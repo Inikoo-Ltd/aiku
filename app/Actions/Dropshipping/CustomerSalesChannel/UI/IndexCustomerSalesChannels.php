@@ -36,6 +36,7 @@ class IndexCustomerSalesChannels extends OrgAction
 
     private Customer|Platform $parent;
     private string $bucket = '';
+    private string $filterPortfolioStatus = 'true';
 
     public function handle(Customer|Platform $parent, ?Shop $shop = null, $prefix = null, string $bucket = ''): LengthAwarePaginator
     {
@@ -66,15 +67,27 @@ class IndexCustomerSalesChannels extends OrgAction
         }
 
         if ($this->bucket === 'problem') {
-            $queryBuilder->where('customer_sales_channels.platform_status', false);
+            $this->filterPortfolioStatus = 'false';
         } elseif ($this->bucket === 'ok' || $this->bucket === '') {
-            $queryBuilder->where('customer_sales_channels.platform_status', true);
+            $this->filterPortfolioStatus = 'true';
         } elseif ($this->bucket === 'ok_with_invoices') {
-            $queryBuilder->where('customer_sales_channels.platform_status', true)
+            $this->filterPortfolioStatus = 'true';
+            $queryBuilder
                 ->where('customer_sales_channels.number_orders', '>', 0);
         } elseif ($this->bucket === 'ok_with_recent_invoices') {
-            $queryBuilder->where('customer_sales_channels.platform_status', true)
+            $this->filterPortfolioStatus = 'true';
+            $queryBuilder
                 ->whereRaw("customer_sales_channels.last_order_created_at >= NOW() - INTERVAL '30 days'");
+        }
+
+        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix,
+                default: $this->filterPortfolioStatus,
+            );
         }
 
         $queryBuilder->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id');
@@ -133,6 +146,29 @@ class IndexCustomerSalesChannels extends OrgAction
         )->table($this->tableStructure(parent: $this->parent));
     }
 
+    protected function getElementGroups(Customer|Platform $parent): array
+    {
+        return [
+            'platform_status' => [
+                'label'    => __('Platform Status'),
+                'elements' => array_merge_recursive(
+                    [
+                        'true'        => __('Connected'),
+                        'false'       => __('Not Connected')
+                    ],
+                    [
+                        'true'      => null,
+                        'false'     => null
+                    ]
+                ),
+                'engine' => function ($query, $elements) {
+                    $query
+                        ->whereIn('platform_status', $elements);
+                }
+
+            ],
+        ];
+    }
 
     public function tableStructure(Customer|Platform $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
@@ -148,6 +184,16 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), sortable: true);
+
+
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $this->filterPortfolioStatus,
+                );
+            }
 
             if ($parent instanceof Platform) {
                 $table->column(key: 'customer_company_name', label: __('Customer'), sortable: true);

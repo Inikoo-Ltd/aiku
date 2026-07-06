@@ -57,8 +57,11 @@ const props = withDefaults(defineProps<{
             phone?: string
         }
         delivery_address: Address,
+        is_forbidden_delivery?: boolean
         products: {
             estimated_weight: number
+            number_items?: number
+            number_skos?: number
         }
         packer: {
             id: number
@@ -505,7 +508,11 @@ function returnNoteRoute(returnDeliveryNote) {
                     </div>
 
                     <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
-                        <div class="border border-gray-300 p-4 rounded-lg">
+                        <div class="relative border p-4 rounded-lg"
+                            :class="boxStats?.is_forbidden_delivery ? 'border-red-500 bg-red-50' : 'border-gray-300'">
+                            <div v-if="boxStats?.is_forbidden_delivery" v-tooltip="ctrans('Delivery to this address was banned (listed in Shop settings)')" class="absolute top-2 right-2">
+                                <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
+                            </div>
                             <div v-if="boxStats.customer_client" class="mb-3">
                                 <div class="xtext-xs text-gray-600 leading-snug">
                                     <div>
@@ -665,7 +672,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
-                            {{ locale.number(boxStats.products?.number_items || 0) }} items
+                            {{ locale.number(boxStats.products?.number_items || 0) }} items <span v-if="Number(boxStats.products?.number_skos ?? 0) > 0">({{ locale.number(boxStats.products?.number_skos || 0) }} SKOs)</span>
                         </dd>
                     </dl>
 

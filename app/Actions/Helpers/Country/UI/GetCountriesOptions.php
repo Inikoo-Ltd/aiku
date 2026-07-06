@@ -15,14 +15,19 @@ class GetCountriesOptions
 {
     use AsObject;
 
-    public function handle(): array
+    public function handle(bool $ignoreStatus = false, $ignoreShowInAddress = false): array
     {
         $selectOptions = [];
         /** @var Country $country */
-        foreach (Country::where('status', true)->where('show_in_address', true)->get() as $country) {
+        foreach (
+            Country::when(!$ignoreStatus, fn ($q) => $q->where('status', true))
+                ->when(!$ignoreShowInAddress, fn ($q) => $q->where('show_in_address', true))
+                ->get() as $country
+        ) {
             $selectOptions[$country->id] =
                 [
                     'label' => $country->name.' ('.$country->code.')',
+                    'code'  => $country->code,
                     'id'    => $country->id
                 ];
         }

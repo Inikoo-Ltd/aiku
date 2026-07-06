@@ -24,6 +24,42 @@ if (!function_exists('escapeSQLSearch')) {
     }
 }
 
+if (!function_exists('maskName')) {
+    function maskName(?string $name): string
+    {
+        if (!$name) {
+            return '';
+        }
+
+        $parts = array_values(array_filter(
+            preg_split('/\s+/', trim($name))
+        ));
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        // Nama satu kata: tampilkan 2 huruf pertama, sisanya menjadi *
+        if (count($parts) === 1) {
+            $word = $parts[0];
+            $length = mb_strlen($word);
+
+            if ($length <= 2) {
+                return mb_convert_case($word, MB_CASE_TITLE, 'UTF-8');
+            }
+
+            return mb_convert_case(
+                mb_substr($word, 0, 2),
+                MB_CASE_TITLE,
+                'UTF-8'
+            ) . str_repeat('*', $length - 2);
+        }
+
+        // Nama lebih dari satu kata
+        return $parts[0] . ' ***';
+    }
+}
+
 if (!function_exists('getUnformattedTaxNumber')) {
     function getUnformattedTaxNumber(?string $formattedTaxNumber = null): array|null
     {

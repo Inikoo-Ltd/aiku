@@ -7,7 +7,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -25,18 +24,13 @@ class IndexProductsNotOnline extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-    public function liveWebpageExistsSql(): string
-    {
-        return "exists (select 1 from webpages w where w.id = products.webpage_id and w.state = '".WebpageStateEnum::LIVE->value."')";
-    }
-
     public function getElementGroups(Shop $shop): array
     {
         $rawCounts = Product::where('is_main', true)
             ->where('shop_id', $shop->id)
             ->whereNull('exclusive_for_customer_id')
             ->where('is_for_sale', true)
-            ->whereRaw('not '.$this->liveWebpageExistsSql())
+            ->where('has_live_webpage', false)
             ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING, ProductStateEnum::IN_PROCESS])
             ->selectRaw('state, count(*) as total')
             ->groupBy('state')
@@ -75,15 +69,13 @@ class IndexProductsNotOnline extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
 
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->leftJoin('webpages', 'products.webpage_id', 'webpages.id');
 
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.is_for_sale', true);
-        $queryBuilder->whereRaw('not '.$this->liveWebpageExistsSql());
+        $queryBuilder->where('products.has_live_webpage', false);
         $queryBuilder->whereIn('products.state', [
             ProductStateEnum::ACTIVE,
             ProductStateEnum::DISCONTINUING,
@@ -120,9 +112,9 @@ class IndexProductsNotOnline extends OrgAction
                 'products.master_product_id',
                 'products.webpage_id',
                 'webpages.state as webpage_state',
-                'products.available_quantity'
-            ])
-            ->selectRaw($this->liveWebpageExistsSql().' as has_live_webpage');
+                'products.available_quantity',
+                'products.has_live_webpage',
+            ]);
 
         return $queryBuilder->allowedSorts([
             'code',
@@ -200,6 +192,7 @@ class IndexProductsNotOnline extends OrgAction
                 'title'                        => $title,
                 'pageHead'                     => [
                     'title'      => $title,
+                    'is_negative' => true,
                     'model'      => null,
                     'icon'       => $icon,
                     'afterTitle' => null,

@@ -508,6 +508,7 @@ class IndexFamilies extends OrgAction
                 'title'                               => __('Families'),
                 'pageHead'                            => [
                     'title'         => $title,
+                    'color'         => '#e879f9',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,

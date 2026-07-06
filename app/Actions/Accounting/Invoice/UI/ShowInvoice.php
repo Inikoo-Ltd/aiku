@@ -335,7 +335,7 @@ class ShowInvoice extends OrgAction
         }
 
         if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {
-            return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab);
+            return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab, $this->parent);
         }
 
         $subNavigation = [];
@@ -405,8 +405,8 @@ class ShowInvoice extends OrgAction
 
                 'invoiceExportOptions'          => $exportInvoiceOptions,
                 'routes'                        => [
-                    'delivery_note'          => $deliveryNoteRoute,
-                    'updateInvoiceDateRoute' => [
+                    'delivery_note'             => $deliveryNoteRoute,
+                    'updateInvoiceDateRoute'    => [
                         'name'       => 'grp.models.invoice.update.date',
                         'parameters' => [$invoice->id]
                     ],
@@ -416,10 +416,10 @@ class ShowInvoice extends OrgAction
                     ],
                 ],
                 'can'                           => [
-                    'editInvoiceDate' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
+                    'editInvoiceDate'    => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                     'editInvoiceAddress' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
                 ],
-                'billing_address_form'                 => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
+                'billing_address_form'          => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
                     'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),
                     'options' => [
                         'countriesAddressData' => GetAddressData::run()

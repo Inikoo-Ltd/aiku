@@ -629,7 +629,7 @@ provide("goNext", goNext)
 				</div>
 
 				<div class="w-full flex justify-end">
-					<a :href="props.allegroAuth?.url" class="w-full">
+					<a :href="props.allegroAuth?.url" :target="'_blank'" class="w-full">
 						<Button
 							:label="trans('Connect')"
 							type="primary"

@@ -54,32 +54,45 @@ class ShowIrisWebpage
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
+
+        $website = $webpage->website;
+
+        $title = $webpage->title;
+        // Prioritize webpage prefix/suffix -> website prefix/suffix
+        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null));
+        $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
+        $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
+            'navigation'                  => $this->getIrisProductNavigation($webpage),
             'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
-                'title'         => $webpage->title,
+                'title'         => $title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
                 'type'          => $webpage->type,
                 'sub_type'      => $webpage->sub_type,  // 'sub_department', 'department', 'product', 'category'
                 'model_type'    => $webpage->model_type,  // Product, ProductCategory, etc
-                'product_page'  => $webpage->sub_type?->value === 'product' && $webpage->model_type === 'Product'
+                'model_slug'   => $webpage->model?->slug,
+                'product_page'  => $webpage->model instanceof Product
                     ? ['department' => [
-                        'name'          => $webpage->model?->department?->name,
-                        'webpage_title' => $webpage->model?->department?->webpage?->title,
+                        'name'          => $webpage->model->department?->name,
+                        'webpage_title' => $webpage->model->department?->webpage?->title,
                     ]]
                     : null,
             ],
-            'webpage_img'                 => $webpageImg,
-            'index_page'                  => $webpage->index_page,
-            'follow_link'                 => $webpage->follow_link,
-            'webpage_slug'                => $webpage->slug,
-            'is_different_when_logged_in' => $webpage->is_different_when_logged_in,
-
+            'webpage_img'                       => $webpageImg,
+            'index_page'                        => $webpage->index_page,
+            'follow_link'                       => $webpage->follow_link,
+            'webpage_slug'                      => $webpage->slug,
+            'allow_review_reaction'             => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
+            'allow_review_reply_reaction'       => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
+            'minimum_reviews_to_show'           => Arr::get($webpage->shop->settings, 'reviews.minimum_reviews_to_show', 0),
+            'show_staff_who_reply'              => Arr::get($webpage->shop->settings, 'reviews.show_staff_who_reply', false),
+            'is_different_when_logged_in'       => $webpage->is_different_when_logged_in,
         ];
 
         return array_merge($baseWebpageData, [
@@ -131,14 +144,13 @@ class ShowIrisWebpage
 
 
         if (!empty($canonicalUrl)) {
-            // Use current URL without query parameters for canonical comparison
-            $currentUrl = rtrim($request->url(), '/');
-
-
-            $normalizedCanon = $this->getEnvironmentUrl($canonicalUrl);
+            $currentUrl      = rtrim($request->url(), '/');
+            $normalizedCanon = rtrim($this->getEnvironmentUrl($canonicalUrl), '/');
 
             if ($normalizedCanon !== $currentUrl) {
-                return $this->getEnvironmentUrl($canonicalUrl);
+                $request->attributes->set('iris_redirect_webpage_id', $webpageID);
+
+                return $normalizedCanon;
             }
         }
 
@@ -249,11 +261,20 @@ class ShowIrisWebpage
             }
 
 
-            return redirect()->to($webpageData, 301)
+            $redirectResponse = redirect()->to($webpageData, 301)
                 ->withHeaders([
                     'Cache-Control'             => 'public, s-maxage=300, max-age=0',
                     'X-Aiku-Cacheable-Redirect' => $cacheRedirectInVarnish,
                 ]);
+
+            $redirectResponse->header('X-AIKU-WEBSITE', (string)request()->website->id);
+
+            $redirectWebpageID = request()->attributes->get('iris_redirect_webpage_id');
+            if ($redirectWebpageID) {
+                $redirectResponse->header('X-AIKU-WEBPAGE', (string)$redirectWebpageID);
+            }
+
+            return $redirectResponse;
         }
 
         $browserTitle            = Arr::get($webpageData, 'webpage_data.title', '');
@@ -368,6 +389,65 @@ class ShowIrisWebpage
         return $breadcrumbs;
     }
 
+    public function getIrisProductNavigation(Webpage $webpage): ?array
+    {
+        if (!$webpage->model instanceof Product) {
+            return null;
+        }
+
+        /** @var Product $product */
+        $product = $webpage->model;
+        if (!$product->family_id) {
+            return null;
+        }
+
+        $siblings = Product::query()
+            ->where('products.family_id', $product->family_id)
+            ->where(function ($query) {
+                $query->whereNull('products.variant_id')
+                    ->orWhere('products.is_variant_leader', true);
+            })
+            ->whereHas('webpage', function ($query) use ($webpage) {
+                $query->where('state', WebpageStateEnum::LIVE)
+                    ->where('website_id', $webpage->website_id);
+            })
+            ->with(['webpage' => function ($query) use ($webpage) {
+                $query->where('state', WebpageStateEnum::LIVE)
+                    ->where('website_id', $webpage->website_id);
+            }])
+            ->orderBy('index_under_family')
+            ->orderBy('code')
+            ->get();
+
+        $currentIndex = $siblings->search(fn (Product $sibling) => $sibling->id === $product->id);
+        if ($currentIndex === false) {
+            return null;
+        }
+
+        $navigation = [
+            'previous' => $this->getProductNavigationItem($siblings->get($currentIndex - 1)),
+            'next'     => $this->getProductNavigationItem($siblings->get($currentIndex + 1)),
+        ];
+
+        if (!$navigation['previous'] && !$navigation['next']) {
+            return null;
+        }
+
+        return $navigation;
+    }
+
+    private function getProductNavigationItem(?Product $product): ?array
+    {
+        if (!$product || !$product->webpage) {
+            return null;
+        }
+
+        return [
+            'label' => $product->name,
+            'url'   => $this->getEnvironmentUrl($product->webpage->canonical_url),
+        ];
+    }
+
     public function getBreadcrumbShortLabel(Webpage $webpage): string
     {
         if ($webpage->model_type == 'Product') {
@@ -402,7 +482,7 @@ class ShowIrisWebpage
         $label = $webpage->breadcrumb_label;
 
         if (!$label) {
-            $label = $webpage->code;
+            $label = $webpage->title ?? $webpage->code;
         }
 
         return $label ?? '';

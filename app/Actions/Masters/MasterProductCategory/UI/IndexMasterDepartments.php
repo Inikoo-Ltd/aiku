@@ -289,6 +289,7 @@ class IndexMasterDepartments extends OrgAction
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
+                    'color'         => '#65a30d',
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,

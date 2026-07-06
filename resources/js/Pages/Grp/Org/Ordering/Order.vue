@@ -241,8 +241,10 @@ const props = defineProps<{
     delivery_note?: {
         reference: string
     },
+    is_forbidden_delivery: boolean
+    is_forbidden_billing: boolean
     route_recalculate_vat: {
-        showButton?: bool,
+        showButton?: boolean,
         name: string,
         parameters: {
             order: string
@@ -1439,7 +1441,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <div class="space-y-0.5 pl-1">
 
                     <!-- Field: Client -->
-                    <div v-if="box_stats?.customer_client" class="pl-1 pb-2 flex items-center w-full gap-x-2">
+                    <div v-if="box_stats?.customer_client" class="pl-1 xpb-2 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer client')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
@@ -1518,8 +1520,13 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
-                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52"
-                            v-html="box_stats?.customer.addresses.billing.formatted_address">
+                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 rounded min-w-52" 
+                            :class="is_forbidden_billing ? 'bg-red-50 ring-red-300' : 'ring-gray-300'"
+                        >
+                            <div v-html="box_stats?.customer.addresses.billing.formatted_address"></div>
+                            <div v-if="is_forbidden_billing" v-tooltip="ctrans('This billing address was banned (listed in Shop settings)')" class="absolute top-2 right-2">
+                                <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
+                            </div>
                         </dd>
                     </dl>
 
@@ -1529,7 +1536,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
                         <ToggleSwitch v-model="isCollection" @change="updateCollection" />
-                        <span class="text-sm text-gray-500">Collection</span>
+                        <span class="text-sm text-gray-500">{{ ctrans("Collection") }}</span>
                     </div>
 
                     <div class="pl-1 pb-2 flex items-start w-full gap-x-2" v-if="box_stats?.customer?.tax_number?.number">
@@ -1580,8 +1587,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
-                            <dd
-                                class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
+                            <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 border rounded min-w-52"
+                                :class="is_forbidden_delivery ? 'border-red-500 bg-red-50' : 'ring-gray-300'"
+                            >
+                                <div v-if="is_forbidden_delivery" v-tooltip="ctrans('Delivery to this address was banned (listed in Shop settings)') + ' ' + (state === 'creating' ? ctrans('You can submit the order anyway') : '')" class="absolute top-2 right-2">
+                                    <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
+                                </div>
                                 <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
@@ -2155,9 +2166,9 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         </template>
 
                         <template #cell_shipping_3="{ fieldSummary }">
-                            <div class="relative col-span-3 justify-self-end font-medium xoverflow-hidden">
+                            <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc" class="relative col-span-3 justify-self-end font-medium xoverflow-hidden">
                                 <Transition name="spin-to-right">
-                                    <div v-if="fieldSummary.data?.engine === 'auto' && fieldSummary.data?.is_shipping_tbc"
+                                    <div
                                         class="-mr-2"
                                         :class="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null ? '' : ''">
                                         <span v-if="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null"
@@ -2173,11 +2184,6 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                             :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null
                                                 " :min="0" />
                                     </div>
-
-                                    <dd v-else :key="fieldSummary.price_total" class=""
-                                        :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
-                                        {{ locale.currencyFormat(currency.code, fieldSummary.price_total || 0) }}
-                                    </dd>
                                 </Transition>
                             </div>
                         </template>

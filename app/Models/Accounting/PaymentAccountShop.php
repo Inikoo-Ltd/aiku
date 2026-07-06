@@ -37,6 +37,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $show_in_checkout
  * @property int $checkout_display_position for the order in which will be shown in checkout UI
  * @property string|null $source_id
+ * @property string|null $invoice_footer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Currency $currency
  * @property-read \App\Models\Accounting\PaymentAccount|null $paymentAccount

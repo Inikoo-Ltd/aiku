@@ -31,6 +31,7 @@ class GetRetinaPaymentMethods
             ->where('show_in_checkout', true)
             ->orderby('checkout_display_position')
             ->get();
+
         /** @var PaymentAccountShop $paymentAccountShop */
         foreach ($paymentAccountShops as $paymentAccountShop) {
             $paymentAccountShopData = GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop, $orderPaymentApiPoint);

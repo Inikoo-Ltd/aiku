@@ -8,6 +8,7 @@
 
 namespace App\Actions\Billables\ShippingZone;
 
+use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateShippingZones;
 use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\OrgAction;
@@ -44,7 +45,7 @@ class StoreShippingZone extends OrgAction
         );
 
 
-        return DB::transaction(function () use ($shippingZoneSchema, $modelData) {
+        $shippingZone = DB::transaction(function () use ($shippingZoneSchema, $modelData) {
             /** @var $shippingZone ShippingZone */
             $shippingZone = $shippingZoneSchema->shippingZones()->create($modelData);
             $shippingZone->stats()->create();
@@ -85,6 +86,10 @@ class StoreShippingZone extends OrgAction
 
             return $shippingZone;
         });
+
+        ShippingZoneSchemaHydrateShippingZones::dispatch($shippingZoneSchema)->delay($this->hydratorsDelay);
+
+        return $shippingZone;
     }
 
     public function rules(): array

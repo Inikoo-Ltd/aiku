@@ -14,6 +14,7 @@ use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
+use App\Actions\Retina\Dropshipping\Orders\FinalizeOrderWithPastpay;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
@@ -127,6 +128,10 @@ class StoreInvoice extends OrgAction
             data_set($modelData, 'is_re', $parent->is_re);
         }
 
+        if ($parent instanceof Order) {
+            data_set($modelData, 'is_pastpay', $parent->is_pastpay);
+        }
+
 
         if (!Arr::exists($modelData, 'tax_category_id')) {
             $modelData = $this->processTaxCategory($modelData, $parent);
@@ -217,6 +222,9 @@ class StoreInvoice extends OrgAction
             MatchCustomerProspects::dispatch($invoice->customer);
         }
 
+        if ($invoice->is_pastpay) {
+            FinalizeOrderWithPastpay::run($invoice);
+        }
 
         return $invoice;
     }

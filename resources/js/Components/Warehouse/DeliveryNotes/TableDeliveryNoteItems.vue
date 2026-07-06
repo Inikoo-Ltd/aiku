@@ -566,7 +566,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xmemoizeRows="true">
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
@@ -893,7 +893,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 <div v-if="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))"
                     class="flex flex-col justify-between gap-x-6 items-center">
                     <!-- Action: decrease and increase quantity -->
-                    <div class="mb-3 w-full flex justify-between gap-x-6 xitems-center">
+                    <div class="w-full flex justify-between gap-x-6 xitems-center">
                         <!-- Section: Locations -->
                         <LabelPickingLocation
                             :locations="itemValue.locations"

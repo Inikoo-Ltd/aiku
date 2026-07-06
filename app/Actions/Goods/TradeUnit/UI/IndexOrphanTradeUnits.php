@@ -59,6 +59,7 @@ class IndexOrphanTradeUnits extends GrpAction
                 'title'       => __('Trade Units No Family'),
                 'pageHead'    => [
                     'title'         => __('Trade Units No Family'),
+                    'is_negative'   => true,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-atom'],
                         'title' => __('Trade Units No Family'),

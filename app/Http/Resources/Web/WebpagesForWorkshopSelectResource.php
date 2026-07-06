@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Web\Webpage\GetWebpageAlt;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -38,8 +39,7 @@ class WebpagesForWorkshopSelectResource extends JsonResource
 
     public function toArray($request): array
     {
-        $imageAlt = $this->title;
-        //todo replace this for: $imageAlt=GetWebpageAlt::run($this->id)
+        $imageAlt = GetWebpageAlt::run($this->id);
 
 
         return [

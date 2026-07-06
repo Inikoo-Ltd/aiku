@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
@@ -28,7 +29,14 @@ class CloseDiscontinuedWebpage
             ];
         }
 
-        if($webpage->state !== WebpageStateEnum::LIVE) {
+        if ($webpage->model instanceof ProductCategory && $webpage->model->type !== ProductCategoryTypeEnum::FAMILY) {
+            return [
+                'error' => 'product_category_not_family'
+            ];
+        }
+
+
+        if ($webpage->state !== WebpageStateEnum::LIVE) {
             return [
                 'error' => 'webpage_not_live'
             ];

@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 03 Jul 2026 11:55:10 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 namespace App\Actions\Helpers\Translations;
 
 use Throwable;
@@ -17,21 +23,23 @@ class DetectLanguageWithAI extends OrgAction
 {
     use AsAction;
 
+
     /**
      * Detect the language of the given text using AI (reusing auto-translations config).
      *
-     * @param  string|null  $text
+     * @param  string|null  $text  The text to analyze for language detection
+     * @param  Language|null  $languageHint  Optional language hint to improve detection accuracy or provide context
      *
      * @return Language|null
      */
-    public function handle(?string $text): ?Language
+    public function handle(?string $text, ?Language $languageHint = null): ?Language
     {
         if (empty($text) || is_numeric($text)) {
             return null;
         }
 
         try {
-            $driverName = config('auto-translations.default_driver', 'chatgpt5');
+            $driverName = config('auto-translations.default_driver_detect_language', 'gpt-5-nano');
 
             $driverConfig = config("auto-translations.drivers.$driverName");
 
@@ -45,6 +53,12 @@ class DetectLanguageWithAI extends OrgAction
 
             $model = 'gpt-4o-mini';
 
+            $systemPrompt = 'You are a language detector. Reply ONLY with the ISO 639-1 language code (e.g., en, es, fr, id). If unknown, reply "null".';
+
+            if ($languageHint) {
+                $systemPrompt .= " The text is likely in $languageHint->name ($languageHint->code); only override this if you are confident the text is in a different language.";
+            }
+
             $response = Http::withToken($apiKey)
                 ->connectTimeout(10)
                 ->timeout(30)
@@ -53,7 +67,7 @@ class DetectLanguageWithAI extends OrgAction
                     'messages'    => [
                         [
                             'role'    => 'system',
-                            'content' => 'You are a language detector. Reply ONLY with the ISO 639-1 language code (e.g., en, es, fr, id). If unknown, reply "null".'
+                            'content' => $systemPrompt
                         ],
                         [
                             'role'    => 'user',

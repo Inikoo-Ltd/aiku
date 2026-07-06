@@ -18,6 +18,7 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
+use App\Models\Accounting\PaymentGatewayLog;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Accounting\TopUp;
 use App\Models\Analytics\AikuSection;
@@ -73,6 +74,7 @@ use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
+use App\Models\HumanResources\WorkSchedule;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
@@ -84,12 +86,12 @@ use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\SalesChannel;
-use App\Models\PaymentGatewayLog;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Production\Artefact;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
+use App\Models\Reviews\GroupReviewStat;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
@@ -108,6 +110,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -117,8 +120,6 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use App\Models\HumanResources\WorkSchedule;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @property int $id
@@ -238,6 +239,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
+ * @property-read GroupReviewStat|null $reviewStats
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read \App\Models\Helpers\Media|null $seoImage
@@ -384,6 +386,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(GroupStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(GroupReviewStat::class);
     }
 
     public function humanResourcesStats(): HasOne
@@ -669,7 +676,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
 
     public function barcodes(): HasMany
     {
-        return $this->hasMany(Barcode::class);
+        return $this->hasMany(Barcode::class, 'group_id', 'id');
     }
 
     public function websites(): HasMany

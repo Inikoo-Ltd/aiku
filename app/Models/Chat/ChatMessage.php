@@ -1,0 +1,192 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 30 Jun 2026 21:07:06 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Models\Chat;
+
+use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Models\Helpers\Language;
+use App\Models\Helpers\Media;
+use App\Models\Traits\HasImage;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+
+/**
+ * @property int $id
+ * @property int|null $chat_session_id
+ * @property ChatMessageTypeEnum $message_type
+ * @property ChatSenderTypeEnum $sender_type
+ * @property int|null $sender_id
+ * @property string|null $message_text
+ * @property int|null $media_id
+ * @property bool $is_read
+ * @property \Illuminate\Support\Carbon|null $delivered_at
+ * @property \Illuminate\Support\Carbon|null $read_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property int|null $original_language_id
+ * @property string|null $original_text
+ * @property array<array-key, mixed>|null $metadata
+ * @property-read Media|null $attachment
+ * @property-read \App\Models\Chat\ChatSession|null $chatSession
+ * @property-read Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
+ * @property-read Language|null $originalLanguage
+ * @property-read Model|\Eloquent|null $sender
+ * @property-read Media|null $seoImage
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Chat\ChatMessageTranslation> $translations
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage fromSenderType(\App\Enums\CRM\Livechat\ChatSenderTypeEnum $senderType)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage textMessages()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage unread()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatMessage withoutTrashed()
+ * @mixin \Eloquent
+ */
+class ChatMessage extends Model implements HasMedia
+{
+    use HasFactory;
+    use SoftDeletes;
+    use HasImage;
+    use InteractsWithMedia;
+
+    protected $table = 'chat_messages';
+
+    protected $casts = [
+        'message_type' => ChatMessageTypeEnum::class,
+        'sender_type' => ChatSenderTypeEnum::class,
+        'is_read' => 'boolean',
+        'delivered_at' => 'datetime',
+        'read_at' => 'datetime',
+        'deleted_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'metadata' => 'array',
+    ];
+
+    protected $guarded = [];
+
+
+    public function chatSession(): BelongsTo
+    {
+        return $this->belongsTo(ChatSession::class);
+    }
+
+
+    public function attachment(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'media_id');
+    }
+
+
+    public function sender(): MorphTo
+    {
+        return $this->morphTo(__FUNCTION__, 'sender_type', 'sender_id');
+    }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(ChatMessageTranslation::class);
+    }
+    public function originalLanguage(): BelongsTo
+    {
+        return $this->belongsTo(Language::class, 'original_language_id');
+    }
+
+
+    public function markAsDelivered(): void
+    {
+        if (!$this->delivered_at) {
+            $this->update(['delivered_at' => now()]);
+        }
+    }
+
+
+    public function markAsRead(): void
+    {
+        if (!$this->is_read) {
+            $this->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+        }
+    }
+
+
+    public function isFromUser(): bool
+    {
+        return $this->sender_type === ChatSenderTypeEnum::USER;
+    }
+
+    /**
+     *
+     */
+    public function isFromGuest(): bool
+    {
+        return $this->sender_type === ChatSenderTypeEnum::GUEST;
+    }
+
+
+    public function isFromAgent(): bool
+    {
+        return $this->sender_type === ChatSenderTypeEnum::AGENT;
+    }
+
+
+    public function isFromAI(): bool
+    {
+        return $this->sender_type === ChatSenderTypeEnum::AI;
+    }
+
+
+    public function isText(): bool
+    {
+        return $this->message_type === ChatMessageTypeEnum::TEXT;
+    }
+
+
+    public function isImage(): bool
+    {
+        return $this->message_type === ChatMessageTypeEnum::IMAGE;
+    }
+
+
+    public function isFile(): bool
+    {
+        return $this->message_type === ChatMessageTypeEnum::FILE;
+    }
+
+
+    public function scopeUnread($query)
+    {
+        return $query->where('is_read', false);
+    }
+
+
+    public function scopeFromSenderType($query, ChatSenderTypeEnum $senderType)
+    {
+        return $query->where('sender_type', $senderType);
+    }
+
+
+    public function scopeTextMessages($query)
+    {
+        return $query->where('message_type', ChatMessageTypeEnum::TEXT);
+    }
+}

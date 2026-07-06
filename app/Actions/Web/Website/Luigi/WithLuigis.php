@@ -459,6 +459,13 @@ trait WithLuigis
             }
         }
 
+
+        $productUnits = (float) $product->units;
+        $price = (float) ($product->price ?? 0);
+        $rrp   = (float) ($product->rrp ?? 0);
+        $pricePerUnit = $productUnits > 0 ? $price / $productUnits : 0;
+        $rrpPerUnit   = $productUnits > 0 ? $rrp / $productUnits : 0;
+
         return [
             "identity" => $webpage->luigiIdentity(),
             "type"     => "item",
@@ -469,12 +476,18 @@ trait WithLuigis
                 // Discontinuing display also (Tomas Request) | HELP-1677
                 "availability"        => intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale),
                 "stock_qty"           => $product->available_quantity ?? 0,
-                "unit"                => $product->unit,
-                "units"               => $product->units,
-                "price"               => (float)$product->price ?? 0,
-                "price_rrp"           => (float)$product->rrp ?? 0,
-                "formatted_price"     => $product->currency->symbol.$product->price.'/'.$product->unit,
-                "formatted_price_rrp" => $product->currency->symbol.$product->rrp.'/'.$product->unit,
+                "unit"                => $product->unit,   // 'bomb'
+                "units"               => $productUnits,   // '6.000'
+
+                "price"                             => $price,
+                "formatted_price"                   => $product->currency->symbol.$price.'/'.$product->unit,
+                "price_rrp"                         => $rrp,
+                "formatted_price_rrp"               => $product->currency->symbol.$rrp.'/'.$product->unit,
+                "price_per_unit"                    => $pricePerUnit,
+                "formatted_price_per_unit"          => $product->currency->symbol . number_format($pricePerUnit, 2) . '/'. $product->unit,
+                "price_rrp_per_unit"                => $rrpPerUnit,
+                "formatted_price_rrp_per_unit"      => $product->currency->symbol . number_format($rrpPerUnit, 2) . '/'. $product->unit,
+
                 "image_link"          => Arr::get($product->imageSources(200, 200), 'original'),
                 "product_code"        => $product->code,
                 "product_id"          => $product->id,

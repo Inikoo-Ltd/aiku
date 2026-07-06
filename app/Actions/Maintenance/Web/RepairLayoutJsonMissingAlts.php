@@ -3,16 +3,19 @@
 namespace App\Actions\Maintenance\Web;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\GetWebpageAlt;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection as CollectionModel;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -40,36 +43,22 @@ class RepairLayoutJsonMissingAlts
                 continue;
             }
 
-            // 1. Take caption first as the highest priority
-            $caption = data_get($image, 'caption');
             $alt = null;
+            $webpageId = data_get($image, 'link_data.id');
 
-            if (!blank($caption)) {
-                $alt = $caption;
-            } else {
-                // 2. If caption is empty, fallback to model name or webpage title
-                $webpageId = data_get($image, 'link_data.id');
+            // 1. Resolve alt using GetWebpageAlt as the highest priority
+            if ($webpageId) {
+                $webpage = $this->webpages[$webpageId] ??= Webpage::find($webpageId);
+                if ($webpage) {
+                    $alt = GetWebpageAlt::run($webpage);
+                }
+            }
 
-                if ($webpageId) {
-                    $webpage = $this->webpages[$webpageId] ??= Webpage::find($webpageId);
-
-                    if ($webpage) {
-
-                        $alt = GetWebpageAlt::run($webpage->id);
-
-
-                        if ($this->canUseWebpageModelForAlt($webpage)) {
-                            $modelName = $webpage->model?->name;
-                            if (!blank($modelName)) {
-                                $alt = $modelName;
-                            }
-                        }
-
-                        // Fallback to Webpage Title if model name is empty or invalid
-                        if (blank($alt) && !blank($webpage->title)) {
-                            $alt = $webpage->title;
-                        }
-                    }
+            // 2. Fallback to image caption if webpage alt is empty
+            if (blank($alt)) {
+                $caption = data_get($image, 'caption');
+                if (!blank($caption)) {
+                    $alt = $caption;
                 }
             }
 
@@ -80,20 +69,14 @@ class RepairLayoutJsonMissingAlts
                 $alt = trim($alt);
             }
 
-            // If no suitable alt is found, skip
             if (blank($alt)) {
                 continue;
             }
 
             $changes++;
 
-
-            //            $command?->line(
-            //                "[APPLY] model_has_web_blocks:    {$modelHasWebBlocks->webpage->canonical_url}  {$modelHasWebBlocks->id}   web_block:{$item->id} image_position:{$key} alt: {$alt}"
-            //
-            //            );
             $command?->line(
-                "alt: {$alt}"
+                "Web block: $item->id || Webpage ID: " . ($webpageId ?? 'N/A') . " || Image index: $key || Webpage subtype : " . ($webpage?->sub_type?->value ?? 'N/A') . " || Alt: $alt"
             );
 
             data_set(
@@ -121,7 +104,7 @@ class RepairLayoutJsonMissingAlts
             if ($apply && $modelHasWebBlocks->webpage) {
                 $webpage = $modelHasWebBlocks->webpage;
                 if ($this->isSnapshotStale($webpage, $item)) {
-                    $command?->line("[SYNC SNAPSHOT] webpage:{$webpage->id} web_block:{$item->id}");
+                    $command?->line("[SYNC SNAPSHOT] webpage:$webpage->id web_block:$item->id");
                     $this->updateWebpage($webpage, $command);
                 }
             }
@@ -130,8 +113,7 @@ class RepairLayoutJsonMissingAlts
         return $changes;
     }
 
-
-    public function updateWebpage(Webpage $webpage, Command $command)
+    public function updateWebpage(Webpage $webpage, Command $command): void
     {
         UpdateWebpageContent::run($webpage);
 
@@ -140,13 +122,27 @@ class RepairLayoutJsonMissingAlts
         }
 
         if ($webpage->is_dirty) {
+            $model = $webpage->model;
+            $shouldPublish = false;
 
+            if ($model instanceof Product) {
+                if (in_array($model->state, [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING], true)) {
+                    $shouldPublish = true;
+                }
+            } elseif ($model instanceof ProductCategory) {
+                if (in_array($model->state, [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING], true)) {
+                    $shouldPublish = true;
+                }
+            } elseif ($model instanceof CollectionModel) {
+                if ($model->state === CollectionStateEnum::ACTIVE) {
+                    $shouldPublish = true;
+                }
+            } else {
+                // For pages with no model or storefront, publish if dirty
+                $shouldPublish = true;
+            }
 
-
-            if (in_array($family->state, [
-                ProductCategoryStateEnum::ACTIVE,
-                ProductCategoryStateEnum::DISCONTINUING
-            ])) {
+            if ($shouldPublish) {
                 $command->line('Webpage '.$webpage->code.' is dirty, publishing after upgrade');
                 PublishWebpage::make()->action(
                     $webpage,
@@ -156,24 +152,6 @@ class RepairLayoutJsonMissingAlts
                 );
             }
         }
-
-
-    }
-
-    private function canUseWebpageModelForAlt(?Webpage $webpage): bool
-    {
-        $model = $webpage?->model;
-
-        if ($model instanceof Product || $model instanceof CollectionModel) {
-            return true;
-        }
-
-        return $model instanceof ProductCategory
-            && in_array($model->type, [
-                ProductCategoryTypeEnum::DEPARTMENT,
-                ProductCategoryTypeEnum::SUB_DEPARTMENT,
-                ProductCategoryTypeEnum::FAMILY,
-            ], true);
     }
 
     private function isSnapshotStale(Webpage $webpage, $item): bool
@@ -191,7 +169,7 @@ class RepairLayoutJsonMissingAlts
 
                 foreach ($dbImages as $key => $dbImg) {
                     $dbAlt = data_get($dbImg, 'properties.alt');
-                    $snapAlt = data_get($snapshotImages, "{$key}.properties.alt");
+                    $snapAlt = data_get($snapshotImages, "$key.properties.alt");
 
                     // If alt is present in DB, but empty in snapshot
                     if (!blank($dbAlt) && blank($snapAlt)) {
@@ -204,18 +182,36 @@ class RepairLayoutJsonMissingAlts
         return false;
     }
 
-    public string $commandSignature = 'repair:layout_json_missing_alts {website}';
+    public string $commandSignature = 'repair:layout_json_missing_alts {website?} {--apply-changes}';
 
     public function asCommand(Command $command): void
     {
         $total = 0;
 
-        ModelHasWebBlocks::with(['webBlock', 'webpage'])->chunk(100, function ($items) use ($command, &$total) {
-            foreach ($items as $item) {
-                $total += $this->handle($item, false, $command);
-            }
-        });
+        $websiteSlug = $command->argument('website');
 
-        $command->info("Applied {$total} missing alt repairs.");
+        $websites = Website::when(
+            $websiteSlug,
+            fn ($q) => $q->where('slug', $websiteSlug)
+        )->get();
+
+        $applyChanges = (bool) $command->option('apply-changes');
+
+        foreach ($websites as $website) {
+            $command->info("\nApplying Repair for website: [$website->slug] $website->name");
+
+            ModelHasWebBlocks::where('website_id', $website->id)
+                ->with(['webBlock', 'webpage'])
+                ->chunk(100, function ($items) use ($command, &$total, $applyChanges) {
+                    foreach ($items as $item) {
+                        $total += $this->handle($item, $applyChanges, $command);
+                    }
+                });
+
+            $command->info("Applied $total missing alt repairs.");
+            $command->info("====== / ======");
+        }
+
+
     }
 }

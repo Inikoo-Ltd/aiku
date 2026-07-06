@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\Catalogue\Shop\Traits\WithReviewIOApi;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -71,6 +72,8 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Models\Reviews\Review;
+use App\Models\Reviews\ShopReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
@@ -164,6 +167,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property int|null $seeder_shop_id
  * @property string|null $proforma_footer
  * @property \Illuminate\Support\Carbon|null $migrated_to_aiku_on
+ * @property array<array-key, mixed> $banned_country_regions
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -235,6 +239,8 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Redirect> $redirects
  * @property-read LaravelCollection<int, Rental> $rentals
  * @property-read LaravelCollection<int, ReturnDeliveryNote> $returnDeliveryNotes
+ * @property-read ShopReviewStat|null $reviewStats
+ * @property-read LaravelCollection<int, Review> $reviews
  * @property-read LaravelCollection<int, Role> $roles
  * @property-read LaravelCollection<int, SalesChannel> $salesChannels
  * @property-read Shop|null $seederShop
@@ -288,6 +294,7 @@ class Shop extends Model implements HasMedia, Auditable
         'location'                     => 'array',
         'extra_languages'              => 'array',
         'forbidden_dispatch_countries' => 'array',
+        'banned_country_regions'       => 'array',
         'type'                         => ShopTypeEnum::class,
         'state'                        => ShopStateEnum::class,
         'engine'                       => ShopEngineEnum::class,
@@ -304,6 +311,7 @@ class Shop extends Model implements HasMedia, Auditable
         'location'                     => '{}',
         'extra_languages'              => '{}',
         'forbidden_dispatch_countries' => '{}',
+        'banned_country_regions'       => '{}',
         'offers_data'                  => '{}',
         'opening_hours'                => '{}',
     ];
@@ -355,6 +363,28 @@ class Shop extends Model implements HasMedia, Auditable
             ->slugsShouldBeNoLongerThan(664);
     }
 
+    public function bannedBillingCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['billing']);
+    }
+
+    public function bannedDeliveryCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['delivery']);
+    }
+
+    public function bannedIPCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['ip_block']);
+    }
+
+    public function getCustomReviewCategoryLabel(): array
+    {
+        return collect(ReviewContextEnum::labels())->mapWithKeys(fn ($item, $key) => [
+                $key => data_get($this->settings, "reviews.rating_labels.$key.label_tab") ?? $item
+            ])->toArray();
+    }
+
     public function crmStats(): HasOne
     {
         return $this->hasOne(ShopCRMStats::class);
@@ -378,6 +408,16 @@ class Shop extends Model implements HasMedia, Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(ShopStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ShopReviewStat::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
     }
 
     public function accountingStats(): HasOne

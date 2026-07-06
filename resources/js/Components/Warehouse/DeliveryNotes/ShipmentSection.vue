@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router, useForm } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { useTruncate } from "@/Composables/useTruncate"
@@ -28,6 +27,11 @@ import { InputNumber, RadioButton } from "primevue"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faBarcodeRead, faPrint } from '@fal'
+import { library } from '@fortawesome/fontawesome-svg-core'
+library.add(faBarcodeRead, faPrint)
 
 const props = withDefaults(defineProps<{
 	shipments: {

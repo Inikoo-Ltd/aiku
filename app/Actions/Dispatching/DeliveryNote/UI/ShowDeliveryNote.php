@@ -18,6 +18,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
@@ -54,13 +55,12 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowDeliveryNote extends OrgAction
 {
-    use AsAction;
     use WithInertia;
     use GetPlatformLogo;
+    use WithOrderForbiddenCountryCheck;
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
@@ -217,7 +217,10 @@ class ShowDeliveryNote extends OrgAction
         }
 
         if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
-            $showCancel = false;
+            // Disable Faire Cancel if Order. Allow if Replacement (INI:1503)
+            if ($deliveryNote->type === DeliveryNoteTypeEnum::ORDER) {
+                $showCancel = false;
+            }
         }
 
         $actions = [];
@@ -659,6 +662,7 @@ class ShowDeliveryNote extends OrgAction
             'products'                     => [
                 'estimated_weight' => $estWeight,
                 'number_items'     => $deliveryNote->number_items,
+                'number_skos'      => $deliveryNote->total_skos,
             ],
             'order'                        => [
                 'reference' => $order->reference,
@@ -678,6 +682,7 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ],
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
+            'is_forbidden_delivery'        => $this->isDeliveryForbiddenForShop($deliveryNote->shop, $deliveryNote->deliveryAddress),
             'picker'                       => $deliveryNote->pickerUser,
             'packer'                       => $deliveryNote->packerUser,
             'picked_bays'                  => $pickedBays,

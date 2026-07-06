@@ -12,10 +12,11 @@ import { faStar, faCircle } from "@fortawesome/free-regular-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 import { Swiper, SwiperSlide } from "swiper/vue"
-import { Navigation, Autoplay, Thumbs, FreeMode, Mousewheel } from "swiper/modules"
+import { Navigation, Autoplay, Thumbs, FreeMode, Mousewheel, Pagination } from "swiper/modules"
 import "swiper/css"
 import "swiper/css/navigation"
 import "swiper/css/free-mode"
+import "swiper/css/pagination"
 
 import Family3Render from "@/Iris/Components/Families3Render.vue"
 import { getStyles } from "@/Composables/styles"
@@ -196,7 +197,8 @@ watch(
 			}">
 			<div class="text-center mb-12">
 				<span class="font-medium text-[#1d2d44]" :style="{ fontSize: '2rem' }">
-					{{ ctrans("Best - Selling") }} {{ modelValue.product_category_title || 'families'}} {{ ctrans('Ranges') }}
+					<template v-if="modelValue.title">{{ modelValue.title }}</template>
+					<template v-else>{{ ctrans("Best - Selling") }} {{ modelValue.product_category_title || 'families'}} {{ ctrans('Ranges') }}</template>
 				</span>
 			</div>
 
@@ -210,7 +212,7 @@ watch(
 					<FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" />
 				</button>
 
-				<div class="swiper-mask lg:px-12 px-0">
+				<div class="swiper-mask lg:px-12 px-2">
 					<Swiper
 						@swiper="
 							(s: any) => {
@@ -221,7 +223,7 @@ watch(
 						@slideChange="updateEdges"
 						@reachBeginning="updateEdges"
 						@reachEnd="updateEdges"
-						:modules="[Autoplay, Thumbs, FreeMode, Navigation, Mousewheel]"
+						:modules="[Autoplay, Thumbs, FreeMode, Navigation, Mousewheel, Pagination]"
 						:loop="false"
 						:slides-per-view="perRow"
 						:space-between="spaceBetween"
@@ -229,6 +231,7 @@ watch(
 						:grabCursor="true"
 						:touchRatio="1.2"
 						navigation
+						:pagination="{ clickable: true, dynamicBullets: true }"
 						class="w-full swiper-inner"
 						:mousewheel="{
 							forceToAxis: true,
@@ -305,5 +308,24 @@ watch(
 :deep(.swiper-button-prev),
 :deep(.swiper-button-next) {
   display: none !important;
+}
+
+:deep(.swiper-pagination) {
+	position: relative;
+	bottom: auto;
+	margin-top: 1.5rem;
+}
+
+:deep(.swiper-pagination.swiper-pagination-lock) {
+	display: none;
+}
+
+:deep(.swiper-pagination-bullet) {
+	background-color: #cbd5e1;
+	opacity: 1;
+}
+
+:deep(.swiper-pagination-bullet-active) {
+	background-color: #1d2d44;
 }
 </style>

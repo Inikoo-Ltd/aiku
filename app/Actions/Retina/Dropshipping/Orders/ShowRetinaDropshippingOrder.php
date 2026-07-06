@@ -10,12 +10,15 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
+use App\Actions\Ordering\Order\UI\IndexAllReviewsInOrder;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\UI\Ordering\RetinaOrderTabsEnum;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -25,20 +28,25 @@ use App\Http\Resources\Dispatching\RetinaShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
+use App\Http\Resources\Ordering\RetinaOrderReviewListResource;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Accounting\Invoice;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
+use App\Models\Reviews\Review;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Enums\Ordering\Order\OrderStateEnum;
 
 class ShowRetinaDropshippingOrder extends RetinaAction
 {
     use GetPlatformLogo;
+    use WithOrderForbiddenCountryCheck;
 
     public function handle(Order $order): Order
     {
@@ -70,7 +78,34 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $action = [];
+        $reviewsEnabled       = (bool) data_get($order->shop->settings, 'reviews.enabled', false);
+        $hoursAfterDispatched = (int) data_get($order->shop->settings, 'reviews.data.hours_after_dispatched', 24);
+        $reviewAvailable      = $reviewsEnabled
+            && $order->state === OrderStateEnum::DISPATCHED
+            && $order->dispatched_at !== null
+            && now()->diffInHours($order->dispatched_at, false) <= -$hoursAfterDispatched;
+        $hasReviews           = $reviewAvailable && Review::where('order_id', $order->id)->exists();
+
+        $customerSalesChannel = $order->customerSalesChannel;
+
+        $orderBanStatus = $this->isForbiddenDetailed($order);
+
+        $action = $reviewAvailable ? [
+            [
+                'type'    => 'button',
+                'style'   => '',
+                'tooltip' => __('Review your order and let us know how we can improve our service'),
+                'label'   => __('Review'),
+                'icon'    => 'fal fa-stars',
+                'route'   => [
+                    'name'       => 'retina.dropshipping.customer_sales_channels.orders.review',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->slug,
+                        'order'                => $order->slug,
+                    ],
+                ],
+            ],
+        ] : [];
 
         $this->tab = $this->tab ?: RetinaOrderTabsEnum::TRANSACTIONS->value;
 
@@ -90,7 +125,9 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => RetinaOrderTabsEnum::navigation()
+                    'navigation' => $hasReviews
+                        ? RetinaOrderTabsEnum::navigation()
+                        : RetinaOrderTabsEnum::navigationExcept([RetinaOrderTabsEnum::REVIEWS]),
                 ],
 
                 'routes' => [
@@ -122,16 +159,27 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
 
+                'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
+                'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
+
                 'box_stats' => $this->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
                 'order'     => OrderResource::make($order),
 
                 'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
+                'review_settings'   => Arr::get($order->shop->settings, 'reviews'),
+                'review_reactions'  => [
+                    'likes'    => $this->customer->likeReactions,
+                    'dislikes' => $this->customer->dislikeReactions,
+                ],
 
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
+                RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value
+                    ? fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])
+                    : Inertia::lazy(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])),
 
             ]
         )
@@ -141,12 +189,63 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     tableRows: $nonProductItems,
                     prefix: RetinaOrderTabsEnum::TRANSACTIONS->value
                 )
+            )
+            ->table(
+                IndexAllReviewsInOrder::make()->tableStructure(
+                    prefix: RetinaOrderTabsEnum::REVIEWS->value
+                )
             );
     }
 
     public function jsonResponse(Order $order): OrderResource
     {
         return new OrderResource($order);
+    }
+
+    private function getReviewSettings(Order $order): array
+    {
+        $settings = $order->shop->settings;
+
+        return [
+            'allow_reactions'       => (bool) data_get($settings, 'reviews.allow_reactions', true),
+            'allow_reply_reactions' => (bool) data_get($settings, 'reviews.allow_reply_reactions', true),
+        ];
+    }
+
+    private function getReviewSummary(Order $order): array
+    {
+        $reviewStats = Review::query()
+            ->where('order_id', $order->id)
+            ->selectRaw('scope, COUNT(*) as count, AVG(rating_main) as avg_rating, SUM(likes) as total_likes, SUM(dislikes) as total_dislikes')
+            ->groupBy('scope')
+            ->get()
+            ->keyBy('scope');
+
+        $totalProducts = Transaction::query()
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->distinct('model_id')
+            ->count('model_id');
+
+        $totalFamilies = Transaction::query()
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->whereNotNull('family_id')
+            ->distinct('family_id')
+            ->count('family_id');
+
+        $overallAvg = Review::query()
+            ->where('order_id', $order->id)
+            ->avg('rating_main');
+
+        return [
+            'overall_review'       => (int) ($reviewStats->get(ReviewScopeEnum::ORDER->value)?->count ?? 0),
+            'product_review'       => (int) ($reviewStats->get(ReviewScopeEnum::PRODUCT->value)?->count ?? 0),
+            'total_product_review' => $totalProducts,
+            'family_review'        => (int) ($reviewStats->get(ReviewScopeEnum::FAMILY->value)?->count ?? 0),
+            'total_family_review'  => $totalFamilies,
+            'average_review'       => $overallAvg ? round((float) $overallAvg, 1) : 0.0,
+        ];
     }
 
     public function getBreadcrumbs(Order $order): array

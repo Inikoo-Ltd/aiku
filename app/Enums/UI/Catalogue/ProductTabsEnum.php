@@ -22,6 +22,7 @@ enum ProductTabsEnum: string
     case SALES = 'sales';
     case CUSTOMERS = 'customers';
     case OFFERS = 'offers';
+    case REVIEWS = 'reviews';
 
 
     case HISTORY = 'history';
@@ -102,6 +103,10 @@ enum ProductTabsEnum: string
             ProductTabsEnum::OFFERS => [
                 'title' => __('Offers'),
                 'icon'  => 'fal fa-badge-percent',
+            ],
+            ProductTabsEnum::REVIEWS => [
+                'title' => __('Reviews'),
+                'icon'  => 'fal fa-star',
             ],
         };
     }

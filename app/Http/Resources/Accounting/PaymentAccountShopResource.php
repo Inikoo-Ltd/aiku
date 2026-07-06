@@ -51,7 +51,7 @@ class PaymentAccountShopResource extends JsonResource
             'number_payments'          => $paymentAccountShop->stats->number_payments,
             'amount_successfully_paid' => $paymentAccountShop->stats->amount_successfully_paid,
             'shop_currency_code'       => $paymentAccountShop->shop->currency->code,
-            'data'                     => Arr::get($paymentAccountShop->paymentAccount->data, 'charges', []),
+            'pastpay_credit_terms'     => Arr::get($paymentAccountShop->data, 'charges', []),
         ];
     }
 }

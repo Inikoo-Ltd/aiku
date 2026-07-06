@@ -42,6 +42,10 @@ trait WithSendCustomerOutboxEmail
             return null;
         }
 
+        if (!$outbox->is_applicable) {
+            return null;
+        }
+
         $emailHtmlBody = $outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;
         if ($emailHtmlBody === null) {
             Sentry::captureMessage('Email live snapshot not found for outbox code: '.$code->value.' outbox id: '.$outbox->id);

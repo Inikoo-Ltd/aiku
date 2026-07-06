@@ -324,7 +324,7 @@ const contentClass = computed(() =>
               class="flex gap-x-1 gap-y-1 md:gap-y-2 offer">
               <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type == 'Category Quantity Ordered Order Interval'
                 ? 'active-inactive-gr-v2'
-                : 'max_discount'
+                : 'max_discount_2'
                 " />
 
               <DiscountByType v-if="
@@ -445,7 +445,7 @@ const contentClass = computed(() =>
 }
 
 :deep(.offer .vd-triggers) {
-  @apply text-[10px] leading-tight opacity-80 truncate max-w-[65px];
+  @apply text-[10px] leading-tight opacity-80 max-w-[7rem] whitespace-normal overflow-visible;
 }
 
 .editor-class h1 {

@@ -248,7 +248,7 @@ const responsiveClasses = computed(() => ({
 </script>
 
 <template>
-	<div :id="modelValue?.id ? modelValue?.id : 'department-1-iris' + indexBlock" component="department-1-iris">
+	<div :id="modelValue?.id ? modelValue?.id : 'department-1-iris' + indexBlock" component="department-1-iris" class="pt-2">
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue?.container?.properties, screenType),
@@ -339,16 +339,16 @@ const responsiveClasses = computed(() => ({
 								</div>
 
 								<div class="flex justify-center mt-5">
-									<button v-if="modelValue.department.showcase_video"
+									<button v-if="modelValue.department.showcase_video" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 										:class="['bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-md transition', responsiveClasses.buttonPadding]"
 										@click="videoDialogVisible = true">
-										{{ ctrans("See a video") }}
+										{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("See a video") }}
 									</button>
 
 									<a v-else href="#sub-department">
-										<button
+										<button :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 											:class="['bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-md transition', responsiveClasses.buttonPadding]">
-											{{ ctrans("Browse All") }}
+												{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("Browse All") }}
 										</button>
 									</a>
 								</div>
@@ -428,9 +428,9 @@ const responsiveClasses = computed(() => ({
 
 						<!-- Content -->
 						<div class="px-6 py-8 text-center">
-							<h2 v-if="modelValue.department.name" class="text-2xl font-bold text-slate-900 mb-4">
+							<!-- <h2 v-if="modelValue.department.name" class="text-2xl font-bold text-slate-900 mb-4">
 								{{ modelValue.department.name }}
-							</h2>
+							</h2> -->
 
 							<div class="relative text-slate-700 text-sm leading-6">
 								<div ref="mobileDescriptionRef" class="overflow-hidden transition-all duration-300"
@@ -447,15 +447,15 @@ const responsiveClasses = computed(() => ({
 								{{ expanded ? "Read Less" : "Read More" }}
 							</button>
 							<div>
-								<button v-if="modelValue.department.showcase_video"
+								<button v-if="modelValue.department.showcase_video" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 									class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md transition"
 									@click="videoDialogVisible = true">
-									{{ ctrans("See a video") }}
+									{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("See a video") }}
 								</button>
 								<a v-else href="#sub-department">
-									<button
+									<button :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 										class="mt-6 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 rounded-md transition">
-										{{ ctrans("Browse All") }}
+										{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("Browse All") }}
 									</button>
 								</a>
 							</div>

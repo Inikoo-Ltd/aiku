@@ -9,6 +9,7 @@
 namespace App\Http\Middleware;
 
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Http\Middleware\Concerns\DetectsWebsite;
 use App\Models\Web\Website;
 use Closure;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class DetectIrisWebsite
 {
+    use DetectsWebsite;
     public function handle(Request $request, Closure $next): Response
     {
         $domain = DetectWebsiteFromDomain::make()->parseDomain($request->getHost());
@@ -37,7 +39,6 @@ class DetectIrisWebsite
                 }
             );
         }
-
         $request->merge($websiteData);
 
         return $next($request);
@@ -52,24 +53,24 @@ class DetectIrisWebsite
         }
         $shop = $website->shop;
 
-        return [
-            'domain'        => $website->domain,
-            'website'       => $website,
-            'currency_data' => [
-                'code'   => $shop->currency->code,
-                'symbol' => $shop->currency->symbol,
-                'name'   => $shop->currency->name,
-            ],
-            'locale'        => $website->shop->language->code,
-            'shop_type'     => $shop->type->value,
-            'favicons'      => [
-                '16'  => $website->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png'),
-                '32'  => $website->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png'),
-                '48'  => $website->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico'),
-                '180' => $website->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png')
-
+        return array_merge(
+            $this->getWebsiteBaseData($website),
+            [
+                'currency_data' => [
+                    'code'   => $shop->currency->code,
+                    'symbol' => $shop->currency->symbol,
+                    'name'   => $shop->currency->name,
+                ],
+                'locale'        => $website->shop->language->code,
+                'shop_type'     => $shop->type->value,
+                'favicons'      => [
+                    '16'  => $website->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png'),
+                    '32'  => $website->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png'),
+                    '48'  => $website->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico'),
+                    '180' => $website->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png')
+                ]
             ]
-        ];
+        );
     }
 
 

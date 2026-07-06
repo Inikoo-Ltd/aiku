@@ -8,22 +8,22 @@
 
 namespace App\Actions\Dropshipping\Bundle;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Models\Bundle;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
+use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
+use Faker\Factory as Faker;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use Faker\Factory as Faker;
 
 class StoreBundle extends OrgAction
 {

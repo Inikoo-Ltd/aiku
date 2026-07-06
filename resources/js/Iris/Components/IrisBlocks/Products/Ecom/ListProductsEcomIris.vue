@@ -40,8 +40,9 @@ const props = defineProps<{
             }
         }
         container?: any
-        model_type: string
-        model_id: number
+        sub_type: string  // 'family'
+        model_type: string  // 'ProductCategory'
+        model_id: number  // '31890'
     }
     webpageData?: any
     blockData?: {}
@@ -487,7 +488,7 @@ watch(
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex space-x-6 w-fit overflow-x-auto mt-2 md:mt-0">
+                    <div class="flex space-x-6 w-fit max-w-full overflow-x-auto mt-2 md:mt-0">
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
                             class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
                             :class="[
@@ -516,6 +517,8 @@ watch(
 
 
                     <template v-else-if="products.length">
+                        <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
+                        <!-- <pre>{{ get(layout, ['family_quantity_ordered'], []) }}</pre> -->
                         <div v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class=" relative rounded flex md:flex-1 justify-center">

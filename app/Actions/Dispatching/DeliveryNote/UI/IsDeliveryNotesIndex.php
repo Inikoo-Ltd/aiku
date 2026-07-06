@@ -209,6 +209,7 @@ trait IsDeliveryNotesIndex
             'delivery_notes.weight',
             'delivery_notes.effective_weight',
             'delivery_notes.estimated_weight',
+            'delivery_notes.parcels',
             'customers.slug as customer_slug',
             'customers.name as customer_name',
             'shops.name as shop_name',
@@ -256,6 +257,8 @@ trait IsDeliveryNotesIndex
             )
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
+            ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_w WHERE dni_w.delivery_note_id = delivery_notes.id AND dni_w.has_waiting_warehouse = true) as waiting_warehouse_count")
+            ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_c WHERE dni_c.delivery_note_id = delivery_notes.id AND dni_c.has_waiting_crm = true) as waiting_crm_count")
             ->allowedSorts([
                 'reference',
                 'date',
@@ -269,8 +272,8 @@ trait IsDeliveryNotesIndex
                 'sort_packer',
                 'sort_trolleys',
                 'is_premium_dispatch',
-                'sort_picked_bays'
-
+                'sort_picked_bays',
+                'parcels'
             ])
             ->allowedFilters($allowedFilters)
             ->withBetweenDates(['date'])
@@ -435,6 +438,8 @@ trait IsDeliveryNotesIndex
                 $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, searchable: true);
             }
             $table->column(key: 'effective_weight', label: __('Weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+
+            $table->column(key: 'parcels', label: __('Parcel'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
 

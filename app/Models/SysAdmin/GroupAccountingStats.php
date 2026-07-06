@@ -92,6 +92,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_invoice_categories_state_active
  * @property int $number_invoice_categories_state_closed
  * @property int $number_invoice_categories_state_cooldown
+ * @property int $number_current_payment_accounts
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupAccountingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupAccountingStats newQuery()

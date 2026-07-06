@@ -15,11 +15,9 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowDevopsDashboard extends OrgAction
 {
-    use AsAction;
     use WithInertia;
 
     public function handle(Group $group): Group

@@ -23,9 +23,12 @@ use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
+use App\Actions\Iris\Reviews\ShowIrisFamilyReview;
+use App\Actions\Iris\Reviews\ShowIrisProductReview;
+use App\Actions\Iris\Reviews\ShowIrisReviews;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
-//Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
+// Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
 Route::get('hello_robot', ShowIrisRobotsTxt::class)->name('iris_robots_a');
 Route::get('hello_robot.txt', ShowIrisRobotsTxt::class)->name('iris_robots_b');
 
@@ -104,6 +107,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
         //system
         Route::get('/catalogue', ShowIrisCatalogue::class)->name('catalogue_iris');
+        Route::get('/reviews', ShowIrisReviews::class)->name('reviews');
+        Route::get('/reviews/product/{product}', ShowIrisProductReview::class)->name('reviews.product');
+        Route::get('/reviews/family/{family}', ShowIrisFamilyReview::class)->name('reviews.family');
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');

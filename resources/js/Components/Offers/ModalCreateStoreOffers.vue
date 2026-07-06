@@ -2,7 +2,7 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, computed, inject, watch } from 'vue'
+import { ref, computed, inject, watch, nextTick } from 'vue'
 import { DatePicker, InputNumber, RadioButton } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { reset, trans } from 'laravel-vue-i18n'
@@ -17,14 +17,24 @@ const props = defineProps<{
         id: number
         slug: string
         currency_code: string
-        organisation: string
-        offercampaign: string
+        organisation?: string
+        offercampaign?: string
     }
 }>()
 
 const isOpenModal = ref(false)
+
+const openModal = () => {
+    resetForm()
+    startDate.value = today
+    isOpenModal.value = true
+}
+const closeModal = () => {
+    isOpenModal.value = false
+    resetForm()
+}
+
 const isLoadingSubmit = ref(false)
-const layout = inject('layout', {})
 
 const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(1)
@@ -36,25 +46,50 @@ const today = new Date(new Date().setHours(0, 0, 0, 0))
 
 const offerLabel = ref('')
 const startDate = ref<Date | null>(today)
-const endDate = ref(null)
+const endDate = ref<Date | null>(null)
+
+const quickIntervalDays = ref<number | null>(null)
+
+const quickIntervalPresets = [1,2,3,7]
+
+let isApplyingPreset = false
+
+const applyQuickInterval = (days: number) => {
+    isApplyingPreset = true
+    dateType.value = 'interval'
+
+    const start = startDate.value ? new Date(startDate.value) : new Date(today)
+    const end = new Date(start)
+    end.setDate(end.getDate() + days)
+
+    startDate.value = start
+    endDate.value = end
+    quickIntervalDays.value = days
+
+    nextTick(() => {
+        isApplyingPreset = false
+    })
+}
 
 const submitShopOffer = () => {
     isLoadingSubmit.value = true
+
+    const payload =  {
+        name: offerLabel.value,
+        type: typeOffer.value,
+        trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
+        trigger_data_item_amount: offerAmount.value,
+        percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
+        duration: dateType.value,
+        start_at: formatDate(startDate.value),
+        end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
+    }
 
     axios.post(
         route('grp.models.shop_offer.store', {
             shop: props.shop_data.id,
         }),
-        {
-            name: offerLabel.value,
-            type: typeOffer.value,
-            trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
-            trigger_data_item_amount: offerAmount.value,
-            percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
-            duration: dateType.value,
-            start_at: formatDate(startDate.value),
-            end_at: formatDate(endDate.value)
-        }
+       payload,
     )
     .then((response) => {
         notify({
@@ -136,6 +171,13 @@ watch(typeOffer, (val) => {
 watch(dateType, (val) => {
     if (val === 'permanent') {
         endDate.value = null
+        quickIntervalDays.value = null
+    }
+})
+
+watch([startDate, endDate], () => {
+    if (!isApplyingPreset) {
+        quickIntervalDays.value = null
     }
 })
 
@@ -144,9 +186,9 @@ resetForm();
 
 <template>
     <div>
-        <Button :label="trans('Create Offer')" @click="isOpenModal = true; resetForm();" icon="fas fa-badge-percent" />
+        <Button :label="trans('Create Shop Offer')" @click="openModal" icon="fas fa-badge-percent" />
 
-        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="isOpenModal = false; resetForm();">
+        <Modal :isOpen="isOpenModal" width="w-full max-w-2xl" @close="closeModal">
             <div class="p-1 space-y-3">
                 <h2 class="text-2xl font-bold mb-4 text-center">
                     {{ trans('Create Shop Offer') }}
@@ -180,7 +222,7 @@ resetForm();
                                 </label>
                             </div>
                         </div>
-
+                        
                         <div class="space-y-2 flex-1">
                             <div class="flex items-center gap-2">
                                 <RadioButton v-model="typeOffer" inputId="type-amount" name="amount" value="amount"
@@ -209,22 +251,29 @@ resetForm();
 
                  <!-- Section: Offer Duration -->
                 <div class="space-y-3">
-
                     <div class="font-medium flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
                         {{ trans('Offer Duration') }}:
                     </div>
 
-                    <div class="flex gap-x-4">
-                        <div class="flex items-center gap-x-2">
+                    <div class="flex flex-wrap items-center gap-x-4">
+                        <label for="permanent" class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors" 
+                        :class="dateType === 'permanent' ? 'border-green-500 bg-green-50 text-green-700 font-semibold' : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="permanent" value="permanent" />
-                            <label for="permanent">{{ trans('Permanent') }}</label>
-                        </div>
+                            <span>{{ trans('Permanent') }}</span>
+                        </label>
 
-                        <div class="flex items-center gap-x-2">
+                        <label for="interval" class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors" 
+                        :class="dateType === 'interval' ? 'border-green-500 bg-green-50 text-green-700 font-semibold' : 'border-gray-200 hover:border-gray-300'">
                             <RadioButton v-model="dateType" inputId="interval" value="interval" />
-                            <label for="interval">{{ trans('Interval') }}</label>
-                        </div>
+                            <span>{{ trans('Interval') }}</span>
+                        </label>
+
+                        <button v-if="dateType === 'interval'" v-for="days in quickIntervalPresets" :key="days" type="button" @click="applyQuickInterval(days)" class="px-3.5 py-2.5 rounded-lg border text-sm cursor-pointer transition-colors" 
+                        :class="quickIntervalDays === days ?'border-green-500 bg-green-50 text-green-700 font-semibold' : 'border-gray-200 hover:border-gray-300'">
+                        {{ trans(':count day', { count: String(days) }) }}
+
+                        </button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,8 +307,8 @@ resetForm();
                 </div>
                 
                 <div class="mt-8 flex justify-end gap-x-4">
-                    <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" @click="submitShopOffer" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" :isLoading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit" />
+                    <Button @click="closeModal" type="cancel" />
+                    <Button full icon="fad fa-save" @click="submitShopOffer" :label="isLoadingSubmit ? trans('Loading') : trans('Save')" :loading="isLoadingSubmit" :disabled="isFormInvalid || isLoadingSubmit" />
                 </div>
 
             </div>

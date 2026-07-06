@@ -17,6 +17,7 @@ use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
+use App\Actions\Web\Webpage\ExportWebpages;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
@@ -33,6 +34,7 @@ use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
+use App\Actions\Web\Website\UI\ShowRestrictedCountry;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
@@ -46,6 +48,7 @@ Route::name('websites.')->group(function () {
     Route::prefix('{website}')
         ->group(function () {
             Route::get('', [ShowWebsite::class, 'inFulfilment'])->name('show');
+            Route::get('restricted-country', [ShowRestrictedCountry::class, 'inFulfilment'])->name('restricted_country');
             Route::get('edit', [EditWebsite::class, 'inFulfilment'])->name('edit');
 
             Route::name('workshop')->prefix('workshop')
@@ -77,6 +80,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/type/operations', [IndexWebpages::class, 'operationsInFulfilment'])->name('index.type.operations');
 
 
+    Route::get('export', [ExportWebpages::class, 'inFulfilment'])->name('export');
     Route::get('create', [CreateWebpage::class, 'inFulfilment'])->name('create');
 
     Route::prefix('{webpage}')

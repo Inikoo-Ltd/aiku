@@ -375,9 +375,9 @@ class Webpage extends Model implements Auditable, HasMedia
         //todo simplify to use this instead
         //return 'webpage-' . $this->slug;
 
-        if($this->model instanceof Product){
+        if ($this->model instanceof Product) {
             return "$this->group_id:$this->organisation_id:$this->shop_id:{$this->website->id}:$this->id";
-        }else{
+        } else {
 
             $model = $this->model;
 

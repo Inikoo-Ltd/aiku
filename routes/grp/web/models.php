@@ -16,6 +16,7 @@ use App\Actions\Accounting\Payment\CancelPayment;
 use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
+use App\Actions\Accounting\PaymentAccountShop\UpdatePaymentAccountShop;
 use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Billables\Rental\StoreRental;
 use App\Actions\Billables\Rental\UpdateRental;
@@ -68,7 +69,6 @@ use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
-use App\Actions\Comms\Email\PublishEmail;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
@@ -130,6 +130,8 @@ use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dispatching\Trolley\UpdateTrolley;
+use App\Actions\Dropshipping\Allegro\Product\MatchPortfolioToCurrentAllegroProduct;
+use App\Actions\Dropshipping\Allegro\Product\StoreNewProductToCurrentAllegro;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
@@ -147,6 +149,8 @@ use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProdu
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\Dropshipping\Tiktok\Product\MatchPortfolioToCurrentTiktokProduct;
+use App\Actions\Dropshipping\Tiktok\Product\StoreNewProductToCurrentTiktok;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
@@ -233,6 +237,7 @@ use App\Actions\Fulfilment\StoredItem\SyncStoredItemPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPallet;
 use App\Actions\Fulfilment\StoredItem\SyncStoredItemToPalletAudit;
 use App\Actions\Fulfilment\StoredItem\UpdateStoredItem;
+use App\Actions\Goods\Barcode\UpdateBarcode;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -249,6 +254,7 @@ use App\Actions\Helpers\Brand\DeleteBrand;
 use App\Actions\Helpers\Brand\DetachBrandFromModel;
 use App\Actions\Helpers\Brand\StoreBrand;
 use App\Actions\Helpers\Brand\UpdateBrand;
+use App\Actions\Helpers\Dashboard\BreakDashboardTimeSeriesCache;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
@@ -276,15 +282,15 @@ use App\Actions\HumanResources\ClockingMachineCoordinatePolicyRule\UpdateClockin
 use App\Actions\HumanResources\Employee\DeleteEmployee;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
+use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\LinkLeaveBalanceToContract;
 use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
-use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
-use App\Actions\HumanResources\Employee\UploadEmployeeContract;
 use App\Actions\HumanResources\JobPosition\DeleteJobPosition;
 use App\Actions\HumanResources\JobPosition\StoreJobPosition;
 use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
+use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
 use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
@@ -355,6 +361,14 @@ use App\Actions\Production\ManufactureTask\UpdateManufactureTask;
 use App\Actions\Production\RawMaterial\ImportRawMaterial;
 use App\Actions\Production\RawMaterial\StoreRawMaterial;
 use App\Actions\Production\RawMaterial\UpdateRawMaterial;
+use App\Actions\Reviews\ApproveReview;
+use App\Actions\Reviews\DeleteReview;
+use App\Actions\Reviews\GetReviewCustomers;
+use App\Actions\Reviews\RejectReview;
+use App\Actions\Reviews\ReviewReply\DeleteReviewReply;
+use App\Actions\Reviews\ReviewReply\StoreReviewReply;
+use App\Actions\Reviews\ReviewReply\UpdateReviewReply;
+use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
@@ -369,11 +383,9 @@ use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
-use App\Actions\Web\Announcement\CloseAnnouncement;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
 use App\Actions\Web\Announcement\ResetAnnouncement;
-use App\Actions\Web\Announcement\StartAnnouncement;
 use App\Actions\Web\Announcement\StoreAnnouncement;
 use App\Actions\Web\Announcement\ToggleAnnouncement;
 use App\Actions\Web\Announcement\UpdateAnnouncement;
@@ -422,6 +434,8 @@ use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
+
+Route::post('dashboard/break-cache', BreakDashboardTimeSeriesCache::class)->name('dashboard.break_cache');
 
 Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('profile.app-login-qrcode');
 
@@ -583,6 +597,17 @@ Route::prefix('/product_category/{productCategory:id}')->name('product_category.
     Route::patch('update-images', UpdateProductCategoryImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromProductCategory::class)->name('delete_images')->withoutScopedBindings();
 });
+
+Route::post('review/reply/store', StoreReviewReply::class)->name('review.reply.store');
+Route::patch('review/reply/{reviewReply:id}/update', UpdateReviewReply::class)->name('review.reply.update');
+Route::delete('review/reply/{reviewReply:id}/delete', DeleteReviewReply::class)->name('review.reply.delete');
+Route::get('review/customers/{productCategory:id}', GetReviewCustomers::class)->name('review.customers');
+Route::get('review/customers/product/{product:id}', [GetReviewCustomers::class, 'asControllerProduct'])->name('review.customers.product');
+Route::get('review/customers/shop/{shop:id}', [GetReviewCustomers::class, 'asControllerShop'])->name('review.customers.shop');
+Route::patch('review/{review:id}/update', UpdateReview::class)->name('review.update');
+Route::patch('review/{review:id}/approve', ApproveReview::class)->name('review.approve');
+Route::patch('review/{review:id}/reject', RejectReview::class)->name('review.reject');
+Route::delete('review/{review:id}/delete', DeleteReview::class)->name('review.delete');
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
@@ -820,6 +845,12 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreNewProductToC
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
 
+Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product');
+Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-allegro-product', MatchPortfolioToCurrentAllegroProduct::class)->name('portfolio.match_to_existing_allegro_product');
+Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product');
+
 Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class)->name('stored-items.pallets.update');
 Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('stored-items.move');
 Route::delete('{storedItem:id}/stored-items', DeleteStoredItem::class)->name('stored-items.delete');
@@ -871,8 +902,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
             Route::patch('{announcement}/publish', PublishAnnouncement::class)->name('publish')->withoutScopedBindings();
             Route::patch('{announcement}', UpdateAnnouncement::class)->name('update')->withoutScopedBindings();
             Route::delete('{announcement}/reset', ResetAnnouncement::class)->name('reset')->withoutScopedBindings();
-            Route::patch('{announcement}/close', CloseAnnouncement::class)->name('close')->withoutScopedBindings();
-            Route::patch('{announcement}/start', StartAnnouncement::class)->name('start')->withoutScopedBindings();
             Route::patch('{announcement}/toggle', ToggleAnnouncement::class)->name('toggle')->withoutScopedBindings();
             Route::delete('{announcement}', DeleteAnnouncement::class)->name('delete')->withoutScopedBindings();
         });
@@ -1092,7 +1121,6 @@ Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mails
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
     Route::post('{emailTemplate:id}/images', UploadImagesToEmailTemplate::class)->name('images.store');
-    Route::post('{emailTemplate:id}/publish', PublishEmail::class)->name('content.publish');
 });
 
 Route::patch('/guest/{guest:id}', UpdateGuest::class)->name('guest.update');
@@ -1237,6 +1265,10 @@ Route::name('brand.')->prefix('brand')->group(function () {
     Route::patch('{brand:id}/attach-multiple', AttachBrandToMultipleModel::class)->name('brands.attach-multiple')->withoutScopedBindings();
 });
 
+Route::name('barcodes.')->prefix('barcode')->group(function () {
+    Route::patch('{barcode:id}/update', UpdateBarcode::class)->name('update')->withoutScopedBindings();
+});
+
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
     Route::post('store', StoreTradeUnitFamily::class)->name('store')->withoutScopedBindings();
     Route::patch('{tradeUnitFamily:id}/update', UpdateTradeUnitFamily::class)->name('update')->withoutScopedBindings();
@@ -1279,6 +1311,7 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
 });
 Route::patch('time-tracker/{timeTracker:id}/clock-out', ClockOutTimeTracker::class)->name('time-tracker.clock-out');
 Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');
+Route::patch('payment-account-shop/{paymentAccountShop:id}', UpdatePaymentAccountShop::class)->name('payment_account_shop.update');
 
 
 

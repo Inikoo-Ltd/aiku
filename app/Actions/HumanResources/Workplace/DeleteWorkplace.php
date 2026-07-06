@@ -26,6 +26,13 @@ class DeleteWorkplace extends OrgAction
         return $workplace;
     }
 
+    public function action(Workplace $workplace): Workplace
+    {
+        $this->asAction = true;
+
+        return $this->handle($workplace);
+    }
+
     public function asController(Workplace $workplace, ActionRequest $request): Workplace
     {
         $this->initialisation($workplace->organisation, $request);

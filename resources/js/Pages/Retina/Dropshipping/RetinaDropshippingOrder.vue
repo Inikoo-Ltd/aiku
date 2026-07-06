@@ -40,7 +40,8 @@ import {
     faPaperclip,
     faTimes,
     faInfoCircle,
-    faSync
+    faSync,
+    faStars
 } from '@fal'
 import {Currency} from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
@@ -55,8 +56,9 @@ import {debounce} from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import ListReviews from '@/Components/ListReviews.vue'
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
+library.add(fadExclamationTriangle,faStars, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
 
 
 const props = defineProps<{
@@ -145,7 +147,12 @@ const props = defineProps<{
     delivery_notes: {
         data: Array<any>
     }
+    reviews : any
     attachments?: {}
+    review_settings : any
+
+    is_forbidden_delivery?: boolean
+    is_forbidden_billing?: boolean
 
 }>()
 
@@ -161,7 +168,8 @@ const component = computed(() => {
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
         invoices: TableInvoices,
-        products: TableProductList
+        products: TableProductList,
+        reviews : ListReviews
     }
 
     return components[currentTab.value]
@@ -203,7 +211,7 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
 }
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
-const hasModified = props.transactions.data.some(item => 
+const hasModified = props.transactions?.data.some(item => 
   item.quantity_ordered !== item.quantity_dispatched
 );
 
@@ -288,9 +296,8 @@ const syncOrderCancellationShopify = async (order) => {
         <Timeline v-if="timelines" :options="timelines" :state="props.order?.data?.state" :slidesPerView="6"/>
     </div>
     
-
     <!-- Section: Alert if unpaid -->
-    <Message v-if="!(box_stats.products.payment.paid_amount >= box_stats.products.payment.total_amount) && !(order.data.state === 'cancelled' || order.data.state === 'creating')" severity="warn" class="mx-4 mt-4 ">
+    <Message v-if="!(box_stats.products.payment.paid_amount >= box_stats.products.payment.total_amount) && !(order.data.state === 'cancelled' || order.data.state === 'creating') && (!is_forbidden_delivery && !is_forbidden_billing)" severity="warn" class="mx-4 mt-4 ">
         <template #icon>
             <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true"/>
         </template>
@@ -315,6 +322,8 @@ const syncOrderCancellationShopify = async (order) => {
         :address_management
         :summary="box_stats"
         :order
+        :is_forbidden_delivery 
+        :is_forbidden_billing
     />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
@@ -323,7 +332,7 @@ const syncOrderCancellationShopify = async (order) => {
     <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200 overflow-x-auto">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="order?.data?.state" :modalOpen="isModalUploadOpen"
-                   @update:tab="handleTabUpdate"/>
+                   @update:tab="handleTabUpdate" :review_settings/>
     </div>
 
     <div class="flex justify-end px-6 gap-x-4">

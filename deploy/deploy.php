@@ -257,7 +257,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
 
 set('keep_releases', 25);
 
-set('shared_dirs', ['storage', 'private','local_storage']);
+set('shared_dirs', ['storage', 'private', 'local_storage']);
 set('shared_files', [
     'isdoc-pdf',
     'rgb.icc',
@@ -288,10 +288,35 @@ desc('👩🏼‍💻 One server only view cache ');
 task('deploy:view-cache', function () {
     if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
         writeln('Skipping migrate on slave host '.currentHost()->getAlias());
+
         return;
     }
 
     artisan('view:cache', ['skipIfNoEnv', 'showOutput'])();
+});
+
+desc('Log deployment');
+task('artisan:log-app-deployment', artisan('deploy:record-deployment --commit={{release_revision}}'))->select('env=prod');
+
+
+desc('Log app deployment');
+task('deploy:log-app-deployment', function () {
+    if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
+        writeln('Skipping log deployment on production host '.currentHost()->getAlias());
+
+        return;
+    }
+    invoke('artisan:log-app-deployment');
+});
+
+
+desc('Artisan Setup guess language');
+task('artisan:translations:setup-guess-language', artisan('translations:setup-guess-language'))->select('env=prod');
+
+
+desc('Setup guess language');
+task('deploy:translations:setup-guess-language', function () {
+    invoke('artisan:translations:setup-guess-language');
 });
 
 
@@ -318,4 +343,6 @@ task('deploy', [
     'deploy:restart-ssr-by-supervisorctl',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
+    'deploy:log-app-deployment',
+    'deploy:translations:setup-guess-language',
 ]);

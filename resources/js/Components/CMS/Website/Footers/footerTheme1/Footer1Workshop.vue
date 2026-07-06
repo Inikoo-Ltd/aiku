@@ -172,7 +172,9 @@ const layout = inject("layout", {})
                  @click="() => sendMessageToParent('panelOpen', 'logo')">
                 <Image v-if="modelValue?.logo?.source" :src="modelValue?.logo?.source" :imageCover="true"
                        :alt="modelValue?.logo?.alt" :imgAttributes="modelValue?.logo?.attributes"
-                       :style="getStyles(modelValue?.logo?.properties)" />
+                       :style="getStyles(modelValue?.logo?.properties)"
+                       :height="getStyles(modelValue?.logo?.properties, screenType, false)?.height"
+                       :width="getStyles(modelValue?.logo?.properties, screenType, false)?.width" />
             </div>
 
             <div v-if="modelValue?.email" @click="() => sendMessageToParent('panelOpen', 'email')"

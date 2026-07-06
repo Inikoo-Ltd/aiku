@@ -56,8 +56,22 @@ class StoreProductToAllegro extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
-            $getRecommendedCategory = $allegroUser->getRecommendedCategory($product->family->name);
-            $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id', '12');
+            $productSearch = [];
+            if ($product->barcode) {
+                $productSearch = $allegroUser->getProductByEan($product->barcode);
+            }
+
+            if ($foundedProduct = Arr::get($productSearch, 'products.0.category.id')) {
+                $categoryId = $foundedProduct;
+            } else {
+                $parent = $product->subDepartment?->name;
+                if (! $parent) {
+                    $parent = $product->name;
+                }
+
+                $getRecommendedCategory = $allegroUser->getRecommendedCategory($parent);
+                $categoryId = Arr::get($getRecommendedCategory, 'matchingCategories.0.id', '12');
+            }
 
             $getParameters = $allegroUser->getCategoryParameters($categoryId);
 
@@ -159,6 +173,7 @@ class StoreProductToAllegro extends RetinaAction
                 'external' => [
                     'id' => (string) $portfolio->id
                 ],
+                'language' => 'en-US',
                 'description' => [
                     'sections' => [
                         [

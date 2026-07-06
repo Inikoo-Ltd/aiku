@@ -17,6 +17,7 @@ import { routeType } from '@/types/route'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { onMounted } from "vue"
 import { watch } from "vue"
+import { useBreadcrumbStructuredData } from "@/Iris/Composables/useBreadcrumbStructuredData"
 
 library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot)
 
@@ -127,12 +128,35 @@ onUnmounted(() => {
 })
 
 const isMobile = computed(() => isMobileRef.value)
+
+// Section: Breadcrumbs structured data (SEO)
+// Mounted independently here instead of inside the page structured data (useStructuredData),
+// so the breadcrumb schema lives in its own <script> and is easier to maintain.
+const { mountBreadcrumbStructuredData, removeStructuredDataScript } = useBreadcrumbStructuredData()
+const breadcrumbStructuredDataScript = ref<HTMLScriptElement | null>(null)
+
+const refreshBreadcrumbStructuredData = () => {
+    removeStructuredDataScript(breadcrumbStructuredDataScript.value)
+    breadcrumbStructuredDataScript.value = mountBreadcrumbStructuredData(props.breadcrumbs)
+}
+
+onMounted(() => {
+    refreshBreadcrumbStructuredData()
+})
+
+watch(() => props.breadcrumbs, () => {
+    refreshBreadcrumbStructuredData()
+}, { deep: true })
+
+onUnmounted(() => {
+    removeStructuredDataScript(breadcrumbStructuredDataScript.value)
+})
 </script>
 
 <template>
     <nav
         ref="scrollerRef"
-        class="isolate z-10 scrollbar-hide relative md:overflow-y-hidden flex h-6 xl:h-8 text-xs md:text-sm transition-all"
+        class="isolate z-10 scrollbar-hide relative md:overflow-y-hidden flex items-center text-xs md:text-sm transition-all overflow-x-hidden m-2"
         aria-label="Breadcrumb"
     >
         <!-- Breadcrumb -->
@@ -164,7 +188,7 @@ const isMobile = computed(() => isMobileRef.value)
                             </Transition>
         
                             <Transition name="spin-to-down">
-                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 sm:w-auto">{{ breadcrumb.simple.label }}</div>
+                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 max-w-[50vw] md:max-w-none">{{ breadcrumb.simple.label }}</div>
                             </Transition>
                         </component>
                     </template>
@@ -267,14 +291,14 @@ const isMobile = computed(() => isMobileRef.value)
             </transition>
         </Menu>
 
-        <div v-if="props.navigation?.previous || props.navigation?.next" class="h-full flex justify-end items-center pr-2 space-x-2 text-xs md:text-sm text-gray-700 font-semibold">
+        <div v-if="props.navigation?.previous || props.navigation?.next" class="shrink-0 flex justify-end items-center space-x-2 text-xs md:text-sm text-gray-700 font-semibold">
             <!-- Button: Previous -->
-            <div class="flex justify-center items-center w-12 xl:w-8 h-full">
+            <div class="flex justify-center items-center w-12 xl:w-8">
                 <Link v-if="props.navigation.previous"
                     @start="() => isLoading = 'bcBack'"
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded w-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.previous?.label"
                 >
                     <LoadingIcon v-if="isLoading === 'bcBack'" />
@@ -284,11 +308,11 @@ const isMobile = computed(() => isMobileRef.value)
             </div>
 
             <!-- Button: Next -->
-            <div class="flex justify-center items-center w-12 xl:w-8 h-full">
+            <div class="flex justify-center items-center w-12 xl:w-8">
                 <Link v-if="props.navigation.next"
                     @start="() => isLoading = 'bcNext'"
                     @finish="() => isLoading = false"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded w-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.next?.label"
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
                 >

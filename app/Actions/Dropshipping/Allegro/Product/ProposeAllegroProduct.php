@@ -13,7 +13,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -53,6 +52,7 @@ class ProposeAllegroProduct
             ],
             'images'     => $productImages,
             'parameters' => $this->buildParameters($portfolio, Arr::get($attributes, 'parameters', [])),
+            'language' => 'en-US',
             'description' => [
                 'sections' => [
                     [
@@ -64,8 +64,7 @@ class ProposeAllegroProduct
                         ]
                     ]
                 ]
-            ],
-            'language' => 'en-US'
+            ]
         ];
 
         return $allegroUser->proposeProduct($productData);
@@ -104,17 +103,6 @@ class ProposeAllegroProduct
 
             $value = $this->resolveProductValue($paramName, $productAttributeMap);
 
-            if ($value === null) {
-                if ($isRequired) {
-                    \Log::warning("Required Allegro parameter not mapped", [
-                        'param_id'   => $paramId,
-                        'param_name' => $param['name'],
-                        'product_id' => $product->id,
-                    ]);
-                }
-                continue;
-            }
-
             $entry = ['id' => $paramId];
 
             switch (Str::upper($paramType)) {
@@ -133,9 +121,6 @@ class ProposeAllegroProduct
 
                     $matchedDictId = $this->matchDictionaryValue($value, $dictValues)
                         ?? Arr::get($dictValues, '0.id');
-
-                    Log::info('Dictionary values: ' . $ambiguousValueId . '-' . $customValuesEnabled . '-' . $param['name'] . '-' . $matchedDictId);
-
 
                     if (!$matchedDictId) {
                         continue 2;
@@ -190,7 +175,7 @@ class ProposeAllegroProduct
 
         return [
             'name'        => $portfolio->customer_product_name ?? null,
-            'brand'       => 'Ancient Wisdom' ?? null,
+            'brand'       => 'Ancient Wisdom',
             'type'        => $product->family?->name ?? null,
             'color'       => $product->color ?? null,
             'size'        => $product->size ?? null,
@@ -204,13 +189,19 @@ class ProposeAllegroProduct
             'sku'         => $product->code ?? null,
             'description' => $product->description ?? null,
             'condition'   => 'NEW',
+            'capacity'    => 10,
+            'essential_oil_type' => $product->essential_oil_type ?? 'OIL',
+            'ean'         => $product->barcode ?? null,
+            'manufacturer_code' => $product->code ?? null,
+            'tariff_code' => $product->tariff_code ?? null,
         ];
     }
 
     private function resolveProductValue(string $paramName, array $attributeMap): mixed
     {
         $keywordMap = [
-            'brand' => ['brand', 'manufacturer', 'marka', 'producent'],
+            'brand' => ['brand', 'manufacturer', 'marka', 'producent', 'manufacturer\'s scent name'],
+            'manufacturer_code' => ['Manufacturer code', 'manufacturer code', 'kod producenta'],
             'type'      => ['type', 'rodzaj', 'typ', 'kind'],
             'size'     => ['size', 'rozmiar'],
             'weight'   => ['weight', 'waga', 'masa'],
@@ -220,8 +211,13 @@ class ProposeAllegroProduct
             'material'   => ['material', 'materiał', 'skład', 'sklad', 'composition', 'ingredients'],
             'model'     => ['model', 'nazwa handlowa', 'trade name'],
             'mpn'      => ['mpn', 'part number', 'numer katalogowy'],
+            'ean' => ['ean (gtin)', 'ean', 'gtin', 'gtin code', 'gtin/ean', 'ean/gtin', 'ean/gtin code'],
             'sku'      => ['sku', 'code', 'reference'],
-            'condition' => ['stan'],
+            'condition' => ['condition', 'stan'],
+            'description' => ['opis', 'opis produktu'],
+            'capacity' => ['capacity', 'capacity (ml)'],
+            'essential_oil_type' => ['essential oil type'],
+            'tariff_code' => ['tariff code', 'customs tariff code']
         ];
 
         foreach ($keywordMap as $attribute => $keywords) {

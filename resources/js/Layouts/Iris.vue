@@ -15,7 +15,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from '@fas'
-import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faMedal, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes } from '@fal'
+import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faMedal, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes, faLock } from '@fal'
 import { faMedal as fasMedal, faCandleHolder, faCircle, faBoxFull } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -43,7 +43,7 @@ interface ChatConfig {
 }
 
 const bundle = useBundle()
-library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes)
+library.add(faBoxFull, faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faCandleHolder, faExclamationTriangle, faMedal, fasMedal, faCircle, fadMedal, faWhatsapp, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes, faLock)
 
 initialiseIrisApp()
 
@@ -181,7 +181,7 @@ const fetchHasInBasket = async () => {
         }
 
         const response = await axios.get(apiUrl);
-        set(layout, ['family_page', 'productInBasket', 'list'], response.data || [])
+        set(layout, ['family_page', 'productInBasket', 'list'], response.data || {})
     } catch (error) {
         console.error('Failed to load product portfolio', error);
     } finally {
@@ -234,6 +234,27 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
                         </Button>
                     </div>
                 </div>
+            </div>
+        </Modal>
+
+        <!-- Modal: is blocked -->
+        <Modal
+            v-if="layout.is_blocked"
+            :isOpen="layout.is_blocked"
+            :isClosableInBackground="false"
+            :zIndex="9999"
+            width="w-full max-w-lg"
+        >
+            <div class="px-6 py-12 text-center">
+                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+                    <FontAwesomeIcon :icon="faLock" class="text-3xl text-red-600" fixed-width aria-hidden="true" />
+                </div>
+                <h2 class="mt-6 text-2xl font-bold tracking-tight text-gray-900">
+                    {{ ctrans("Access Unauthorized") }}
+                </h2>
+                <p class="mx-auto mt-4 text-base text-gray-600">
+                    {{ ctrans("You are not authorised to continue. Please contact support for assistance.") }}
+                </p>
             </div>
         </Modal>
 

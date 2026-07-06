@@ -22,7 +22,7 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
     use AsAction;
     use WithLuigis;
 
-    public string $jobQueue = 'default-long-slave';
+    public string $jobQueue = 'long-low-priority';
 
     public string $commandSignature = 'luigis:reindex_website {website?}';
     public int $jobTries = 1;
@@ -56,10 +56,12 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
             ->where('state', 'live')
             ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
             ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
-            ->chunk(1000, function ($webpages) use ($website, $command) {
+            ->chunk(200, function ($webpages) use ($website, $command) {
                 if ($command) {
                     $objects = [];
+                    $index = 0;
                     foreach ($webpages as $webpage) {
+                        $command->line($index++.' '.$webpage->slug);
                         $object = $this->getObjectFromWebpage($webpage);
                         if ($object) {
                             $objects[] = $object;
@@ -69,13 +71,15 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
                     $body       = [
                         'objects' => $objects
                     ];
-                    $compressed = count($objects) >= 1;
-                    $compressed = false;
+                    //$compressed = count($objects) >= 200;
+                    $compressed = false; // if not set as null, it fails, so do not change this
                     $command->info("Reindexing webpages $website->domain with ".count($objects)." objects");
                     try {
                         $this->request($website, '/v1/content', $body, 'post', $compressed);
+                        $command->line("Success to reindex ".count($objects));
                     } catch (Exception $e) {
-                        print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
+                        $command->error("Failed to reindex website $website->domain: ".$e->getMessage());
+
 
                         return;
                     }

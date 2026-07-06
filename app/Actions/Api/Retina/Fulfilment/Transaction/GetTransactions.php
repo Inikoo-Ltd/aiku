@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 13-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -25,11 +25,10 @@ class GetTransactions extends RetinaApiAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel, PalletReturn $palletReturn, array $modelData): LengthAwarePaginator
     {
-
         $queryBuilder = QueryBuilder::for(PalletStoredItem::class)
-        ->leftJoin('stored_items', 'pallet_stored_items.stored_item_id', '=', 'stored_items.id')
-        ->leftJoin('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id')
-        ->leftJoin('pallet_return_items', 'pallet_stored_items.id', '=', 'pallet_return_items.pallet_stored_item_id');
+            ->leftJoin('stored_items', 'pallet_stored_items.stored_item_id', '=', 'stored_items.id')
+            ->leftJoin('pallets', 'pallet_stored_items.pallet_id', '=', 'pallets.id')
+            ->leftJoin('pallet_return_items', 'pallet_stored_items.id', '=', 'pallet_return_items.pallet_stored_item_id');
 
         $queryBuilder->where('pallets.fulfilment_customer_id', $customerSalesChannel->customer->fulfilmentCustomer->id);
         $queryBuilder->where('pallet_return_items.pallet_return_id', $palletReturn->id);
@@ -67,6 +66,7 @@ class GetTransactions extends RetinaApiAction
     public function asController(PalletReturn $palletReturn, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromFulfilment($request);
+
         return $this->handle($this->customerSalesChannel, $palletReturn, $this->validateAttributes());
     }
 
@@ -80,9 +80,9 @@ class GetTransactions extends RetinaApiAction
     {
         return [
             'reference' => ['nullable', 'string'],
-            'page' => ['nullable', 'integer'],
-            'per_page' => ['nullable', 'integer'],
-            'sort' => ['nullable', 'string'],
+            'page'      => ['nullable', 'integer'],
+            'per_page'  => ['nullable', 'integer'],
+            'sort'      => ['nullable', 'string'],
         ];
     }
 
@@ -90,10 +90,10 @@ class GetTransactions extends RetinaApiAction
     {
         $request->merge(
             [
-                'reference' => ['nullable', 'string'],
-                'page' => $request->query('page', 1),
-                'per_page' => $request->query('per_page', 50),
-                'sort' => $request->query('sort', 'id'),
+                'reference' => $request->query('reference'),
+                'page'      => $request->query('page', 1),
+                'per_page'  => $request->query('per_page', 50),
+                'sort'      => $request->query('sort', 'reference'),
             ]
         );
     }

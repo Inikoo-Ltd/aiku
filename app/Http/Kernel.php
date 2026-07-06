@@ -18,6 +18,7 @@ use App\Http\Middleware\DisableSSR;
 use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\HandleCorneaInertiaRequests;
 use App\Http\Middleware\HandlePupilInertiaRequests;
+use App\Http\Middleware\RestrictCountryRegions;
 use App\Http\Middleware\RetinaPreparingAccount;
 use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\SetHanAsAppScope;
@@ -216,6 +217,7 @@ class Kernel extends HttpKernel
             DisableSSR::class,
             DetectWebsite::class,
             CheckWebsiteState::class,
+            RestrictCountryRegions::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,

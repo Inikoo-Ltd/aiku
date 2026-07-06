@@ -9,12 +9,15 @@
 namespace App\Http\Middleware;
 
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Http\Middleware\Concerns\DetectsWebsite;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class DetectWebsite
 {
+    use DetectsWebsite;
+
     public function handle(Request $request, Closure $next): Response
     {
         $website = DetectWebsiteFromDomain::run($request->getHost());
@@ -22,13 +25,8 @@ class DetectWebsite
             abort(404, 'Not found');
         }
 
-        $request->merge([
-            'domain'  => $website->domain,
-            'website' => $website
-        ]);
+        $request->merge($this->getWebsiteBaseData($website));
 
         return $next($request);
     }
-
-
 }

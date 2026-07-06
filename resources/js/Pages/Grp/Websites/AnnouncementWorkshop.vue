@@ -5,34 +5,31 @@
   * Copyright: 2025
 -->
 <script setup lang="ts">
-import { Head, router, usePage } from '@inertiajs/vue3'
-import { inject, onMounted, provide, ref, watch } from 'vue'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import { Head, router } from "@inertiajs/vue3"
+import { inject, onMounted, provide, ref, watch ,onBeforeUnmount} from "vue"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from 'laravel-vue-i18n'
-import AnnouncementTemplateList from '@/Components/Websites/Announcement/AnnouncementTemplateList.vue'
-import AnnouncementSettings from '@/Components/Websites/Announcement/AnnouncementSettings.vue'
-
+import { trans } from "laravel-vue-i18n"
+import AnnouncementTemplateList from "@/Components/Websites/Announcement/AnnouncementTemplateList.vue"
+import AnnouncementSettings from "@/Components/Websites/Announcement/AnnouncementSettings.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faGlobe, faImage, faExternalLink, faRocketLaunch, faSave, faUndoAlt, faInfoCircle, faChevronDown, faCircle, faHandPointer, faStopwatch20 } from '@fal'
-import { faThLarge, faSquare } from '@fas'
-import { faCheckCircle } from '@far'
-import { faStop } from '@fad'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import AnnouncementSideEditor from '@/Components/Websites/Announcement/AnnouncementSideEditor.vue'
-import { notify } from '@kyvg/vue3-notification'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { debounce } from 'lodash-es'
-import Modal from '@/Components/Utils/Modal.vue'
-import { getAnnouncementComponent } from '@/Composables/useAnnouncement'
+import { faGlobe, faImage, faExternalLink, faRocketLaunch, faSave, faUndoAlt, faInfoCircle, faChevronDown, faCircle, faHandPointer, faStopwatch20 } from "@fal"
+import { faThLarge, faSquare } from "@fas"
+import { faCheckCircle } from "@far"
+import { faStop } from "@fad"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import AnnouncementSideEditor from "@/Components/Websites/Announcement/AnnouncementSideEditor.vue"
+import { notify } from "@kyvg/vue3-notification"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { debounce } from "lodash-es"
+import Modal from "@/Components/Utils/Modal.vue"
+import { getAnnouncementComponent } from "@/Composables/useAnnouncement"
 import { getStyles } from "@/Composables/styles"
-
-import { routeType } from '@/types/route'
-import EmptyState from '@/Components/Utils/EmptyState.vue'
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
-import { useFormatTime } from '@/Composables/useFormatTime'
-import { onBeforeUnmount } from 'vue'
+import { routeType } from "@/types/route"
+import EmptyState from "@/Components/Utils/EmptyState.vue"
+import { TabGroup, TabList, Tab } from "@headlessui/vue"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 library.add(faStop, faGlobe, faImage, faExternalLink, faRocketLaunch, faSave, faUndoAlt, faInfoCircle, faChevronDown, faCircle, faHandPointer, faStopwatch20, faSquare, faThLarge, faCheckCircle)
 
@@ -41,9 +38,7 @@ const props = defineProps<{
     title: string
     // data: {},
     announcement_data: {
-        container_properties: {
-
-        }
+        container_properties: {}
         created_at: string
         fields: {
             close_button: {
@@ -64,9 +59,7 @@ const props = defineProps<{
         name: string
         schedule_at?: string
         schedule_finish_at?: string
-        settings: {
-
-        }
+        settings: {}
         state: string
         status: string
         ulid: string
@@ -78,11 +71,8 @@ const props = defineProps<{
         publish_route: routeType
         update_route: routeType
         reset_route: routeType
-        close_route: routeType
         activated_route: routeType
         upload_image_route: routeType
-        start_route: routeType
-        delete_announcement_route: routeType
         fetch_active_announcements_route: routeType
     }
     is_announcement_published: boolean
@@ -96,26 +86,26 @@ const props = defineProps<{
 }>()
 
 const announcementData = ref(props.announcement_data)
-provide('announcementData', announcementData.value)
+provide("announcementData", announcementData.value)
 
 const isModalOpen = ref(false)
 
 // Section: Screen type (mobile, tablet, desktop)
-const screenType = inject('screenType', ref('desktop'))
+const screenType = inject("screenType", ref("desktop"))
 const checkScreenType = () => {
     const width = window.innerWidth
-    if (width < 640) screenType.value = 'mobile'
-    else if (width >= 640 && width < 1024) screenType.value = 'tablet'
-    else screenType.value = 'desktop'
+    if (width < 640) screenType.value = "mobile"
+    else if (width >= 640 && width < 1024) screenType.value = "tablet"
+    else screenType.value = "desktop"
 }
-provide('screenType', screenType)
-provide('currentView', screenType)
+provide("screenType", screenType)
+provide("currentView", screenType)
 onMounted(() => {
     checkScreenType()
-    window.addEventListener('resize', checkScreenType)
+    window.addEventListener("resize", checkScreenType)
 })
 onBeforeUnmount(() => {
-    window.removeEventListener('resize', checkScreenType)
+    window.removeEventListener("resize", checkScreenType)
 })
 
 
@@ -123,8 +113,8 @@ onBeforeUnmount(() => {
 const isLoadingSave = ref(false)
 const saveCancelToken = ref<Function | null>(null)
 const onSave = () => {
-    if(announcementData.value?.template_code) {
-        router[props.routes_list.update_route.method || ''](
+    if (announcementData.value?.template_code) {
+        router[props.routes_list.update_route.method || ""](
             route(props.routes_list.update_route.name, props.routes_list.update_route.parameters),
             announcementData.value,
             {
@@ -134,11 +124,11 @@ const onSave = () => {
                     saveCancelToken.value = null
                 },
                 onError: (error) => {
-                    console.log('ewew', error)
+                    console.log("ewew", error)
                     notify({
-                        title: trans('Something went wrong'),
-                        text: trans('Failed to save Announcement data'),
-                        type: 'error',
+                        title: trans("Something went wrong"),
+                        text: trans("Failed to save Announcement data"),
+                        type: "error"
                     })
                 },
                 onCancelToken: (cclToken) => saveCancelToken.value = cclToken.cancel,
@@ -152,16 +142,16 @@ const onSave = () => {
 
 // Method: Publish announcement
 const isLoadingPublish = ref(false)
-const onPublish = (addData: { bodyToSend: {}}) => {
+const onPublish = (addData: { bodyToSend: {} }) => {
     const additionalDataToSend = addData.bodyToSend || {}
     const toPublish = {
         ...announcementData.value,
         compiled_layout: _component_template_Announcement.value?.compiled_layout || undefined,
-        text: 'xxx',
+        text: "xxx",
         ...additionalDataToSend
     }
-    
-    router[props.routes_list.publish_route.method || 'patch'](
+
+    router[props.routes_list.publish_route.method || "patch"](
         route(props.routes_list.publish_route.name, props.routes_list.publish_route.parameters),
         toPublish,
         {
@@ -172,17 +162,17 @@ const onPublish = (addData: { bodyToSend: {}}) => {
             },
             onSuccess: () => {
                 notify({
-                    title: 'Success',
-                    text: trans('Announcement is published'),
-                    type: 'success',
+                    title: "Success",
+                    text: trans("Announcement is published"),
+                    type: "success"
                 })
             },
             onError: (error) => {
-                console.log('error', error)
+                console.log("error", error)
                 notify({
-                    title: trans('Something went wrong'),
+                    title: trans("Something went wrong"),
                     text: error.message,
-                    type: 'error',
+                    type: "error"
                 })
             },
             preserveState: true,
@@ -194,7 +184,7 @@ const onPublish = (addData: { bodyToSend: {}}) => {
 // Method: Reset data
 const isLoadingReset = ref(false)
 const onReset = async () => {
-    router[props.routes_list.reset_route.method || 'delete'](
+    router[props.routes_list.reset_route.method || "delete"](
         route(props.routes_list.reset_route.name, props.routes_list.reset_route.parameters),
         {
             onStart: () => {
@@ -206,9 +196,9 @@ const onReset = async () => {
             },
             onError: (error) => {
                 notify({
-                    title: 'Something went wrong',
+                    title: "Something went wrong",
                     text: error.message,
-                    type: 'error',
+                    type: "error"
                 })
             },
             onCancelToken: (cclToken) => saveCancelToken.value = cclToken.cancel,
@@ -234,8 +224,8 @@ watch(announcementData, (newVal) => {
 const xxx = debounce(() => onSave(), 1000, { leading: false, trailing: true })
 
 
-const isOnPublishState = inject('isOnPublishState', false)
-const styleToRemove = isOnPublishState ? ['top'] : null
+const isOnPublishState = inject("isOnPublishState", false)
+const styleToRemove = isOnPublishState ? ["top"] : null
 const _parentComponent = ref(null)
 
 // Section: Tabs
@@ -247,14 +237,13 @@ const changeTab = async (idxCategory: number) => {
 }
 
 
-
 const cancelTokenActivate = ref<Function | null>(null)
 const onClickToggleActivate = async (newVal: string) => {
     if (props.is_announcement_active === newVal) return
 
-    if(cancelTokenActivate.value) return
+    if (cancelTokenActivate.value) return
 
-    router[props.routes_list.activated_route.method || 'patch'](
+    router[props.routes_list.activated_route.method || "patch"](
         route(props.routes_list.activated_route.name, props.routes_list.activated_route.parameters),
         { is_published: newVal },
         {
@@ -266,34 +255,34 @@ const onClickToggleActivate = async (newVal: string) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans('Gotcha!'),
-                    text: trans('Successfully set the status'),
-                    type: 'success',
+                    title: trans("Gotcha!"),
+                    text: trans("Successfully set the status"),
+                    type: "success"
                 })
             },
             onError: () => {
                 notify({
-                    title: trans('Something went wrong'),
-                    text: trans('Failed to update the status'),
-                    type: 'error',
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update the status"),
+                    type: "error"
                 })
-            },
+            }
         }
     )
 }
 
 const openFieldWorkshop = ref<number | null>(null)
-provide('openFieldWorkshop', openFieldWorkshop)
+provide("openFieldWorkshop", openFieldWorkshop)
 
 
 const _component_template_Announcement = ref(null)
 
-const sectionClass = ref('')
+const sectionClass = ref("")
 const onSectionSetting = () => {
     setTimeout(() => {
-        sectionClass.value = 'bg-yellow-500/40'
+        sectionClass.value = "bg-yellow-500/40"
         setTimeout(() => {
-            sectionClass.value = 'bg-yellow-500/0'
+            sectionClass.value = "bg-yellow-500/0"
         }, 600)
     }, 100)
 }
@@ -306,29 +295,30 @@ const onSectionSetting = () => {
     <PageHeading :data="pageHead">
         <template v-if="announcementData.template_code" #other>
             <div class="flex gap-x-2 flex-wrap gap-y-1.5 justify-end">
-                <Button @click="onReset" label="Reset" v-tooltip="trans('Reset data to last publish') + ` (${useFormatTime(last_published_date || '', {formatTime: 'hm'})})`" :loading="isLoadingReset" :style="'negative'" :disabled="!is_announcement_dirty" icon="fal fa-undo-alt" />
+                <Button @click="onReset" label="Reset" v-tooltip="trans('Reset data to last publish') + ` (${useFormatTime(last_published_date || '', {formatTime: 'hm'})})`" :loading="isLoadingReset" :style="'negative'"
+                        :disabled="!is_announcement_dirty" icon="fal fa-undo-alt" />
                 <!-- <Button @click="() => false" label="Stop now" :loading="isLoadingSave" :style="'red'" icon="fas fa-square" /> -->
 
                 <!-- Button: Active & Inactive -->
                 <div v-if="routes_list.activated_route" class="flex items-center min-w-16">
                     <div class="grid grid-cols-2 cursor-pointer rounded overflow-hidden select-none ring-1 ring-gray-400">
                         <div @click="onClickToggleActivate('inactive')"
-                            class="py-1.5 px-3 flex justify-center items-center gap-x-1 capitalize transition-all"
-                            :class="[is_announcement_active == 'inactive' ? 'bg-red-600 text-gray-100' : 'bg-gray-100/70 text-red-400 hover:bg-red-200/70']">
-                            {{ trans('Inactive') }}
+                             class="py-1.5 px-3 flex justify-center items-center gap-x-1 capitalize transition-all"
+                             :class="[is_announcement_active == 'inactive' ? 'bg-red-600 text-gray-100' : 'bg-gray-100/70 text-red-400 hover:bg-red-200/70']">
+                            {{ trans("Inactive") }}
                             <LoadingIcon v-if="is_announcement_active !== 'inactive' && cancelTokenActivate" size="sm" />
-                            <FontAwesomeIcon v-else-if="is_announcement_active == 'inactive'" icon='far fa-check-circle' size="sm" class='' fixed-width aria-hidden='true' />
-                            <FontAwesomeIcon v-else="!cancelTokenActivate" icon='fal fa-circle' size="sm" class='' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-else-if="is_announcement_active == 'inactive'" icon="far fa-check-circle" size="sm" class="" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-else="!cancelTokenActivate" icon="fal fa-circle" size="sm" class="" fixed-width aria-hidden="true" />
                         </div>
 
                         <div xclick="onClickToggleActivate('active')"
-                            @click="() => (selectedTab = 1, onSectionSetting())"
-                            class="py-1.5 px-3 flex justify-center items-center gap-x-1 capitalize transition-all"
-                            :class="[is_announcement_active === 'active' ? 'bg-green-600 text-green-100' : 'bg-gray-100/70 text-gray-400 hover:bg-green-200/70']">
-                            {{ trans('Active') }}
+                             @click="() => (selectedTab = 1, onSectionSetting())"
+                             class="py-1.5 px-3 flex justify-center items-center gap-x-1 capitalize transition-all"
+                             :class="[is_announcement_active === 'active' ? 'bg-green-600 text-green-100' : 'bg-gray-100/70 text-gray-400 hover:bg-green-200/70']">
+                            {{ trans("Active") }}
                             <LoadingIcon v-if="is_announcement_active !== 'active' && cancelTokenActivate" size="sm" />
-                            <FontAwesomeIcon v-else-if="is_announcement_active === 'active'" icon='far fa-check-circle' size="sm" class='' fixed-width aria-hidden='true' />
-                            <FontAwesomeIcon v-else="!cancelTokenActivate" icon='fal fa-circle' size="sm" class='' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-else-if="is_announcement_active === 'active'" icon="far fa-check-circle" size="sm" class="" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-else="!cancelTokenActivate" icon="fal fa-circle" size="sm" class="" fixed-width aria-hidden="true" />
                         </div>
                     </div>
                 </div>
@@ -341,7 +331,7 @@ const onSectionSetting = () => {
                     >
                         <div>
                             {{ trans("Publish & Setting") }}
-                            <FontAwesomeIcon icon='fal fa-cog' class='' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon icon="fal fa-cog" class="" fixed-width aria-hidden="true" />
                         </div>
                     </Button>
                     <!-- <Button @click="onPublish" label="Publish now" :loading="isLoadingPublish" iconRight="fal fa-rocket-launch" class="rounded-l-none" /> -->
@@ -377,9 +367,9 @@ const onSectionSetting = () => {
 
         <div @click="() => false ? onSave() : false" v-tooltip="trans('Save status')" class="flex items-center px-2 text-3xl">
             <LoadingIcon v-if="isLoadingSave" />
-            <FontAwesomeIcon v-else icon='fal fa-save' class='text-gray-300' fixed-width aria-hidden='true' />
+            <FontAwesomeIcon v-else icon="fal fa-save" class="text-gray-300" fixed-width aria-hidden="true" />
         </div>
-        
+
         <!-- <Button @click="onSave" label="save" :loading="isLoadingSave" :style="'tertiary'" icon="fal fa-save" /> -->
 
     </div>
@@ -390,12 +380,12 @@ const onSectionSetting = () => {
         <div v-if="announcementData.template_code" class="w-[600px] py-2 px-3 ">
             <div class="w-full text-lg font-semibold flex items-center justify-between gap-3 border-b border-gray-300">
                 <div class="flex items-center gap-3">
-                    {{ trans('Announcement') }}
+                    {{ trans("Announcement") }}
                 </div>
 
                 <div class="py-1 px-2 cursor-pointer" title="template" v-tooltip="'Template'"
-                    @click="isModalOpen = true">
-                    <FontAwesomeIcon icon="fas fa-th-large" aria-hidden='true' />
+                     @click="isModalOpen = true">
+                    <FontAwesomeIcon icon="fas fa-th-large" aria-hidden="true" />
                 </div>
             </div>
 
@@ -410,34 +400,13 @@ const onSectionSetting = () => {
         <!-- Section: Preview -->
         <div class="w-full h-full flex flex-col py-2 px-3">
             <div class="flex justify-between">
-                <!-- <div class="py-1 px-2 cursor-pointer md:hidden block" title="Desktop view" v-tooltip="'Navigation'">
-                    <FontAwesomeIcon :icon='faBars' aria-hidden='true' @click="()=>openDrawer = true" />
-                    <Drawer v-model:visible="openDrawer" :header="''" :dismissable="true">
-                        <WebpageSideEditor ref="_WebpageSideEditor" :webpage="data" :webBlockTypeCategories="webBlockTypeCategories"
-                            @update="sendBlockUpdate" @delete="sendDeleteBlock" @add="addNewBlock"
-                            @order="sendOrderBlock"  @openBlockList="()=>{openDrawer = false, _WebpageSideEditor.isModalBlocksList = true}" />
-                    </Drawer>
-                </div> -->
-
-                <!-- Section: Screenview -->
-                <!-- <div v-if="announcementData.template_code" class="flex justify-between w-full py-2 px-2">
-                    <div>
-                        <ScreenView v-model="screenType" />
-                    </div>
-
-                    <a :href="deliveryUrl"
-                        target="_blank" class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'">
-                        What will showed in <span class="font-semibold">{{ website.name }}</span>?
-                        <FontAwesomeIcon icon='fal fa-external-link' aria-hidden='true' />
-                    </a>
-                </div> -->
             </div>
 
             <div class="xborder-2 h-full w-full">
                 <div class="h-full w-full bg-white relative">
                     <div v-if="announcementData.template_code"
-                        ref="_parentComponent"
-                        :xxxstyle="{
+                         ref="_parentComponent"
+                         :xxxstyle="{
                             ...getStyles(announcementData.container_properties, { toRemove: styleToRemove}),
                             position: announcementData.container_properties?.position?.type === 'fixed' ? 'absolute' : announcementData.container_properties?.position?.type
                         }"
@@ -457,7 +426,7 @@ const onSectionSetting = () => {
 
                         <div class="mx-auto mt-4">
                             <Button @click="() => isModalOpen = true" :style="'tertiary'"
-                                label="Select from template" />
+                                    label="Select from template" />
                         </div>
 
                     </div>

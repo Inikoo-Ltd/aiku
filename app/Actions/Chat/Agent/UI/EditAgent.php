@@ -1,0 +1,188 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 30 Jun 2026 21:09:14 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Chat\Agent\UI;
+
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
+use App\Actions\Helpers\Shop\UI\GetShopOptions;
+use App\Actions\OrgAction;
+use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
+use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ShopHasChatAgent;
+use App\Models\SysAdmin\Organisation;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
+
+class EditAgent extends OrgAction
+{
+    /**
+     * Load model
+     */
+    public function handle(Organisation $organisation, ChatAgent $agent, ActionRequest $request): Response
+    {
+
+        return Inertia::render(
+            'EditModel',
+            [
+                'title' => __('Edit CRM Agent'),
+
+                'pageHead' => [
+                    'title' => __('Edit') .' '. $agent->user->contact_name ?? __('Agent'),
+                    'icon'  => [
+                        'title' => __('CRM Agent'),
+                        'icon'  => 'fal fa-headset',
+                    ],
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'route' => [
+                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ]
+                        ]
+                    ]
+                ],
+
+                'formData' => [
+                    'blueprint' => [
+
+                        [
+                            'label'  => __('Agent'),
+                            'title'  => __('Edit Agent'),
+                            'fields' => [
+                                'user_id' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Agent'),
+                                    'readonly'    => true,
+                                    'value'       => $agent->user->contact_name,
+                                ],
+                            ],
+                        ],
+
+                        [
+                            'label'  => __('Max Concurrent Chats'),
+                            'title'  => __('Edit Max Concurrent Chats'),
+                            'fields' => [
+                                'max_concurrent_chats' => [
+                                    'type'     => 'input_number',
+                                    'label'    => __('Max Concurrent Chats'),
+                                    'value'    => $agent->max_concurrent_chats,
+                                    'required' => true,
+                                ],
+                            ],
+                        ],
+
+                        [
+                            'label'  => __('Specialization'),
+                            'title'  => __('Edit Specialization'),
+                            'fields' => [
+                                'specialization' => [
+                                    'type'      => 'multiselect-tags',
+                                    'label'     => __('Specialization'),
+                                    'options'   => ChatAgentSpecializationEnum::options(),
+                                    'labelProp' => 'label',
+                                    'valueProp' => 'value',
+                                    'value'     => $agent->specialization ?? [],
+                                ],
+                            ],
+                        ],
+
+                        [
+                            'label'  => __('Auto Accept'),
+                            'title'  => __('Edit Auto Accept'),
+                            'fields' => [
+                                'auto_accept' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Auto Accept'),
+                                    'value' => $agent->auto_accept,
+                                ],
+                            ],
+                        ],
+
+                        [
+                            'label'  => __('Organisation & Shop'),
+                            'title'  => __('Edit Organisation & Shop'),
+                            'fields' => [
+                                'organisation_id' => [
+                                    'type'  => 'select',
+                                    'label' => __('Organisation'),
+                                    'placeholder' => __('Select organisation'),
+                                    'options'  => GetOrganisationOptions::make()->filter($organisation->slug),
+                                    'value' => optional(
+                                        $agent->organisations
+                                            ->firstWhere('slug', $organisation->slug)
+                                    )->id,
+                                    'readonly'    => true,
+                                ],
+
+                                'shop_id' => [
+                                    'type'  => 'multiselect-tags',
+                                    'label' => __('Shop'),
+                                    'placeholder' => __('Select shop'),
+                                    'options'     => GetShopOptions::run($organisation->slug),
+                                    'value'       => ShopHasChatAgent::query()
+                                        ->where('chat_agent_id', $agent->id)
+                                        ->whereHas(
+                                            'organisation',
+                                            fn ($q) =>
+                                            $q->where('slug', $organisation->slug)
+                                        )
+                                        ->pluck('shop_id')
+                                        ->filter()
+                                        ->values()
+                                        ->toArray(),
+                                    'labelProp' => 'label',
+                                    'valueProp' => 'value',
+                                ],
+                            ],
+                        ],
+
+                        [
+                            'label'  => __('Language'),
+                            'title'  => __('Edit Language'),
+                            'fields' => [
+                                'language_id' => [
+                                    'type'  => 'select',
+                                    'label' => __('Language'),
+                                    'placeholder' => __('Select language'),
+                                    'options'  => GetLanguagesOptions::make()->translated(),
+                                    'value' => $agent->language_id,
+                                ],
+                            ],
+                        ],
+
+                    ],
+
+                    'args' => [
+                        'updateRoute' => [
+                            'name'       => 'grp.org.chat.agents.update',
+                            'parameters' => [
+                                $this->organisation->slug,
+                                $agent->id,
+                            ],
+                        ],
+                    ],
+                ]
+
+            ]
+        );
+    }
+
+    /**
+     * Controller endpoint
+     */
+    public function asController(Organisation $organisation, $agentId, ActionRequest $request): Response
+    {
+        $this->initialisation($organisation, $request);
+        $agent = ChatAgent::findOrFail($agentId);
+        return $this->handle($organisation, $agent, $request);
+    }
+}

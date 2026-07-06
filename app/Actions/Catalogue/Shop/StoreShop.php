@@ -17,7 +17,6 @@ use App\Actions\CRM\TrafficSource\SeedTrafficSources;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
 use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
-use App\Actions\Helpers\Query\Seeders\ProspectQuerySeeder;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
@@ -146,9 +145,11 @@ class StoreShop extends OrgAction
                 $shop->timeSeries()->create(['frequency' => $frequency]);
             }
 
-            if ($shop->type === ShopTypeEnum::DROPSHIPPING) {
+            if ($shop->type === ShopTypeEnum::DROPSHIPPING || $shop->type === ShopTypeEnum::FULFILMENT) {
                 $shop->dropshippingStats()->create();
+            }
 
+            if ($shop->type === ShopTypeEnum::DROPSHIPPING) {
                 foreach (Platform::all() as $platform) {
                     $shop->platformSalesIntervals()->create(['platform_id' => $platform->id]);
                 }
@@ -238,7 +239,6 @@ class StoreShop extends OrgAction
 
         GroupHydrateShops::dispatch($organisation->group)->delay($this->hydratorsDelay);
         OrganisationHydrateShops::dispatch($organisation)->delay($this->hydratorsDelay);
-        ProspectQuerySeeder::dispatch($shop);
         SeedShopOutboxes::dispatch($shop);
         SetIconAsShopLogo::dispatch($shop)->delay($this->hydratorsDelay);
         SeedShopOfferCampaigns::dispatch($shop);
@@ -292,21 +292,6 @@ class StoreShop extends OrgAction
 
         return $this->handle($organisation, $this->validatedData);
     }
-
-    /**
-     * @throws \Throwable
-     */
-    public function inMaster(MasterShop $masterShop, Organisation $organisation, ActionRequest $request): Shop
-    {
-        $this->masterShop = $masterShop;
-        $this->initialisation($organisation, $request);
-
-        $modelData = $this->validatedData;
-        data_set($modelData, 'master_shop_id', $masterShop->id);
-
-        return $this->handle($organisation, $modelData);
-    }
-
 
     public string $commandSignature = 'shop:create {organisation : organisation slug} {code} {name} {type}
     {--warehouses=*} {--contact_name=} {--company_name=} {--email=} {--phone=} {--identity_document_number=} {--identity_document_type=} {--country=} {--currency=} {--language=} {--timezone=}';

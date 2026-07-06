@@ -11,7 +11,9 @@ namespace App\Actions\Comms\SubscriptionEvent;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Comms\SubscriptionEvent\SubscriptionEventTypeEnum;
 use App\Models\Comms\SubscriptionEvent;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateSubscriptionEvent extends OrgAction
@@ -37,7 +39,7 @@ class UpdateSubscriptionEvent extends OrgAction
     public function rules(): array
     {
         $rules = [
-
+            'type' => ['sometimes', Rule::enum(SubscriptionEventTypeEnum::class)],
         ];
 
         if (!$this->strict) {

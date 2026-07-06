@@ -5,14 +5,7 @@
 #
 
 echo "Restarting Varnish..."
-sudo cp /etc/haproxy/haproxy_no_varnish.cfg /etc/haproxy/haproxy.cfg
-sudo systemctl restart haproxy.service
-sudo systemctl restart varnish
-sudo cp /etc/haproxy/haproxy_varnish.cfg /etc/haproxy/haproxy.cfg
-sudo systemctl restart haproxy.service
+#sudo varnishadm 'ban req.url ~ .'
+sudo varnishadm 'ban obj.http.x-aiku-website ~ .'
 echo "Done."
-#echo "warming base cache...";
-#./cache_warmer.sh warming_base.txt WEBSITE_DOMAIN &
-#wait
-#echo "warming families cache...";
-#./cache_warmer.sh warming_families WEBSITE_DOMAIN &
+id -un

@@ -24,7 +24,7 @@ class AuthenticateBeefreeAccount extends OrgAction
     public function handle(Organisation $organisation, array $modelData): array
     {
 
-        $beefreeSettings = $this->group->settings['beefree'];
+        $beefreeSettings = Arr::get($this->group->settings, 'beefree', []);
         $clientId = Arr::get($beefreeSettings, 'client_id');
         $clientSecret = Arr::get($beefreeSettings, 'client_secret');
 

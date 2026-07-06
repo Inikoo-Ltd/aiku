@@ -24,6 +24,10 @@ trait WithAllegroApiServices
 
     public function restApi(string $method = 'GET', array $params = []): PendingRequest
     {
+        if ($this->access_token_expire_in < now()->timestamp) {
+            $this->refreshAccessToken($this->refresh_token);
+        }
+
         $http = Http::withHeaders([
             'Authorization'  => 'Bearer ' . $this->access_token,
             'Accept'         => $this->allegroApiVersion,
@@ -94,6 +98,7 @@ trait WithAllegroApiServices
         }
 
         $content = str_replace(['<strong>', '</strong>'], ['<b>', '</b>'], $content);
+        $content = str_replace(['<br>', '<br/>', '<br />'], ' ', $content);
         $description = str_replace('&acute;', '´', $content);
 
         $description = preg_replace_callback('/<b>(.*?)<\/b>/is', function ($matches) {
@@ -243,6 +248,13 @@ trait WithAllegroApiServices
     {
         return $this->makeApiRequest('PUT', "/order/checkout-forms/$orderId/fulfillment", [
             'status' => 'SENT',
+        ]);
+    }
+
+    public function setOrderCancelled(string $orderId): array
+    {
+        return $this->makeApiRequest('PUT', "/order/checkout-forms/$orderId/fulfillment", [
+            'status' => 'CANCELLED',
         ]);
     }
 
@@ -436,6 +448,14 @@ trait WithAllegroApiServices
     // Categories
     // -------------------------------------------------------------------------
 
+    public function getProductByEan(string $ean): array
+    {
+        return $this->makeApiRequest('GET', '/sale/products', [], [
+            'mode' => "GTIN",
+            'phrase' => $ean
+        ]);
+    }
+
     public function getCategories(array $params = []): array
     {
         return $this->makeApiRequest('GET', '/sale/categories', [], $params);
@@ -465,6 +485,16 @@ trait WithAllegroApiServices
             'name'  => Arr::get($data, 'name', 'Default shipping rates'),
             'rates' => Arr::get($data, 'rates', []),
         ]);
+    }
+
+    public function createResponsibleProducer(array $data): array
+    {
+        return $this->makeApiRequest('POST', '/sale/responsible-producers', $data);
+    }
+
+    public function createResponsiblePerson(array $data): array
+    {
+        return $this->makeApiRequest('POST', '/sale/responsible-persons', $data);
     }
 
     public function createReturnPolicy(array $data): array

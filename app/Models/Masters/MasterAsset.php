@@ -19,6 +19,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
+use App\Models\Reviews\MasterAssetReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -170,6 +171,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read LaravelCollection<int, Product> $products
+ * @property-read MasterAssetReviewStat|null $reviewStats
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
  * @property-read Media|null $sizeComparisonImage
@@ -318,6 +320,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(MasterAssetStats::class);
+    }
+
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(MasterAssetReviewStat::class);
     }
 
     public function orderingIntervals(): HasOne

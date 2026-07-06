@@ -15,6 +15,7 @@ use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         return $customerSalesChannelId ?? 'empty';
     }
 
-    public function handle(?int $customerSalesChannelId): void
+    public function handle(?int $customerSalesChannelId, ?Command $command = null): void
     {
         if (!$customerSalesChannelId) {
             return;
@@ -47,6 +48,11 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $customerSalesChannel->user;
+        if (!$shopifyUser instanceof ShopifyUser) {
+            $command?->error('Shopify user not found');
+
+            return;
+        }
 
         $portfolios = Portfolio::on('aiku_no_sticky')
             ->where('customer_sales_channel_id', $customerSalesChannel->id)
@@ -66,11 +72,11 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             ->get()
             ->keyBy('id');
 
-        $maxQtyAd = $shopifyUser->customerSalesChannel?->max_quantity_advertise;
+        $maxQtyAd = $customerSalesChannel->max_quantity_advertise;
 
         foreach ($portfolios->chunk(100) as $portfolioChunk) {
             try {
-                $this->processChunk($shopifyUser, $portfolioChunk, $productMap, $maxQtyAd);
+                $this->processChunk($shopifyUser, $portfolioChunk, $productMap, $maxQtyAd, $command);
             } catch (\Throwable) {
                 // Individual chunk failure handled by not throwing to allow other chunks to proceed
             }
@@ -81,7 +87,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
      * @param  Collection<int, Portfolio>  $portfolios
      * @param  Collection<int, \stdClass>  $productMap
      */
-    private function processChunk(ShopifyUser $shopifyUser, Collection $portfolios, Collection $productMap, ?int $maxQtyAd): void
+    private function processChunk(ShopifyUser $shopifyUser, Collection $portfolios, Collection $productMap, ?int $maxQtyAd, ?Command $command = null): void
     {
         $logs                   = [];
         $inventoryItems         = [];
@@ -107,6 +113,10 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 $availableQuantity = 0;
             }
 
+            if ($maxQtyAd > 0) {
+                $availableQuantity = min($availableQuantity, $maxQtyAd);
+            }
+
             $key         = $portfolio->platform_product_variant_id ?: $portfolio->platform_product_id;
             $shopifyData = $shopifyDataMap[$key] ?? null;
 
@@ -125,15 +135,12 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 continue;
             }
 
-            if ($maxQtyAd > 0) {
-                $availableQuantity = min($availableQuantity, $maxQtyAd);
-            }
 
-            $currentIndex       = count($inventoryItems);
-            $inventoryItems[]   = [
+            $currentIndex                      = count($inventoryItems);
+            $inventoryItems[]                  = [
                 'inventoryItemId' => $inventoryItemId,
                 'locationId'      => $shopifyUser->shopify_location_id,
-                'quantity'        => (int) $availableQuantity,
+                'quantity'        => (int)$availableQuantity,
             ];
             $indexToPortfolioId[$currentIndex] = $portfolio->id;
 
@@ -177,6 +184,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             ]);
 
             foreach ($portfoliosToUpdateData as $portfolioId => $data) {
+                $command?->error(json_encode($res));
                 $portfolios->get($portfolioId)?->update([
                     'stock_last_fail_updated_at' => now(),
                 ]);
@@ -192,7 +200,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         foreach ($userErrors as $error) {
             $path = $error['field'] ?? [];
             if (isset($path[2]) && is_numeric($path[2])) {
-                $failedIndices[(int) $path[2]] = $error['message'];
+                $failedIndices[(int)$path[2]] = $error['message'];
             }
         }
 
@@ -212,6 +220,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                     ]);
                 }
             } else {
+                $command?->line("Portfolio $portfolioId usefully updated");
                 $portfolio?->update([
                     'last_stock_value'      => $portfoliosToUpdateData[$portfolioId]['last_stock_value'],
                     'stock_last_updated_at' => now(),
@@ -296,4 +305,17 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, $modelData);
         }
     }
+
+    public function getCommandSignature(): string
+    {
+        return 'dropshipping:bulk-update-shopify-portfolio {customerSalesChannelId}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $this->handle($command->argument('customerSalesChannelId'), $command);
+
+        return 0;
+    }
+
 }

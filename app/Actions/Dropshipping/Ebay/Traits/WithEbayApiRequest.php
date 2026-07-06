@@ -1164,11 +1164,9 @@ trait WithEbayApiRequest
                 $params['filter'] = $filter;
             }
 
+            $endpoint    = "/sell/fulfillment/v1/order";
 
-            $queryString = http_build_query($params);
-            $endpoint    = "/sell/fulfillment/v1/order?$queryString";
-
-            return $this->makeEbayRequest('get', $endpoint);
+            return $this->makeEbayRequest('get', $endpoint, [], $params);
         } catch (Exception $e) {
             Log::error('Get eBay Orders Error: '.$e->getMessage());
 

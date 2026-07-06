@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
-use App\Models\Helpers\Country;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
@@ -61,7 +60,7 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
         }
 
         foreach ($wooOrders as $wooOrder) {
-            if(blank($wooOrder) || !is_array($wooOrder)) {
+            if (blank($wooOrder) || !is_array($wooOrder)) {
                 continue;
             }
 
@@ -76,16 +75,6 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
 
             if (!Arr::get($wooOrder, 'shipping.country')) {
                 continue;
-            }
-
-            if ($wooCommerceUser->customerSalesChannel?->shop) {
-                $country = Country::where('code', Arr::get($wooOrder, 'shipping.country'))->first();
-
-                if ($country) {
-                    if (in_array($country->id, $wooCommerceUser->customerSalesChannel->shop->forbidden_dispatch_countries ?? [])) {
-                        continue;
-                    }
-                }
             }
 
             if (DB::table('orders')

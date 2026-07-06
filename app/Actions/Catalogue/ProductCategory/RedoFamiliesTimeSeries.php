@@ -18,8 +18,8 @@ class RedoFamiliesTimeSeries implements ShouldBeUnique
 
     protected ?ProductCategoryTypeEnum $categoryType;
 
-    public string $jobQueue         = 'default-long-slave';
-    public string $commandSignature = 'families:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
+    public string $jobQueue         = 'long-low-priority';
+    public string $commandSignature = 'families:redo_time_series {--S|shop= : Shop slug} {--O|organisation= : Organisation slug} {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {

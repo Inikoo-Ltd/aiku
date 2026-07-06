@@ -26,7 +26,7 @@ class ShowWebsiteWorkshopPreview extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Website
     {
-        $this->initialisation($organisation, $request)->withTab(WebsiteWorkshopTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(WebsiteWorkshopTabsEnum::values());
 
         return $website;
     }

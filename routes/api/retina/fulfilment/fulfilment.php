@@ -11,7 +11,7 @@ use App\Actions\Api\Retina\Fulfilment\Client\GetClient;
 use App\Actions\Api\Retina\Fulfilment\Client\GetClients;
 use App\Actions\Api\Retina\Fulfilment\Client\StoreApiCustomerClient;
 use App\Actions\Api\Retina\Fulfilment\Client\UpdateApiCustomerClient;
-use App\Actions\Api\Retina\Fulfilment\Order\CancelApiOrder;
+use App\Actions\Api\Retina\Fulfilment\Order\CancelApiPalletReturn;
 use App\Actions\Api\Retina\Fulfilment\Order\GetOrder;
 use App\Actions\Api\Retina\Fulfilment\Order\GetOrders;
 use App\Actions\Api\Retina\Fulfilment\Order\StoreApiOrder;
@@ -32,7 +32,7 @@ Route::prefix('order')->as('order.')->group(function () {
     Route::get('{palletReturn:id}', GetOrder::class)->name('show')->whereNumber('palletReturn');
     Route::patch('{palletReturn:id}/update', UpdateApiOrder::class)->name('update')->whereNumber('palletReturn');
     Route::patch('{palletReturn:id}/submit', SubmitApiPalletReturn::class)->name('submit')->whereNumber('palletReturn');
-    Route::post('{palletReturn:id}/cancel', CancelApiOrder::class)->name('cancel')->whereNumber('palletReturn');
+    Route::post('{palletReturn:id}/cancel', CancelApiPalletReturn::class)->name('cancel')->whereNumber('palletReturn');
     Route::get('{palletReturn:id}/transactions', GetTransactions::class)->name('transaction.index')->whereNumber('palletReturn');
     Route::post('/{palletReturn:id}/sku/{sku:id}/store', AttachApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings()->whereNumber(['palletReturn', 'sku']);
 });

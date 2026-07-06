@@ -12,10 +12,10 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
-use App\Models\Bundle;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
+use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
@@ -24,11 +24,14 @@ use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
+use App\Models\Reviews\ProductReviewStat;
+use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
@@ -44,7 +47,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -222,6 +224,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Organisation $organisation
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, Product> $productVariants
+ * @property-read ProductReviewStat|null $reviewStats
+ * @property-read LaravelCollection<int, Review> $reviews
  * @property-read Media|null $rightImage
  * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
@@ -386,6 +390,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->hasOne(ProductStats::class);
     }
 
+    public function reviewStats(): HasOne
+    {
+        return $this->hasOne(ProductReviewStat::class);
+    }
+
     public function contents(): MorphMany
     {
         return $this->morphMany(ModelHasContent::class, 'model');
@@ -472,6 +481,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->morphMany(Portfolio::class, 'item');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'product_id');
+    }
+
     public function favourites(): HasMany
     {
         return $this->hasMany(Favourite::class);
@@ -529,9 +543,10 @@ class Product extends Model implements Auditable, HasMedia
 
     public function getLuigiIdentity(): string
     {
-        if($this->webpage){
+        if ($this->webpage) {
             return $this->webpage->luigiIdentity();
         }
+
         return 'unknown';
     }
 

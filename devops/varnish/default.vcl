@@ -170,13 +170,6 @@ sub vcl_recv {
         call set_login_flag_from_cookie;
     }
 
-    if (req.http.X-Is-Diff=="Y") {
-         set req.http.X-Web-State = req.http.X-Logged-Status;
-    }else{
-         set req.http.X-Web-State ="B";
-    }
-
-
     # Select backend weights based on the derived login status
     if (req.http.X-Logged-Status == "In") {
         set req.backend_hint = logged_in_vdir.backend();
@@ -255,8 +248,6 @@ sub vcl_hash {
     hash_data(req.http.host);
     hash_data(req.url);
 
-    hash_data(req.http.X-Web-State);
-
     # Categorize requests into two hash buckets based on X-Inertia header.
     if (req.http.X-Inertia) {
         hash_data("Inertia");
@@ -308,15 +299,26 @@ sub vcl_backend_response {
         return (deliver);
     }
 
-    # Handle self-redirects and potential loops
+    # Handle self-redirects and potential loops.
+    # Compare with trailing slashes stripped: the app rtrims the request URL when
+    # checking canonicals, so "/foo" -> "/foo/" (and "/" -> "https://host") are
+    # self-redirects the exact string comparison used to miss.
     if (beresp.status == 301 || beresp.status == 302) {
+        set bereq.http.X-Aiku-Loop-Location = regsub(beresp.http.Location, "/+$", "");
+        set bereq.http.X-Aiku-Loop-Url = regsub(bereq.url, "/+$", "");
+
         if (bereq.retries == 0 && (
-            beresp.http.Location == bereq.url ||
-            beresp.http.Location == "https://" + bereq.http.host + bereq.url ||
-            beresp.http.Location == "http://" + bereq.http.host + bereq.url
+            bereq.http.X-Aiku-Loop-Location == bereq.http.X-Aiku-Loop-Url ||
+            bereq.http.X-Aiku-Loop-Location == "https://" + bereq.http.host + bereq.http.X-Aiku-Loop-Url ||
+            bereq.http.X-Aiku-Loop-Location == "http://" + bereq.http.host + bereq.http.X-Aiku-Loop-Url
         )) {
+            unset bereq.http.X-Aiku-Loop-Location;
+            unset bereq.http.X-Aiku-Loop-Url;
             return (retry);
         }
+
+        unset bereq.http.X-Aiku-Loop-Location;
+        unset bereq.http.X-Aiku-Loop-Url;
 
         if (bereq.retries > 0) {
             set beresp.ttl = 0s;
@@ -346,6 +348,17 @@ sub vcl_backend_response {
         set beresp.ttl = 0s;
         set beresp.uncacheable = true;
         return (deliver);
+    }
+
+    # Split the cache by login state only for pages the app marks as different
+    # when logged in (X-Is-Diff response header). Varnish stores one variant per
+    # X-Logged-Status value, which vcl_recv derives from the iris_vua cookie.
+    if (beresp.http.X-Is-Diff == "Y") {
+        if (beresp.http.Vary) {
+            set beresp.http.Vary = beresp.http.Vary + ", X-Logged-Status";
+        } else {
+            set beresp.http.Vary = "X-Logged-Status";
+        }
     }
 
     # Do not cache JSON unless it is an explicit Inertia request.
@@ -423,10 +436,6 @@ sub vcl_deliver {
 
     if (req.http.X-Stripped-Query) {
         set resp.http.X-Traffic-Sources = req.http.X-Stripped-Query;
-    }
-
-    if (req.http.X-Web-State) {
-        set resp.http.X-Web-State = req.http.X-Web-State;
     }
 
     if (resp.status == 301 || resp.status == 302 || resp.status == 303 || resp.status == 307 || resp.status == 308) {

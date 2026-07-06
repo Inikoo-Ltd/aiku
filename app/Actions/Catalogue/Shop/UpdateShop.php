@@ -17,7 +17,11 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Web\Website\BlockedCountries\SyncWebsiteBlockedCountries;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
+use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -25,6 +29,7 @@ use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
 use App\Models\Inventory\Warehouse;
+use App\Models\Reviews\ReviewRatingLabel;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -33,6 +38,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Ordering\SalesChannel;
+use Closure;
 
 class UpdateShop extends OrgAction
 {
@@ -52,6 +58,10 @@ class UpdateShop extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Shop
     {
+        if (Arr::exists($modelData, 'review_rating_labels')) {
+            $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
+        }
+
         $reHydrateChildPrices = false;
 
         if (Arr::has($modelData, 'invoice_serial_references')) {
@@ -81,6 +91,19 @@ class UpdateShop extends OrgAction
             );
         }
 
+        if (Arr::has($modelData, 'banned_countries')) {
+            $bannedCountries = Arr::pull($modelData, 'banned_countries');
+
+            data_set($modelData, 'banned_country_regions', Arr::get($bannedCountries, 'banned_list', []));
+            data_set($modelData, 'settings.banned_countries.is_follow_organisation_banned_list', (bool)Arr::get($bannedCountries, 'is_follow_organisation_banned_list', false));
+
+            $bannedIPCountries = array_filter(data_get($bannedCountries, 'banned_list', []), fn ($item) => $item['ip_block']);
+
+            if ($shop->website) {
+                SyncWebsiteBlockedCountries::run($shop->website, $bannedIPCountries);
+            }
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -93,7 +116,7 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.customer.identity_document_number_alt', Arr::pull($modelData, 'identity_document_number_alt_label'));
         }
 
-        // Catalogue Descriptions etc
+        // Catalogue Descriptions etc.
 
         if (Arr::has($modelData, 'collection_follow_master')) {
             data_set($modelData, 'settings.catalog.collection_follow_master', Arr::pull($modelData, 'collection_follow_master'));
@@ -128,7 +151,7 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.follow_master_pricing', Arr::pull($modelData, 'follow_master_pricing'));
         }
 
-        // Catalogue Indexing etc
+        // Catalogue Indexing etc.
 
         if (Arr::has($modelData, 'family_indexing_follow_master')) {
             data_set($modelData, 'settings.catalog.family_indexing_follow_master', Arr::pull($modelData, 'family_indexing_follow_master'));
@@ -161,9 +184,12 @@ class UpdateShop extends OrgAction
                     'faire_is_shipping_by_external' => 'settings.faire.is_shipping_by_external',
                     'faire_dont_send_first_orders_automatically_to_warehouse' => 'settings.faire.dont_send_first_orders_automatically_to_warehouse',
                     'wix_access_token' => 'settings.wix.access_token',
-                    'enable_chat'          => 'settings.chat.enable_chat',
+                    'gads_customer_id' => 'settings.google_ads.customer_id',
+                    'gads_login_customer_id' => 'settings.google_ads.login_customer_id',
+                    'gads_user_list_id' => 'settings.google_ads.user_list_id',
+                    'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
-                    'reviews' => 'settings.reviews',
+                    'review_rating_labels' => 'settings.reviews.rating_labels',
                     'bank_transfer_instructions_for_email' => 'settings.bank_transfer_instructions_for_email',
                     default => $key
                 },
@@ -188,9 +214,12 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'faire_dont_send_first_orders_automatically_to_warehouse');
         data_forget($modelData, 'is_shipping_by_external');
         data_forget($modelData, 'wix_access_token');
+        data_forget($modelData, 'gads_customer_id');
+        data_forget($modelData, 'gads_login_customer_id');
+        data_forget($modelData, 'gads_user_list_id');
         data_forget($modelData, 'portal_link');
-        data_forget($modelData, 'reviews');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
+        data_forget($modelData, 'review_rating_labels');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -203,7 +232,7 @@ class UpdateShop extends OrgAction
             }
 
             if (Arr::exists($modelData, 'chat_slack_channels')) {
-                $channels = array_values(array_filter((array) Arr::pull($modelData, 'chat_slack_channels')));
+                $channels = array_values(array_filter((array)Arr::pull($modelData, 'chat_slack_channels')));
                 data_set($settings, 'chat.slack_channels', $channels);
             }
 
@@ -293,6 +322,73 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.invoicing.download_pdf_columns", $columnsMap);
         }
 
+        if (Arr::exists($modelData, 'reviews')) {
+            data_set($modelData, 'settings.reviews.enabled', (bool)Arr::pull($modelData, 'reviews'));
+        }
+
+        if (Arr::exists($modelData, 'review_visibility')) {
+            $visibility = Arr::pull($modelData, 'review_visibility');
+            data_set($modelData, 'settings.reviews.visibility.private', (bool)data_get($visibility, 'visibility.private', false));
+            data_set($modelData, 'settings.reviews.visibility.public', (bool)data_get($visibility, 'visibility.public', true));
+        }
+
+        if (Arr::exists($modelData, 'review_publishing')) {
+            $reviewPublishing   = Arr::pull($modelData, 'review_publishing');
+            $autoPublishingMode = Arr::get($reviewPublishing, 'auto_publishing.mode');
+
+            data_set($modelData, 'settings.reviews.auto_publishing.mode', $autoPublishingMode);
+            data_set(
+                $modelData,
+                'settings.reviews.auto_publishing.delay_hours',
+                $autoPublishingMode === ReviewAutoPublishingEnum::DELAY->value
+                    ? (int)Arr::get($reviewPublishing, 'auto_publishing.delay_hours', 24)
+                    : null
+            );
+
+            if (Arr::has($shop->settings ?? [], 'reviews.auto_publishing.delay')) {
+                $settings = $shop->settings;
+                Arr::forget($settings, 'reviews.auto_publishing.delay');
+                $shop->updateQuietly(['settings' => $settings]);
+                $shop->refresh();
+            }
+        }
+
+        if (Arr::exists($modelData, 'review_public_rating_threshold')) {
+            data_set($modelData, 'settings.reviews.public_rating_threshold', (int)Arr::pull($modelData, 'review_public_rating_threshold'));
+        }
+
+        if (Arr::exists($modelData, 'review_minimum_rating_to_show')) {
+            data_set($modelData, 'settings.reviews.minimum_rating_to_show', (int)Arr::pull($modelData, 'review_minimum_rating_to_show'));
+        }
+
+        if (Arr::exists($modelData, 'review_minimum_reviews_to_show')) {
+            data_set($modelData, 'settings.reviews.minimum_reviews_to_show', (int)Arr::pull($modelData, 'review_minimum_reviews_to_show'));
+        }
+
+        if (Arr::exists($modelData, 'review_show_staff_who_reply')) {
+            data_set($modelData, 'settings.reviews.show_staff_who_reply', (bool)Arr::pull($modelData, 'review_show_staff_who_reply'));
+        }
+
+        if (Arr::exists($modelData, 'review_add_other_shops')) {
+            data_set($modelData, 'settings.reviews.add_other_shops', (bool)Arr::pull($modelData, 'review_add_other_shops'));
+        }
+
+        if (Arr::exists($modelData, 'review_approval_required')) {
+            data_set($modelData, 'settings.reviews.data.approval_required', (bool)Arr::pull($modelData, 'review_approval_required'));
+        }
+
+        if (Arr::exists($modelData, 'review_hours_after_dispatched')) {
+            data_set($modelData, 'settings.reviews.data.hours_after_dispatched', (int)Arr::pull($modelData, 'review_hours_after_dispatched'));
+        }
+
+        if (Arr::exists($modelData, 'review_allow_reactions')) {
+            data_set($modelData, 'settings.reviews.allow_reactions', Arr::pull($modelData, 'review_allow_reactions'));
+        }
+
+        if (Arr::exists($modelData, 'review_allow_reply_reactions')) {
+            data_set($modelData, 'settings.reviews.allow_reply_reactions', Arr::pull($modelData, 'review_allow_reply_reactions'));
+        }
+
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
         $shop->refresh();
@@ -357,6 +453,64 @@ class UpdateShop extends OrgAction
         $shop->refresh();
 
         return $shop;
+    }
+
+    protected function syncReviewRatingLabels(Shop $shop, ?array $reviewRatingLabels): void
+    {
+        $baseQuery = ReviewRatingLabel::query()
+            ->where('model_type', 'shop')
+            ->where('model_id', $shop->id);
+
+        if ($reviewRatingLabels === null) {
+            $baseQuery->delete();
+
+            return;
+        }
+
+        $keepKeys = [];
+
+        foreach (ReviewContextEnum::values() as $reviewContext) {
+            foreach (ReviewRatingDimensionEnum::values() as $index => $dimension) {
+                $label = trim((string)data_get($reviewRatingLabels, "$reviewContext.$dimension", ''));
+
+                if ($label === '') {
+                    continue;
+                }
+
+                $keepKey            = "$reviewContext:$dimension";
+                $keepKeys[$keepKey] = true;
+
+                ReviewRatingLabel::query()->updateOrCreate(
+                    [
+                        'model_type'     => 'shop',
+                        'model_id'       => $shop->id,
+                        'review_context' => $reviewContext,
+                        'dimension'      => $dimension,
+                    ],
+                    [
+                        'label'      => $label,
+                        'sort_order' => $index,
+                        'is_active'  => true,
+                    ]
+                );
+            }
+        }
+
+        $baseQuery
+            ->get()
+            ->each(function (ReviewRatingLabel $reviewRatingLabel) use ($keepKeys): void {
+                $reviewContext = $reviewRatingLabel->review_context instanceof ReviewContextEnum
+                    ? $reviewRatingLabel->review_context->value
+                    : (string)$reviewRatingLabel->review_context;
+                $dimension     = $reviewRatingLabel->dimension instanceof ReviewRatingDimensionEnum
+                    ? $reviewRatingLabel->dimension->value
+                    : (string)$reviewRatingLabel->dimension;
+                $key           = "$reviewContext:$dimension";
+
+                if (!isset($keepKeys[$key])) {
+                    $reviewRatingLabel->delete();
+                }
+            });
     }
 
     public function rules(): array
@@ -425,6 +579,9 @@ class UpdateShop extends OrgAction
             'faire_is_shipping_by_external'                           => ['sometimes', 'boolean'],
             'faire_dont_send_first_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
             'wix_access_token'                                        => ['sometimes', 'string'],
+            'gads_customer_id'                                        => ['sometimes', 'nullable', 'string'],
+            'gads_login_customer_id'                                  => ['sometimes', 'nullable', 'string'],
+            'gads_user_list_id'                                       => ['sometimes', 'nullable', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
@@ -441,7 +598,6 @@ class UpdateShop extends OrgAction
             'cost_price_ratio'                                        => ['sometimes', 'numeric', 'min:0'],
             'price_rrp_ratio'                                         => ['sometimes', 'numeric', 'min:0'],
             'extra_languages'                                         => ['sometimes', 'array', 'nullable'],
-            'forbidden_dispatch_countries'                            => ['sometimes', 'array', 'nullable'],
             'image'                                                   => [
                 'sometimes',
                 'nullable',
@@ -460,10 +616,50 @@ class UpdateShop extends OrgAction
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],
             'family_webpage_split_description'                        => ['sometimes', 'boolean'],
-            'reviews'                                                 => ['sometimes', 'nullable', 'array'],
+            'reviews'                                                 => ['sometimes', 'boolean'],
+            'review_rating_labels'                                    => ['sometimes', 'nullable', 'array'],
+            'review_rating_labels.*'                                  => ['sometimes', 'array'],
+            'review_rating_labels.*.*'                                => ['sometimes', 'nullable', 'string', 'max:255'],
+            'review_visibility'                                       => ['sometimes', 'nullable', 'array'],
+            'review_visibility.visibility.private'                    => ['sometimes', 'boolean'],
+            'review_visibility.visibility.public'                     => ['sometimes', 'boolean'],
+            'review_publishing'                                       => ['sometimes', 'nullable', 'array'],
+            'review_publishing.auto_publishing.mode'                  => ['sometimes', 'required', Rule::enum(ReviewAutoPublishingEnum::class)],
+            'review_publishing.auto_publishing.delay_hours'           => ['sometimes', 'nullable', 'integer', 'min:1', 'required_if:review_publishing.auto_publishing.mode,'.ReviewAutoPublishingEnum::DELAY->value],
+            'review_public_rating_threshold'                          => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'review_minimum_rating_to_show'                           => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
+            'review_minimum_reviews_to_show'                          => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'review_show_staff_who_reply'                             => ['sometimes', 'boolean'],
+            'review_add_other_shops'                                  => ['sometimes', 'boolean'],
+            'review_approval_required'                                => ['sometimes', 'boolean'],
+            'review_hours_after_dispatched'                           => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'review_allow_reactions'                                  => ['sometimes', 'boolean'],
+            'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
+            'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
+            'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],
+            'banned_countries.banned_list'                            => ['sometimes', 'nullable', 'array'],
+            'banned_countries.banned_list.*'                          => ['required', 'array'],
+            'banned_countries.banned_list.*.postcode'                 => [
+                'sometimes',
+                'string',
+                'nullable',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+
+                    // Just to check whether valid regex or not. Would throw false if it's an invalid regex since preg_match would not compile
+                    if (@preg_match($value, '') === false) {
+                        $fail('Invalid Postcode regex');
+                    }
+                },
+            ],
+            'banned_countries.banned_list.*.billing'                  => ['required', 'boolean'],
+            'banned_countries.banned_list.*.delivery'                 => ['required', 'boolean'],
+            'banned_countries.banned_list.*.ip_block'                 => ['required', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

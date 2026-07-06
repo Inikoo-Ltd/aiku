@@ -28,7 +28,7 @@ return [
     'ses' => [
         'key'               => env('AWS_ACCESS_KEY_ID'),
         'secret'            => env('AWS_SECRET_ACCESS_KEY'),
-        'region'            => env('AWS_DEFAULT_REGION', 'us-east-1'),
+        'region'            => env('AWS_DEFAULT_REGION', 'eu-west-1'),
         'configuration_set' => env('AWS_CONFIGURATION_SET'),
     ],
 
@@ -68,6 +68,11 @@ return [
         'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     ],
+    'google_ads' => [
+        'developer_token' => env('GOOGLE_ADS_DEVELOPER_TOKEN'),
+        'client_id'       => env('GOOGLE_CLIENT_ID'),
+        'client_secret'   => env('GOOGLE_CLIENT_SECRET'),
+    ],
     'slack'     => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
@@ -94,5 +99,18 @@ return [
 
     'openai' => [
         'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY')
-    ]
+    ],
+    'pastpay' => [
+        'demo_api_key' => env('PASTPAY_DEMO_API_KEY'),
+        'base_url' => env('PASTPAY_BASE_URL'),
+        'sandbox_url' => env('PASTPAY_SANDBOX_URL'),
+    ],
+    'max_mind' => [
+        'enabled' => env('MAXMIND_ENABLED', false),
+        'account_id' => env('MAXMIND_ACCOUNT_ID'),
+        'license_key' => env('MAXMIND_LICENSE_KEY'),
+    ],
+    'discord' => [
+        'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+    ],
 ];

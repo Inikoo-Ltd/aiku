@@ -1,6 +1,6 @@
 <script setup lang="ts">
     
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { faClipboard, faDollarSign, faSortNumericDown, faWeight, faMapPin } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
@@ -53,12 +53,15 @@ const props = defineProps<{
         is_collection: boolean
     }
     balance?: string
-    address_management: AddressManagement
-    is_unable_dispatch?: boolean
+    address_management?: AddressManagement
+    is_forbidden_delivery?: boolean
+    is_forbidden_billing?: boolean
     contact_address?: Address | null
-    isInBasket?: boolean
+    isShowAllOffersMeter?: boolean  // Whether to show all offers meter or only the achieved offers
     updateRoute: routeType
     missed_offers: {}
+    isInBasket?: boolean
+    isInCheckout?: boolean
 }>()
 
 const locale = inject('locale', {})
@@ -72,6 +75,11 @@ const convertToFloat2 = (val: any) => {
     const num = parseFloat(val)
     if (isNaN(num)) return 0.00
     return parseFloat(num.toFixed(2))
+}
+
+// Method: is the offer target reached
+const isOfferFulfilled = (offer: any) => {
+    return convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target)
 }
 
 // Collection feature methods
@@ -123,6 +131,10 @@ const updateCollection = (value: boolean) => {
                 <div v-else class="text-gray-400 italic pl-6 pr-3">
                     {{ trans("No billing address") }}
                 </div>
+
+                <div v-if="is_forbidden_billing" class="text-red-500 mt-3 text-xs">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}
+                </div>
             </div>
             
             <div class="">
@@ -137,7 +149,7 @@ const updateCollection = (value: boolean) => {
                                 :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
                                 @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
                                 :loading="isLoadingCollection"
-                                :disabled="!props.isInBasket"
+                                :disabled="!props.isInBasket || !props.updateRoute?.name"
                             />
                             <span class="text-sm"
                                 :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
@@ -171,65 +183,75 @@ const updateCollection = (value: boolean) => {
                         <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
                     </div>
                 
-                    <div v-if="is_unable_dispatch" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
+                    <div v-if="is_forbidden_delivery" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
                     </div>
                 </div>
             </div>
 
-            <!-- Section: Offer meters -->
+            <!-- Section: Offer meters (free gift, etc)-->
             <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
-                <div v-for="offer in layout?.offer_meters" class="grid grid-cols-2 mb-3 gap-x-4">
-                    <!-- Title: is gift -->
-                    <div v-if="offer.is_gift" :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
-                    >
-                        <FontAwesomeIcon icon='fal fa-gift' class='opacity-60 mr-1' fixed-width aria-hidden='true' />
-                        <span class="font-bold">{{ ctrans('Gift') }}</span>:
+                <template v-for="(offer, offerIndex) in layout?.offer_meters" :key="offerIndex">
+                    <div v-if="isShowAllOffersMeter || isOfferFulfilled(offer)" class="grid grid-cols-2 mb-3 gap-x-4">
+                        <!-- Title: is gift -->
+                        <div v-if="offer.is_gift" :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                            class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
+                        >
+                            <FontAwesomeIcon icon='fal fa-gift' class='opacity-60 mr-1' fixed-width aria-hidden='true' />
+                            <span class="font-bold">{{ ctrans('Gift') }}</span>:
 
-                        <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
-                        <!-- <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" /> -->
+                            <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
+                            <!-- <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" /> -->
 
-                        <span class="ml-2 xopacity-70">
-                            {{ offer.label }}
-                        </span>
-                    </div>
-
-                    <div v-else :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
-                        class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
-                    >
-                        <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-base text-ellipsis truncate">
-                            {{ offer.label}}
-                        </div>
-                        <div v-else v-tooltip="offer.label_got ?? offer.label" class="text-base text-green-600 text-ellipsis truncate">
-                            {{ offer.label_got ?? offer.label}}
+                            <span class="ml-2 xopacity-70">
+                                {{ offer.label }}
+                            </span>
                         </div>
 
-                        <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
-                        <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" />
-                    </div>
-                    
-                    <!-- Section: meter -->
-                    <div v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
-                        ? ctrans(`:xcurrentx / :xtargetx  (Spend at least :xtargetx to get the offer)`, { xcurrentx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtargetx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
-                        : ctrans('Offer activated')" class="w-full flex items-center">
-                        <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
-                            <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
-                                :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
-                                :style="{
-                                    width: convertToFloat2(offer.metadata?.target) ? convertToFloat2(offer.metadata?.current)/convertToFloat2(offer.metadata?.target) * 100 + '%' : '100%'
-                                }"
-                            />
+                        <div v-else :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
+                            class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
+                        >
+                            <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-base text-ellipsis truncate">
+                                {{ offer.label}}
+                            </div>
+                            <div v-else v-tooltip="offer.label_got ?? offer.label" class="text-base text-green-600 text-ellipsis truncate">
+                                {{ offer.label_got ?? offer.label}}
+                            </div>
+
+                            <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
+                            <FontAwesomeIcon v-if="!(convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target))" icon="fas fa-check-circle" class="ml-1" fixed-width aria-hidden="true" />
+                        </div>
+                        
+                        <!-- Section: meter -->
+                        <div v-if="isShowAllOffersMeter" v-tooltip="convertToFloat2(offer.metadata?.target) && convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)
+                            ? ctrans(`:xcurrentx / :xtargetx  (Spend at least :xtargetx to get the offer)`, { xcurrentx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.current)), xtargetx: locale.currencyFormat(layout.iris?.currency?.code, convertToFloat2(offer.metadata?.target)) })
+                            : ctrans('Offer activated')" class="w-full flex items-center">
+                            <div class="w-full rounded-full h-2 bg-gray-200 relative overflow-hidden">
+                                <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
+                                    :class="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target) ? 'shimmer bg-green-400' : 'bg-green-500'"
+                                    :style="{
+                                        width: convertToFloat2(offer.metadata?.target) ? convertToFloat2(offer.metadata?.current)/convertToFloat2(offer.metadata?.target) * 100 + '%' : '100%'
+                                    }"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Section: fulfilled check (when not in basket) -->
+                        <div v-else class="w-full flex items-center justify-end">
+                            <span v-tooltip="ctrans('Offer activated')">
+                                <FontAwesomeIcon icon="fas fa-check-circle" class="text-green-500" fixed-width aria-hidden="true" />
+                            </span>
                         </div>
                     </div>
-                </div>
+                </template>
             </div>
 
             <!-- Section: Missed Offers -->
             <Transition v-if="layout.app.environment === 'local'" name="slide-to-right">
                 <div v-if="Object.values(missed_offers || {}).length" class="xborder border-red-200 xbg-red-50 rounded-md p-3">
                     <div class="text-xs text-red-500 font-bold mb-0">
-                        {{ trans('You missed ( :numberMissedOffer ) offers', { numberMissedOffer: Object.values(missed_offers || {}).length }) }}
+                        <!-- <span class="bg-red-500 text-white">(local only)</span> -->
+                        {{ ctrans('You missed ( :numberMissedOffer ) offers', { numberMissedOffer: Object.values(missed_offers || {}).length }) }}
                     </div>
                     <div class="flex flex-col gap-y-2">
                         <TransitionGroup name="list" tag="ul" class="!m-0">
@@ -249,7 +271,7 @@ const updateCollection = (value: boolean) => {
         <!-- Section: amount of balance, charges, shipping, tax -->
         <div class="col-span-2 md:col-span-1">
             <div v-if="!order" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
-                <div class="">{{ trans("Current balance") }}:</div>
+                <div class="">{{ ctrans("Current balance") }}:</div>
                 <div>
                     {{ locale.currencyFormat(layout?.iris?.currency?.code, balance ?? 0) }}
                 </div>
@@ -262,7 +284,11 @@ const updateCollection = (value: boolean) => {
                 </div>
             </div>
 
-            <template v-else-if="summary?.products?.payment?.pay_status != 'no_need' && !isInBasket">
+            <div v-else-if="order?.state === 'handling_blocked'">
+                <!-- INI-1521: hide payment status if handling_blocked -->
+            </div>
+
+            <template v-else-if="summary?.products?.payment?.pay_status != 'no_need' && !(isInBasket || isInCheckout)">
                 <div class="w-full mb-2.5">
                     <!-- Section: pay with balance (if order Submit without paid) -->
                     <div class="w-full rounded-md shadow pxb-2 isolate border overflow-hidden"
@@ -292,7 +318,7 @@ const updateCollection = (value: boolean) => {
             <div>
                 <!-- Field: weight -->
                 <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                    <dt v-tooltip="trans('Weight')" class="flex-none pl-1">
+                    <dt v-tooltip="ctrans('Weight')" class="flex-none pl-1">
                         <FontAwesomeIcon :icon="faWeight" fixed-width aria-hidden="true" class="text-gray-500" />
                     </dt>
                     <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
@@ -305,7 +331,35 @@ const updateCollection = (value: boolean) => {
                 <OrderSummary
                     :order_summary="summary.order_summary"
                     :currency_code="layout?.iris?.currency?.code"
-                />
+                >
+                    <template #cell_shipping_1="{ fieldSummary }">
+                        <dt class="col-span-3 flex flex-col">
+                            <div class="flex items-center leading-none" :class="fieldSummary.label_class">
+                                <span
+                                    :class="fieldSummary.data.discounted_shipping_offer_id ? 'text-green-500' : ''"
+                                >
+                                    {{ fieldSummary.label }}
+                                </span>
+
+                                <FontAwesomeLayers v-if="fieldSummary.data.discounted_shipping_offer_id" v-tooltip="ctrans('Shipping discount')" class="ml-1 me-2 text-green-500">
+                                    <FontAwesomeIcon fixed-width icon="fal fa-truck"/>
+                                    <FontAwesomeIcon fixed-width icon="fas fa-percent" style="left: unset; right: 6px; bottom: 2px; width: 30%;"/>
+                                </FontAwesomeLayers>
+
+                                <!-- qq{{ fieldSummary.data.discounted_shipping_offer_id }}ww -->
+                                <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle'
+                                    v-tooltip="fieldSummary.information_icon"
+                                    class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width
+                                    aria-hidden='true'
+                                />
+                                
+                            </div>
+                            <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">
+                                {{ fieldSummary.information }}
+                            </span>
+                        </dt>
+                    </template>
+                </OrderSummary>
             </div>
         </div>
 

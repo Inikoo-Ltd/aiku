@@ -27,8 +27,7 @@ class RepairDiscontinuedFamilyWebpages
         if ($productCategory->webpage) {
             $result = CloseDiscontinuedWebpage::run($productCategory->webpage);
 
-            if (Arr::has($result,'redirect_to'))
-            {
+            if (Arr::has($result, 'redirect_to')) {
                 $command->info(sprintf(
                     'Redirecting discontinued family %s to %s',
                     $productCategory->slug,
@@ -37,7 +36,7 @@ class RepairDiscontinuedFamilyWebpages
             } else {
                 $command->error(sprintf(
                     'No redirect found for discontinued family %s. Error: %s',
-                    $productCategory->slug, 
+                    $productCategory->slug,
                     data_get($result, 'error', 'n/a error message')
                 ));
                 exit;

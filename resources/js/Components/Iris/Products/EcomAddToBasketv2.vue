@@ -131,7 +131,10 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
             [product.value.id]: {
                 transaction_id: payload.transaction_id,
                 quantity_ordered: payload.quantity_ordered,
-                quantity_ordered_new:  payload.quantity_ordered
+                quantity_ordered_new:  payload.quantity_ordered,
+                department_id: payload.department_id,
+                sub_department_id: payload.sub_department_id,
+                family_id: payload.family_id,
             }
         }
         set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
@@ -189,7 +192,10 @@ const onUpdateQuantity = async () => {
             [product.value.id]: {
                 transaction_id: transactionId,
                 quantity_ordered: payload.quantity_ordered,
-                quantity_ordered_new:  qty
+                quantity_ordered_new:  qty,
+                department_id: payload.department_id,
+                sub_department_id: payload.sub_department_id,
+                family_id: payload.family_id,
             }
         }
         set(layout, ['family_page', 'productInBasket', 'list'], updatedList)

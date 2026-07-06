@@ -18,6 +18,7 @@ class StoreEmailAddress
 
     public function handle(Group $group, string $email): EmailAddress
     {
+        /** @var EmailAddress $emailAddress */
         $emailAddress = $group->emailAddresses()->where('email', $email)->first();
         if (!$emailAddress) {
             $emailAddress = $group->emailAddresses()->create(

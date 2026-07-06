@@ -50,12 +50,11 @@ class ShowFulfilmentInvoice extends OrgAction
 
     protected function getParent(ActionRequest $request): Organisation|null
     {
-
         if (!$request->route()) {
             return null;
         }
 
-        $parent    = null;
+        $parent = null;
 
 
         $routeName = $request->route()->getName();
@@ -118,10 +117,14 @@ class ShowFulfilmentInvoice extends OrgAction
     }
 
 
-    public function htmlResponse(Invoice $invoice, ActionRequest $request, $tab = null): Response
+    public function htmlResponse(Invoice $invoice, ActionRequest $request, $tab = null, $parent = null): Response
     {
         if ($tab !== null) {
             $this->tab = $tab;
+        }
+
+        if ($parent !== null) {
+            $this->parent = $parent;
         }
 
         $subNavigation = [];
@@ -158,14 +161,14 @@ class ShowFulfilmentInvoice extends OrgAction
                     'next'     => $this->getNextModel($invoice, $request),
                 ],
                 'pageHead'    => [
-                    'subNavigation' => $subNavigation,
-                    'model'         => __('invoice'),
-                    'title'         => $invoice->reference,
-                    'icon'          => [
+                    'subNavigation'   => $subNavigation,
+                    'model'           => __('invoice'),
+                    'title'           => $invoice->reference,
+                    'icon'            => [
                         'icon'  => ['fal', 'fa-file-invoice-dollar'],
                         'title' => $invoice->reference
                     ],
-                    'wrapped_actions'       => $actions
+                    'wrapped_actions' => $actions
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -207,11 +210,11 @@ class ShowFulfilmentInvoice extends OrgAction
 
             ]
         )
-        ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: FulfilmentInvoiceTabsEnum::REFUNDS->value))
-        ->table(IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure(invoice: $invoice, prefix: FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-        ->table(IndexInvoiceTransactions::make()->tableStructure(prefix: FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-        ->table(IndexDispatchedEmails::make()->tableStructure(parent: $invoice->customer, prefix: FulfilmentInvoiceTabsEnum::EMAIL->value))
-        ->table(IndexPayments::make()->tableStructure(parent: $invoice, modelOperations: [], prefix: FulfilmentInvoiceTabsEnum::PAYMENTS->value));
+            ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: FulfilmentInvoiceTabsEnum::REFUNDS->value))
+            ->table(IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure(invoice: $invoice, prefix: FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+            ->table(IndexInvoiceTransactions::make()->tableStructure(prefix: FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+            ->table(IndexDispatchedEmails::make()->tableStructure(parent: $invoice->customer, prefix: FulfilmentInvoiceTabsEnum::EMAIL->value))
+            ->table(IndexPayments::make()->tableStructure(parent: $invoice, modelOperations: [], prefix: FulfilmentInvoiceTabsEnum::PAYMENTS->value));
     }
 
 
@@ -219,10 +222,6 @@ class ShowFulfilmentInvoice extends OrgAction
     {
         return new InvoiceResource($invoice);
     }
-
-
-
-
 
 
 }

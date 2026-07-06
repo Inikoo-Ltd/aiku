@@ -66,6 +66,36 @@ trait WithReorderWebpages
         UpdateWebpageContent::run($webpage->refresh());
     }
 
+    public function ensureFamilyPageHasRequiredBlocks(Webpage $webpage): void
+    {
+        $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
+
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'luigi-trends-1');
+        }
+
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'luigi-last-seen-1');
+        }
+
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-customer-recently-bought-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
+        }
+
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-from-master');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'recommendation-from-master');
+        }
+
+        $countRelatedProductCategoryBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master');
+        if (count($countRelatedProductCategoryBlock) == 0) {
+            $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
+        }
+    }
+
     public function reorderFamilyPageBlocks(Webpage $webpage, $familyWebBlockCode = 'family-1'): void
     {
         $familyWebBlock = $this->getWebpageBlocksByType($webpage, $familyWebBlockCode)->first()->model_has_web_blocks_id;
