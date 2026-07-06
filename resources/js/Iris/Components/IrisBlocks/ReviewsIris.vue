@@ -199,6 +199,31 @@ const totalReviews = computed(() => reviewsData.value.meta?.total ?? 0)
 const selectedReview = ref<any>(null)
 const reviewModalVisible = ref(false)
 
+const showOriginal = ref<Record<number, boolean>>({})
+
+const hasMessageTranslation = (review: any) =>
+    !!review?.message_translated && review.message_translated !== review.message
+
+const hasReplyTranslation = (review: any) =>
+    !!review?.reply_translated && review.reply_translated !== review.reply
+
+const hasTranslation = (review: any) =>
+    hasMessageTranslation(review) || hasReplyTranslation(review)
+
+const displayMessage = (review: any) =>
+    hasMessageTranslation(review) && !showOriginal.value[review.id]
+        ? review.message_translated
+        : review.message
+
+const displayReply = (review: any) =>
+    hasReplyTranslation(review) && !showOriginal.value[review.id]
+        ? review.reply_translated
+        : review.reply
+
+const toggleTranslation = (review: any) => {
+    showOriginal.value[review.id] = !showOriginal.value[review.id]
+}
+
 const openReview = (review: any) => {
     selectedReview.value = review
     reviewModalVisible.value = true
@@ -323,11 +348,17 @@ console.log('plm',layout)
                         </div>
 
                         <p class="mt-2 h-20 overflow-hidden text-xs leading-5 text-gray-600 line-clamp-4">
-                            {{ review.message }}
+                            {{ displayMessage(review) }}
                         </p>
-                        
-                        <div class="mt-auto text-[11px] text-gray-400 w-fit">
-                            <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location[1] != layout?.iris?.shop?.location[1]" />
+
+                        <div class="flex justify-between mt-auto text-[11px] text-gray-400 w-full">
+                            <div class="flex items-center w-fit">
+                                <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location[1] != layout?.iris?.shop?.location[1]" />
+                            </div>
+                            <div v-if="hasTranslation(review)" @click.stop="toggleTranslation(review)"
+                                class="text-gray-400 hover:text-gray-700 cursor-pointer">
+                                {{ showOriginal[review.id] ? ctrans("See translation") : ctrans("See original") }}
+                            </div>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="text-[11px] text-gray-400">
@@ -419,8 +450,12 @@ console.log('plm',layout)
 
         <div class="px-5 pb-4">
             <p class="whitespace-pre-line text-sm leading-6 text-gray-700">
-                {{ selectedReview.message }}
+                {{ displayMessage(selectedReview) }}
             </p>
+            <div v-if="hasMessageTranslation(selectedReview)" @click="toggleTranslation(selectedReview)"
+                class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
+                {{ showOriginal[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
+            </div>
             <div v-if="selectedReview.web_images?.length" class="flex gap-3">
                 <button v-for="(image, index) in selectedReview.web_images" :key="image.id ?? index" type="button"
                     class="group relative aspect-square w-12 h-12 cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
@@ -468,8 +503,12 @@ console.log('plm',layout)
                 </div>
 
                 <p class="whitespace-pre-line text-sm leading-6 text-gray-700">
-                    {{ selectedReview.reply }}
+                    {{ displayReply(selectedReview) }}
                 </p>
+                <div v-if="hasReplyTranslation(selectedReview)" @click="toggleReplyTranslation(selectedReview)"
+                    class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
+                    {{ showOriginalReply[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
+                </div>
                 <div class="flex items-center w-full justify-end gap-2"
                     v-if="allow_review_reply_reaction && layout?.iris?.is_logged_in">
                     <button :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"

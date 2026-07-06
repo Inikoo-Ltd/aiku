@@ -35,6 +35,7 @@ const props = defineProps<{
     minimum_reviews_to_show : number
     webpage_slug : string
     show_staff_who_reply : boolean
+    webpage_id : number
 }>()
 
 defineOptions({ layout: LayoutIris })
@@ -136,7 +137,7 @@ onBeforeUnmount(() => {
                 v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)">
                 <div>
                  <!--    <ReviewByStore :code="'review-by-store'" /> -->
-                     <ReviewsIris :webpage_slug />
+                     <ReviewsIris :webpage_slug="webpage_id" />
                 </div>
             </div>
 

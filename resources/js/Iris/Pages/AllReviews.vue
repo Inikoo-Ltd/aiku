@@ -274,7 +274,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
 
                         <div class="mt-6">
 
-                            <ListReviews v-if="hasReviews" :data="props.reviews" :tab="activeTab"
+                            <ListReviews  :data="props.reviews" :tab="activeTab"
                                 :readonly="!layout?.iris?.is_logged_in" :showTagVisibleType="false" :review_settings
                                 :reaction_routes="{
                                     name: 'iris.models.review.react'
@@ -303,12 +303,6 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
 
                             </ListReviews>
 
-                            <div v-else
-                                class="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
-
-                                No reviews have been published yet.
-
-                            </div>
 
                         </div>
 

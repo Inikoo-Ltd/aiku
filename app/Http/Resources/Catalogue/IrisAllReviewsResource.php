@@ -29,6 +29,8 @@ class IrisAllReviewsResource extends JsonResource
             default   => null,
         };
 
+        $languageId = $this->language_id;
+
         return [
             'review_id'       => (int) $this->id,
             'scope'           => $scope,
@@ -41,6 +43,7 @@ class IrisAllReviewsResource extends JsonResource
                 'review_id'     => (int) $this->id,
                 'rating'        => $this->rating_main !== null ? (float) $this->rating_main : null,
                 'message'       => $this->message,
+                'message_translated'    => data_get($this->translations, "message.$languageId", null),
                 'is_public'     => (bool) $this->is_public,
                 'review_images' => $this->web_images ?? [],
                 'likes'         => (int) ($this->likes ?? 0),
@@ -51,6 +54,7 @@ class IrisAllReviewsResource extends JsonResource
                     'contact_name' => $this->reply_by,
                     'likes'        => (int) ($this->replay_likes ?? 0),
                     'dislikes'     => (int) ($this->replay_dislikes ?? 0),
+                    'reply_translated'      => data_get($this->translations, "reply_message.$languageId", null),
                 ] : null,
             ],
             'review_reaction' => ReviewReactionTypeEnum::getValue($this->review_reaction),
