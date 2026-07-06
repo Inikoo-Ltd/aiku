@@ -72,6 +72,23 @@ class UpdateGroupSettings extends GrpAction
             data_forget($modelData, 'print_by_printnode');
         }
 
+        if (Arr::has($modelData, 'access_id')) {
+            data_set($groupSettings, 'email.provider.access_id', Arr::get($modelData, 'access_id'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'access_id');
+        }
+        if (Arr::has($modelData, 'access_key')) {
+            data_set($groupSettings, 'email.provider.access_key', Arr::get($modelData, 'access_key'));
+
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'access_key');
+        }
+        if (Arr::has($modelData, 'region')) {
+            data_set($groupSettings, 'email.provider.region', Arr::get($modelData, 'region'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'region');
+        }
+
         return $this->update($group, $modelData);
     }
 
@@ -100,6 +117,9 @@ class UpdateGroupSettings extends GrpAction
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
+            'access_id'                    => ['sometimes', 'string', 'nullable'],
+            'access_key'                   => ['sometimes', 'string', 'nullable'],
+            'region'                       => ['sometimes', 'string', 'nullable'],
         ];
     }
 

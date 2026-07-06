@@ -12,7 +12,7 @@ use Aws\Ses\SesClient;
 
 trait AwsClient
 {
-    public function getSesClient(): SesClient
+    public function getSesClient(?int $outboxId = null): SesClient
     {
         return new SesClient([
             'version'     => 'latest',
