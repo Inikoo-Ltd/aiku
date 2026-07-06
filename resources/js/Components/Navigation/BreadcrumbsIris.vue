@@ -181,6 +181,7 @@ onUnmounted(() => {
                         <component
                             :is="breadcrumb.simple.url || breadcrumb.simple.route?.name ? Link : 'span'"
                             :href="breadcrumb.simple.url ? breadcrumb.simple.url : breadcrumb.simple?.route?.name ? route( breadcrumb.simple.route.name, breadcrumb.simple.route.parameters ) : '#' "
+                            :aria-label="breadcrumb.simple.label || breadcrumb.simple.route?.name || ctrans('Breadcrumb link :idxBreadcrumb', { idxBreadcrumb: breadcrumbIdx})"
                             class="hover:text-gray-700 overflow-hidden flex items-center"
                         >
                             <Transition name="spin-to-down">
