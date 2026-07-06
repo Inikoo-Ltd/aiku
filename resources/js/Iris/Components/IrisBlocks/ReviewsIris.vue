@@ -46,7 +46,7 @@ const fetchMoreReviews = async () => {
 
     try {
         const { data } = await axios.get(
-            route("iris.json.fetch_reviews", { webpage: props.webpage_id }),
+            route("iris.json.fetch_reviews_new", { webpage: props.webpage_id }),
             { params: { page: currentPage + 1 } }
         )
 
