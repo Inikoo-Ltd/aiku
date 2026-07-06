@@ -41,7 +41,7 @@ class DeleteOrgStockFamily extends OrgAction
             DB::table('org_stock_movements')->where('org_stock_family_id', $orgStockFamily->id)->update(['org_stock_family_id' => null]);
             DB::table('delivery_note_items')->where('org_stock_family_id', $orgStockFamily->id)->update(['org_stock_family_id' => null]);
 
-            foreach ($orgStockFamily->orgStocks() as $orgStock) {
+            foreach ($orgStockFamily->orgStocks as $orgStock) {
                 UpdateOrgStock::make()->action($orgStock, ['org_stock_family_id' => null]);
             }
 
@@ -77,7 +77,7 @@ class DeleteOrgStockFamily extends OrgAction
     public function action(OrgStockFamily $orgStockFamily): void
     {
         $this->asAction = true;
-        $this->initialisationFromGroup($orgStockFamily->group, []);
+        $this->initialisation($orgStockFamily->organisation, []);
 
         $this->handle($orgStockFamily);
     }
