@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { get } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
+import RadioButton from 'primevue/radiobutton'
 
 interface ScopeOption {
     value: string
@@ -73,20 +74,24 @@ const fieldNameString = computed(() => props.fieldName)
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-6">
-                                <label
+                                <div
                                     v-for="option in scopeOptions"
                                     :key="`${row.context}-${option.value}`"
-                                    class="flex items-center gap-2 cursor-pointer"
+                                    class="flex items-center gap-2"
                                 >
-                                    <input
-                                        type="radio"
+                                    <RadioButton
+                                        v-model="row.scope"
+                                        :inputId="`${fieldNameString}-${row.context}-${option.value}`"
                                         :name="`${fieldNameString}-${row.context}`"
                                         :value="option.value"
-                                        v-model="row.scope"
-                                        class="text-indigo-600 focus:ring-indigo-500"
                                     />
-                                    <span class="text-sm text-gray-700">{{ option.label }}</span>
-                                </label>
+                                    <label
+                                        :for="`${fieldNameString}-${row.context}-${option.value}`"
+                                        class="text-sm text-gray-700 cursor-pointer"
+                                    >
+                                        {{ option.label }}
+                                    </label>
+                                </div>
                             </div>
                         </td>
                     </tr>
