@@ -47,11 +47,20 @@ class HandleIrisInertiaRequests extends Middleware
         if (!$request->inertia() || Session::get('reloadLayout')) {
             $websiteTheme = Arr::get($website->published_layout, 'theme');
 
+
+
+
             $firstLoadOnlyProps = [
                 'currency'    => $request->input('currency_data'),
                 'environment' => app()->environment(),
                 'ziggy'       => function () use ($request) {
-                    return array_merge(new Ziggy('iris')->toArray(), [
+                    $ziggyRoutes=new Ziggy('iris')->toArray();
+
+                    //unset($ziggyRoutes['routes']['iris.json.footer']);
+
+                    $ziggyRoutes=[];
+
+                    return array_merge($ziggyRoutes, [
                         'location' => $request->url()
                     ]);
                 },
