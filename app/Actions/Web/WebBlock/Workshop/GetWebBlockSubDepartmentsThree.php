@@ -28,7 +28,7 @@ class GetWebBlockSubDepartmentsThree
         if (!$department instanceof ProductCategory || $department->type != ProductCategoryTypeEnum::DEPARTMENT) {
             return null;
         }
-         $permissions = [''];
+        $permissions = [''];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $department->name);
