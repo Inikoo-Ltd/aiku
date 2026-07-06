@@ -21,7 +21,7 @@ import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 
 
 const props = defineProps<{
-    webpage_slug?: string
+    webpage_id?: string
 }>()
 
 const reviewsData = ref({ data: [] as any[], meta: { current_page: 0, last_page: 1, total: 0 } })
@@ -46,7 +46,7 @@ const fetchMoreReviews = async () => {
 
     try {
         const { data } = await axios.get(
-            route("iris.json.fetch_reviews", { webpage: props.webpage_slug }),
+            route("iris.json.fetch_reviews", { webpage: props.webpage_id }),
             { params: { page: currentPage + 1 } }
         )
 
