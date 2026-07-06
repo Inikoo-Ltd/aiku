@@ -31,9 +31,9 @@ class GetIrisProductReviews
         $queryBuilder = QueryBuilder::for(Review::class);
         if (Arr::get($setting, 'enabled', false)) {
             if (Arr::get($setting, 'scope') == 'group') {
-                $queryBuilder->where('group_id', $product->group_id);
+                $queryBuilder->where('reviews.group_id', $product->group_id);
             } else {
-                $queryBuilder->where('organisation_id', $product->organisation_id);
+                $queryBuilder->where('reviews.organisation_id', $product->organisation_id);
             }
             $queryBuilder->where('master_product_id', $product->master_product_id);
         } else {
@@ -65,7 +65,7 @@ class GetIrisProductReviews
                 'customers.contact_name',
             ])
             ->leftJoin('customers', 'customers.id', '=', 'reviews.customer_id')
-            ->defaultSort('-created_at')
+            ->defaultSort('-reviews.created_at')
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
