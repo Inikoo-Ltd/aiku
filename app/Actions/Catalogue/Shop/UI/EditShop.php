@@ -634,6 +634,27 @@ class EditShop extends OrgAction
                         default => []
                     } : [],
                 [
+                    'label'  => __('Email Provider'),
+                    'icon'   => 'fa-light fa-satellite-dish',
+                    'fields' => [
+                        'access_id'  => [
+                            'type'  => 'input',
+                            'label' => __('Access ID'),
+                            'value' => Arr::get($shop->settings, 'email.provider.access_id', ''),
+                        ],
+                        'access_key' => [
+                            'type'  => 'input',
+                            'label' => __('Access Key'),
+                            'value' => Arr::get($shop->settings, 'email.provider.access_key', ''),
+                        ],
+                        'region'     => [
+                            'type'  => 'input',
+                            'label' => __('Region'),
+                            'value' => Arr::get($shop->settings, 'email.provider.region', ''),
+                        ],
+                    ],
+                ],
+                [
                     'label'  => __('Chat'),
                     'icon'   => 'fal fa-comment-alt',
                     'fields' => [

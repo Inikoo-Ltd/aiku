@@ -192,6 +192,9 @@ class UpdateShop extends OrgAction
                     'portal_link' => 'settings.portal.link',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
                     'bank_transfer_instructions_for_email' => 'settings.bank_transfer_instructions_for_email',
+                    'access_id' => 'settings.email.provider.access_id',
+                    'access_key' => 'settings.email.provider.access_key',
+                    'region' => 'settings.email.provider.region',
                     default => $key
                 },
                 $value
@@ -221,6 +224,9 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
         data_forget($modelData, 'review_rating_labels');
+        data_forget($modelData, 'access_id');
+        data_forget($modelData, 'access_key');
+        data_forget($modelData, 'region');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -656,6 +662,9 @@ class UpdateShop extends OrgAction
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'access_id'                                               => ['sometimes', 'nullable', 'string'],
+            'access_key'                                              => ['sometimes', 'nullable', 'string'],
+            'region'                                                  => ['sometimes', 'nullable', 'string'],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],
