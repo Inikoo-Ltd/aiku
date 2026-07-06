@@ -24,7 +24,7 @@ class GetIrisProductReviews
 {
     use asObject;
 
-    public function handle(Product $product,$prefix=null): LengthAwarePaginator
+    public function handle(Product $product, $prefix = null): LengthAwarePaginator
     {
         $setting = Arr::get($product->shop->settings, 'reviews.validation_scope.product', []);
 
@@ -70,10 +70,7 @@ class GetIrisProductReviews
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
-
-
     }
 
-   Ω
 
 }
