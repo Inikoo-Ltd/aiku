@@ -95,18 +95,19 @@ class IndexDeliveryNoteItemsV2 extends OrgAction
 
             ])
             ->addSelect([
-                // 'un_numbers' => DB::table('trade_units')
-                //     ->join('model_has_trade_units', function ($join) {
-                //         $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
-                //             ->where('model_has_trade_units.model_type', 'OrgStock');
-                //     })
-                //     ->whereColumn('model_has_trade_units.model_id', 'org_stocks.id')
-                //     ->whereNotNull('trade_units.un_number')
-                //     ->where('trade_units.un_number', '<>', 'None')
-                //     ->selectRaw('jsonb_object_agg(
-                //             trade_units.proper_shipping_name, 
-                //             trade_units.un_number
-                //         )'),
+                 'un_numbers' => DB::table('trade_units')
+                     ->join('model_has_trade_units', function ($join) {
+                         $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
+                             ->where('model_has_trade_units.model_type', 'OrgStock');
+                     })
+                     ->whereColumn('model_has_trade_units.model_id', 'org_stocks.id')
+                     ->whereNotNull('trade_units.un_number')
+                     ->whereNotNull('trade_units.proper_shipping_name')
+                     ->where('trade_units.un_number', '<>', 'None')
+                     ->selectRaw('jsonb_object_agg(
+                             trade_units.proper_shipping_name,
+                             trade_units.un_number
+                         )'),
                 'pickings' => DB::table('pickings')
                     ->leftJoin('locations', 'locations.id', '=', 'pickings.location_id')
                     ->leftJoin('batch_codes', 'pickings.batch_code_id', '=', 'batch_codes.id')
@@ -166,18 +167,17 @@ class IndexDeliveryNoteItemsV2 extends OrgAction
                 $allowAction = $parent->id == data_get($tempHandler, 'value') && now()->lt(data_get($tempHandler, 'expires_at'));
             }
 
+            $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false);
             if (!$parent || !$allowAction) {
-                $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false, sortable: false, searchable: false);
                 $table->column(key: 'quantity_required_readonly', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked_readonly', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_packed_readonly', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             } else {
-                $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false, sortable: false, searchable: false);
                 $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 $table->column(key: 'quantity_packed', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 if ($isEditable) {
-                    $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: false, searchable: false, className: 'w-[250px]');
+                    $table->column(key: 'action', label: __('Action'), canBeHidden: false, className: 'w-[250px]');
                 }
             }
         };

@@ -56,15 +56,16 @@ class IndexDeliveryNoteItemsStateUnassignedV2 extends OrgAction
                 'org_stocks.packed_in'
             ])
             ->addSelect([
-                // 'un_numbers' => DB::table('trade_units')
-                //     ->join('model_has_trade_units', function ($join) {
-                //         $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
-                //             ->where('model_has_trade_units.model_type', 'OrgStock');
-                //     })
-                //     ->whereColumn('model_has_trade_units.model_id', 'org_stocks.id')
-                //     ->whereNotNull('trade_units.un_number')
-                //     ->where('trade_units.un_number', '<>', 'None')
-                //     ->selectRaw('jsonb_object_agg(trade_units.proper_shipping_name, trade_units.un_number)'),
+                 'un_numbers' => DB::table('trade_units')
+                     ->join('model_has_trade_units', function ($join) {
+                         $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
+                             ->where('model_has_trade_units.model_type', 'OrgStock');
+                     })
+                     ->whereColumn('model_has_trade_units.model_id', 'org_stocks.id')
+                     ->whereNotNull('trade_units.un_number')
+                     ->whereNotNull('trade_units.proper_shipping_name')
+                     ->where('trade_units.un_number', '<>', 'None')
+                     ->selectRaw('jsonb_object_agg(trade_units.proper_shipping_name, trade_units.un_number)'),
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required'])
             ->allowedFilters([$globalSearch])
