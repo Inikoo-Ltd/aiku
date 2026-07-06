@@ -2,8 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { get } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
-import RadioButton from 'primevue/radiobutton'
-import ToggleSwitch from 'primevue/toggleswitch'
+import Toggle from '@/Components/Pure/Toggle.vue'
 
 interface ScopeOption {
     value: string
@@ -14,32 +13,36 @@ interface ScopeRow {
     context: string
     label: string
     enabled: boolean
-    scope: string
+    organisation: boolean
+    group: boolean
 }
 
 const props = defineProps<{
     form: any
     fieldName: string
-    options?: ScopeOption[]
     fieldData?: any
 }>()
 
-const scopeOptions = computed<ScopeOption[]>(() =>
-    props.options ??
-    props.fieldData?.options ?? [
-        { value: 'organisation', label: trans('Organisation') },
-        { value: 'group', label: trans('Group') },
-    ]
-)
+const scopeOptions: ScopeOption[] = [
+    { value: 'organisation', label: trans('This organisation only') },
+    { value: 'group', label: trans('All') },
+]
+
+const rowLabels: Record<string, string> = {
+    shop: trans('Shop'),
+    family: trans('Family'),
+    product: trans('Product'),
+}
 
 const initialValue: ScopeRow[] = Array.isArray(props.form[props.fieldName]) ? props.form[props.fieldName] : []
 
 const rows = ref<ScopeRow[]>(
     initialValue.map((row) => ({
         context: row.context,
-        label: row.label,
+        label: rowLabels[row.context] ?? row.context,
         enabled: row.enabled ?? false,
-        scope: row.scope ?? scopeOptions.value[0]?.value,
+        organisation: row.organisation ?? false,
+        group: row.group ?? false,
     }))
 )
 
@@ -48,63 +51,63 @@ const syncForm = () => {
         context: row.context,
         label: row.label,
         enabled: row.enabled,
-        scope: row.scope,
+        organisation: row.organisation,
+        group: row.group,
     }))
 }
 
 watch(rows, syncForm, { deep: true })
 
+const setScope = (row: ScopeRow, key: 'organisation' | 'group', value: boolean): void => {
+    row[key] = value
+
+    if (value) {
+        const other = key === 'organisation' ? 'group' : 'organisation'
+        row[other] = false
+    }
+}
+
 const fieldNameString = computed(() => props.fieldName)
-
-
 </script>
 
 <template>
     <div class="w-full">
-        <div class="overflow-hidden rounded-lg border border-gray-200">
-            <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200 text-xs">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th scope="col" class="px-4 py-2 text-left font-medium text-gray-500">
+                        <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500">
                             {{ trans('Type') }}
                         </th>
-                        <th scope="col" class="px-4 py-2 text-left font-medium text-gray-500">
+                        <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500">
                             {{ trans('Include') }}
                         </th>
-                        <th scope="col" class="px-4 py-2 text-left font-medium text-gray-500">
-
-                        </th>
+                        <th scope="col" class="px-3 py-2 text-left font-medium text-gray-500"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     <tr v-for="row in rows" :key="row.context">
-                        <td class="px-4 py-3 font-medium text-gray-700">
+                        <td class="px-3 py-3 font-medium text-gray-700">
                             {{ row.label }}
                         </td>
-                        <td class="px-4 py-3">
-                            <ToggleSwitch v-model="row.enabled" />
+                        <td class="px-3 py-3">
+                            <Toggle v-model="row.enabled" />
                         </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-6" :class="{ 'opacity-20': !row.enabled }">
-                                <div
-                                    v-for="option in scopeOptions"
-                                    :key="`${row.context}-${option.value}`"
-                                    class="flex items-center gap-2"
-                                >
-                                    <RadioButton
-                                        v-model="row.scope"
-                                        :inputId="`${fieldNameString}-${row.context}-${option.value}`"
-                                        :name="`${fieldNameString}-${row.context}`"
-                                        :value="option.value"
-                                        :disabled="!row.enabled"
+                        <td class="px-3 py-3">
+                            <div v-if="row.enabled" class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+                                <div class="flex items-center gap-2">
+                                    <Toggle
+                                        :modelValue="row.organisation"
+                                        @update:modelValue="(val) => setScope(row, 'organisation', val)"
                                     />
-                                    <label
-                                        :for="`${fieldNameString}-${row.context}-${option.value}`"
-                                        class="text-sm text-gray-700"
-                                        :class="row.enabled ? 'cursor-pointer' : 'cursor-not-allowed'"
-                                    >
-                                        {{ option.label }}
-                                    </label>
+                                    <span class="whitespace-nowrap text-xs text-gray-700">{{ scopeOptions[0].label }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <Toggle
+                                        :modelValue="row.group"
+                                        @update:modelValue="(val) => setScope(row, 'group', val)"
+                                    />
+                                    <span class="whitespace-nowrap text-xs text-gray-700">{{ scopeOptions[1].label }}</span>
                                 </div>
                             </div>
                         </td>

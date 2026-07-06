@@ -825,7 +825,6 @@ class EditShop extends OrgAction
                             'type'        => 'review_validation_scope',
                             'label'       => __('Include other shops'),
                             'information' => __('Here you can configure whether you want to include other shops reviews.'),
-                            'options'     => ReviewValidationScopeEnum::selectOptions(),
                             'value'       => $this->loadReviewValidationScopes($shop),
                         ],
                     ],
@@ -926,7 +925,7 @@ class EditShop extends OrgAction
     }
 
     /**
-     * @return array<int, array{context: string, label: string, enabled: bool, scope: string}>
+     * @return array<int, array{context: string, label: string, enabled: bool, organisation: bool, group: bool}>
      */
     private function loadReviewValidationScopes(Shop $shop): array
     {
@@ -939,12 +938,19 @@ class EditShop extends OrgAction
         ];
 
         return collect($contexts)
-            ->map(fn (string $context) => [
-                'context' => $context,
-                'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::shortLabels(), $context, $context)),
-                'enabled' => (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.enabled", false),
-                'scope'   => Arr::get($shop->settings, "reviews.validation_scope.$context.scope", ReviewValidationScopeEnum::ORGANISATION->value),
-            ])
+            ->map(function (string $context) use ($shop, $tabLabels): array {
+                $row = [
+                    'context' => $context,
+                    'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::shortLabels(), $context, $context)),
+                    'enabled' => (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.enabled", false),
+                ];
+
+                foreach (ReviewValidationScopeEnum::values() as $scope) {
+                    $row[$scope] = (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.$scope", false);
+                }
+
+                return $row;
+            })
             ->all();
     }
 
