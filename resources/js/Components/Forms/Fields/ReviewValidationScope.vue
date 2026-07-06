@@ -85,13 +85,14 @@ const fieldNameString = computed(() => props.fieldName)
                             {{ row.label }}
                         </td>
                         <td class="px-3 py-3">
-                            <Toggle v-model="row.enabled" />
+                            <Toggle v-model="row.enabled" :classes="row.enabled ? '!bg-indigo-500' : ''" />
                         </td>
                         <td class="px-3 py-3">
                             <div v-if="row.enabled" class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
                                 <div class="flex items-center gap-2">
                                     <Toggle
                                         :modelValue="row.scope === scopeOptions[0].value"
+                                        :classes="row.scope === scopeOptions[0].value ? '!bg-indigo-500' : ''"
                                         @update:modelValue="(val) => selectScope(row, scopeOptions[0].value, val)"
                                     />
                                     <span class="whitespace-nowrap text-xs text-gray-700">{{ scopeOptions[0].label }}</span>
@@ -99,6 +100,7 @@ const fieldNameString = computed(() => props.fieldName)
                                 <div class="flex items-center gap-2">
                                     <Toggle
                                         :modelValue="row.scope === scopeOptions[1].value"
+                                        :classes="row.scope === scopeOptions[1].value ? '!bg-indigo-500' : ''"
                                         @update:modelValue="(val) => selectScope(row, scopeOptions[1].value, val)"
                                     />
                                     <span class="whitespace-nowrap text-xs text-gray-700">{{ scopeOptions[1].label }}</span>
