@@ -19,7 +19,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
 {
-    public function handle(DeliveryNote $deliveryNote, $prefix = null): LengthAwarePaginator
+    public function handle(DeliveryNote $deliveryNote, $prefix = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -35,6 +35,10 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.delivery_note_id', $deliveryNote->id);
+
+        if ($deliveryNoteItemId) {
+            $query->where('delivery_note_items.id', $deliveryNoteItemId);
+        }
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id')
             ->with('orgStock.tradeUnits');
