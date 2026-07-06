@@ -547,11 +547,13 @@ const layout = inject("layout", {})
         <div
             class="mt-8 border-0 border-t border-solid border-white/10 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8 ">
             <div class="grid gap-y-2 text-center md:text-left ">
-                <div class="group relative flex gap-x-6 justify-center hover-dashed">
+                <div class="group relative flex gap-x-5 justify-center hover-dashed">
                     <a v-for="item of modelValue.socialMedia" target="_blank" :key="item.icon">
                         <font-awesome-icon
                             :icon="item.icon" class="text-2xl"
-                            @click="() => sendMessageToParent('panelOpen', 'social-media')" />
+                            @click="() => sendMessageToParent('panelOpen', 'social-media')"
+                            fixed-width
+                        />
                     </a>
                 </div>
             </div>

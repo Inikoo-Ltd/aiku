@@ -251,7 +251,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 
     if ($shouldRestartSSR) {
-        run("sudo supervisorctl restart inertia-ssr-production");
+        run("sudo /usr/bin/supervisorctl restart inertia-ssr-production");
     }
 })->select('env=prod');
 

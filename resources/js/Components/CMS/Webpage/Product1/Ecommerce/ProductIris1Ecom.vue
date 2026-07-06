@@ -94,6 +94,11 @@ const props = withDefaults(
                     }
                 }
             }
+            paymentData: {
+                name: string
+                image: string
+                value: string
+            }[]
         }
         webpageData?: any
         blockData?: object
@@ -473,8 +478,12 @@ console.log(props)
                     </h2>
 
                     <div class="flex flex-wrap items-center gap-6 py-2">
-                        <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
-                            class="h-4 px-1" />
+                        <template v-for="logo in fieldValue.paymentData" :key="logo.value">
+                            <img :src="logo.image"
+                                class="h-4 px-1"
+                                :alt="ctrans('Logo of :paymentLabel', { paymentLabel: logo.name })"
+                            />
+                        </template>
                     </div>
                 </div>
             </div>
