@@ -2,7 +2,7 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
-use App\Actions\Catalogue\Review\Hydrators\Concerns\BuildsReviewStats;
+use App\Actions\Reviews\Hydrators\Concerns\BuildsReviewStats;
 use App\Models\Catalogue\Product;
 use App\Models\Reviews\Review;
 use Illuminate\Contracts\Queue\ShouldBeUnique;

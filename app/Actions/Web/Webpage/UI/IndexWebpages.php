@@ -196,6 +196,26 @@ class IndexWebpages extends OrgAction
         return $this->handle(parent: $this->parent, bucket: $this->bucket);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inWebpage(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = '';
+        $this->parent = $webpage;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent: $webpage);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inWebpageInFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Webpage $webpage, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = '';
+        $this->parent = $webpage;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent: $webpage);
+    }
+
 
     protected function getElementGroups(Organisation|Website|Webpage $parent): array
     {

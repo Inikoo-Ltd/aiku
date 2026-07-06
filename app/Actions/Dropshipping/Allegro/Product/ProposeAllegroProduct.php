@@ -52,6 +52,7 @@ class ProposeAllegroProduct
             ],
             'images'     => $productImages,
             'parameters' => $this->buildParameters($portfolio, Arr::get($attributes, 'parameters', [])),
+            'language' => 'en-US',
             'description' => [
                 'sections' => [
                     [
@@ -63,8 +64,7 @@ class ProposeAllegroProduct
                         ]
                     ]
                 ]
-            ],
-            'language' => 'en-US'
+            ]
         ];
 
         return $allegroUser->proposeProduct($productData);

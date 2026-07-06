@@ -8,7 +8,7 @@
 
 namespace App\Actions\Accounting\Payment\CheckoutCom;
 
-use App\Models\PaymentGatewayLog;
+use App\Models\Accounting\PaymentGatewayLog;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessCheckoutComPaymentGatewayLog

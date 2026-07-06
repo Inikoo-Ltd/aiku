@@ -782,7 +782,7 @@ class Kernel extends ConsoleKernel
 
 
             $this->logSchedule(
-                $schedule->command('outboxes:redo_time_series --from=' . now()->subDays(1)->format('Y-m-d') . ' --to=' . now()->format('Y-m-d') . ' --async')
+                $schedule->command('outboxes:redo_time_series --from=' . now()->subDays()->format('Y-m-d') . ' --to=' . now()->format('Y-m-d') . ' --async')
                 ->dailyAt('16:00')
                 ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'OutboxRedoTimeSeries',

@@ -35,8 +35,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property int|null $language_id
+ * @property array<array-key, mixed> $translations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\Helpers\Language|null $language
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\CRM\Poll|null $poll
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\PollReply> $pollReplies
@@ -60,9 +63,11 @@ class PollOption extends Model implements Auditable
     protected $casts = [
         'fetched_at'         => 'datetime',
         'last_fetched_at'    => 'datetime',
+        'translations'       => 'array',
     ];
 
     protected $attributes = [
+        'translations'       => '{}',
     ];
 
     protected $guarded = [];
@@ -105,4 +110,8 @@ class PollOption extends Model implements Auditable
         return $this->hasMany(PollReply::class);
     }
 
+    public function language(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Helpers\Language::class);
+    }
 }

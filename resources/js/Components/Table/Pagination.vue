@@ -74,9 +74,9 @@
                             </svg>
                         </component>
                         <!-- Number of pagination -->
-                        <div v-for="(link, key) in pagination.links" :key="key" class="">
+                        <div v-for="(link, key) in displayedLinks" :key="key" class="">
                             <slot name="link">
-                                <component :is="link.url ? 'a' : 'div'" v-if="!isNaN(link.label) || link.label === '...'
+                                <component :is="link.url ? 'a' : 'div'" v-if="!isNaN(Number(link.label)) || link.label === '...'
                                     " :href="link.url" :dusk="link.url ? `pagination-${link.label}` : null"
                                     class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium text-gray-700"
                                     :class="{
@@ -126,6 +126,7 @@ const props = withDefaults(defineProps<{
     'perPageOptions'?: number[]
     onPerPageChange?: Function
     hasData: Boolean
+    maxPages?: number
     meta: {
         total: number
         links: {
@@ -151,6 +152,55 @@ const props = withDefaults(defineProps<{
 
 const pagination = computed(() => {
     return props.meta
+})
+
+const displayedLinks = computed(() => {
+    const links = (pagination.value.links ?? []).filter((link) => !Number.isNaN(Number(link.label)))
+    const max = props.maxPages
+    const total = links.length
+
+    if (!max || total <= max) {
+        return links
+    }
+
+    const activeIndex = Math.max(0, links.findIndex((link) => link.active))
+    const side = Math.floor((max - 1) / 2)
+
+    let start = activeIndex - side
+    let end = activeIndex + (max - 1 - side)
+
+    if (start < 0) {
+        end += -start
+        start = 0
+    }
+    if (end > total - 1) {
+        start -= end - (total - 1)
+        end = total - 1
+    }
+    start = Math.max(0, start)
+
+    const ellipsis = { url: null, label: "...", active: false }
+    const result = []
+
+    if (start > 0) {
+        result.push(links[0])
+        if (start > 1) {
+            result.push(ellipsis)
+        }
+    }
+
+    for (let i = start; i <= end; i++) {
+        result.push(links[i])
+    }
+
+    if (end < total - 1) {
+        if (end < total - 2) {
+            result.push(ellipsis)
+        }
+        result.push(links[total - 1])
+    }
+
+    return result
 })
 
 const hasLinks = computed(() => {

@@ -144,14 +144,13 @@ class ShowIrisWebpage
 
 
         if (!empty($canonicalUrl)) {
-            // Use current URL without query parameters for canonical comparison
-            $currentUrl = rtrim($request->url(), '/');
-
-
-            $normalizedCanon = $this->getEnvironmentUrl($canonicalUrl);
+            $currentUrl      = rtrim($request->url(), '/');
+            $normalizedCanon = rtrim($this->getEnvironmentUrl($canonicalUrl), '/');
 
             if ($normalizedCanon !== $currentUrl) {
-                return $this->getEnvironmentUrl($canonicalUrl);
+                $request->attributes->set('iris_redirect_webpage_id', $webpageID);
+
+                return $normalizedCanon;
             }
         }
 
@@ -262,11 +261,20 @@ class ShowIrisWebpage
             }
 
 
-            return redirect()->to($webpageData, 301)
+            $redirectResponse = redirect()->to($webpageData, 301)
                 ->withHeaders([
                     'Cache-Control'             => 'public, s-maxage=300, max-age=0',
                     'X-Aiku-Cacheable-Redirect' => $cacheRedirectInVarnish,
                 ]);
+
+            $redirectResponse->header('X-AIKU-WEBSITE', (string)request()->website->id);
+
+            $redirectWebpageID = request()->attributes->get('iris_redirect_webpage_id');
+            if ($redirectWebpageID) {
+                $redirectResponse->header('X-AIKU-WEBPAGE', (string)$redirectWebpageID);
+            }
+
+            return $redirectResponse;
         }
 
         $browserTitle            = Arr::get($webpageData, 'webpage_data.title', '');

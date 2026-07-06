@@ -210,7 +210,7 @@ watch(
 <template>
 	<div
 		:id="fieldValue?.id ? fieldValue?.id : 'department-1-iris' + indexBlock"
-		component="department-1-iris">
+		component="department-1-iris" class="pt-2">
 		<div
 			:style="{
 				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),

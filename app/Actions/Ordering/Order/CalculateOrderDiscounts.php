@@ -94,7 +94,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
         foreach ($this->transactions as $transaction) {
             if (property_exists($transaction, 'with_offer')) {
-                $discountsRatio = 1 - $transaction->discounted_percentage ?? 0;
+                $discountsRatio = 1 - ($transaction->discounted_percentage ?? 0);
 
                 DB::table('transactions')->where('id', $transaction->id)
                     ->update(

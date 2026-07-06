@@ -11,7 +11,7 @@ class AskToAi extends OrgAction
 {
     /**
      * Send a prompt to AI and get a string response.
-     * Reuses configuration from auto-translations (ChatGPT5 driver) for consistency.
+     * Reuses configuration from auto-translations (ChatGPT driver) for consistency.
      *
      * @param string $prompt
      * @param string $model (Optional, default 'gpt-4o-mini')
@@ -27,7 +27,7 @@ class AskToAi extends OrgAction
             $apiKey = $this->getApiKey();
 
             if (empty($apiKey)) {
-                Log::error("AskToAi: Missing API Key (checked auto-translations and askbot config)");
+                Log::error("AskToAi: Missing API Key (checked auto-translations config)");
                 return null;
             }
 
@@ -40,8 +40,8 @@ class AskToAi extends OrgAction
 
     private function getApiKey(): ?string
     {
-        $driverName = config('auto-translations.default_driver', 'chatgpt5');
-        $driverConfig = config("auto-translations.drivers.{$driverName}");
+        $driverName = config('auto-translations.default_driver', 'gpt-5-nano');
+        $driverConfig = config("auto-translations.drivers.$driverName");
         $apiKey = $driverConfig['api_key'] ?? null;
 
         if (empty($apiKey)) {

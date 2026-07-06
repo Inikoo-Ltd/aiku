@@ -2,8 +2,8 @@
 
 namespace App\Actions\Retina\Ecom\Review;
 
-use App\Actions\Catalogue\Review\UpdateReview;
 use App\Actions\RetinaAction;
+use App\Actions\Reviews\UpdateReview;
 use App\Models\Reviews\Review;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;

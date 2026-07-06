@@ -62,7 +62,8 @@ trait WithIrisInertia
                     'number_brands'         => $shop->stats->number_brands,
                     'number_current_brands' => $shop->stats->number_current_brands,
                     'number_tags'           => $shop->stats->number_brands,
-                    'number_current_tags'   => $shop->stats->number_current_tags
+                    'number_current_tags'   => $shop->stats->number_current_tags,
+                    'location'              => is_string($shop->location) ? json_decode($shop->location, true) : $shop->location,
                 ],
                 "website"              => WebsiteIrisResource::make($website)->getArray(),
                 'theme'                => Arr::get($website->published_layout, 'theme'),

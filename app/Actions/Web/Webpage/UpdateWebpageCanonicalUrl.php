@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Traits\WithVarnishBan;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 {
     use AsAction;
+    use WithVarnishBan;
 
     public string $jobQueue = 'urgent';
 
@@ -61,6 +63,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         if ($oldCanonicalUrl != $canonicalUrl) {
             $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_canonicals_'.$webpage->id;
             Cache::forget($key);
+            $this->banVarnishCanonicalObjects($webpage, $oldCanonicalUrl, $canonicalUrl);
         }
 
         if ($updateChildren) {
@@ -68,6 +71,29 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         }
 
         return $canonicalUrl;
+    }
+
+    protected function banVarnishCanonicalObjects(Webpage $webpage, ?string $oldCanonicalUrl, string $newCanonicalUrl): void
+    {
+        if (!config('iris.cache.varnish')) {
+            return;
+        }
+
+        $this->sendVarnishBanHttp([
+            'x-ban-webpage' => (string)$webpage->id,
+        ]);
+
+        foreach (array_unique(array_filter([$oldCanonicalUrl, $newCanonicalUrl])) as $url) {
+            $host = parse_url($url, PHP_URL_HOST);
+            if (!$host) {
+                continue;
+            }
+
+            $this->sendVarnishBanHttp([
+                'x-ban-host' => strtolower($host),
+                'x-ban-url'  => parse_url($url, PHP_URL_PATH) ?: '/',
+            ]);
+        }
     }
 
     protected function updateChildrenCanonicalUrls(Webpage $webpage): void

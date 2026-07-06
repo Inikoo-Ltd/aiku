@@ -59,7 +59,7 @@ class UpdateShop extends OrgAction
     public function handle(Shop $shop, array $modelData): Shop
     {
         if (Arr::exists($modelData, 'review_rating_labels')) {
-            $this->syncReviewRatingLabels($shop, Arr::pull($modelData, 'review_rating_labels'));
+            $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
         }
 
         $reHydrateChildPrices = false;
@@ -219,6 +219,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'gads_user_list_id');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
+        data_forget($modelData, 'review_rating_labels');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -366,6 +367,10 @@ class UpdateShop extends OrgAction
 
         if (Arr::exists($modelData, 'review_show_staff_who_reply')) {
             data_set($modelData, 'settings.reviews.show_staff_who_reply', (bool)Arr::pull($modelData, 'review_show_staff_who_reply'));
+        }
+
+        if (Arr::exists($modelData, 'review_add_other_shops')) {
+            data_set($modelData, 'settings.reviews.add_other_shops', (bool)Arr::pull($modelData, 'review_add_other_shops'));
         }
 
         if (Arr::exists($modelData, 'review_approval_required')) {
@@ -625,6 +630,7 @@ class UpdateShop extends OrgAction
             'review_minimum_rating_to_show'                           => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'review_minimum_reviews_to_show'                          => ['sometimes', 'nullable', 'integer', 'min:0'],
             'review_show_staff_who_reply'                             => ['sometimes', 'boolean'],
+            'review_add_other_shops'                                  => ['sometimes', 'boolean'],
             'review_approval_required'                                => ['sometimes', 'boolean'],
             'review_hours_after_dispatched'                           => ['sometimes', 'nullable', 'integer', 'min:1'],
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],

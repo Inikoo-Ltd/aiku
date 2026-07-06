@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Product\GetProductImages;
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
-use App\Actions\Catalogue\Review\UI\IndexReviews;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Comms\BackInStockReminder\UI\ProductHasBackInStockReminders;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
@@ -23,13 +22,15 @@ use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInProduct;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
 use App\Actions\OrgAction;
+use App\Actions\Reviews\UI\IndexReviews;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\UI\Catalogue\ExternalShop\ProductInExternalTabsEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
-use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
+use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -41,13 +42,12 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\Reviews\ReviewRatingLabel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
-use App\Enums\Catalogue\Review\ReviewContextEnum;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\Reviews\ReviewRatingLabel;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowProduct extends OrgAction
@@ -479,9 +479,9 @@ class ShowProduct extends OrgAction
             'data' => ReviewsResource::collection(
                 IndexReviews::run(parent: $product, prefix: ProductTabsEnum::REVIEWS->value, scope: 'product')
             ),
-            'rating_labels' => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::PRODUCT),
-            'reviewable_type' => 'product_reviews',
-            'replier_type' => 'merchant'
+            'rating_labels'     => $this->ratingLabelsForShop($product->shop->id, ReviewContextEnum::PRODUCT),
+            'reviewable_type'   => 'product_reviews',
+            'replier_type'      => 'merchant',
         ];
     }
 
