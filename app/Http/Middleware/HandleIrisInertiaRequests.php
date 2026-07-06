@@ -54,15 +54,9 @@ class HandleIrisInertiaRequests extends Middleware
                 'currency'    => $request->input('currency_data'),
                 'environment' => app()->environment(),
                 'ziggy'       => function () use ($request) {
-                    $ziggyRoutes=new Ziggy('iris')->toArray();
-
-                    //unset($ziggyRoutes['routes']['iris.json.footer']);
-
-                    $ziggyRoutes=[];
-
-                    return array_merge($ziggyRoutes, [
-                        'location' => $request->url()
-                    ]);
+                    return [
+                        'location' => $request->url(),
+                    ];
                 },
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,
