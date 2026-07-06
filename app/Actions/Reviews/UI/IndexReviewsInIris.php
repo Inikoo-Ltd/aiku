@@ -54,6 +54,8 @@ class IndexReviewsInIris extends OrgAction
         $countQuery = Review::query()
             ->selectRaw('FLOOR(rating_main) as star, COUNT(*) as count');
 
+
+
         if (!$includeOtherShops) {
             //todo this is wrong
             $countQuery->where('reviews.shop_id', $shop->id)->where('reviews.organisation_id', $shop->organisation_id);
@@ -382,6 +384,7 @@ class IndexReviewsInIris extends OrgAction
     {
         $shop              = $parent;
         $includeOtherShops = false;
+
 
         if ($parent instanceof Product) {
             $shop              = $parent->shop;
