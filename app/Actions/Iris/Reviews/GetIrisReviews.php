@@ -26,7 +26,6 @@ class GetIrisReviews extends IrisAction
     {
         $model = $webpage->model;
 
-        $reviews = null;
 
         if ($model instanceof Product) {
             $reviews = GetIrisProductReviews::run($model);
