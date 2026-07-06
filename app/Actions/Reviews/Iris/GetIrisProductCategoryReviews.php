@@ -1,32 +1,29 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 06 Jul 2026 13:52:27 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
- */
+ * Author Louis Perez
+ * Created on 06-07-2026-14h-24m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
 
-namespace App\Actions\Iris\Reviews;
+namespace App\Actions\Reviews\Iris;
 
+use App\Actions\Reviews\Iris\Traits\WithGetIrisReviewsTrait;
 use App\Enums\Catalogue\Review\ReviewReactionTargetEnum;
-use App\Enums\Catalogue\Review\ReviewScopeEnum;
-use App\Enums\Catalogue\Review\ReviewStateEnum;
-use App\Enums\Catalogue\Review\ReviewStatusEnum;
-use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\WebUser;
-use App\Models\Reviews\Review;
-use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetIrisProductReviews
+class GetIrisProductCategoryReviews
 {
-    use asObject;
+    use AsObject;
+    use WithGetIrisReviewsTrait;
 
-    public function handle(Product $product, $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -34,35 +31,13 @@ class GetIrisProductReviews
             });
         });
 
-        $shop = $product->shop;
+        $shop = $productCategory->shop;
 
-        $setting = Arr::get($shop->settings, 'reviews.validation_scope.product', []);
-
-        $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
+        $queryBuilder = $this->getBaseQuery($productCategory);
 
         $allowedSort = [
             'rating_main',
-            'created_at',
         ];
-
-        $queryBuilder = QueryBuilder::for(Review::class);
-        if (Arr::get($setting, 'enabled', false)) {
-            if (Arr::get($setting, 'scope') == 'group') {
-                $queryBuilder->where('reviews.group_id', $product->group_id);
-            } else {
-                $queryBuilder->where('reviews.organisation_id', $product->organisation_id);
-            }
-            $queryBuilder->where('reviews.master_product_id', $product->master_product_id);
-        } else {
-            $queryBuilder->where('reviews.shop_id', $product->shop_id);
-            $queryBuilder->where('reviews.product_id', $product->id);
-        }
-
-        $queryBuilder->where('reviews.rating_main', '>=', $minRating)
-            ->where('reviews.state', ReviewStateEnum::PUBLISHED)
-            ->where('reviews.is_public', true)
-            ->where('reviews.review_status', ReviewStatusEnum::APPROVED)
-            ->where('reviews.scope', ReviewScopeEnum::PRODUCT);
 
         $select = [
             'reviews.id',
