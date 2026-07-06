@@ -26,13 +26,11 @@ class SaveShopDataAllegroChannel
         try {
             /** @var Shop $shop */
             $shop = $allegroUser->customerSalesChannel->shop;
-            // Get user info from Allegro API
             $userInfo = $allegroUser->getUserInfo();
 
             if ($userInfo) {
                 $data = $allegroUser->data ?? [];
 
-                // Save user/seller information
                 data_set($data, 'user_id', Arr::get($userInfo, 'id'));
                 data_set($data, 'login', Arr::get($userInfo, 'login'));
                 data_set($data, 'email', Arr::get($userInfo, 'email'));
@@ -42,28 +40,45 @@ class SaveShopDataAllegroChannel
 
                 if (! Arr::get($allegroUser->settings, 'shipping.id')) {
                     try {
-                        $deliveryMethods = $allegroUser->getDeliveryMethods();
-                        $deliveryMethod = collect(Arr::get($deliveryMethods, 'deliveryMethods'))->firstWhere('destinationCountry', $shop->country->code);
+                        $shippingZones = [
+                            'SK' => [[1, '2.70'], [2, '2.80'], [5, '2.90'], [15, '3.00'], [30, '3.50']],
+                            'CZ' => [[1, '3.90'], [2, '4.30'], [5, '4.85'], [15, '5.85'], [30, '6.20']],
+                            'PL' => [[1, '4.40'], [2, '4.80'], [5, '5.00'], [10, '6.00'], [15, '7.00'], [30, '7.50']],
+                            'HU' => [[1, '4.50'], [2, '4.70'], [5, '4.80'], [10, '5.60'], [30, '6.20']]
+                        ];
 
-                        $shipping = $allegroUser->createShippingRates([
-                            'name' => 'Shipping-rates-'.$allegroUser->customerSalesChannel->slug,
-                            'rates' => [
-                                [
-                                    'deliveryMethod' => [
-                                        'id' => Arr::get($deliveryMethod ?? [], 'id'),
-                                    ],
-                                    'maxQuantityPerPackage' => 5,
-                                    'firstItemRate' => [
-                                        'currency' => Arr::get($deliveryMethod ?? [], 'shippingRatesConstraints.firstItemRate.currency'),
-                                        'amount' => '2.00'
-                                    ],
-                                    'nextItemRate' => [
-                                        'currency' => Arr::get($deliveryMethod ?? [], 'shippingRatesConstraints.nextItemRate.currency'),
-                                        'amount' => '0.00'
-                                    ],
+                        $countryCode = strtoupper((string) $allegroUser->customerSalesChannel->customer?->address?->country_code);
+                        $brackets = Arr::get($shippingZones, $countryCode);
+                        $amount = $brackets[0][1] ?? null;
+
+                        $deliveryMethods = $allegroUser->getDeliveryMethods();
+                        $deliveryMethod = collect(Arr::get($deliveryMethods, 'deliveryMethods'))->firstWhere('destinationCountry', $countryCode);
+
+                        $shipping = ($deliveryMethod && $amount !== null)
+                            ? $allegroUser->createShippingRates([
+                                'name' => 'AW-EU-'.$allegroUser->customerSalesChannel->slug . '-' . $countryCode,
+                                'rates' => [
+                                    [
+                                        'deliveryMethod' => [
+                                            'id' => Arr::get($deliveryMethod, 'id'),
+                                        ],
+                                        'maxQuantityPerPackage' => 5,
+                                        'maxPackageWeight' => [
+                                            'value' => 30,
+                                            'unit' => 'KILOGRAM'
+                                        ],
+                                        'firstItemRate' => [
+                                            'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.firstItemRate.currency'),
+                                            'amount' => $amount
+                                        ],
+                                        'nextItemRate' => [
+                                            'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.nextItemRate.currency'),
+                                            'amount' => '0'
+                                        ],
+                                    ]
                                 ]
-                            ]
-                        ]);
+                            ])
+                            : [];
                     } catch (\Exception $e) {
                         $shipping = [];
                     }
