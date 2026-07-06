@@ -22,7 +22,7 @@ defineProps<{
             </div>
 
             <div v-else class="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                
+                    
                 <article v-for="post in blogs" :key="post.id"
                     class="rounded-2xl bg-white h-fit shadow-md transition duration-300 overflow-hidden border border-gray-200">
                     <a :href="post.url ? post.url : '#' " class="block">
