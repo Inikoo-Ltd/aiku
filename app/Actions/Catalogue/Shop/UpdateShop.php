@@ -22,6 +22,7 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
+use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -373,6 +374,17 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.reviews.add_other_shops', (bool)Arr::pull($modelData, 'review_add_other_shops'));
         }
 
+        if (Arr::exists($modelData, 'review_validation_scope')) {
+            foreach (Arr::pull($modelData, 'review_validation_scope') ?? [] as $row) {
+                $context = data_get($row, 'context');
+                $scope   = data_get($row, 'scope');
+
+                if ($context && $scope) {
+                    data_set($modelData, "settings.reviews.validation_scope.$context", $scope);
+                }
+            }
+        }
+
         if (Arr::exists($modelData, 'review_approval_required')) {
             data_set($modelData, 'settings.reviews.data.approval_required', (bool)Arr::pull($modelData, 'review_approval_required'));
         }
@@ -631,6 +643,10 @@ class UpdateShop extends OrgAction
             'review_minimum_reviews_to_show'                          => ['sometimes', 'nullable', 'integer', 'min:0'],
             'review_show_staff_who_reply'                             => ['sometimes', 'boolean'],
             'review_add_other_shops'                                  => ['sometimes', 'boolean'],
+            'review_validation_scope'                                 => ['sometimes', 'nullable', 'array'],
+            'review_validation_scope.*.context'                       => ['sometimes', 'required', 'string'],
+            'review_validation_scope.*.label'                         => ['sometimes', 'nullable', 'string'],
+            'review_validation_scope.*.scope'                         => ['sometimes', 'required', Rule::enum(ReviewValidationScopeEnum::class)],
             'review_approval_required'                                => ['sometimes', 'boolean'],
             'review_hours_after_dispatched'                           => ['sometimes', 'nullable', 'integer', 'min:1'],
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
