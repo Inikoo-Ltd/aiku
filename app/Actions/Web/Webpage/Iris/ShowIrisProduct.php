@@ -42,6 +42,7 @@ class ShowIrisProduct extends IrisAction
                 'mini_breadcrumbs' => array_filter([
                     $product->department ? [
                         'label'   => $product->department->name,
+                        'url'     => route('iris.catalogue.department.show', ['department' => $product->department->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.department.show',
                             'parameters' => [
@@ -53,6 +54,7 @@ class ShowIrisProduct extends IrisAction
                     ] : [],
                     $product->subDepartment ? [
                         'label'   => $product->subDepartment->name,
+                        'url'     => route('iris.catalogue.sub_department.show', ['subDepartment' => $product->subDepartment->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.sub_department.show',
                             'parameters' => [
@@ -64,6 +66,7 @@ class ShowIrisProduct extends IrisAction
                     ] : [],
                     $product->family ? [
                         'label'   => $product->family->name,
+                        'url'     => route('iris.catalogue.family.show', ['family' => $product->family->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.family.show',
                             'parameters' => [
@@ -75,6 +78,7 @@ class ShowIrisProduct extends IrisAction
                     ] : [],
                     [
                         'label'   => $product->code,
+                        'url'     => route('iris.catalogue.product.show', ['product' => $product->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.product.show',
                             'parameters' => [
