@@ -50,7 +50,7 @@ const parentInfo = computed(() => {
     <Table :resource="data" :name="tab" class="mt-5">
          <template #cell(code)="{ item: department }">
             <Link
-                :href="route('iris.catalogue.sub_department.show', { subDepartment: department.slug })"
+                :href="`/catalogue/sub-department/${department.slug}`"
                 class="primaryLink"
             >
                 {{ department.code }}

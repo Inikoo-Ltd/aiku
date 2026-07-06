@@ -49,7 +49,7 @@ const activeScope = computed<string>(() => {
             <Link
                 v-for="tab in props.navigation"
                 :key="tab.key"
-                :href="route('iris.catalogue_iris', { scope: tab.key })"
+                :href="`/catalogue?scope=${tab.key}`"
                 :class="[tab.key === activeScope ? 'tabNavigationActive' : 'tabNavigation']"
                 class="group relative inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-2 text-left text-sm font-medium md:text-base"
                 @start="() => (isLoading = tab.key)"

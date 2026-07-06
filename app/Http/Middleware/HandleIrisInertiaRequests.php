@@ -47,13 +47,16 @@ class HandleIrisInertiaRequests extends Middleware
         if (!$request->inertia() || Session::get('reloadLayout')) {
             $websiteTheme = Arr::get($website->published_layout, 'theme');
 
+
+
+
             $firstLoadOnlyProps = [
                 'currency'    => $request->input('currency_data'),
                 'environment' => app()->environment(),
                 'ziggy'       => function () use ($request) {
-                    return array_merge(new Ziggy('iris')->toArray(), [
-                        'location' => $request->url()
-                    ]);
+                    return [
+                        'location' => $request->url(),
+                    ];
                 },
 
                 'use_chat' => $website->settings['enable_chat'] ?? false,

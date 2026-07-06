@@ -32,7 +32,6 @@ const props = defineProps<{
 }>()
 
 const selectedDeliveryNotes = ref<number[]>([])
-const layoutStore = inject("layout", layoutStructure);
 const loading=ref(false)
 
 // const pickingSessionRoute = {
@@ -88,10 +87,11 @@ const isHidden = computed(() => {
   <PageHeading :data="pageHead">
     <template #other>
         <Button
-        v-if="selectedDeliveryNotes.length > 0 && !isHidden"
+        v-if="!isHidden"
         type="create"
-        :label="trans('Picking session')"
+        :label="trans('Picking session') + ' ('+ selectedDeliveryNotes.length + ')'"
         :loading="loading"
+        :disabled="selectedDeliveryNotes.length <= 0"
         @click="createPickingSession"
       />
     </template>

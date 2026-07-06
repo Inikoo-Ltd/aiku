@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBadgePercent } from "@fas"
+import { faBadgePercent, faMedal } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { formatPercentage } from '@/Composables/Utils'
 library.add(faBadgePercent)
@@ -42,24 +42,24 @@ const props = defineProps<{
         {{ offers_data?.o?.l }}
     </div>
 
-    <div v-else class="bg-green-500/20 px-1 py-0.5 text-xs border flex items-center border-green-500/50 rounded-sm w-fit text-green-700" >
+    <div v-else class="bg-[#E87928] px-1 py-0.5 text-xs border flex items-center border-[#E87928] rounded-sm w-fit text-gray-100" >
         <!-- Label: Gold Reward Amnesty -->
         <template v-if="offers_data?.o?.st === 'a'">
-            <FontAwesomeIcon icon="fas fa-candle-holder" class="text-green-500 text-[1em] align-middle" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon icon="" class="text-gray-100 text-[1em] align-middle" fixed-width aria-hidden="true" />
             <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span>
             {{ ctrans("Gold Reward Amnesty") }}
         </template>
 
         <!-- Label: Gold Reward Member -->
         <template v-else-if="offers_data?.o?.st === 'i'">
-            <FontAwesomeIcon icon="fas fa-badge-percent" class="text-green-500 text-[1em] align-middle" fixed-width aria-hidden="true" />
-            <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span>
+            <FontAwesomeIcon :icon="faMedal" class="text-gray-100 text-[1em] align-middle mr-1" fixed-width aria-hidden="true" />
             {{ ctrans("Gold Reward Member") }}
+            <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }} OFF</span>
         </template>
 
         <!-- Label: default -->
         <template v-else>
-            <FontAwesomeIcon icon="fas fa-badge-percent" class="text-green-500 text-[1.1667em] align-middle" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon :icon="faMedal" class="text-gray-100 text-[1.1667em] align-middle mr-1" fixed-width aria-hidden="true" />
             <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span>
             {{ offers_data?.o?.l }}
         </template>

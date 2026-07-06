@@ -21,6 +21,7 @@ use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
+use App\Actions\CRM\Customer\HydrateCustomersClv;
 use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
@@ -429,7 +430,6 @@ class Kernel extends ConsoleKernel
             );
 
 
-
             $this->logSchedule(
                 $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'ProcessFetchStacks',
@@ -661,7 +661,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job('HydrateCustomersClv')->dailyAt('01:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->job(HydrateCustomersClv::makeJob())->dailyAt('01:00')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'HydrateCustomersClv',
                 ),
                 name: 'HydrateCustomersClv',
@@ -782,11 +782,11 @@ class Kernel extends ConsoleKernel
 
 
             $this->logSchedule(
-                $schedule->command('outboxes:redo_time_series --from=' . now()->subDays()->format('Y-m-d') . ' --to=' . now()->format('Y-m-d') . ' --async')
-                ->dailyAt('16:00')
-                ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'OutboxRedoTimeSeries',
-                ),
+                $schedule->command('outboxes:redo_time_series --from='.now()->subDays()->format('Y-m-d').' --to='.now()->format('Y-m-d').' --async')
+                    ->dailyAt('16:00')
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'OutboxRedoTimeSeries',
+                    ),
                 name: 'OutboxRedoTimeSeries',
                 type: 'command',
                 scheduledAt: now()->format('H:i')

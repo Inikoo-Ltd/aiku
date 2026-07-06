@@ -18,6 +18,7 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
+use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -826,6 +827,13 @@ class EditShop extends OrgAction
                             'information' => __('Applicable family and product reviews'),
                             'value'       => Arr::get($shop->settings, 'reviews.add_other_shops', false),
                         ],
+                        'review_validation_scope'   => [
+                            'type'        => 'review_validation_scope',
+                            'label'       => __('Review validation scope'),
+                            'information' => __('Choose whether data is retrieved from the current organisation only or from the entire group.'),
+                            'options'     => ReviewValidationScopeEnum::selectOptions(),
+                            'value'       => $this->loadReviewValidationScopes($shop),
+                        ],
                     ],
                 ]
             ],
@@ -913,14 +921,37 @@ class EditShop extends OrgAction
         $reviewLabel = collect(ReviewContextEnum::values())
             ->mapWithKeys(fn (string $context) => [
                 $context => [
-                    ...$emptyDimensions, 
+                    ...$emptyDimensions,
                     ...($stored[$context] ?? []),
                     'label_tab' => data_get($tabLabels, $context)
                 ],
             ])
             ->all();
-            
+
         return $reviewLabel;
+    }
+
+    /**
+     * @return array<int, array{context: string, label: string, enabled: bool, scope: string}>
+     */
+    private function loadReviewValidationScopes(Shop $shop): array
+    {
+        $tabLabels = $shop->getCustomReviewCategoryLabel();
+
+        $contexts = [
+            ReviewContextEnum::SHOP->value,
+            ReviewContextEnum::FAMILY->value,
+            ReviewContextEnum::PRODUCT->value,
+        ];
+
+        return collect($contexts)
+            ->map(fn (string $context) => [
+                'context' => $context,
+                'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::labels(), $context, $context)),
+                'enabled' => (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.enabled", false),
+                'scope'   => Arr::get($shop->settings, "reviews.validation_scope.$context.scope", ReviewValidationScopeEnum::ORGANISATION->value),
+            ])
+            ->all();
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

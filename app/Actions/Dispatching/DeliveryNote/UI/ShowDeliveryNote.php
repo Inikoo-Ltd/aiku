@@ -12,7 +12,10 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandlingV2;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassignedV2;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsV2;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -31,8 +34,10 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
+use App\Http\Resources\Dispatching\DeliveryNoteItemsResourceV2;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
-use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
+use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResourceV2;
+use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResourceV2;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -51,6 +56,7 @@ use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
+use Closure;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -853,6 +859,40 @@ class ShowDeliveryNote extends OrgAction
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
         }
 
+        // TODO: RAUL REVIEW RESOURCE JUST UNCOMMENT THIS IF YOU WANNA SEE THE PERFORMANCE (memory & speed)
+        // TODO: If you want to see this more detailed, ddRawSql inside the resources manually and use EXPLAIN ANALYZE($query)
+
+        // $benchmark = function (Closure $fn) {
+        //     gc_collect_cycles();
+
+        //     $start = hrtime(true);
+        //     $startMemory = memory_get_usage(false);
+        //     $startPeak = memory_get_peak_usage(false);
+
+        //     $fn();
+
+        //     return [
+        //         'time_ms' => round((hrtime(true) - $start) / 1e6, 3),
+        //         'memory_kb' => round((memory_get_usage(false) - $startMemory) / 1024, 2),
+        //         'peak_mb' => round((memory_get_peak_usage(false) - $startPeak) / 1024 / 1024, 2),
+        //     ];
+        // };
+
+        // dd([
+        //     'Unassigned'    => [
+        //         'old' => [],
+        //         'new' => [],
+        //     ],
+        //     'Handling'      => [
+        //         'old' => $benchmark(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+        //         'new' => $benchmark(fn () => DeliveryNoteItemsStateHandlingResourceV2::collection(IndexDeliveryNoteItemsStateHandlingV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+        //     ],
+        //     'Normal'        => [
+        //         'old' => $benchmark(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+        //         'new' => $benchmark(fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+        //     ]
+        // ]);
+
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -1004,13 +1044,13 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
             $inertiaResponse->table(IndexDeliveryNoteItemsStateUnassigned::make()->tableStructure(deliveryNote: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
-            $inertiaResponse->table(IndexDeliveryNoteItemsStateHandling::make()->tableStructure(prefix: DeliveryNoteTabsEnum::ITEMS->value, deliveryNote: $deliveryNote, isEditable: $isEditable));
+            $inertiaResponse->table(IndexDeliveryNoteItemsStateHandlingV2::make()->tableStructure(prefix: DeliveryNoteTabsEnum::ITEMS->value, deliveryNote: $deliveryNote, isEditable: $isEditable));
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED) {
-            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value, $isEditable));
-            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, $isEditable));
-            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, $isEditable));
+            $inertiaResponse->table(IndexDeliveryNoteItemsV2::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value, $isEditable));
+            $inertiaResponse->table(IndexDeliveryNoteItemsV2::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, $isEditable));
+            $inertiaResponse->table(IndexDeliveryNoteItemsV2::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, $isEditable));
         } else {
-            $inertiaResponse->table(IndexDeliveryNoteItems::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value, isEditable: $isEditable));
+            $inertiaResponse->table(IndexDeliveryNoteItemsV2::make()->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value, isEditable: $isEditable));
         }
 
         $inertiaResponse->table(IndexHistory::make()->tableStructure(DeliveryNoteTabsEnum::HISTORY->value));
@@ -1023,37 +1063,37 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+                    fn () => DeliveryNoteItemsStateUnassignedResourceV2::collection(IndexDeliveryNoteItemsStateUnassignedV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
+                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResourceV2::collection(IndexDeliveryNoteItemsStateUnassignedV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+                    fn () => DeliveryNoteItemsStateHandlingResourceV2::collection(IndexDeliveryNoteItemsStateHandlingV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
+                    : Inertia::lazy(fn () => DeliveryNoteItemsStateHandlingResourceV2::collection(IndexDeliveryNoteItemsStateHandlingV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::PACKING || $deliveryNote->state == DeliveryNoteStateEnum::PACKED) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+                    fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
+                    : Inertia::lazy(fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
 
                 DeliveryNoteTabsEnum::PENDING_ITEMS->value => $this->tab == DeliveryNoteTabsEnum::PENDING_ITEMS->value ?
-                    fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, stateFilter: DeliveryNoteItemStateEnum::PACKING))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, stateFilter: DeliveryNoteItemStateEnum::PACKING))),
+                    fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, stateFilter: DeliveryNoteItemStateEnum::PACKING))
+                    : Inertia::lazy(fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, stateFilter: DeliveryNoteItemStateEnum::PACKING))),
 
                 DeliveryNoteTabsEnum::DONE_ITEMS->value => $this->tab == DeliveryNoteTabsEnum::DONE_ITEMS->value ?
-                    fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, stateFilter: DeliveryNoteItemStateEnum::PACKED))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, stateFilter: DeliveryNoteItemStateEnum::PACKED))),
+                    fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, stateFilter: DeliveryNoteItemStateEnum::PACKED))
+                    : Inertia::lazy(fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, stateFilter: DeliveryNoteItemStateEnum::PACKED))),
             ];
         }
 
         return [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
-                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
+                fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))
+                : Inertia::lazy(fn () => DeliveryNoteItemsResourceV2::collection(IndexDeliveryNoteItemsV2::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value))),
 
         ];
     }
