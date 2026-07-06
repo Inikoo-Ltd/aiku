@@ -222,7 +222,7 @@ onUnmounted(() => {
 
         <!-- Popup for Breadcrumb List on Mobile -->
         <Menu as="div" class="z-50 w-fit h-8 absolute top-0 md:hidden">
-            <MenuButton class="absolute w-64 h-full"></MenuButton>
+            <MenuButton class="absolute w-64 h-full" aria-label="Transparency clickable area for breadcrumb popup"></MenuButton>
             <transition enter-active-class="transition ease-out duration-100"
                 enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100"
                 leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100"
