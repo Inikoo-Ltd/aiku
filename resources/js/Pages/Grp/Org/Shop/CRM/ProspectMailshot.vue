@@ -23,6 +23,7 @@ import { routeType } from "@/types/route";
 import { Popover, ToggleSwitch, InputText, InputNumber } from 'primevue';
 import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
+import AlertMessage from '@/Components/Utils/AlertMessage.vue'
 import { trans } from "laravel-vue-i18n"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { toZonedTime} from 'date-fns-tz';
@@ -48,6 +49,7 @@ const props = defineProps<{
     status?: string
     secondWaveStatus?: string
     estimatedRecipients?: number
+    isRecipientsCapped?: boolean
     mailshotType?: string
     setSecondWaveRoute?: routeType
     updateSecondWaveRoute?: routeType
@@ -678,6 +680,14 @@ watch(
         </template>
 
     </PageHeading>
+
+    <div v-if="props.isRecipientsCapped" class="p-2 pb-0">
+        <AlertMessage :alert="{
+            status: 'warning',
+            title: trans('Recipient limit applied'),
+            description: trans('Due to limited email resources. Only the first 1,000 prospects will receive this email, please focus on prospects who have never been contacted.')
+        }" />
+    </div>
 
     <!-- Schedule DateTime Picker Popover -->
     <Popover ref="schedulePicker" :visible="showSchedulePicker" @hide="cancelSchedule" appendTo="body">
