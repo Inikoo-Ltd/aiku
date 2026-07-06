@@ -383,10 +383,7 @@ class UpdateShop extends OrgAction
                 }
 
                 data_set($modelData, "settings.reviews.validation_scope.$context.enabled", (bool)data_get($row, 'enabled', false));
-
-                foreach (ReviewValidationScopeEnum::values() as $scope) {
-                    data_set($modelData, "settings.reviews.validation_scope.$context.$scope", (bool)data_get($row, $scope, false));
-                }
+                data_set($modelData, "settings.reviews.validation_scope.$context.scope", data_get($row, 'scope'));
             }
         }
 
@@ -652,6 +649,7 @@ class UpdateShop extends OrgAction
             'review_validation_scope.*.context'                       => ['sometimes', 'required', 'string'],
             'review_validation_scope.*.label'                         => ['sometimes', 'nullable', 'string'],
             'review_validation_scope.*.enabled'                       => ['sometimes', 'boolean'],
+            'review_validation_scope.*.scope'                         => ['sometimes', 'required', Rule::enum(ReviewValidationScopeEnum::class)],
             'review_approval_required'                                => ['sometimes', 'boolean'],
             'review_hours_after_dispatched'                           => ['sometimes', 'nullable', 'integer', 'min:1'],
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
@@ -686,10 +684,6 @@ class UpdateShop extends OrgAction
         $channelIds = SalesChannel::pluck('id');
         foreach ($channelIds as $id) {
             $rules['sales_channel_'.$id] = ['sometimes', 'boolean'];
-        }
-
-        foreach (ReviewValidationScopeEnum::values() as $scope) {
-            $rules["review_validation_scope.*.$scope"] = ['sometimes', 'boolean'];
         }
 
         if (!$this->strict) {

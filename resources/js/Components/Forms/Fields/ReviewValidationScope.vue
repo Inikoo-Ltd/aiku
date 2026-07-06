@@ -13,8 +13,7 @@ interface ScopeRow {
     context: string
     label: string
     enabled: boolean
-    organisation: boolean
-    group: boolean
+    scope: string
 }
 
 const props = defineProps<{
@@ -41,8 +40,7 @@ const rows = ref<ScopeRow[]>(
         context: row.context,
         label: rowLabels[row.context] ?? row.context,
         enabled: row.enabled ?? false,
-        organisation: row.organisation ?? false,
-        group: row.group ?? false,
+        scope: row.scope ?? scopeOptions[0].value,
     }))
 )
 
@@ -51,19 +49,15 @@ const syncForm = () => {
         context: row.context,
         label: row.label,
         enabled: row.enabled,
-        organisation: row.organisation,
-        group: row.group,
+        scope: row.scope,
     }))
 }
 
 watch(rows, syncForm, { deep: true })
 
-const setScope = (row: ScopeRow, key: 'organisation' | 'group', value: boolean): void => {
-    row[key] = value
-
-    if (value) {
-        const other = key === 'organisation' ? 'group' : 'organisation'
-        row[other] = false
+const selectScope = (row: ScopeRow, value: string, on: boolean): void => {
+    if (on) {
+        row.scope = value
     }
 }
 
@@ -97,15 +91,15 @@ const fieldNameString = computed(() => props.fieldName)
                             <div v-if="row.enabled" class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
                                 <div class="flex items-center gap-2">
                                     <Toggle
-                                        :modelValue="row.organisation"
-                                        @update:modelValue="(val) => setScope(row, 'organisation', val)"
+                                        :modelValue="row.scope === scopeOptions[0].value"
+                                        @update:modelValue="(val) => selectScope(row, scopeOptions[0].value, val)"
                                     />
                                     <span class="whitespace-nowrap text-xs text-gray-700">{{ scopeOptions[0].label }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <Toggle
-                                        :modelValue="row.group"
-                                        @update:modelValue="(val) => setScope(row, 'group', val)"
+                                        :modelValue="row.scope === scopeOptions[1].value"
+                                        @update:modelValue="(val) => selectScope(row, scopeOptions[1].value, val)"
                                     />
                                     <span class="whitespace-nowrap text-xs text-gray-700">{{ scopeOptions[1].label }}</span>
                                 </div>

@@ -925,7 +925,7 @@ class EditShop extends OrgAction
     }
 
     /**
-     * @return array<int, array{context: string, label: string, enabled: bool, organisation: bool, group: bool}>
+     * @return array<int, array{context: string, label: string, enabled: bool, scope: string}>
      */
     private function loadReviewValidationScopes(Shop $shop): array
     {
@@ -938,19 +938,12 @@ class EditShop extends OrgAction
         ];
 
         return collect($contexts)
-            ->map(function (string $context) use ($shop, $tabLabels): array {
-                $row = [
-                    'context' => $context,
-                    'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::shortLabels(), $context, $context)),
-                    'enabled' => (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.enabled", false),
-                ];
-
-                foreach (ReviewValidationScopeEnum::values() as $scope) {
-                    $row[$scope] = (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.$scope", false);
-                }
-
-                return $row;
-            })
+            ->map(fn (string $context) => [
+                'context' => $context,
+                'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::shortLabels(), $context, $context)),
+                'enabled' => (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.enabled", false),
+                'scope'   => Arr::get($shop->settings, "reviews.validation_scope.$context.scope", ReviewValidationScopeEnum::ORGANISATION->value),
+            ])
             ->all();
     }
 
