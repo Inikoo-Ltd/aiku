@@ -2,6 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { get } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
+import RadioButton from 'primevue/radiobutton'
+import ToggleSwitch from 'primevue/toggleswitch'
 
 interface ScopeOption {
     value: string
@@ -11,6 +13,7 @@ interface ScopeOption {
 interface ScopeRow {
     context: string
     label: string
+    enabled: boolean
     scope: string
 }
 
@@ -35,6 +38,7 @@ const rows = ref<ScopeRow[]>(
     initialValue.map((row) => ({
         context: row.context,
         label: row.label,
+        enabled: row.enabled ?? false,
         scope: row.scope ?? scopeOptions.value[0]?.value,
     }))
 )
@@ -43,6 +47,7 @@ const syncForm = () => {
     props.form[props.fieldName] = rows.value.map((row) => ({
         context: row.context,
         label: row.label,
+        enabled: row.enabled,
         scope: row.scope,
     }))
 }
@@ -62,6 +67,9 @@ const fieldNameString = computed(() => props.fieldName)
                             {{ trans('Review type') }}
                         </th>
                         <th scope="col" class="px-4 py-2 text-left font-medium text-gray-500">
+                            {{ trans('Enabled') }}
+                        </th>
+                        <th scope="col" class="px-4 py-2 text-left font-medium text-gray-500">
                             {{ trans('Validation scope') }}
                         </th>
                     </tr>
@@ -72,21 +80,30 @@ const fieldNameString = computed(() => props.fieldName)
                             {{ row.label }}
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center gap-6">
-                                <label
+                            <ToggleSwitch v-model="row.enabled" />
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-6" :class="{ 'opacity-50': !row.enabled }">
+                                <div
                                     v-for="option in scopeOptions"
                                     :key="`${row.context}-${option.value}`"
-                                    class="flex items-center gap-2 cursor-pointer"
+                                    class="flex items-center gap-2"
                                 >
-                                    <input
-                                        type="radio"
+                                    <RadioButton
+                                        v-model="row.scope"
+                                        :inputId="`${fieldNameString}-${row.context}-${option.value}`"
                                         :name="`${fieldNameString}-${row.context}`"
                                         :value="option.value"
-                                        v-model="row.scope"
-                                        class="text-indigo-600 focus:ring-indigo-500"
+                                        :disabled="!row.enabled"
                                     />
-                                    <span class="text-sm text-gray-700">{{ option.label }}</span>
-                                </label>
+                                    <label
+                                        :for="`${fieldNameString}-${row.context}-${option.value}`"
+                                        class="text-sm text-gray-700"
+                                        :class="row.enabled ? 'cursor-pointer' : 'cursor-not-allowed'"
+                                    >
+                                        {{ option.label }}
+                                    </label>
+                                </div>
                             </div>
                         </td>
                     </tr>

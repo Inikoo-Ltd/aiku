@@ -377,11 +377,13 @@ class UpdateShop extends OrgAction
         if (Arr::exists($modelData, 'review_validation_scope')) {
             foreach (Arr::pull($modelData, 'review_validation_scope') ?? [] as $row) {
                 $context = data_get($row, 'context');
-                $scope   = data_get($row, 'scope');
 
-                if ($context && $scope) {
-                    data_set($modelData, "settings.reviews.validation_scope.$context", $scope);
+                if (!$context) {
+                    continue;
                 }
+
+                data_set($modelData, "settings.reviews.validation_scope.$context.enabled", (bool)data_get($row, 'enabled', false));
+                data_set($modelData, "settings.reviews.validation_scope.$context.scope", data_get($row, 'scope'));
             }
         }
 
@@ -646,6 +648,7 @@ class UpdateShop extends OrgAction
             'review_validation_scope'                                 => ['sometimes', 'nullable', 'array'],
             'review_validation_scope.*.context'                       => ['sometimes', 'required', 'string'],
             'review_validation_scope.*.label'                         => ['sometimes', 'nullable', 'string'],
+            'review_validation_scope.*.enabled'                       => ['sometimes', 'boolean'],
             'review_validation_scope.*.scope'                         => ['sometimes', 'required', Rule::enum(ReviewValidationScopeEnum::class)],
             'review_approval_required'                                => ['sometimes', 'boolean'],
             'review_hours_after_dispatched'                           => ['sometimes', 'nullable', 'integer', 'min:1'],

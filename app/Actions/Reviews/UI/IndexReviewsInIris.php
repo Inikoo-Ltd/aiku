@@ -24,13 +24,17 @@ use Closure;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
 class IndexReviewsInIris extends OrgAction
 {
+    private Shop|ProductCategory|Product $parent;
+
     public function handle(Shop|ProductCategory|Product $parent, ?string $prefix = null): LengthAwarePaginator
     {
+        $this->parent = $parent;
         $query = $this->baseQuery();
         $this->applyWhereQuery($parent, $query);
 
@@ -223,6 +227,13 @@ class IndexReviewsInIris extends OrgAction
 
     private function baseQuery(bool $withProductJoin = false, bool $withFamilyJoin = false): QueryBuilder
     {
+        $language = null;
+        if ($this->parent instanceof Shop) {
+            $language = $this->parent->language;
+        } else {
+            $language = $this->parent->shop?->language;
+        }
+
         $select = [
             'reviews.id',
             'reviews.scope',
@@ -239,8 +250,13 @@ class IndexReviewsInIris extends OrgAction
             'reviews.web_images',
             'reviews.reply_message',
             'reviews.reply_at',
+            'reviews.translations',
             'reply_users.contact_name as reply_by',
         ];
+
+        if ($language) {
+            array_push($select, DB::raw("'{$language->id}' as language_id"));
+        }
 
         $query = QueryBuilder::for(Review::class)
             ->leftJoin('customers', 'customers.id', 'reviews.customer_id')

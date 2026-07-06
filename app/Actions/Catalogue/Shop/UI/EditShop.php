@@ -921,18 +921,18 @@ class EditShop extends OrgAction
         $reviewLabel = collect(ReviewContextEnum::values())
             ->mapWithKeys(fn (string $context) => [
                 $context => [
-                    ...$emptyDimensions, 
+                    ...$emptyDimensions,
                     ...($stored[$context] ?? []),
                     'label_tab' => data_get($tabLabels, $context)
                 ],
             ])
             ->all();
-            
+
         return $reviewLabel;
     }
 
     /**
-     * @return array<int, array{context: string, label: string, scope: string}>
+     * @return array<int, array{context: string, label: string, enabled: bool, scope: string}>
      */
     private function loadReviewValidationScopes(Shop $shop): array
     {
@@ -948,7 +948,8 @@ class EditShop extends OrgAction
             ->map(fn (string $context) => [
                 'context' => $context,
                 'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::labels(), $context, $context)),
-                'scope'   => Arr::get($shop->settings, "reviews.validation_scope.$context", ReviewValidationScopeEnum::ORGANISATION->value),
+                'enabled' => (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.enabled", false),
+                'scope'   => Arr::get($shop->settings, "reviews.validation_scope.$context.scope", ReviewValidationScopeEnum::ORGANISATION->value),
             ])
             ->all();
     }
