@@ -277,7 +277,7 @@ console.log('plm',layout)
                         <div class="skeleton h-3 w-16 rounded"></div>
                         <div class="skeleton h-6 w-16 rounded"></div>
                     </div>
-                </div>
+                </div>    
             </div>
         </div>
 
