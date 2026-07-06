@@ -715,7 +715,7 @@ test('index reviews in iris scope handlers', function () {
     StoreReview::make()->action($this->family, ['customer_id' => $this->customer->id, 'rating' => 4, 'message' => 'family level']);
     StoreReview::make()->action($this->order, ['customer_id' => $this->customer->id, 'order_id' => $this->order->id, 'rating' => 5, 'message' => 'order level']);
 
-    $indexer = IndexReviewsInIris::make();
+    $indexer = IndexReviewsInIris::make($this->shop);
 
     expect($indexer->handleAllScopeReviews(shop: $this->shop, prefix: 'all')->total())->toBeGreaterThanOrEqual(1)
         ->and($indexer->handleProductScopeReviews(shop: $this->shop, prefix: 'product')->total())->toBeGreaterThanOrEqual(0)

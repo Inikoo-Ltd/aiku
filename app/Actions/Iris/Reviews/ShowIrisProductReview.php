@@ -29,7 +29,7 @@ class ShowIrisProductReview extends IrisAction
     public function handle(Product $product): array
     {
         $shop           = $product->shop;
-        $indexer        = IndexReviewsInIris::make();
+        $indexer        = IndexReviewsInIris::make($product);
         $reviewSettings = Arr::get($shop->settings, 'reviews');
         $minRating      = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
 
@@ -110,7 +110,7 @@ class ShowIrisProductReview extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
-        $indexer           = IndexReviewsInIris::make();
+        $indexer           = IndexReviewsInIris::make($this->product);
         $product           = $this->product;
         $includeOtherShops = $indexer->includesOtherShops($product->shop) && $product->master_product_id;
 

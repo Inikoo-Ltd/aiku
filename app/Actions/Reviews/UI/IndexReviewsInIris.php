@@ -26,12 +26,25 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Override;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
 class IndexReviewsInIris extends OrgAction
 {
     private Shop|ProductCategory|Product $parent;
+
+    public static function make(Shop|ProductCategory|Product|null $parent = null): static
+    {
+        // TODO: QUICK FIX, NEED TO REFACTOR EVERYTHING LATER. THIS WORKS FOR NOW
+        $instance = app(static::class);
+
+        if ($parent) {
+            $instance->parent = $parent;
+        }
+
+        return $instance;
+    }
 
     public function handle(Shop|ProductCategory|Product $parent, ?string $prefix = null): LengthAwarePaginator
     {
