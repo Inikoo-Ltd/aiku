@@ -55,6 +55,8 @@ const syncForm = () => {
 watch(rows, syncForm, { deep: true })
 
 const fieldNameString = computed(() => props.fieldName)
+
+
 </script>
 
 <template>
@@ -64,13 +66,13 @@ const fieldNameString = computed(() => props.fieldName)
                 <thead class="bg-gray-50">
                     <tr>
                         <th scope="col" class="px-4 py-2 text-left font-medium text-gray-500">
-                            {{ trans('Review type') }}
+                            {{ trans('Type') }}
                         </th>
                         <th scope="col" class="px-4 py-2 text-left font-medium text-gray-500">
-                            {{ trans('Enabled') }}
+                            {{ trans('Include') }}
                         </th>
                         <th scope="col" class="px-4 py-2 text-left font-medium text-gray-500">
-                            {{ trans('Validation scope') }}
+
                         </th>
                     </tr>
                 </thead>
@@ -83,7 +85,7 @@ const fieldNameString = computed(() => props.fieldName)
                             <ToggleSwitch v-model="row.enabled" />
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center gap-6" :class="{ 'opacity-50': !row.enabled }">
+                            <div class="flex items-center gap-6" :class="{ 'opacity-20': !row.enabled }">
                                 <div
                                     v-for="option in scopeOptions"
                                     :key="`${row.context}-${option.value}`"

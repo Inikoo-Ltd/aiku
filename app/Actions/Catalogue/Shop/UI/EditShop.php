@@ -821,16 +821,10 @@ class EditShop extends OrgAction
                             'information' => __('Show the name of the staff member who replied to a review.'),
                             'value'       => Arr::get($shop->settings, 'reviews.show_staff_who_reply', false),
                         ],
-                        'review_add_other_shops'    => [
-                            'type'        => 'toggle',
-                            'label'       => __('Add Other Shops Reviews'),
-                            'information' => __('Applicable family and product reviews'),
-                            'value'       => Arr::get($shop->settings, 'reviews.add_other_shops', false),
-                        ],
                         'review_validation_scope'   => [
                             'type'        => 'review_validation_scope',
-                            'label'       => __('Review validation scope'),
-                            'information' => __('Choose whether data is retrieved from the current organisation only or from the entire group.'),
+                            'label'       => __('Include other shops'),
+                            'information' => __('Here you can configure whether you want to include other shops reviews.'),
                             'options'     => ReviewValidationScopeEnum::selectOptions(),
                             'value'       => $this->loadReviewValidationScopes($shop),
                         ],
@@ -947,7 +941,7 @@ class EditShop extends OrgAction
         return collect($contexts)
             ->map(fn (string $context) => [
                 'context' => $context,
-                'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::labels(), $context, $context)),
+                'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::shortLabels(), $context, $context)),
                 'enabled' => (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.enabled", false),
                 'scope'   => Arr::get($shop->settings, "reviews.validation_scope.$context.scope", ReviewValidationScopeEnum::ORGANISATION->value),
             ])

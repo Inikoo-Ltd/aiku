@@ -18,6 +18,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\WebUser;
 use App\Models\Reviews\Review;
 use App\Services\QueryBuilder;
 use Closure;
@@ -35,7 +36,7 @@ class IndexReviewsInIris extends OrgAction
     public function handle(Shop|ProductCategory|Product $parent, ?string $prefix = null): LengthAwarePaginator
     {
         $this->parent = $parent;
-        $query = $this->baseQuery();
+        $query        = $this->baseQuery();
         $this->applyWhereQuery($parent, $query);
 
         return $this->applyQueryOptions($query, $prefix);
@@ -43,7 +44,7 @@ class IndexReviewsInIris extends OrgAction
 
     public function includesOtherShops(Shop $shop): bool
     {
-        return (bool) Arr::get($shop->settings, 'reviews.add_other_shops', false);
+        return (bool)Arr::get($shop->settings, 'reviews.add_other_shops', false);
     }
 
     protected function getElementGroups(Shop $shop, array $scopes, ?callable $extraConditions = null, bool $includeOtherShops = false): array
@@ -51,12 +52,17 @@ class IndexReviewsInIris extends OrgAction
         $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
 
         $countQuery = Review::query()
-            ->selectRaw('FLOOR(rating_main) as star, COUNT(*) as count')
-            ->when(!$includeOtherShops, 
-                fn ($query) => $query->where('reviews.shop_id', $shop->id),
-                fn ($query) => $query->where('reviews.organisation_id', $shop->organisation_id)
-            )
-            ->whereIn('reviews.scope', $scopes)
+            ->selectRaw('FLOOR(rating_main) as star, COUNT(*) as count');
+
+
+
+        if (!$includeOtherShops) {
+            //todo this is wrong
+            $countQuery->where('reviews.shop_id', $shop->id)->where('reviews.organisation_id', $shop->organisation_id);
+        }
+
+
+        $countQuery->whereIn('reviews.scope', $scopes)
             ->where('reviews.rating_main', '>=', $minRating)
             ->where('reviews.state', ReviewStateEnum::PUBLISHED)
             ->where('reviews.is_public', true)
@@ -72,8 +78,8 @@ class IndexReviewsInIris extends OrgAction
 
         $elements = [];
         foreach (range(5, 1) as $star) {
-            $label              = $star === 1 ? __('1 Star') : $star . ' ' . __('Stars');
-            $elements[(string) $star] = [$label, (int) ($counts[$star] ?? 0)];
+            $label                   = $star === 1 ? __('1 Star') : $star.' '.__('Stars');
+            $elements[(string)$star] = [$label, (int)($counts[$star] ?? 0)];
         }
 
         return [
@@ -81,8 +87,9 @@ class IndexReviewsInIris extends OrgAction
                 'label'    => __('Rating'),
                 'elements' => $elements,
                 'engine'   => function ($query, $elements) {
+                    /** @noinspection SpellCheckingInspection */
                     $query->whereRaw(
-                        'FLOOR(reviews.rating_main) IN (' . implode(',', array_fill(0, count($elements), '?')) . ')',
+                        'FLOOR(reviews.rating_main) IN ('.implode(',', array_fill(0, count($elements), '?')).')',
                         array_map('intval', $elements)
                     );
                 },
@@ -104,8 +111,9 @@ class IndexReviewsInIris extends OrgAction
 
     public function handleCompanyScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
-        $scopes = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER];
-        $query  = $this->baseQuery();
+        $this->parent = $shop;
+        $scopes       = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER];
+        $query        = $this->baseQuery();
         $this->applyShopConditions($shop, $query, $scopes);
         $this->applyElementGroups($query, $shop, $scopes, $prefix);
 
@@ -114,6 +122,7 @@ class IndexReviewsInIris extends OrgAction
 
     public function handleProductScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
+        $this->parent      = $shop;
         $scopes            = [ReviewScopeEnum::PRODUCT];
         $includeOtherShops = $this->includesOtherShops($shop);
         $query             = $this->baseQuery(withProductJoin: true);
@@ -122,13 +131,14 @@ class IndexReviewsInIris extends OrgAction
 
         return $this->applyQueryOptions($query, $prefix, [
             AllowedFilter::callback('product', function ($query, $value) {
-                $query->where('reviews.product_id', (int) $value);
+                $query->where('reviews.product_id', (int)$value);
             }),
         ], ['products.name']);
     }
 
     public function handleFamilyScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
+        $this->parent      = $shop;
         $scopes            = [ReviewScopeEnum::FAMILY];
         $includeOtherShops = $this->includesOtherShops($shop);
         $query             = $this->baseQuery(withFamilyJoin: true);
@@ -137,13 +147,14 @@ class IndexReviewsInIris extends OrgAction
 
         return $this->applyQueryOptions($query, $prefix, [
             AllowedFilter::callback('family', function ($query, $value) {
-                $query->where('reviews.product_category_id', (int) $value);
+                $query->where('reviews.product_category_id', (int)$value);
             }),
         ], ['product_categories.name']);
     }
 
     public function handleSpecificProductReviews(Product $product, ?string $prefix = null): LengthAwarePaginator
     {
+        $this->parent      = $product;
         $shop              = $product->shop;
         $scopes            = [ReviewScopeEnum::PRODUCT];
         $includeOtherShops = $this->includesOtherShops($shop) && $product->master_product_id;
@@ -151,10 +162,10 @@ class IndexReviewsInIris extends OrgAction
         $this->applyShopConditions($shop, $query, $scopes, $includeOtherShops);
 
         if ($includeOtherShops) {
-            $extraConditions = fn ($q) => $q->where('reviews.master_product_id', $product->master_product_id);
+            $extraConditions = fn($q) => $q->where('reviews.master_product_id', $product->master_product_id);
             $query->where('reviews.master_product_id', $product->master_product_id);
         } else {
-            $extraConditions = fn ($q) => $q->where('reviews.product_id', $product->id);
+            $extraConditions = fn($q) => $q->where('reviews.product_id', $product->id);
             $query->where('reviews.product_id', $product->id);
         }
 
@@ -165,6 +176,7 @@ class IndexReviewsInIris extends OrgAction
 
     public function handleSpecificFamilyReviews(ProductCategory $family, ?string $prefix = null): LengthAwarePaginator
     {
+        $this->parent      = $family;
         $shop              = $family->shop;
         $scopes            = [ReviewScopeEnum::FAMILY];
         $includeOtherShops = $this->includesOtherShops($shop) && $family->master_product_category_id;
@@ -172,10 +184,10 @@ class IndexReviewsInIris extends OrgAction
         $this->applyShopConditions($shop, $query, $scopes, $includeOtherShops);
 
         if ($includeOtherShops) {
-            $extraConditions = fn ($q) => $q->where('reviews.master_product_category_id', $family->master_product_category_id);
+            $extraConditions = fn($q) => $q->where('reviews.master_product_category_id', $family->master_product_category_id);
             $query->where('reviews.master_product_category_id', $family->master_product_category_id);
         } else {
-            $extraConditions = fn ($q) => $q->where('reviews.product_category_id', $family->id);
+            $extraConditions = fn($q) => $q->where('reviews.product_category_id', $family->id);
             $query->where('reviews.product_category_id', $family->id);
         }
 
@@ -186,6 +198,7 @@ class IndexReviewsInIris extends OrgAction
 
     public function handleProductsInFamilyReviews(ProductCategory $family, ?string $prefix = null): LengthAwarePaginator
     {
+        $this->parent      = $family;
         $shop              = $family->shop;
         $scopes            = [ReviewScopeEnum::PRODUCT];
         $includeOtherShops = $this->includesOtherShops($shop) && $family->master_product_category_id;
@@ -193,14 +206,14 @@ class IndexReviewsInIris extends OrgAction
         $this->applyShopConditions($shop, $query, $scopes, $includeOtherShops);
 
         if ($includeOtherShops) {
-            $extraConditions = fn ($q) => $q
+            $extraConditions = fn($q) => $q
                 ->join('products as p_count', 'p_count.id', '=', 'reviews.product_id')
                 ->join('product_categories as f_count', 'f_count.id', '=', 'p_count.family_id')
                 ->where('f_count.master_product_category_id', $family->master_product_category_id);
             $query->join('product_categories as review_family', 'review_family.id', '=', 'products.family_id')
                 ->where('review_family.master_product_category_id', $family->master_product_category_id);
         } else {
-            $extraConditions = fn ($q) => $q
+            $extraConditions = fn($q) => $q
                 ->join('products as p_count', 'p_count.id', '=', 'reviews.product_id')
                 ->where('p_count.family_id', $family->id);
             $query->where('products.family_id', $family->id);
@@ -210,15 +223,16 @@ class IndexReviewsInIris extends OrgAction
 
         return $this->applyQueryOptions($query, $prefix, [
             AllowedFilter::callback('product', function ($query, $value) {
-                $query->where('reviews.product_id', (int) $value);
+                $query->where('reviews.product_id', (int)$value);
             }),
         ], ['products.name']);
     }
 
     public function handleAllScopeReviews(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
-        $scopes = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER, ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY];
-        $query  = $this->baseQuery(withProductJoin: true, withFamilyJoin: true);
+        $this->parent = $shop;
+        $scopes       = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER, ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY];
+        $query        = $this->baseQuery(withProductJoin: true, withFamilyJoin: true);
         $this->applyShopConditions($shop, $query, $scopes);
         $this->applyElementGroups($query, $shop, $scopes, $prefix);
 
@@ -227,7 +241,6 @@ class IndexReviewsInIris extends OrgAction
 
     private function baseQuery(bool $withProductJoin = false, bool $withFamilyJoin = false): QueryBuilder
     {
-        $language = null;
         if ($this->parent instanceof Shop) {
             $language = $this->parent->language;
         } else {
@@ -255,7 +268,7 @@ class IndexReviewsInIris extends OrgAction
         ];
 
         if ($language) {
-            array_push($select, DB::raw("'{$language->id}' as language_id"));
+            $select[] = DB::raw("'$language->id' as language_id");
         }
 
         $query = QueryBuilder::for(Review::class)
@@ -295,20 +308,21 @@ class IndexReviewsInIris extends OrgAction
         }
 
         if (auth()->check()) {
-            $user = auth()->user();
-            if ($user->customer) {
+            /** @var WebUser $webUser */
+            $webUser = auth()->user();
+            if ($webUser->customer) {
                 $select[] = 'review_reactions.type as review_reaction';
                 $select[] = 'reply_reactions.type as reply_reaction';
 
                 $query
-                    ->leftJoin('review_reactions', function ($join) use ($user) {
+                    ->leftJoin('review_reactions', function ($join) use ($webUser) {
                         $join->on('review_reactions.review_id', 'reviews.id')
-                            ->where('review_reactions.customer_id', $user->customer->id)
+                            ->where('review_reactions.customer_id', $webUser->customer->id)
                             ->where('review_reactions.target', ReviewReactionTargetEnum::REVIEW);
                     })
-                    ->leftJoin('review_reactions as reply_reactions', function ($join) use ($user) {
+                    ->leftJoin('review_reactions as reply_reactions', function ($join) use ($webUser) {
                         $join->on('reply_reactions.review_id', 'reviews.id')
-                            ->where('reply_reactions.customer_id', $user->customer->id)
+                            ->where('reply_reactions.customer_id', $webUser->customer->id)
                             ->where('reply_reactions.target', ReviewReactionTargetEnum::REVIEW_REPLY);
                     });
             }
@@ -358,7 +372,7 @@ class IndexReviewsInIris extends OrgAction
                     });
                 }),
                 AllowedFilter::callback('rating', function ($query, $value) {
-                    $query->whereRaw('FLOOR(reviews.rating_main) = ?', [(int) $value]);
+                    $query->whereRaw('FLOOR(reviews.rating_main) = ?', [(int)$value]);
                 }),
                 ...$extraFilters,
             ])
@@ -370,6 +384,7 @@ class IndexReviewsInIris extends OrgAction
     {
         $shop              = $parent;
         $includeOtherShops = false;
+
 
         if ($parent instanceof Product) {
             $shop              = $parent->shop;
@@ -421,18 +436,20 @@ class IndexReviewsInIris extends OrgAction
     {
         $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
 
-        return Review::query()
-            ->when(
-                !$includeOtherShops, 
-                fn ($query) => $query->where('shop_id', $shop->id),
-                fn ($query) => $query->where('reviews.organisation_id', $shop->organisation_id)
-            )
+        $query = Review::query()
             ->whereIn('scope', $scopes)
             ->where('rating_main', '>=', $minRating)
             ->where('state', ReviewStateEnum::PUBLISHED)
             ->where('is_public', true)
-            ->where('review_status', ReviewStatusEnum::APPROVED)
-            ->avg('rating_main');
+            ->where('review_status', ReviewStatusEnum::APPROVED);
+
+        if (!$includeOtherShops) {
+            // this is wrong
+            $query->where('shop_id', $shop->id)->where('reviews.organisation_id', $shop->organisation_id);
+        }
+
+
+        return $query->avg('rating_main');
     }
 
     public function tableStructure(?string $prefix = null, ?Shop $shop = null, array $scopes = [], ?callable $extraConditions = null, bool $includeOtherShops = false): Closure
@@ -444,8 +461,8 @@ class IndexReviewsInIris extends OrgAction
 
             $table->withGlobalSearch();
 
-            $table->column(key: 'name', label: __('Reviewer'), canBeHidden: false, sortable: false)
-                ->column(key: 'review', label: __('Review'), canBeHidden: false, sortable: false)
+            $table->column(key: 'name', label: __('Reviewer'), canBeHidden: false)
+                ->column(key: 'review', label: __('Review'), canBeHidden: false)
                 ->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true);
 
             if ($shop && !empty($scopes)) {

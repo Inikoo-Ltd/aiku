@@ -60,7 +60,7 @@ const parentInfo = computed(() => {
         </template>
          <template #cell(code)="{ item: department }">
             <Link
-                :href="route('iris.catalogue.collection.show', { collection: department.slug })"
+                :href="`/catalogue/collection/${department.slug}`"
                 class="primaryLink"
             >
                 {{ department.code }}

@@ -9,28 +9,27 @@ class ReviewsInIrisResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var Review $review */
-        $review = $this->resource;
-        $languageId = $review->language_id;
+        
+        $languageId = $this->language_id;
 
         return [
-            'id'                    => $review->id,
-            'name'                  => maskName($review->contact_name),
-            'customer_location'     => is_string($review->location) ? json_decode($review->location, true) : $review->location,
-            'rating'                => $review->rating_main,
-            'message'               => $review->message,
-            'message_translated'    => data_get($review->translations, "message.$languageId", null),
-            'date'                  => $review->published_at,
-            'web_images'            => $review->web_images,
-            'likes'                 => $review->likes,
-            'dislikes'              => $review->dislikes,
-            'review_reactions'      => $review->review_reaction,
-            'reply_likes'           => $review->replay_likes,
-            'reply_dislikes'        => $review->replay_dislikes,
-            'reply_reactions'       => $review->reply_reaction,
-            'reply'                 => $review->reply,
-            'reply_translated'      => data_get($review->translations, "reply_message.$languageId", null),
-            'reply_by'              => $review->reply_by,
+            'id'                    => $this->id,
+            'name'                  => maskName($this->contact_name),
+            'customer_location'     => is_string($this->location) ? json_decode($this->location, true) : $this->location,
+            'rating'                => $this->rating_main,
+            'message'               => $this->message,
+            'message_translated'    => data_get($this->translations, "message.$languageId", null),
+            'date'                  => $this->published_at,
+            'web_images'            => $this->web_images,
+            'likes'                 => $this->likes,
+            'dislikes'              => $this->dislikes,
+            'review_reactions'      => $this->review_reaction,
+            'reply_likes'           => $this->replay_likes,
+            'reply_dislikes'        => $this->replay_dislikes,
+            'reply_reactions'       => $this->reply_reaction,
+            'reply'                 => $this->reply,
+            'reply_translated'      => data_get($this->translations, "reply_message.$languageId", null),
+            'reply_by'              => $this->reply_by,
         ];
     }
 }

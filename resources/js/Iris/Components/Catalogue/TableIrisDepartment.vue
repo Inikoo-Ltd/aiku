@@ -37,7 +37,7 @@ defineProps<{
         </template>
         <template #cell(code)="{ item: department }">
             <Link
-                :href="route('iris.catalogue.department.show', { department: department.slug })"
+                :href="`/catalogue/department/${department.slug}`"
                 class="primaryLink inline-block"
             >
                 {{ department.code }}
