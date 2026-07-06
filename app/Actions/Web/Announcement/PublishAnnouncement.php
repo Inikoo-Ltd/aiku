@@ -13,6 +13,7 @@ use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreAnnouncementSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\WebsiteHydrateAnnouncements;
 use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -82,22 +83,22 @@ class PublishAnnouncement extends OrgAction
         $compiled_layout = [];
         if (Arr::exists($modelData, 'compiled_layout')) {
             $compiled_layout = [
-                'compiled_layout'          => Arr::get($modelData, 'compiled_layout'),
+                'compiled_layout' => Arr::get($modelData, 'compiled_layout'),
             ];
         }
 
         $updateData = [
-            'live_snapshot_id'          => $snapshot->id,
-            'fields'                    => Arr::get($snapshot->layout, 'fields'),
-            'published_fields'          => Arr::get($snapshot->layout, 'fields'),
-            'published_message'         => Arr::get($modelData, 'published_message'),
-            'container_properties'      => Arr::get($modelData, 'container_properties'),
-            'text'                      => Arr::get($snapshot->layout, 'text'),
-            'published_checksum'        => md5(json_encode($snapshot->layout)),
-            'state'                     => AnnouncementStateEnum::READY,
-            'status'                    => AnnouncementStatusEnum::ACTIVE,
-            'published_settings'        => Arr::get($snapshot->layout, 'settings'),
-            'is_dirty'                  => false,
+            'live_snapshot_id'     => $snapshot->id,
+            'fields'               => Arr::get($snapshot->layout, 'fields'),
+            'published_fields'     => Arr::get($snapshot->layout, 'fields'),
+            'published_message'    => Arr::get($modelData, 'published_message'),
+            'container_properties' => Arr::get($modelData, 'container_properties'),
+            'text'                 => Arr::get($snapshot->layout, 'text'),
+            'published_checksum'   => md5(json_encode($snapshot->layout)),
+            'state'                => AnnouncementStateEnum::READY,
+            'status'               => AnnouncementStatusEnum::ACTIVE,
+            'published_settings'   => Arr::get($snapshot->layout, 'settings'),
+            'is_dirty'             => false,
             ...$compiled_layout
         ];
 
@@ -119,22 +120,20 @@ class PublishAnnouncement extends OrgAction
         $updateData['schedule_finish_at'] = Carbon::parse($scheduleFinishAt);
 
         if ($scheduleFinishAt) {
-            $updateData['closed_at']          = Carbon::parse($scheduleFinishAt);
+            $updateData['closed_at'] = Carbon::parse($scheduleFinishAt);
         } else {
             $updateData['schedule_finish_at'] = null;
         }
 
         ToggleAnnouncement::dispatch($announcement, AnnouncementStatusEnum::ACTIVE->value)->delay($updateData['live_at']);
 
-        if (! blank($updateData['schedule_finish_at'])) {
+        if (!blank($updateData['schedule_finish_at'])) {
             ToggleAnnouncement::dispatch($announcement, AnnouncementStatusEnum::INACTIVE->value)->delay($updateData['schedule_finish_at']);
         }
 
         $this->update($announcement, $updateData);
         ClearCacheByWildcard::run("irisData:website:$announcement->website_id:*");
-
-
-
+        WebsiteHydrateAnnouncements::dispatch($announcement->website_id)->delay(2);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -158,8 +157,8 @@ class PublishAnnouncement extends OrgAction
 
     public function asController(Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): void
     {
-        $this->scope    = 'website';
-        $this->parent   = $website;
+        $this->scope  = 'website';
+        $this->parent = $website;
         $this->initialisation($website->organisation, $request);
 
         $this->handle($announcement, $this->validatedData);

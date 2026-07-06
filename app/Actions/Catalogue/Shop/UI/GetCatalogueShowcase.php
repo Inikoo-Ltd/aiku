@@ -2,9 +2,9 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -471,7 +471,8 @@ class GetCatalogueShowcase
                 ->where('is_main', true)
                 ->whereNull('exclusive_for_customer_id')
                 ->where('is_for_sale', true)
-                ->whereRaw("not exists (select 1 from webpages w where w.id = products.webpage_id and w.state = '".WebpageStateEnum::LIVE->value."')")
+                ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING, ProductStateEnum::IN_PROCESS])
+                ->where('has_live_webpage', false)
                 ->count(),
         ];
     }

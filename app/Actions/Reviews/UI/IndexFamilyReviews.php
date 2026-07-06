@@ -2,8 +2,8 @@
 
 namespace App\Actions\Reviews\UI;
 
-use App\Actions\Catalogue\Review\UI\IndexReviews;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -11,6 +11,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
+https://app.aiku.test/org/sk/shops/at/reviews/products
 class IndexFamilyReviews extends OrgAction
 {
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
@@ -22,18 +23,23 @@ class IndexFamilyReviews extends OrgAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
+        $title = __('Family Reviews');
+        $tabLabels = $shop->getCustomReviewCategoryLabel();
+        $alternateName = data_get($tabLabels, ReviewContextEnum::FAMILY->value);
+        $displayAlternateName = $alternateName && $title != $alternateName;
+
         return Inertia::render('Org/Catalogue/ShopReviews', [
-            'title'       => __('Family Reviews'),
+            'title'       => $title,
             'breadcrumbs' => $this->getBreadcrumbs(
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
             'pageHead' => [
-                'title' => __('Family Reviews'),
+                'title' => $title . ($displayAlternateName ? " ($alternateName)" : ''),
                 'model' => __('Shop'),
                 'icon'  => [
                     'icon'  => ['fal', 'fa-folder'],
-                    'title' => __('Family Reviews'),
+                    'title' => $title . ($displayAlternateName ? " ($alternateName)" : ''),
                 ],
             ],
             'data' => [

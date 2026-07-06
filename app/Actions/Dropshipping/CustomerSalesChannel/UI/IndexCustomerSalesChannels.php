@@ -185,7 +185,7 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), sortable: true);
 
-                
+
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,

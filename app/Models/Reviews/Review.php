@@ -27,7 +27,6 @@ use App\Models\Ordering\Order;
 use App\Models\Reviews\Traits\IsReviews;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
@@ -53,7 +52,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property \Illuminate\Support\Carbon|null $auto_approve_at
  * @property bool $is_public
  * @property string|null $message
- * @property string $web_images
+ * @property array<array-key, mixed> $web_images
  * @property int|null $language_id
  * @property ReviewStatusEnum $review_status
  * @property bool $approved
@@ -77,11 +76,14 @@ use Spatie\MediaLibrary\HasMedia;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property array<array-key, mixed> $translations
+ * @property int|null $reply_language_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read \App\Models\Helpers\Language|null $language
  * @property-read MasterAsset|null $masterProduct
  * @property-read MasterProductCategory|null $masterProductCategory
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
@@ -119,6 +121,7 @@ class Review extends Model implements Auditable, HasMedia
         'replay_likes'      => 'integer',
         'replay_dislikes'   => 'integer',
         'meta'              => 'array',
+        'translations'      => 'array',
         'web_images'        => 'array',
         'auto_approve_at'   => 'datetime',
         'published_at'      => 'datetime',
@@ -128,6 +131,7 @@ class Review extends Model implements Auditable, HasMedia
 
     protected $attributes = [
         'meta'              => '{}',
+        'translations'      => '{}',
         'web_images'        => '{}',
     ];
 
@@ -171,5 +175,10 @@ class Review extends Model implements Auditable, HasMedia
     public function reactions(): HasMany
     {
         return $this->hasMany(ReviewReaction::class);
+    }
+
+    public function language(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Helpers\Language::class);
     }
 }

@@ -72,6 +72,16 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
             ReviewContextEnum::FAMILY->value  => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::FAMILY),
         ];
 
+        $navigation = RetinaOrderReviewTabsEnum::navigation();
+        $tabLabels  = $this->shop->getCustomReviewCategoryLabel();
+
+        $navigation = collect($navigation)->mapWithKeys(fn ($item, $key) => [
+            $key    => [
+                'title' => data_get($tabLabels, $item['scope'], $item['title']),
+                'icon'  => $item['icon'],
+            ]
+        ])->toArray();
+
         $customerSalesChannel = $order->customerSalesChannel;
 
         return Inertia::render(
@@ -105,7 +115,7 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                 ],
                 'tabs'           => [
                     'current'    => $this->tab,
-                    'navigation' => RetinaOrderReviewTabsEnum::navigation()
+                    'navigation' => $navigation
                 ],
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
                 'box_stats' => $this->getOrderBoxStats($order),

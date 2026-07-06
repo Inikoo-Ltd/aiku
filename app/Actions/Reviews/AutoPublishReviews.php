@@ -8,7 +8,7 @@
 
 namespace App\Actions\Reviews;
 
-use App\Actions\Catalogue\Review\Traits\HasReviewHydrators;
+use App\Actions\Reviews\Traits\HasReviewHydrators;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
 use App\Models\HumanResources\WorkSchedule;

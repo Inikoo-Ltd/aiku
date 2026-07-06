@@ -18,7 +18,7 @@ return new class () extends Migration {
             $table->ipAddress('ip')->unique();
             $table->char('country', 2)->index();
             $table->string('city')->nullable();
-            $table->string('postcode');
+            $table->string('postcode')->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
             $table->timestampsTz();

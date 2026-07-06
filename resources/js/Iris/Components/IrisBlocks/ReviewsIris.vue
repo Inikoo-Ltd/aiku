@@ -17,6 +17,7 @@ import Image from "@/Common/Components/Image.vue"
 import StarRating from "@/Iris/Components/StarRating.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { faArrowRight } from "@fas"
+import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 
 
 const props = defineProps<{
@@ -224,7 +225,7 @@ const reviewLink = computed(() => {
             }
     }
 })
-
+console.log('plm',layout)
 </script>
 
 <template>
@@ -257,30 +258,43 @@ const reviewLink = computed(() => {
 
         <div v-else class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary -->
-            <a href="/reviews">
-                <div
-                    class="flex min-h-[150px] flex-col items-center justify-center px-6 py-6 text-center lg:col-span-1">
-                    <div class="text-sm font-semibold uppercase tracking-wider text-gray-900">
-                        {{ ctrans("Customer Rating") }}
-                    </div>
-
-                    <div class="mt-3 flex items-end gap-1">
-                        <span class="text-4xl font-bold leading-none">
-                            {{ parseFloat(reviewSummary).toFixed(2) }}
-                        </span>
-
-                        <span class="pb-1 text-base text-gray-500">
-                            /5
-                        </span>
-                    </div>
-
-                    <StarRating :modelValue="parseFloat(reviewSummary)" class="review-rating mt-3 text-2xl" />
-
-                    <div class="mt-3 text-xs text-gray-500">
-                        {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
-                    </div>
+            <div
+                class="flex min-h-[150px] flex-col items-center justify-center px-6 py-2 text-center lg:col-span-1">
+                <div class="text-sm font-semibold uppercase tracking-wider text-gray-900">
+                    {{ ctrans("Customer Rating") }}
                 </div>
-            </a>
+
+                <div class="mt-3 flex items-end gap-1">
+                    <span class="text-4xl font-bold leading-none">
+                        {{ parseFloat(reviewSummary).toFixed(2) }}
+                    </span>
+
+                    <span class="pb-1 text-base text-gray-500">
+                        /5
+                    </span>
+                </div>
+
+                <StarRating :modelValue="parseFloat(reviewSummary)" class="review-rating mt-3 text-2xl" />
+
+                <div class="mt-3 text-xs text-gray-500">
+                    {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
+                </div>
+
+                <div class="mt-2 flex flex-col items-center gap-2">
+                    <a :href="reviewLink.href"
+                        class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
+                        {{ reviewLink.text }}
+                    </a>
+
+                    <a v-if="reviewLink.href !== '/reviews'" href="/reviews"
+                        class="group inline-flex items-center gap-2 text-xs font-bold  hover:underline">
+                        {{ ctrans("See All Reviews") }}
+
+                        <FontAwesomeIcon :icon="faArrowRight"
+                            class="text-xs transition-transform group-hover:translate-x-1" />
+                    </a>
+                </div>
+            </div>
 
 
             <!-- Reviews -->
@@ -299,17 +313,7 @@ const reviewLink = computed(() => {
                     <FontAwesomeIcon v-else :icon="faChevronRight" class="text-[10px] text-gray-600" />
                 </button>
 
-                <div class="grid grid-cols-1 divide-gray-200 lg:grid-cols-4 2xl:grid-cols-5">
-                     <div class="col-span-5 flex justify-end">
-                        <a :href="reviewLink.href"
-                            class="group inline-flex items-center gap-2 text-sm font-medium hover:underline">
-                            {{ reviewLink.text }}
-
-                            <FontAwesomeIcon :icon="faArrowRight"
-                                class=" text-xs transition-transform group-hover:translate-x-1">
-                        </FontAwesomeIcon>
-                        </a>
-                    </div>
+                <div class="grid grid-cols-1 divide-gray-200 lg:grid-cols-4 2xl:grid-cols-5 px-8 lg:px-0">
                     <div v-for="review in visibleReviews" :key="review.id" @click="openReview(review)"
                         class="flex min-h-[170px] flex-col px-5 py-5 transition hover:bg-gray-50">
                         <Rating :modelValue="review.rating" readonly :cancel="false" class="review-rating-small" />
@@ -321,8 +325,11 @@ const reviewLink = computed(() => {
                         <p class="mt-2 h-20 overflow-hidden text-xs leading-5 text-gray-600 line-clamp-4">
                             {{ review.message }}
                         </p>
-
-                        <div class="mt-auto flex items-center justify-between pt-4">
+                        
+                        <div class="mt-auto text-[11px] text-gray-400 w-fit">
+                            <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location[1] != layout?.iris?.shop?.location[1]" />
+                        </div>
+                        <div class="flex items-center justify-between">
                             <div class="text-[11px] text-gray-400">
                                 {{ useFormatTime(review.date) }}
                             </div>
@@ -354,11 +361,12 @@ const reviewLink = computed(() => {
                             </div>
                         </div>
                     </div>
-                  
                 </div>
             </div>
         </div>
     </div>
+
+
 
 
     <Dialog v-model:visible="reviewModalVisible" modal dismissableMask :draggable="false" :closable="false"

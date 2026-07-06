@@ -98,6 +98,8 @@ class ReviewIOImport implements ToCollection
                 continue;
             }
 
+            $parsedDate = Carbon::parse($row[$createdDateColumnPos]);
+
             $reviewData = array_filter([
                 'order_id'          => $order?->id,
                 'customer_id'       => $customer->id,
@@ -119,7 +121,7 @@ class ReviewIOImport implements ToCollection
 
                 $meta = [
                     'source'                  => 'ReviewIO',
-                    'review_created'          => $row[$createdDateColumnPos],
+                    'review_created'          => $parsedDate,
                 ];
 
                 $webImages = [
@@ -140,7 +142,7 @@ class ReviewIOImport implements ToCollection
 
                 $meta = [
                     'source'                  => 'ReviewIO',
-                    'review_created'          => $row[$createdDateColumnPos],
+                    'review_created'          => $parsedDate,
                 ];
 
                 $webImages = [
@@ -161,9 +163,8 @@ class ReviewIOImport implements ToCollection
             $review->update(
                 [
                     'is_online'     => true,
-                    'published_at'  => Carbon::parse(
-                        $row[$createdDateColumnPos]
-                    ),
+                    'created_at'    => $parsedDate,
+                    'published_at'  => $parsedDate,
                     'review_status' => ReviewStatusEnum::APPROVED->value,
                     'auto_approved' => true,
                     'approved'      => true,

@@ -20,6 +20,7 @@ import { faCircle, faDotCircle, faReply } from "@fas"
 import { faEye, faEyeSlash, faFolder, faGameConsoleHandheld, faStar } from "@far"
 import { inject, ref } from "vue"
 import Image from "@/Common/Components/Image.vue"
+import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 
 const props = withDefaults(
 	defineProps<{
@@ -31,9 +32,9 @@ const props = withDefaults(
 		showTagVisibleType?: boolean
 	}>(),
 	{
-		showTagVisibleType:true,
-		reaction_routes:{
-			name : "retina.models.review.react"
+		showTagVisibleType: true,
+		reaction_routes: {
+			name: "retina.models.review.react"
 		}
 	}
 )
@@ -134,48 +135,49 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 				<article
 					class="rounded-xl border border-gray-200 bg-white p-4 transition-all duration-200 hover:border-gray-300 hover:shadow-md">
 					<!-- Header -->
-					<div class="flex items-start justify-between gap-3">
-						<div class="flex min-w-0 gap-3">
-							<!-- Scope -->
-							<div v-tooltip="`Review ${item.scope}`"
-								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100">
-								<FontAwesomeIcon :icon="scopeIcon(item.scope)" class="text-sm text-gray-500" />
-							</div>
-
-							<!-- Title -->
-							<div class="min-w-0 flex-1">
-								<div class="flex flex-wrap items-center gap-2">
-									<h3 class="truncate text-sm font-semibold text-gray-900">
-										{{ item.name }}
-									</h3>
-									<Tag v-if="showTagVisibleType" rounded :severity="item?.review?.is_public ? 'success' : 'secondary'
-										" class="text-[10px]">
-										<template #icon>
-											<FontAwesomeIcon :icon="item?.review?.is_public ? faEye : faEyeSlash
-												" />
-										</template>
-
-										{{ item?.review?.is_public ? "Public" : "Private" }}
-									</Tag>
-								</div>
-
-								<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-									<span>{{ item.code }}</span>
-
-									<span class="flex items-center">
-										<FontAwesomeIcon :icon="faCircle" class="text-[5px]" />
-									</span>
-
-									<span>{{ useFormatTime(item.created_at) }}</span>
-								</div>
-							</div>
+					<div class="flex gap-3">
+						<!-- Scope -->
+						<div v-tooltip="`Review ${item.scope}`"
+							class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100">
+							<FontAwesomeIcon :icon="scopeIcon(item.scope)" class="text-sm text-gray-500" />
 						</div>
 
-						<div class="flex gap-3 item-center">
-							<Rating :modelValue="item.review.rating" readonly :cancel="false" />
+						<!-- Content -->
+						<div class="min-w-0 flex-1">
+							<!-- Row 1 -->
+							<div class="flex items-start justify-between gap-4">
+								<div class="min-w-0">
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="truncate text-sm font-semibold text-gray-900">
+											{{ item.name }}
+										</span>
 
-							<div class="text-xs font-medium text-amber-600">
-								{{ item.review.rating }}/5
+										<Tag v-if="showTagVisibleType" rounded
+											:severity="item.review.is_public ? 'success' : 'secondary'"
+											class="text-[10px]">
+											<template #icon>
+												<FontAwesomeIcon :icon="item.review.is_public ? faEye : faEyeSlash" />
+											</template>
+
+											{{ item.review.is_public ? 'Public' : 'Private' }}
+										</Tag>
+									</div>
+								</div>
+
+								<div class="flex shrink-0 items-center gap-2">
+									<Rating :modelValue="item.review.rating" readonly :cancel="false" />
+
+									<span class="text-sm font-semibold text-amber-600">
+										{{ item.review.rating }}/5
+									</span>
+								</div>
+							</div>
+
+							<!-- Row 2 -->
+							<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+								<span>{{ item.code }}</span>
+								<FontAwesomeIcon :icon="faCircle" class="text-[5px]" />
+								<span>{{ useFormatTime(item.created_at) }}</span>
 							</div>
 						</div>
 					</div>
@@ -189,8 +191,9 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 
 						<!-- Images -->
 						<div v-if="item.review.review_images?.length" class="flex gap-3">
-							<slot name="image-item" :item="item" :openImagePreview="openImagePreview" >
-								<button type="button" v-for="(image, index) in item.review.review_images" :key="image.id ?? index"
+							<slot name="image-item" :item="item" :openImagePreview="openImagePreview">
+								<button type="button" v-for="(image, index) in item.review.review_images"
+									:key="image.id ?? index"
 									class="group relative aspect-square w-12 h-12 cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
 									@click="openImagePreview(item.review.review_images, index)">
 									<Image :src="image.media_url" :alt="image.name" :imageCover="true"
@@ -231,6 +234,11 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 								</span>
 							</button>
 						</div>
+
+						  
+                        <div class="mt-auto text-[11px] text-gray-400 w-fit">
+                            <AddressLocation :data="item['location']" :use_flag="item?.location[1] != layout?.iris?.shop?.location[1]" />
+                        </div>
 					</div>
 
 					<!-- Reply -->
@@ -239,7 +247,8 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 							<div
 								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white">
 
-								<img v-if="layout?.iris?.website?.logo?.avif" :src="layout.iris.website.logo.avif" src="logo" />
+								<img v-if="layout?.iris?.website?.logo?.avif" :src="layout.iris.website.logo.avif"
+									src="logo" />
 								<FontAwesomeIcon v-else :icon="faReply" class="text-[10px]" />
 							</div>
 
@@ -307,10 +316,10 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 			<div class="relative flex w-full flex-col items-center justify-center">
 
 				<div class="mb-1 block max-h-[80vh] min-h-[400px] w-full rounded">
-				  <slot name="image-dialog" :images="previewImages[previewIndex]">
-					<Image :src="previewImages[previewIndex]?.media_url" :alt="previewImages[previewIndex]?.name"
-						:imageCover="true" :style="{ objectFit: 'contain' }" />
-				  </slot>
+					<slot name="image-dialog" :images="previewImages[previewIndex]">
+						<Image :src="previewImages[previewIndex]?.media_url" :alt="previewImages[previewIndex]?.name"
+							:imageCover="true" :style="{ objectFit: 'contain' }" />
+					</slot>
 				</div>
 
 				<template v-if="previewImages.length > 1">

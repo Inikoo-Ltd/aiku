@@ -37,7 +37,7 @@ class GetCancelledAllegroOrdersFromApi extends RetinaAction
                 ->where('customer_sales_channel_id', $allegroUser->customer_sales_channel_id)
                 ->first();
 
-            if($order) {
+            if ($order) {
                 CancelOrder::run($order);
             }
         }

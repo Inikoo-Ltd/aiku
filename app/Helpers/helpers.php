@@ -31,12 +31,32 @@ if (!function_exists('maskName')) {
             return '';
         }
 
-        $parts = preg_split('/\s+/', trim($name));
+        $parts = array_values(array_filter(
+            preg_split('/\s+/', trim($name))
+        ));
 
-        return collect($parts)
-            ->filter()
-            ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
-            ->implode('');
+        if (empty($parts)) {
+            return '';
+        }
+
+        // Nama satu kata: tampilkan 2 huruf pertama, sisanya menjadi *
+        if (count($parts) === 1) {
+            $word = $parts[0];
+            $length = mb_strlen($word);
+
+            if ($length <= 2) {
+                return mb_convert_case($word, MB_CASE_TITLE, 'UTF-8');
+            }
+
+            return mb_convert_case(
+                mb_substr($word, 0, 2),
+                MB_CASE_TITLE,
+                'UTF-8'
+            ) . str_repeat('*', $length - 2);
+        }
+
+        // Nama lebih dari satu kata
+        return $parts[0] . ' ***';
     }
 }
 

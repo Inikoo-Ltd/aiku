@@ -7,6 +7,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
@@ -37,12 +38,25 @@ trait WithTimeSeriesRedo
         return $query;
     }
 
+    protected function scopeShop(Builder $query, Command $command): Builder
+    {
+        if ($command->hasOption('shop') && $command->option('shop')) {
+            $shop = Shop::where('slug', $command->option('shop'))->first();
+
+            if ($shop) {
+                $query->where('shop_id', $shop->id);
+            }
+        }
+
+        return $query;
+    }
+
     public function asCommand(Command $command): int
     {
         $this->beforeCommand($command);
         $command->info($command->getName());
         $tableName = (new $this->model())->getTable();
-        $query     = $this->modifyQuery($this->scopeOrganisation($this->prepareQuery($tableName, $command), $command));
+        $query     = $this->modifyQuery($this->scopeShop($this->scopeOrganisation($this->prepareQuery($tableName, $command), $command), $command));
         $count     = $query->count();
         $bar       = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');

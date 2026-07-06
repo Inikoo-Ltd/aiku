@@ -27,8 +27,6 @@ use App\Models\Traits\HasRoles;
 use App\Models\Traits\HasSearch;
 use App\Models\Traits\IsUserable;
 use App\Models\Traits\WithPushNotifications;
-use App\Models\UserFailedLogIn;
-use App\Models\UserLogin;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;

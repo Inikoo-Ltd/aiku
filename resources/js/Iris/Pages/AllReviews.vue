@@ -39,6 +39,9 @@ const averageRating = computed(() => props.avg_review ?? 0)
 
 
 const initialTab = (): string => {
+    if (typeof window === "undefined") {
+        return props.tabs?.current || "all"
+    }
     const paramTab = new URLSearchParams(window.location.search).get("tab")
     if (paramTab && props.tabs?.navigation?.some((tab) => tab.key === paramTab)) {
         return paramTab
@@ -133,10 +136,6 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                             <div class="absolute inset-0 flex flex-col items-center justify-center">
                                 <div class="text-xl font-bold text-primary sm:text-2xl">
                                     {{ recommend_percent ?? 0 }}%
-                                </div>
-
-                                <div class="mt-1 text-xs text-gray-500">
-                                    {{ ctrans('Recommended') }}
                                 </div>
                             </div>
                         </div>

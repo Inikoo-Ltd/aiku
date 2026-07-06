@@ -24,7 +24,7 @@ trait WithAllegroApiServices
 
     public function restApi(string $method = 'GET', array $params = []): PendingRequest
     {
-        if($this->access_token_expire_in < now()->timestamp) {
+        if ($this->access_token_expire_in < now()->timestamp) {
             $this->refreshAccessToken($this->refresh_token);
         }
 
