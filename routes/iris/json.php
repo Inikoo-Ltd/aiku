@@ -43,10 +43,10 @@ use App\Actions\Iris\Json\GetIrisFooterData;
 use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Iris\Reviews\FetchIrisReviewsInWebpage;
+use App\Actions\Iris\Reviews\GetIrisReviews;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
-use App\Actions\Reviews\Iris\GetIrisReviews;
 use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 use Illuminate\Support\Facades\Route;
@@ -117,6 +117,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
 
     Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
-    Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews');
+    Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new');
 
 });

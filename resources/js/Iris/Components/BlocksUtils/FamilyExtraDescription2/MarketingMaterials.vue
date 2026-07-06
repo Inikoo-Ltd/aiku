@@ -38,7 +38,7 @@ console.log(props.fieldValue)
                     {{ ctrans("store & social media") }}
                 </h2>
 
-                <a :href="route(fieldValue?.family?.marketing_material_route.name, fieldValue?.family?.marketing_material_route.parameters)"
+                <a :href="fieldValue?.family?.marketing_material_route?.name ? route(fieldValue?.family?.marketing_material_route.name, fieldValue?.family?.marketing_material_route.parameters) : '#'"
                     target="_blank">
                      <button
                          :style="{

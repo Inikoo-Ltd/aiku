@@ -1,22 +1,24 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 06 Jul 2026 13:48:18 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Reviews\Iris;
+namespace App\Actions\Iris\Reviews;
 
+use App\Actions\IrisAction;
 use App\Http\Resources\Catalogue\ReviewsInIrisResource;
-use App\Http\Resources\Inventory\LocationsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetIrisReviews
+class GetIrisReviews extends IrisAction
 {
     use AsAction;
 
@@ -24,18 +26,28 @@ class GetIrisReviews
     {
         $model = $webpage->model;
 
+        $reviews = null;
+
         if ($model instanceof Product) {
-            GetIrisProductReviews::run($model);
+            $reviews = GetIrisProductReviews::run($model);
         } elseif ($model instanceof ProductCategory) {
-           // GetIrisProductCategoryReviews::run($model);
+            $reviews = GetIrisProductCategoryReviews::run($model);
         } else {
-           // GetIrisShopReviews::run($webpage->shop);
+            $reviews = GetIrisShopReviews::run($webpage->shop);
         }
-        return null;
+
+        return $reviews;
     }
 
     public function jsonResponse(LengthAwarePaginator $reviews): AnonymousResourceCollection
     {
         return ReviewsInIrisResource::collection($reviews);
+    }
+
+    public function asController(Webpage $webpage, ActionRequest $request)
+    {
+        $this->initialisation($request);
+
+        return $this->handle($webpage);
     }
 }

@@ -200,7 +200,7 @@ onMounted(() => {
 </script>
 
 <template>    
-    <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'luigi-last-seen-1-iris'+indexBlock"  component="luigi-last-seen-1-iris"
+    <div data-block-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'luigi-last-seen-1-iris'+indexBlock"  component="luigi-last-seen-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
