@@ -132,7 +132,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                     ? fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
                         ->additional([
                             'pageHead' => [
-                                'model' => __(''),
+                                'model' => '',
                                 'title' => __('Family review'),
                                  'icon' => [
                                     'icon'  => 'fal fa-folder',
@@ -148,7 +148,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                     : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
                         ->additional([
                             'pageHead' => [
-                                'model' => __(''),
+                                'model' => '',
                                 'title' => __('Family review'),
                                   'icon' => [
                                     'icon'  => 'fal fa-folder',
@@ -166,7 +166,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                     ? fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
                         ->additional([
                             'pageHead' => [
-                                'model' => __(''),
+                                'model' => '',
                                 'title' => __('Products review'),
                                   'icon' => [
                                     'icon'  => 'fal fa-cube',
@@ -182,7 +182,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                     : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
                         ->additional([
                             'pageHead' => [
-                                'model' => __(''),
+                                'model' => '',
                                 'title' => __('Products review'),
                                 'icon' => [
                                     'icon'  => 'fal fa-cube',
@@ -239,7 +239,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
 
         return [
             'pageHead'    => [
-                'model'         => __(''),
+                'model'         => '',
                 'title'         => __('Overall review'),
                 'icon' => [
                     'icon'  => 'fal fa-star',
