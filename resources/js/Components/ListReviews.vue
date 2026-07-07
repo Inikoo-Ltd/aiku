@@ -212,10 +212,10 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 						<!-- Review -->
 						<p class="whitespace-pre-line text-sm leading-6 text-gray-700">
 							{{ displayMessage(item.review) }}
-							<div v-if="layout.app.environment == 'local'">
+						<!-- 	<div v-if="layout?.app?.environment == 'local'">
   							   <span class="text-red-500">{{ item?.review?.message }}</span>
 							   <span class="text-green-500">{{ item?.review?.message_translated }}</span>
-							</div>
+							</div> -->
 						</p>
 
 						<!-- Images -->
@@ -307,10 +307,10 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 								<p class="mt-2 whitespace-pre-line text-sm leading-6 text-gray-700">
 									{{ displayReply(item.review) }}
 
-									<div v-if="layout.app.environment == 'local'">
+									<!-- <div v-if="layout.app.environment == 'local'">
   							   			<span class="text-red-500">{{ item?.review?.reply?.reply }}</span>
 										<span class="text-green-500">{{ item?.review?.reply?.reply_translated }}</span>
-									</div>
+									</div> -->
 								</p>
 
 								<div v-if="hasReplyTranslation(item.review.reply)"
