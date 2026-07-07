@@ -126,7 +126,7 @@ class ShowPickingSession extends OrgAction
         }
 
         $props = [
-            'title'       => $title,
+            'title'       => $title . ' (' . $pickingSession->reference . ')',
             'breadcrumbs' => $this->getBreadcrumbs(
                 $pickingSession,
                 $request->route()->getName(),
