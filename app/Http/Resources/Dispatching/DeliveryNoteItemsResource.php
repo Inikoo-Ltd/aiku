@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Dispatching;
 
-use App\Models\Dispatching\DeliveryNoteItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -45,12 +44,10 @@ class DeliveryNoteItemsResource extends JsonResource
             $this->packed_in
         );
 
-
         $packedIn = $this->packed_in;
         if ($packedIn == null) {
             $packedIn = 1;
         }
-
 
         $quantityDispatched = $this->quantity_dispatched;
         if ($quantityDispatched == null) {
@@ -64,18 +61,7 @@ class DeliveryNoteItemsResource extends JsonResource
             $packedInMessage = '('.__('Pack of').": $packedIn".")";
         }
 
-        /** @var DeliveryNoteItem $resource */
-        $resource = $this->resource;
-        $unNumbers = [];
-
-        if ($resource->relationLoaded('orgStock')) {
-            $orgStock = $resource->orgStock;
-
-            if ($orgStock->relationLoaded('tradeUnits')) {
-                $unNumbers = $orgStock->tradeUnits->whereNotNull('un_number')->where('un_number', '!=', 'None')->pluck('un_number', 'proper_shipping_name')->toArray();
-            }
-        }
-
+        $pickings = @json_decode($this->pickings) ?? [];
 
         return [
             'id'                             => $this->id,
@@ -111,39 +97,33 @@ class DeliveryNoteItemsResource extends JsonResource
             'is_packed'                      => $this->is_packed,
             'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
             'quantity_waiting_crm'           => $this->quantity_waiting_crm,
-
-
-            'picking_locations' => $this->pickings
-                ->where('type', '!=', \App\Enums\Dispatching\Picking\PickingTypeEnum::NOT_PICK)
-                ->where('quantity', '!=', 0)
-                ->map(function ($picking) {
-                    $location = $picking->location;
-
+            'picking_locations'              => collect($pickings)
+                ->map(function ($picking, $pickingId) {
                     return [
-                        'id'                      => $picking->id,
-                        'quantity_picked'          => (float)$picking->quantity,
-                        'location_slug'            => $location ? $location->slug : null,
-                        'location_code'            => $location ? $location->code : null,
-                        'warehouse_slug'           => $location ? $location->warehouse?->slug : null,
-                        'warehouse_code'           => $location ? $location->warehouse?->code : null,
-                        'show_batch_code_ui'       => $picking->orgStock?->current_batch_codes > 0,
-                        'batch_code_id'            => $picking->batch_code_id,
-                        'batch_code'               => $picking->batchCode?->code ?? $picking->orgStock?->mainBatchCode?->code,
+                        'id'                       => $pickingId,
+                        'quantity_picked'          => (float) $picking->quantity,
+                        'location_slug'            => $picking->location_slug,
+                        'location_code'            => $picking->location_code,
+                        'warehouse_slug'           => $this->warehouse_slug,
+                        'warehouse_code'           => $this->warehouse_code,
+                        'show_batch_code_ui'       => $this->org_stocks_batch_code_count > 0,
+                        'batch_code_id'            => $picking->batch_code_id ?? $this->org_stocks_batch_code_count,
+                        'batch_code'               => $picking->batch_code ?? $this->org_stocks_batch_code,
                         'update_route'             => [
                             'name'       => 'grp.models.picking.update',
-                            'parameters' => ['picking' => $picking->id],
+                            'parameters' => ['picking' => $pickingId],
                             'method'     => 'patch',
                         ],
                         'split_route'              => [
                             'name'       => 'grp.models.picking.split',
-                            'parameters' => ['picking' => $picking->id],
+                            'parameters' => ['picking' => $pickingId],
                             'method'     => 'post',
                         ],
                         'batch_codes_fetch_route'  => [
                             'name'       => 'grp.json.org_stock.batch_codes.index',
                             'parameters' => [
-                                'organisation' => $picking->organisation_id,
-                                'orgStock'     => $picking->org_stock_id,
+                                'organisation' => $this->organisation_id,
+                                'orgStock'     => $this->org_stock_id,
                             ],
                         ],
                     ];
@@ -155,7 +135,7 @@ class DeliveryNoteItemsResource extends JsonResource
                 ],
                 'method'     => 'post'
             ],
-            'un_numbers'                     => $unNumbers,
+            'un_numbers'                     => @json_decode($this->un_numbers) ?? null,
         ];
     }
 }

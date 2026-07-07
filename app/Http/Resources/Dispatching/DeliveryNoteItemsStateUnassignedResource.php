@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Dispatching;
 
-use App\Models\Dispatching\DeliveryNoteItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -51,18 +50,6 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             $packedInMessage = '('.__('Pack of').": $packedIn".")";
         }
 
-        /** @var DeliveryNoteItem $resource */
-        $resource = $this->resource;
-        $unNumbers = [];
-
-        if ($resource->relationLoaded('orgStock')) {
-            $orgStock = $resource->orgStock;
-
-            if ($orgStock->relationLoaded('tradeUnits')) {
-                $unNumbers = $orgStock->tradeUnits->whereNotNull('un_number')->where('un_number', '!=', 'None')->pluck('un_number', 'proper_shipping_name')->toArray();
-            }
-        }
-
         return [
             'id'                           => $this->id,
             'state'                        => $this->state,
@@ -76,7 +63,7 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             'batch_code'                   => $this->batch_code,
             'expiry_date'                  => $this->expiry_date,
             'packed_in_message'            => $packedInMessage,
-            'un_numbers'                   => $unNumbers,
+            'un_numbers'                   => @json_decode($this->un_numbers) ?? null,
         ];
     }
 }

@@ -40,6 +40,8 @@ import { ctrans } from "@/Composables/useTrans"
 import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
+
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
 
 
@@ -67,7 +69,7 @@ const currentRouteParams = route().params
 const currentRouteName = route().current()
 
 const orgStockRouteCache = new Map<number | string, string>()
-function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
+function orgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
     if(!deliveryNoteItem.org_stock_id){
         return '';
     }
@@ -569,6 +571,45 @@ const onSetItemToUndoWaitingWarehouse = () => {
         onFinish: () => isLoadingUndoWaitingWarehouse.value = false,
     }
 )}
+
+const isLoadingImage = ref(false);
+
+watch(
+    () => isOpenModalUndoWaitingWarehouse.value, 
+    async (isOpened) => {
+        if (isOpened) {
+            isLoadingImage.value = true
+            let imageData = await fetchImage(isOpenModalUndoWaitingWarehouse);
+            if (imageData && isOpenModalUndoWaitingWarehouse.value) {
+                isOpenModalUndoWaitingWarehouse.value.org_stock_image_thumbnail = imageData;
+            }
+        }
+    }
+)
+
+watch(
+    () => isOpenModalSetAsWaiting.value, 
+    async (isOpened) => {
+        if (isOpened) {
+            isLoadingImage.value = true
+            let imageData = await fetchImage(selectedTransactionToSetAsWaiting);
+            console.log(imageData);
+            if (imageData ) {
+                selectedTransactionToSetAsWaiting.value.org_stock_image_thumbnail = imageData;
+            }
+        }
+    }
+)
+
+const fetchImage = async (deliveryNoteItem: any)   => {
+    const response = await axios.get(route('grp.json.fetch_single_delivery_note_item.image', {
+        deliveryNoteItem: deliveryNoteItem.value.id,
+    }))
+
+    isLoadingImage.value = false;
+
+    return response.data ?? null;
+}
 </script>
 
 <template>
@@ -1349,13 +1390,22 @@ const onSetItemToUndoWaitingWarehouse = () => {
         </div>
 
         <div class="flex items-center gap-4 mb-2">
-            <div class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+            <div 
+                class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center"
+                :class="[selectedTransactionToSetAsWaiting?.org_stock_image_thumbnail ? '' : 'grid']""
+            >
                 <Image
                     v-if="selectedTransactionToSetAsWaiting?.org_stock_image_thumbnail"
                     :src="selectedTransactionToSetAsWaiting.org_stock_image_thumbnail"
                     :alt="selectedTransactionToSetAsWaiting.org_stock_name"
                 />
-                <FontAwesomeIcon v-else icon="fal fa-box" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon 
+                    v-else
+                    icon="fal fa-box" 
+                    class="text-2xl text-gray-400" 
+                    fixed-width aria-hidden="true" 
+                />
+                <LoadingIcon v-if="isLoadingImage" class="text-xs justify-self-center" />
             </div>
 
             <div class="min-w-0">
@@ -1443,13 +1493,22 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     </div>
 
                     <div class="mt-4 bg-amber-50 border border-amber-200 rounded flex items-center gap-4 mb-2 py-2 px-3">
-                        <div class="shrink-0 size-16 rounded-lg overflow-hidden xbg-gray-100 border border-black/10 flex items-center justify-center">
+                        <div 
+                            class="shrink-0 size-16 rounded-lg overflow-hidden xbg-gray-100 border border-black/10 flex items-center justify-center"   
+                            :class="[selectedItemToUndoWaitingWarehouse?.org_stock_image_thumbnail ? '' : 'grid']""
+                        >
                             <Image
                                 v-if="selectedItemToUndoWaitingWarehouse?.org_stock_image_thumbnail"
                                 :src="selectedItemToUndoWaitingWarehouse.org_stock_image_thumbnail"
                                 :alt="selectedItemToUndoWaitingWarehouse.org_stock_name"
                             />
-                            <FontAwesomeIcon v-else icon="fal fa-image" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon 
+                                v-else
+                                icon="fal fa-image"
+                                class="text-2xl text-gray-400" 
+                                fixed-width aria-hidden="true" 
+                            />
+                            <LoadingIcon v-if="isLoadingImage" class="text-xs justify-self-center" />
                         </div>
 
                         <div class="min-w-0">
