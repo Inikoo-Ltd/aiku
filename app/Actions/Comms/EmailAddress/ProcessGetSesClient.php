@@ -29,7 +29,7 @@ class ProcessGetSesClient
         OutboxCodeEnum::REVIEW_REMINDER
     ];
 
-    private const IMPORTANT_GROUP = [
+    private const OUTBOX_IMPORTANT_GROUP = [
         OutboxCodeEnum::PASSWORD_REMINDER,
     ];
 
@@ -66,7 +66,7 @@ class ProcessGetSesClient
         }
 
         // Important: always use default credentials
-        if (in_array($outbox->code, self::IMPORTANT_GROUP, true)) {
+        if (in_array($outbox->code, self::OUTBOX_IMPORTANT_GROUP, true)) {
             return $default;
         }
 
@@ -79,16 +79,18 @@ class ProcessGetSesClient
      */
     private function fromSettings(?array $settings): ?array
     {
-        $accessId = Arr::get($settings, 'email.provider.access_id');
+        $key    = Arr::get($settings, 'email.provider.access_id');
+        $secret = Arr::get($settings, 'email.provider.access_key');
+        $region = Arr::get($settings, 'email.provider.region');
 
-        if (!$accessId) {
+        if (!$key || !$secret || !$region) {
             return null;
         }
 
         return [
-            'key'    => $accessId,
-            'secret' => Arr::get($settings, 'email.provider.access_key'),
-            'region' => Arr::get($settings, 'email.provider.region'),
+            'key'    => $key,
+            'secret' => $secret,
+            'region' => $region,
         ];
     }
 }
