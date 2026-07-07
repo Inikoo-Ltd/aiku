@@ -19,7 +19,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Reviews\Review;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowIrisProductReview extends IrisAction
@@ -101,7 +100,7 @@ class ShowIrisProductReview extends IrisAction
         ];
     }
 
-    public function htmlResponse(array $data): Response
+    public function htmlResponse(array $data): \Symfony\Component\HttpFoundation\Response
     {
         $indexer    = IndexReviewsInIris::make($this->product);
         $product    = $this->product;
@@ -113,13 +112,19 @@ class ShowIrisProductReview extends IrisAction
             ? fn ($q) => $q->where('reviews.master_product_id', $product->master_product_id)
             : fn ($q) => $q->where('reviews.product_id', $product->id);
 
-        return Inertia::render('AllReviews', $data)
+        $response = Inertia::render('AllReviews', $data)
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(
                 shop: $shop,
                 scopes: [ReviewScopeEnum::PRODUCT],
                 extraConditions: $extraConditions,
                 setting: $setting
-            )($t->name('reviews')->pageName('reviewsPage')));
+            )($t->name('reviews')->pageName('reviewsPage')))
+            ->toResponse(request());
+
+        $response->headers->set('Cache-Control', 'public, s-maxage=300, max-age=0');
+        /* $response->header('X-AIKU-WEBSITE', (string)$shop->organisation_id); */
+
+        return $response;
     }
 
     public function asController(Product $product, ActionRequest $request): array

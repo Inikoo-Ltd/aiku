@@ -19,7 +19,6 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Reviews\Review;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowIrisFamilyReview extends IrisAction
@@ -201,7 +200,7 @@ class ShowIrisFamilyReview extends IrisAction
         return (int) round(($count / $totalReviews) * 100);
     }
 
-    public function htmlResponse(array $data): Response
+    public function htmlResponse(array $data): \Symfony\Component\HttpFoundation\Response
     {
         $indexer  = IndexReviewsInIris::make($this->family);
         $family   = $this->family;
@@ -223,7 +222,7 @@ class ShowIrisFamilyReview extends IrisAction
                 ->join('products as p_count', 'p_count.id', '=', 'reviews.product_id')
                 ->where('p_count.family_id', $family->id);
 
-        return Inertia::render('AllReviews', $data)
+        $response = Inertia::render('AllReviews', $data)
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(
                 shop: $shop,
                 scopes: [ReviewScopeEnum::FAMILY],
@@ -235,7 +234,13 @@ class ShowIrisFamilyReview extends IrisAction
                 scopes: [ReviewScopeEnum::PRODUCT],
                 extraConditions: $productExtraConditions,
                 setting: $setting
-            )($t->name('product')->pageName('productPage')));
+            )($t->name('product')->pageName('productPage')))
+            ->toResponse(request());
+
+        $response->headers->set('Cache-Control', 'public, s-maxage=300, max-age=0');
+     /*    $response->header('X-AIKU-WEBSITE', (string)$shop->organisation_id); */
+
+        return $response;
     }
 
     public function asController(ProductCategory $family, ActionRequest $request): array
