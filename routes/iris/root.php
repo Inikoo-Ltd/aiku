@@ -6,8 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Iris\Reviews\ShowIrisReviewsTest;
-use App\Actions\Iris\Reviews\ShowIrisReviewsTest2;
 use App\Actions\Retina\Dropshipping\Bundle\UI\RedirectIrisToRetinaBundle;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use Illuminate\Support\Facades\Route;
@@ -109,9 +107,11 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
         //system
         Route::get('/catalogue', ShowIrisCatalogue::class)->name('catalogue_iris');
-        Route::get('/reviews', ShowIrisReviews::class)->name('reviews');
-        Route::get('/rev', ShowIrisReviewsTest::class)->name('reviews-test');
-        Route::get('/rev2', ShowIrisReviewsTest2::class)->name('reviews-test2');
+
+
+        Route::redirect('/reviews', '/customer-reviews')->name('reviews.redirect');
+        Route::get('/customer-reviews', ShowIrisReviews::class)->name('reviews');
+
         Route::get('/reviews/product/{product}', ShowIrisProductReview::class)->name('reviews.product');
         Route::get('/reviews/family/{family}', ShowIrisFamilyReview::class)->name('reviews.family');
 
