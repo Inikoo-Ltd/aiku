@@ -13,6 +13,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -32,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ShopHasChatAgent extends Model
 {
     use HasFactory;
+    use SoftDeletes;
     protected $table = 'shop_has_chat_agents';
 
     protected $fillable = [

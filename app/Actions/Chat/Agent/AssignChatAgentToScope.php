@@ -11,49 +11,37 @@ namespace App\Actions\Chat\Agent;
 use App\Actions\OrgAction;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ShopHasChatAgent;
-use Illuminate\Validation\ValidationException;
 
 class AssignChatAgentToScope extends OrgAction
 {
-    public function handle(array $data, ChatAgent $agent)
+    public function handle(array $data, ChatAgent $agent): void
     {
-
         $organisationId = $data['organisation_id'];
-        $shopIds        = $data['shop_id'] ?? [null];
 
-        $shopIds = is_array($shopIds) ? $shopIds : [$shopIds];
+        $shopIds = collect($data['shop_id'] ?? [null])
+            ->map(fn ($id) => $id === null ? null : (int) $id)
+            ->unique()
+            ->values();
 
         foreach ($shopIds as $shopId) {
-
-            $exists = ShopHasChatAgent::query()
-                ->where('organisation_id', $organisationId)
-                ->where('chat_agent_id', $agent->id)
-                ->when(
-                    $shopId,
-                    fn ($q) => $q->where('shop_id', $shopId),
-                    fn ($q) => $q->whereNull('shop_id')
-                )
-                ->exists();
-
-            if ($exists) {
-                session()->flash('notification', [
-                    'status'      => 'error',
-                    'title'       => __('Error'),
-                    'description' => __('Agent already assigned to one of the selected shops.'),
-                ]);
-
-                throw ValidationException::withMessages([
-                    'shop_id' => __('Agent already assigned to one of the selected shops.'),
-                ]);
-            }
-
-            ShopHasChatAgent::create([
+            $record = ShopHasChatAgent::withTrashed()->firstOrNew([
                 'organisation_id' => $organisationId,
                 'shop_id'         => $shopId,
                 'chat_agent_id'   => $agent->id,
             ]);
+
+            if ($record->exists) {
+                if ($record->trashed()) {
+                    $record->restore();
+                }
+
+                continue;
+            }
+
+            $record->save();
         }
     }
+
 
     public function asController(array $data, ChatAgent $agent): null
     {
@@ -62,21 +50,29 @@ class AssignChatAgentToScope extends OrgAction
 
     public function update(array $data, ChatAgent $agent): void
     {
-
         $organisationId = $data['organisation_id'];
-        $newShopIds     = $data['shop_id'] ?? [null];
-        $newShopIds     = is_array($newShopIds) ? $newShopIds : [$newShopIds];
 
-        $existing = ShopHasChatAgent::query()
+        // Normalize incoming shop ids
+        $newShopIds = collect($data['shop_id'] ?? [null])
+            ->map(function ($id) {
+                return $id === null ? null : (int) $id;
+            })
+            ->unique()
+            ->values()
+            ->all();
+
+        // Existing assignments
+        $existingShopIds = ShopHasChatAgent::query()
             ->where('organisation_id', $organisationId)
             ->where('chat_agent_id', $agent->id)
-            ->get();
-
-        $existingShopIds = $existing
             ->pluck('shop_id')
-            ->map(fn ($id) => $id ?? null)
-            ->toArray();
+            ->map(function ($id) {
+                return $id === null ? null : (int) $id;
+            })
+            ->values()
+            ->all();
 
+        // Delete removed shops
         $toDelete = array_diff($existingShopIds, $newShopIds);
 
         if (!empty($toDelete)) {
@@ -87,14 +83,21 @@ class AssignChatAgentToScope extends OrgAction
                 ->delete();
         }
 
+        // Insert new shops
         $toInsert = array_diff($newShopIds, $existingShopIds);
 
         foreach ($toInsert as $shopId) {
-            ShopHasChatAgent::create([
+            $record = ShopHasChatAgent::withTrashed()->firstOrNew([
                 'organisation_id' => $organisationId,
                 'shop_id'         => $shopId,
                 'chat_agent_id'   => $agent->id,
             ]);
+
+            if ($record->exists && $record->trashed()) {
+                $record->restore();
+            } elseif (! $record->exists) {
+                $record->save();
+            }
         }
     }
 }
