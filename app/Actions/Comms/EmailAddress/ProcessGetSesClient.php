@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\EmailAddress;
 
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,10 +18,19 @@ class ProcessGetSesClient
 {
     use AsAction;
 
-    private const SHOP_LEVEL_CODES = [
-        OutboxCodeEnum::INVITE,
-        OutboxCodeEnum::MARKETING,
-        OutboxCodeEnum::NEWSLETTER,
+    private const OUTBOX_BULK_GROUP = [
+        OutboxCodeEnum::BASKET_LOW_STOCK,
+        OutboxCodeEnum::REORDER_REMINDER,
+        OutboxCodeEnum::REORDER_REMINDER_2ND,
+        OutboxCodeEnum::REORDER_REMINDER_3RD,
+        OutboxCodeEnum::OOS_NOTIFICATION,
+        OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+        OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
+        OutboxCodeEnum::REVIEW_REMINDER
+    ];
+
+    private const IMPORTANT_GROUP = [
+        OutboxCodeEnum::PASSWORD_REMINDER,
     ];
 
     /**
@@ -28,24 +38,40 @@ class ProcessGetSesClient
      */
     public function handle(?int $outboxId = null): array
     {
-        $outbox = $outboxId ? Outbox::find($outboxId) : null;
-
-        if ($outbox && in_array($outbox->code, self::SHOP_LEVEL_CODES)) {
-            $settings = $this->fromSettings($outbox->shop?->settings)
-                ?? $this->fromSettings($outbox->organisation?->settings)
-                ?? $this->fromSettings($outbox->group?->settings);
-        } elseif ($outbox) {
-            $settings = $this->fromSettings($outbox->organisation?->settings)
-                ?? $this->fromSettings($outbox->group?->settings);
-        } else {
-            $settings = null;
-        }
-
-        return $settings ?? [
+        $default = [
             'key'    => config('services.ses.key'),
             'secret' => config('services.ses.secret'),
             'region' => config('services.ses.region'),
         ];
+
+        $outbox = $outboxId ? Outbox::find($outboxId) : null;
+
+        if (!$outbox) {
+            return $default;
+        }
+
+        // Mailshot: shop → organisation → group
+        if ($outbox->model_type === class_basename(Mailshot::class)) {
+            return $this->fromSettings($outbox->shop?->settings)
+                ?? $this->fromSettings($outbox->organisation?->settings)
+                ?? $this->fromSettings($outbox->group?->settings)
+                ?? $default;
+        }
+
+        // Bulk: organisation → group
+        if (in_array($outbox->code, self::OUTBOX_BULK_GROUP, true)) {
+            return $this->fromSettings($outbox->organisation?->settings)
+                ?? $this->fromSettings($outbox->group?->settings)
+                ?? $default;
+        }
+
+        // Important: always use default credentials
+        if (in_array($outbox->code, self::IMPORTANT_GROUP, true)) {
+            return $default;
+        }
+
+        // Everything else: group only
+        return $this->fromSettings($outbox->group?->settings) ?? $default;
     }
 
     /**
