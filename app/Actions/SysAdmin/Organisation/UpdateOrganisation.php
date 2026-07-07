@@ -42,6 +42,16 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.google.drive.folder", Arr::pull($modelData, 'google_drive_folder_key'));
         }
 
+        if (Arr::has($modelData, 'access_id')) {
+            data_set($modelData, "settings.email.provider.access_id", Arr::pull($modelData, 'access_id'));
+        }
+        if (Arr::has($modelData, 'access_key')) {
+            data_set($modelData, "settings.email.provider.access_key", Arr::pull($modelData, 'access_key'));
+        }
+        if (Arr::has($modelData, 'region')) {
+            data_set($modelData, "settings.email.provider.region", Arr::pull($modelData, 'region'));
+        }
+
         if (Arr::has($modelData, 'show_omega')) {
             data_set($modelData, "settings.invoice_export.show_omega", Arr::pull($modelData, 'show_omega'));
         }
@@ -150,6 +160,9 @@ class UpdateOrganisation extends OrgAction
             'attach_isdoc_to_pdf'                   => ['sometimes', 'boolean'],
             'show_tax_liability_date'               => ['sometimes', 'boolean'],
             'google_drive_folder_key'               => ['sometimes', 'string'],
+            'access_id'                             => ['sometimes', 'string', 'nullable'],
+            'access_key'                            => ['sometimes', 'string', 'nullable'],
+            'region'                                => ['sometimes', 'string', 'nullable'],
             'address'                               => ['sometimes', 'required', new ValidAddress()],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
