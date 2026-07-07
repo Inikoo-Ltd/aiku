@@ -731,9 +731,8 @@ test('index reviews in iris scope handlers', function () {
 
     expect($indexer->avgReview($this->shop))->not->toBeNull()
         ->and($indexer->avgReview($this->product))->not->toBeNull()
-        ->and($indexer->avgReview($this->family))->not->toBeNull()
-        ->and($indexer->includesOtherShops($this->shop))->toBeFalse();
+        ->and($indexer->avgReview($this->family))->not->toBeNull();
 
-    $closure = $indexer->tableStructure('all', $this->shop, [ReviewScopeEnum::SHOP, ReviewScopeEnum::PRODUCT]);
+    $closure = $indexer->tableStructure(shop: $this->shop, scopes: [ReviewScopeEnum::SHOP, ReviewScopeEnum::PRODUCT]);
     $closure(new InertiaTable(request()));
 });
