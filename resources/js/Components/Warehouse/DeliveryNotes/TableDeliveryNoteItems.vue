@@ -774,7 +774,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
             <FractionDisplay v-if="item.quantity_dispatched_fractional"
                 :fractionData="item.quantity_dispatched_fractional" />
             <span v-else>{{ item.quantity_dispatched }}</span>
-
+ 
         </template>
 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
