@@ -85,7 +85,7 @@ import {
     faTrophy, faClipboardCheck,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
-import { faViruses } from "@fad"
+import { faViruses, faSave as fadSave } from "@fad"
 import {
     faAsterisk as fasAsterisk,
     faBoxHeart,
@@ -181,7 +181,7 @@ library.add(
     faCheck,
     faAsterisk,
     faMailBulk, faEllipsisV,
-    faShare, faUndoAlt, faRobot, faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses,
+    faShare, faUndoAlt, faRobot, faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses, fadSave,
     faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
     faBadgePercent, faUserHeadset,
     faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight, faHammer, faPlaneArrival, falCheck, falCheckCircle,
