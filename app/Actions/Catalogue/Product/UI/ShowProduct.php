@@ -14,6 +14,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Comms\BackInStockReminder\UI\ProductHasBackInStockReminders;
+use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -31,6 +32,7 @@ use App\Enums\UI\Catalogue\ExternalShop\ProductInExternalTabsEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductHasBackInStockRemindersResource;
+use App\Http\Resources\Catalogue\OffersResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ReviewsResource;
 use App\Http\Resources\CRM\CustomersResource;
@@ -242,29 +244,27 @@ class ShowProduct extends OrgAction
             ];
         }
 
-
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'edit',
-            'tooltip' => __('Sync Product Images from Trade Units'),
-            'label'   => __('Repair Images'),
-            'icon'    => 'fal fa-tools',
-            'route'   => [
-                'name'          => 'grp.models.product.repair_product_images',
-                'method'        => 'patch',
-                'parameters'    => [
-                    'product' => $product->id
-                ],
-            ]
-        ];
-
+        // $actions[] = [
+        //     'type'    => 'button',
+        //     'style'   => 'edit',
+        //     'tooltip' => __('Sync Product Images from Trade Units'),
+        //     'label'   => __('Repair Images'),
+        //     'icon'    => 'fal fa-tools',
+        //     'route'   => [
+        //         'name'          => 'grp.models.product.repair_product_images',
+        //         'method'        => 'patch',
+        //         'parameters'    => [
+        //             'product' => $product->id
+        //         ],
+        //     ]
+        // ];
         if ($product->webpage) {
             $actions = array_merge($actions, [
-                [
-                    'type'  => 'button',
-                    'style' => 'edit',
-                    'key'   => 'reindex',
-                ],
+                // [
+                //     'type'  => 'button',
+                //     'style' => 'edit',
+                //     'key'   => 'reindex',
+                // ],
                 [
                     'type'  => 'button',
                     'style' => 'edit',
@@ -374,6 +374,10 @@ class ShowProduct extends OrgAction
                 ProductTabsEnum::ATTACHMENTS->value => $this->tab == ProductTabsEnum::ATTACHMENTS->value ?
                     fn () => GetProductAttachment::run($product)
                     : Inertia::lazy(fn () => GetProductAttachment::run($product)),
+
+                ProductTabsEnum::OFFERS->value => $this->tab == ProductTabsEnum::OFFERS->value ?
+                    fn () => OffersResource::collection(IndexOffers::make()->inProduct(parent: $product, prefix: ProductTabsEnum::OFFERS->value))
+                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProduct(parent: $product, prefix: ProductTabsEnum::OFFERS->value))),
             ]);
         }
 
@@ -462,7 +466,8 @@ class ShowProduct extends OrgAction
             $productPage = $productPage
                 ->table(ProductHasBackInStockReminders::make()->tableStructure($product, ProductTabsEnum::REMINDERS->value))
                 ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value))
-                ->table(IndexProductImages::make()->tableStructure($product, ProductTabsEnum::IMAGES->value));
+                ->table(IndexProductImages::make()->tableStructure($product, ProductTabsEnum::IMAGES->value))
+                ->table(IndexOffers::make()->tableStructure(parent: $product, prefix: ProductTabsEnum::OFFERS->value));
         }
 
         return $productPage;

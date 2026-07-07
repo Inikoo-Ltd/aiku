@@ -250,7 +250,7 @@ const reviewLink = computed(() => {
             }
     }
 })
-console.log("plm", layout)
+
 </script>
 
 <template>
@@ -285,9 +285,9 @@ console.log("plm", layout)
             <!-- Summary -->
             <div
                 class="flex min-h-[150px] flex-col items-center justify-center px-6 py-2 text-center lg:col-span-1">
-                <div class="text-sm font-semibold uppercase tracking-wider text-gray-900">
+                <h2 class="!text-sm !ont-semibold !uppercase !tracking-wider !text-gray-900">
                     {{ ctrans("Customer Rating") }}
-                </div>
+                </h2>
 
                 <div class="mt-3 flex items-end gap-1">
                     <span class="text-4xl font-bold leading-none">
@@ -305,7 +305,7 @@ console.log("plm", layout)
                     {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
                 </div>
 
-                <div class="mt-2 flex flex-col items-center gap-2">
+                <div class="mt-2 flex flex-col items-center gap-2" >
                    <a :href="reviewLink.href"
                         class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
                         {{ reviewLink.text }}
@@ -313,7 +313,7 @@ console.log("plm", layout)
                             class="text-xs transition-transform group-hover:translate-x-1" />
                     </a>
 
-                    <a :href="'/customer-reviews'"
+                    <a v-if="['family', 'product'].includes(webpage_data.sub_type)" :href="'/customer-reviews'"
                         class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
                         {{ ctrans("See All Reviews") }}
                     </a>

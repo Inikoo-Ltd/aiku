@@ -23,7 +23,7 @@ class IndexDeliveryNoteItems extends OrgAction
 {
     use WithDeliveryNoteItemUI;
 
-    public function handle(DeliveryNote $parent, $prefix = null, DeliveryNoteItemStateEnum|null $stateFilter = null): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
     {
         $globalSearch = $this->getGlobalSearchFilter();
 
@@ -34,6 +34,10 @@ class IndexDeliveryNoteItems extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
+
+        if ($deliveryNoteItemId) {
+            $query->where('delivery_note_items.id', $deliveryNoteItemId);
+        }
 
         $this->applyDeliveryNoteItemBaseWiths($query);
         $this->applyDeliveryNoteItemBaseJoins($query);
@@ -98,7 +102,6 @@ class IndexDeliveryNoteItems extends OrgAction
 
             $allowAction = $this->canHandleDeliveryNote($parent);
 
-            $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false);
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction);
             if ($allowAction && $isEditable) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, className: 'w-[250px]');
