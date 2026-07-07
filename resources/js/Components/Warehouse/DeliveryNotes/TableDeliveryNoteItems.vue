@@ -705,8 +705,8 @@ const onSetItemToUndoWaitingWarehouse = async () => {
             <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
                 {{ deliveryNoteItem.org_stock_code }}
             </Link>
-            <span v-for="(un_number, packing_name) in deliveryNoteItem.un_numbers" v-tooltip="packing_name ? packing_name : ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="packing_name ? 'cursor-pointer' : ''">
-                {{ un_number }}
+            <span v-for="un_number in deliveryNoteItem.un_numbers" v-tooltip="un_number?.shipping_name ?? ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="un_number?.shipping_name ? 'cursor-pointer' : ''">
+                {{ un_number.number }}
             </span>
         </template>
 
