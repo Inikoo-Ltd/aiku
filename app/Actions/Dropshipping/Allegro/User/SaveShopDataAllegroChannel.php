@@ -52,8 +52,7 @@ class SaveShopDataAllegroChannel
                                 'street'        => $shop->address->address_line_1,
                                 'city'        => $shop->address->locality,
                                 'country_code' => $shop->country->code,
-                                'post_code'    => $shop->address->postal_code,
-                                'province'    => $shop->address->administrative_area
+                                'post_code'    => $shop->address->postal_code
                             ]
                         ]);
                     } catch (\Exception $e) {
