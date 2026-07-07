@@ -132,6 +132,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $phone
  * @property string|null $identity_document_number_alt
  * @property bool $is_pastpay
+ * @property string|null $fiscal_name
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -209,6 +210,7 @@ class Invoice extends Model implements Auditable
                 'reference',
                 'customer_reference',
                 'customer_name',
+                'fiscal_name',
                 'customer_contact_name',
                 'email',
                 'phone',
@@ -226,6 +228,7 @@ class Invoice extends Model implements Auditable
             'type'                  => $this->type->value,
             'reference'             => $this->reference,
             'customer_name'         => (string)$this->customer_name,
+            'fiscal_name'          => (string)$this->fiscal_name,
             'customer_contact_name' => (string)$this->customer_contact_name,
             'email'                 => (string)$this->email,
             'phone'                 => (string)$this->phone,
@@ -241,6 +244,7 @@ class Invoice extends Model implements Auditable
     protected array $auditInclude = [
         'reference',
         'type',
+        'fiscal_name',
         'state',
         'status',
         'email',

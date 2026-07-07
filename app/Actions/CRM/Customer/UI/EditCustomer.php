@@ -115,6 +115,19 @@ class EditCustomer extends OrgAction
                     'value'  => $customer->is_re,
 
                 ],
+
+            ]
+        ];
+
+        $identification = [
+            'title'  => __('Id/Fiscal Name'),
+            'label'  => __('Id/Fiscal name'),
+            'fields' => [
+                'fiscal_name'             => [
+                    'type'  => 'input',
+                    'label' => __('Fiscal name'),
+                    'value' => $customer->fiscal_name
+                ],
                 'identity_document_number' => [
                     'type'          => 'input',
                     'label'         => data_get($customer->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),
@@ -127,6 +140,7 @@ class EditCustomer extends OrgAction
                 ],
             ]
         ];
+
         $accounting = [
             'title'  => __('Accounting'),
             'label'  => __('Accounting'),
@@ -203,6 +217,7 @@ class EditCustomer extends OrgAction
 
         $blueprint   = [];
         $blueprint[] = $contact;
+        $blueprint[] = $identification;
         if (!$isExternal) {
             $blueprint[] = $accounting;
             $blueprint[] = $tags;

@@ -102,7 +102,7 @@ class StoreCustomer extends OrgAction
         );
 
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
-        $trafficSourcesData = Arr::pull($modelData, 'traffic_sources');
+        $trafficSourcesData     = Arr::pull($modelData, 'traffic_sources');
 
         $customer = DB::transaction(function () use ($shop, $modelData, $contactAddressData, $deliveryAddressData, $taxNumberData, $emailSubscriptionsData) {
             /** @var Customer $customer */
@@ -265,7 +265,7 @@ class StoreCustomer extends OrgAction
 
     private function extractTrafficSourceAbbreviations(string $data): array
     {
-        $segments = preg_split('/[|,]/', $data);
+        $segments      = preg_split('/[|,]/', $data);
         $abbreviations = [];
 
         foreach ($segments as $segment) {
@@ -305,6 +305,7 @@ class StoreCustomer extends OrgAction
             'status'                   => ['sometimes', Rule::enum(CustomerStatusEnum::class)],
             'contact_name'             => ['nullable', 'string', 'max:255'],
             'company_name'             => ['nullable', 'string', 'max:255'],
+            'fiscal_name'              => ['sometimes', 'nullable', 'string', 'max:255'],
             'external_id'              => [
                 'nullable',
                 'string',

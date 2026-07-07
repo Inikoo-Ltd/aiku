@@ -120,11 +120,10 @@ trait WithRetinaRegistration
                     "The answer must be a string!"
                 );
             }
-
         }
 
-        $country       = Country::find($request->input('contact_address.country_id'));
-        $postcode      = $request->input('contact_address.postal_code');
+        $country  = Country::find($request->input('contact_address.country_id'));
+        $postcode = $request->input('contact_address.postal_code');
 
         $bannedCountry = data_get($this->shop->banned_country_regions ?? [], $country?->code, null);
 
@@ -155,7 +154,6 @@ trait WithRetinaRegistration
                 );
             }
         }
-
     }
 
     public function prepareForValidation(ActionRequest $request): void
@@ -196,6 +194,7 @@ trait WithRetinaRegistration
             'session_id'      => ['sometimes', 'nullable', 'string'],
             'contact_name'    => ['required', 'string', 'max:255'],
             'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'fiscal_name'     => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'           => [
                 'required',
@@ -215,7 +214,7 @@ trait WithRetinaRegistration
             'contact_address' => ['required', new ValidAddress()],
             'is_opt_in'       => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],
-            'tax_number'      => [ Arr::get($this->shop->settings, 'registration.tax_number_is_required', false) ? 'required' : 'nullable',  'array'],
+            'tax_number'      => [Arr::get($this->shop->settings, 'registration.tax_number_is_required', false) ? 'required' : 'nullable', 'array'],
             'password'        =>
                 [
                     'required',

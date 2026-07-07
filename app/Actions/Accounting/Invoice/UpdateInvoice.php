@@ -92,15 +92,15 @@ class UpdateInvoice extends OrgAction
         $taxNumber = null;
 
 
-        $updateTaxCategory = (bool) $billingAddressData;
+        $updateTaxCategory = (bool)$billingAddressData;
 
         if (Arr::has($modelData, 'formatted_tax_number')) {
-            $formattedTaxNumber     = getUnformattedTaxNumber(Arr::pull($modelData, 'formatted_tax_number'));
-            $countryId              = null;
+            $formattedTaxNumber = getUnformattedTaxNumber(Arr::pull($modelData, 'formatted_tax_number'));
+            $countryId          = null;
 
 
             if ($formattedTaxNumber && Arr::has($formattedTaxNumber, 'country_code')) {
-                $countryId          = Country::where('code', Arr::pull($formattedTaxNumber, 'country_code'))->first()?->id;
+                $countryId = Country::where('code', Arr::pull($formattedTaxNumber, 'country_code'))->first()?->id;
             }
 
             if ($countryId) {
@@ -314,7 +314,7 @@ class UpdateInvoice extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'                     => [
+            'reference'                    => [
                 'sometimes',
                 'string',
                 'max:64',
@@ -326,25 +326,27 @@ class UpdateInvoice extends OrgAction
                     ]
                 ),
             ],
-            'payment_amount'                => ['sometimes', 'numeric'],
-            'date'                          => ['sometimes', 'date'],
-            'tax_liability_at'              => ['sometimes', 'date'],
-            'footer'                        => ['sometimes', 'string'],
-            'billing_address'               => ['sometimes', 'required', new ValidAddress()],
-            'invoice_billing_address'       => ['sometimes', 'required', new ValidAddress()], // TODO: consolidate(rename) this fields names after aurora migration
-            'delivery_address'              => ['sometimes', 'required', new ValidAddress()],
-            'sales_channel_id'              => [
+            'payment_amount'               => ['sometimes', 'numeric'],
+            'date'                         => ['sometimes', 'date'],
+            'tax_liability_at'             => ['sometimes', 'date'],
+            'footer'                       => ['sometimes', 'string'],
+            'billing_address'              => ['sometimes', 'required', new ValidAddress()],
+            'invoice_billing_address'      => ['sometimes', 'required', new ValidAddress()], // TODO: consolidate(rename) this fields names after aurora migration
+            'delivery_address'             => ['sometimes', 'required', new ValidAddress()],
+            'sales_channel_id'             => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
-            'shipping_zone_schema_id'       => ['sometimes', 'nullable'],
-            'shipping_zone_id'              => ['sometimes', 'nullable'],
-            'formatted_tax_number'          => ['sometimes', 'nullable', 'string'],
-            'identity_document_number'      => ['sometimes', 'nullable', 'string'],
-            'identity_document_number_alt'  => ['sometimes', 'nullable', 'string'],
+            'shipping_zone_schema_id'      => ['sometimes', 'nullable'],
+            'shipping_zone_id'             => ['sometimes', 'nullable'],
+            'formatted_tax_number'         => ['sometimes', 'nullable', 'string'],
+            'identity_document_number'     => ['sometimes', 'nullable', 'string'],
+            'identity_document_number_alt' => ['sometimes', 'nullable', 'string'],
+            'fiscal_name'                  => ['sometimes', 'nullable', 'string']
+
 
         ];
 
@@ -379,6 +381,7 @@ class UpdateInvoice extends OrgAction
             $rules['identity_document_type']             = ['sometimes', 'nullable', 'string'];
             $rules['identity_document_number']           = ['sometimes', 'nullable', 'string'];
             $rules['identity_document_number_alt']       = ['sometimes', 'nullable', 'string'];
+            $rules['fiscal_name']             = ['sometimes', 'nullable', 'string'];
 
 
             $rules['reference'] = [

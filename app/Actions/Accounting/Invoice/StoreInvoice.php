@@ -94,6 +94,7 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'identity_document_type', $customer->identity_document_type, false);
         data_set($modelData, 'identity_document_number', $customer->identity_document_number, false);
         data_set($modelData, 'identity_document_number_alt', $customer->identity_document_number_alt, false);
+        data_set($modelData, 'fiscal_name', $customer->fiscal_name, false);
 
 
         $taxNumber = $customer->taxNumber;
@@ -336,6 +337,8 @@ class StoreInvoice extends OrgAction
             $rules['tax_number_valid']         = ['sometimes', 'nullable', 'boolean'];
             $rules['identity_document_type']   = ['sometimes', 'nullable', 'string'];
             $rules['identity_document_number'] = ['sometimes', 'nullable', 'string'];
+            $rules['fiscal_name']              = ['sometimes', 'nullable', 'string'];
+
 
             $rules['invoice_category_id'] = ['sometimes', 'nullable', Rule::exists('invoice_categories', 'id')->where('organisation_id', $this->organisation->id)];
             $rules['tax_category_id']     = ['sometimes', 'required', 'exists:tax_categories,id'];

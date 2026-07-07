@@ -147,6 +147,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $eori
  * @property string|null $ukims
  * @property string|null $identity_document_number_alt
+ * @property string|null $fiscal_name
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AllegroUser> $allegroUsers
@@ -276,6 +277,7 @@ class Customer extends Model implements HasMedia, Auditable
                 'name',
                 'contact_name',
                 'company_name',
+                'fiscal_name',
                 'eori',
                 'email',
                 'phone',
@@ -301,6 +303,7 @@ class Customer extends Model implements HasMedia, Auditable
             'name'                     => (string)$this->name,
             'contact_name'             => (string)$this->contact_name,
             'company_name'             => (string)$this->company_name,
+            'fiscal_name'              => (string)$this->fiscal_name,
             'email'                    => (string)$this->email,
             'phone'                    => (string)$this->phone,
             'contact_website'          => (string)$this->contact_website,
@@ -326,6 +329,7 @@ class Customer extends Model implements HasMedia, Auditable
         'reference',
         'contact_name',
         'company_name',
+        'fiscal_name',
         'eori',
         'ukims',
         'email',
