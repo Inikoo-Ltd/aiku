@@ -9,17 +9,18 @@
 
 namespace App\Actions\Comms\Email;
 
-use App\Actions\Accounting\Invoice\GetInvoicePdfContent;
 use App\Actions\OrgAction;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\Customer;
 use App\Actions\Comms\Traits\WithSendCustomerOutboxEmail;
+use App\Actions\Accounting\Invoice\WithInvoicesExport;
 
 class SendInvoicePaidEmailToCustomer extends OrgAction
 {
     use WithSendCustomerOutboxEmail;
+    use WithInvoicesExport;
 
     public string $jobQueue = 'low-priority';
 
@@ -30,7 +31,7 @@ class SendInvoicePaidEmailToCustomer extends OrgAction
         $invoice = Invoice::find($additionalData['invoice_id'] ?? null);
         if ($invoice) {
             $attachments[] = [
-                'content'  => GetInvoicePdfContent::run($invoice),
+                'content'  => $this->getInvoicePdfContent($invoice),
                 'filename' => $invoice->slug.'.pdf',
             ];
 
