@@ -826,7 +826,7 @@ const setShippingManualAmount = (v: number) => {
         }
     )
 }
-const setShippingToAuto = () => {
+const setShippingToAuto = (fieldSummary) => {
     // Section: Submit
     router.get(
         route('grp.models.order.set_shipping_engine_auto', {
@@ -847,9 +847,10 @@ const setShippingToAuto = () => {
                 })
             },
             onError: errors => {
+                set(fieldSummary, ['data', 'engine'], 'manual')
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to set shipping method to auto"),
+                    text: errors?.message || trans("Failed to set shipping method to auto"),
                     type: "error"
                 })
             },
@@ -2110,14 +2111,17 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                             {{ trans("Select to change shipping price method") }}:
                                         </div>
                                         <div class="grid grid-cols-1 gap-2">
+                                            <!-- Radio: Auto -->
                                             <div class="flex items-center gap-2">
                                                 <input type="radio"
                                                     :checked="get(fieldSummary, ['data', 'engine'], null) === 'auto'"
-                                                    @change="() => { set(fieldSummary, ['data', 'engine'], 'auto'); setShippingToAuto(); }"
+                                                    @change="() => { set(fieldSummary, ['data', 'engine'], 'auto'); setShippingToAuto(fieldSummary); }"
                                                     id="ingredient1" name="pizza" value="auto"
                                                     class="focus:ring-0 focus:border-none" />
                                                 <label for="ingredient1">{{ trans("Auto") }}</label>
                                             </div>
+
+                                            <!-- Radio: Manual -->
                                             <div>
                                                 <div class="flex items-start gap-2">
                                                     <input type="radio"

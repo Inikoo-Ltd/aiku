@@ -10,9 +10,9 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\UpdateCollectionImages;
-use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Helpers\CanUpdateImages;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;

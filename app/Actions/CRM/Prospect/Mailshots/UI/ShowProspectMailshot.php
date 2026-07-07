@@ -71,6 +71,8 @@ class ShowProspectMailshot extends OrgAction
             ? (GetProspectMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('prospects.id') ?? 0)
             : 0;
 
+        $isRecipientsCapped = $estimatedRecipients > 1000;
+
         $canLoadTemplates = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
 
         /* NOTE:
@@ -259,6 +261,7 @@ class ShowProspectMailshot extends OrgAction
                 'status' => $mailshot->state->value,
                 'secondWaveStatus' => $mailshot->secondWave?->state?->value,
                 'estimatedRecipients' => $estimatedRecipients,
+                'isRecipientsCapped' => $isRecipientsCapped,
                 'mailshotType' => $mailshot->type->value,
                 'isSecondWaveActive' => $isSecondWaveActive,
                 'secondwaveSubject' => $mailshotSecondWave?->subject,

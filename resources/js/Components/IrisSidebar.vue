@@ -425,7 +425,7 @@ const fetchSidebarOnce = async () => {
 	<div class="mobile-menu editor-class">
 
 		<!-- Button: hamburger (showed on mobile) -->
-		<button @click="isOpenMenuMobile = true" class="">
+		<button @click="isOpenMenuMobile = true" class="" aria-label="Hamburger icon">
 			<slot name="icon">
 				<FontAwesomeIcon
 					:icon="props.header?.mobile?.menu?.icon || faBars"

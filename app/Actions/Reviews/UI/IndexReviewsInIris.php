@@ -26,12 +26,25 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Override;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
 class IndexReviewsInIris extends OrgAction
 {
     private Shop|ProductCategory|Product $parent;
+
+    public static function make(Shop|ProductCategory|Product|null $parent = null): static
+    {
+        // TODO: QUICK FIX, NEED TO REFACTOR EVERYTHING LATER. THIS WORKS FOR NOW
+        $instance = app(static::class);
+
+        if ($parent) {
+            $instance->parent = $parent;
+        }
+
+        return $instance;
+    }
 
     public function handle(Shop|ProductCategory|Product $parent, ?string $prefix = null): LengthAwarePaginator
     {
@@ -44,7 +57,20 @@ class IndexReviewsInIris extends OrgAction
 
     public function includesOtherShops(Shop $shop): bool
     {
-        return (bool)Arr::get($shop->settings, 'reviews.add_other_shops', false);
+        $setting           = Arr::get($shop->settings, 'reviews.validation_scope', []);
+        $includeOtherShops = false;
+        if(Arr::get($setting, 'product.enabled', false)) {
+            $includeOtherShops = true;
+        }
+        if(Arr::get($setting, 'family.enabled', false)) {
+            $includeOtherShops = true;
+        }
+        if(Arr::get($setting, 'shop.enabled', false)) {
+            $includeOtherShops = true;
+        }
+
+
+        return $includeOtherShops;
     }
 
     protected function getElementGroups(Shop $shop, array $scopes, ?callable $extraConditions = null, bool $includeOtherShops = false): array
@@ -54,9 +80,42 @@ class IndexReviewsInIris extends OrgAction
         $countQuery = Review::query()
             ->selectRaw('FLOOR(rating_main) as star, COUNT(*) as count');
 
+
         if (!$includeOtherShops) {
-            //todo this is wrong
-            $countQuery->where('reviews.shop_id', $shop->id)->where('reviews.organisation_id', $shop->organisation_id);
+
+            $parent=$this->parent;
+
+            if($this->parent instanceof Product) {
+                $setting           = Arr::get($shop->settings, 'reviews.validation_scope.product', []);
+            }elseif($this->parent instanceof ProductCategory) {
+                $setting           = Arr::get($shop->settings, 'reviews.validation_scope.family', []);
+            }else{
+                $setting           = Arr::get($shop->settings, 'reviews.validation_scope.shop', []);
+            }
+
+
+            if (Arr::get($setting, 'enabled', false)) {
+                if (Arr::get($setting, 'scope') == 'group') {
+                    $countQuery->where('reviews.group_id', $parent->group_id);
+                } else {
+                    $countQuery->where('reviews.organisation_id', $parent->organisation_id);
+                }
+
+                if ($parent instanceof Product) {
+                    $countQuery->where('reviews.master_product_id', $parent->master_product_id);
+                } elseif ($parent instanceof ProductCategory) {
+                    $countQuery->where('reviews.master_product_category_id', $parent->master_product_category_id);
+                }
+            } else {
+                $countQuery->where('reviews.shop_id', $shop->id);
+
+                if ($parent instanceof Product) {
+                    $countQuery->where('reviews.product_id', $parent->id);
+                } elseif ($parent instanceof ProductCategory) {
+                    $countQuery->where('reviews.product_category_id', $parent->id);
+                }
+            }
+
         }
 
 
@@ -382,6 +441,7 @@ class IndexReviewsInIris extends OrgAction
     {
         $shop              = $parent;
         $includeOtherShops = false;
+
 
         if ($parent instanceof Product) {
             $shop              = $parent->shop;

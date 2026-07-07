@@ -125,6 +125,7 @@ class Review extends Model implements Auditable, HasMedia
         'web_images'        => 'array',
         'auto_approve_at'   => 'datetime',
         'published_at'      => 'datetime',
+        'created_at'        => 'datetime',
         'removed_at'        => 'datetime',
         'reply_at'          => 'datetime',
     ];

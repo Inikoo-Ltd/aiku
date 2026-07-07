@@ -13,7 +13,7 @@ use App\Actions\Fulfilment\PalletDelivery\UI\IndexPalletDeliveries;
 use App\Actions\Fulfilment\PickingSession\StartPickFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\UI\IndexFulfilmentPickingSessions;
 use App\Actions\Fulfilment\PickingSession\UI\ShowFulfilmentPickingSession;
-use App\Actions\Inventory\GoodsIn\UI\ShowWarehousePalletDelivery;
+use App\Actions\Fulfilment\UI\GoodsIn\UI\ShowWarehousePalletDelivery;
 use App\Actions\Inventory\Location\UI\IndexFulfilmentLocations;
 use App\Actions\Inventory\Location\UI\ShowFulfilmentLocation;
 use App\Actions\UI\Fulfilment\ShowWarehouseFulfilmentDashboard;

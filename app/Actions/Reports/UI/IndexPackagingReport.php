@@ -1,6 +1,11 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 06 Jul 2026 22:41:28 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Inventory\Reports\UI;
+namespace App\Actions\Reports\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Reports\IndexReports;

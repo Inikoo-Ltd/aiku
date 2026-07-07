@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Inventory\GoodsIn\UI;
+namespace App\Actions\Fulfilment\UI\GoodsIn\UI;
 
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;

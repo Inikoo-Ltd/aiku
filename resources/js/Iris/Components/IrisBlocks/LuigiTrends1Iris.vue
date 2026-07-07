@@ -275,7 +275,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'+indexBlock"  component="luigi-trends-1-iris"
+    <div data-block-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'+indexBlock"  component="luigi-trends-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
@@ -301,8 +301,16 @@ onMounted(() => {
                     spaceBetween="12"
                     autoHeight
                 >
-                    <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                        <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
+                    <div v-if="isLoadingFetch" class="grid gap-x-3" :style="{ gridTemplateColumns: `repeat(${slidesPerView ? slidesPerView : 4}, minmax(0, 1fr))` }">
+                        <div v-for="xx in (slidesPerView ? slidesPerView : 4)" :key="xx" class="flex flex-col rounded bg-white">
+                            <div class="mb-3 flex justify-center">
+                                <div class="skeleton w-full max-w-[220px] aspect-square rounded"></div>
+                            </div>
+                            <div class="skeleton mb-1 min-h-[3.15em] w-full rounded"></div>
+                            <div class="xflex justify-between">
+                                <div class="skeleton h-4 w-1/3 rounded"></div>
+                                <div class="skeleton h-4 w-1/4 rounded"></div>
+                            </div>
                         </div>
                     </div>
 

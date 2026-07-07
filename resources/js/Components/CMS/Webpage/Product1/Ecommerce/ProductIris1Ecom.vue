@@ -128,7 +128,7 @@ const emits = defineEmits<{
 
 const product = ref(props.product)
 const layout = inject("layout", {})
-const webpage_slug = inject("webpage_slug", {})
+const webpage_id = inject("webpage_id", {})
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 
@@ -753,8 +753,9 @@ console.log(props)
                 <div class="flex flex-wrap gap-4">
                     <img
                         v-for="logo in fieldValue.paymentData"
-                        :key="logo.code"
+                        :key="logo.value"
                         :src="logo.image"
+                        :alt="ctrans('Logo of :paymentLabel', { paymentLabel: logo.name })"
                         class="h-4"
                     />
                 </div>
@@ -763,7 +764,7 @@ console.log(props)
 
     </div>
 
-    <ReviewsIris  :webpage_slug="webpage_slug"/>
+    <ReviewsIris  :webpage_id="webpage_id"/>
 
 
 </template>

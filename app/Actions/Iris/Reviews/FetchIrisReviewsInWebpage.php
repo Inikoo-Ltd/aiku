@@ -27,10 +27,10 @@ class FetchIrisReviewsInWebpage extends IrisAction
 
         if ($webpage->model instanceof Product || ($webpage->model instanceof ProductCategory && $webpage->sub_type == ProductCategoryTypeEnum::FAMILY->value)) {
             $reviews = IndexReviewsInIris::run(parent: $webpage->model, prefix: $webpage->title);
-            $avgReview = IndexReviewsInIris::make()->avgReview($webpage->model);
+            $avgReview = IndexReviewsInIris::make($webpage->model)->avgReview($webpage->model);
         } else {
             $reviews = IndexReviewsInIris::run(parent: $webpage->shop, prefix: $webpage->title);
-            $avgReview = IndexReviewsInIris::make()->avgReview($webpage->shop);
+            $avgReview = IndexReviewsInIris::make($webpage->shop)->avgReview($webpage->shop);
         }
         return [
             'reviews'                           => ReviewsInIrisResource::collection($reviews)->response()->getData(true),

@@ -81,13 +81,12 @@ trait WithAllegroApiServices
                     ?? Arr::get($firstError, 'message')
                     ?? 'Unknown Allegro API error';
 
-                throw new \Exception($errorMessage);
+                return ['message' => $errorMessage];
             }
 
             return $response->json() ?? [];
         } catch (\Exception $e) {
-            Log::error('Allegro API Request failed: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            return ['message' => $e->getMessage()];
         }
     }
 
@@ -501,6 +500,7 @@ trait WithAllegroApiServices
     {
         $data = [
             'name'             => Arr::get($data, 'name', 'Default return policy'),
+            'isFulfillment' => false,
             'availability'     => [
                 'range' => 'FULL'
             ],

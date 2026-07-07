@@ -11,6 +11,7 @@ namespace App\Actions\Chat\Agent\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
+use App\Http\Resources\CRM\Livechat\ChatAgentResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -47,13 +48,13 @@ class ShowAgent extends OrgAction
         return Inertia::render(
             'Agent/Agents',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'      => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => 'CRM Agent',
+                'title'            => 'CRM Agent',
                 'organisationSlug' => $this->organisation?->slug,
-                'pageHeading' => [
+                'pageHeading'      => [
                     'title'  => __('CRM Agent'),
                     'icon'   => [
                         'title' => __('CRM Agent'),
@@ -72,12 +73,15 @@ class ShowAgent extends OrgAction
                         ],
                     ],
                 ],
-                'data'        => $agents,
+                'data'   => ChatAgentResource::collection($agents),
+                'routes' => [
+                    'delete'       => 'grp.org.chat.agents.delete',
+                    'restore'      => 'grp.org.chat.agents.restore',
+                    'force_delete' => 'grp.org.chat.agents.force_delete',
+                ],
             ],
         )->table(
-            $indexAgentAction->tableStructure(
-                prefix: 'agents'
-            ),
+            $indexAgentAction->tableStructure(parent: $this->organisation, prefix: 'agents')
         );
     }
 

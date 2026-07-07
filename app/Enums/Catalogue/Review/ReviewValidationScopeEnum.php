@@ -25,10 +25,18 @@ enum ReviewValidationScopeEnum: string
         ];
     }
 
+    public static function editLabel(): array
+    {
+        return [
+            self::ORGANISATION->value => __('This organisation only'),
+            self::GROUP->value        => __('All'),
+        ];
+    }
+
     public static function selectOptions(): array
     {
         $options = [];
-        foreach (self::labels() as $value => $label) {
+        foreach (self::editLabel() as $value => $label) {
             $options[] = [
                 'value' => $value,
                 'label' => $label,

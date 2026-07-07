@@ -36,7 +36,7 @@ class IndexReturnDeliveryNoteItems extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $currency = $parent->order->invoices->first()->currency ?? $parent->shop->currency;
+        $currency = $parent->order->invoices->first()?->currency ?? $parent->shop->currency;
 
         $query = QueryBuilder::for(ReturnDeliveryNoteItem::class);
 

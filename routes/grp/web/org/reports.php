@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\CreditTransaction\ExportCustomerCredit;
+use App\Actions\Accounting\CreditTransaction\UI\IndexCustomerCredit;
 use App\Actions\Accounting\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\Intrastat\ExportIntrastatExcel;
 use App\Actions\Accounting\Intrastat\ExportIntrastatImportExcel;
@@ -19,13 +21,11 @@ use App\Actions\Accounting\SageInvoices\ExportSageInvoices;
 use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
 use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
-use App\Actions\Inventory\Reports\DownloadPackagingReport;
-use App\Actions\Inventory\Reports\UI\IndexPackagingReport;
+use App\Actions\Reports\DownloadPackagingReport;
 use App\Actions\Reports\ExportUkManufacturingSurvey;
 use App\Actions\Reports\PostRoomRoutes;
+use App\Actions\Reports\UI\IndexPackagingReport;
 use App\Actions\Reports\UI\IndexUkManufacturingSurveyReport;
-use App\Actions\Accounting\CreditTransaction\ExportCustomerCredit;
-use App\Actions\Accounting\CreditTransaction\UI\IndexCustomerCredit;
 use App\Actions\UI\Reports\IndexReports;
 use App\Stubs\UIDummies\IndexDummies;
 use Illuminate\Support\Facades\Route;
