@@ -56,7 +56,7 @@ const selectTab = (key: string) => {
     router.get(
         window.location.pathname,
         { tab: key },
-        { preserveState: true, preserveScroll: true, replace: true }
+        { preserveScroll: true, replace: true }
     )
 }
 const heroTitle = computed(

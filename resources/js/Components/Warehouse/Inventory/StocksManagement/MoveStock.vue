@@ -317,8 +317,8 @@ onMounted(() => {
                         <FontAwesomeIcon :icon="faArrowRight" class="text-gray-600 text-sm" />
                     </span>
                     <div class="flex items-center gap-2 justify-self-center h-[30px] w-fit">
-                        <label class="text-lg text-gray-600">Quantity:</label>
-                        <div class="w-full max-w-20">
+                        <label class="text-sm">Quantity:</label>
+                        <div class="w-full max-w-14">
                             <InputNumber
                                     v-if="moveStock.to" 
                                 :modelValue="moveStock.quantity"

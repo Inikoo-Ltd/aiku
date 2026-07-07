@@ -17,6 +17,7 @@ import Image from "@/Common/Components/Image.vue"
 import StarRating from "@/Iris/Components/StarRating.vue"
 import { ctrans } from "@/Composables/useTrans"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
+import { faArrowRight } from "@far"
 
 
 const props = defineProps<{
@@ -244,7 +245,7 @@ const reviewLink = computed(() => {
 
         default:
             return {
-                href: "/reviews",
+                href: "/customer-reviews",
                 text: ctrans("See All Reviews")
             }
     }
@@ -304,6 +305,19 @@ console.log("plm", layout)
                     {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
                 </div>
 
+                <div class="mt-2 flex flex-col items-center gap-2">
+                   <a :href="reviewLink.href"
+                        class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
+                        {{ reviewLink.text }}
+                        <FontAwesomeIcon :icon="faArrowRight"
+                            class="text-xs transition-transform group-hover:translate-x-1" />
+                    </a>
+
+                    <a :href="'/customer-reviews'"
+                        class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
+                        {{ ctrans("See All Reviews") }}
+                    </a>
+                </div>
 
             </div>
 

@@ -73,7 +73,7 @@ class StoreStoredItemsToReturn extends OrgAction
             foreach ($pallets as $pallet) {
                 $palletStoredItemQty = $pallet->storedItems
                     ->where('pivot.stored_item_id', $storedItem->id)
-                    ->first()->pivot->quantity ?? 0;
+                    ->first()?->pivot?->quantity ?? 0;
 
                 if ($allocatedQuantity < $requiredQuantity) {
                     $quantityToUse = min($palletStoredItemQty, $requiredQuantity - $allocatedQuantity);
