@@ -17,12 +17,13 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
     use WithDeliveryNoteItemUI;
 
-    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null): LengthAwarePaginator
     {
         $globalSearch = $this->getGlobalSearchFilter();
 
@@ -33,10 +34,6 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
-
-        if ($deliveryNoteItemId) {
-            $query->where('delivery_note_items.id', $deliveryNoteItemId);
-        }
 
         if ($stateFilter) {
             if (is_array($stateFilter)) {
@@ -50,6 +47,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $this->applyDeliveryNoteItemBaseJoins($query);
         $this->applyDeliveryNoteItemPickingJoins($query);
 
+        $query->leftJoin('batch_codes as org_stock_batch_code', 'org_stocks.main_batch_code_id', '=', 'org_stock_batch_code.id');
         $query->leftjoin('shops', 'shops.id', '=', 'delivery_note_items.shop_id');
 
         return $query
@@ -59,9 +57,53 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 $this->getDeliveryNoteItemPickingSelect(),
                 [
                     'delivery_note_items.notes',
+                    'org_stocks.main_batch_code_id as org_stocks_batch_code_id',
+                    'org_stocks.current_batch_codes as org_stocks_batch_code_count',
+                    'org_stock_batch_code.code as org_stocks_batch_code',
                     'shops.slug as shop_slug',
+                    'shops.type as shop_type',
+                    DB::raw("'{$parent->organisation->slug}' as organisation_slug"),
                 ]
             ))
+            ->addSelect([
+                 'un_numbers' => $this->getUnNumbersSubquery(),
+                'location_org_stocks' => DB::table('location_org_stocks')
+                    ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
+                    ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
+                    ->selectRaw("
+                        jsonb_agg(
+                            jsonb_build_object(
+                                'id', location_org_stocks.id,
+                                'quantity', location_org_stocks.quantity,
+                                'type', location_org_stocks.type,
+                                'location_id', locations.id,
+                                'location_slug', locations.slug,
+                                'location_code', locations.code,
+                                'org_stock_packed_in', org_stocks.packed_in,
+                                'pickings_data', (
+                                    SELECT concat(
+                                        coalesce(sum(quantity), 0),
+                                        ';',
+                                        coalesce(string_agg(id::char, ','), '')
+                                    )
+                                    FROM pickings
+                                    WHERE pickings.location_id = location_org_stocks.location_id
+                                    AND pickings.org_stock_id = location_org_stocks.org_stock_id
+                                AND pickings.type = 'pick'
+                                    AND pickings.delivery_note_item_id = delivery_note_items.id
+                                )
+                            )
+                            ORDER BY
+                                CASE
+                                    WHEN shops.type = 'b2b'
+                                        THEN location_org_stocks.default_wholesale_picking_location::int
+                                    ELSE
+                                        location_org_stocks.default_dropshipping_picking_location::int
+                                END DESC,
+                                picking_priority
+                        )
+                    ")
+            ])
             ->allowedSorts(array_merge($this->getDeliveryNoteItemBaseSorts(), ['picking_position']))
             ->allowedFilters([$globalSearch])
             ->withPaginator($ignoreParentPagination ? 'deliveryNoteItems' : $prefix, tableName: request()->route()->getName())
