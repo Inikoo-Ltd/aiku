@@ -19,7 +19,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexNotes extends GrpAction
 {
-    // use WithWorkspaceAuthorisation;
+    use WithWorkspaceAuthorisation;
 
     public function handle(Group $group, Employee $employee, ?string $prefix = null): LengthAwarePaginator
     {

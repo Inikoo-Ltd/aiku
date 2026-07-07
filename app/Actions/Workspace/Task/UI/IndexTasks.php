@@ -21,7 +21,7 @@ use App\Enums\Workspace\TaskStatusEnum;
 
 class IndexTasks extends GrpAction
 {
-    // use WithWorkspaceAuthorisation;
+    use WithWorkspaceAuthorisation;
 
     public function handle(Group $group, ?string $prefix = null): LengthAwarePaginator
     {
@@ -71,7 +71,7 @@ class IndexTasks extends GrpAction
     {
         $this->initialisation(app('group'), $request);
 
-        $this->canEdit = $request->user()->authTo('group.webmaster.edit');
+        $this->canEdit = $request->user()->authTo('group_webmaster.edit');
 
         return $this->handle($this->group);
     }
