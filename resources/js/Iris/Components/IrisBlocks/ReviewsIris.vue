@@ -245,7 +245,7 @@ const reviewLink = computed(() => {
 
         default:
             return {
-                href: "/customer-reviews",
+                href: "/reviews",
                 text: ctrans("See All Reviews")
             }
     }
@@ -313,7 +313,7 @@ const reviewLink = computed(() => {
                             class="text-xs transition-transform group-hover:translate-x-1" />
                     </a>
 
-                    <a v-if="['family', 'product'].includes(webpage_data.sub_type)" :href="'/customer-reviews'"
+                    <a v-if="['family', 'product'].includes(webpage_data.sub_type)" :href="'/reviews'"
                         class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
                         {{ ctrans("See All Reviews") }}
                     </a>

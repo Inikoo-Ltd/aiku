@@ -108,9 +108,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         //system
         Route::get('/catalogue', ShowIrisCatalogue::class)->name('catalogue_iris');
 
-
-        Route::redirect('/reviews', '/customer-reviews')->name('reviews.redirect');
-        Route::get('/customer-reviews', ShowIrisReviews::class)->name('reviews');
+        Route::get('/reviews', ShowIrisReviews::class)->name('reviews');
         Route::get('/reviews/product/{product}', ShowIrisProductReview::class)->name('reviews.product');
         Route::get('/reviews/family/{family}', ShowIrisFamilyReview::class)->name('reviews.family');
 
