@@ -128,7 +128,7 @@ class SaveShopDataAllegroChannel
 
             return $allegroUser->refresh();
         } catch (\Exception $e) {
-            Log::error('Failed to save Allegro shop data: ' . $e->getMessage());
+            \Sentry::captureException($e);
             return $allegroUser;
         }
     }
