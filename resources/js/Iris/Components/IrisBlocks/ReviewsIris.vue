@@ -306,11 +306,16 @@ console.log("plm", layout)
                 </div>
 
                 <div class="mt-2 flex flex-col items-center gap-2">
-                    <a :href="reviewLink.href"
+                   <a :href="reviewLink.href"
                         class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
                         {{ reviewLink.text }}
                         <FontAwesomeIcon :icon="faArrowRight"
                             class="text-xs transition-transform group-hover:translate-x-1" />
+                    </a>
+
+                    <a :href="'/customer-reviews'"
+                        class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
+                        {{ ctrans("See All Reviews") }}
                     </a>
                 </div>
 
