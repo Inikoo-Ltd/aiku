@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 03 Jul 2026 18:41:48 Malaysia Time, Kuala Lumpur, Malaysia
@@ -123,7 +124,7 @@ class IndexReviews extends OrgAction
             });
         });
 
-        $IDSearch = AllowedFilter::callback('ID', function ($query, $value) {
+        $IdSearch = AllowedFilter::callback('ID', function ($query, $value) {
             $query->where('reviews.id', $value);
         });
 
@@ -189,7 +190,7 @@ class IndexReviews extends OrgAction
                 'product_categories.code as family_code'
             ])
             ->allowedSorts(['id', 'created_at', 'rating', 'likes'])
-            ->allowedFilters([$globalSearch, 'status', 'rating', 'customer_name', $IDSearch])
+            ->allowedFilters([$globalSearch, 'status', 'rating', 'customer_name', $IdSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

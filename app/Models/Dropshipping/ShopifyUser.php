@@ -80,7 +80,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dropshipping\PlatformHasClient> $clients
  * @property-read Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
- * @property-read Collection<int, DebugWebhooks> $debugWebhooks
+ * @property-read Collection<int, \App\Models\Dropshipping\DebugWebhooks> $debugWebhooks
  * @property-read Shop|null $externalShop
  * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image

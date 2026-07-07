@@ -79,7 +79,7 @@ class UpdateReview extends OrgAction
         });
 
 
-        if($oldMessage !== $updatedReview->message){
+        if ($oldMessage !== $updatedReview->message) {
             TranslateReview::dispatch($updatedReview);
         }
 

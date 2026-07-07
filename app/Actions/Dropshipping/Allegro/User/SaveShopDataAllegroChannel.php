@@ -15,7 +15,6 @@ use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 
 class SaveShopDataAllegroChannel
 {

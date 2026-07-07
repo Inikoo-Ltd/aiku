@@ -96,7 +96,7 @@ class IndexDeliveryNoteItems extends OrgAction
                         'title' => __("No items found"),
                     ]
                 );
-                
+
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $allowAction = $this->canHandleDeliveryNote($parent);
 

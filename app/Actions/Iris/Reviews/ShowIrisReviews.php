@@ -233,8 +233,7 @@ class ShowIrisReviews extends IrisAction
             ->toResponse(request());
 
         $response->headers->set('Cache-Control', 'public, s-maxage=300, max-age=0');
-       /*  $response->header('X-AIKU-WEBSITE', (string)$shop->organisation_id);
- */
+
         return $response;
     }
 

@@ -87,8 +87,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Shop|null $shop
  * @property-read \App\Models\CRM\WebUserStats|null $stats
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read Collection<int, WebUserFailedLogin> $webUserFailedLogins
- * @property-read Collection<int, WebUserLogin> $webUserLogins
+ * @property-read Collection<int, \App\Models\CRM\WebUserFailedLogin> $webUserFailedLogins
+ * @property-read Collection<int, \App\Models\CRM\WebUserLogin> $webUserLogins
  * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Website|null $website
  * @method static \Database\Factories\CRM\WebUserFactory factory($count = null, $state = [])
