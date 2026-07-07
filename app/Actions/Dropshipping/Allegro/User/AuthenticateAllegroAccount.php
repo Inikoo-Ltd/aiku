@@ -89,9 +89,7 @@ class AuthenticateAllegroAccount extends OrgAction
                         'auth_type' => 'oauth',
                     ];
 
-                    $allegroUser = AllegroUser::where('customer_id', $customer?->id)
-                        ->where('allegro_id', $userData['allegro_id'])
-                        ->first();
+                    $allegroUser = AllegroUser::where('allegro_id', $userData['allegro_id'])->first();
 
                     if (!$allegroUser && $customer?->id) {
                         $allegroUser = StoreAllegroUser::run($customer, $userData);
