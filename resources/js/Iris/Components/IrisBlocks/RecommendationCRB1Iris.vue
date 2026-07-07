@@ -53,6 +53,7 @@ const layout = inject('layout', retinaLayoutStructure)
 
 const listProducts = ref<LastOrderedProduct[]>([])
 const isLoadingFetch = ref(false)
+const isFinish = ref(false)
 
 const fetchRecommenders = async () => {
     if (route().has('iris.json.product_category.last-ordered-products.index')) {
@@ -66,6 +67,7 @@ const fetchRecommenders = async () => {
                 })
             )
             listProducts.value = response.data.data || []
+            // listProducts.value = []
             
             if (!(listProducts.value?.length > 3)) {
                 console.warn('Block CRB are less than 3, will not showed.')
@@ -74,12 +76,14 @@ const fetchRecommenders = async () => {
             console.error('Error on fetching recommendations:', error)
         } finally {
             isLoadingFetch.value = false
+            isFinish.value = true
         }
     }
 }
 
 onMounted(() => {
     fetchRecommenders()
+    window.crbFetchRecommenders = fetchRecommenders
 })
 </script>
 
@@ -89,17 +93,22 @@ onMounted(() => {
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
     }">
-        <div v-if="isLoadingFetch" class="py-4 px-3 md:px-12 grid grid-cols-4 gap-x-4">
-            <div v-for="xx in 4" :key="xx" class="skeleton w-full h-64 rounded"></div>
+        <!-- Title -->
+        <div v-if="!isFinish || (isFinish && listProducts.length)" class="px-3 py-6 pb-2">
+            <div class="text-2xl md:text-3xl font-semibold">
+                <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
+            </div>
+        </div>
+
+        <div v-if="isLoadingFetch" class="py-4 px-3 md:px-12 grid gap-x-3" :style="{ gridTemplateColumns: `repeat(${slidesPerView ? slidesPerView : 4}, minmax(0, 1fr))` }">
+            <div v-for="xx in (slidesPerView ? slidesPerView : 4)" :key="xx" class="flex flex-col w-full md:px-4 md:py-3">
+                <div class="skeleton w-full max-w-[220px] aspect-square mx-auto rounded"></div>
+                <div class="skeleton mt-3 min-h-[2.3em] w-full rounded"></div>
+                <!-- <div class="skeleton mt-2 h-4 w-1/2 mx-auto rounded"></div> -->
+            </div>
         </div>
 
         <template v-else-if="listProducts && listProducts.length > 3">
-            <!-- Title -->
-            <div class="px-3 py-6 pb-2">
-                <div class="text-2xl md:text-3xl font-semibold">
-                    <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
-                </div>
-            </div>
 
             <div class="py-4 px-3 md:px-12" id="recommendation-crb-1-iris">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"

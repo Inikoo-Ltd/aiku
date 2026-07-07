@@ -8,7 +8,7 @@ import {
     faChevronRight,
     faThumbsUp,
     faThumbsDown,
-    faTimes,
+    faTimes
 } from "@fortawesome/free-solid-svg-icons"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { router } from "@inertiajs/vue3"
@@ -16,7 +16,6 @@ import Dialog from "primevue/dialog"
 import Image from "@/Common/Components/Image.vue"
 import StarRating from "@/Iris/Components/StarRating.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { faArrowRight } from "@fas"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 
 
@@ -55,7 +54,7 @@ const fetchMoreReviews = async () => {
 
         reviewsData.value = {
             ...data.reviews,
-            data: [...reviewsData.value.data, ...fetchedReviews],
+            data: [...reviewsData.value.data, ...fetchedReviews]
         }
         reviewSummary.value = data?.review_summary ?? reviewSummary.value
     } catch (error) {
@@ -145,7 +144,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
         route("iris.models.review.react", { review: review.id }),
         {
             target: target,
-            type: newReaction,
+            type: newReaction
         },
         {
             preserveScroll: true,
@@ -160,7 +159,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
             },
             onFinish: () => {
                 delete reactingKeys.value[reactionKey]
-            },
+            }
         }
     )
 }
@@ -231,33 +230,33 @@ const openReview = (review: any) => {
 
 const reviewLink = computed(() => {
     switch (webpage_data.sub_type) {
-        case 'family':
+        case "family":
             return {
                 href: `/reviews/family/${webpage_data.model_slug}`,
-                text: ctrans('See All Reviews Family'),
+                text: ctrans("See All Reviews Family")
             }
 
-        case 'product':
+        case "product":
             return {
                 href: `/reviews/product/${webpage_data.model_slug}`,
-                text: ctrans('See All Reviews Product'),
+                text: ctrans("See All Reviews Product")
             }
 
         default:
             return {
-                href: '/reviews',
-                text: ctrans('See All Reviews'),
+                href: "/reviews",
+                text: ctrans("See All Reviews")
             }
     }
 })
-console.log('plm',layout)
+console.log("plm", layout)
 </script>
 
 <template>
     <div class="editor-class overflow-hidden"
-        v-if="isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length">
+         v-if="isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length">
         <div v-if="isInitialLoading"
-            class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
+             class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary skeleton -->
             <div
                 class="flex min-h-[150px] flex-col items-center justify-center gap-3 px-6 py-6 text-center lg:col-span-1">
@@ -277,7 +276,7 @@ console.log('plm',layout)
                         <div class="skeleton h-3 w-16 rounded"></div>
                         <div class="skeleton h-6 w-16 rounded"></div>
                     </div>
-                </div>    
+                </div>
             </div>
         </div>
 
@@ -305,20 +304,7 @@ console.log('plm',layout)
                     {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
                 </div>
 
-                <div class="mt-2 flex flex-col items-center gap-2">
-                    <a :href="reviewLink.href"
-                        class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
-                        {{ reviewLink.text }}
-                    </a>
 
-                    <a v-if="reviewLink.href !== '/reviews'" href="/reviews"
-                        class="group inline-flex items-center gap-2 text-xs font-bold  hover:underline">
-                        {{ ctrans("See All Reviews") }}
-
-                        <FontAwesomeIcon :icon="faArrowRight"
-                            class="text-xs transition-transform group-hover:translate-x-1" />
-                    </a>
-                </div>
             </div>
 
 
@@ -326,21 +312,21 @@ console.log('plm',layout)
             <div class="relative lg:col-span-6">
                 <!-- Previous -->
                 <button @click="prev" :disabled="current === 0"
-                    class="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:-left-5">
+                        class="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:-left-5">
                     <FontAwesomeIcon :icon="faChevronLeft" class="text-[10px] text-gray-600" />
                 </button>
 
                 <!-- Next -->
                 <button @click="next" :disabled="isNextDisabled"
-                    class="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:right-3">
+                        class="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:right-3">
                     <FontAwesomeIcon v-if="isFetchingMoreReviews" :icon="faChevronRight"
-                        class="text-[10px] text-gray-600 animate-pulse" />
+                                     class="text-[10px] text-gray-600 animate-pulse" />
                     <FontAwesomeIcon v-else :icon="faChevronRight" class="text-[10px] text-gray-600" />
                 </button>
 
                 <div class="grid grid-cols-1 divide-gray-200 lg:grid-cols-4 2xl:grid-cols-5 px-8 lg:px-0">
                     <div v-for="review in visibleReviews" :key="review.id" @click="openReview(review)"
-                        class="flex min-h-[170px] flex-col px-5 py-5 transition hover:bg-gray-50">
+                         class="flex min-h-[170px] flex-col px-5 py-5 transition hover:bg-gray-50">
                         <Rating :modelValue="review.rating" readonly :cancel="false" class="review-rating-small" />
 
                         <div class="mt-2 text-sm font-semibold text-gray-900">
@@ -356,7 +342,7 @@ console.log('plm',layout)
                                 <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location[1] != layout?.iris?.shop?.location[1]" />
                             </div>
                             <div v-if="hasTranslation(review)" @click.stop="toggleTranslation(review)"
-                                class="text-gray-400 hover:text-gray-700 cursor-pointer">
+                                 class="text-gray-400 hover:text-gray-700 cursor-pointer">
                                 {{ showOriginal[review.id] ? ctrans("See translation") : ctrans("See original") }}
                             </div>
                         </div>
@@ -366,11 +352,11 @@ console.log('plm',layout)
                             </div>
 
                             <div v-if="allow_review_reaction && layout?.iris?.is_logged_in"
-                                class="flex items-center gap-2">
+                                 class="flex items-center gap-2">
                                 <button @click.stop="() => toggleReaction(review, 'review', true)"
-                                    :disabled="reactingKeys[`${review.id}-review`] || reactions[review.id] === 'like'"
-                                    class="flex h-7 items-center gap-1 rounded px-2 transition disabled:cursor-not-allowed"
-                                    :class="reactions[review.id] === 'like'
+                                        :disabled="reactingKeys[`${review.id}-review`] || reactions[review.id] === 'like'"
+                                        class="flex h-7 items-center gap-1 rounded px-2 transition disabled:cursor-not-allowed"
+                                        :class="reactions[review.id] === 'like'
                                         ? 'bg-green-50 text-green-600'
                                         : 'text-gray-500 hover:bg-gray-100'
                                         ">
@@ -381,9 +367,9 @@ console.log('plm',layout)
                                 </button>
 
                                 <button @click.stop="() => toggleReaction(review, 'review', false)"
-                                    :disabled="reactingKeys[`${review.id}-review`] || reactions[review.id] === 'dislike'"
-                                    class="flex h-7 w-7 items-center justify-center rounded transition disabled:cursor-not-allowed"
-                                    :class="reactions[review.id] === 'dislike'
+                                        :disabled="reactingKeys[`${review.id}-review`] || reactions[review.id] === 'dislike'"
+                                        class="flex h-7 w-7 items-center justify-center rounded transition disabled:cursor-not-allowed"
+                                        :class="reactions[review.id] === 'dislike'
                                         ? 'bg-red-50 text-red-600'
                                         : 'text-gray-500 hover:bg-gray-100'
                                         ">
@@ -398,10 +384,8 @@ console.log('plm',layout)
     </div>
 
 
-
-
     <Dialog v-model:visible="reviewModalVisible" modal dismissableMask :draggable="false" :closable="false"
-        :style="{ width: '640px', maxWidth: '95vw' }" :breakpoints="{ '640px': '100vw' }" :pt="{
+            :style="{ width: '640px', maxWidth: '95vw' }" :breakpoints="{ '640px': '100vw' }" :pt="{
             root: { class: 'overflow-hidden rounded-xl' },
             header: { class: 'p-0' },
             content: { class: 'p-0' }
@@ -431,7 +415,7 @@ console.log('plm',layout)
 
                     <div class="mt-1 flex items-center gap-2">
                         <Rating :modelValue="selectedReview.rating" readonly :cancel="false"
-                            class="review-rating-small rating" />
+                                class="review-rating-small rating" />
 
                         <span class="text-xs font-medium text-gray-600">
                             {{ selectedReview.rating }}/5
@@ -441,7 +425,7 @@ console.log('plm',layout)
                 </div>
 
                 <button @click="reviewModalVisible = false"
-                    class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100">
+                        class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100">
                     <FontAwesomeIcon :icon="faTimes" class="text-xs" />
                 </button>
 
@@ -453,25 +437,25 @@ console.log('plm',layout)
                 {{ displayMessage(selectedReview) }}
             </p>
             <div v-if="hasMessageTranslation(selectedReview)" @click="toggleTranslation(selectedReview)"
-                class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
+                 class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
                 {{ showOriginal[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
             </div>
             <div v-if="selectedReview.web_images?.length" class="flex gap-3">
                 <button v-for="(image, index) in selectedReview.web_images" :key="image.id ?? index" type="button"
-                    class="group relative aspect-square w-12 h-12 cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                        class="group relative aspect-square w-12 h-12 cursor-zoom-in overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
                     <Image :src="image.original" :alt="selectedReview.name" :imageCover="true"
-                        class="h-full w-full flex items-center justify-center transition duration-300 group-hover:scale-105" />
+                           class="h-full w-full flex items-center justify-center transition duration-300 group-hover:scale-105" />
                 </button>
             </div>
 
             <div v-if="allow_review_reaction && layout?.iris?.is_logged_in"
-                class="mt-1 flex items-center justify-between border-b border-gray-100 pt-3">
+                 class="mt-1 flex items-center justify-between border-b border-gray-100 pt-3">
                 <span class="text-xs text-gray-500">
                     Helpful?
                 </span>
                 <div class="flex items-center gap-2">
                     <button :disabled="reactingKeys[`${selectedReview.id}-review`]"
-                        @click="() => toggleReaction(selectedReview, 'review', true)" :class="[
+                            @click="() => toggleReaction(selectedReview, 'review', true)" :class="[
                             'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
                             reactions[selectedReview.id] === 'like'
                                 ? ' text-green-600'
@@ -481,7 +465,7 @@ console.log('plm',layout)
                         {{ selectedReview.likes ?? 0 }}
                     </button>
                     <button :disabled="reactingKeys[`${selectedReview.id}-review`]"
-                        @click="() => toggleReaction(selectedReview, 'review', false)" :class="[
+                            @click="() => toggleReaction(selectedReview, 'review', false)" :class="[
                             'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
                             reactions[selectedReview.id] === 'dislike'
                                 ? ' text-red-600'
@@ -506,13 +490,13 @@ console.log('plm',layout)
                     {{ displayReply(selectedReview) }}
                 </p>
                 <div v-if="hasReplyTranslation(selectedReview)" @click="toggleReplyTranslation(selectedReview)"
-                    class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
+                     class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
                     {{ showOriginalReply[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
                 </div>
                 <div class="flex items-center w-full justify-end gap-2"
-                    v-if="allow_review_reply_reaction && layout?.iris?.is_logged_in">
+                     v-if="allow_review_reply_reaction && layout?.iris?.is_logged_in">
                     <button :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
-                        @click="() => toggleReaction(selectedReview, 'review_reply', true)" :class="[
+                            @click="() => toggleReaction(selectedReview, 'review_reply', true)" :class="[
                             'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
                             replyReactions[selectedReview.id] === 'like'
                                 ? ' text-green-600'
@@ -522,7 +506,7 @@ console.log('plm',layout)
                         {{ selectedReview.reply_likes ?? 0 }}
                     </button>
                     <button :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
-                        @click="() => toggleReaction(selectedReview, 'review_reply', false)" :class="[
+                            @click="() => toggleReaction(selectedReview, 'review_reply', false)" :class="[
                             'flex h-8 items-center gap-1 rounded-full px-3 text-xs transition',
                             replyReactions[selectedReview.id] === 'dislike'
                                 ? ' text-red-600'

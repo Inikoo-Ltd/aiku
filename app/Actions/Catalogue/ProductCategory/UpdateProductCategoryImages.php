@@ -10,9 +10,9 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\WithUpdateWebImages;
-use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Helpers\CanUpdateImages;
 use App\Models\Catalogue\ProductCategory;
 use Lorisleiva\Actions\ActionRequest;
 

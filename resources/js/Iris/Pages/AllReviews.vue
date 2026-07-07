@@ -4,9 +4,8 @@ import Image from "@/Common/Components/Image.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPhone, faEnvelope, faLocationDot, faGlobe } from "@fortawesome/free-solid-svg-icons"
 import type { Image as ImageProxy } from "@/types/Image"
-import { computed, ref } from "vue"
+import { computed, ref, inject } from "vue"
 import { router } from "@inertiajs/vue3"
-import { inject } from "vue"
 import StarRating from "@/Iris/Components/StarRating.vue"
 
 
@@ -33,9 +32,7 @@ const props = defineProps<{
     }
 }>()
 const layout = inject("layout", {})
-const ratingStars = computed(() => Array.from({ length: 5 }, (_, index) => index + 1))
 const averageRating = computed(() => props.avg_review ?? 0)
-
 
 
 const initialTab = (): string => {
@@ -64,10 +61,9 @@ const selectTab = (key: string) => {
 }
 const heroTitle = computed(
     () =>
-        props.heading ? props.heading : `${props.shop_profile?.name ?? "Shop"} ${props.tabs.current != 'all' ? props.tabs.current : ''} Reviews`
+        props.heading ? props.heading : `${props.shop_profile?.name ?? "Shop"} ${props.tabs.current != "all" ? props.tabs.current : ""} Reviews`
 )
-const reviewItems = computed(() => props.reviews?.data ?? [])
-const hasReviews = computed(() => reviewItems.value.length > 0)
+
 </script>
 
 <template>
@@ -117,7 +113,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                     <div class="flex flex-col items-center">
 
                         <span class="text-sm font-medium text-gray-500">
-                            {{ ctrans('Recommend Rate') }}
+                            {{ ctrans("Recommend Rate") }}
                         </span>
 
                         <div class="relative mt-5 flex w-full items-center justify-center overflow-hidden">
@@ -127,8 +123,8 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                                 <circle cx="80" cy="80" r="60" stroke="#E5E7EB" stroke-width="12" fill="none" />
 
                                 <circle cx="80" cy="80" r="60" stroke="currentColor" stroke-width="12" fill="none"
-                                    stroke-linecap="round" class="text-primary transition-all duration-700"
-                                    :stroke-dasharray="2 * Math.PI * 60" :stroke-dashoffset="(2 * Math.PI * 60) *
+                                        stroke-linecap="round" class="text-primary transition-all duration-700"
+                                        :stroke-dasharray="2 * Math.PI * 60" :stroke-dashoffset="(2 * Math.PI * 60) *
                                         (1 - (recommend_percent ?? 0) / 100)
                                         " />
                             </svg>
@@ -145,12 +141,12 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                                 {{ recommend_percent ?? 0 }}%
                             </span>
 
-                            {{ ctrans(' of customers recommend this') }}
+                            {{ ctrans(" of customers recommend this") }}
 
                             <span class="font-medium">
-                                {{ $props.tabs.current != 'all'
-                                    ? $props.tabs.current
-                                    : 'company'
+                                {{ $props.tabs.current != "all"
+                                ? $props.tabs.current
+                                : "company"
                                 }}
                             </span>
                         </p>
@@ -167,8 +163,8 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                     class="mx-auto flex max-w-7xl overflow-x-auto px-4 text-sm font-semibold text-gray-700 sm:px-6 lg:px-8">
 
                     <button v-for="tab in tabs?.navigation" :key="tab.key" type="button"
-                        class="flex-shrink-0 whitespace-nowrap border-b-4 px-5 py-4 transition hover:text-gray-900 sm:flex-1 sm:px-8 sm:py-5"
-                        :class="{
+                            class="flex-shrink-0 whitespace-nowrap border-b-4 px-5 py-4 transition hover:text-gray-900 sm:flex-1 sm:px-8 sm:py-5"
+                            :class="{
                             'border-primary text-primary': activeTab === tab.key,
                             'border-transparent': activeTab !== tab.key,
                         }" @click="selectTab(tab.key)">
@@ -196,8 +192,8 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                                 class="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gray-50">
 
                                 <Image v-if="props.shop_profile?.logo" :src="props.shop_profile.logo"
-                                    :alt="props.shop_profile.name ?? 'Shop Logo'" :imageCover="true"
-                                    class="h-full w-full" />
+                                       :alt="props.shop_profile.name ?? 'Shop Logo'" :imageCover="true"
+                                       class="h-full w-full" />
 
                                 <span v-else class="text-3xl font-bold text-gray-400">
 
@@ -274,21 +270,21 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
 
                         <div class="mt-6">
 
-                            <ListReviews  :data="props.reviews" :tab="activeTab"
-                                :readonly="!layout?.iris?.is_logged_in" :showTagVisibleType="false" :review_settings
-                                :reaction_routes="{
+                            <ListReviews :data="props.reviews" :tab="activeTab"
+                                         :readonly="!layout?.iris?.is_logged_in" :showTagVisibleType="false" :review_settings
+                                         :reaction_routes="{
                                     name: 'iris.models.review.react'
                                 }">
 
                                 <template #image-item="{ item, openImagePreview }">
 
                                     <button v-for="(image, index) in item.review.review_images" :key="image.id ?? index"
-                                        type="button"
-                                        class="group relative h-14 w-14 overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
-                                        @click="openImagePreview(item.review.review_images, index)">
+                                            type="button"
+                                            class="group relative h-14 w-14 overflow-hidden rounded-xl border border-gray-200 bg-gray-100"
+                                            @click="openImagePreview(item.review.review_images, index)">
 
                                         <Image :src="image.original" :alt="image.name" :imageCover="true"
-                                            class="h-full w-full transition duration-300 group-hover:scale-105" />
+                                               class="h-full w-full transition duration-300 group-hover:scale-105" />
 
                                     </button>
 
@@ -297,7 +293,7 @@ const hasReviews = computed(() => reviewItems.value.length > 0)
                                 <template #image-dialog="{ images }">
 
                                     <Image :src="images.original" :alt="images.name" :imageCover="true"
-                                        :style="{ objectFit: 'contain' }" />
+                                           :style="{ objectFit: 'contain' }" />
 
                                 </template>
 
