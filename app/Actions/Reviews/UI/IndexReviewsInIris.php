@@ -385,6 +385,7 @@ class IndexReviewsInIris extends OrgAction
         }
 
         return $query
+            ->defaultSort(AllowedSort::field('recent', 'reviews.published_at')->defaultDirection('desc'))
             ->allowedSorts([
                 'id',
                 AllowedSort::field('created_at', 'reviews.published_at'),
