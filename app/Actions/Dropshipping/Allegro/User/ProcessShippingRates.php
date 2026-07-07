@@ -30,38 +30,54 @@ class ProcessShippingRates extends RetinaAction
                 'HU' => [[1, '4.50'], [2, '4.70'], [5, '4.80'], [10, '5.60'], [30, '6.20']]
             ];
 
-            $countryCode = strtoupper((string) $allegroUser->customerSalesChannel->customer?->address?->country_code);
-            $brackets = Arr::get($shippingZones, $countryCode);
+            $countryCode = strtoupper((string)$allegroUser->customerSalesChannel->customer?->address?->country_code);
+            $brackets = Arr::get($shippingZones, $countryCode, $shippingZones['SK']);
             $amount = $brackets[0][1] ?? null;
 
             $deliveryMethods = $allegroUser->getDeliveryMethods();
             $deliveryMethod = collect(Arr::get($deliveryMethods, 'deliveryMethods'))->firstWhere('destinationCountry', $countryCode);
 
-            $shipping = ($deliveryMethod && $amount !== null)
-                ? $allegroUser->createShippingRates([
-                    'name' => 'AW-EU-'.$allegroUser->customerSalesChannel->slug . '-' . $countryCode,
-                    'rates' => [
-                        [
-                            'deliveryMethod' => [
-                                'id' => Arr::get($deliveryMethod, 'id'),
-                            ],
-                            'maxQuantityPerPackage' => 5,
-                            'maxPackageWeight' => [
-                                'value' => 30,
-                                'unit' => 'KILOGRAM'
-                            ],
-                            'firstItemRate' => [
-                                'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.firstItemRate.currency'),
-                                'amount' => $amount
-                            ],
-                            'nextItemRate' => [
-                                'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.nextItemRate.currency'),
-                                'amount' => '0'
-                            ],
-                        ]
+            $maxWeightData = [];
+
+            if(!$deliveryMethod) {
+                return [];
+            }
+
+            if($amount === null) {
+                return [];
+            }
+
+            if(Arr::get($deliveryMethod, 'shippingRatesConstraints.maxPackageWeight.supported')) {
+                $maxWeightData = [
+                    'maxPackageWeight' => [
+                        'value' => 30,
+                        'unit' => 'KILOGRAM'
+                    ],
+                ];
+            }
+
+            $shippingRatesData = [
+                'name' => 'AW-EU-'.$allegroUser->customerSalesChannel->slug . '-' . $countryCode,
+                'rates' => [
+                    [
+                        'deliveryMethod' => [
+                            'id' => Arr::get($deliveryMethod, 'id'),
+                        ],
+                        'maxQuantityPerPackage' => 30,
+                        ...$maxWeightData,
+                        'firstItemRate' => [
+                            'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.firstItemRate.currency'),
+                            'amount' => $amount
+                        ],
+                        'nextItemRate' => [
+                            'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.nextItemRate.currency'),
+                            'amount' => '0'
+                        ],
                     ]
-                ])
-                : [];
+                ]
+            ];
+
+            $shipping = $allegroUser->createShippingRates($shippingRatesData);
         } catch (\Exception $e) {
             $shipping = [];
         }
