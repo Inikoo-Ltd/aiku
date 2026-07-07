@@ -24,7 +24,7 @@ trait WithGetIrisReviewsTrait
         $scopes = [];
         if ($parent instanceof Shop) {
             $shop = $parent;
-            $scopes = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER];
+            $scopes = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER, ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY];
             $setting = Arr::get($shop->settings, 'reviews.validation_scope.shop', []);
         } else {
             $shop = $parent->shop;
