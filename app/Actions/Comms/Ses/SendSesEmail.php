@@ -99,7 +99,7 @@ class SendSesEmail
                     print "Start try to send   attempt $attempt  Start  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
                 }
 
-                $result = $this->sendEmail($emailData);
+                $result = $this->sendEmail($emailData, $dispatchedEmail->outbox_id);
 
                 if ($debug) {
                     print "Start try to send  attempt $attempt  End  to {$dispatchedEmail->emailAddress?->email} ".now()->toDateTimeString()."\n";
@@ -195,9 +195,9 @@ class SendSesEmail
     /**
      * @throws \PHPMailer\PHPMailer\Exception
      */
-    public function sendEmail($emailData): Result
+    public function sendEmail($emailData, ?int $outboxId = null): Result
     {
-        return $this->getSesClient()->sendRawEmail($this->getRawEmail($emailData));
+        return $this->getSesClient($outboxId)->sendRawEmail($this->getRawEmail($emailData));
     }
 
     public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null): array
