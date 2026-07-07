@@ -96,16 +96,18 @@ class IndexDeliveryNoteItems extends OrgAction
                         'title' => __("No items found"),
                     ]
                 );
-
+                
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $this->addDeliveryNoteItemBaseTableColumns($table);
-
             $allowAction = $this->canHandleDeliveryNote($parent);
 
-            $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction);
             if ($allowAction && $isEditable) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, className: 'w-[250px]');
             }
+
+            $this->addDeliveryNoteItemBaseTableColumns($table);
+
+
+            $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction);
         };
     }
 }
