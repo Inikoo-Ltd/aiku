@@ -1,9 +1,9 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 19 Nov 2024 11:11:46 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Author: eka yudinata (https://github.com/ekayudinata)
+ * Created: 07/07/2026 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Copyright (c) 2026, eka yudinata
  */
 
 namespace App\Actions\Comms\EmailAddress;
@@ -27,10 +27,6 @@ class ProcessGetSesClient
         OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
         OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
         OutboxCodeEnum::REVIEW_REMINDER
-    ];
-
-    private const OUTBOX_IMPORTANT_GROUP = [
-        OutboxCodeEnum::PASSWORD_REMINDER,
     ];
 
     /**
@@ -63,11 +59,6 @@ class ProcessGetSesClient
             return $this->fromSettings($outbox->organisation?->settings)
                 ?? $this->fromSettings($outbox->group?->settings)
                 ?? $default;
-        }
-
-        // Important: always use default credentials
-        if (in_array($outbox->code, self::OUTBOX_IMPORTANT_GROUP, true)) {
-            return $default;
         }
 
         // Everything else: group only
