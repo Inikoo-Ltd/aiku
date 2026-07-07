@@ -128,16 +128,18 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                     ]
                 )->defaultSort('picking_position');
 
+            $allowAction = $this->canHandleDeliveryNote($deliveryNote);
+
+            if ($allowAction && $isEditable) {
+                $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
+            }
+
             $this->addDeliveryNoteItemBaseTableColumns($table);
 
-            $allowAction = $this->canHandleDeliveryNote($deliveryNote);
 
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction, false);
             if ($allowAction) {
                 $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-                if ($isEditable) {
-                    $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
-                }
             }
         };
     }
