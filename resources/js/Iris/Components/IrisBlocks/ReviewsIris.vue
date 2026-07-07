@@ -305,7 +305,7 @@ const reviewLink = computed(() => {
                     {{ ctrans("Based on :total Reviews", { total: reviewsData?.meta?.total }) }}
                 </div>
 
-                <div class="mt-2 flex flex-col items-center gap-2" >
+                <!-- <div class="mt-2 flex flex-col items-center gap-2" >
                    <a :href="reviewLink.href"
                         class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
                         {{ reviewLink.text }}
@@ -317,7 +317,7 @@ const reviewLink = computed(() => {
                         class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
                         {{ ctrans("See All Reviews") }}
                     </a>
-                </div>
+                </div> -->
 
             </div>
 
