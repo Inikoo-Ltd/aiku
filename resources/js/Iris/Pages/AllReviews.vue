@@ -2,7 +2,7 @@
 import ListReviews from "@/Components/ListReviews.vue"
 import Image from "@/Common/Components/Image.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPhone, faEnvelope, faLocationDot, faGlobe } from "@fortawesome/free-solid-svg-icons"
+import { faPhone, faEnvelope, faLocation, faGlobe } from "@fas"
 import type { Image as ImageProxy } from "@/types/Image"
 import { computed, ref, inject } from "vue"
 import { router } from "@inertiajs/vue3"
@@ -215,7 +215,7 @@ const heroTitle = computed(
 
                             <div v-if="props.shop_profile?.formatted_address" class="flex items-start gap-3">
 
-                                <FontAwesomeIcon :icon="faLocationDot" class="mt-1 w-4 shrink-0 text-gray-400" />
+                                <FontAwesomeIcon :icon="faLocation" class="mt-1 w-4 shrink-0 text-gray-400" />
 
                                 <span class="break-words" v-html="props.shop_profile.formatted_address">
                                 </span>
