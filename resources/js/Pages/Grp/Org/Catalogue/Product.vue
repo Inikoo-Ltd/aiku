@@ -39,6 +39,7 @@ import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategory
 import { trans } from "laravel-vue-i18n"
 import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import Action from '@/Components/Forms/Fields/Action.vue'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import { faShapes, faStar } from '@fas'
 import { faHatCowboy } from "@far"
@@ -285,8 +286,33 @@ const saveProductReview = async () => {
 
         </template>
 
-        <template #button-reindex>
-            <div class="w-fit">
+        <template #button-create-review="{ action }">
+            <div v-if="currentTab != 'reviews'"></div>
+            <div v-else>
+                <Button :style="action.style" :label="action.label" @click="openDialog" />
+            </div>
+        </template>        
+        <template #other>
+        </template>
+        <template #otherBefore>
+            <Action
+                v-if="currentTab === 'images'"
+                :action="{
+                    key: 'repair-images',
+                    type: 'button',
+                    style: 'edit',
+                    icon: 'fal fa-tools',
+                    label: trans('Repair Images'),
+                    tooltip: trans('Sync Product Images from Trade Units'),
+                    route: {
+                        name: 'grp.models.product.repair_product_images',
+                        method: 'patch',
+                        parameters: { product: product_id },
+                    },
+                }"
+            />
+
+            <div class="w-fit" v-if="currentTab === 'showcase'">
                 <ButtonReindexWebpage
                     :webpage="{
                         id: luigi_data.webpage_id,
@@ -315,17 +341,6 @@ const saveProductReview = async () => {
                     </template>
                 </ButtonReindexWebpage>
             </div>
-        </template>
-
-         <template #button-create-review="{ action }">
-            <div v-if="currentTab != 'reviews'"></div>
-            <div v-else>
-                <Button :style="action.style" :label="action.label" @click="openDialog" />
-            </div>
-            </template>
-        <template #other>
-        </template>
-        <template #otherBefore>
 
             <ModalCreateGiftOffers
                 v-if="currentTab === 'offers'"
