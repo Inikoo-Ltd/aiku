@@ -500,6 +500,7 @@ trait WithAllegroApiServices
     {
         $data = [
             'name'             => Arr::get($data, 'name', 'Default return policy'),
+            'isFulfillment' => false,
             'availability'     => [
                 'range' => 'FULL'
             ],

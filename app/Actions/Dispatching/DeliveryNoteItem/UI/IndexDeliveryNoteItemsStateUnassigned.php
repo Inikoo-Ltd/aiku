@@ -21,7 +21,7 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
 {
     use WithDeliveryNoteItemUI;
 
-    public function handle(DeliveryNote $deliveryNote, $prefix = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
+    public function handle(DeliveryNote $deliveryNote, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = $this->getGlobalSearchFilter();
 
@@ -33,15 +33,14 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
 
         $query->where('delivery_note_items.delivery_note_id', $deliveryNote->id);
 
-        if ($deliveryNoteItemId) {
-            $query->where('delivery_note_items.id', $deliveryNoteItemId);
-        }
-
         $this->applyDeliveryNoteItemBaseJoins($query);
         $query->with('orgStock.tradeUnits');
 
         return $query->defaultSort('org_stocks.code')
             ->select($this->getDeliveryNoteItemBaseSelect())
+            ->addSelect([
+                 'un_numbers' => $this->getUnNumbersSubquery(),
+            ])
             ->allowedSorts($this->getDeliveryNoteItemBaseSorts())
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

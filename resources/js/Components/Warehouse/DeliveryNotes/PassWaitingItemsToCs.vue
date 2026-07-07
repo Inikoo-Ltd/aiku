@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { router } from "@inertiajs/vue3"
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
@@ -9,6 +9,8 @@ import Image from "@common/Components/Image.vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Image as ImageTS } from '@/types/Image'
 import { ctrans } from '@/Composables/useTrans'
+import axios from 'axios'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 
 const model = defineModel<boolean>()
 
@@ -20,7 +22,7 @@ const props = defineProps<{
         org_stock_name: string
         org_stock_code: string
         notes: string
-        org_stock_image_thumbnail: ImageTS
+        org_stock_image_thumbnail?: ImageTS
         shop_name?: string
         shop_code?: string
     }
@@ -31,9 +33,9 @@ const dataToSendAsWaiting = ref({
     note: '',
 })
 const isLoadingSetAsWaiting = ref(false)
-const onPassItemToCs = () => {
+const onPassItemToCs = async () => {
     // Section: Submit
-    router.post(
+    await router.post(
         route('grp.models.delivery_note_item.set_as_waiting_crm', {
             deliveryNoteItem: props.transaction?.id
         }),
@@ -71,10 +73,25 @@ const onPassItemToCs = () => {
     )
 }
 
+const isLoadingImage = ref(false);
+
+const fetchImage = (deliveryNoteItem: any)   => {
+    axios.get(route('grp.json.fetch_single_delivery_note_item.image', {
+        deliveryNoteItem: deliveryNoteItem.id,
+    })).then((item) => {
+        props.transaction.org_stock_image_thumbnail = item.data ?? null;
+        isLoadingImage.value = false;
+    })
+}
+
 onMounted(() => {
-    // console.log('qqqqqq', props.transaction)
     dataToSendAsWaiting.value.note = props.transaction.notes ?? ''
+    if (!props.transaction?.org_stock_image_thumbnail) {
+        isLoadingImage.value = true
+        fetchImage(props.transaction);
+    }
 })
+
 </script>
 
 <template>
@@ -84,13 +101,22 @@ onMounted(() => {
         </div>
 
         <div class="flex items-center gap-4 mb-2">
-            <div class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+            <div 
+                class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center"
+                :class="[transaction?.org_stock_image_thumbnail ? '' : 'grid']"
+            >
                 <Image
                     v-if="transaction?.org_stock_image_thumbnail"
                     :src="transaction.org_stock_image_thumbnail"
                     :alt="transaction.org_stock_name"
                 />
-                <FontAwesomeIcon v-else icon="fal fa-image" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon 
+                    v-else 
+                    icon="fal fa-image" 
+                    class="text-2xl text-gray-400" 
+                    fixed-width aria-hidden="true" 
+                />
+                <LoadingIcon v-if="isLoadingImage" class="text-xs justify-self-center" />
             </div>
 
             <div class="min-w-0">

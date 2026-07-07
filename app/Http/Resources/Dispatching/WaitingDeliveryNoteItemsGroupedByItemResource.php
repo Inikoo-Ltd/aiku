@@ -57,7 +57,7 @@ class WaitingDeliveryNoteItemsGroupedByItemResource extends JsonResource
             'org_stock_code'                 => $this->org_stock_code,
             'org_stock_name'                 => $this->org_stock_name,
             'org_stock_slug'                 => $this->org_stock_slug,
-            'org_stock_image_thumbnail'      => $orgStock?->tradeUnits->first()?->imageSources(64, 64),
+            'org_stock_image_thumbnail'      => null, // Using ajax call anyway
             'packed_in'                      => $this->packed_in ?? 1,
             'picking_position'               => $this->picking_position,
             'warehouse_area'                 => $warehouseArea,
