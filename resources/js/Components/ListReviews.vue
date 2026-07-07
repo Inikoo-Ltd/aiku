@@ -10,7 +10,6 @@ import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
 	faCube,
-	faLayerGroup,
 	faThumbsUp,
 	faThumbsDown,
 	faChevronCircleLeft,
