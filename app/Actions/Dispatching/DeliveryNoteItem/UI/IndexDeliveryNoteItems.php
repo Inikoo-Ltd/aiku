@@ -100,14 +100,15 @@ class IndexDeliveryNoteItems extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $allowAction = $this->canHandleDeliveryNote($parent);
 
-            if ($allowAction && $isEditable) {
-                $table->column(key: 'action', label: __('Action'), canBeHidden: false, className: 'w-[250px]');
-            }
+
 
             $this->addDeliveryNoteItemBaseTableColumns($table);
 
 
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction);
+            if ($allowAction && $isEditable) {
+                $table->column(key: 'action', label: __('Action'), canBeHidden: false, className: 'w-[250px]');
+            }
         };
     }
 }
