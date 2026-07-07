@@ -33,43 +33,36 @@ class ShowIrisProductReview extends IrisAction
         $reviewSettings = Arr::get($shop->settings, 'reviews');
         $minRating      = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
 
-        $includeOtherShops = $indexer->includesOtherShops($shop) && $product->master_product_id;
+        $setting    = Arr::get($shop->settings, 'reviews.validation_scope.product', []);
+        $enabled    = Arr::get($setting, 'enabled', false);
+        $usesMaster = $enabled && $product->master_product_id;
 
         $reviews      = $indexer->handleSpecificProductReviews($product, 'reviews');
         $totalReviews = $reviews->total();
 
-        if ($includeOtherShops) {
-            $avgReview = Review::query()
-                ->where('scope', ReviewScopeEnum::PRODUCT)
-                ->where('master_product_id', $product->master_product_id)
-                ->where('reviews.organisation_id', $shop->organisation_id)
-                ->where('state', ReviewStateEnum::PUBLISHED)
-                ->where('is_public', true)
-                ->where('review_status', ReviewStatusEnum::APPROVED)
-                ->where('rating_main', '>=', $minRating)
-                ->avg('rating_main');
-        } else {
-            $avgReview = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::PRODUCT]);
-        }
-
-        $recommendBase = Review::query()
+        $avgQuery = Review::query()
             ->where('scope', ReviewScopeEnum::PRODUCT)
             ->where('state', ReviewStateEnum::PUBLISHED)
             ->where('is_public', true)
             ->where('review_status', ReviewStatusEnum::APPROVED)
             ->where('rating_main', '>=', $minRating);
 
-        if ($includeOtherShops) {
-            $recommendBase
-                ->where('master_product_id', $product->master_product_id)
-                ->where('reviews.organisation_id', $shop->organisation_id);
+        if ($usesMaster && Arr::get($setting, 'scope') === 'group') {
+            $avgQuery->where('master_product_id', $product->master_product_id)
+                ->where('group_id', $shop->group_id);
+        } elseif ($usesMaster) {
+            $avgQuery->where('master_product_id', $product->master_product_id)
+                ->where('organisation_id', $shop->organisation_id);
         } else {
-            $recommendBase
-                ->where('shop_id', $shop->id)
+            $avgQuery->where('shop_id', $shop->id)
                 ->where('product_id', $product->id);
         }
 
-        $recommendedCount = $recommendBase->where('rating_main', '>=', 4)->count();
+        $avgReview = $avgQuery->avg('rating_main');
+
+        $recommendBase = (clone $avgQuery)->where('rating_main', '>=', 4);
+
+        $recommendedCount = $recommendBase->count();
         $labels = $this->shop->getCustomReviewCategoryLabel();
 
         return [
@@ -110,22 +103,22 @@ class ShowIrisProductReview extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
-        $indexer           = IndexReviewsInIris::make($this->product);
-        $product           = $this->product;
-        $includeOtherShops = $indexer->includesOtherShops($product->shop) && $product->master_product_id;
+        $indexer    = IndexReviewsInIris::make($this->product);
+        $product    = $this->product;
+        $shop       = $product->shop;
+        $setting    = Arr::get($shop->settings, 'reviews.validation_scope.product', []);
+        $usesMaster = Arr::get($setting, 'enabled', false) && $product->master_product_id;
 
-        $extraConditions = $includeOtherShops
-            ? fn ($q) => $q
-                ->where('reviews.master_product_id', $product->master_product_id)
-            : fn ($q) => $q
-                ->where('reviews.product_id', $product->id);
+        $extraConditions = $usesMaster
+            ? fn ($q) => $q->where('reviews.master_product_id', $product->master_product_id)
+            : fn ($q) => $q->where('reviews.product_id', $product->id);
 
         return Inertia::render('AllReviews', $data)
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(
-                shop: $product->shop,
+                shop: $shop,
                 scopes: [ReviewScopeEnum::PRODUCT],
                 extraConditions: $extraConditions,
-                includeOtherShops: $includeOtherShops
+                setting: $setting
             )($t->name('reviews')->pageName('reviewsPage')));
     }
 

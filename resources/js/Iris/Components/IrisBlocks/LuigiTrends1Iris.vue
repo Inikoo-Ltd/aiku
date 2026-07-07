@@ -210,7 +210,8 @@ const fetchRecommenders = async () => {
             RecommendationCollector(response.data[0])
         }
 
-        console.log('LTrends1:', subType, response.data)
+        console.log(`LTrends1 (${response.data?.[0]?.hits?.length}): `, subType, response.data)
+
         listProductsFromLuigi.value = response.data[0].hits
         fetchProductData()  // Fetch real data from DB
     } catch (error: any) {

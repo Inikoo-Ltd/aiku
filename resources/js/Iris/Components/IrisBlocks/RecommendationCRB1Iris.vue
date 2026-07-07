@@ -68,6 +68,7 @@ const fetchRecommenders = async () => {
             )
             listProducts.value = response.data.data || []
             // listProducts.value = []
+            console.log(`CRB (${response?.data?.data?.length}): `, response.data)
             
             if (!(listProducts.value?.length > 3)) {
                 console.warn('Block CRB are less than 3, will not showed.')
