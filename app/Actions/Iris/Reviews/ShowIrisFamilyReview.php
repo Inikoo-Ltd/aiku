@@ -46,8 +46,8 @@ class ShowIrisFamilyReview extends IrisAction
                 'slug' => $family->slug,
                 'code' => $family->code,
             ],
-            'heading' => $family->name . " Reviews",
-            'shop_profile' => [
+            'heading'         => $family->name.' Reviews',
+            'shop_profile'    => [
                 'name'              => $shop->name,
                 'email'             => $shop->email,
                 'phone'             => $shop->phone,
@@ -60,12 +60,12 @@ class ShowIrisFamilyReview extends IrisAction
                 'current'    => $tab,
                 'navigation' => [
                     [
-                        'key' => 'family',
-                        'label' => data_get($labels, ReviewContextEnum::FAMILY->value)
+                        'key'   => 'family',
+                        'label' => data_get($labels, ReviewContextEnum::FAMILY->value),
                     ],
                     [
-                        'key' => 'product',
-                        'label' => data_get($labels, ReviewContextEnum::PRODUCT->value)
+                        'key'   => 'product',
+                        'label' => data_get($labels, ReviewContextEnum::PRODUCT->value),
                     ],
                 ],
             ],
@@ -74,11 +74,13 @@ class ShowIrisFamilyReview extends IrisAction
 
     private function familyTab(ProductCategory $family, IndexReviewsInIris $indexer): array
     {
-        $shop              = $family->shop;
-        $minRating         = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
-        $includeOtherShops = $indexer->includesOtherShops($shop) && $family->master_product_category_id;
-        $reviews           = $indexer->handleSpecificFamilyReviews($family, 'family');
+        $shop      = $family->shop;
+        $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
+        $setting   = Arr::get($shop->settings, 'reviews.validation_scope.family', []);
+        $enabled   = Arr::get($setting, 'enabled', false);
+        $usesMaster = $enabled && $family->master_product_category_id;
 
+        $reviews  = $indexer->handleSpecificFamilyReviews($family, 'family');
         $avgQuery = Review::query()
             ->where('scope', ReviewScopeEnum::FAMILY)
             ->where('rating_main', '>=', $minRating)
@@ -86,13 +88,14 @@ class ShowIrisFamilyReview extends IrisAction
             ->where('is_public', true)
             ->where('review_status', ReviewStatusEnum::APPROVED);
 
-        if ($includeOtherShops) {
-            $avgQuery
-                ->where('master_product_category_id', $family->master_product_category_id)
-                ->where('reviews.organisation_id', $shop->organisation_id);
+        if ($usesMaster && Arr::get($setting, 'scope') === 'group') {
+            $avgQuery->where('master_product_category_id', $family->master_product_category_id)
+                ->where('group_id', $shop->group_id);
+        } elseif ($usesMaster) {
+            $avgQuery->where('master_product_category_id', $family->master_product_category_id)
+                ->where('organisation_id', $shop->organisation_id);
         } else {
-            $avgQuery
-                ->where('shop_id', $shop->id)
+            $avgQuery->where('shop_id', $shop->id)
                 ->where('product_category_id', $family->id);
         }
 
@@ -104,17 +107,18 @@ class ShowIrisFamilyReview extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($totalReviews, function ($q) use ($shop, $family, $minRating, $includeOtherShops) {
+            'recommend_percent' => $this->recommendPercent($totalReviews, function ($q) use ($shop, $family, $minRating, $setting, $usesMaster) {
                 $q->where('scope', ReviewScopeEnum::FAMILY)
                     ->where('rating_main', '>=', $minRating);
 
-                if ($includeOtherShops) {
-                    $q
-                        ->where('master_product_category_id', $family->master_product_category_id)
-                        ->where('reviews.organisation_id', $shop->organisation_id);
+                if ($usesMaster && Arr::get($setting, 'scope') === 'group') {
+                    $q->where('master_product_category_id', $family->master_product_category_id)
+                        ->where('group_id', $shop->group_id);
+                } elseif ($usesMaster) {
+                    $q->where('master_product_category_id', $family->master_product_category_id)
+                        ->where('organisation_id', $shop->organisation_id);
                 } else {
-                    $q
-                        ->where('shop_id', $shop->id)
+                    $q->where('shop_id', $shop->id)
                         ->where('product_category_id', $family->id);
                 }
             }),
@@ -123,11 +127,13 @@ class ShowIrisFamilyReview extends IrisAction
 
     private function productTab(ProductCategory $family, IndexReviewsInIris $indexer): array
     {
-        $shop              = $family->shop;
-        $minRating         = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
-        $includeOtherShops = $indexer->includesOtherShops($shop) && $family->master_product_category_id;
-        $reviews           = $indexer->handleProductsInFamilyReviews($family, 'product');
+        $shop      = $family->shop;
+        $minRating = Arr::get($shop->settings, 'reviews.minimum_rating_to_show', 3);
+        $setting   = Arr::get($shop->settings, 'reviews.validation_scope.family', []);
+        $enabled   = Arr::get($setting, 'enabled', false);
+        $usesMaster = $enabled && $family->master_product_category_id;
 
+        $reviews  = $indexer->handleProductsInFamilyReviews($family, 'product');
         $avgQuery = Review::query()
             ->where('reviews.scope', ReviewScopeEnum::PRODUCT)
             ->where('reviews.rating_main', '>=', $minRating)
@@ -136,14 +142,16 @@ class ShowIrisFamilyReview extends IrisAction
             ->where('reviews.review_status', ReviewStatusEnum::APPROVED)
             ->join('products', 'products.id', '=', 'reviews.product_id');
 
-        if ($includeOtherShops) {
-            $avgQuery
-                ->join('product_categories', 'product_categories.id', '=', 'products.family_id')
+        if ($usesMaster && Arr::get($setting, 'scope') === 'group') {
+            $avgQuery->join('product_categories', 'product_categories.id', '=', 'products.family_id')
+                ->where('product_categories.master_product_category_id', $family->master_product_category_id)
+                ->where('reviews.group_id', $shop->group_id);
+        } elseif ($usesMaster) {
+            $avgQuery->join('product_categories', 'product_categories.id', '=', 'products.family_id')
                 ->where('product_categories.master_product_category_id', $family->master_product_category_id)
                 ->where('reviews.organisation_id', $shop->organisation_id);
         } else {
-            $avgQuery
-                ->where('reviews.shop_id', $shop->id)
+            $avgQuery->where('reviews.shop_id', $shop->id)
                 ->where('products.family_id', $family->id);
         }
 
@@ -155,19 +163,21 @@ class ShowIrisFamilyReview extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($totalReviews, function ($q) use ($shop, $family, $minRating, $includeOtherShops) {
+            'recommend_percent' => $this->recommendPercent($totalReviews, function ($q) use ($shop, $family, $minRating, $setting, $usesMaster) {
                 $q->where('reviews.scope', ReviewScopeEnum::PRODUCT)
                     ->where('reviews.rating_main', '>=', $minRating)
                     ->join('products', 'products.id', '=', 'reviews.product_id');
 
-                if ($includeOtherShops) {
-                    $q
-                        ->join('product_categories', 'product_categories.id', '=', 'products.family_id')
+                if ($usesMaster && Arr::get($setting, 'scope') === 'group') {
+                    $q->join('product_categories', 'product_categories.id', '=', 'products.family_id')
+                        ->where('product_categories.master_product_category_id', $family->master_product_category_id)
+                        ->where('reviews.group_id', $shop->group_id);
+                } elseif ($usesMaster) {
+                    $q->join('product_categories', 'product_categories.id', '=', 'products.family_id')
                         ->where('product_categories.master_product_category_id', $family->master_product_category_id)
                         ->where('reviews.organisation_id', $shop->organisation_id);
                 } else {
-                    $q
-                        ->where('reviews.shop_id', $shop->id)
+                    $q->where('reviews.shop_id', $shop->id)
                         ->where('products.family_id', $family->id);
                 }
             }),
@@ -193,17 +203,18 @@ class ShowIrisFamilyReview extends IrisAction
 
     public function htmlResponse(array $data): Response
     {
-        $indexer           = IndexReviewsInIris::make($this->family);
-        $family            = $this->family;
-        $includeOtherShops = $indexer->includesOtherShops($family->shop) && $family->master_product_category_id;
+        $indexer  = IndexReviewsInIris::make($this->family);
+        $family   = $this->family;
+        $shop     = $family->shop;
+        $setting  = Arr::get($shop->settings, 'reviews.validation_scope.family', []);
+        $enabled  = Arr::get($setting, 'enabled', false);
+        $usesMaster = $enabled && $family->master_product_category_id;
 
-        $familyExtraConditions = $includeOtherShops
-            ? fn ($q) => $q
-                ->where('reviews.master_product_category_id', $family->master_product_category_id)
-            : fn ($q) => $q
-                ->where('reviews.product_category_id', $family->id);
+        $familyExtraConditions = $usesMaster
+            ? fn ($q) => $q->where('reviews.master_product_category_id', $family->master_product_category_id)
+            : fn ($q) => $q->where('reviews.product_category_id', $family->id);
 
-        $productExtraConditions = $includeOtherShops
+        $productExtraConditions = $usesMaster
             ? fn ($q) => $q
                 ->join('products as p_count', 'p_count.id', '=', 'reviews.product_id')
                 ->join('product_categories as f_count', 'f_count.id', '=', 'p_count.family_id')
@@ -214,16 +225,16 @@ class ShowIrisFamilyReview extends IrisAction
 
         return Inertia::render('AllReviews', $data)
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(
-                shop: $family->shop,
+                shop: $shop,
                 scopes: [ReviewScopeEnum::FAMILY],
                 extraConditions: $familyExtraConditions,
-                includeOtherShops: $includeOtherShops
+                setting: $setting
             )($t->name('family')->pageName('familyPage')))
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(
-                shop: $family->shop,
+                shop: $shop,
                 scopes: [ReviewScopeEnum::PRODUCT],
                 extraConditions: $productExtraConditions,
-                includeOtherShops: $includeOtherShops
+                setting: $setting
             )($t->name('product')->pageName('productPage')));
     }
 
