@@ -2,23 +2,46 @@
 
 namespace App\Actions\Workspace\Note;
 
+use App\Actions\GrpAction;
 use App\Models\Workspace\Note;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class DeleteNote
+class DeleteNote extends GrpAction
 {
-    use AsAction;
-
-    public function asController(ActionRequest $request, Note $note)
+    public function authorize(ActionRequest $request): bool
     {
-        $this->handle($note);
+        if ($this->asAction) {
+            return true;
+        }
 
-        return redirect()->back()->with('success', __('Note deleted successfully.'));
+        $user = $request->user();
+
+        if (!$user->authTo(['group-webmaster.view', 'group-webmaster.edit'])) {
+            return false;
+        }
+
+        /** @var Note $note */
+        $note     = $request->route('note');
+        $employee = $user->employee(app('group'));
+
+        return $employee && $note->employee_id === $employee->id;
     }
 
     public function handle(Note $note): bool
     {
         return $note->delete();
+    }
+
+    public function asController(ActionRequest $request, Note $note): bool
+    {
+        $this->initialisation(app('group'), $request);
+
+        return $this->handle($note);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return redirect()->back()->with('success', __('Note deleted successfully.'));
     }
 }

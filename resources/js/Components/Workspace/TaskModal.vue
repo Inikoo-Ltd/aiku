@@ -1,96 +1,119 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { watch } from 'vue';
+import { useForm } from "@inertiajs/vue3"
+import { computed, watch } from "vue"
+import { trans } from "laravel-vue-i18n"
+import Modal from "@/Components/Utils/Modal.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 
-const props = defineProps({
-  show: Boolean,
-  task: {
-    type: Object,
-    default: null
-  }
-});
+const props = defineProps<{
+	show: boolean
+	task: any | null
+	employees: { value: number; label: string }[]
+	statuses: Record<string, string>
+}>()
 
-const emit = defineEmits(['close']);
+const emit = defineEmits<{
+	(e: "close"): void
+}>()
 
-const form = useForm({
-  title: '',
-  description: '',
-  status: 'Pending',
-});
+const form = useForm<{
+	title: string
+	description: string | null
+	status: string
+	assignee_id: number | null
+}>({
+	title: "",
+	description: null,
+	status: "pending",
+	assignee_id: null,
+})
 
-watch(() => props.task, (newTask) => {
-  if (newTask) {
-    form.title = newTask.title;
-    form.description = newTask.description || '';
-    form.status = newTask.status || 'Pending';
-  } else {
-    form.reset();
-  }
-}, { immediate: true });
+watch(
+	() => props.task,
+	(task) => {
+		form.clearErrors()
+		if (task) {
+			form.title = task.title
+			form.description = task.description ?? null
+			form.status = task.status ?? "pending"
+			form.assignee_id = task.assignee_id ?? null
+		} else {
+			form.reset()
+		}
+	},
+	{ immediate: true }
+)
+
+const modalTitle = computed(() => (props.task ? trans("Edit Task") : trans("New Task")))
 
 const submit = () => {
-  if (props.task) {
-    form.put(route('grp.workspace.tasks.update', props.task.id), {
-      onSuccess: () => emit('close')
-    });
-  } else {
-    form.post(route('grp.workspace.tasks.store'), {
-      onSuccess: () => emit('close')
-    });
-  }
-};
+	if (props.task) {
+		form.put(route("grp.workspace.tasks.update", props.task.id), {
+			preserveScroll: true,
+			onSuccess: () => emit("close"),
+		})
+	} else {
+		form.post(route("grp.workspace.tasks.store"), {
+			preserveScroll: true,
+			onSuccess: () => emit("close"),
+		})
+	}
+}
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="emit('close')"></div>
+	<Modal :isOpen="show" @onClose="emit('close')" width="w-full max-w-lg">
+		<h2 class="text-lg font-semibold text-gray-800 mb-4">{{ modalTitle }}</h2>
 
-      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+		<form class="space-y-4" @submit.prevent="submit">
+			<div>
+				<label class="block text-sm font-medium text-gray-700">{{ trans("Title") }}</label>
+				<input
+					v-model="form.title"
+					type="text"
+					required
+					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+				<div v-if="form.errors.title" class="mt-1 text-sm text-red-600">{{ form.errors.title }}</div>
+			</div>
 
-      <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-        <div>
-          <div class="mt-3 text-center sm:mt-5">
-            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-              {{ task ? 'Edit Task' : 'New Task' }}
-            </h3>
-            <div class="mt-2 text-left">
-              <form @submit.prevent="submit">
-                <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700">Title</label>
-                  <input v-model="form.title" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required>
-                  <p v-if="form.errors.title" class="text-red-500 text-xs mt-1">{{ form.errors.title }}</p>
-                </div>
-                
-                <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700">Description</label>
-                  <textarea v-model="form.description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
-                  <p v-if="form.errors.description" class="text-red-500 text-xs mt-1">{{ form.errors.description }}</p>
-                </div>
+			<div>
+				<label class="block text-sm font-medium text-gray-700">{{ trans("Description") }}</label>
+				<textarea
+					v-model="form.description"
+					rows="3"
+					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+				<div v-if="form.errors.description" class="mt-1 text-sm text-red-600">{{ form.errors.description }}</div>
+			</div>
 
-                <div class="mb-4" v-if="task">
-                  <label class="block text-sm font-medium text-gray-700">Status</label>
-                  <select v-model="form.status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                    <option>Pending</option>
-                    <option>Working on</option>
-                    <option>Ready</option>
-                    <option>Can't be done</option>
-                  </select>
-                </div>
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<label class="block text-sm font-medium text-gray-700">{{ trans("Assignee") }}</label>
+					<PureMultiselect
+						v-model="form.assignee_id"
+						:options="employees"
+						:valueProp="'value'"
+						:label="'label'"
+						:searchable="true"
+						:placeholder="trans('Select employee...')"
+						@update:modelValue="() => (form.errors.assignee_id = null)" />
+					<div v-if="form.errors.assignee_id" class="mt-1 text-sm text-red-600">{{ form.errors.assignee_id }}</div>
+				</div>
 
-                <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                  <button type="submit" :disabled="form.processing" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm">
-                    Save
-                  </button>
-                  <button type="button" @click="emit('close')" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1 sm:text-sm">
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+				<div v-if="task">
+					<label class="block text-sm font-medium text-gray-700">{{ trans("Status") }}</label>
+					<select
+						v-model="form.status"
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
+						<option v-for="(label, value) in statuses" :key="value" :value="value">{{ label }}</option>
+					</select>
+				</div>
+			</div>
+
+			<div class="mt-6 flex justify-end gap-2">
+				<Button type="tertiary" @click="emit('close')">{{ trans("Cancel") }}</Button>
+				<Button type="save" nativeType="submit" :loading="form.processing">{{ trans("Save") }}</Button>
+			</div>
+		</form>
+	</Modal>
 </template>

@@ -1,93 +1,111 @@
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3";
-import { capitalize } from "@/Composables/capitalize";
-import { PageHeadingTypes } from "@/types/PageHeading";
-import PageHeading from '@/Components/Headings/PageHeading.vue';
-import { ref } from 'vue';
-import TaskModal from '@/Components/Workspace/TaskModal.vue';
+import { Head, router } from "@inertiajs/vue3"
+import { ref } from "vue"
+import { capitalize } from "@/Composables/capitalize"
+import { trans } from "laravel-vue-i18n"
+import { PageHeadingTypes } from "@/types/PageHeading"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import Table from "@/Components/Table/Table.vue"
+import Tag from "@/Components/Tag.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import TaskModal from "@/Components/Workspace/TaskModal.vue"
 
 const props = defineProps<{
-  pageHead: PageHeadingTypes
-  title: string
-  tasks: Array<any>
+  pageHead : PageHeadingTypes
+  title : string
+  data: any
+  employees: { value: number; label: string }[]
+  statuses: Record<string, string>
+  canEdit: boolean
+  employeeId: number | null
 }>();
 
-const isModalOpen = ref(false);
-const editingTask = ref(null);
+const statusTheme: Record<string, number> = {
+  pending: 99,
+  working_on: 1,
+  ready: 3,
+  cant_be_done: 7,
+}
 
-const openModal = (task = null) => {
-  editingTask.value = task;
-  isModalOpen.value = true;
-};
+const isModalOpen = ref(false)
+const editingTask = ref<any>(null)
+
+const openModal = (task: any = null) => {
+  editingTask.value = task
+  isModalOpen.value = true
+}
 
 const closeModal = () => {
-  isModalOpen.value = false;
-  editingTask.value = null;
-};
+  isModalOpen.value = false
+  editingTask.value = null
+}
+ 
+const updateStatus = (task: any, status: string) => {
+  router.put(
+    route("grp.workspace.tasks.update", task.id),
+    { status },
+    { preserveScroll: true }
+  )
+}
 
-const updateStatus = (task, status) => {
-  router.put(route('grp.workspace.tasks.update', task.id), {
-    status: status
-  }, {
-    preserveScroll: true
-  });
-};
 
-const deleteTask = (task) => {
-  if(confirm('Are you sure you want to delete this task?')) {
-    router.delete(route('grp.workspace.tasks.destroy', task.id), {
-      preserveScroll: true
-    });
-  }
-};
+// const deleteTask = (task : any) => {
+//   if(confirm('Are you sure you want to delete this task?')) {
+//     router.delete(route('grp.workspace.tasks.destroy', task.id), {
+//       preserveScroll: true
+//     });
+//   }
+// };
 </script>
 
 <template>
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
-    <template #actions>
-      <button @click="openModal()" class="btn btn-primary bg-blue-600 text-white px-4 py-2 rounded">
-        Add New Task
-      </button>
+    <template #button-task="{ action }">
+      <Button :icon="action.icon" :label="action.label" :style="action.style" @click="openModal()" />
     </template>
   </PageHeading>
 
-  <div class="mt-8">
-    <div class="bg-white shadow overflow-hidden sm:rounded-md">
-      <ul role="list" class="divide-y divide-gray-200">
-        <li v-for="task in tasks" :key="task.id">
-          <div class="px-4 py-4 flex items-center sm:px-6">
-            <div class="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between">
-              <div class="truncate">
-                <div class="flex text-sm">
-                  <p class="font-medium text-blue-600 truncate">{{ task.title }}</p>
-                  <p class="ml-1 flex-shrink-0 font-normal text-gray-500">
-                    in {{ task.status }}
-                  </p>
-                </div>
-                <div class="mt-2 flex">
-                  <div class="flex items-center text-sm text-gray-500">
-                    <p>{{ task.description }}</p>
-                  </div>
-                </div>
-              </div>
-              <div class="mt-4 flex-shrink-0 sm:mt-0 sm:ml-5 flex space-x-2">
-                  <button @click="updateStatus(task, 'Working on')" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Working on</button>
-                  <button @click="updateStatus(task, 'Ready')" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Ready</button>
-                  <button @click="updateStatus(task, 'Can\'t be done')" class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Can't be done</button>
-                  
-                  <button @click="openModal(task)" class="text-xs text-blue-600 border border-blue-600 px-2 py-1 rounded ml-4">Edit</button>
-                  <button @click="deleteTask(task)" class="text-xs text-red-600 border border-red-600 px-2 py-1 rounded">Delete</button>
-              </div>
-            </div>
-          </div>
-        </li>
-        <li v-if="tasks.length === 0" class="px-4 py-4 text-center text-gray-500">
-          No tasks found.
-        </li>
-      </ul>
-    </div>
-  </div>
+   <Table :resource="data" class="mt-5">
+    <template #cell(title)="{ item }">
+      <span class="font-medium text-gray-900">{{ item.title }}</span>
+      <p v-if="item.description" class="text-sm text-gray-500">{{ item.description }}</p>
+    </template>
 
-  <TaskModal :show="isModalOpen" :task="editingTask" @close="closeModal" />
+  <template #cell(status)="{ item }">
+      <Tag :theme="statusTheme[item.status] ?? 99" :label="statuses[item.status] ?? item.status" />
+    </template>
+    <template #cell(assignee)="{ item }">
+      <span class="text-gray-600">{{ item.assignee?.contact_name || item.assignee?.alias || "-" }}</span>
+    </template>
+    <template #cell(assigner)="{ item }">
+      <span class="text-gray-600">{{ item.assigner?.contact_name || item.assigner?.alias || "-" }}</span>
+    </template>
+    <template #cell(actions)="{ item }">
+      <div class="flex items-center justify-end gap-2">
+        <template v-if="!canEdit && item.assignee_id === employeeId">
+          <select
+            :value="item.status"
+            class="rounded-md border border-gray-300 py-1 text-xs focus:border-indigo-500 focus:ring-indigo-500"
+            @change="updateStatus(item, ($event.target as HTMLSelectElement).value)">
+            <option v-for="(label, value) in statuses" :key="value" :value="value">{{ label }}</option>
+          </select>
+        </template>
+        <template v-if="canEdit">
+          <Button type="tertiary" icon="fal fa-pencil" size="xs" v-tooltip="trans('Edit task')" @click="openModal(item)" />
+          <ModalConfirmationDelete
+            :routeDelete="{ name: 'grp.workspace.tasks.destroy', parameters: { task: item.id } }"
+            :title="trans('Are you sure you want to delete this task?')"
+            :noLabel="trans('Delete')"
+            noIcon="fal fa-trash">
+            <template #default="{ changeModel }">
+              <Button type="negative" icon="fal fa-trash" size="xs" v-tooltip="trans('Delete task')" @click="changeModel()" />
+            </template>
+          </ModalConfirmationDelete>
+        </template>
+      </div>
+    </template>
+  </Table>
+  <TaskModal :show="isModalOpen" :task="editingTask" :employees="employees" :statuses="statuses" @close="closeModal" />
 </template>

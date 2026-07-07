@@ -3,42 +3,78 @@
 namespace App\Actions\Workspace\Note\UI;
 
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithWorkspaceAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Actions\UI\WithInertia;
+use App\InertiaTable\InertiaTable;
+use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\Group;
 use App\Models\Workspace\Note;
+use App\Services\QueryBuilder;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexNotes extends GrpAction
 {
-    use AsAction;
-    use WithInertia;
+    // use WithWorkspaceAuthorisation;
 
-    public function handle(?int $employeeId = null)
+    public function handle(Group $group, Employee $employee, ?string $prefix = null): LengthAwarePaginator
     {
-        $query = Note::latest();
-        if ($employeeId) {
-            $query->where('employee_id', $employeeId);
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
         }
-        return $query->get();
+
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->whereAnyWordStartWith('workspace_notes.title', $value);
+        });
+
+        return QueryBuilder::for(Note::class)
+            ->where('workspace_notes.group_id', $group->id)
+            ->where('workspace_notes.employee_id', $employee->id)
+            ->defaultSort('-workspace_notes.created_at')
+            ->allowedSort(['title', 'created_at'])
+            ->allowedFilter([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
-    public function asController(ActionRequest $request)
+    public function tableStructure(?string $prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table->name($prefix)
+                    ->pageName($prefix . 'Page');
+            }
+
+            $table->withGlobalSearch()
+                ->withEmptyState([
+                    'title'         => __('No Notes Found'),
+                    'description'   => __('Get started by creating new notes'),
+                ])->column(key: 'title', label: __('Title'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'content', label: __('Content'), canBeHidden: false)
+                ->column(key: 'actions', label: __('Actions'))
+                ->defaultSort('-created_at');
+        };
+    }
+
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation(app('group'), $request);
-        
-        $employeeId = $request->user()->employee?->id;
-        $notes = $this->handle($employeeId);
-        
-        return $this->htmlResponse($notes, $request);
+
+        $employee = $request->user()->employee($this->group);
+
+        return $employee
+            ? $this->handle($this->group, $employee)
+            : Note::query()->whereRaw('1 = 0')->paginate();
     }
-    
-    public function htmlResponse($notes, ActionRequest $request): Response
+
+    public function htmlResponse(LengthAwarePaginator $notes, ActionRequest $request): Response
     {
         $title = __('Notes');
-        
+
         return Inertia::render(
             'Workspace/Notes/Index',
             [
@@ -50,10 +86,17 @@ class IndexNotes extends GrpAction
                         'icon'  => ['fal', 'fa-sticky-note'],
                         'title' => $title,
                     ],
+                    'actions' => [
+                        'type'  => 'button',
+                        'style' => 'create',
+                        'key'   => 'note',
+                        'label' => __('Note'),
+                        'icon'  => ['fal', 'fa-plus'],
+                    ],
                 ],
-                'notes' => $notes,
+                'data' => $notes,
             ]
-        );
+        )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

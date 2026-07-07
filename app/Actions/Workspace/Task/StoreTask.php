@@ -2,42 +2,48 @@
 
 namespace App\Actions\Workspace\Task;
 
+use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithWorkspaceEditAuthorisation;
+use App\Enums\Workspace\TaskStatusEnum;
+use App\Models\SysAdmin\Group;
 use App\Models\Workspace\Task;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Http\RedirectResponse;
 
-class StoreTask
+class StoreTask extends GrpAction
 {
-    use AsAction;
+    use WithWorkspaceEditAuthorisation;
 
     public function rules(): array
     {
         return [
             'title'       => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'status'      => ['nullable', 'string', 'in:Pending,Working on,Ready,Can\'t be done'],
-            'assignee_id' => ['nullable', 'exists:employees,id'],
+            'status'      => ['nullable', Rule::enum(TaskStatusEnum::class)],
+            'assignee_id' => ['nullable', Rule::exists('employees', 'id')->where('group_id', app('group')->id)],
         ];
     }
 
-    public function asController(ActionRequest $request)
+    public function handle(Group $group, array $modelData, ?int $assignerId): Task
     {
-        $this->handle(
-            $request->validated(),
-            $request->user()->employee?->id
-        );
+        $modelData['group_id']    = $group->id;
+        $modelData['assigner_id'] = $assignerId;
+        $modelData['status']    ??= TaskStatusEnum::PENDING->value;
 
-        return redirect()->back()->with('success', __('Task created successfully.'));
+        return Task::create($modelData);
     }
 
-    public function handle(array $data, ?int $assignerId = null): Task
+    public function asController(ActionRequest $request): Task
     {
-        return Task::create([
-            'title'       => $data['title'],
-            'description' => $data['description'] ?? null,
-            'status'      => $data['status'] ?? 'Pending',
-            'assignee_id' => $data['assignee_id'] ?? null,
-            'assigner_id' => $assignerId,
-        ]);
+        $group = app('group');
+        $this->initialisation($group, $request);
+
+        return $this->handle($group, $this->validatedData, $request->user()->employee($group)?->id);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return redirect()->back()->with('success', __('Task created successfully.'));
     }
 }

@@ -102,7 +102,7 @@ class GetGroupNavigation
             ],
         ];
 
-        if($user()->authTo('group-workspace.view')){
+        if($user()->authTo('group-webmaster.view')){
             $groupNavigation['workspace'] = [
                 'label'   => __('Tasks & Notes'),
                 'tooltip' => __('Tasks & Notes'),

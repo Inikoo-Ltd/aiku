@@ -2,13 +2,18 @@
 
 namespace App\Actions\Workspace\Note;
 
+use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithWorkspaceAuthorisation;
+use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\Group;
 use App\Models\Workspace\Note;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class StoreNote
+class StoreNote extends GrpAction
 {
-    use AsAction;
+    use WithWorkspaceAuthorisation;
 
     public function rules(): array
     {
@@ -18,22 +23,30 @@ class StoreNote
         ];
     }
 
-    public function asController(ActionRequest $request)
+    public function handle(Group $group, Employee $employee, array $modelData): Note
     {
-        $this->handle(
-            $request->validated(),
-            $request->user()->employee?->id
-        );
+        $modelData['group_id']    = $group->id;
+        $modelData['employee_id'] = $employee->id;
 
-        return redirect()->back()->with('success', __('Note created successfully.'));
+        return Note::create($modelData);
     }
 
-    public function handle(array $data, ?int $employeeId): Note
+    public function asController(ActionRequest $request): Note
     {
-        return Note::create([
-            'title'       => $data['title'],
-            'content'     => $data['content'] ?? null,
-            'employee_id' => $employeeId,
-        ]);
+        $group = app('group');
+        $this->initialisation($group, $request);
+
+        $employee = $request->user()->employee($group);
+
+        if (!$employee) {
+            throw ValidationException::withMessages(['title' => __('No employee record found for this user.')]);
+        }
+
+        return $this->handle($group, $employee, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return redirect()->back()->with('success', __('Note created successfully.'));
     }
 }
