@@ -167,10 +167,17 @@ class StoreTiktokOrder extends RetinaAction
             })
             ->values();*/
         foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
-            $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')
+
+            $product = $tiktokUser->getProduct($item['product_id']);
+            $externalProductId = Arr::get($product, 'data.external_product_id');
+
+            $portfolioData = DB::table('portfolios')->select('item_id')
+                ->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
                 ->where('platform_product_id', $item['product_id'])
+                ->orWhere('id', $externalProductId)
                 ->first();
+
             if ($portfolioData && $portfolioData->item_id) {
                 $product = Product::find($portfolioData->item_id);
                 if ($product) {
