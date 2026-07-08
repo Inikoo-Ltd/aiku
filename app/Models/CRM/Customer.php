@@ -493,6 +493,11 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Portfolio::class);
     }
 
+    public function packagingPreferences(): HasMany
+    {
+        return $this->hasMany(CustomerHasPackaging::class);
+    }
+
     public function customerSalesChannels(): HasMany
     {
         return $this->hasMany(CustomerSalesChannel::class);

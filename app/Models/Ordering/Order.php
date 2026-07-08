@@ -20,6 +20,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
 use App\Models\Billables\ShippingZone;
+use App\Models\Catalogue\Packaging;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
@@ -510,6 +511,11 @@ class Order extends Model implements HasMedia, Auditable
     public function shippingZone(): BelongsTo
     {
         return $this->belongsTo(ShippingZone::class);
+    }
+
+    public function packaging(): BelongsTo
+    {
+        return $this->belongsTo(Packaging::class);
     }
 
     public function returnedDeliveryNote(): HasMany

@@ -283,6 +283,11 @@ class AppServiceProvider extends ServiceProvider
                 'Product'                          => 'App\Models\Catalogue\Product',
                 'Collection'                       => 'App\Models\Catalogue\Collection',
                 'Shipping'                         => 'App\Models\Catalogue\Shipping',
+                'Packaging'                        => 'App\Models\Catalogue\Packaging',
+                'Leaflet'                          => 'App\Models\Catalogue\Leaflet',
+                'ModelHasLeaflet'                  => 'App\Models\Catalogue\ModelHasLeaflet',
+                'CustomerHasPackaging'             => 'App\Models\CRM\CustomerHasPackaging',
+                'DeliveryNoteLeaflet'              => 'App\Models\Dispatching\DeliveryNoteLeaflet',
 
                 // Discounts
                 'Offer'                            => 'App\Models\Discounts\Offer',

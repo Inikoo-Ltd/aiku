@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Helpers\NaturalLanguage;
+use App\Models\Catalogue\Packaging;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
@@ -372,6 +373,16 @@ class DeliveryNote extends Model implements Auditable
     public function pickings(): HasMany
     {
         return $this->hasMany(Picking::class);
+    }
+
+    public function packaging(): BelongsTo
+    {
+        return $this->belongsTo(Packaging::class);
+    }
+
+    public function leaflets(): HasMany
+    {
+        return $this->hasMany(DeliveryNoteLeaflet::class);
     }
 
     public function packings(): HasMany
