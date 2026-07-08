@@ -76,11 +76,11 @@ class AddVoucherToOrder extends OrgAction
             ]
         );
 
-        if ($offer->allowance_type == 'percentage_off') {
-            CalculateOrderDiscounts::run($order);
-        } elseif ($offer->allowance_type == 'discounted_shipping') {
+        if ($offer->allowance_type == 'discounted_shipping') {
             CalculateOrderShipping::run($order);
         }
+
+        CalculateOrderDiscounts::run($order);
     }
 
     public function rules(): array

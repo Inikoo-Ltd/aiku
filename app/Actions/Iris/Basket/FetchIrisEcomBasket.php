@@ -116,6 +116,7 @@ class FetchIrisEcomBasket extends IrisAction
             ],
             [
                 'label'       => __('Shipping'),
+                'label_class'       => '',  // TODO INI-1762: make it 'text-green-600' if have discount shipping
                 'information' => '',
                 'price_total' => $order->shipping_amount
             ]
