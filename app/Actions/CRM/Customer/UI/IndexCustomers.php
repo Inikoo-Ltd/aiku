@@ -349,6 +349,7 @@ class IndexCustomers extends OrgAction
                 'customers.name',
                 'customers.slug',
                 'customers.created_at',
+                'customers.is_vip',
                 'customer_stats.number_current_portfolios',
                 'customer_stats.number_current_customer_clients',
                 'customer_stats.last_invoiced_at',
