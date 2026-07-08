@@ -129,7 +129,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
         $this->getGiftsMeters($order);
-        // $this->getVoucherMeter($order);
+        $this->getVoucherMeterNonPercentage($order);
 
 
         $order->update(
@@ -198,7 +198,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
     }
 
-    public function getVoucherMeter(Order $order): void
+    public function getVoucherMeterNonPercentage(Order $order): void
     {
         if (!$order->offer_voucher_id) {
             return;
@@ -477,7 +477,6 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function getDaysSinceLastInvoiced(Order $order): int
     {
-
         $customer = $order->customer;
         if (!$customer) {
             return 10000;
