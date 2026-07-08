@@ -34,14 +34,6 @@ class DeletePicking extends OrgAction
             if ($orgStockMovement) {
                 DeleteOrgStockMovement::run($orgStockMovement);
 
-                if (app()->environment('production')) {
-                    DeletePickingInAurora::dispatch(
-                        $picking->id,
-                        $picking->organisation,
-                        $picking->picker->contact_name,
-                        $picking->orgStock
-                    );
-                }
             }
 
 
