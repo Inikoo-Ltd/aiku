@@ -762,10 +762,10 @@ const fetchImage = async (deliveryNoteItem: any)   => {
                         }" />
                 </span>
 
-                <div v-else v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
+                <!-- <div v-else-if="Number(item.quantity_not_picked > 0)" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
                     <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
-                    {{ item.quantity_not_picked }}
-                </div>
+                    {{ Number(item.quantity_not_picked) }}
+                </div> -->
             </template>
 
         </template>
@@ -872,7 +872,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
 
                     </div>
 
-                    <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
+                    <div v-if="picking.type === 'not-pick'" v-tooltip="ctrans(':qtyPicked quantities not gonna be picked', { qtyPicked: Number(picking.quantity_picked)})"
                         class="text-red-500 w-fit mr-auto">
                         <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                         <FractionDisplay v-if="picking.quantity_picked_fractional"
