@@ -213,6 +213,7 @@ class IndexOrders extends OrgAction
                 'organisations.slug as organisation_slug',
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
+                'customers.is_vip as is_customer_vip',
                 'orders.customer_notes',
                 'orders.internal_notes',
                 'orders.public_notes',
