@@ -14,6 +14,7 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
@@ -29,7 +30,7 @@ class StoreVoucherOffers extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Offer
     {
-        dd($modelData);
+
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::VOUCHERS)->first();
         if (!$offerCampaign) {
             abort(404);
@@ -75,6 +76,8 @@ class StoreVoucherOffers extends OrgAction
 
         $allowanceType = Arr::get($modelData, 'allowance_type');
 
+
+
         if ($allowanceType == 'percentage_off') {
             $targetId   = Arr::pull($modelData, 'target_id');
             $targetType = match (Arr::pull($modelData, 'target_type')) {
@@ -101,7 +104,7 @@ class StoreVoucherOffers extends OrgAction
                     ]
                 ]
             );
-        } else {
+        } elseif($allowanceType == 'discounted_shipping') {
             data_forget($modelData, 'target_type');
             data_forget($modelData, 'target_id');
 
@@ -116,7 +119,35 @@ class StoreVoucherOffers extends OrgAction
                     ]
                 ]
             );
+        }else {
+            data_forget($modelData, 'target_type');
+            data_forget($modelData, 'target_id');
+
+            $gift = Product::where('shop_id', $shop->id)->where('id', Arr::get($modelData,'gift_product_id'))->first();
+
+
+            data_set(
+                $modelData,
+                'allowances',
+                [
+                    [
+                        'class'       => OfferAllowanceClass::GIFT->value,
+                        'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
+                        'type'        => OfferAllowanceType::GIFT->value,
+                        'data'        => [
+                            'product_id' => $gift->id,
+                            'quantity'   => Arr::pull($modelData, 'gift_quantity')
+                        ]
+                    ]
+                ]
+            );
+
+
         }
+
+        data_forget($modelData, 'gift_product_id');
+        data_forget($modelData, 'gift_quantity');
+
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
         ActivateOffer::run($offer, 30);
@@ -133,7 +164,7 @@ class StoreVoucherOffers extends OrgAction
                 'max:16',
                 Rule::unique('offers', 'voucher')
                     ->where('shop_id', $this->shop->id)
-                    ->where(fn ($query) => $query->whereRaw('LOWER(voucher) = ?', [Str::lower($this->get('voucher'))]))
+                    ->where(fn($query) => $query->whereRaw('LOWER(voucher) = ?', [Str::lower($this->get('voucher'))]))
             ],
             'name'               => ['required', 'string', 'max:255'],
             'offer_amount'       => ['nullable', 'required', 'numeric', 'min:0'],
@@ -147,9 +178,15 @@ class StoreVoucherOffers extends OrgAction
             'target_type'        => ['required', 'string', 'in:shop,department,sub_department,family,collection,product'],
             'target_id'          => ['required', 'integer'],
             'allowance_type'     => ['required', 'string', 'in:percentage_off,discounted_shipping,gift'],
+            'percentage_off'     => ['nullable', 'required_if:allowance_type,percentage_off', 'numeric', 'gt:0', 'lt:100'],
 
-            'percentage_off' => ['nullable', 'required_if:allowance_type,percentage_off', 'numeric', 'gt:0', 'lt:100'],
-
+            'gift_quantity'   => ['nullable', 'required_if:allowance_type,gift', 'integer', 'min:0'],
+            'gift_product_id' => [
+                'nullable',
+                'required_if:allowance_type,percentage_off',
+                'integer',
+                Rule::exists('products', 'id')->where('shop_id', $this->shop->id)
+            ],
         ];
     }
 
@@ -164,6 +201,7 @@ class StoreVoucherOffers extends OrgAction
 
     public function asController(Shop $shop, ActionRequest $request): Offer
     {
+
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $this->validatedData);

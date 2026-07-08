@@ -54,6 +54,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
         $offersData = $this->processFob($offersData, $shop);
         $offersData = $this->processDiscountedShipping($offersData, $shop);
         $offersData = $this->processDiscountedShippingFromVoucher($offersData, $shop);
+        $offersData = $this->processGiftFromVoucher($offersData, $shop);
 
         $shop->updateQuietly(['offers_data' => $offersData]);
         $shop->refresh();
@@ -131,6 +132,51 @@ class ShopHydrateOffersData implements ShouldBeUnique
                     'formated_end_at'      => $offer->end_at->toFormattedDateString(),
                     'min_amount'           => $amount,
                     'missined_offer_label' => $offer->name.': '.__('Spend :amount more to qualify for discounted shipping'),
+                ];
+            }
+        }
+
+        data_set($offersData, 'discounted_shipping_vouchers', $vouchersData);
+
+
+        return $offersData;
+    }
+
+    public function processGiftFromVoucher(array $offersData, Shop $shop): array
+    {
+        $vouchersData     = [];
+        $vouchersCampaign = OfferCampaign::where('shop_id', $shop->id)
+            ->where('status', true)
+            ->where('type', OfferCampaignTypeEnum::VOUCHERS)->first();
+
+        if ($vouchersCampaign) {
+            $offers = Offer::where('offer_campaign_id', $vouchersCampaign->id)
+                ->where('allowance_type', 'gift')
+                ->where('status', true)->get();
+
+
+            /** @var Offer $offer */
+            foreach ($offers as $offer) {
+                $amount = Arr::get($offer->trigger_data, 'item_amount');
+
+
+                $offerAllowance = OfferAllowance::where('offer_id', $offer->id)->first();
+
+                $product = Product::find(Arr::get($offerAllowance?->data, 'product_id'));
+
+                $vouchersData[$offer->id] = [
+                    'active'               => true,
+                    'id'                   => $offer->id,
+                    'offer_campaign_id'    => $offer->offer_campaign_id,
+                    'offer_allowance_id'   => $offerAllowance?->id,
+                    'end_at'               => $offer->end_at->toDateTimeString(),
+                    'formated_end_at'      => $offer->end_at->toFormattedDateString(),
+                    'min_amount'           => $amount,
+                    'quantity'             => Arr::get($offerAllowance?->data, 'quantity', 1),
+                    'product_id'           => Arr::get($offerAllowance?->data, 'product_id'),
+                    'product_name'         => $product?->name,
+                    'product_code'         => $product?->code,
+                    'missined_offer_label' => $offer->name.': '.__('Spend :amount more get free :quantity :product_name'),
                 ];
             }
         }
