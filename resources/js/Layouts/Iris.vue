@@ -372,6 +372,12 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
 </template>
 
 <style lang="scss">
+
+html {
+  overscroll-behavior: none;
+}
+
+
 #iris_breadcrumbs ol,
 #iris_breadcrumbs ul {
     margin-left: 0;
