@@ -129,6 +129,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
         $this->getGiftsMeters($order);
+        // $this->getVoucherGiftMeter($order);
 
 
         $order->update(
@@ -196,6 +197,37 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             ];
         }
     }
+
+    // public function getVoucherGiftMeter(Order $order): void
+    // {
+    //     if (!$order->offer_voucher_id) {
+    //         return;
+    //     }
+
+    //     $voucherGiftData = DB::table('offers')
+    //         ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
+    //         ->where('shop_id', $order->shop_id)
+    //         ->where('status', true)
+    //         ->where('allowance_type', 'gift')
+    //         ->where('id', $order->offer_voucher_id)
+    //         ->first();
+
+    //     if (!$voucherGiftData) {
+    //         return;
+    //     }
+
+    //     $triggerData = json_decode($voucherGiftData->trigger_data, true);
+
+    //     $this->offerMeters[$voucherGiftData->allowance_signature] = [
+    //         'offer_id' => $voucherGiftData->id,
+    //         'label'    => $voucherGiftData->name,
+    //         'is_gift'  => true,
+    //         'metadata' => [
+    //             'current' => $order->gross_amount,
+    //             'target'  => Arr::get($triggerData, 'item_amount', 0),
+    //         ]
+    //     ];
+    // }
 
     private function setEnabledOffers(Order $order): void
     {
