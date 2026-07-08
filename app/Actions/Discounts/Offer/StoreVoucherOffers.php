@@ -14,6 +14,7 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
@@ -29,6 +30,7 @@ class StoreVoucherOffers extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Offer
     {
+
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::VOUCHERS)->first();
         if (!$offerCampaign) {
             abort(404);
@@ -71,32 +73,81 @@ class StoreVoucherOffers extends OrgAction
         data_set($modelData, 'trigger_id', $shop->id);
         data_set($modelData, 'duration', 'interval');
 
-        $targetId = Arr::pull($modelData, 'target_id');
 
-        $targetType = match (Arr::pull($modelData, 'target_type')) {
-            'shop' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
-            'department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
-            'sub_department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
-            'family' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY->value,
-            'collection' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION->value,
-            default => OfferAllowanceTargetTypeEnum::PRODUCT->value
-        };
+        $allowanceType = Arr::get($modelData, 'allowance_type');
 
-        data_set(
-            $modelData,
-            'allowances',
-            [
+
+
+        if ($allowanceType == 'percentage_off') {
+            $targetId   = Arr::pull($modelData, 'target_id');
+            $targetType = match (Arr::pull($modelData, 'target_type')) {
+                'shop' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
+                'department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
+                'sub_department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
+                'family' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY->value,
+                'collection' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION->value,
+                default => OfferAllowanceTargetTypeEnum::PRODUCT->value
+            };
+
+            data_set(
+                $modelData,
+                'allowances',
                 [
-                    'class'       => OfferAllowanceClass::DISCOUNT->value,
-                    'target_type' => $targetType,
-                    'target_id'   => $targetId,
-                    'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
-                    'data'        => [
-                        'percentage_off' => $percentageOff,
+                    [
+                        'class'       => OfferAllowanceClass::DISCOUNT->value,
+                        'target_type' => $targetType,
+                        'target_id'   => $targetId,
+                        'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
+                        'data'        => [
+                            'percentage_off' => $percentageOff,
+                        ]
                     ]
                 ]
-            ]
-        );
+            );
+        } elseif($allowanceType == 'discounted_shipping') {
+            data_forget($modelData, 'target_type');
+            data_forget($modelData, 'target_id');
+
+            data_set(
+                $modelData,
+                'allowances',
+                [
+                    [
+                        'class'       => OfferAllowanceClass::SHIPPING->value,
+                        'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
+                        'type'        => OfferAllowanceType::SHIPPING->value,
+                    ]
+                ]
+            );
+        }else {
+            data_forget($modelData, 'target_type');
+            data_forget($modelData, 'target_id');
+
+            $gift = Product::where('shop_id', $shop->id)->where('id', Arr::get($modelData,'gift_product_id'))->first();
+
+
+            data_set(
+                $modelData,
+                'allowances',
+                [
+                    [
+                        'class'       => OfferAllowanceClass::GIFT->value,
+                        'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
+                        'type'        => OfferAllowanceType::GIFT->value,
+                        'data'        => [
+                            'product_id' => $gift->id,
+                            'quantity'   => Arr::pull($modelData, 'gift_quantity')
+                        ]
+                    ]
+                ]
+            );
+
+
+        }
+
+        data_forget($modelData, 'gift_product_id');
+        data_forget($modelData, 'gift_quantity');
+
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
         ActivateOffer::run($offer, 30);
@@ -113,7 +164,7 @@ class StoreVoucherOffers extends OrgAction
                 'max:16',
                 Rule::unique('offers', 'voucher')
                     ->where('shop_id', $this->shop->id)
-                    ->where(fn ($query) => $query->whereRaw('LOWER(voucher) = ?', [Str::lower($this->get('voucher'))]))
+                    ->where(fn($query) => $query->whereRaw('LOWER(voucher) = ?', [Str::lower($this->get('voucher'))]))
             ],
             'name'               => ['required', 'string', 'max:255'],
             'offer_amount'       => ['nullable', 'required', 'numeric', 'min:0'],
@@ -124,14 +175,33 @@ class StoreVoucherOffers extends OrgAction
                 'before_or_equal:end_at'
             ],
             'end_at'             => ['required', 'date'],
-            'percentage_off'     => ['required', 'numeric', 'gt:0', 'lt:100'],
             'target_type'        => ['required', 'string', 'in:shop,department,sub_department,family,collection,product'],
             'target_id'          => ['required', 'integer'],
+            'allowance_type'     => ['required', 'string', 'in:percentage_off,discounted_shipping,gift'],
+            'percentage_off'     => ['nullable', 'required_if:allowance_type,percentage_off', 'numeric', 'gt:0', 'lt:100'],
+
+            'gift_quantity'   => ['nullable', 'required_if:allowance_type,gift', 'integer', 'min:0'],
+            'gift_product_id' => [
+                'nullable',
+                'required_if:allowance_type,percentage_off',
+                'integer',
+                Rule::exists('products', 'id')->where('shop_id', $this->shop->id)
+            ],
         ];
     }
 
+    public function action(Shop $shop, array $modelData): Offer
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($shop, $modelData);
+
+        return $this->handle($shop, $this->validatedData);
+    }
+
+
     public function asController(Shop $shop, ActionRequest $request): Offer
     {
+
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop, $this->validatedData);

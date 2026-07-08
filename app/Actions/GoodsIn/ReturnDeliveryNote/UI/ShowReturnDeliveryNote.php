@@ -52,6 +52,7 @@ class ShowReturnDeliveryNote extends OrgAction
     use GetPlatformLogo;
 
     private Order|Shop|Warehouse|Customer $parent;
+    private ?array $countriesAddressData = null;
 
     public function handle(ReturnDeliveryNote $returnDeliveryNote): ReturnDeliveryNote
     {
@@ -229,6 +230,8 @@ class ShowReturnDeliveryNote extends OrgAction
 
     public function getBoxStats(ReturnDeliveryNote $returnDeliveryNote): array
     {
+        $this->countriesAddressData ??= GetAddressData::run();
+
         $deliveryNote = $returnDeliveryNote->deliveryNote;
         $order     = $returnDeliveryNote->order;
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
@@ -277,7 +280,7 @@ class ShowReturnDeliveryNote extends OrgAction
             'address'                      => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => GetAddressData::run()
+                    'countriesAddressData' => $this->countriesAddressData
                 ]
             ],
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
@@ -292,7 +295,7 @@ class ShowReturnDeliveryNote extends OrgAction
                 'address'      => [
                     'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                     'options'  => [
-                        'countriesAddressData' => GetAddressData::run()
+                        'countriesAddressData' => $this->countriesAddressData
                     ]
                 ]
             ],
@@ -358,6 +361,8 @@ class ShowReturnDeliveryNote extends OrgAction
             $isEditable = true;
         }
 
+        $this->countriesAddressData ??= GetAddressData::run();
+
         $actions = $this->getActions($returnDeliveryNote);
 
 
@@ -402,7 +407,7 @@ class ShowReturnDeliveryNote extends OrgAction
             'address'             => [
                 'delivery' => AddressResource::make($returnDeliveryNote->deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => GetAddressData::run()
+                    'countriesAddressData' => $this->countriesAddressData
                 ]
             ],
             'timelines'           => $this->getTimeline($returnDeliveryNote),

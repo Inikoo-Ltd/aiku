@@ -64,6 +64,7 @@ class ShowDeliveryNote extends OrgAction
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
+    private ?array $countriesAddressData = null;
 
     private bool $allowAction = true;
 
@@ -625,6 +626,8 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
+        $this->countriesAddressData ??= GetAddressData::run();
+
         return [
             'state'                        => $deliveryNote->state,
             'state_icon'                   => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
@@ -678,7 +681,7 @@ class ShowDeliveryNote extends OrgAction
             'address'                      => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => GetAddressData::run()
+                    'countriesAddressData' => $this->countriesAddressData
                 ]
             ],
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
@@ -714,7 +717,7 @@ class ShowDeliveryNote extends OrgAction
                 'address'      => [
                     'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                     'options'  => [
-                        'countriesAddressData' => GetAddressData::run()
+                        'countriesAddressData' => $this->countriesAddressData
                     ]
                 ]
             ],
@@ -797,6 +800,7 @@ class ShowDeliveryNote extends OrgAction
         if ($this->parent instanceof Warehouse) {
             $isEditable = true;
         }
+        $this->countriesAddressData ??= GetAddressData::run();
 
         $handler = $deliveryNote->picker_user_id;
 
@@ -892,7 +896,7 @@ class ShowDeliveryNote extends OrgAction
             'address'             => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => GetAddressData::run()
+                    'countriesAddressData' => $this->countriesAddressData
                 ]
             ],
             'allowActions'        => $allowAction,

@@ -95,7 +95,7 @@ onMounted(() => {
         width: 'auto'
     }">
         <!-- Title -->
-        <div v-if="!isFinish || (isFinish && listProducts.length)" class="px-3 py-6 pb-2">
+        <div v-if="!isFinish || (isFinish && listProducts.length > 3)" class="px-3 py-6 pb-2">
             <div class="text-2xl md:text-3xl font-semibold">
                 <p style="text-align: center">{{ trans("Customers Recently Bought") || "Customers Recently Bought" }}</p>
             </div>

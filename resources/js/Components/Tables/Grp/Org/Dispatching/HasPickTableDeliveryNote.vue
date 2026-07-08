@@ -20,6 +20,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 // Import the new NotesDisplay component
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+import { faCertificate } from "@fas"
 
 const props = defineProps<{
     data: TableTS,
@@ -214,6 +215,13 @@ const warehouseDaysClass = (days?: number | null) => {
                 </Link>
                 <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
                     icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon
+					v-if="deliveryNote.is_customer_vip"
+					v-tooltip="trans('VIP Customer')"
+					:icon="faCertificate"
+                    color="#191970"
+					fixed-width
+				/>
                 <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')"
                     icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
                 <NotesDisplay :item="deliveryNote" reference-field="reference" />

@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 07 Jul 2026 13:46:16 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
@@ -70,9 +76,11 @@ class AddVoucherToOrder extends OrgAction
             ]
         );
 
-        CalculateOrderDiscounts::run($order);
-
-        GetVoucherData::run($offer->id);
+        if ($offer->allowance_type == 'percentage_off') {
+            CalculateOrderDiscounts::run($order);
+        } elseif ($offer->allowance_type == 'discounted_shipping') {
+            CalculateOrderShipping::run($order);
+        }
     }
 
     public function rules(): array
