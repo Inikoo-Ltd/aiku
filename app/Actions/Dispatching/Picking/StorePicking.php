@@ -53,10 +53,6 @@ class StorePicking extends OrgAction
         $picking->refresh();
 
 
-        if (app()->environment('production')) {
-            SavePickingInAurora::dispatch($picking);
-        }
-
         StoreOrgStockMovement::dispatch(
             $locationOrgStock->orgStock,
             $locationOrgStock->location,
