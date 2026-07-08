@@ -13,15 +13,18 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
+use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Events\BroadcastStockMovement;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
 
 class DeleteOrgStockMovement extends OrgAction
 {
     use WithActionUpdate;
+    use WithOrgStockMovementHydrator;
 
     public function handle(OrgStockMovement $orgStockMovement): OrgStockMovement
     {
@@ -41,15 +44,7 @@ class DeleteOrgStockMovement extends OrgAction
         $orgStock = $orgStockMovement->orgStock;
         $orgStockMovement->delete();
 
-        if ($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE) {
-            OrgStockHydrateStockValue::dispatch($orgStock);//todo do we need to delete this??? maybe yes
-            OrgStockHydrateSkuValue::dispatch($orgStock);
-        }
-
-        OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
-        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
-        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay(now()->addMinutes(15));
-
+        $this->hydrateOrgStockMovement($orgStockMovement);
 
         return $orgStockMovement;
     }
