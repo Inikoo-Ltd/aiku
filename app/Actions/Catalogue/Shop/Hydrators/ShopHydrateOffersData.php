@@ -167,6 +167,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
                 $vouchersData[$offer->id] = [
                     'active'               => true,
                     'id'                   => $offer->id,
+                    'name'                 => $offer->name,
                     'offer_campaign_id'    => $offer->offer_campaign_id,
                     'offer_allowance_id'   => $offerAllowance?->id,
                     'end_at'               => $offer->end_at->toDateTimeString(),
@@ -181,7 +182,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
             }
         }
 
-        data_set($offersData, 'discounted_shipping_vouchers', $vouchersData);
+        data_set($offersData, 'gift_from_vouchers', $vouchersData);
 
 
         return $offersData;
