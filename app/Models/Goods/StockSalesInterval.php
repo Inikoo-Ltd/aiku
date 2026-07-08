@@ -1311,7 +1311,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $vip_number_customers_pq5
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Stock|null $stock
+ * @property-read \App\Models\Goods\Stock|null $stock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockSalesInterval newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockSalesInterval newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockSalesInterval query()

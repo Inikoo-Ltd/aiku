@@ -18,6 +18,7 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
+use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -820,11 +821,11 @@ class EditShop extends OrgAction
                             'information' => __('Show the name of the staff member who replied to a review.'),
                             'value'       => Arr::get($shop->settings, 'reviews.show_staff_who_reply', false),
                         ],
-                        'review_add_other_shops'    => [
-                            'type'        => 'toggle',
-                            'label'       => __('Add Other Shops Reviews'),
-                            'information' => __('Applicable family and product reviews'),
-                            'value'       => Arr::get($shop->settings, 'reviews.add_other_shops', false),
+                        'review_validation_scope'   => [
+                            'type'        => 'review_validation_scope',
+                            'label'       => __('Include other shops'),
+                            'information' => __('Here you can configure whether you want to include other shops reviews.'),
+                            'value'       => $this->loadReviewValidationScopes($shop),
                         ],
                     ],
                 ]
@@ -913,14 +914,37 @@ class EditShop extends OrgAction
         $reviewLabel = collect(ReviewContextEnum::values())
             ->mapWithKeys(fn (string $context) => [
                 $context => [
-                    ...$emptyDimensions, 
+                    ...$emptyDimensions,
                     ...($stored[$context] ?? []),
                     'label_tab' => data_get($tabLabels, $context)
                 ],
             ])
             ->all();
-            
+
         return $reviewLabel;
+    }
+
+    /**
+     * @return array<int, array{context: string, label: string, enabled: bool, scope: string}>
+     */
+    private function loadReviewValidationScopes(Shop $shop): array
+    {
+        $tabLabels = $shop->getCustomReviewCategoryLabel();
+
+        $contexts = [
+            ReviewContextEnum::SHOP->value,
+            ReviewContextEnum::FAMILY->value,
+            ReviewContextEnum::PRODUCT->value,
+        ];
+
+        return collect($contexts)
+            ->map(fn (string $context) => [
+                'context' => $context,
+                'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::shortLabels(), $context, $context)),
+                'enabled' => (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.enabled", false),
+                'scope'   => Arr::get($shop->settings, "reviews.validation_scope.$context.scope", ReviewValidationScopeEnum::ORGANISATION->value),
+            ])
+            ->all();
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

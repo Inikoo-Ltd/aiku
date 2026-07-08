@@ -352,6 +352,9 @@ class UpdateCustomer extends OrgAction
             'eori'                                                  => ['sometimes', 'nullable', 'string', 'max:20'],
             'ukims'                                                 => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
+            'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
+            'is_vip'                                                => ['sometimes', 'boolean'],
+
         ];
 
         if ($this?->asAction) {
@@ -360,7 +363,6 @@ class UpdateCustomer extends OrgAction
 
 
         if (!$this->strict) {
-            $rules['is_vip']             = ['sometimes', 'boolean'];
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
             $rules['registered_at']      = ['sometimes', 'nullable', 'date'];

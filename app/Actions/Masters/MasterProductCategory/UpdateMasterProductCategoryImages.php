@@ -11,9 +11,9 @@ namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Actions\Catalogue\WithUpdateWebImages;
-use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Helpers\CanUpdateImages;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;

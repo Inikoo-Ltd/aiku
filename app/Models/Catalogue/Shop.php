@@ -380,7 +380,7 @@ class Shop extends Model implements HasMedia, Auditable
 
     public function getCustomReviewCategoryLabel(): array
     {
-        return collect(ReviewContextEnum::labels())->mapWithKeys(fn ($item, $key) => [
+        return collect(ReviewContextEnum::shortLabels())->mapWithKeys(fn ($item, $key) => [
                 $key => data_get($this->settings, "reviews.rating_labels.$key.label_tab") ?? $item
             ])->toArray();
     }

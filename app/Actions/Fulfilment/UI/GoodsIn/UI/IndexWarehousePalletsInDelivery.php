@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Inventory\GoodsIn\UI;
+namespace App\Actions\Fulfilment\UI\GoodsIn\UI;
 
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInDelivery;
 use App\Actions\OrgAction;

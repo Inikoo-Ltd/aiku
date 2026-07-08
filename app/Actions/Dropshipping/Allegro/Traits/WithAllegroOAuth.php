@@ -53,7 +53,7 @@ trait WithAllegroOAuth
                     ?? Arr::get($response->json(), 'error')
                     ?? 'OAuth token request failed';
 
-                throw new \Exception($error);
+                return ['message' => $error];
             }
 
             return $response->json();
@@ -142,7 +142,7 @@ trait WithAllegroOAuth
                 $error = Arr::get($response->json(), 'error_description')
                     ?? Arr::get($response->json(), 'error')
                     ?? 'OAuth code exchange failed';
-                throw ValidationException::withMessages(['message' => $error]);
+                return ['message' => $error];
             }
 
             return $response->json();
@@ -196,9 +196,7 @@ trait WithAllegroOAuth
             ])->asForm()->post($this->allegroDeviceUrl, $params);
 
             if ($response->failed()) {
-                throw new \Exception(
-                    Arr::get($response->json(), 'error_description') ?? 'Device code request failed'
-                );
+                return $response->json();
             }
 
             return $response->json();
@@ -254,10 +252,6 @@ trait WithAllegroOAuth
                     continue;
                 }
 
-                // access_denied, expired, invalid device code — abort
-                throw new \Exception(
-                    Arr::get($body, 'error_description') ?? $error ?? 'Device authorization failed'
-                );
             } catch (ValidationException $e) {
                 Sentry::captureException($e);
             } catch (\Exception $e) {
@@ -266,8 +260,6 @@ trait WithAllegroOAuth
                 return [];
             }
         }
-
-        throw ValidationException::withMessages(['message' => 'Device flow timed out waiting for user approval.']);
     }
 
     // -------------------------------------------------------------------------
@@ -354,11 +346,7 @@ trait WithAllegroOAuth
             ]);
 
             if ($response->failed()) {
-                throw new \Exception(
-                    Arr::get($response->json(), 'error_description')
-                    ?? Arr::get($response->json(), 'message')
-                    ?? 'Dynamic Client Registration failed'
-                );
+                return $response->json();
             }
 
             return $response->json();

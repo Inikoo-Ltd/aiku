@@ -85,7 +85,8 @@ test('it detects iris website', function () {
         return response('OK');
     });
 
-    expect($response->getStatusCode())->toBe(200);
+    expect($response->getStatusCode())->toBe(200)
+        ->and($response->headers->get('X-AIKU-WEBSITE'))->toBe((string) $this->website->id);
 });
 
 test('it processes blocked country regions in DetectIrisWebsite', function () {

@@ -662,7 +662,7 @@ const isLoading = ref<string | boolean>(false)
                         <!-- <pre>{{ Object.values(queryBuilderProps.emptyState?.action).length }}</pre> -->
                         <div> <!-- div to replace in case v-if empty  -->
                             <Link v-if="Object.values(queryBuilderProps.emptyState?.action || {}).length" as="div"
-                                :href="queryBuilderProps.emptyState?.action?.route?.name ? route(queryBuilderProps.emptyState?.action.route.name, queryBuilderProps.emptyState?.action.route.parameters) : '#'"
+                                :href="queryBuilderProps?.emptyState?.action?.route?.name ? route(queryBuilderProps.emptyState?.action.route.name, queryBuilderProps.emptyState?.action.route.parameters) : '#'"
                                 :method="queryBuilderProps.emptyState?.action?.route?.method" class="mt-4 block"
                                 @start="() => isLoading = 'loadingEmptyState'" @finish="() => isLoading = false">
                             <Button :style="queryBuilderProps.emptyState?.action.style"
@@ -721,7 +721,7 @@ const isLoading = ref<string | boolean>(false)
                                 <slot v-for="(linkButton, btnIndex) in queryBuilderProps.modelOperations?.bulk"
                                     :name="`button${linkButton.label}`" :linkButton="linkButton">
                                     <Link v-if="linkButton?.route?.name" as="div"
-                                        :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                        :href="linkButton?.route?.name ? route(linkButton.route.name, linkButton?.route?.parameters) : '#'"
                                         :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
                                         :data="selectRow"
                                         :class="[queryBuilderProps.modelOperations?.bulk.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
@@ -743,7 +743,7 @@ const isLoading = ref<string | boolean>(false)
                                 <!-- {{ linkButton?.route?.name }} -->
                                 <component v-if="linkButton?.route?.name" :is="linkButton.target ? 'a' : Link" as="div"
                                     :target="linkButton.target || undefined"
-                                    :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                    :href="linkButton?.route?.name ? route(linkButton?.route?.name, linkButton?.route?.parameters) : ''"
                                     :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
                                     :class="[queryBuilderProps.modelOperations?.createLink.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
                                     <Button :style="linkButton.style" :type="linkButton.type" :icon="linkButton.icon"

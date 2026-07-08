@@ -83,7 +83,7 @@ class StoreVolumeGRDiscount extends OrgAction
         data_set(
             $modelData,
             'name',
-            Translate::run($label, $english, $family->shop->language,'gpt-5-nano').' '.$family->code,
+            Translate::run($label, $english, $family->shop->language, 'gpt-5-nano').' '.$family->code,
             false
         );
 

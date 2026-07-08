@@ -715,7 +715,7 @@ test('index reviews in iris scope handlers', function () {
     StoreReview::make()->action($this->family, ['customer_id' => $this->customer->id, 'rating' => 4, 'message' => 'family level']);
     StoreReview::make()->action($this->order, ['customer_id' => $this->customer->id, 'order_id' => $this->order->id, 'rating' => 5, 'message' => 'order level']);
 
-    $indexer = IndexReviewsInIris::make();
+    $indexer = IndexReviewsInIris::make($this->shop);
 
     expect($indexer->handleAllScopeReviews(shop: $this->shop, prefix: 'all')->total())->toBeGreaterThanOrEqual(1)
         ->and($indexer->handleProductScopeReviews(shop: $this->shop, prefix: 'product')->total())->toBeGreaterThanOrEqual(0)
@@ -731,9 +731,8 @@ test('index reviews in iris scope handlers', function () {
 
     expect($indexer->avgReview($this->shop))->not->toBeNull()
         ->and($indexer->avgReview($this->product))->not->toBeNull()
-        ->and($indexer->avgReview($this->family))->not->toBeNull()
-        ->and($indexer->includesOtherShops($this->shop))->toBeFalse();
+        ->and($indexer->avgReview($this->family))->not->toBeNull();
 
-    $closure = $indexer->tableStructure('all', $this->shop, [ReviewScopeEnum::SHOP, ReviewScopeEnum::PRODUCT]);
+    $closure = $indexer->tableStructure(shop: $this->shop, scopes: [ReviewScopeEnum::SHOP, ReviewScopeEnum::PRODUCT]);
     $closure(new InertiaTable(request()));
 });

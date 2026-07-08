@@ -10,7 +10,6 @@ namespace App\Http\Resources\Dispatching;
 
 use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Dispatching\Picking;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 
@@ -55,71 +54,42 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 ),
                 $this->packed_in
             );
-        //=== PERFORMANCE
-        // fining other stuff should free this
-        $deliveryNoteItem = DeliveryNoteItem::find($this->id);
+
+        /** @var DeliveryNoteItem $deliveryNoteItem */
+        $deliveryNoteItem = $this->resource;
+
         $fullWarning      = [
             'disabled' => false,
             'message'  => ''
         ];
+
         if ($this->quantity_picked == $this->quantity_required) {
             $fullWarning = [
                 'disabled' => true,
                 'message'  => __('The required quantity has already been fully picked.')
             ];
         }
-        //=== PERFORMANCE
-        // use select_raw in the query and inject this value
-        $shopType = $request->shop?->type;
 
-        $pickingLocations = DB::table('location_org_stocks')
-            ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
-            ->where('org_stock_id', $this->org_stock_id)
-            ->select([
-                'location_org_stocks.id',
-                'location_org_stocks.quantity',
-                'location_org_stocks.type',
-                'locations.id as location_id',
-                'locations.code as location_code',
-                'locations.slug as location_slug',
-                'location_org_stocks.default_wholesale_picking_location',
-                'location_org_stocks.default_dropshipping_picking_location',
-            ])
-            ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
-            ->selectRaw(
-                '(
-                    SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
-                    WHERE pickings.location_id = location_org_stocks.location_id
-                    AND pickings.org_stock_id = location_org_stocks.org_stock_id
-                    AND pickings.type = ? AND pickings.delivery_note_item_id = ?
-                ) as pickings_data',
-                ['pick', $this->id]
-            )
-            ->when(
-                $shopType,
-                function ($q) use ($shopType) {
-                    if ($shopType->value == 'b2b') {
-                        $q->orderBy('location_org_stocks.default_wholesale_picking_location', 'desc');
-                    } elseif ($shopType->value == 'dropshipping') {
-                        $q->orderBy('location_org_stocks.default_dropshipping_picking_location', 'desc');
-                    }
-                    $q->orderBy('picking_priority');
-                },
-                function ($q) {
-                    $q->orderBy('picking_priority');
-                }
-            )
-            ->get();
-
+        $pickingLocations = @json_decode($this->location_org_stocks) ?? [];
         $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked - $this->quantity_waiting_warehouse - $this->quantity_waiting_crm);
 
 
         $isPicked = $quantityToPick == 0;
         $isPacked = $isPicked && $this->quantity_packed == $this->quantity_picked;
 
-        //=== PERFORMANCE
-        // I think thi sjust need to be called if state is packed or more ask Aldo
-        $pickings = Picking::where('delivery_note_item_id', $this->id)->with(['batchCode', 'orgStock.mainBatchCode'])->get();
+        $pickings = $deliveryNoteItem
+            ->pickings()
+            ->leftJoin('batch_codes', 'batch_codes.id', 'pickings.batch_code_id')
+            ->select([
+                'pickings.*',
+                'batch_codes.id as batch_code_id',
+                'batch_codes.code as batch_code',
+                DB::raw("'{$this->org_stocks_batch_code_id}' as org_stocks_batch_code_id"),
+                DB::raw("'{$this->org_stocks_batch_code}' as org_stocks_batch_code"),
+                DB::raw("'{$this->org_stocks_batch_code_count}' as org_stocks_batch_code_count"),
+                DB::raw("'{$packedIn}' as packed_in"),
+            ])
+            ->get();
 
         $warehouseArea = '';
         if ($this->warehouse_area_picking_position) {
@@ -147,22 +117,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
         }
 
-
-        //=== PERFORMANCE
-        // This one can be fixed adding jsonb un_numbers into stocks or org_stocks (i think stocks is better) <-- We need to meaker hydrators and repairs
-
-        /** @var DeliveryNoteItem $resource */
-        $resource = $this->resource;
-        $unNumbers = [];
-
-        if ($resource->relationLoaded('orgStock')) {
-            $orgStock = $resource->orgStock;
-
-            if ($orgStock->relationLoaded('tradeUnits')) {
-                $unNumbers = $orgStock->tradeUnits->whereNotNull('un_number')->where('un_number', '!=', 'None')->pluck('un_number', 'proper_shipping_name')->toArray();
-            }
-        }
-
         return [
             'id'                             => $this->id,
             'is_picked'                      => $isPicked,
@@ -172,67 +126,56 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_to_pick'               => $quantityToPick,
             'quantity_to_pick_fractional'    => $quantityToPickFractional,
             'quantity_to_pick_fractional_ds' => $quantityToPickFractionalDS,
-            'quantity_picked_fractional'     => $this->quantity_picked > 0 ? riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->quantity_picked) : null,
+            'quantity_picked_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked ?? 0)), $packedIn),
             'quantity_picked'                => $this->quantity_picked,
             'quantity_not_picked'            => $this->quantity_not_picked,
             'quantity_packed'                => $this->quantity_packed,
             'quantity_dispatched'            => $this->quantity_dispatched,
             'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
             'quantity_waiting_crm'           => $this->quantity_waiting_crm,
-
-            'org_stock_id'                 => $this->org_stock_id,
-            'org_stock_code'               => $this->org_stock_code,
-            'org_stock_slug'               => $this->org_stock_slug,
-            'org_stock_name'               => $this->org_stock_name,
-
-            //=== PERFORMANCE
-            // DO we actually display this image? if really display need to create:  stocks or org_stocks  jsonb web_images (and follow what we do in products.web_images)
-            // OR --- If vika only use this in a modal, remve this line, and ask vika to get the individual image by ajax when the modal is opened
-            'org_stock_image_thumbnail'    => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
-            'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
-            'pickings'                     => PickingResource::collection($pickings),
-
-            //=== PERFORMANCE
-            // create jsonb packings in delivery_note_items  (need hydrators::run and repairs)
-            'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
-            'warning'                      => $fullWarning,
-            'is_handled'                   => $this->is_handled,
-            'is_packed'                    => $isPacked,
-            'quantity_required_fractional' => $requiredFactionalData,
-            'warehouse_area'               => $warehouseArea,
-            'batch_code'                   => $this->batch_code,
-            'batch_code_id'                => $this->batch_code_id,
-            'expiry_date'                  => $this->expiry_date,
-            'organisation_id'              => $this->organisation_id,
-            'batch_codes_fetch_route'      => [
+            'org_stock_id'                   => $this->org_stock_id,
+            'org_stock_code'                 => $this->org_stock_code,
+            'org_stock_slug'                 => $this->org_stock_slug,
+            'org_stock_name'                 => $this->org_stock_name,
+            'org_stock_image_thumbnail'      => null,
+            'locations'                      => LocationOrgStocksForPickingActionsResource::collection($pickingLocations),
+            'pickings'                       => PickingResourceForDeliveryNoteItemsStateHandling::collection($pickings),
+            'packings'                       => PackingsResource::collection($deliveryNoteItem->packings),
+            'warning'                        => $fullWarning,
+            'is_handled'                     => $this->is_handled,
+            'is_packed'                      => $isPacked,
+            'quantity_required_fractional'   => $requiredFactionalData,
+            'warehouse_area'                 => $warehouseArea,
+            'batch_code'                     => $this->batch_code,
+            'batch_code_id'                  => $this->batch_code_id,
+            'expiry_date'                    => $this->expiry_date,
+            'organisation_id'                => $this->organisation_id,
+            'batch_codes_fetch_route'        => [
                 'name'       => 'grp.json.org_stock.batch_codes.index',
                 'parameters' => [
                     'organisation' => $this->organisation_id,
                     'orgStock'     => $this->org_stock_id,
                 ],
             ],
-            'packed_in_message'            => $packedInMessage,
-            'notes'                        => $this->notes,
-            'shop_slug'                    => $this->shop_slug,
-            'un_numbers'                   => $unNumbers,
-
-
-            'upsert_picking_route' => [
+            'packed_in_message'              => $packedInMessage,
+            'notes'                          => $this->notes,
+            'shop_slug'                      => $this->shop_slug,
+            'un_numbers'                     => @json_decode($this->un_numbers) ?? null,
+            'upsert_picking_route'           => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method'     => 'post'
             ],
-
-            'picking_route'      => [
+            'picking_route'                  => [
                 'name'       => 'grp.models.delivery_note_item.picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method'     => 'post'
             ],
-            'picking_all_route'  => [
+            'picking_all_route'              => [
                 'name'       => 'grp.models.delivery_note_item.picking_all.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
@@ -256,17 +199,13 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'pickers_list_route' => [
                 'name'       => 'grp.json.employees.picker_users',
                 'parameters' => [
-                    //=== PERFORMANCE
-                    // use select_raw in the query and inject this value
-                    'organisation' => $deliveryNoteItem->organisation->slug
+                    'organisation' => $this->organisation_slug
                 ]
             ],
             'packers_list_route' => [
                 'name'       => 'grp.json.employees.packers',
                 'parameters' => [
-                    //=== PERFORMANCE
-                    // use select_raw in the query and inject this value
-                    'organisation' => $deliveryNoteItem->organisation->slug
+                    'organisation' => $this->organisation_slug
                 ]
             ],
         ];

@@ -40,6 +40,8 @@ import { ctrans } from "@/Composables/useTrans"
 import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
+
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
 
 
@@ -63,15 +65,23 @@ const screenType = inject('screenType', ref('desktop'))
 const locale = inject("locale", aikuLocaleStructure);
 const layout = inject('layout', layoutStructure)
 
-function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
+const currentRouteParams = route().params
+const currentRouteName = route().current()
+
+const orgStockRouteCache = new Map<number | string, string>()
+function orgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
     if(!deliveryNoteItem.org_stock_id){
         return '';
     }
 
-    return route(
-        "grp.helpers.redirect_org_stock",
-        [deliveryNoteItem.org_stock_id])
+    if (!orgStockRouteCache.has(deliveryNoteItem.org_stock_id)) {
+        orgStockRouteCache.set(
+            deliveryNoteItem.org_stock_id,
+            route("grp.helpers.redirect_org_stock", [deliveryNoteItem.org_stock_id])
+        )
+    }
 
+    return orgStockRouteCache.get(deliveryNoteItem.org_stock_id)!
 }
 
 
@@ -109,33 +119,31 @@ onMounted(() => {
 // const debounceOnPickingQuantity = debounce(onPickingQuantity, 500);
 
 
+const locationRouteCache = new Map<string, string>()
 const generateLocationRoute = (location: any) => {
-    if (!location.location_slug || !(route().params["organisation"]) || !(route().params["warehouse"])) {
+    if (!location.location_slug || !currentRouteParams["organisation"] || !currentRouteParams["warehouse"]) {
         return "";
     }
 
-    if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
-        return route(
-            "grp.org.warehouses.show.infrastructure.locations.show",
-            [
-                route().params["organisation"],
-                route().params["warehouse"],
-                location.location_slug
-            ]
-        );
-    } else if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
-        return route(
-            "grp.org.warehouses.show.infrastructure.locations.show",
-            [
-                route().params["organisation"],
-                route().params["warehouse"],
-                location.location_slug
-            ]
+    if (currentRouteName !== "grp.org.warehouses.show.dispatching.delivery_notes.show") {
+        return "";
+    }
+
+    if (!locationRouteCache.has(location.location_slug)) {
+        locationRouteCache.set(
+            location.location_slug,
+            route(
+                "grp.org.warehouses.show.infrastructure.locations.show",
+                [
+                    currentRouteParams["organisation"],
+                    currentRouteParams["warehouse"],
+                    location.location_slug
+                ]
+            )
         )
-    } else {
-        return "";
     }
 
+    return locationRouteCache.get(location.location_slug)!
 };
 
 
@@ -408,8 +416,8 @@ const modalResource = computed(() => {
 })
 
 
-const routeItemsWaitingWarehouse = (item) => {
-    if (!route().params.warehouse || !route().params.organisation || !props.shop_type) {
+const urlItemsWaitingWarehouse = computed(() => {
+    if (!currentRouteParams.warehouse || !currentRouteParams.organisation || !props.shop_type) {
         return '#'
     }
 
@@ -418,14 +426,14 @@ const routeItemsWaitingWarehouse = (item) => {
         : 'grp.org.warehouses.show.dispatching.waiting_items.shop'
 
     return route(routeName, {
-        organisation: route().params.organisation,
-        warehouse: route().params.warehouse,
+        organisation: currentRouteParams.organisation,
+        warehouse: currentRouteParams.warehouse,
         shopType: props.shop_type,
     })
-}
+})
 
-const routeItemsWaitingCrm = (item) => {
-    if (!route().params.warehouse || !route().params.organisation || !props.shop_type) {
+const urlItemsWaitingCrm = computed(() => {
+    if (!currentRouteParams.warehouse || !currentRouteParams.organisation || !props.shop_type) {
         return '#'
     }
 
@@ -434,11 +442,11 @@ const routeItemsWaitingCrm = (item) => {
         : 'grp.org.warehouses.show.dispatching.waiting_crm_items.shop'
 
     return route(routeName, {
-        organisation: route().params.organisation,
-        warehouse: route().params.warehouse,
+        organisation: currentRouteParams.organisation,
+        warehouse: currentRouteParams.warehouse,
         shopType: props.shop_type,
     })
-}
+})
 
 // watch(modalResource, (val) => {
 //     // console.log("modalResource", val)
@@ -563,10 +571,49 @@ const onSetItemToUndoWaitingWarehouse = () => {
         onFinish: () => isLoadingUndoWaitingWarehouse.value = false,
     }
 )}
+
+const isLoadingImage = ref(false);
+
+watch(
+    () => isOpenModalUndoWaitingWarehouse.value, 
+    async (isOpened) => {
+        if (isOpened) {
+            isLoadingImage.value = true
+            let imageData = await fetchImage(isOpenModalUndoWaitingWarehouse);
+            if (imageData && isOpenModalUndoWaitingWarehouse.value) {
+                isOpenModalUndoWaitingWarehouse.value.org_stock_image_thumbnail = imageData;
+            }
+        }
+    }
+)
+
+watch(
+    () => isOpenModalSetAsWaiting.value, 
+    async (isOpened) => {
+        if (isOpened) {
+            isLoadingImage.value = true
+            let imageData = await fetchImage(selectedTransactionToSetAsWaiting);
+            console.log(imageData);
+            if (imageData ) {
+                selectedTransactionToSetAsWaiting.value.org_stock_image_thumbnail = imageData;
+            }
+        }
+    }
+)
+
+const fetchImage = async (deliveryNoteItem: any)   => {
+    const response = await axios.get(route('grp.json.fetch_single_delivery_note_item.image', {
+        deliveryNoteItem: deliveryNoteItem.value.id,
+    }))
+
+    isLoadingImage.value = false;
+
+    return response.data ?? null;
+}
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xmemoizeRows="true">
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo>
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
@@ -590,7 +637,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
             <!-- Label: warehouse waiting -->
             <div v-if="Number(item.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
-                <Link :href="routeItemsWaitingWarehouse(item)" class="hover:underline">
+                <Link :href="urlItemsWaitingWarehouse" class="hover:underline">
                     <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)">
                     </LabelItemsWaitingForWarehouse>
                 </Link>
@@ -598,7 +645,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
             <!-- Section: items are waiting for CRM -->
             <div v-if="Number(item.quantity_waiting_crm) > 0" class="mx-auto w-fit">
-                <Link :href="routeItemsWaitingCrm(item)" class="hover:underline">
+                <Link :href="urlItemsWaitingCrm" class="hover:underline">
                     <LabelItemsWaitingForCrm v-if="Number(item.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
                 </Link>
             </div>
@@ -614,8 +661,8 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
                 {{ deliveryNoteItem.org_stock_code }}
             </Link>
-            <span v-for="(un_number, packing_name) in deliveryNoteItem.un_numbers" v-tooltip="packing_name ? packing_name : ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="packing_name ? 'cursor-pointer' : ''">
-                {{ un_number }}
+            <span v-for="un_number in deliveryNoteItem.un_numbers" v-tooltip="un_number?.shipping_name ?? ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="un_number?.shipping_name ? 'cursor-pointer' : ''">
+                {{ un_number.number }}
             </span>
         </template>
 
@@ -709,7 +756,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 <span v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2">
 
                     <ButtonWithLink v-if="!item.is_handled" type="negative"
-                        :label="locale.number(item.quantity_to_pick)" tooltip="Set as not picked" icon="fal fa-debug"
+                        :label="locale.number(item.quantity_to_pick)"  v-tooltip="ctrans('Set as not picked')" icon="fal fa-debug"
                         size="xs" :routeTarget="item.not_picking_route" :bindToLink="{
                             preserveScroll: true,
                         }" />
@@ -727,7 +774,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <FractionDisplay v-if="item.quantity_dispatched_fractional"
                 :fractionData="item.quantity_dispatched_fractional" />
             <span v-else>{{ item.quantity_dispatched }}</span>
-
+ 
         </template>
 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
@@ -739,7 +786,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             </span>
 
             <!-- Number: waiting warehouse -->
-            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="routeItemsWaitingWarehouse(item)" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
+            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="urlItemsWaitingWarehouse" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_waiting_warehouse) }}
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
@@ -754,7 +801,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <!-- Number: waiting CRM -->
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
-                :href="routeItemsWaitingCrm(item)"
+                :href="urlItemsWaitingCrm"
             >
                 <span v-tooltip="ctrans('Waiting for customer services')"  class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2">
                     {{ Number(item.quantity_waiting_crm) }}
@@ -877,7 +924,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
         </template>
 
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
-            <div class="hidden">
+            <div v-if="false" class="hidden">
                 <div><span class="bg-yellow-400">itemValue.is_picked</span>: {{ itemValue.is_picked }}</div>
                 <div><span class="bg-yellow-400">itemValue.is_handled</span>: {{ itemValue.is_handled }}</div>
                 <div><span class="bg-yellow-400">itemValue.is_packed</span>: {{ itemValue.is_packed }}</div>
@@ -1068,7 +1115,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                         
                         <ButtonWithLink
                             type="negative"
-                            v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
+                            v-tooltip="ctrans('Set :numberNotPicked as not picked', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
                             iconRight="fal fa-debug"
                             :label="itemValue.quantity_to_pick.toString() || '0'"
                             :size="screenType == 'desktop' ? 'sm' : 'lg'"
@@ -1081,15 +1128,14 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
             <div v-else-if="Number(itemValue.quantity_waiting_warehouse) < 1 && Number(itemValue.quantity_waiting_crm) < 1" class="flex justify-between gap-x-2 gap-y-1">
                 <div v-if="!itemValue.is_handled" class="text-gray-400 italic text-sm">
-                    {{ trans("No quantity to pick") }}
+                    {{ ctrans("No quantity to pick") }}
                 </div>
 
                 <div class="flex gap-x-2 gap-y-1">
                     <ButtonWithLink
                         v-if="!itemValue.is_handled"
                         type="negative"
-                        tooltip="No quantity to pick. Click to ignore."
-                        xicon="fal fa-debug"
+                        v-tooltip="ctrans('No quantity to pick. Click to ignore.')"
                         label="Click to ignore"
                         :size="screenType == 'desktop' ? 'sm' : 'lg'"
                         :routeTarget="itemValue.not_picking_route"
@@ -1101,7 +1147,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
             <!-- Section: items are waiting for warehouse -->
             
             <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
-                <Link :href="routeItemsWaitingWarehouse(itemValue)" class="hover:underline">
+                <Link :href="urlItemsWaitingWarehouse" class="hover:underline">
                     <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)">
                     </LabelItemsWaitingForWarehouse>
                 </Link>
@@ -1116,7 +1162,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
             <!-- Section: items are waiting for CRM -->
             <div v-if="Number(itemValue.quantity_waiting_crm) > 0" class="mx-auto w-fit">
-                <Link :href="routeItemsWaitingCrm(itemValue)" class="hover:underline">
+                <Link :href="urlItemsWaitingCrm" class="hover:underline">
                     <LabelItemsWaitingForCrm v-if="Number(itemValue.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(itemValue.quantity_waiting_crm)" />
                 </Link>
             </div>
@@ -1202,14 +1248,13 @@ const onSetItemToUndoWaitingWarehouse = () => {
                 <!-- icon="fal fa-debug" -->
                 <ButtonWithLink
                     type="negative"
-                    tooltip="No quantity to pick. Click to ignore."
-                             label="Click to ignore"
-                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                            :routeTarget="item.not_picking_route"
-                            :bindToLink="{preserveScroll: true}"
-                             @success="closePackingModal"
-                        />
-                    
+                    v-tooltip="ctrans('No quantity to pick. Click to ignore.')"
+                    label="Click to ignore"
+                    :size="screenType == 'desktop' ? 'sm' : 'lg'"
+                    :routeTarget="item.not_picking_route"
+                    :bindToLink="{preserveScroll: true}"
+                    @success="closePackingModal"
+                />
             </template>
         </Table>
        
@@ -1235,7 +1280,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
     <!-- Modal: Select batch code -->
     <Modal :isOpen="isModalEditExpiryDate" @onClose="() => onCloseModalExpiryDate()" width="w-full max-w-lg">
         <div class="text-center mb-4">
-            <div class="font-semibold text-2xl">{{ trans('Batch Code for') }} {{ selectedItemToEditExpiryDate?.org_stock_code }}:</div>
+            <div class="font-semibold text-2xl">{{ ctrans('Batch Code for') }} {{ selectedItemToEditExpiryDate?.org_stock_code }}:</div>
             <div class="opacity-80 italic text-sm">
                 {{ selectedItemToEditExpiryDate?.org_stock_name }}
             </div>
@@ -1244,7 +1289,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <div class="flex flex-col items-center gap-4">
             <div class="w-full">
                 <label class="block text-sm font-medium mb-2">
-                    {{ trans("Batch code") }}:
+                    {{ ctrans("Batch code") }}:
                 </label>
                 <PureMultiselectInfiniteScroll
                     v-if="batchCodeFetchRoute"
@@ -1254,7 +1299,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     labelProp="label"
                     valueProp="id"
                     object
-                    :placeholder="trans('Search batch code...')"
+                    :placeholder="ctrans('Search batch code...')"
                     :disabled="isLoadingSubmitExpiryDate"
                 />
             </div>
@@ -1266,7 +1311,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     :disabled="isLoadingSubmitExpiryDate"
                     icon="far fa-arrow-left"
                     @click="onCloseModalExpiryDate"
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                 />
 
                 <Button
@@ -1276,7 +1321,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     icon="fad fa-save"
                     @click="onSubmitEditExpiryDate"
                     full
-                    :label="trans('Save')"
+                    :label="ctrans('Save')"
                 />
             </div>
         </div>
@@ -1299,11 +1344,11 @@ const onSetItemToUndoWaitingWarehouse = () => {
 
                 <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                     <div class="text-base font-semibold">
-                        {{ trans("Are you sure want to pick all from magic place?") }}
+                        {{ ctrans("Are you sure want to pick all from magic place?") }}
                     </div>
                     <div class="mt-2">
                         <p class="text-sm text-gray-500">
-                            {{ trans("Yes, magic place.") }}
+                            {{ ctrans("Yes, magic place.") }}
                         </p>
                     </div>
 
@@ -1328,7 +1373,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                             type="tertiary"
                             icon="far fa-arrow-left"
                             :disabled="isLoadingSubmitPickMagicPlace"
-                            :label="trans('Cancel')"
+                            :label="ctrans('Cancel')"
                             full
                             @click=" () => (isModalEPickMagicPlace = false)" />
                     </div>
@@ -1341,17 +1386,26 @@ const onSetItemToUndoWaitingWarehouse = () => {
     <Modal :isOpen="isOpenModalSetAsWaiting" width="w-full max-w-lg" @close="isOpenModalSetAsWaiting = false">
         <!-- Product info header -->
         <div class="font-semibold text-center text-2xl mb-8">
-            {{ trans("Set item as waiting") }}
+            {{ ctrans("Set item as waiting") }}
         </div>
 
         <div class="flex items-center gap-4 mb-2">
-            <div class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+            <div 
+                class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center"
+                :class="[selectedTransactionToSetAsWaiting?.org_stock_image_thumbnail ? '' : 'grid']""
+            >
                 <Image
                     v-if="selectedTransactionToSetAsWaiting?.org_stock_image_thumbnail"
                     :src="selectedTransactionToSetAsWaiting.org_stock_image_thumbnail"
                     :alt="selectedTransactionToSetAsWaiting.org_stock_name"
                 />
-                <FontAwesomeIcon v-else icon="fal fa-box" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon 
+                    v-else
+                    icon="fal fa-box" 
+                    class="text-2xl text-gray-400" 
+                    fixed-width aria-hidden="true" 
+                />
+                <LoadingIcon v-if="isLoadingImage" class="text-xs justify-self-center" />
             </div>
 
             <div class="min-w-0">
@@ -1368,7 +1422,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <div class="flex items-center gap-2 mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200">
             <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-amber-500" fixed-width aria-hidden="true" />
             <span class="text-sm text-amber-700">
-                {{ trans('Quantity to set as waiting') }}:
+                {{ ctrans('Quantity to set as waiting') }}:
             </span>
             <span class="font-bold text-amber-800">
                 <!-- <FractionDisplay
@@ -1376,7 +1430,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                 />
                 <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) ?? 0) }}</template> -->
-                {{ selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) }}
+                {{ Number(selectedTransactionToSetAsWaiting?.quantity_to_pick ?? 0) + Number(selectedTransactionToSetAsWaiting?.quantity_waiting_warehouse || 0) }}
                 
             </span>
         </div>
@@ -1384,7 +1438,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
         <!-- Note textarea -->
         <div>
             <label class="font-medium mb-1 flex items-center gap-x-1 text-sm">
-                {{ trans('Note') }}:
+                {{ ctrans('Note') }}:
             </label>
             <PureTextarea v-model="dataToSendAsWaiting.note" :rows="4" />
         </div>
@@ -1439,13 +1493,22 @@ const onSetItemToUndoWaitingWarehouse = () => {
                     </div>
 
                     <div class="mt-4 bg-amber-50 border border-amber-200 rounded flex items-center gap-4 mb-2 py-2 px-3">
-                        <div class="shrink-0 size-16 rounded-lg overflow-hidden xbg-gray-100 border border-black/10 flex items-center justify-center">
+                        <div 
+                            class="shrink-0 size-16 rounded-lg overflow-hidden xbg-gray-100 border border-black/10 flex items-center justify-center"   
+                            :class="[selectedItemToUndoWaitingWarehouse?.org_stock_image_thumbnail ? '' : 'grid']""
+                        >
                             <Image
                                 v-if="selectedItemToUndoWaitingWarehouse?.org_stock_image_thumbnail"
                                 :src="selectedItemToUndoWaitingWarehouse.org_stock_image_thumbnail"
                                 :alt="selectedItemToUndoWaitingWarehouse.org_stock_name"
                             />
-                            <FontAwesomeIcon v-else icon="fal fa-image" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon 
+                                v-else
+                                icon="fal fa-image"
+                                class="text-2xl text-gray-400" 
+                                fixed-width aria-hidden="true" 
+                            />
+                            <LoadingIcon v-if="isLoadingImage" class="text-xs justify-self-center" />
                         </div>
 
                         <div class="min-w-0">

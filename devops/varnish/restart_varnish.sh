@@ -5,7 +5,6 @@
 #
 
 echo "Restarting Varnish..."
-#sudo varnishadm 'ban req.url ~ .'
-sudo varnishadm 'ban obj.http.x-aiku-website ~ .'
+sudo varnishadm 'ban obj.http.x-aiku-host ~ .'
 echo "Done."
 id -un

@@ -24,6 +24,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
 use Eloquent;
@@ -42,6 +43,7 @@ use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -132,6 +134,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $phone
  * @property string|null $identity_document_number_alt
  * @property bool $is_pastpay
+ * @property string|null $fiscal_name
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -165,7 +168,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Invoice withoutTrashed()
  * @mixin Eloquent
  */
-class Invoice extends Model implements Auditable
+class Invoice extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
@@ -173,6 +176,7 @@ class Invoice extends Model implements Auditable
     use InCustomer;
     use HasHistory;
     use HasSearch;
+    use HasAttachments;
 
     protected $casts = [
         'type'                => InvoiceTypeEnum::class,
@@ -209,6 +213,7 @@ class Invoice extends Model implements Auditable
                 'reference',
                 'customer_reference',
                 'customer_name',
+                'fiscal_name',
                 'customer_contact_name',
                 'email',
                 'phone',
@@ -226,6 +231,7 @@ class Invoice extends Model implements Auditable
             'type'                  => $this->type->value,
             'reference'             => $this->reference,
             'customer_name'         => (string)$this->customer_name,
+            'fiscal_name'          => (string)$this->fiscal_name,
             'customer_contact_name' => (string)$this->customer_contact_name,
             'email'                 => (string)$this->email,
             'phone'                 => (string)$this->phone,
@@ -241,6 +247,7 @@ class Invoice extends Model implements Auditable
     protected array $auditInclude = [
         'reference',
         'type',
+        'fiscal_name',
         'state',
         'status',
         'email',

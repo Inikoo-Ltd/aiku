@@ -74,6 +74,8 @@ class WebBlockProductForWorkshopResource extends JsonResource
             'web_images'        => $product->web_images,
             'images'            => $product->bucket_images ? $this->getImagesData($product, true) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
+
+            'is_single_trade_unit'       => $product->is_single_trade_unit,
         ];
     }
 }

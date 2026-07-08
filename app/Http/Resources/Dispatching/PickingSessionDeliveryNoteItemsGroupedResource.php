@@ -31,6 +31,7 @@ class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
         $deliveryNote = DeliveryNote::find($this->delivery_note_id);
 
         return [
+            'id'                              => $this->delivery_note_id,
             'delivery_note_reference'         => $this->delivery_note_reference,
             'delivery_note_state_icon'        => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
             'delivery_note_slug'              => $this->delivery_note_slug,

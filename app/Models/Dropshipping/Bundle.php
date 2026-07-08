@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 04 Jul 2026 00:34:27 Malaysia Time, Kuala Lumpur, Malaysia
@@ -31,7 +32,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent $bundleable
  * @property-read Customer|null $customer
- * @property-read CustomerSalesChannel|null $customerSalesChannel
+ * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\BundleItem> $items
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Bundle newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Bundle newQuery()

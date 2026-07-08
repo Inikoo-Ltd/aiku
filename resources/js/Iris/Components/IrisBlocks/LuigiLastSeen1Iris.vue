@@ -128,7 +128,7 @@ const fetchRecommenders = async () => {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        console.log('LLS:', response.data)
+        console.log(`LLS (${response.data?.[0]?.hits?.length}): `, response.data)
         RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProductsFromLuigi.value = response.data[0].hits
@@ -200,7 +200,7 @@ onMounted(() => {
 </script>
 
 <template>    
-    <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'luigi-last-seen-1-iris'+indexBlock"  component="luigi-last-seen-1-iris"
+    <div data-block-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'luigi-last-seen-1-iris'+indexBlock"  component="luigi-last-seen-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),

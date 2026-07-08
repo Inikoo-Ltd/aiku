@@ -1,6 +1,12 @@
 <?php
 
-namespace App\Actions\Inventory\Reports;
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 06 Jul 2026 22:41:35 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Reports;
 
 use App\Actions\OrgAction;
 use App\Models\SysAdmin\Organisation;

@@ -179,6 +179,7 @@ const idxSlideLoading = ref<number | null>(null)
                         class="w-full h-full flex justify-center items-center" 
                         :height="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.height"
                         :width="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.width"
+                        :preload="Number(indexBlock) === 0 && index === 0"
                       />
                       <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
                         <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />

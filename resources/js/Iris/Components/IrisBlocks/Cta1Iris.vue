@@ -67,6 +67,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 							:imgAttributes="fieldValue.image.attributes" 
 							:height="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.height"
 							:width="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.width"
+							:preload="Number(indexBlock) === 0"
 							/>
 						<div
 							v-if="isLoading"

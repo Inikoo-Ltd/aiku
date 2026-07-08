@@ -15,7 +15,6 @@ use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 
 class SaveShopDataAllegroChannel
 {
@@ -26,13 +25,11 @@ class SaveShopDataAllegroChannel
         try {
             /** @var Shop $shop */
             $shop = $allegroUser->customerSalesChannel->shop;
-            // Get user info from Allegro API
             $userInfo = $allegroUser->getUserInfo();
 
             if ($userInfo) {
                 $data = $allegroUser->data ?? [];
 
-                // Save user/seller information
                 data_set($data, 'user_id', Arr::get($userInfo, 'id'));
                 data_set($data, 'login', Arr::get($userInfo, 'login'));
                 data_set($data, 'email', Arr::get($userInfo, 'email'));
@@ -41,32 +38,7 @@ class SaveShopDataAllegroChannel
                 data_set($data, 'marketplace_id', Arr::get($userInfo, 'baseMarketplace.id'));
 
                 if (! Arr::get($allegroUser->settings, 'shipping.id')) {
-                    try {
-                        $deliveryMethods = $allegroUser->getDeliveryMethods();
-                        $deliveryMethod = collect(Arr::get($deliveryMethods, 'deliveryMethods'))->firstWhere('destinationCountry', $shop->country->code);
-
-                        $shipping = $allegroUser->createShippingRates([
-                            'name' => 'Shipping-rates-'.$allegroUser->customerSalesChannel->slug,
-                            'rates' => [
-                                [
-                                    'deliveryMethod' => [
-                                        'id' => Arr::get($deliveryMethod ?? [], 'id'),
-                                    ],
-                                    'maxQuantityPerPackage' => 5,
-                                    'firstItemRate' => [
-                                        'currency' => Arr::get($deliveryMethod ?? [], 'shippingRatesConstraints.firstItemRate.currency'),
-                                        'amount' => '2.00'
-                                    ],
-                                    'nextItemRate' => [
-                                        'currency' => Arr::get($deliveryMethod ?? [], 'shippingRatesConstraints.nextItemRate.currency'),
-                                        'amount' => '0.00'
-                                    ],
-                                ]
-                            ]
-                        ]);
-                    } catch (\Exception $e) {
-                        $shipping = [];
-                    }
+                    $shipping = ProcessShippingRates::run($allegroUser);
 
                     data_set($data, 'shipping_id', Arr::get($shipping, 'id'));
                 }
@@ -79,8 +51,7 @@ class SaveShopDataAllegroChannel
                                 'street'        => $shop->address->address_line_1,
                                 'city'        => $shop->address->locality,
                                 'country_code' => $shop->country->code,
-                                'post_code'    => $shop->address->postal_code,
-                                'province'    => $shop->address->administrative_area
+                                'post_code'    => $shop->address->postal_code
                             ]
                         ]);
                     } catch (\Exception $e) {
@@ -155,8 +126,7 @@ class SaveShopDataAllegroChannel
 
             return $allegroUser->refresh();
         } catch (\Exception $e) {
-            dd($e);
-            Log::error('Failed to save Allegro shop data: ' . $e->getMessage());
+            \Sentry::captureException($e);
             return $allegroUser;
         }
     }

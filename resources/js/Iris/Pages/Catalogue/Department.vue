@@ -38,6 +38,7 @@ const props = defineProps<{
     }
     mini_breadcrumbs?: Array<{
         label: string
+        url?: string
         tooltip?: string
         title?: string
         icon?: any
@@ -110,12 +111,12 @@ const componentProps = computed(() => {
                     <template #item="{ item }">
                         <div class="flex items-center gap-1 whitespace-nowrap">
                             <component
-                                :is="item.to ? Link : 'span'"
-                                :href="item.to ? route(item.to.name, item.to.parameters) : undefined"
+                                :is="item.url ? Link : 'span'"
+                                :href="item.url"
                                 v-tooltip="item.tooltip"
                                 :title="item.title"
                                 class="flex items-center gap-2 text-sm text-gray-500 transition-colors duration-150"
-                                :class="{ 'cursor-default': !item.to }"
+                                :class="{ 'cursor-default': !item.url }"
                             >
                                 <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="h-4 w-4" />
                                 <span>{{ item.label || '-' }}</span>

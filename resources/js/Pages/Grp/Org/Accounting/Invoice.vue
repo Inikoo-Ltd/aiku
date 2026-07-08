@@ -60,13 +60,15 @@ import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
 import Icon from "@/Components/Icon.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
+import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue";
+import UploadAttachment from "@/Components/Upload/UploadAttachment.vue";
 import ListColumnToDownload from "../../Invoices/ListColumnToDownload.vue"
 import { Icon as IconType } from "@/types/Utils/Icon"
 import PureAddress from "@/Components/Pure/PureAddress.vue";
 import { Address, AddressOptions } from "@/types/PureComponent/Address";
 import { cloneDeep, pick } from "lodash-es"
 
-library.add(faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle);
+library.add(farIdCard,faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle);
 
 const props = defineProps<{
     title: string,
@@ -85,6 +87,7 @@ const props = defineProps<{
             phone: string
             reference: string
             slug: string
+            fiscal_name: string
         }
         delivery_notes: any
         information: {
@@ -111,6 +114,11 @@ const props = defineProps<{
     details?: {}
     history?: {}
     refunds?: {}
+    attachments?: {}
+    attachmentRoutes?: {
+        attachRoute: routeType
+        detachRoute: routeType
+    }
 
     outbox: {
         state: string
@@ -166,6 +174,8 @@ const props = defineProps<{
 const currentTab = ref<string>(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
+const isModalUploadOpen = ref(false);
+
 const component = computed(() => {
     const components: Component = {
         invoice_transactions: TableInvoiceTransactions,
@@ -174,7 +184,8 @@ const component = computed(() => {
         payments: TablePayments,
         history: TableHistories,
         email: TableDispatchedEmails,
-        refunds: TableRefunds
+        refunds: TableRefunds,
+        attachments: TableAttachments
     };
 
     return components[currentTab.value];
@@ -339,6 +350,11 @@ const submitEditAddress = async () => {
 
     <PageHeading :data="pageHead">
 
+        <template #other>
+            <Button v-if="currentTab === 'attachments' && attachmentRoutes?.attachRoute"
+                @click="() => isModalUploadOpen = true" :label="trans('Attach')" icon="upload" />
+        </template>
+
         <!-- Export Buttons -->
         <template #otherBefore>
             <div v-if="props.invoiceExportOptions?.length"
@@ -480,6 +496,17 @@ const submitEditAddress = async () => {
                     <dd class="text-base text-gray-500">#{{ box_stats?.customer.reference }}</dd>
                 </Link>
             </dl>
+
+            <!-- Field: Fiscal Name -->
+            <dl v-if="box_stats?.customer.fiscal_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt v-tooltip="trans('Fiscal name')" class="flex-none">
+                    <span class="sr-only">{{'Fiscal name'}}</span>
+                    <FontAwesomeIcon icon="far fa-id-card" size="xs" class="text-gray-400" fixed-width
+                                     aria-hidden="true"/>
+                </dt>
+                <dd class="text-base text-gray-500">{{ box_stats?.customer.fiscal_name }}</dd>
+            </dl>
+
             <!-- Field: Customer name -->
             <dl v-if="box_stats?.customer.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt  v-tooltip="trans('Customer name')"  class="flex-none">
@@ -532,7 +559,7 @@ const submitEditAddress = async () => {
             <dl v-if="invoice.identity_document_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt v-tooltip="invoice.identity_document_number?.label" class="flex-none">
                     <span class="sr-only">{{ invoice.identity_document_number?.label }}</span>
-                    <FontAwesomeIcon :icon="farIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
+                    <FontAwesomeIcon :icon="faIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
                 </dt>
                 <dd class="text-base text-gray-500 flex items-center gap-x-2">
                     <span>{{ invoice.identity_document_number?.number }}</span> 
@@ -731,7 +758,8 @@ const submitEditAddress = async () => {
     </div>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate"/>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"/>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab"
+        :detachRoute="attachmentRoutes?.detachRoute"/>
 
     <!-- Modal: Edit invoice date -->
     <Modal :isOpen="isModalEditDate" @onClose="isModalEditDate = false" width="w-full max-w-sm">
@@ -807,4 +835,13 @@ const submitEditAddress = async () => {
             </EmptyState>
         </div>
     </Modal>
+
+    <UploadAttachment v-if="attachmentRoutes" v-model="isModalUploadOpen" scope="attachment" :title="{
+        label: trans('Upload your file'),
+    }" :attachmentRoutes="attachmentRoutes" :options="[
+        {
+            name: 'Other',
+            code: 'other'
+        }
+    ]" />
 </template>

@@ -486,6 +486,10 @@ watch(
 							</p>
 						</div>
 
+						<div v-if="fieldError('rating')" class="mt-4 text-xs text-red-500">
+							{{ fieldError("rating") }}
+						</div>
+
 						<div v-if="activeRatings.length" class="mt-4 space-y-2">
 							<div v-for="item in activeRatings" :key="item.dimension"
 								class="rating flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 ctransition-all duration-200 hover:border-gray-200 hover:bg-white sm:flex-row sm:items-center sm:justify-between">

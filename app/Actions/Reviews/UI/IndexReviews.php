@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 03 Jul 2026 18:41:48 Malaysia Time, Kuala Lumpur, Malaysia
@@ -123,7 +124,7 @@ class IndexReviews extends OrgAction
             });
         });
 
-        $IDSearch = AllowedFilter::callback('ID', function ($query, $value) {
+        $IdSearch = AllowedFilter::callback('ID', function ($query, $value) {
             $query->where('reviews.id', $value);
         });
 
@@ -133,7 +134,8 @@ class IndexReviews extends OrgAction
 
         $query = QueryBuilder::for(Review::class)
             ->leftJoin('customers', 'customers.id', '=', 'reviews.customer_id')
-            ->leftJoin('products', 'products.id', '=', 'reviews.product_id');
+            ->leftJoin('products', 'products.id', '=', 'reviews.product_id')
+            ->leftJoin('product_categories', 'product_categories.id', '=', 'reviews.product_category_id');
 
         if ($parent instanceof Shop) {
             $query->where('reviews.shop_id', $parent->id);
@@ -185,16 +187,17 @@ class IndexReviews extends OrgAction
                 'customers.slug as customer_slug',
                 'products.code as product_code',
                 'products.slug as product_slug',
+                'product_categories.code as family_code'
             ])
             ->allowedSorts(['id', 'created_at', 'rating', 'likes'])
-            ->allowedFilters([$globalSearch, 'status', 'rating', 'customer_name', $IDSearch])
+            ->allowedFilters([$globalSearch, 'status', 'rating', 'customer_name', $IdSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null, bool $withProduct = false): Closure
+    public function tableStructure(?string $prefix = null, bool $withProduct = false, bool $withFamily = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $withProduct) {
+        return function (InertiaTable $table) use ($prefix, $withProduct, $withFamily) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -214,6 +217,9 @@ class IndexReviews extends OrgAction
             $table->column(key: 'customer_name', label: __('Customer'), searchable: true);
             if ($withProduct) {
                 $table->column(key: 'product_code', label: __('Product'), searchable: true);
+            }
+            if ($withFamily) {
+                $table->column(key: 'family_code', label: __('Family'), searchable: true);
             }
             $table->column(key: 'rating', label: __('Rating'), sortable: true, align: 'right');
             $table->column(key: 'message', label: __('Message'), searchable: true);

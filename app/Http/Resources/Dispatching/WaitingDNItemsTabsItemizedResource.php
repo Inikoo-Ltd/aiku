@@ -145,7 +145,7 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'org_stock_code'            => $this->org_stock_code,
             'org_stock_name'            => $this->org_stock_name,
             'org_stock_slug'            => $this->org_stock_slug,
-            'org_stock_image_thumbnail' => $deliveryNoteItem->orgStock?->tradeUnits->first()?->imageSources(64, 64),
+            'org_stock_image_thumbnail' => null, // Using ajax call anyway
 
             'packed_in'         => $packedIn,
             'packed_in_message' => $packedInMessage,

@@ -13,6 +13,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -21,17 +22,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $chat_agent_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \App\Models\Chat\ChatAgent|null $agent
  * @property-read Organisation $organisation
  * @property-read Shop|null $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopHasChatAgent newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopHasChatAgent newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopHasChatAgent onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopHasChatAgent query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopHasChatAgent withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopHasChatAgent withoutTrashed()
  * @mixin \Eloquent
  */
 class ShopHasChatAgent extends Model
 {
     use HasFactory;
+    use SoftDeletes;
     protected $table = 'shop_has_chat_agents';
 
     protected $fillable = [

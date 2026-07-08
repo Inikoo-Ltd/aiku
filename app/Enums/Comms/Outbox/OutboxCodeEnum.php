@@ -56,6 +56,7 @@ enum OutboxCodeEnum: string
     case CHAT_NOTIFICATION_TO_CUSTOMER = 'chat_notification_to_customer';
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
+    case INVOICE_PAID = 'invoice_paid';
     case WEB_USER_REGISTRATION = 'web_user_registration';
     case NEW_REVIEW = 'new_review';
     case REVIEW_REMINDER = 'review_reminder';
@@ -91,6 +92,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             OutboxCodeEnum::REVIEW_REMINDER,
+            OutboxCodeEnum::INVOICE_PAID,
             OutboxCodeEnum::WARM_LEAD_ENGAGEMENT
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
@@ -167,6 +169,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
+            OutboxCodeEnum::INVOICE_PAID => 'Invoice paid',
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
             OutboxCodeEnum::NEW_REVIEW => 'New review',
             OutboxCodeEnum::REVIEW_REMINDER => 'Review reminder',
@@ -218,6 +221,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
+            OutboxCodeEnum::INVOICE_PAID => 'Invoice paid',
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
             OutboxCodeEnum::NEW_REVIEW => 'New review',
             OutboxCodeEnum::REVIEW_REMINDER => 'Review reminder',
@@ -307,7 +311,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::BASKET_PUSH,
-            OutboxCodeEnum::NEW_CUSTOMER_PUSH
+            OutboxCodeEnum::NEW_CUSTOMER_PUSH,
+            OutboxCodeEnum::INVOICE_PAID
             => ['b2b'],
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
             => ['dropshipping'],
@@ -397,6 +402,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::REVIEW_REMINDER,
+            OutboxCodeEnum::INVOICE_PAID,
             OutboxCodeEnum::WARM_LEAD_ENGAGEMENT
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
@@ -439,7 +445,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
-            OutboxCodeEnum::NEW_REVIEW
+            OutboxCodeEnum::NEW_REVIEW,
+            OutboxCodeEnum::INVOICE_PAID
             => EmailOngoingRunTypeEnum::TRANSACTIONAL,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::REORDER_REMINDER,
@@ -487,6 +494,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
+            OutboxCodeEnum::INVOICE_PAID,
             OutboxCodeEnum::WARM_LEAD_ENGAGEMENT
 
             => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
