@@ -37,6 +37,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\LaravelPasskeys\Models\Concerns\HasPasskeys;
+use Spatie\LaravelPasskeys\Models\Concerns\InteractsWithPasskeys;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
 
@@ -128,7 +130,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
  * @mixin \Eloquent
  */
-class User extends Authenticatable implements HasMedia, Auditable
+class User extends Authenticatable implements HasMedia, Auditable, HasPasskeys
 {
     use HasEmail;
     use HasRoles;
@@ -137,6 +139,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     use HasImage;
     use HasApiTokens;
     use HasSearch;
+    use InteractsWithPasskeys;
 
     protected $guarded = [
     ];
@@ -163,6 +166,16 @@ class User extends Authenticatable implements HasMedia, Auditable
         'sources'   => '{}',
         'bookmarks' => '{}'
     ];
+
+    public function getPasskeyName(): string
+    {
+        return (string) ($this->email ?: $this->username);
+    }
+
+    public function getPasskeyDisplayName(): string
+    {
+        return (string) ($this->contact_name ?: $this->username);
+    }
 
     public function searchIndexShouldBeUpdated(): bool
     {

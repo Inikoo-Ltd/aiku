@@ -8,8 +8,12 @@
 
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\UI\Profile\CanVisit;
+use App\Actions\UI\Profile\DeletePasskey;
 use App\Actions\UI\Profile\EditProfile;
 use App\Actions\UI\Profile\EditProfileSettings;
+use App\Actions\UI\Profile\GeneratePasskeyRegisterOptions;
+use App\Actions\UI\Profile\RegisterPasskey;
+use App\Actions\UI\Profile\ShowPasskey;
 use App\Actions\UI\Profile\ShowProfile;
 use App\Actions\UI\Profile\ShowProfileIndexHistory;
 use App\Actions\UI\Profile\ShowProfileIndexKpi;
@@ -23,6 +27,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', ShowProfile::class)->name('show');
 Route::get('/edit', EditProfile::class)->name('edit');
 Route::get('/settings', EditProfileSettings::class)->name('settings');
+
+Route::get('/passkey', ShowPasskey::class)->name('passkey.show');
+Route::get('/passkey/options', GeneratePasskeyRegisterOptions::class)->name('passkey.options');
+Route::post('/passkey', RegisterPasskey::class)->name('passkey.store');
+Route::delete('/passkey/{passkey}', DeletePasskey::class)->name('passkey.delete');
 
 Route::post('/', UpdateProfile::class)->name('update');
 Route::get('/can-visit', CanVisit::class)->name('can_visit');

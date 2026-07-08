@@ -92,6 +92,7 @@ import InputFaqMaster from '@/Components/Forms/Fields/InputFaqMaster.vue'
 import InputFaqShop from '@/Components/Forms/Fields/InputFaqShop.vue'
 import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
 import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
+import PasskeyList from '@/Components/Forms/Fields/PasskeyList.vue'
 
 
 export const componentsList: { [key: string]: Component } = {
@@ -186,6 +187,7 @@ export const componentsList: { [key: string]: Component } = {
     'faq-shop' : InputFaqShop,
     'tags': TagsInput,
     'banned-countries': BannedCountries,
+    'passkey_list': PasskeyList,
 }
 
 export const getComponent = (componentName: string) => {

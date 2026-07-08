@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
+import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser'
 import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
@@ -19,6 +20,24 @@ const form = useForm({
 
 
 const isLoading = ref(false)
+const isLoadingPasskey = ref(false)
+const supportsPasskey = ref(false)
+
+const submitWithPasskey = async () => {
+    isLoadingPasskey.value = true
+    try {
+        const response = await fetch(route('grp.passkeys.authentication_options'))
+        const optionsJSON = await response.json()
+        const startAuthenticationResponse = await startAuthentication({ optionsJSON })
+        router.post(route('grp.passkeys.login'), {
+            start_authentication_response: JSON.stringify(startAuthenticationResponse),
+        }, {
+            onFinish: () => (isLoadingPasskey.value = false),
+        })
+    } catch {
+        isLoadingPasskey.value = false
+    }
+}
 
 const submit = () => {
     isLoading.value = true
@@ -55,6 +74,7 @@ onMounted(() => {
     }
 
     document.addEventListener('visibilitychange', focusUsernameOnReturn)
+    supportsPasskey.value = browserSupportsWebAuthn()
 })
 
 onBeforeUnmount(() => {
@@ -99,6 +119,10 @@ onBeforeUnmount(() => {
             <Button full @click.prevent="submit" :loading="isLoading" :disabled="isLoading" label="Sign in" type="indigo"/>
         </div>
     </form>
+
+    <div v-if="supportsPasskey" class="mt-4">
+        <Button full @click.prevent="submitWithPasskey" :loading="isLoadingPasskey" :disabled="isLoadingPasskey" :label="trans('Sign in with a passkey')" type="secondary" />
+    </div>
 
     <ValidationErrors />
 

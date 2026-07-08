@@ -88,6 +88,23 @@ class EditProfile
                                 ],
                             ],
                         ]
+                    ],
+                    [
+                        "label"   => __("Passkeys"),
+                        "icon"    => "fal fa-key",
+                        "current" => true,
+                        "fields"  => [
+                            "passkeys" => [
+                                "type"         => "passkey_list",
+                                "label"        => __("Passkeys"),
+                                "noSaveButton" => true,
+                                "value"        => $user->passkeys()->orderByDesc('id')->get(['id', 'name', 'last_used_at']),
+                                "deleteRoute" => [
+                                    "name"   => "grp.profile.passkey.delete",
+                                    "method" => "delete",
+                                ],
+                            ],
+                        ]
                     ]
                 ],
                 "args"      => [
