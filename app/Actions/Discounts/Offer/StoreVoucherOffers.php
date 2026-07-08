@@ -29,6 +29,7 @@ class StoreVoucherOffers extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Offer
     {
+        dd($modelData);
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::VOUCHERS)->first();
         if (!$offerCampaign) {
             abort(404);
@@ -145,7 +146,7 @@ class StoreVoucherOffers extends OrgAction
             'end_at'             => ['required', 'date'],
             'target_type'        => ['required', 'string', 'in:shop,department,sub_department,family,collection,product'],
             'target_id'          => ['required', 'integer'],
-            'allowance_type'     => ['required', 'string', 'in:percentage_off,discounted_shipping:gift'],
+            'allowance_type'     => ['required', 'string', 'in:percentage_off,discounted_shipping,gift'],
 
             'percentage_off' => ['nullable', 'required_if:allowance_type,percentage_off', 'numeric', 'gt:0', 'lt:100'],
 
