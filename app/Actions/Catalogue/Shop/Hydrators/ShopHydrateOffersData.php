@@ -126,6 +126,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
                 $vouchersData[$offer->id] = [
                     'active'               => true,
                     'id'                   => $offer->id,
+                    'voucher_code'         => $offer->voucher,
                     'offer_campaign_id'    => $offer->offer_campaign_id,
                     'offer_allowance_id'   => $offerAllowance?->id,
                     'end_at'               => $offer->end_at->toDateTimeString(),
@@ -168,6 +169,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
                     'active'               => true,
                     'id'                   => $offer->id,
                     'name'                 => $offer->name,
+                    'voucher_code'         => $offer->voucher,
                     'offer_campaign_id'    => $offer->offer_campaign_id,
                     'offer_allowance_id'   => $offerAllowance?->id,
                     'end_at'               => $offer->end_at->toDateTimeString(),
