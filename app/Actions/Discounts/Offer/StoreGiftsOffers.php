@@ -80,7 +80,11 @@ class StoreGiftsOffers extends OrgAction
         return [
 
             'name'             => ['required', 'string', 'max:255'],
-            'product_id'       => ['required', 'integer'],
+            'product_id' => [
+                'required',
+                'integer',
+                Rule::exists('products', 'id')->where('shop_id', $this->shop->id)
+            ],
             'duration'         => ['required', 'string', 'in:interval,permanent'],
             'min_order_amount' => ['required', 'numeric', 'min:0'],
             'quantity'         => ['required', 'integer', 'min:0'],

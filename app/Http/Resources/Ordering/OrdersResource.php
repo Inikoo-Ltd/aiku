@@ -54,7 +54,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property bool $with_replacement
  * @property mixed $submitted_at
  * @property mixed $dispatched_at
- *
+ * @property mixed $is_customer_vip
  */
 class OrdersResource extends JsonResource
 {
@@ -124,6 +124,7 @@ class OrdersResource extends JsonResource
             'shipping_data'               => $this->shipping_data,
             'with_replacement'            => $this->with_replacement,
             'platform_milestones'         => data_get($this->data, 'platform_milestones'),
+            'is_customer_vip'             => $this->is_customer_vip,
         ];
     }
 }

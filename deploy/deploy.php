@@ -346,7 +346,7 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
-    'deploy:restart-ssr-by-supervisorctl',
+    //'deploy:restart-ssr-by-supervisorctl',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
     'deploy:log-app-deployment',
