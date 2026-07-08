@@ -377,6 +377,10 @@ html {
   overscroll-behavior: none;
 }
 
+/* * {
+  outline: 1px solid red;
+} */
+
 
 #iris_breadcrumbs ol,
 #iris_breadcrumbs ul {
