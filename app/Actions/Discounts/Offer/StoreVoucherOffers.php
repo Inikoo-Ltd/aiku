@@ -29,6 +29,7 @@ class StoreVoucherOffers extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Offer
     {
+        dd($modelData);
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::VOUCHERS)->first();
         if (!$offerCampaign) {
             abort(404);
@@ -71,32 +72,51 @@ class StoreVoucherOffers extends OrgAction
         data_set($modelData, 'trigger_id', $shop->id);
         data_set($modelData, 'duration', 'interval');
 
-        $targetId = Arr::pull($modelData, 'target_id');
 
-        $targetType = match (Arr::pull($modelData, 'target_type')) {
-            'shop' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
-            'department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
-            'sub_department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
-            'family' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY->value,
-            'collection' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION->value,
-            default => OfferAllowanceTargetTypeEnum::PRODUCT->value
-        };
+        $allowanceType = Arr::get($modelData, 'allowance_type');
 
-        data_set(
-            $modelData,
-            'allowances',
-            [
+        if ($allowanceType == 'percentage_off') {
+            $targetId   = Arr::pull($modelData, 'target_id');
+            $targetType = match (Arr::pull($modelData, 'target_type')) {
+                'shop' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
+                'department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
+                'sub_department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
+                'family' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY->value,
+                'collection' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION->value,
+                default => OfferAllowanceTargetTypeEnum::PRODUCT->value
+            };
+
+            data_set(
+                $modelData,
+                'allowances',
                 [
-                    'class'       => OfferAllowanceClass::DISCOUNT->value,
-                    'target_type' => $targetType,
-                    'target_id'   => $targetId,
-                    'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
-                    'data'        => [
-                        'percentage_off' => $percentageOff,
+                    [
+                        'class'       => OfferAllowanceClass::DISCOUNT->value,
+                        'target_type' => $targetType,
+                        'target_id'   => $targetId,
+                        'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
+                        'data'        => [
+                            'percentage_off' => $percentageOff,
+                        ]
                     ]
                 ]
-            ]
-        );
+            );
+        } else {
+            data_forget($modelData, 'target_type');
+            data_forget($modelData, 'target_id');
+
+            data_set(
+                $modelData,
+                'allowances',
+                [
+                    [
+                        'class'       => OfferAllowanceClass::SHIPPING->value,
+                        'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
+                        'type'        => OfferAllowanceType::SHIPPING->value,
+                    ]
+                ]
+            );
+        }
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
         ActivateOffer::run($offer, 30);
@@ -124,11 +144,23 @@ class StoreVoucherOffers extends OrgAction
                 'before_or_equal:end_at'
             ],
             'end_at'             => ['required', 'date'],
-            'percentage_off'     => ['required', 'numeric', 'gt:0', 'lt:100'],
             'target_type'        => ['required', 'string', 'in:shop,department,sub_department,family,collection,product'],
             'target_id'          => ['required', 'integer'],
+            'allowance_type'     => ['required', 'string', 'in:percentage_off,discounted_shipping,gift'],
+
+            'percentage_off' => ['nullable', 'required_if:allowance_type,percentage_off', 'numeric', 'gt:0', 'lt:100'],
+
         ];
     }
+
+    public function action(Shop $shop, array $modelData): Offer
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($shop, $modelData);
+
+        return $this->handle($shop, $this->validatedData);
+    }
+
 
     public function asController(Shop $shop, ActionRequest $request): Offer
     {

@@ -59,7 +59,7 @@ const isFreeGift = computed(() => offerType.value === "gift")
 
 const productId = ref<number | null>(0)
 const selectedProduct = ref<any | null>(null)
-const quantity = ref<number | null>(0)
+const quantity = ref<number | null>(1)
 const discountPercentage = ref<number | null>(null)
 const offerVoucher = ref("")
 const offerLabel = ref("")
@@ -295,7 +295,7 @@ function resetForm() {
 	discountPercentage.value = null
 	reuseCustomer.value = false
 	productId.value = null
-	quantity.value = 0
+	quantity.value = 1
 	offerAmount.value = 0
 	selectedProduct.value = null
 	target.value = "shop"
