@@ -44,7 +44,7 @@ console.log('haloo',props)
 
         <div class="special-offer__content">
             <div class="special-offer__percentage">
-                <span v-if="maxDiscountLabel">{{ maxDiscountLabel }} {{ ctrans("OFF") }}</span>
+                <span v-if="maxDiscountLabel">{{ maxDiscountLabel }}% {{ ctrans("OFF") }}</span>
             </div>
 
             <div v-if="offer?.duration_label" class="special-offer__status">

@@ -166,7 +166,7 @@ trait WithOutboxBuilder
         UpdateOutbox::make()->action(
             $outbox,
             [
-                'state'    => OutboxStateEnum::ACTIVE,
+                // 'state'    => OutboxStateEnum::ACTIVE,
                 'model_id' => $emailOngoingRun->id
             ]
         );

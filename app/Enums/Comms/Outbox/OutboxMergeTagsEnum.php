@@ -37,6 +37,7 @@ enum OutboxMergeTagsEnum: string
     case WEB_USER_PASSWORD = 'Web User Password';
     case WEB_USER_CONTACT_NAME = 'Web User Contact Name';
     case REVIEW_REMINDER_LINKS = 'Review Reminder Links';
+    case DOWNLOAD_INVOICE_PDF = 'Download Invoice Pdf';
 
 
     public static function tags(): array
@@ -137,6 +138,10 @@ enum OutboxMergeTagsEnum: string
             [
                 'name' => __('Review Reminder Links'),
                 'value' => '[Review Reminder Links]'
+            ],
+            [
+                'name' => __('Download Invoice Pdf'),
+                'value' => '[Download Invoice Pdf]'
             ],
 
 
