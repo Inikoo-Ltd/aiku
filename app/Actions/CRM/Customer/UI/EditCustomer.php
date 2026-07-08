@@ -215,6 +215,18 @@ class EditCustomer extends OrgAction
             ]
         ];
 
+        $vip = [
+            'title'  => __('VIP'),
+            'label'  => __('VIP'),
+            'fields' => [
+                'is_vip'   => [
+                    'type'  => 'toggle',
+                    'label' => __('VIP'),
+                    'value' => $customer->is_vip,
+                ],
+            ]
+        ];
+
         $blueprint   = [];
         $blueprint[] = $contact;
         $blueprint[] = $identification;
@@ -222,7 +234,7 @@ class EditCustomer extends OrgAction
             $blueprint[] = $accounting;
             $blueprint[] = $tags;
         }
-
+        $blueprint[] = $vip;
 
         return Inertia::render(
             'EditModel',

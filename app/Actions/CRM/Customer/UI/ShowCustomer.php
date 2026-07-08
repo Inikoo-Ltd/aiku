@@ -151,6 +151,11 @@ class ShowCustomer extends OrgAction
                         ],
                     ],
                     'subNavigation' => $subNavigation,
+                    'iconRight' => $customer->is_vip ? [
+                        'tooltip' => __('VIP Customer'),
+                        'icon' => 'fas fa-star',
+                        'color' => '#FFC000'
+                    ] : []
                 ],
                 'notes'            => $customer->shop->type !== ShopTypeEnum::EXTERNAL ? $this->getCustomerNotes($customer) : null,
                 'updateRoute'      => [
