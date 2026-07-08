@@ -104,7 +104,7 @@ class StoreVoucherOffers extends OrgAction
                     ]
                 ]
             );
-        } elseif($allowanceType == 'discounted_shipping') {
+        } elseif ($allowanceType == 'discounted_shipping') {
             data_forget($modelData, 'target_type');
             data_forget($modelData, 'target_id');
 
@@ -119,11 +119,11 @@ class StoreVoucherOffers extends OrgAction
                     ]
                 ]
             );
-        }else {
+        } else {
             data_forget($modelData, 'target_type');
             data_forget($modelData, 'target_id');
 
-            $gift = Product::where('shop_id', $shop->id)->where('id', Arr::get($modelData,'gift_product_id'))->first();
+            $gift = Product::where('shop_id', $shop->id)->where('id', Arr::get($modelData, 'gift_product_id'))->first();
 
 
             data_set(
@@ -164,7 +164,7 @@ class StoreVoucherOffers extends OrgAction
                 'max:16',
                 Rule::unique('offers', 'voucher')
                     ->where('shop_id', $this->shop->id)
-                    ->where(fn($query) => $query->whereRaw('LOWER(voucher) = ?', [Str::lower($this->get('voucher'))]))
+                    ->where(fn ($query) => $query->whereRaw('LOWER(voucher) = ?', [Str::lower($this->get('voucher'))]))
             ],
             'name'               => ['required', 'string', 'max:255'],
             'offer_amount'       => ['nullable', 'required', 'numeric', 'min:0'],

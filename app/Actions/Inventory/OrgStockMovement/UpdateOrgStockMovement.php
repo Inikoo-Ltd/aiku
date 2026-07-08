@@ -9,10 +9,6 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -29,7 +25,7 @@ class UpdateOrgStockMovement extends OrgAction
     public function handle(OrgStockMovement $orgStockMovement, array $modelData): OrgStockMovement
     {
         $oldQuantity = $orgStockMovement->quantity;
-        
+
         if (Arr::has($modelData, 'quantity')) {
             $orgAmount = $modelData['quantity'] * $orgStockMovement->orgStock->value_in_locations;
             data_set($modelData, 'org_amount', $orgAmount);
