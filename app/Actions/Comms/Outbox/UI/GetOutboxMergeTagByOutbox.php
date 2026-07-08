@@ -23,6 +23,8 @@ class GetOutboxMergeTagByOutbox extends OrgAction
                 return OutboxMergeTagsEnum::filterTags([OutboxMergeTagsEnum::CUSTOMER_NAME, OutboxMergeTagsEnum::PRODUCTS]);
             case OutboxCodeEnum::REVIEW_REMINDER:
                 return OutboxMergeTagsEnum::filterTags([OutboxMergeTagsEnum::CUSTOMER_NAME, OutboxMergeTagsEnum::REVIEW_REMINDER_LINKS]);
+            case OutboxCodeEnum::INVOICE_PAID:
+                return OutboxMergeTagsEnum::filterTags([OutboxMergeTagsEnum::CUSTOMER_NAME, OutboxMergeTagsEnum::DOWNLOAD_INVOICE_PDF]);
             default:
                 return GetMailshotMergeTags::run();
         }

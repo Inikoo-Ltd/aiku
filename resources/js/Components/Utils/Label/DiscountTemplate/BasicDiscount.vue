@@ -36,32 +36,41 @@ const props = defineProps<{
     </div>
 
     <!-- Label: Discretionary Discount (because sto is null) -->
-    <div v-else-if="offers_data?.o?.sto === null && offers_data?.o?.st === null" class="bg-purple-500/20 px-1 py-0.5 text-xs border flex items-center border-purple-500/50 rounded-sm w-fit text-purple-700" >
-        <FontAwesomeIcon icon="fas fa-badge-percent" class="text-purple-500 text-[1.1667em] align-middle" fixed-width aria-hidden="true" />
-        <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span>
+    <div v-else-if="offers_data?.o?.sto === null && offers_data?.o?.st === null" class="bg-[#E87928] px-1 py-0.5 text-xs border flex items-center border-[#E87928] rounded-sm w-fit text-white" >
+        <!-- <FontAwesomeIcon icon="fas fa-badge-percent" class="text-white text-[1.1667em] align-middle" fixed-width aria-hidden="true" /> -->
         {{ offers_data?.o?.l }}
+        <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span> {{ ctrans("OFF") }}
     </div>
 
-    <div v-else class="bg-[#E87928] px-1 py-0.5 text-xs border flex items-center border-[#E87928] rounded-sm w-fit text-gray-100" >
-        <!-- Label: Gold Reward Amnesty -->
-        <template v-if="offers_data?.o?.st === 'a'">
-            <FontAwesomeIcon icon="" class="text-gray-100 text-[1em] align-middle" fixed-width aria-hidden="true" />
-            <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span>
-            {{ ctrans("Gold Reward Amnesty") }}
-        </template>
+    <div v-else class="flex items-center">
+        <FontAwesomeIcon :icon="faMedal" class="text-[#E87928] text-[1rem] align-middle mr-1" fixed-width
+            aria-hidden="true" />
 
-        <!-- Label: Gold Reward Member -->
-        <template v-else-if="offers_data?.o?.st === 'i'">
-            <FontAwesomeIcon :icon="faMedal" class="text-gray-100 text-[1em] align-middle mr-1" fixed-width aria-hidden="true" />
-            {{ ctrans("Gold Reward Member") }}
-            <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }} OFF</span>
-        </template>
+        <div
+            class="bg-[#E87928] px-1 py-0.5 border flex items-center border-[#E87928] rounded-sm w-fit text-white">
+            <!-- Label: Gold Reward Amnesty -->
+            <template v-if="offers_data?.o?.st === 'a'">
+                <span class="ml-0.5 font-bold mr-1">
+                    {{ formatPercentage(props.offers_data?.o?.p) }}
+                </span>
+                {{ ctrans("Gold Reward Amnesty") }}
+            </template>
 
-        <!-- Label: default -->
-        <template v-else>
-            <FontAwesomeIcon :icon="faMedal" class="text-gray-100 text-[1.1667em] align-middle mr-1" fixed-width aria-hidden="true" />
-            <span class="ml-0.5 font-bold mr-1">{{ formatPercentage(props.offers_data?.o?.p)  }}</span>
-            {{ offers_data?.o?.l }}
-        </template>
+            <!-- Label: Gold Reward Member -->
+            <template v-else-if="offers_data?.o?.st === 'i'">
+                {{ ctrans("Gold Reward Member") }}
+                <span class="ml-0.5 font-bold mr-1">
+                    {{ formatPercentage(props.offers_data?.o?.p) }} OFF
+                </span>
+            </template>
+
+            <!-- Label: default -->
+            <template v-else>
+                <span class="ml-0.5 font-bold mr-1">
+                    {{ formatPercentage(props.offers_data?.o?.p) }}
+                </span>
+                {{ offers_data?.o?.l }}
+            </template>
+        </div>
     </div>
 </template>

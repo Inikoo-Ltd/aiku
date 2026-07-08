@@ -37,7 +37,8 @@ trait WithSendBulkEmails
         ?string $senderName = null,
         bool $isTest = false,
         bool $debug = false,
-        ?string $previewText = null
+        ?string $previewText = null,
+        array $attachments = []
     ): DispatchedEmail {
         $html = $emailHtmlBody;
         $html = $this->processStyles($html);
@@ -91,7 +92,8 @@ trait WithSendBulkEmails
             unsubscribeUrl: $unsubscribeUrl,
             senderName: $senderName,
             isTest: $isTest,
-            debug: $debug
+            debug: $debug,
+            attachments: $attachments
         );
     }
 
@@ -151,6 +153,7 @@ trait WithSendBulkEmails
             'order-number' => Arr::get($additionalData, 'order_number'),
             'invoice-reference' => Arr::get($additionalData, 'invoice_reference'),
             'invoice-link' => Arr::get($additionalData, 'invoice_link'),
+            'download-invoice-pdf' => Arr::get($additionalData, 'download_invoice_pdf_link'),
             'customer-link' => Arr::get($additionalData, 'customer_link'),
             'pallet-reference' => Arr::get($additionalData, 'pallet_reference'),
             'pallet-link' => Arr::get($additionalData, 'pallet_link'),
