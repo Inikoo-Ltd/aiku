@@ -179,6 +179,26 @@ class CalculateOrderShipping
         return $order;
     }
 
+    // public function getUndiscountedShippingAmount(Order $order): ?float
+    // {
+    //     if ($order->collection_address_id) {
+    //         return null;
+    //     }
+
+    //     $shippingZoneSchema = $order->shop->currentShippingZoneSchema;
+    //     if (!$shippingZoneSchema) {
+    //         return null;
+    //     }
+
+    //     list($shippingAmount) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
+
+    //     if ($this->toBeConfirmed) {
+    //         return is_numeric($order->shipping_tbc_amount) ? (float) $order->shipping_tbc_amount : null;
+    //     }
+
+    //     return is_numeric($shippingAmount) ? (float) $shippingAmount : null;
+    // }
+
     private function storeShippingTransaction(Order $order, ShippingZone $shippingZone, $shippingAmount): Transaction
     {
         return StoreTransaction::run(
