@@ -183,7 +183,7 @@ class StoreVoucherOffers extends OrgAction
             'gift_quantity'   => ['nullable', 'required_if:allowance_type,gift', 'integer', 'min:0'],
             'gift_product_id' => [
                 'nullable',
-                'required_if:allowance_type,percentage_off',
+                'required_if:allowance_type,gift',
                 'integer',
                 Rule::exists('products', 'id')->where('shop_id', $this->shop->id)
             ],
