@@ -203,7 +203,7 @@ const showReturnStoredItemsRoute = (item: any) => {
 </script>
 
 <template>
-    <Table :resource="data" class="mt-5" rowAlignTop :name="tab">
+    <Table :resource="data" class="mt-5" rowAlignTop :name="tab" xisUseVMemo>
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -221,7 +221,9 @@ const showReturnStoredItemsRoute = (item: any) => {
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
-
+            <div class="mb-2">
+                <!-- Helper to make the row's height consistent -->
+            </div>
         </template>
 
         <template #cell(delivery_note_reference)="{ item }">
@@ -358,7 +360,7 @@ const showReturnStoredItemsRoute = (item: any) => {
                     <template v-if="deliveryItem.quantity_to_pick > 0 && deliveryItem.state == 'handling'">
                         <div v-if="findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null))"
                             class="rounded p-1 flex flex-col justify-between gap-x-6 items-center">
-                            <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
+                            <div class="xmb-3 w-full flex justify-between gap-x-6 items-center">
                                 <!-- Section: Locations -->
                                 <LabelPickingLocation
                                     :locations="deliveryItem.locations"
@@ -505,9 +507,9 @@ const showReturnStoredItemsRoute = (item: any) => {
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0 && pickingSession.state == 'handling'">
                 <div v-if="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))"
-                    class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
+                    class="rounded xp-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
                     <!-- Action: decrease and increase quantity -->
-                    <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
+                    <div class="xmb-3 w-full flex justify-between gap-x-6 items-center">
                         <!-- Section: Location list and their stocks -->
                         <LabelPickingLocation
                             :locations="itemValue.locations"
