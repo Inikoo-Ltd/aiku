@@ -22,6 +22,7 @@ import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/Wait
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTruck, faYinYang } from "@fal"
+import { faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTruck, faYinYang)
 
@@ -231,6 +232,13 @@ const generateRouteDeliveryNote = (id: string) => {
 					class="text-yellow-500"
 					fixed-width
 					aria-hidden="true" />
+				<FontAwesomeIcon
+					v-if="deliveryNote.is_customer_vip"
+					v-tooltip="trans('VIP Customer')"
+					:icon="faCertificate"
+                    color="#191970"
+					fixed-width
+				/>
 				<FontAwesomeIcon
 					v-if="deliveryNote.has_extra_packing"
 					v-tooltip="trans('Extra packing')"

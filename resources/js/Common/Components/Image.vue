@@ -31,6 +31,8 @@ const props = withDefaults(defineProps<{
   responsive?: ResponsiveSize
   responsiveEnabled?: boolean
 
+  preload?: boolean
+
   imgAttributes?: {
     fetchpriority?: 'high' | 'low'
     loading?: 'lazy' | 'eager'
@@ -39,6 +41,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   src: () => ({ original: fallbackPath }),
   responsiveEnabled: true,
+  preload: false,
   imgAttributes: () => ({
     loading: 'lazy',
     decoding: 'async',
@@ -180,7 +183,7 @@ const sizes = computed(() => {
       :height="baseHeight"
       :style="{ height: 'inherit', ...style }"
       :class="imageCover ? 'w-full h-full object-cover' : undefined"
-      v-bind="imgAttributes"
+      v-bind="preload ? { ...imgAttributes, loading: 'eager', fetchpriority: 'high' } : imgAttributes"
       @load="emits('onLoadImage')"
     />
   </picture>

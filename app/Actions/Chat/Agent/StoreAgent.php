@@ -80,7 +80,7 @@ class StoreAgent extends OrgAction
                 ]);
             }
 
-            AssignChatAgentToScope::run($modelData, $agent);
+            AssignChatAgentToScope::make()->update($modelData, $agent);
 
             return $agent;
         });
