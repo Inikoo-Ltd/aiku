@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Models\Catalogue\Product;
 use App\Models\Discounts\Offer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -33,16 +34,24 @@ class GetVoucherData
 
         $discount = percentage($discount, 1);
 
+        $giftProductCode = null;
+        if ($offer->allowance_type === 'gift') {
+            $giftProductId   = Arr::get($allowance->data, 'product_id');
+            $giftProductCode = $giftProductId ? Product::find($giftProductId)?->code : null;
+        }
+
         return [
-            'id'             => $offer->id,
-            'voucher_code'   => $offer->code,
-            'voucher_amount' => Arr::get($offer->trigger_data, 'item_amount'),
-            'state'          => $offer->state->value,
-            'status'         => $offer->status,
-            'start_at'       => $offer->start_at,
-            'end_at'         => $offer->end_at,
-            'name'           => $offer->name,
-            'discount'       => $discount
+            'id'                => $offer->id,
+            'allowance_type'    => $offer->allowance_type,
+            'voucher_code'      => $offer->code,
+            'voucher_amount'    => Arr::get($offer->trigger_data, 'item_amount'),
+            'state'             => $offer->state->value,
+            'status'            => $offer->status,
+            'start_at'          => $offer->start_at,
+            'end_at'            => $offer->end_at,
+            'name'              => $offer->name,
+            'discount'          => $discount,
+            'gift_product_code' => $giftProductCode
         ];
     }
 }

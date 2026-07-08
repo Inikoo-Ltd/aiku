@@ -26,6 +26,8 @@ const props = defineProps<{
         end_at: string
         name: string
         discount: number
+        allowance_type?: string
+        gift_product_code?: string | null
     } | null
     order?: {
         id: number
@@ -56,33 +58,42 @@ const locale = inject('locale', aikuLocaleStructure)
 const isLoadingVoucher = ref(false)
 const isModalVoucherNotFound = ref(false)
 const voucherNotFoundMessage = ref<null | string>('')
-const currentVoucher = ref(props.voucher || {
+const emptyVoucher = {
     id: 0,
     voucher_code: '',
     voucher_amount: 0,
+    state: '',
     status: '',
+    start_at: '',
     end_at: '',
     name: '',
-    discount: 0
-})
+    discount: 0,
+    allowance_type: '',
+    gift_product_code: null as string | null
+}
+const currentVoucher = ref({ ...emptyVoucher, ...(props.voucher ?? {}) })
 const hasAttachedVoucher = computed(() => Boolean(currentVoucher.value?.voucher_code))
 const isVoucherExpired = computed(() => currentVoucher.value?.status === 'expired')
+
+const voucherLabel = computed(() => {
+    const voucher = currentVoucher.value
+    if (!voucher?.discount) {
+        return voucher?.voucher_code ?? ''
+    }
+
+    const detail = voucher.allowance_type === 'gift'
+        ? `${ctrans('Free gift')} (${voucher.gift_product_code})`
+        : voucher.discount
+
+    return `${voucher.voucher_code} - ${detail}`
+})
 const tempVoucherCode = ref<string | undefined>('')
 
 watch(
     () => props?.voucher?.voucher_code,
     (newVoucherCode) => {
         tempVoucherCode.value = newVoucherCode
-        currentVoucher.value = props.voucher || {
-            id: 0,
-            voucher_code: '',
-            voucher_amount: 0,
-            status: '',
-            start_at: '',
-            end_at: '',
-            name: '',
-            discount: 0
-        }
+        currentVoucher.value = { ...emptyVoucher, ...(props.voucher ?? {}) }
     },
     { immediate: true }
 )
@@ -152,17 +163,7 @@ const onRemoveVoucher = () => {
                 isLoadingVoucher.value = true
             },
             onSuccess: () => {
-                currentVoucher.value = {
-                    id: 0,
-                    voucher_code: '',
-                    voucher_amount: 0,
-                    state: '',
-                    status: '',
-                    start_at: '',
-                    end_at: '',
-                    name: '',
-                    discount: 0
-                }
+                currentVoucher.value = { ...emptyVoucher }
                 notify({
                     title: ctrans("Success"),
                     text: ctrans("Voucher removed from your basket."),
@@ -195,7 +196,7 @@ const onRemoveVoucher = () => {
                 <div class="" :class="inIris ? 'w-full' : 'w-72'">
                     <!-- <InputText type="text" v-model="voucherCode" size="small" /> -->
                     <PureInput
-                        :modelValue="currentVoucher.voucher_code + (currentVoucher.discount ? ` - ${currentVoucher.discount}` : '')"
+                        :modelValue="voucherLabel"
                         xisLoading="isLoadingVoucher"
                         @onEnter="() => onApplyVoucher()"
                         :disabled="isLoadingVoucher || hasAttachedVoucher"
