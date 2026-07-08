@@ -613,7 +613,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xvirtualScroll xvirtualItemHeight="estimateDeliveryNoteItemRowHeight" xvirtualRowMemo="virtualRowMemo">
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo>
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
