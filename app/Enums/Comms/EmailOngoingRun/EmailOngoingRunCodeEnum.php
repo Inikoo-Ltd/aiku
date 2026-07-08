@@ -61,6 +61,7 @@ enum EmailOngoingRunCodeEnum: string
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
 
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
+    case INVOICE_PAID = 'invoice_paid';
     case WEB_USER_REGISTRATION = 'web_user_registration';
     case NEW_REVIEW = 'new_review';
 }
