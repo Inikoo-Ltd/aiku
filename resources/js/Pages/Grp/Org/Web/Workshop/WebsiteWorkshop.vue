@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, ref, provide, inject, onMounted, onUnmounted } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -155,6 +155,7 @@ onUnmounted(() => stopSocketListener())
 </script>
 
 <template>
+  <Head :title="title" />
   <PageHeading :data="pageHead" ignoreIsolate>
     <template #button-publish="{ action }">
       <Button v-if="currentTab !== 'history'" v-bind="action" @click="onPublish">
