@@ -51,7 +51,6 @@ use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
-use Closure;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;

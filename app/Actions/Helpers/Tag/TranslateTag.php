@@ -30,7 +30,7 @@ class TranslateTag
         foreach ($shopLanguages as $languageId) {
             $language = Language::find($languageId);
 
-            $translatedLabel = Translate::run($tag->name, $english, $languag,'gpt-5-nano');
+            $translatedLabel = Translate::run($tag->name, $english, $languag, 'gpt-5-nano');
             $translations[$language->code] = $translatedLabel;
         }
         $tag->setTranslations('label', $translations);

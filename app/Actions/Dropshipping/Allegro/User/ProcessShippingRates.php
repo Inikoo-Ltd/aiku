@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Artha <artha@aw-advantage.com>
  * Created: Mon, 10 Mar 2025 16:53:20 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -39,15 +40,15 @@ class ProcessShippingRates extends RetinaAction
 
             $maxWeightData = [];
 
-            if(!$deliveryMethod) {
+            if (!$deliveryMethod) {
                 return [];
             }
 
-            if($amount === null) {
+            if ($amount === null) {
                 return [];
             }
 
-            if(Arr::get($deliveryMethod, 'shippingRatesConstraints.maxPackageWeight.supported')) {
+            if (Arr::get($deliveryMethod, 'shippingRatesConstraints.maxPackageWeight.supported')) {
                 $maxWeightData = [
                     'maxPackageWeight' => [
                         'value' => 30,

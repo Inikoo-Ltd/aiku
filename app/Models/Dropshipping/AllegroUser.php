@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
- * @property-read \Illuminate\Database\Eloquent\Collection<int, DebugWebhooks> $debugWebhooks
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\DebugWebhooks> $debugWebhooks
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AllegroUser query()

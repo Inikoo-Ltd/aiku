@@ -93,7 +93,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_fulfilment_orders_state_dispatched
  * @property int $number_fulfilment_orders_state_cancel
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Bundle> $bundles
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\Bundle> $bundles
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders

@@ -103,6 +103,7 @@ class CustomerResource extends JsonResource
             'name'                          => $customer->name,
             'contact_name'                  => $customer->contact_name,
             'company_name'                  => $customer->company_name,
+            'fiscal_name'                   => $customer->fiscal_name,
             'location'                      => $customer->location,
             'address'                       => AddressResource::make($customer->address),
             'delivery_address'              => AddressResource::make($customer->deliveryAddress),

@@ -66,7 +66,7 @@ import PureAddress from "@/Components/Pure/PureAddress.vue";
 import { Address, AddressOptions } from "@/types/PureComponent/Address";
 import { cloneDeep, pick } from "lodash-es"
 
-library.add(faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle);
+library.add(farIdCard,faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle);
 
 const props = defineProps<{
     title: string,
@@ -85,6 +85,7 @@ const props = defineProps<{
             phone: string
             reference: string
             slug: string
+            fiscal_name: string
         }
         delivery_notes: any
         information: {
@@ -480,6 +481,17 @@ const submitEditAddress = async () => {
                     <dd class="text-base text-gray-500">#{{ box_stats?.customer.reference }}</dd>
                 </Link>
             </dl>
+
+            <!-- Field: Fiscal Name -->
+            <dl v-if="box_stats?.customer.fiscal_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt v-tooltip="trans('Fiscal name')" class="flex-none">
+                    <span class="sr-only">{{'Fiscal name'}}</span>
+                    <FontAwesomeIcon icon="far fa-id-card" size="xs" class="text-gray-400" fixed-width
+                                     aria-hidden="true"/>
+                </dt>
+                <dd class="text-base text-gray-500">{{ box_stats?.customer.fiscal_name }}</dd>
+            </dl>
+
             <!-- Field: Customer name -->
             <dl v-if="box_stats?.customer.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt  v-tooltip="trans('Customer name')"  class="flex-none">
@@ -532,7 +544,7 @@ const submitEditAddress = async () => {
             <dl v-if="invoice.identity_document_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt v-tooltip="invoice.identity_document_number?.label" class="flex-none">
                     <span class="sr-only">{{ invoice.identity_document_number?.label }}</span>
-                    <FontAwesomeIcon :icon="farIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
+                    <FontAwesomeIcon :icon="faIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
                 </dt>
                 <dd class="text-base text-gray-500 flex items-center gap-x-2">
                     <span>{{ invoice.identity_document_number?.number }}</span> 

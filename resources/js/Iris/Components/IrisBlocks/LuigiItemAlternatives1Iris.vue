@@ -126,17 +126,17 @@ const fetchRecommenders = async () => {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        console.log('LIA1:', response.data)
+        console.log(`LIA1 (${response.data?.[0]?.hits?.length}): `, response.data)
         RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProductsFromLuigi.value = response.data[0].hits
-        fetchRecommendersToGetProducts()
+        await fetchRecommendersToGetProducts()
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     } finally {
         isFetched.value = true
+        isLoadingFetch.value = false
     }
-    isLoadingFetch.value = false
 }
 
 /*  const fetchRecommenders = async () => {
@@ -165,24 +165,15 @@ const fetchRecommenders = async () => {
 const fetchRecommendersToGetProducts = async () => {
     const productListid = listProductsFromLuigi.value?.map((item) => item.attributes.product_id[0])
     if (productListid?.length) {
-        try {
-            isLoadingFetch.value = true
-
-            const response = await axios.get(
-                route('iris.json.luigi.product_details'),
-                {
-                    params: {
-                        product_ids: productListid?.join(',')
-                    }
+        const response = await axios.get(
+            route('iris.json.luigi.product_details'),
+            {
+                params: {
+                    product_ids: productListid?.join(',')
                 }
-            )
-            listProducts.value = response.data.data
-        } catch (error: any) {
-            console.error('Error on fetching recommendations:', error)
-        } finally {
-            isFetched.value = true
-            isLoadingFetch.value = false
-        }
+            }
+        )
+        listProducts.value = response.data.data
     }
 }
 
@@ -208,7 +199,7 @@ onMounted(() => {
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
     }">
-        <template v-if="isFetched && listProducts?.length">
+    
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-2xl md:text-3xl font-semibold">
@@ -217,7 +208,21 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-            
+        <div v-if="isLoadingFetch" class="py-4 px-3 md:px-12 grid gap-x-3" :style="{ gridTemplateColumns: `repeat(${slidesPerView ? slidesPerView : 4}, minmax(0, 1fr))` }">
+            <div v-for="xx in (slidesPerView ? slidesPerView : 4)" :key="xx" class="flex flex-col md:p-3 rounded bg-white">
+                <div class="mb-3 flex justify-center">
+                    <div class="skeleton w-full max-w-[220px] aspect-square rounded"></div>
+                </div>
+                <div class="skeleton mb-1 min-h-[3.5em] w-full rounded"></div>
+                <div class="flex justify-between">
+                    <div class="skeleton h-4 w-1/3 rounded"></div>
+                    <div class="skeleton h-4 w-1/4 rounded"></div>
+                </div>
+            </div>
+        </div>
+
+        <template v-else-if="isFetched && listProducts?.length">
+
             <div class="py-4 px-3 md:px-12 swiper-container">
                 <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :pagination="{ clickable: true }"
@@ -225,37 +230,22 @@ onMounted(() => {
                     spaceBetween="12"
                     autoHeight
                 >
-                    <div v-if="isLoadingFetch" class="grid gap-x-3" :style="{ gridTemplateColumns: `repeat(${slidesPerView ? slidesPerView : 4}, minmax(0, 1fr))` }">
-                        <div v-for="xx in (slidesPerView ? slidesPerView : 4)" :key="xx" class="flex flex-col md:p-3 rounded bg-white">
-                            <div class="mb-3 flex justify-center">
-                                <div class="skeleton w-full max-w-[220px] aspect-square rounded"></div>
-                            </div>
-                            <div class="skeleton mb-1 min-h-[3.5em] w-full rounded"></div>
-                            <div class="flex justify-between">
-                                <div class="skeleton h-4 w-1/3 rounded"></div>
-                                <div class="skeleton h-4 w-1/4 rounded"></div>
-                            </div>
-                        </div>
-                    </div>
+                    <SwiperSlide
+                        v-for="(product, index) in listProducts"
+                        :key="index"
+                        class="w-full cursor-grab relative !grid  min-h-full"
+                    >
+                        <RecommendationSlideLastSeen
+                            :product
+                            :isProductLoading
+                        />
 
-                    <template v-else>
-                        <SwiperSlide
-                            v-for="(product, index) in listProducts"
-                            :key="index"
-                            class="w-full cursor-grab relative !grid  min-h-full"
-                        >
-                            <RecommendationSlideLastSeen
-                                :product
-                                :isProductLoading
-                            />
+                       <!--  <RecommendationSlideIris
+                            :product
+                            :isProductLoading
+                        /> -->
 
-                           <!--  <RecommendationSlideIris
-                                :product
-                                :isProductLoading
-                            /> -->
- 
-                        </SwiperSlide>
-                    </template>
+                    </SwiperSlide>
                 </Swiper>
             </div>
         </template>

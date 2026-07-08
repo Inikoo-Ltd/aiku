@@ -71,6 +71,12 @@ task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
         run("cd {{release_path}} && {{bin/npm}} run build");
+        run(
+            'for dir in retina iris grp pupil aiku-public; do '
+            .'if [ -d {{previous_release}}/public/$dir/assets ]; then '
+            .'rsync -a --ignore-existing {{previous_release}}/public/$dir/assets/ {{release_path}}/public/$dir/assets/; '
+            .'fi; done'
+        );
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
