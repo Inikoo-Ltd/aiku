@@ -224,7 +224,7 @@ const submitVoucherOffer = () => {
 	const payload = {
 		voucher: offerVoucher.value,
 		name: offerLabel.value,
-		type: offerType.value,
+		allowance_type: offerType.value,
 		offer_amount: offerAmount.value,
 		start_at: formatDate(startDate.value),
 		end_at: formatDate(endDate.value),

@@ -64,6 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $label
  * @property string|null $voucher
  * @property int|null $customer_id exclusive customer offer
+ * @property string|null $allowance_type Used for performance, to avoid load offer_allowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions

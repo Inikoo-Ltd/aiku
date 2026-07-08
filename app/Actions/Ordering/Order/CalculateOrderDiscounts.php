@@ -232,6 +232,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
                 ->where('shop_id', $order->shop_id)
                 ->where('status', true)
+                ->where('allowance_type', 'percentage_off')
                 ->where('id', $order->offer_voucher_id)
                 ->first();
 
