@@ -204,7 +204,7 @@ class FetchIrisEcomBasket extends IrisAction
 
         $orderArr['products']      = $transactions;
 
-        // Section: Missed Offers   // Maybe can take from HasBasketDetails->getMissedOffers()
+        // Section: Missed Offers - Maybe can take from HasBasketDetails->getMissedOffers()
         $shopOffersData = $this->shop->offers_data;
         $orderArr['missed_offers'] = [];
         if (Arr::get($shopOffersData, 'fob.active')) {
