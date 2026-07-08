@@ -14,9 +14,13 @@ trait AwsClient
 {
     public function getSesClient(): SesClient
     {
+        //todo, do this properly, this is a temporal fix;
+        $region = rand(0, 1) === 1 ? 'us-east-1' : config('services.ses.region');
+
+
         return new SesClient([
             'version'     => 'latest',
-            'region'      => config('services.ses.region'),
+            'region'      => $region,
             'credentials' => [
                 'key'    => config('services.ses.key'),
                 'secret' => config('services.ses.secret'),
