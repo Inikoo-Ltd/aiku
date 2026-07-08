@@ -198,7 +198,6 @@ watch(aspectRatios, (newRatios) => {
 </script>
 
 <template>
-    {{ ratio }}
     <!-- Preview cropped image -->
     <div class="mb-6 relative w-full flex justify-center">
         <div class="flex items-center justify-center border-2 border-gray-500 shadow-md" :style="previewStyle">
