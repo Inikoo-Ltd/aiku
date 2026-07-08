@@ -14,6 +14,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
 
 class CallbackShopGoogleAds extends OrgAction
 {
@@ -26,11 +27,7 @@ class CallbackShopGoogleAds extends OrgAction
         try {
             $this->storeGoogleAdsRefreshToken($shop, $authCode);
         } catch (Exception $exception) {
-            return $redirect->with('notification', [
-                'status'      => 'error',
-                'title'       => __('Google Ads connection failed'),
-                'description' => $exception->getMessage(),
-            ]);
+            Sentry::captureException($exception);
         }
 
         return $redirect->with('notification', [
