@@ -68,6 +68,7 @@ const layout: any = inject("layout", {})
                   class="absolute inset-0 w-full h-full object-cover"
                   :height="getStyles(fieldValue?.image?.container?.properties, screenType,false)?.height"
                   :width="getStyles(fieldValue?.image?.container?.properties, screenType,false)?.width"
+                  :preload="Number(indexBlock) === 0 && index === 0"
                 />
               </component>
 

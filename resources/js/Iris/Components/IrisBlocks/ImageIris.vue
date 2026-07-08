@@ -119,7 +119,6 @@ const imgAttrsFor = (image: any, index: number) => {
     : { ...image?.attributes, loading: 'lazy', decoding: 'async' }
 }
 
-console.log(props)
 </script>
 
 <template>

@@ -230,8 +230,8 @@ const submitVoucherOffer = () => {
 		end_at: formatDate(endDate.value),
 		can_customer_reuse: reuseCustomer.value,
 		percentage_off: isPercentageOff.value ? discountPercentage.value : null,
-		product_id: isFreeGift.value ? productId.value : null,
-		quantity: isFreeGift.value ? quantity.value : null,
+		gift_product_id: isFreeGift.value ? productId.value : null,
+		gift_quantity: isFreeGift.value ? quantity.value : null,
 		target_type: targetPayload?.target_type ?? null,
 		target_id: targetPayload?.target_id ?? null,
 	}

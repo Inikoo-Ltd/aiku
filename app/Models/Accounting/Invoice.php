@@ -24,6 +24,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
 use Eloquent;
@@ -42,6 +43,7 @@ use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -166,7 +168,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Invoice withoutTrashed()
  * @mixin Eloquent
  */
-class Invoice extends Model implements Auditable
+class Invoice extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
@@ -174,6 +176,7 @@ class Invoice extends Model implements Auditable
     use InCustomer;
     use HasHistory;
     use HasSearch;
+    use HasAttachments;
 
     protected $casts = [
         'type'                => InvoiceTypeEnum::class,

@@ -211,7 +211,46 @@ const props = defineProps(
             default: null,
             required: false,
         },
+        // Opt-in row memoization WITHOUT virtualization: every row still mounts, but each <tr> is
+        // wrapped in v-memo so mutating one row's data re-renders only that row instead of all of
+        // them. Receives (item, index) and must return every reactive value the row's cells read
+        // (item fields + external deps like screenType/selected location). Use for big tables where
+        // virtual scroll is undesirable (e.g. tablet). Does not support useExpandTable.
+        rowMemo: {
+            type: Function,
+            default: null,
+            required: false,
+        },
+        // Simpler alternative to rowMemo: set true and Table auto-builds the v-memo dependency array
+        // from every own property of the row object (nested objects/arrays are JSON.stringify'd). A row
+        // then only re-renders when its own data changes. Caveat: it can only see the row object, so
+        // cells that read external reactive state (injected refs, a lookup keyed elsewhere) will not
+        // refresh while memoized — use the rowMemo function for those.
+        isUseVMemo: {
+            type: Boolean,
+            default: false,
+            required: false,
+        },
     });
+
+// Flatten a row into a stable list of primitives for v-memo. Nested objects/arrays are stringified
+// so a change inside them is detected; the row re-renders only when one of these values changes.
+function autoRowMemo(item: Record<string, any>) {
+    const values: any[] = []
+    for (const key in item) {
+        const value = item[key]
+        values.push(value !== null && typeof value === 'object' ? JSON.stringify(value) : value)
+    }
+    return values
+}
+
+// Signature of the current columns (count + key + label + visibility), appended to every row's
+// v-memo array. Without it a row memoized before a column was added/renamed/toggled keeps its cached
+// vnodes, so the new column's cell renders empty. When the columns change this value changes and all
+// rows re-render.
+const columnsMemoKey = computed(() =>
+    JSON.stringify((queryBuilderProps.value.columns ?? []).map((column: any) => [column.key, column.label, column.hidden]))
+)
 
 const emits = defineEmits<{
     (e: 'onSelectRow', value: {[key: string]: boolean}): void
@@ -1157,6 +1196,74 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                         <tr v-if="virtualBottomSpacerHeight > 0" aria-hidden="true" class="bg-gray-50/70">
                                             <td :colspan="virtualColSpan" :style="{ height: `${virtualBottomSpacerHeight}px`, padding: 0, border: 'none' }">
                                                 <div class="h-full animate-pulse" :style="{ background: 'repeating-linear-gradient(to bottom, rgb(249 250 251) 0px, rgb(249 250 251) 59px, rgb(229 231 235) 59px, rgb(229 231 235) 60px)' }" />
+                                            </td>
+                                        </tr>
+                                    </template>
+
+                                    <!-- Memoized non-virtual path (opt-in via rowMemo): all rows mount, but each
+                                         <tr> is wrapped in v-memo so mutating one row's data re-renders only that
+                                         row. v-memo must sit on the same element as v-for, so rows render directly
+                                         (no <template> wrapper) and useExpandTable is not supported here. -->
+                                    <template v-else-if="rowMemo || isUseVMemo">
+                                        <tr v-for="(item, key) in props.resource.data"
+                                            :key="`table-${name}-row-${item.id}-${item.slug}`"
+                                            v-memo="[...(rowMemo ? rowMemo(item, key) : autoRowMemo(item)), columnsMemoKey]"
+                                            class="" :class="[
+                                                {
+                                                    'bg-gray-50': striped && key % 2,
+                                                },
+                                                selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
+                                                    ? 'bg-green-100/70'
+                                                    : striped
+                                                        ? 'bg-gray-200 hover:bg-gray-300'
+                                                        : rowColorFunction(item)
+                                                            ? rowColorFunction(item)
+                                                            : 'hover:bg-gray-50'
+                                            ]">
+                                            <td v-if="isCheckBox" key="checkbox" class="">
+                                                <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
+                                                    <FontAwesomeIcon v-if="disabledCheckbox(item)"
+                                                        icon="fal fa-minus-square"
+                                                        class='text-gray-400 p-2 cursor-not-allowed text-lg mx-auto block'
+                                                        fixed-width aria-hidden='true' />
+                                                </slot>
+
+                                                <template v-else>
+                                                    <slot :name="`checkbox`" :checked="{props : props.isChecked(item), item :item.is_checked, row : selectRow[item[checkboxKey]]}" :data="item">
+                                                        <FontAwesomeIcon
+                                                            v-show="props.isChecked(item) || item.is_checked || selectRow[item[checkboxKey]]"
+                                                            @click="async () => (setLodash(selectRow, [item.id], false), setLodash(item, ['is_checked'], false), emits('onUnchecked', item))"
+                                                            icon='fas fa-check-square'
+                                                            class='text-green-500 p-2 cursor-pointer text-lg mx-auto block'
+                                                            fixed-width aria-hidden='true' />
+                                                        <FontAwesomeIcon
+                                                            v-show="!props.isChecked(item) && !item.is_checked && !selectRow[item[checkboxKey]]"
+                                                            @click="async () => (setLodash(selectRow, [item.id], true), setLodash(item, ['is_checked'], true), emits('onChecked', item))"
+                                                            icon='fal fa-square'
+                                                            class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
+                                                            fixed-width aria-hidden='true' />
+                                                    </slot>
+                                                </template>
+                                            </td>
+
+                                            <td v-for="(column, index) in queryBuilderProps.columns"
+                                                v-show="show(column.key)"
+                                                :key="`table-${name}-row-${key}-column-${column.key}`"
+                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                    column.type === 'avatar' || column.type === 'icon'
+                                                        ? 'text-center min-w-fit px-3'
+                                                        : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
+                                                            ? 'text-right pl-3 pr-9 tabular-nums'
+                                                            : 'px-6',
+                                                    props.rowAlignTop ? 'align-top' : '',
+                                                    { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
+                                                    column.className
+                                                ]">
+                                                <slot :name="`cell(${column.key})`"
+                                                    :item="{ ...item, index: index, rowIndex : key, data : item }"
+                                                    :proxyItem="item" :tabName="name" class="">
+                                                    <TableRows :column :item />
+                                                </slot>
                                             </td>
                                         </tr>
                                     </template>
