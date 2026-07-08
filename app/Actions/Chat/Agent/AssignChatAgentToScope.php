@@ -33,6 +33,10 @@ class AssignChatAgentToScope extends OrgAction
             if ($record->exists) {
                 if ($record->trashed()) {
                     $record->restore();
+                } else {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'shop_id' => __('Agent is already assigned to this shop.'),
+                    ]);
                 }
 
                 continue;
