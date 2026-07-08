@@ -18,6 +18,8 @@ use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\DeleteStandalo
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\StoreStandaloneFulfilmentInvoiceTransaction;
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\UpdateStandaloneFulfilmentInvoiceTransaction;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
+use App\Actions\Helpers\Media\AttachAttachmentToModel;
+use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use Illuminate\Support\Facades\Route;
 
 Route::name('invoice.')->prefix('invoice/{invoice:id}')->group(function () {
@@ -28,6 +30,11 @@ Route::name('invoice.')->prefix('invoice/{invoice:id}')->group(function () {
     Route::post('payment-account/{paymentAccount:id}/payment', PayInvoice::class)->name('payment.store')->withoutScopedBindings();
 
     Route::post('send-invoice', SendInvoiceToFulfilmentCustomerEmail::class)->name('send_invoice');
+
+    Route::name('attachment.')->prefix('attachment')->group(function () {
+        Route::post('attach', [AttachAttachmentToModel::class, 'inInvoice'])->name('attach');
+        Route::delete('{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inInvoice'])->name('detach')->withoutScopedBindings();
+    });
 });
 
 Route::name('standalone-invoice.')->prefix('standalone-invoice/{invoice:id}')->group(function () {
