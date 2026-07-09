@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { Head } from "@inertiajs/vue3"
+import { useLayoutStore } from "@/Stores/retinaLayout"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
@@ -29,6 +30,15 @@ defineProps<{
     title: string
     pageHead: PageHeadingTypes
 }>()
+
+const layout = useLayoutStore()
+const accentColor = computed(() => layout?.app?.theme?.[4] ?? "#f97316")
+const accentTextColor = computed(() => layout?.app?.theme?.[5] ?? "#ffffff")
+const accentStyle = computed(() => ({
+    softBg: `color-mix(in srgb, ${accentColor.value} 8%, white)`,
+    softBorder: `color-mix(in srgb, ${accentColor.value} 35%, white)`,
+    text: `color-mix(in srgb, ${accentColor.value} 85%, black)`,
+}))
 
 // Static placeholder data, will be replaced by backend props later
 const packagingOptions = ref([
@@ -69,7 +79,7 @@ const summary = computed(() => ({
     <Head :title="capitalize(title)" />
     <!-- Page header -->
     <div class="flex items-start gap-4 border-b border-gray-200 px-4 py-5 sm:px-6">
-        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
+        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl" :style="{ backgroundColor: accentColor, color: accentTextColor }">
             <FontAwesomeIcon :icon="['fal', 'gift']" class="text-3xl" fixed-width aria-hidden="true" />
         </div>
         <div>
@@ -84,7 +94,7 @@ const summary = computed(() => ({
     <div class="p-4 sm:p-6 space-y-6">
 
         <!-- Info banner -->
-        <div class="rounded-md bg-orange-50 border border-orange-200 px-4 py-3 text-sm text-orange-700 flex gap-2 items-start">
+        <div class="rounded-md border px-4 py-2.5 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, borderColor: accentStyle.softBorder, color: accentStyle.text }">
             <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
             <span>
                 {{ trans("If an item does not fit any of the selected packaging options, it will be sent in our standard packaging at") }}
@@ -103,17 +113,17 @@ const summary = computed(() => ({
                     :key="option.code"
                     type="button"
                     class="relative rounded-lg border p-4 text-center transition"
-                    :class="selectedPackaging === option.code
-                        ? 'border-orange-500 ring-1 ring-orange-500'
-                        : 'border-gray-200 hover:border-gray-300'"
+                    :class="selectedPackaging === option.code ? '' : 'border-gray-200 hover:border-gray-300'"
+                    :style="selectedPackaging === option.code ? { borderColor: accentColor, boxShadow: `0 0 0 1px ${accentColor}` } : undefined"
                     @click="selectedPackaging = option.code"
                 >
                     <!-- Radio indicator -->
                     <span
                         class="absolute left-3 top-3 flex h-4 w-4 items-center justify-center rounded-full border"
-                        :class="selectedPackaging === option.code ? 'border-orange-500' : 'border-gray-300'"
+                        :class="selectedPackaging === option.code ? '' : 'border-gray-300'"
+                        :style="selectedPackaging === option.code ? { borderColor: accentColor } : undefined"
                     >
-                        <span v-if="selectedPackaging === option.code" class="h-2 w-2 rounded-full bg-orange-500" />
+                        <span v-if="selectedPackaging === option.code" class="h-2 w-2 rounded-full" :style="{ backgroundColor: accentColor }" />
                     </span>
 
                     <!-- Packaging image placeholder -->
@@ -128,11 +138,11 @@ const summary = computed(() => ({
 
                     <div class="text-sm font-medium">{{ option.label }}</div>
                     <div class="text-xs text-gray-500">{{ option.sizes }}</div>
-                    <div class="mt-1 text-sm font-semibold text-orange-600">{{ option.price }}</div>
+                    <div class="mt-1 text-sm font-semibold" :style="{ color: accentStyle.text }">{{ option.price }}</div>
                 </button>
             </div>
 
-            <div class="mt-4 rounded-md bg-orange-50 px-4 py-2.5 text-sm text-orange-700 flex gap-2 items-start">
+            <div class="mt-4 rounded-md px-4 py-2 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, color: accentStyle.text }">
                 <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
                 <span>{{ trans("We will always use the most suitable size for your order based on the packaging you select.") }}</span>
             </div>
@@ -153,14 +163,14 @@ const summary = computed(() => ({
                         :key="insert.type"
                         class="flex items-center gap-3 py-3 cursor-pointer"
                     >
-                        <input v-model="insert.enabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
+                        <input v-model="insert.enabled" type="checkbox" class="h-4 w-4 rounded border-gray-300" :style="{ accentColor: accentColor }" />
                         <span class="flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-400">
                             <FontAwesomeIcon :icon="['fal', 'file-alt']" fixed-width aria-hidden="true" />
                         </span>
                         <span class="flex-1">
                             <span class="block text-sm">
                                 <span class="font-medium">{{ insert.label }}</span>
-                                <span class="ml-1 text-xs font-medium text-orange-600">({{ trans("Size to be confirmed") }})</span>
+                                <span class="ml-1 text-xs font-medium" :style="{ color: accentStyle.text }">({{ trans("Size to be confirmed") }})</span>
                             </span>
                             <span class="block text-xs text-gray-500">{{ insert.description }}</span>
                         </span>
@@ -171,7 +181,7 @@ const summary = computed(() => ({
                     </label>
                 </div>
 
-                <div class="mt-3 rounded-md bg-orange-50 px-4 py-2.5 text-sm text-orange-700 flex gap-2 items-start">
+                <div class="mt-3 rounded-md px-4 py-2 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, color: accentStyle.text }">
                     <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
                     <span>
                         {{ trans("All leaflets and inserts must be uploaded by you.") }}<br />
@@ -193,7 +203,7 @@ const summary = computed(() => ({
                         v-model="personalisedMessage"
                         :maxlength="maxMessageLength"
                         rows="5"
-                        class="w-full rounded-md border-gray-300 text-sm focus:border-orange-500 focus:ring-orange-500"
+                        class="w-full rounded-md border-gray-300 text-sm"
                         :placeholder="trans('Write your message here')"
                     />
                     <div class="absolute bottom-2 right-3 text-xs text-gray-400">
@@ -201,7 +211,7 @@ const summary = computed(() => ({
                     </div>
                 </div>
 
-                <div class="mt-3 rounded-md bg-orange-50 px-4 py-2.5 text-sm text-orange-700 flex gap-2 items-start">
+                <div class="mt-3 rounded-md px-4 py-2 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, color: accentStyle.text }">
                     <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
                     <span>{{ trans("This message can be changed or removed at any time.") }}</span>
                 </div>
@@ -211,15 +221,15 @@ const summary = computed(() => ({
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <!-- Section 4: Manage leaflets -->
             <section class="lg:col-span-3 rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
-                <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                <div class="mb-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
                         <h2 class="text-base font-semibold">4. {{ trans("Manage Your Leaflets & Inserts") }}</h2>
-                        <p class="text-sm text-gray-500">{{ trans("Upload and manage the leaflets and inserts available for your orders.") }}</p>
+                        <button type="button" class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium hover:bg-gray-50">
+                            <FontAwesomeIcon :icon="['fal', 'upload']" fixed-width aria-hidden="true" />
+                            {{ trans("Upload new leaflet") }}
+                        </button>
                     </div>
-                    <button type="button" class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium hover:bg-gray-50">
-                        <FontAwesomeIcon :icon="['fal', 'upload']" fixed-width aria-hidden="true" />
-                        {{ trans("Upload new leaflet") }}
-                    </button>
+                    <p class="text-sm text-gray-500">{{ trans("Upload and manage the leaflets and inserts available for your orders.") }}</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -236,16 +246,16 @@ const summary = computed(() => ({
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <tr v-for="leaflet in leaflets" :key="leaflet.name">
-                                <td class="py-3 pr-4">
+                                <td class="py-3 pr-4 whitespace-nowrap">
                                     <span class="inline-flex items-center gap-2">
                                         <FontAwesomeIcon :icon="['fal', 'file-pdf']" class="text-red-500" fixed-width aria-hidden="true" />
                                         {{ leaflet.name }}
                                     </span>
                                 </td>
-                                <td class="py-3 pr-4">{{ leaflet.type }}</td>
-                                <td class="py-3 pr-4">{{ leaflet.size }}</td>
-                                <td class="py-3 pr-4">{{ leaflet.uploadedAt }}</td>
-                                <td class="py-3 pr-4">
+                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.type }}</td>
+                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.size }}</td>
+                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.uploadedAt }}</td>
+                                <td class="py-3 pr-4 whitespace-nowrap">
                                     <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
                                         {{ leaflet.status }}
                                     </span>
@@ -265,8 +275,8 @@ const summary = computed(() => ({
             </section>
 
             <!-- Default summary -->
-            <aside class="lg:col-span-2 rounded-lg border border-orange-300 bg-orange-50/50 p-4 sm:p-6 h-fit">
-                <h2 class="text-base font-semibold text-orange-600 mb-4">{{ trans("Your Default Summary") }}</h2>
+            <aside class="lg:col-span-2 rounded-lg border p-4 sm:p-6 h-fit" :style="{ backgroundColor: accentStyle.softBg, borderColor: accentStyle.softBorder }">
+                <h2 class="text-base font-semibold mb-4" :style="{ color: accentStyle.text }">{{ trans("Your Default Summary") }}</h2>
 
                 <dl class="space-y-3 text-sm">
                     <div class="flex justify-between gap-4">
@@ -287,7 +297,7 @@ const summary = computed(() => ({
                     </div>
                 </dl>
 
-                <p class="mt-4 text-sm font-medium text-orange-600">
+                <p class="mt-4 text-sm font-medium" :style="{ color: accentStyle.text }">
                     {{ trans("These preferences will be applied to all new orders.") }}
                 </p>
             </aside>
