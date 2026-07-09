@@ -200,6 +200,9 @@ class UpdateShop extends OrgAction
                     'access_id' => 'settings.email.provider.access_id',
                     'access_key' => 'settings.email.provider.access_key',
                     'region' => 'settings.email.provider.region',
+                    'customer_notification_access_id' => 'settings.email.provider.customer_notification.access_id',
+                    'customer_notification_access_key' => 'settings.email.provider.customer_notification.access_key',
+                    'customer_notification_region' => 'settings.email.provider.customer_notification.region',
                     default => $key
                 },
                 $value
@@ -232,6 +235,9 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'access_id');
         data_forget($modelData, 'access_key');
         data_forget($modelData, 'region');
+        data_forget($modelData, 'customer_notification_access_id');
+        data_forget($modelData, 'customer_notification_access_key');
+        data_forget($modelData, 'customer_notification_region');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -674,6 +680,9 @@ class UpdateShop extends OrgAction
             'access_id'                                               => ['sometimes', 'nullable', 'string'],
             'access_key'                                              => ['sometimes', 'nullable', 'string'],
             'region'                                                  => ['sometimes', 'nullable', 'string'],
+            'customer_notification_access_id'                         => ['sometimes', 'nullable', 'string'],
+            'customer_notification_access_key'                        => ['sometimes', 'nullable', 'string'],
+            'customer_notification_region'                            => ['sometimes', 'nullable', 'string'],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],

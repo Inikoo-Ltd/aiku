@@ -88,6 +88,21 @@ class UpdateGroupSettings extends GrpAction
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'region');
         }
+        if (Arr::has($modelData, 'user_notification_access_id')) {
+            data_set($groupSettings, 'user_notification.provider.access_id', Arr::get($modelData, 'user_notification_access_id'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'user_notification_access_id');
+        }
+        if (Arr::has($modelData, 'user_notification_access_key')) {
+            data_set($groupSettings, 'user_notification.provider.access_key', Arr::get($modelData, 'user_notification_access_key'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'user_notification_access_key');
+        }
+        if (Arr::has($modelData, 'user_notification_region')) {
+            data_set($groupSettings, 'user_notification.provider.region', Arr::get($modelData, 'user_notification_region'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'user_notification_region');
+        }
 
         return $this->update($group, $modelData);
     }
@@ -120,6 +135,10 @@ class UpdateGroupSettings extends GrpAction
             'access_id'                    => ['sometimes', 'string', 'nullable'],
             'access_key'                   => ['sometimes', 'string', 'nullable'],
             'region'                       => ['sometimes', 'string', 'nullable'],
+            'user_notification_access_id' => ['sometimes', 'string', 'nullable'],
+            'user_notification_access_key' => ['sometimes', 'string', 'nullable'],
+            'user_notification_region'     => ['sometimes', 'string', 'nullable'],
+
         ];
     }
 

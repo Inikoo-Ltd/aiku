@@ -43,14 +43,25 @@ class UpdateOrganisation extends OrgAction
         }
 
         if (Arr::has($modelData, 'access_id')) {
-            data_set($modelData, "settings.email.provider.access_id", Arr::pull($modelData, 'access_id'));
+            data_set($modelData, "settings.email.provider.failover.access_id", Arr::pull($modelData, 'access_id'));
         }
         if (Arr::has($modelData, 'access_key')) {
-            data_set($modelData, "settings.email.provider.access_key", Arr::pull($modelData, 'access_key'));
+            data_set($modelData, "settings.email.provider.failover.access_key", Arr::pull($modelData, 'access_key'));
         }
         if (Arr::has($modelData, 'region')) {
-            data_set($modelData, "settings.email.provider.region", Arr::pull($modelData, 'region'));
+            data_set($modelData, "settings.email.provider.failover.region", Arr::pull($modelData, 'region'));
         }
+
+        if (Arr::has($modelData, 'customer_notification_access_id')) {
+            data_set($modelData, "settings.email.provider.customer_notification.access_id", Arr::pull($modelData, 'customer_notification_access_id'));
+        }
+        if (Arr::has($modelData, 'customer_notification_access_key')) {
+            data_set($modelData, "settings.email.provider.customer_notification.access_key", Arr::pull($modelData, 'customer_notification_access_key'));
+        }
+        if (Arr::has($modelData, 'customer_notification_region')) {
+            data_set($modelData, "settings.email.provider.customer_notification.region", Arr::pull($modelData, 'customer_notification_region'));
+        }
+
 
         if (Arr::has($modelData, 'show_omega')) {
             data_set($modelData, "settings.invoice_export.show_omega", Arr::pull($modelData, 'show_omega'));
@@ -163,6 +174,9 @@ class UpdateOrganisation extends OrgAction
             'access_id'                             => ['sometimes', 'string', 'nullable'],
             'access_key'                            => ['sometimes', 'string', 'nullable'],
             'region'                                => ['sometimes', 'string', 'nullable'],
+            'customer_notification_access_id'       => ['sometimes', 'string', 'nullable'],
+            'customer_notification_access_key'      => ['sometimes', 'string', 'nullable'],
+            'customer_notification_region'          => ['sometimes', 'string', 'nullable'],
             'address'                               => ['sometimes', 'required', new ValidAddress()],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
