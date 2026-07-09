@@ -154,11 +154,12 @@ class ShowMailshot extends OrgAction
                             'label' => __('Convert to Page'),
                             'icon'  => ["fal", "fa-file-export"],
                             'route' => [
-                                'name'       => 'grp.json.mailshot.convert-to-page',
+                                'name'       => 'grp.models.shop.mailshot.convert-to-blog',
                                 'parameters' => [
-                                    'mailshot' => $mailshot->id
+                                    $this->shop->id,
+                                    $mailshot->id
                                 ],
-                                'method'     => 'post'
+                                'method'     => 'get'
                             ]
                         ] : [],
                         $isShowStop ? [
