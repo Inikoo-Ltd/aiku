@@ -148,6 +148,19 @@ class ShowMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
+                        $isShowEditName ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Convert to Page'),
+                            'icon'  => ["fal", "fa-file-export"],
+                            'route' => [
+                                'name'       => 'grp.json.mailshot.convert-to-page',
+                                'parameters' => [
+                                    'mailshot' => $mailshot->id
+                                ],
+                                'method'     => 'post'
+                            ]
+                        ] : [],
                         $isShowStop ? [
                             'type'  => 'button',
                             'style' => 'edit',

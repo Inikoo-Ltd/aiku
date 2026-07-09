@@ -50,6 +50,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
+use App\Actions\Comms\BeeFreeSDK\BeefreeConvertEmailJsonToPageJson;
 use App\Actions\Comms\EmailCopy\GetEmailCopy;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
@@ -151,6 +152,7 @@ Route::get('fulfilment-customer/{fulfilmentCustomer}/storing-pallets', GetFulfil
 Route::get('fulfilment-customer/{fulfilmentCustomer}/audit/{storedItemAudit}/stored-items', GetPalletAuditStoredItems::class)->name('fulfilment-customer.audit.stored-items.index');
 
 Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->name('mailshot.merge-tags');
+Route::get('/mailshot/{mailshot:id}/convert-to-page', BeefreeConvertEmailJsonToPageJson::class)->name('mailshot.convert-to-page');
 
 Route::get('email/dispatched-email/{dispatchedEmail:id}/copy', GetEmailCopy::class)->name('email.dispatched-email.copy');
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
