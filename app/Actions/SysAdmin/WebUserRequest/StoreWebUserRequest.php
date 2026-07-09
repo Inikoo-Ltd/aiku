@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Analytics\WebUserRequest;
+namespace App\Actions\SysAdmin\WebUserRequest;
 
 use App\Actions\CRM\WebUser\Hydrators\WebUserHydrateWebUserRequests;
 use App\Actions\GrpAction;

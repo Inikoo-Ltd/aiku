@@ -10,7 +10,6 @@
 
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrganisation;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
-use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequestsInOrganisation;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInOrganisation;
 use App\Actions\Catalogue\Product\UI\IndexProductsInOrganisation;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInOrganisation;
@@ -24,6 +23,7 @@ use App\Actions\Ordering\Order\UI\IndexOrdersInOrganisation;
 use App\Actions\Ordering\UI\ShowOrdersBacklog;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
 use App\Actions\SysAdmin\Organisation\UI\IndexHistoryInOrganisation;
+use App\Actions\SysAdmin\WebUserRequest\UI\IndexWebUserRequestsInOrganisation;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowOrganisationOverviewHub::class)->name('hub');

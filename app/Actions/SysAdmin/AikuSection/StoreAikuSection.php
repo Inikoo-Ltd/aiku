@@ -7,7 +7,7 @@
  * copyright 2024
 */
 
-namespace App\Actions\Analytics\AikuSection;
+namespace App\Actions\SysAdmin\AikuSection;
 
 use App\Actions\GrpAction;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;

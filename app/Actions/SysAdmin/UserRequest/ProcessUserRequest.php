@@ -6,10 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Analytics\UserRequest;
+namespace App\Actions\SysAdmin\UserRequest;
 
-use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\GrpAction;
+use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\SysAdmin\User\StoreUserRequest;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Analytics\UserRequest;

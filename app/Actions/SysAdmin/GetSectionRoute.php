@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Actions\Analytics;
+namespace App\Actions\SysAdmin;
 
 use App\Actions\OrgAction;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;

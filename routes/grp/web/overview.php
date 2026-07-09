@@ -13,7 +13,6 @@ use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsInGroup
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccountsInGroup;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
-use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequestsInGroup;
 use App\Actions\Billables\Charge\UI\IndexCharges;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInGroup;
 use App\Actions\Catalogue\Product\UI\IndexProductsInGroup;
@@ -63,6 +62,7 @@ use App\Actions\SupplyChain\Agent\UI\IndexAgents;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
 use App\Actions\SysAdmin\Group\UI\IndexHistoryInGroup;
+use App\Actions\SysAdmin\WebUserRequest\UI\IndexWebUserRequestsInGroup;
 use App\Actions\Web\Banner\UI\IndexBanners;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
 use App\Actions\Web\Website\UI\IndexWebsites;

@@ -7,7 +7,7 @@
  * copyright 2024
 */
 
-namespace App\Actions\Analytics\AikuScopedSection;
+namespace App\Actions\SysAdmin\AikuScopedSection;
 
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
