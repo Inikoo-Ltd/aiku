@@ -52,7 +52,7 @@ class GetOrgStockFamilySearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'code,name,description'
+                'query_by' => 'code,name'
             ],
         ];
     }
