@@ -131,17 +131,17 @@ const warehouseAreaItems = computed(() =>
                         @start="() => { model = false; loadingId = location.id }"
                         @finish="() => loadingId = null"
                     >
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm font-semibold">{{ location.code }}</p>
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-semibold truncate min-w-0">{{ location.code }}</p>
                             <span
                                 v-if="loadingId === location.id"
-                                class="text-slate-400"
+                                class="shrink-0 text-slate-400"
                             >
                                 <FontAwesomeIcon icon='fal fa-spinner-third' spin fixed-width aria-hidden='true' />
                             </span>
                             <span
                                 v-else
-                                class="text-[10px] px-2 py-0.5 rounded-full capitalize"
+                                class="shrink-0 text-[10px] px-2 py-0.5 rounded-full capitalize"
                                 :class="location.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'"
                             >
                                 {{ location.status }}
@@ -166,13 +166,13 @@ const warehouseAreaItems = computed(() =>
                         @start="() => { model = false; loadingId = area.id }"
                         @finish="() => loadingId = null"
                     >
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm font-semibold">{{ area.name }}</p>
-                            <span v-if="loadingId === area.id" class="text-slate-400">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-semibold truncate min-w-0">{{ area.name }}</p>
+                            <span v-if="loadingId === area.id" class="shrink-0 text-slate-400">
                                 <FontAwesomeIcon icon='fal fa-spinner-third' spin fixed-width aria-hidden='true' />
                             </span>
                         </div>
-                        <p class="text-xs text-gray-400 mt-2">{{ ctrans("Code") }}: {{ area.code }}</p>
+                        <p class="text-xs text-gray-400 mt-2 truncate">{{ ctrans("Code") }}: {{ area.code }}</p>
                     </component>
                 </div>
                 <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">
