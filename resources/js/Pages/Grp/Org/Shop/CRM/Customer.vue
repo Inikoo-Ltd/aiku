@@ -101,7 +101,9 @@ const props = defineProps<{
 let currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
 const isOrderModalOpen = ref(false)
+const openUpcomingFormSignal = ref(0)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
 const orderForm = useForm({
     sales_channel_id: null as number | null
 })
@@ -140,12 +142,14 @@ const layout = inject('layout')
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other>
+        <template #other>            
             <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
             <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
                 icon="plus" />
+            <Button v-if="currentTab === 'showcase'" @click="openUpcomingFormSignal++" label="Upcoming Transaction"
+                style="create" icon="plus" />
         </template>
     </PageHeading>
 
@@ -174,6 +178,7 @@ const layout = inject('layout')
         :handleTabUpdate
         :timeline="props.timeline"
         :detachRoute="attachmentRoutes.detachRoute"
+        :openUpcomingFormSignal="openUpcomingFormSignal"
     />
 
   <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
