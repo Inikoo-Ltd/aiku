@@ -36,6 +36,7 @@ use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Ordering\UpcomingTransaction;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -51,7 +52,6 @@ class SubmitOrder extends OrgAction
 
 
     private Order $order;
-
 
     /**
      * @throws \Throwable
@@ -170,7 +170,7 @@ class SubmitOrder extends OrgAction
                     'quantity_bonus' => $isGift ? $upComingTransaction->quantity : 0,
                     'is_gift'          => $isGift,
                     'is_follow_on'     => $isFollowOn,
-                    'label' => $upComingTransaction->notes
+                    'label' => $upComingTransaction->notes ?? ''
                 ]
             );
 
