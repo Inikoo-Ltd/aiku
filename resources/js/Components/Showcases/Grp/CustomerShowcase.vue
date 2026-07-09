@@ -472,9 +472,9 @@ const submitNote = async () => {
     </div>
 
     <!-- Quick Actions Bar -->
-    <div class="px-4 pt-6 md:px-6 lg:px-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex flex-wrap gap-3">
-            <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true">
+    <div class="px-4 pt-6 md:px-6 lg:px-8">
+        <div class="flex flex-wrap items-center gap-3">
+            <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
                 <template #mainIcon>
                     <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
                     {{ trans("Add Note") }}
@@ -512,15 +512,14 @@ const submitNote = async () => {
                 <FontAwesomeIcon icon="fal fa-history" class="text-rose-500 text-xs" />
                 {{ trans("Add History Note") }}
             </button>
-        </div>
 
-        <UpcomingTransactionsPanel
-            v-if="data.upcoming_transaction_route"
-            :routes="data.upcoming_transaction_route"
-            :shopSlug="data.shop.slug"
-            :openFormSignal="openUpcomingFormSignal"
-            class="w-full flex-shrink-0 lg:w-[24rem]"
-        />
+            <UpcomingTransactionsPanel
+                v-if="data.upcoming_transaction_route"
+                :routes="data.upcoming_transaction_route"
+                :shopSlug="data.shop.slug"
+                :openFormSignal="openUpcomingFormSignal"
+            />
+        </div>
     </div>
 
     <!-- 3-Column Hub Layout -->
