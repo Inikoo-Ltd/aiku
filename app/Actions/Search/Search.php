@@ -22,18 +22,19 @@ class Search extends OrgAction
     public function handle(string $scope, string $query, array $options = []): array
     {
         $actions = [
-            'sysadmin'  => static fn() => SearchSysAdmin::run($query),
-            'catalogue' => static fn() => SearchCatalogue::run($query, $options),
-            'prospects' => static fn() => SearchProspects::run($query, $options),
-            'customers' => static fn() => SearchCustomers::run($query, $options),
-            'inventory' => static fn() => SearchInventory::run($query, $options),
+            'sysadmin'  => static fn () => SearchSysAdmin::run($query),
+            'catalogue' => static fn () => SearchCatalogue::run($query, $options),
+            'prospects' => static fn () => SearchProspects::run($query, $options),
+            'customers' => static fn () => SearchCustomers::run($query, $options),
+            'inventory' => static fn () => SearchInventory::run($query, $options),
+            'locations' => static fn () => SearchLocations::run($query, $options),
         ];
 
         if (!isset($actions[$scope])) {
             return [];
         }
 
-        //$dummy='{"scope":"org_stocks","results":{"org_stocks":[{"name":"Jumbo Bath Bombs - 200g","code":"JBB","state":"discontinued","id":12716},{"name":"Mixed pack","code":"JBB","state":"discontinued","id":12504},{"name":"thin wall Jbb carton","code":"Jbbpack-01thin","state":"active","id":83550},{"name":"Bespoke JBB Recipe Bath Bombs","code":"JBB-Bespoke","state":"discontinued","id":30011},{"name":"PUCKATOR - JBB Mix Rose\/Lav\/5 Her\/Tanger (BATH14)","code":"PuckJBB-Mix2","state":"active","id":27418},{"name":"PUCKATOR - JBB Mix Rose\/Lav\/Mango\/Coco (BATH13)","code":"PuckJBB-Mix1","state":"active","id":27417},{"name":"JBB Starter Pack","code":"43679","state":"discontinued","id":20603},{"name":"PUCKATOR - JBB Mix Rose\/Lav\/5 Her\/Tanger","code":"JBB-Mix2","state":"discontinuing","id":14079},{"name":"PUCKATOR - JBB Mix Rose\/Lav\/Mango\/Coco","code":"JBB-Mix1","state":"discontinued","id":13905},{"name":"JBB Gift Boxes (empty)","code":"JBB-Gift","state":"active","id":11556},{"name":"Jumbo Bath Bomb Discovery 4 of each Pack Dubai, Amethyst, Razzle, Charlotte","code":"JBB-MX4","state":"active","id":82121},{"name":"Jumbo Bath Bomb - Pink Charlotte","code":"JBB-39","state":"active","id":82120},{"name":"Jumbo Bath Bomb - Amethyst Creed","code":"JBB-37","state":"active","id":82119},{"name":"Jumbo Bath Bomb - Razzle Dazzle","code":"JBB-38","state":"active","id":82118},{"name":"Dubai Bath Bomb - Emerald Oudh Truffle","code":"JBB-36","state":"active","id":82117},{"name":"Blueberry Bath Bomb 180g","code":"JBB-33","state":"active","id":38634},{"name":"Blackberry Bath Bomb 180g","code":"JBB-34","state":"active","id":38633},{"name":"Pink Lemonade Bath Bomb 180g","code":"JBB-35","state":"active","id":38632}]}}';
+        // $dummy='JSON_SERACH_RESULTS';
         //return json_decode($dummy,true);
 
         return $actions[$scope]();
@@ -82,14 +83,15 @@ class Search extends OrgAction
     public function getRouteScope(string $route): ?string
     {
         $scopes = [
-            'grp.sysadmin'                       => 'sysadmin',
-            'grp.org.shops.show.catalogue'       => 'catalogue',
-            'grp.org.shops.show.crm.prospects'   => 'prospects',
-            'grp.org.shops.show.crm'             => 'customers',
-            'grp.org.warehouses.show.inventory.' => 'inventory',
+            'grp.sysadmin'                            => 'sysadmin',
+            'grp.org.shops.show.catalogue'            => 'catalogue',
+            'grp.org.shops.show.crm.prospects'        => 'prospects',
+            'grp.org.shops.show.crm'                  => 'customers',
+            'grp.org.warehouses.show.inventory.'      => 'inventory',
+            'grp.org.warehouses.show.infrastructure.' => 'locations',
         ];
 
-        return array_find($scopes, fn($scope, $prefix) => str_starts_with($route, $prefix));
+        return array_find($scopes, fn ($scope, $prefix) => str_starts_with($route, $prefix));
     }
 
 }

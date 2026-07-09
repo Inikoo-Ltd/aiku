@@ -34,14 +34,13 @@ class DeleteOrgStockMovement extends OrgAction
                     'quantity' => $locationOrgStock->quantity - $orgStockMovement->quantity,
                 ]
             );
+            BroadcastStockMovement::dispatch($locationOrgStock);
         }
 
-        $orgStock = $orgStockMovement->orgStock;
         $orgStockMovement->delete();
 
         $this->hydrateOrgStockMovement($orgStockMovement);
 
-        BroadcastStockMovement::dispatch($locationOrgStock);
 
         return $orgStockMovement;
     }

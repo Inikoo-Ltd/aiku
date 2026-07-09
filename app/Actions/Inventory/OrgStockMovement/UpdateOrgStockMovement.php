@@ -57,7 +57,7 @@ class UpdateOrgStockMovement extends OrgAction
 
         $orgStockMovement->update($modelData);
 
-        if ($oldQuantity != $orgStockMovement->quantity) {
+        if ($oldQuantity != $orgStockMovement->quantity && $locationOrgStock) {
             $currentLocationOrgStockQuantity = GetLocationOrgStockQuantity::run($orgStockMovement->orgStock, $orgStockMovement->location);
             UpdateLocationOrgStock::run(
                 $locationOrgStock,
@@ -66,11 +66,11 @@ class UpdateOrgStockMovement extends OrgAction
                 ]
             );
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
+            BroadcastStockMovement::dispatch($locationOrgStock);
         }
 
         $this->hydrateOrgStockMovement($orgStockMovement);
 
-        BroadcastStockMovement::dispatch($locationOrgStock);
 
         return $orgStockMovement;
     }
@@ -94,7 +94,7 @@ class UpdateOrgStockMovement extends OrgAction
     {
         $this->strict = $strict;
 
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($orgStockMovement->organisation, $modelData);
 
