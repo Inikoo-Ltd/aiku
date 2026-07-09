@@ -125,7 +125,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
 
                 RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value => $this->tab == RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value ?
                     fn () => $this->getOverallReview($order)
-                    : Inertia::lazy(fn () => $this->getOverallReview($order)),
+                    : Inertia::optional(fn () => $this->getOverallReview($order)),
 
 
                 RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value
@@ -145,7 +145,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                             'scope'         => ReviewScopeEnum::FAMILY->value,
                             'rating_labels' => $ratingLabels[ReviewContextEnum::FAMILY->value],
                         ])
-                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
+                    : Inertia::optional(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
                         ->additional([
                             'pageHead' => [
                                 'model' => '',
@@ -179,7 +179,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                             'scope' => ReviewScopeEnum::PRODUCT->value,
                             'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
                         ])
-                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
+                    : Inertia::optional(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
                         ->additional([
                             'pageHead' => [
                                 'model' => '',

@@ -546,35 +546,35 @@ class ShowOrder extends OrgAction
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    : Inertia::optional(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::DISPATCHED_EMAILS->value => $this->tab == OrderTabsEnum::DISPATCHED_EMAILS->value ?
                     fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $order, prefix: OrderTabsEnum::DISPATCHED_EMAILS->value))
-                    : Inertia::lazy(fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $order, prefix: OrderTabsEnum::DISPATCHED_EMAILS->value))),
+                    : Inertia::optional(fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $order, prefix: OrderTabsEnum::DISPATCHED_EMAILS->value))),
 
                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
                     fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    : Inertia::optional(fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
                     fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                    : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                    : Inertia::optional(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
                 OrderTabsEnum::RETURNS->value => $this->tab == OrderTabsEnum::RETURNS->value ?
                     fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::RETURNS->value))
-                    : Inertia::lazy(fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::RETURNS->value))),
+                    : Inertia::optional(fn () => ReturnDeliveryNotesResource::collection(IndexReturnDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::RETURNS->value))),
 
                 OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
                 OrderTabsEnum::PAYMENTS->value => $this->tab == OrderTabsEnum::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))),
+                    : Inertia::optional(fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))),
 
                 OrderTabsEnum::HISTORY->value => $this->tab == OrderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($order, OrderTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($order, OrderTabsEnum::HISTORY->value))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($order, OrderTabsEnum::HISTORY->value))),
 
             ]
         )

@@ -128,11 +128,11 @@ class ShowOrgAgent extends OrgAction
 
                 OrgAgentTabsEnum::SHOWCASE->value => $this->tab == OrgAgentTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgAgentShowcase::run($orgAgent)
-                    : Inertia::lazy(fn () => GetOrgAgentShowcase::run($orgAgent)),
+                    : Inertia::optional(fn () => GetOrgAgentShowcase::run($orgAgent)),
 
                 OrgAgentTabsEnum::HISTORY->value => $this->tab == OrgAgentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgAgent))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgAgent)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgAgent)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value));
     }

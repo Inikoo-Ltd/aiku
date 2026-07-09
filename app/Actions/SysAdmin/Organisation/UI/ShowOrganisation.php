@@ -20,8 +20,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrganisation extends GrpAction
 {
-    private Organisation $organisation;
-
 
     public function handle(Organisation $organisation): Organisation
     {
@@ -36,6 +34,7 @@ class ShowOrganisation extends GrpAction
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
         $this->initialisation(app('group'), $request)->withTab(OrgTabsEnum::values());
+
         return $this->handle($organisation);
     }
 
@@ -62,18 +61,17 @@ class ShowOrganisation extends GrpAction
                     ]
                 ],
 
-                'tabs' => [
+                'tabs'                       => [
                     'current'    => $this->tab,
                     'navigation' => OrgTabsEnum::navigation()
                 ],
                 OrgTabsEnum::SHOWCASE->value => $this->tab == OrgTabsEnum::SHOWCASE->value ?
-                fn () => OrganisationResource::make($organisation)
-                : Inertia::lazy(fn () => OrganisationResource::make($organisation)),
+                    fn() => OrganisationResource::make($organisation)
+                    : Inertia::optional(fn() => OrganisationResource::make($organisation)),
 
                 OrgTabsEnum::HISTORY->value => $this->tab == OrgTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($organisation))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($organisation)))
-
+                    fn() => HistoryResource::collection(IndexHistory::run($organisation))
+                    : Inertia::optional(fn() => HistoryResource::collection(IndexHistory::run($organisation)))
 
 
             ]
@@ -83,7 +81,6 @@ class ShowOrganisation extends GrpAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
     {
-
         $headCrumb = function (Organisation $organisation, array $routeParameters, string $suffix) {
             return [
                 [
@@ -100,7 +97,7 @@ class ShowOrganisation extends GrpAction
                         ],
 
                     ],
-                    'suffix' => $suffix
+                    'suffix'         => $suffix
 
                 ],
             ];
@@ -132,6 +129,5 @@ class ShowOrganisation extends GrpAction
 
             default => []
         };
-
     }
 }

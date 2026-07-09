@@ -10,16 +10,15 @@ namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Events\BroadcastStockMovement;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
@@ -31,6 +30,7 @@ use Illuminate\Validation\Rule;
 class StoreOrgStockMovement extends OrgAction
 {
     use CalculatesOrgStockHistories;
+    use WithOrgStockMovementHydrator;
 
     public int $jobTries = 1;
 
@@ -94,7 +94,7 @@ class StoreOrgStockMovement extends OrgAction
                     ]
                 );
             } else {
-                $stock = $this->getStockQuantity($orgStock, $location);
+                $stock = GetLocationOrgStockQuantity::run($orgStock, $location);
                 UpdateLocationOrgStock::run(
                     $locationOrgStock,
                     [
@@ -103,16 +103,12 @@ class StoreOrgStockMovement extends OrgAction
                 );
             }
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
+            BroadcastStockMovement::dispatch($locationOrgStock);
+
         }
 
-        if ($orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE) {
-            OrgStockHydrateStockValue::dispatch($orgStock);//todo do we need to delete this??? maybe yes
-            OrgStockHydrateSkuValue::dispatch($orgStock);
-        }
+        $this->hydrateOrgStockMovement($orgStockMovement);
 
-        OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
-        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
-        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay(now()->addMinutes(15));
 
         $picking?->update(
             [

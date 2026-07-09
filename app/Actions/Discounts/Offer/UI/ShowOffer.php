@@ -135,15 +135,15 @@ class ShowOffer extends OrgAction
         $tabComponentData = [
             OfferTabsEnum::CUSTOMERS->value => $this->tab == OfferTabsEnum::CUSTOMERS->value
                 ? fn () => CustomersResource::collection(IndexCustomers::run($offer, OfferTabsEnum::CUSTOMERS->value))
-                : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($offer, OfferTabsEnum::CUSTOMERS->value))),
+                : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run($offer, OfferTabsEnum::CUSTOMERS->value))),
 
             OfferTabsEnum::ORDERS->value => $this->tab == OfferTabsEnum::ORDERS->value
                 ? fn () => OrderResource::collection(IndexOrders::run(parent: $offer, prefix: OfferTabsEnum::ORDERS->value, bucket: 'offer'))
-                : Inertia::lazy(fn () => OrderResource::collection(IndexOrders::run(parent: $offer, prefix: OfferTabsEnum::ORDERS->value, bucket: 'offer'))),
+                : Inertia::optional(fn () => OrderResource::collection(IndexOrders::run(parent: $offer, prefix: OfferTabsEnum::ORDERS->value, bucket: 'offer'))),
 
             OfferTabsEnum::HISTORY->value => $this->tab == OfferTabsEnum::HISTORY->value
                 ? fn () => HistoryResource::collection(IndexHistory::run($offer))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($offer))),
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($offer))),
         ];
 
         return Inertia::render(

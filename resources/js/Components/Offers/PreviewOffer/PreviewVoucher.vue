@@ -4,6 +4,8 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTag } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { computed } from 'vue'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faTag)
 
 const props = defineProps<{
@@ -13,17 +15,41 @@ const props = defineProps<{
             percentage_off?: number
         }
         name?: string
+        allowances?: Array<{
+            type?: string
+            label?: string
+            percentage_off?: number | string
+            product_code?: string | null
+            product_name?: string | null
+            quantity?: number
+            min_order_amount?: number | null
+        }>
     }
 }>()
-    
+
+const voucherLabel = computed(() => {
+    const allowance = props.offer.allowances?.[0]
+
+    let detail = ''
+    if (allowance?.type === 'gift') {
+        detail = `${ctrans('Free gift')} (${allowance.product_code ?? ctrans('unknown')})`
+    } else if (allowance?.type === 'shipping') {
+        detail = ctrans('Discounted shipping')
+    } else if (props.offer.data_allowance_signature?.percentage_off) {
+        detail = `${Number(props.offer.data_allowance_signature.percentage_off) * 100}%`
+    }
+
+    return detail ? `${props.offer.code} - ${detail}` : props.offer.code
+})
 </script>
 
 <template>
     <div>
         <PureInput
-            :modelValue="offer.code + (offer.data_allowance_signature?.percentage_off ? ` - ${Number(offer.data_allowance_signature?.percentage_off) * 100}%` : '')"
+            :modelValue="voucherLabel"
             xonEnter="() => onApplyVoucher()"
             xdisabled="isLoadingVoucher || hasAttachedVoucher"
+            disabled
             class="!bg-green-100 font-bold !border !border-green-500"
             :prefix="{
                 icon: 'fas fa-tag'

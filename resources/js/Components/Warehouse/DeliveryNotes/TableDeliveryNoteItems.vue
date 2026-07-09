@@ -15,7 +15,7 @@ import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
-import { ref, onMounted, reactive, inject, computed, watch } from "vue";
+import { ref, onMounted, reactive, inject, computed, watch, onUnmounted } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
@@ -86,9 +86,65 @@ function orgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
 
 
 const isMounted = ref(false);
+let socketChannel: any = null
+
+const initSocketListener = () => {
+    const socketEvent = `grp.${route().params['organisation']}.stock_movement`;
+
+    if (['finalised', 'dispatched', 'cancelled'].includes(props.state)) return; // No need initiate listener if finished finished
+
+    socketChannel = window.Echo.private(socketEvent).listen(".stock_update", async (eventData: any) => {
+        const affectedData = eventData.affected_data;
+
+        let itemToSet = props.data.data.find(
+            item => item.org_stock_id === affectedData.org_stock_id
+        );
+
+        if (!itemToSet) {
+            return;
+        }
+
+        let locationOrgStock = itemToSet.locations.find(
+            item => item.location_id === affectedData.location_id
+        )
+
+        const remainingItem =
+            parseFloat(itemToSet.quantity_required) -
+            (parseFloat(itemToSet.quantity_not_picked ?? 0) +
+            parseFloat(itemToSet.quantity_picked ?? 0));
+
+        const shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
+
+        if (shouldRefetch) {
+            const response = await axios.get(
+                route('grp.json.delivery_note_item_row', {
+                    deliveryNoteItem: itemToSet.id,
+                })
+            );
+            Object.assign(itemToSet, response.data.data);
+        }
+    })
+
+    // console.log('Subscribed to channel for Stock Movement. Channel:', socketEvent, socketChannel);
+}
+
+const stopSocketListener = () => {
+    if (socketChannel) {
+        socketChannel.stopListening(".stock_update");
+        window.Echo.leave(`private-grp.${route().params['organisation']}.stock_movement`);
+        socketChannel = null;
+    }
+}
+
 onMounted(() => {
     isMounted.value = true;
+    initSocketListener();
 });
+
+onUnmounted(() => {
+    stopSocketListener();
+})
+
 
 // const onPickingQuantity = (pick_route: routeType, quantity: number) => {
 //     router[pick_route.method || "post"](
@@ -613,7 +669,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xvirtualScroll xvirtualItemHeight="estimateDeliveryNoteItemRowHeight" xvirtualRowMemo="virtualRowMemo">
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo>
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
@@ -762,10 +818,10 @@ const fetchImage = async (deliveryNoteItem: any)   => {
                         }" />
                 </span>
 
-                <div v-else v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
+                <!-- <div v-else-if="Number(item.quantity_not_picked > 0)" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
                     <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
-                    {{ item.quantity_not_picked }}
-                </div>
+                    {{ Number(item.quantity_not_picked) }}
+                </div> -->
             </template>
 
         </template>
@@ -872,7 +928,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
 
                     </div>
 
-                    <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
+                    <div v-if="picking.type === 'not-pick'" v-tooltip="ctrans(':qtyPicked quantities not gonna be picked', { qtyPicked: Number(picking.quantity_picked)})"
                         class="text-red-500 w-fit mr-auto">
                         <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                         <FractionDisplay v-if="picking.quantity_picked_fractional"
@@ -1036,7 +1092,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
                                         :size="screenType == 'desktop' ? 'sm' : 'lg'"
                                         :routeTarget="itemValue.not_picking_route"
                                         :bindToLink="{preserveScroll: true}"
-                                        v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                                        v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: (itemValue.quantity_to_pick ?? 0) < 0 ? '0' : locale.number(itemValue.quantity_to_pick ?? 0)})"
                                     >
                                         <template #label>
                                             <div>

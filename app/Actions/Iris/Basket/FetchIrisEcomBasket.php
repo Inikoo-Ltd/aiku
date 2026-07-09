@@ -115,9 +115,12 @@ class FetchIrisEcomBasket extends IrisAction
                 'price_total' => $order->charges_amount
             ],
             [
-                'label'       => __('Shipping'),
-                'information' => '',
-                'price_total' => $order->shipping_amount
+                'label'         => __('Shipping'),
+                'label_class'   => '',  // TODO INI-1762: make it 'text-green-600' if have discount shipping
+                'is_discounted' => false,
+                'discount_data' => null,
+                'information'   => '',
+                'price_total'   => $order->shipping_amount
             ]
         ];
 
@@ -201,10 +204,10 @@ class FetchIrisEcomBasket extends IrisAction
         }
 
 
-        $orderArr['products']      = $transactions;
+        $orderArr['products'] = $transactions;
 
-        // Section: Missed Offers   // Maybe can take from HasBasketDetails->getMissedOffers()
-        $shopOffersData = $this->shop->offers_data;
+        // Section: Missed Offers - Maybe can take from HasBasketDetails->getMissedOffers()
+        $shopOffersData            = $this->shop->offers_data;
         $orderArr['missed_offers'] = [];
         if (Arr::get($shopOffersData, 'fob.active')) {
             $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)

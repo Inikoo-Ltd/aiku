@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
+import Image from "@/Common/Components/Image.vue"
 import axios from "axios"
 import PureInput from "../Pure/PureInput.vue"
 import InformationIcon from "../Utils/InformationIcon.vue"
@@ -15,7 +16,6 @@ import Toggle from "../Pure/Toggle.vue"
 import PureMultiselectInfiniteScroll from "../Pure/PureMultiselectInfiniteScroll.vue"
 import { faSpinnerThird, faCheckCircle, faTimesCircle } from "@fas"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
 library.add(faSpinnerThird, faCheckCircle, faTimesCircle)
 const props = defineProps<{
 	shop_data: {
@@ -30,8 +30,6 @@ const props = defineProps<{
 		}
 	}
 }>()
-
-const layout = inject("layout", layoutStructure)
 
 const isOpenModal = ref(false)
 const openModal = () => {
@@ -59,7 +57,7 @@ const isFreeGift = computed(() => offerType.value === "gift")
 
 const productId = ref<number | null>(0)
 const selectedProduct = ref<any | null>(null)
-const quantity = ref<number | null>(0)
+const quantity = ref<number | null>(1)
 const discountPercentage = ref<number | null>(null)
 const offerVoucher = ref("")
 const offerLabel = ref("")
@@ -224,14 +222,14 @@ const submitVoucherOffer = () => {
 	const payload = {
 		voucher: offerVoucher.value,
 		name: offerLabel.value,
-		type: offerType.value,
+		allowance_type: offerType.value,
 		offer_amount: offerAmount.value,
 		start_at: formatDate(startDate.value),
 		end_at: formatDate(endDate.value),
 		can_customer_reuse: reuseCustomer.value,
 		percentage_off: isPercentageOff.value ? discountPercentage.value : null,
-		product_id: isFreeGift.value ? productId.value : null,
-		quantity: isFreeGift.value ? quantity.value : null,
+		gift_product_id: isFreeGift.value ? productId.value : null,
+		gift_quantity: isFreeGift.value ? quantity.value : null,
 		target_type: targetPayload?.target_type ?? null,
 		target_id: targetPayload?.target_id ?? null,
 	}
@@ -295,7 +293,7 @@ function resetForm() {
 	discountPercentage.value = null
 	reuseCustomer.value = false
 	productId.value = null
-	quantity.value = 0
+	quantity.value = 1
 	offerAmount.value = 0
 	selectedProduct.value = null
 	target.value = "shop"
@@ -530,36 +528,32 @@ const isFormInvalid = computed(() => {
 
 				<!-- voucher type -->
 				<div class="space-y-3">
-					<template v-if="layout.app.environment === 'local'">
-						<label class="font-semibold flex items-center gap-x-1">
-							<FontAwesomeIcon
-								icon="fas fa-asterisk"
-								class="font-light text-xs text-red-400 align-middle" />
-							{{ trans("Voucher type") }}
-							<span class="inline-flex items-center rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-600">
-								{{ trans('Local only') }}
-							</span>
-						</label>
+					<label class="font-semibold flex items-center gap-x-1">
+						<FontAwesomeIcon
+							icon="fas fa-asterisk"
+							class="font-light text-xs text-red-400 align-middle" />
+						{{ trans("Voucher type") }}
+					</label>
 
-						<div class="flex flex-nowrap gap-2">
-							<label
-								v-for="opt in offerTypeOptions"
-								:key="opt.value"
-								:for="`offer-type-${opt.value}`"
-								class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-sm whitespace-nowrap"
-								:class="
-									offerType === opt.value
-										? 'border-green-500 bg-green-50 text-green-700 font-semibold'
-										: 'border-gray-200 hover:border-gray-300'
-								">
-								<RadioButton
-									v-model="offerType"
-									:value="opt.value"
-									:inputId="`offer-type-${opt.value}`" />
-								<span>{{ trans(opt.label) }}</span>
-							</label>
-						</div>
-					</template>
+					<div class="flex flex-nowrap gap-2">
+						<label
+							v-for="opt in offerTypeOptions"
+							:key="opt.value"
+							:for="`offer-type-${opt.value}`"
+							class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-sm whitespace-nowrap"
+							:class="
+								offerType === opt.value
+									? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+									: 'border-gray-200 hover:border-gray-300'
+							">
+							<RadioButton
+								v-model="offerType"
+								:value="opt.value"
+								:inputId="`offer-type-${opt.value}`" />
+							<span>{{ trans(opt.label) }}</span>
+						</label>
+					</div>
+					
 
 					<!-- Section: Discount -->
 					<div v-if="isPercentageOff">

@@ -85,31 +85,31 @@ class ShowPlatform extends OrgAction
                 PlatformTabsEnum::SHOWCASE->value =>
                     $this->tab == PlatformTabsEnum::SHOWCASE->value
                         ? fn () => InvoicesResource::collection(IndexInvoices::run($parent, $platform, prefix: PlatformTabsEnum::SHOWCASE->value))
-                        : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run($parent, $platform, prefix: PlatformTabsEnum::SHOWCASE->value))),
+                        : Inertia::optional(fn () => InvoicesResource::collection(IndexInvoices::run($parent, $platform, prefix: PlatformTabsEnum::SHOWCASE->value))),
                 PlatformTabsEnum::CHANNELS->value =>
                     $this->tab == PlatformTabsEnum::CHANNELS->value
                         ? fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $parent instanceof Shop ? $parent : null, prefix: PlatformTabsEnum::CHANNELS->value, bucket: $request->get('bucket', '')))
-                        : Inertia::lazy(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $parent instanceof Shop ? $parent : null, prefix: PlatformTabsEnum::CHANNELS->value, bucket: $request->get('bucket', '')))),
+                        : Inertia::optional(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $parent instanceof Shop ? $parent : null, prefix: PlatformTabsEnum::CHANNELS->value, bucket: $request->get('bucket', '')))),
                 PlatformTabsEnum::CUSTOMERS->value =>
                     $this->tab == PlatformTabsEnum::CUSTOMERS->value
                         ? fn () => CustomersResource::collection(IndexCustomers::run($parent, $platform, prefix: PlatformTabsEnum::CUSTOMERS->value))
-                        : Inertia::lazy(fn () => IndexCustomers::run($parent, $platform, prefix: PlatformTabsEnum::CUSTOMERS->value)),
+                        : Inertia::optional(fn () => IndexCustomers::run($parent, $platform, prefix: PlatformTabsEnum::CUSTOMERS->value)),
                 PlatformTabsEnum::PRODUCTS->value =>
                     $this->tab == PlatformTabsEnum::PRODUCTS->value
                         ? fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))
-                        : Inertia::lazy(fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
+                        : Inertia::optional(fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
                 PlatformTabsEnum::TOP_LISTED_FAMILIES->value =>
                     $this->tab == PlatformTabsEnum::TOP_LISTED_FAMILIES->value
                         ? fn () => TopListedProductsResource::collection(IndexTopListedFamiliesInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_LISTED_FAMILIES->value))
-                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedFamiliesInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_LISTED_FAMILIES->value))),
+                        : Inertia::optional(fn () => TopListedProductsResource::collection(IndexTopListedFamiliesInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_LISTED_FAMILIES->value))),
                 PlatformTabsEnum::TOP_LISTED_PRODUCTS->value =>
                     $this->tab == PlatformTabsEnum::TOP_LISTED_PRODUCTS->value
                         ? fn () => TopListedProductsResource::collection(IndexTopListedProductsInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_LISTED_PRODUCTS->value))
-                        : Inertia::lazy(fn () => TopListedProductsResource::collection(IndexTopListedProductsInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_LISTED_PRODUCTS->value))),
+                        : Inertia::optional(fn () => TopListedProductsResource::collection(IndexTopListedProductsInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_LISTED_PRODUCTS->value))),
                 PlatformTabsEnum::TOP_SOLD_PRODUCTS->value =>
                     $this->tab == PlatformTabsEnum::TOP_SOLD_PRODUCTS->value
                         ? fn () => TopSoldProductsResource::collection(IndexTopSoldProductsInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_SOLD_PRODUCTS->value))
-                        : Inertia::lazy(fn () => TopSoldProductsResource::collection(IndexTopSoldProductsInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_SOLD_PRODUCTS->value))),
+                        : Inertia::optional(fn () => TopSoldProductsResource::collection(IndexTopSoldProductsInPlatform::run($parent, $platform, prefix: PlatformTabsEnum::TOP_SOLD_PRODUCTS->value))),
             ]
         )->table(
             IndexInvoices::make()->tableStructure(

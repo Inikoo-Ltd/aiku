@@ -21,6 +21,8 @@ const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> =
     sysadmin: defineAsyncComponent(() => import('@/Components/Search/SearchResultSysAdmin.vue')),
     catalogue: defineAsyncComponent(() => import('@/Components/Search/SearchResultCatalogue.vue')),
     customers: defineAsyncComponent(() => import('@/Components/Search/SearchResultCustomers.vue')),
+    inventory: defineAsyncComponent(() => import('@/Components/Search/SearchResultOrgStocks.vue')),
+    locations: defineAsyncComponent(() => import('@/Components/Search/SearchResultLocations.vue')),
 }
 
 const isOpen = defineModel<boolean>()

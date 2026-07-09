@@ -29,13 +29,6 @@ class SowingResource extends JsonResource
             'location_id'                => $this->location?->id,
             'org_stock_id'               => $this->org_stock_id,
             'organisation_id'            => $this->organisation_id,
-            // 'update_route'       => [
-            //     'name'       => 'grp.models.picking.update',
-            //     'parameters' => [
-            //         'picking' => $this->id
-            //     ],
-            //     'method'     => 'patch'
-            // ],
             'undo_sowing_route' => [
                 'name'       => 'grp.models.sowing.delete',
                 'parameters' => [

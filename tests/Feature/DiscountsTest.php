@@ -322,7 +322,7 @@ test('activate scheduled offers', function () {
     $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
 
-    $offer = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+    $offer           = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
     $offer->duration = OfferDurationEnum::PERMANENT;
     $offer->start_at = now()->subDay();
     $offer->state    = OfferStateEnum::IN_PROCESS;
@@ -474,7 +474,7 @@ test('store and update transaction has offer allowance', function () {
 });
 
 test('check voucher code existence', function () {
-    $shop          = $this->shop;
+    $shop = $this->shop;
     if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::VOUCHERS)->exists()) {
         SeedShopOfferCampaigns::run($shop);
     }
@@ -488,6 +488,7 @@ test('check voucher code existence', function () {
         'start_at'           => now()->toDateTimeString(),
         'end_at'             => now()->addDays(10)->toDateTimeString(),
         'percentage_off'     => 10,
+        'allowance_type'     => 'percentage_off',
         'target_type'        => 'shop',
         'target_id'          => $shop->id,
     ]);
@@ -495,11 +496,13 @@ test('check voucher code existence', function () {
     expect($offer)->toBeInstanceOf(Offer::class)
         ->and($offer->voucher)->toBe('testvoucher');
 
-    $response = $this->getJson(route('grp.org.shops.show.discounts.campaigns.check_voucher', [
-        $this->organisation->slug,
-        $shop->slug,
-        $offerCampaign->slug
-    ]).'?code=TESTVOUCHER');
+    $response = $this->getJson(
+        route('grp.org.shops.show.discounts.campaigns.check_voucher', [
+            $this->organisation->slug,
+            $shop->slug,
+            $offerCampaign->slug
+        ]).'?code=TESTVOUCHER'
+    );
 
     $response->assertJson(['exists' => true]);
 });
@@ -511,13 +514,13 @@ test('store customer offers', function () {
     }
 
     $offer = StoreCustomerOffers::make()->handle($shop, [
-        'customer_id'       => $this->customer->id,
-        'min_order_amount'  => 0,
-        'percentage_off'    => 15,
-        'duration'          => 'permanent',
-        'start_at'          => now()->toDateTimeString(),
-        'target_type'       => 'shop',
-        'target_id'         => $shop->id,
+        'customer_id'      => $this->customer->id,
+        'min_order_amount' => 0,
+        'percentage_off'   => 15,
+        'duration'         => 'permanent',
+        'start_at'         => now()->toDateTimeString(),
+        'target_type'      => 'shop',
+        'target_id'        => $shop->id,
     ]);
 
     expect($offer)->toBeInstanceOf(Offer::class)
@@ -1064,10 +1067,12 @@ test('UI show offer campaign for each campaign type', function () {
 test('UI create offer', function () {
     $offerCampaign = $this->shop->offerCampaigns()->first();
 
-    $response = get(route('grp.org.shops.show.discounts.offers.create', [
-        $this->organisation->slug,
-        $this->shop->slug,
-    ]).'?offerCampaign='.$offerCampaign->slug);
+    $response = get(
+        route('grp.org.shops.show.discounts.offers.create', [
+            $this->organisation->slug,
+            $this->shop->slug,
+        ]).'?offerCampaign='.$offerCampaign->slug
+    );
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('CreateModel')
@@ -1149,7 +1154,6 @@ describe('calculate order discounts', function () {
 
 
     test('CalculateOrderDiscounts: Category Ordered trigger', function () {
-
         $order = Order::first();
 
         $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
@@ -1423,7 +1427,7 @@ describe('calculate order discounts', function () {
         $order       = Order::first();
         $transaction = Transaction::where('order_id', $order->id)->first();
 
-        $voucherOffer = StoreVoucherOffers::run($this->shop, [
+        $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
             'voucher'            => 'SAVE20',
             'name'               => 'Save 20',
             'offer_amount'       => 0,
@@ -1433,8 +1437,10 @@ describe('calculate order discounts', function () {
             'percentage_off'     => 20,
             'target_type'        => 'shop',
             'target_id'          => $this->shop->id,
+            'allowance_type'     => 'percentage_off',
         ]);
-        expect($voucherOffer->refresh()->type)->toBe('Voucher Any Order');
+        expect($voucherOffer)->toBeInstanceOf(Offer::class)
+            ->and($voucherOffer->refresh()->type)->toBe('Voucher Any Order');
 
         AddVoucherToOrder::run($order, ['voucher' => 'SAVE20']);
         $order->refresh();

@@ -319,15 +319,15 @@ class ShowWebpage extends OrgAction
                 'redirected_to'         => $webpage->redirectedTo?->redirectTo?->only(['id', 'slug', 'code', 'url']),
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
-                    : Inertia::lazy(fn () => WebpageResource::make($webpage)->getArray()),
+                    : Inertia::optional(fn () => WebpageResource::make($webpage)->getArray()),
 
                 WebpageTabsEnum::SNAPSHOTS->value => $this->tab == WebpageTabsEnum::SNAPSHOTS->value ?
                     fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))
-                    : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))),
+                    : Inertia::optional(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))),
 
                 WebpageTabsEnum::EXTERNAL_LINKS->value => $this->tab == WebpageTabsEnum::EXTERNAL_LINKS->value ?
                     fn () => ExternalLinksResource::collection(IndexExternalLinks::run($webpage))
-                    : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($webpage))),
+                    : Inertia::optional(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($webpage))),
 
                 WebpageTabsEnum::WEBPAGES->value  => $this->tab == WebpageTabsEnum::WEBPAGES->value
                     ?
@@ -337,7 +337,7 @@ class ShowWebpage extends OrgAction
                             prefix: 'webpages'
                         )
                     )
-                    : Inertia::lazy(fn () => WebpageResource::collection(
+                    : Inertia::optional(fn () => WebpageResource::collection(
                         IndexWebpages::run(
                             parent: $webpage,
                             prefix: 'webpages'
@@ -345,19 +345,19 @@ class ShowWebpage extends OrgAction
                     )),
                 WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
                     fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
-                    : Inertia::lazy(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
+                    : Inertia::optional(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($webpage))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($webpage))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($webpage))),
 
                 WebpageTabsEnum::REDIRECTS->value => $this->tab == WebpageTabsEnum::REDIRECTS->value ?
                     fn () => RedirectsResource::collection(IndexRedirects::run($webpage))
-                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($webpage))),
+                    : Inertia::optional(fn () => RedirectsResource::collection(IndexRedirects::run($webpage))),
 
                 WebpageTabsEnum::LABELED_SNAPSHOTS->value => $this->tab == WebpageTabsEnum::LABELED_SNAPSHOTS->value ?
                     fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true))
-                    : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true)))
+                    : Inertia::optional(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true)))
 
 
             ]

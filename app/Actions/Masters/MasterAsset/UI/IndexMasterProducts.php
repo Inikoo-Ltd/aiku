@@ -539,15 +539,15 @@ class IndexMasterProducts extends GrpAction
                 ],
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)
-                    : Inertia::lazy(fn () => MasterProductsResource::collection($masterAssets)),
+                    : Inertia::optional(fn () => MasterProductsResource::collection($masterAssets)),
 
                 MasterProductsTabsEnum::INDEX_ORDERING->value => $this->tab == MasterProductsTabsEnum::INDEX_ORDERING->value ?
                     fn () => MasterProductsResource::collection($this->handle($this->parent, MasterProductsTabsEnum::INDEX_ORDERING->value, null, true))
-                    : Inertia::lazy(fn () => MasterProductsResource::collection($this->handle($this->parent, null, null, true))),
+                    : Inertia::optional(fn () => MasterProductsResource::collection($this->handle($this->parent, null, null, true))),
 
                 MasterProductsTabsEnum::SALES->value => $this->tab == MasterProductsTabsEnum::SALES->value ?
                     fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))),
 
             ]
         )

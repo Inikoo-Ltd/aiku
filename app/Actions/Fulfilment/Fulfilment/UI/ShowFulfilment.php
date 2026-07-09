@@ -344,7 +344,7 @@ class ShowFulfilment extends OrgAction
                 FulfilmentTabsEnum::DASHBOARD->value => $this->tab == FulfilmentTabsEnum::DASHBOARD->value
                     ?
                     fn () => $this->getDashboard($fulfilment)
-                    : Inertia::lazy(fn () => $this->getDashboard($fulfilment)),
+                    : Inertia::optional(fn () => $this->getDashboard($fulfilment)),
 
 
             ]

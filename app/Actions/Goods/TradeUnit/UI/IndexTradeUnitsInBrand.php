@@ -138,7 +138,7 @@ class IndexTradeUnitsInBrand extends GrpAction
 
                 TradeUnitsTabsEnum::INDEX->value => $this->tab == TradeUnitsTabsEnum::INDEX->value
                     ? fn () => TradeUnitsResource::collection($tradeUnits)
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection($tradeUnits)),
+                    : Inertia::optional(fn () => TradeUnitsResource::collection($tradeUnits)),
             ]
         )->table($this->tableStructure(prefix: TradeUnitsTabsEnum::INDEX->value));
     }

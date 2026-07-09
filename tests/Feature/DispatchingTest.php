@@ -843,7 +843,6 @@ test("UI Index dispatching show picking session", function (PickingSession $pick
     $response->assertInertia(function (AssertableInertia $page) use ($pickingSession) {
         $page
             ->component("Org/Inventory/PickingSession")
-            ->where("title", 'Picking Session')
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",

@@ -212,6 +212,7 @@ trait IsDeliveryNotesIndex
             'delivery_notes.parcels',
             'customers.slug as customer_slug',
             'customers.name as customer_name',
+            'customers.is_vip as is_customer_vip',
             'shops.name as shop_name',
             'shops.slug as shop_slug',
             'organisations.name as organisation_name',

@@ -236,7 +236,7 @@ class IndexWarehousePalletDeliveries extends OrgAction
 
                 PalletDeliveriesTabsEnum::DELIVERIES->value => $this->tab == PalletDeliveriesTabsEnum::DELIVERIES->value ?
                     fn () => PalletDeliveriesResource::collection($deliveries)
-                    : Inertia::lazy(fn () => PalletDeliveriesResource::collection($deliveries)),
+                    : Inertia::optional(fn () => PalletDeliveriesResource::collection($deliveries)),
 
 
             ]

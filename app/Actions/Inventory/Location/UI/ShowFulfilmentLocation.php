@@ -77,15 +77,15 @@ class ShowFulfilmentLocation extends OrgAction
 
                 FulfilmentLocationTabsEnum::SHOWCASE->value => $this->tab == FulfilmentLocationTabsEnum::SHOWCASE->value ?
                     fn () => GetLocationShowcase::run($location)
-                    : Inertia::lazy(fn () => GetLocationShowcase::run($location)),
+                    : Inertia::optional(fn () => GetLocationShowcase::run($location)),
 
                 FulfilmentLocationTabsEnum::PALLETS->value => $this->tab == FulfilmentLocationTabsEnum::PALLETS->value ?
                     fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))
-                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),
+                    : Inertia::optional(fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),
 
                 FulfilmentLocationTabsEnum::HISTORY->value => $this->tab == FulfilmentLocationTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($location))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($location)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($location)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: FulfilmentLocationTabsEnum::HISTORY->value))->table(
             IndexPalletsInWarehouse::make()->tableStructure(

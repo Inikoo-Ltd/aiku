@@ -99,7 +99,7 @@ class ShowStockDelivery extends OrgAction
                 ],
                 StockDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == StockDeliveryTabsEnum::ATTACHMENTS->value ?
                 fn () => AttachmentsResource::collection(IndexAttachments::run($this->stockDelivery))
-                : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($this->stockDelivery))),
+                : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($this->stockDelivery))),
             ]
         )->table(IndexAttachments::make()->tableStructure(
             prefix: StockDeliveryTabsEnum::ATTACHMENTS->value

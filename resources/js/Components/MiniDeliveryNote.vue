@@ -245,7 +245,7 @@ onMounted(() => {
             </div>
 
             <div v-else class="text-gray-500 italic">
-                {{ trans("No shipping information available.") }}
+                {{ ctrans("No shipping information available.") }}
             </div>
 
             <div class="border-t border-gray-200 pt-3 mt-3 text-sm">
@@ -255,7 +255,7 @@ onMounted(() => {
                 </div>
                 <div class="flex justify-between py-1">
                     <span>{{ trans("Customer") }}:</span>
-                    <span class="font-medium">
+                    <span class="font-medium text-right">
                         {{ data.delivery_note?.customer.contact_name }}
                         <span v-if="data.delivery_note?.customer.reference" class="text-gray-500">
                             #{{ data.delivery_note.customer.reference }}

@@ -152,8 +152,7 @@ class IndexCollections extends OrgAction
                     'invoices'                    => 'invoices'
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
-                prefix: $prefix,
-                includeLY: true
+                prefix: $prefix
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -217,7 +216,7 @@ class IndexCollections extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->withLabelRecord([__('collection'),__('collections')])
+                ->withLabelRecord([__('collection'), __('collections')])
                 ->withEmptyState(
                     [
                         'title'       => __("No collections found"),
@@ -231,9 +230,9 @@ class IndexCollections extends OrgAction
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, searchable: false, align: 'right')
+                    ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right')
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
@@ -258,7 +257,7 @@ class IndexCollections extends OrgAction
         $container = null;
 
         $subNavigation = $this->getCollectionsSubNavigation($this->shop);
-        $navigation = CollectionsTabsEnum::navigation();
+        $navigation    = CollectionsTabsEnum::navigation();
 
         $title     = __('Collections');
         $icon      = [
@@ -346,12 +345,12 @@ class IndexCollections extends OrgAction
                 'website_domain' => $websiteDomain,
 
                 CollectionsTabsEnum::INDEX->value => $this->tab == CollectionsTabsEnum::INDEX->value ?
-                    fn () => CollectionsResource::collection($collections)
-                    : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
+                    fn() => CollectionsResource::collection($collections)
+                    : Inertia::optional(fn() => CollectionsResource::collection($collections)),
 
                 CollectionsTabsEnum::SALES->value => $this->tab == CollectionsTabsEnum::SALES->value ?
-                    fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
+                    fn() => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))
+                    : Inertia::optional(fn() => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::SALES->value));
