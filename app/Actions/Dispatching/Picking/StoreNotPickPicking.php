@@ -77,7 +77,8 @@ class StoreNotPickPicking extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if (!$request->has('quantity')) {
-            $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
+            $quantityNotToPick = $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked;
+            $this->set('quantity', $quantityNotToPick < 0 ? 0 : $quantityNotToPick);
         }
     }
 

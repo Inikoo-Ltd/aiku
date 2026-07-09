@@ -16,6 +16,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Catalogue\OffersResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -34,9 +35,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOffers extends OrgAction
 {
-    protected Group|Shop|OfferCampaign|ProductCategory|Customer $parent;
+    protected Group|Shop|OfferCampaign|ProductCategory|Product|Customer $parent;
 
-    protected function getElementGroups(Group|Shop|OfferCampaign|ProductCategory|Customer $parent): array
+    protected function getElementGroups(Group|Shop|OfferCampaign|ProductCategory|Product|Customer $parent): array
     {
         return [
             'state' => [
@@ -52,7 +53,7 @@ class IndexOffers extends OrgAction
         ];
     }
 
-    public function handle(Group|Shop|OfferCampaign|ProductCategory|Customer $parent, $prefix = null, $filterByOfferType = null): LengthAwarePaginator
+    public function handle(Group|Shop|OfferCampaign|ProductCategory|Product|Customer $parent, $prefix = null, $filterByOfferType = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -76,6 +77,9 @@ class IndexOffers extends OrgAction
         } elseif ($parent instanceof ProductCategory) {
             $query->where('offers.trigger_id', $parent->id);
             $query->where('offers.trigger_type', class_basename(ProductCategory::class));
+        } elseif ($parent instanceof Product) {
+            $query->where('offers.trigger_id', $parent->id);
+            $query->where('offers.trigger_type', class_basename(Product::class));
         } elseif ($parent instanceof Customer) {
             $query->where('offers.trigger_id', $parent->id);
             $query->where('offers.trigger_type', class_basename(Customer::class));
@@ -184,7 +188,7 @@ class IndexOffers extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Shop|OfferCampaign|ProductCategory|Customer $parent, $prefix = null, $modelOperations = [], bool $showActions = false): Closure
+    public function tableStructure(Group|Shop|OfferCampaign|ProductCategory|Product|Customer $parent, $prefix = null, $modelOperations = [], bool $showActions = false): Closure
     {
         return function (InertiaTable $table) use ($prefix, $modelOperations, $parent, $showActions) {
             if ($prefix) {
@@ -216,7 +220,7 @@ class IndexOffers extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true, searchable: false);
             $table->column(key: 'name', label: __('Name'), sortable: true);
             $table->column(key: 'label', label: __('Label'), sortable: false);
-            if ($parent instanceof ProductCategory) {
+            if ($parent instanceof ProductCategory || $parent instanceof Product) {
                 $table->column(key: 'type_icon', label: __('Type'), sortable: true, type: 'icon', );
             } else {
                 $table->column(key: 'type', label: __('Type'), sortable: true);
@@ -262,6 +266,13 @@ class IndexOffers extends OrgAction
     }
 
     public function inProductCategory(ProductCategory $parent, $prefix = null): LengthAwarePaginator
+    {
+        $this->parent = $parent;
+
+        return $this->handle($parent, $prefix);
+    }
+
+    public function inProduct(Product $parent, $prefix = null): LengthAwarePaginator
     {
         $this->parent = $parent;
 

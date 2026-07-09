@@ -22,4 +22,14 @@ enum ReviewContextEnum: string
             self::SHOP->value  => __('Shop Reviews'),
         ];
     }
+
+    public static function shortLabels(): array
+    {
+        return [
+            self::PRODUCT->value => __('Product'),
+            self::ORDER->value   => __('Overall'),
+            self::FAMILY->value  => __('Family'),
+            self::SHOP->value  => __('Shop'),
+        ];
+    }
 }

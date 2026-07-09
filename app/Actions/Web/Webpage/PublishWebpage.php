@@ -97,7 +97,7 @@ class PublishWebpage extends OrgAction
         }
 
         $webpage->update($updateData);
-        if ($webpage->model_type === Product::class && $webpage->model) {
+        if ($webpage->model instanceof Product) {
             ProductHydrateHasLiveWebpage::run($webpage->model);
         }
         UpdateWebpageIsDifferentWhenLoggedIn::run($webpage);

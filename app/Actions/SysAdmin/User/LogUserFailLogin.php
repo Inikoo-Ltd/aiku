@@ -10,7 +10,7 @@ namespace App\Actions\SysAdmin\User;
 
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\SysAdmin\User;
-use App\Models\UserFailedLogIn;
+use App\Models\SysAdmin\UserFailedLogIn;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;

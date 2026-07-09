@@ -121,16 +121,16 @@ class ShowMasterVariant extends GrpAction
                     $this->tab === MasterVariantTabsEnum::SHOWCASE->value ? [
                         'master_variant'            => $masterVariant,
                         'master_products' => $masterProductInVariant
-                    ] : Inertia::lazy(fn () => [
+                    ] : Inertia::optional(fn () => [
                         'master_variant'            => $masterVariant,
                         'master_products' => $masterProductInVariant,
                     ]),
                 MasterVariantTabsEnum::PRODUCTS->value =>
                     $this->tab === MasterVariantTabsEnum::PRODUCTS->value ? MasterProductsResource::collection(IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value))),
+                    : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProductsInMasterVariant::run($masterVariant, MasterVariantTabsEnum::PRODUCTS->value))),
                 MasterVariantTabsEnum::VARIANTS->value =>
                     $this->tab === MasterVariantTabsEnum::VARIANTS->value ? VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))
-                    : Inertia::lazy(fn () => VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))),
+                    : Inertia::optional(fn () => VariantsResource::collection(IndexVariantInMasterVariant::run($masterVariant, MasterVariantTabsEnum::VARIANTS->value))),
             ]
         )
         ->table(IndexVariantInMasterVariant::make()->tableStructure(masterVariant: $masterVariant, prefix: MasterVariantTabsEnum::VARIANTS->value))

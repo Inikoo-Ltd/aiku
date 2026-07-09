@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, inject } from "vue"
 import { DatePicker, InputNumber, RadioButton } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { router } from "@inertiajs/vue3"
+import Image from "@/Common/Components/Image.vue"
 import axios from "axios"
 import PureInput from "../Pure/PureInput.vue"
 import InformationIcon from "../Utils/InformationIcon.vue"
@@ -43,10 +44,29 @@ const closeModal = () => {
 	resetForm()
 }
 const isLoadingSubmit = ref(false)
+
+type VoucherType = "percentage_off" | "discounted_shipping" | "gift"
+const offerType = ref<VoucherType>("percentage_off")
+const offerTypeOptions: { value: VoucherType; label: string }[] = [
+	{ value: "percentage_off", label: "Percentage off" },
+	{ value: "discounted_shipping", label: "Discounted shipping" },
+	{ value: "gift", label: "Free Gift" },
+]
+const isPercentageOff = computed(() => offerType.value === "percentage_off")
+const isFreeGift = computed(() => offerType.value === "gift")
+
+const productId = ref<number | null>(0)
+const selectedProduct = ref<any | null>(null)
+const quantity = ref<number | null>(1)
 const discountPercentage = ref<number | null>(null)
 const offerVoucher = ref("")
 const offerLabel = ref("")
 const offerAmount = ref<number | null>(0)
+
+const selectedProductImage = computed(() =>
+    selectedProduct.value?.web_images?.main?.original || null
+)
+
 const startDate = ref<Date | null>(
 	props.shop_data.default_dates?.start ? new Date(props.shop_data.default_dates.start) : null
 )
@@ -202,12 +222,14 @@ const submitVoucherOffer = () => {
 	const payload = {
 		voucher: offerVoucher.value,
 		name: offerLabel.value,
-		type: "amount",
+		allowance_type: offerType.value,
 		offer_amount: offerAmount.value,
 		start_at: formatDate(startDate.value),
 		end_at: formatDate(endDate.value),
 		can_customer_reuse: reuseCustomer.value,
-		percentage_off: discountPercentage.value,
+		percentage_off: isPercentageOff.value ? discountPercentage.value : null,
+		gift_product_id: isFreeGift.value ? productId.value : null,
+		gift_quantity: isFreeGift.value ? quantity.value : null,
 		target_type: targetPayload?.target_type ?? null,
 		target_id: targetPayload?.target_id ?? null,
 	}
@@ -261,6 +283,7 @@ watch(target, () => {
 })
 
 function resetForm() {
+	offerType.value = "percentage_off"
 	offerLabel.value = ""
 	offerVoucher.value = ""
 	voucherExists.value = null
@@ -269,7 +292,10 @@ function resetForm() {
 	endDate.value = null
 	discountPercentage.value = null
 	reuseCustomer.value = false
+	productId.value = null
+	quantity.value = 1
 	offerAmount.value = 0
+	selectedProduct.value = null
 	target.value = "shop"
 	categoryFilters.value = null
 	collectionFilters.value = null
@@ -292,9 +318,15 @@ const isVoucherInfoInvalid = computed(() => {
 const isFormInvalid = computed(() => {
 	if (isVoucherInfoInvalid.value) return true
 
-	const pct = discountPercentage.value
-	if (pct === null || pct === undefined || pct <= 0 || pct > 100) return true
+	if (isPercentageOff.value) {
+		const pct = discountPercentage.value
+		if (pct === null || pct === undefined || pct <= 0 || pct > 100) return true
+	}
 
+	if(isFreeGift.value) {
+		if (!productId.value) return true
+		if (!quantity.value) return true
+	}
 	return buildTargetPayload() === null
 })
 </script>
@@ -491,8 +523,40 @@ const isFormInvalid = computed(() => {
 							labelProp="name" />
 					</div>
 
+					
+				</div>
+
+				<!-- voucher type -->
+				<div class="space-y-3">
+					<label class="font-semibold flex items-center gap-x-1">
+						<FontAwesomeIcon
+							icon="fas fa-asterisk"
+							class="font-light text-xs text-red-400 align-middle" />
+						{{ trans("Voucher type") }}
+					</label>
+
+					<div class="flex flex-nowrap gap-2">
+						<label
+							v-for="opt in offerTypeOptions"
+							:key="opt.value"
+							:for="`offer-type-${opt.value}`"
+							class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-sm whitespace-nowrap"
+							:class="
+								offerType === opt.value
+									? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+									: 'border-gray-200 hover:border-gray-300'
+							">
+							<RadioButton
+								v-model="offerType"
+								:value="opt.value"
+								:inputId="`offer-type-${opt.value}`" />
+							<span>{{ trans(opt.label) }}</span>
+						</label>
+					</div>
+					
+
 					<!-- Section: Discount -->
-					<div>
+					<div v-if="isPercentageOff">
 						<div class="font-medium mb-2 flex items-center gap-x-1">
 							<FontAwesomeIcon
 								icon="fas fa-asterisk"
@@ -503,15 +567,66 @@ const isFormInvalid = computed(() => {
 						<InputNumber
 							v-model="discountPercentage"
 							inputId="offer_discount"
-							:placeholder="ctrans('Enter percentage 0-99')" 
+							:placeholder="ctrans('Enter percentage 0-99')"
 							suffix="%"
 							:min="0"
 							:max="100"
 							class="w-full" />
 					</div>
+
+					<!-- Section: Product Gift -->
+					<template v-if="isFreeGift">
+						<div class="space-y-2">
+							<div class="font-medium mb-2 flex items-center gap-x-1">
+								<FontAwesomeIcon icon="fas fa-asterisk"
+									class="font-light text-xs text-red-400 align-middle" />
+								{{ trans('Quantity product') }}:
+							</div>
+
+							<InputNumber v-model="quantity" inputId="offer_discount"
+								:placeholder="trans('Enter quantity')" :min="1" class="w-full" />
+						</div>
+						<div class="space-y-2">
+							<label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
+								<FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+
+								{{ trans('Select product') }}:
+							</label>
+							<PureMultiselectInfiniteScroll v-model="productId" :fetchRoute="productFetchRoute"
+								labelProp="name" placeholder="Select product" valueProp="id" :required="true" mode="single"
+								@selectedObject="(product) => selectedProduct = product">
+								<template #singlelabel="{ value }">
+									<div class="w-full text-left pl-4 leading-4 truncate mr-2">
+										{{ value.code }}
+										<span class="text-sm text-gray-400">({{ value.name }})</span>
+										<span class="text-sm text-gray-400"> · {{ trans('Stock') }}: {{ value.stock ?? 0 }}</span>
+									</div>
+								</template>
+
+								<template #option="{ option, isSelected }">
+									<div class="flex w-full items-center justify-between gap-x-2">
+										<div>
+											{{ option.code }}
+											<span class="text-sm"
+												:class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.name }})</span>
+										</div>
+										<span class="text-sm whitespace-nowrap"
+											:class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">
+											{{ trans('Stock') }}: {{ option.stock ?? 0 }}
+										</span>
+									</div>
+								</template>
+							</PureMultiselectInfiniteScroll>
+						</div>
+						<div class="space-y-2" v-if="selectedProductImage">
+							<!-- Product Image -->
+							<div class="h-24 rounded-lg border border-gray-200 shadow-sm flex items-center justify-center ">
+								<Image :src="selectedProductImage" alt="Product image" object-cover />
+							</div>
+						</div>
+					</template>
 				</div>
 
-                <!-- Discount -->
 				<div class="space-y-2">
 					<label class="font-medium flex items-center gap-x-1">
 						{{ trans("Can customers reuse the voucher") }}?

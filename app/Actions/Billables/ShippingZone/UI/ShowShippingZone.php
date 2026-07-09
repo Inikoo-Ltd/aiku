@@ -88,7 +88,7 @@ class ShowShippingZone extends OrgAction
                 ],
                 ShippingZoneTabsEnum::HISTORY->value => $this->tab == ShippingZoneTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($shippingZone))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($shippingZone))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($shippingZone))),
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: ShippingZoneTabsEnum::HISTORY->value));

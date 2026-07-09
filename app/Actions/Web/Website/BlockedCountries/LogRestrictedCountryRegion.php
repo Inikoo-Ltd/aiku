@@ -8,7 +8,7 @@
 
 namespace App\Actions\Web\Website\BlockedCountries;
 
-use Illuminate\Support\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,7 +20,7 @@ class LogRestrictedCountryRegion
     public string $jobQueue = 'analytics';
     public int $jobTries = 1;
 
-    public function handle(array $blockedData, Carbon $date): void
+    public function handle(array $blockedData, CarbonInterface $date): void
     {
         $isBlocked = $blockedData[0];
         $geoDataId = $blockedData[1];

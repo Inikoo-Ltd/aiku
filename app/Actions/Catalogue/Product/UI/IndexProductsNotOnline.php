@@ -7,7 +7,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -25,18 +24,13 @@ class IndexProductsNotOnline extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-    public function liveWebpageExistsSql(): string
-    {
-        return "exists (select 1 from webpages w where w.id = products.webpage_id and w.state = '".WebpageStateEnum::LIVE->value."')";
-    }
-
     public function getElementGroups(Shop $shop): array
     {
         $rawCounts = Product::where('is_main', true)
             ->where('shop_id', $shop->id)
             ->whereNull('exclusive_for_customer_id')
             ->where('is_for_sale', true)
-            ->whereRaw('not '.$this->liveWebpageExistsSql())
+            ->where('has_live_webpage', false)
             ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING, ProductStateEnum::IN_PROCESS])
             ->selectRaw('state, count(*) as total')
             ->groupBy('state')
@@ -75,15 +69,13 @@ class IndexProductsNotOnline extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
 
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->leftJoin('webpages', 'products.webpage_id', 'webpages.id');
 
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.is_for_sale', true);
-        $queryBuilder->whereRaw('not '.$this->liveWebpageExistsSql());
+        $queryBuilder->where('products.has_live_webpage', false);
         $queryBuilder->whereIn('products.state', [
             ProductStateEnum::ACTIVE,
             ProductStateEnum::DISCONTINUING,
@@ -120,9 +112,9 @@ class IndexProductsNotOnline extends OrgAction
                 'products.master_product_id',
                 'products.webpage_id',
                 'webpages.state as webpage_state',
-                'products.available_quantity'
-            ])
-            ->selectRaw($this->liveWebpageExistsSql().' as has_live_webpage');
+                'products.available_quantity',
+                'products.has_live_webpage',
+            ]);
 
         return $queryBuilder->allowedSorts([
             'code',
@@ -132,9 +124,9 @@ class IndexProductsNotOnline extends OrgAction
             'webpage_state',
             'available_qty',
         ])
-        ->allowedFilters([$globalSearch])
-        ->withPaginator($prefix, tableName: request()->route()->getName())
-        ->withQueryString();
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
     public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null): Closure
@@ -169,9 +161,9 @@ class IndexProductsNotOnline extends OrgAction
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'webpage_state', label: ['fal', 'fa-browser'], type: 'icon', canBeHidden: false, sortable: true, searchable: false, tooltip: 'Webpage State')
+                ->column(key: 'webpage_state', label: ['fal', 'fa-browser'], tooltip: 'Webpage State', canBeHidden: false, sortable: true, type: 'icon')
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'available_quantity', label: __('Available Qty'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'available_quantity', label: __('Available Qty'), canBeHidden: false, sortable: true)
                 ->defaultSort('code');
         };
     }
@@ -193,28 +185,28 @@ class IndexProductsNotOnline extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Products',
             [
-                'breadcrumbs'                  => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                        => $title,
-                'pageHead'                     => [
-                    'title'      => $title,
+                'title'       => $title,
+                'pageHead'    => [
+                    'title'       => $title,
                     'is_negative' => true,
-                    'model'      => null,
-                    'icon'       => $icon,
-                    'afterTitle' => null,
-                    'iconRight'  => null,
+                    'model'       => null,
+                    'icon'        => $icon,
+                    'afterTitle'  => null,
+                    'iconRight'   => null,
                 ],
-                'data'                         => ProductsResource::collection($products),
-                'tabs'                         => [
+                'data'        => ProductsResource::collection($products),
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
 
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
-                    fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    fn() => ProductsResource::collection($products)
+                    : Inertia::optional(fn() => ProductsResource::collection($products)),
             ]
         )->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value));
     }

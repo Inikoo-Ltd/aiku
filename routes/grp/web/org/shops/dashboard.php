@@ -9,7 +9,6 @@
 
 use App\Actions\Catalogue\Shop\UI\GetShopDashboardTabData;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Catalogue\Review\UI\IndexShopReviews;
 use App\Actions\Catalogue\Shop\UI\IndexHistoryInShop;
 use Illuminate\Support\Facades\Route;
 

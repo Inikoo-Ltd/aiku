@@ -4,17 +4,24 @@
   -  Copyright (c) 2022, Raul A Perusquia Flores
   -->
 
+<script lang="ts">
+import { faSpinnerThird } from "@fad"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPencil, faDownload, faPlus as falPlus } from "@fal"
+import { faArrowLeft, faTrashAlt, faTimes } from "@far"
+import { faPlus, faSave, faUpload, faTrashUndoAlt, faMinus } from "@fas"
+
+// Registered once per module load (plain <script>), not per Button instance
+// (<script setup> re-runs its whole body for every mounted component).
+library.add(faPlus, faSave, faUpload, faDownload, falPlus, faArrowLeft, faPencil, faTrashAlt, faSpinnerThird, faTrashUndoAlt, faTimes, faMinus)
+</script>
+
+<!-- Script: Setup -->
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
-import { faSpinnerThird, faSave as fadSave } from "@fad"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { faClipboard, faSpinner, faPencil, faDownload, faFileExport, faPlus as falPlus, faHistory, faListAlt, IconDefinition, faExternalLink } from "@fal"
-import { faArrowLeft, faTrashAlt, faPersonDolly, faTimes } from "@far"
-import { faPlus, faSave, faUpload, faTrashUndoAlt, faThLarge, faRocket, faMinus, faStop } from "@fas"
+import type { IconDefinition } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Icon } from "@/types/Utils/Icon"
-
-library.add(faPlus, faSave, fadSave, faSpinner, faUpload, faDownload, falPlus, faRocket, faArrowLeft, faPencil, faTrashAlt, faSpinnerThird, faTrashUndoAlt, faPersonDolly, faFileExport, faClipboard, faHistory, faListAlt, faTimes, faThLarge, faMinus, faExternalLink, faStop)
 
 const props = withDefaults(defineProps<{
     style?: string | object

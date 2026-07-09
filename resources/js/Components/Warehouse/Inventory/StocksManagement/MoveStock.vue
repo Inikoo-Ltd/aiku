@@ -289,8 +289,8 @@ onMounted(() => {
                     <FontAwesomeIcon icon="fas fa-times" class="text-xs" />
                 </button>
             </div>
-            <div class="flex items-center lg:text-xl text-lg justify-self-center grid grid-cols-8 w-full pt-4 pb-5">
-                <div class="grid col-span-3" :class="[
+            <div class="items-start sm:items-center lg:text-xl sm:text-lg text-sm justify-self-center grid grid-cols-1 sm:grid-cols-8 gap-4 sm:gap-0 w-full pt-4 pb-5">
+                <div class="grid col-span-1 sm:col-span-3 text-center sm:text-start" :class="[
                     moveStock.from?.id !== form.id ? 'bg-red-50 border border-red-100 p-2' :
                     'border border-[rgba(255,255,255,0)] hover:bg-gray-50'
                 ]">
@@ -311,14 +311,14 @@ onMounted(() => {
                         </span>
                     </div>
                 </div>
-                <div class="grid px-2 py-auto col-span-2">
+                <div class="grid px-2 py-auto col-span-1 sm:col-span-2">
                     <span class="justify-self-center h-[30px]">
                         <FontAwesomeIcon icon="fas fa-forklift" class="text-gray-600 mr-2 text-lg" />
                         <FontAwesomeIcon :icon="faArrowRight" class="text-gray-600 text-sm" />
                     </span>
                     <div class="flex items-center gap-2 justify-self-center h-[30px] w-fit">
-                        <label class="text-lg text-gray-600">Quantity:</label>
-                        <div class="w-full max-w-20">
+                        <label class="text-sm">Quantity:</label>
+                        <div class="w-full max-w-14">
                             <InputNumber
                                     v-if="moveStock.to" 
                                 :modelValue="moveStock.quantity"
@@ -343,7 +343,7 @@ onMounted(() => {
                         </span>
                     </div>
                 </div>
-                <div class="grid col-span-3 text-end" :class="[
+                <div class="grid col-span-1 sm:col-span-3 text-center sm:text-end" :class="[
                     moveStock.to?.id !== form.id ? 'bg-green-50 border border-green-100 p-2' :
                     'border border-[rgba(255,255,255,0)] hover:bg-gray-50'
                 ]">
@@ -398,7 +398,7 @@ onMounted(() => {
                 </span>
                 <div class="col-span-2 text-right flex items-center justify-end gap-x-1">
                     <!-- Stock change indicator for move stock -->
-                    <div v-if="getStockChangeIndicator(form) !== null" class="mr-2">
+                    <div v-if="getStockChangeIndicator(form) !== null">
                         <span v-if="getStockChangeIndicator(form) > 0" class="text-green-600">
                             +{{ getStockChangeIndicator(form) }}
                         </span>

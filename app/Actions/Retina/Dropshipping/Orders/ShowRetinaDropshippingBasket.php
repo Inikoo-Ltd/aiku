@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexIndexTransactionsInBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
@@ -40,6 +41,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 {
     use HasBasketDetails;
     use GetPlatformLogo;
+    use WithOrderForbiddenCountryCheck;
 
     public function handle(Order $order): Order
     {
@@ -75,6 +77,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         $insurance       = $charges['insurance'];
 
         \Sentry\traceMetrics()->count('visit.basket.ds', 1, ['shop' => $this->shop->slug]);
+
+        $orderBanStatus = $this->isForbiddenDetailed($order);
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingBasket',
@@ -197,7 +201,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
                 ],
 
-                'is_unable_dispatch' => in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
+                'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
+                'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
 
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
@@ -209,7 +214,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
                     fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
+                    : Inertia::optional(fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
 
 
             ]

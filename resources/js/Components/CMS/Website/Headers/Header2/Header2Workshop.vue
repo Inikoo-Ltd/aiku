@@ -131,7 +131,7 @@ const layout = inject('layout', {})
 				</div>
 
 
-				<div class="relative w-full h-auto">
+				<div class="relative w-full h-auto my-auto">
 					<Editor v-model="modelValue.text.text" :editable="editable" 
 					@update:model-value="
 						(e) => {

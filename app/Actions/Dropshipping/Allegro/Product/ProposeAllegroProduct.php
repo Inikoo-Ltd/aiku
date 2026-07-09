@@ -13,7 +13,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -53,6 +52,7 @@ class ProposeAllegroProduct
             ],
             'images'     => $productImages,
             'parameters' => $this->buildParameters($portfolio, Arr::get($attributes, 'parameters', [])),
+            'language' => 'en-US',
             'description' => [
                 'sections' => [
                     [
@@ -64,8 +64,7 @@ class ProposeAllegroProduct
                         ]
                     ]
                 ]
-            ],
-            'language' => 'en-US'
+            ]
         ];
 
         return $allegroUser->proposeProduct($productData);
@@ -176,7 +175,7 @@ class ProposeAllegroProduct
 
         return [
             'name'        => $portfolio->customer_product_name ?? null,
-            'brand'       => 'Ancient Wisdom' ?? null,
+            'brand'       => 'Ancient Wisdom',
             'type'        => $product->family?->name ?? null,
             'color'       => $product->color ?? null,
             'size'        => $product->size ?? null,
@@ -216,9 +215,9 @@ class ProposeAllegroProduct
             'sku'      => ['sku', 'code', 'reference'],
             'condition' => ['condition', 'stan'],
             'description' => ['opis', 'opis produktu'],
-            'capacity' => ['capacity', 'capacity (ml)', 'capacity (ml)', 'capacity (ml)'],
-            'essential_oil_type' => ['essential oil type', 'essential oil type', 'essential oil type'],
-            'tariff_code' => ['tariff code', 'tariff code', 'tariff code', 'customs tariff code']
+            'capacity' => ['capacity', 'capacity (ml)'],
+            'essential_oil_type' => ['essential oil type'],
+            'tariff_code' => ['tariff code', 'customs tariff code']
         ];
 
         foreach ($keywordMap as $attribute => $keywords) {

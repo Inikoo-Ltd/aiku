@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
@@ -42,6 +43,7 @@ class CreateReplacementDeliveryNote extends OrgAction
     use WithInertia;
     use GetPlatformLogo;
     use IsOrder;
+    use WithOrderForbiddenCountryCheck;
 
     private Order|Shop|Warehouse|Customer $parent;
 
@@ -183,6 +185,7 @@ class CreateReplacementDeliveryNote extends OrgAction
                 ]
             ],
             'delivery_address'      => AddressResource::make($deliveryNote->deliveryAddress),
+            'is_forbidden_delivery' => $this->isDeliveryForbiddenForShop($deliveryNote->shop, $deliveryNote->deliveryAddress),
             'shipping_fields'              => [
                 'company_name' => $deliveryNote->company_name,
                 'contact_name' => $deliveryNote->contact_name,
@@ -291,7 +294,7 @@ class CreateReplacementDeliveryNote extends OrgAction
                     ]
                 );
 
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+            $table->column(key: 'state_icon', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_dispatched', label: __('Quantity Dispatched'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
@@ -304,7 +307,7 @@ class CreateReplacementDeliveryNote extends OrgAction
         return [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
                 fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
-                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
+                : Inertia::optional(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
         ];
     }

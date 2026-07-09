@@ -53,14 +53,14 @@ const parentInfo = computed(() => {
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image
-                    :src="item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    :src="item.image_thumbnail ?? item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
                     class="w-6 aspect-square rounded-full overflow-hidden shadow"
                 />
             </div>
         </template>
          <template #cell(code)="{ item: department }">
             <Link
-                :href="route('iris.catalogue.collection.show', { collection: department.slug })"
+                :href="`/catalogue/collection/${department.slug}`"
                 class="primaryLink"
             >
                 {{ department.code }}

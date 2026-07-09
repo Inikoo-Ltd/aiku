@@ -79,7 +79,7 @@ class ShowFulfilmentPhysicalGood extends OrgAction
 
                 FulfilmentAssetTabsEnum::SHOWCASE->value => $this->tab == FulfilmentAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetPhysicalGoodShowcase::run($product)
-                    : Inertia::lazy(fn () => GetPhysicalGoodShowcase::run($product)),
+                    : Inertia::optional(fn () => GetPhysicalGoodShowcase::run($product)),
 
             ]
         );

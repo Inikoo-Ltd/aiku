@@ -72,7 +72,10 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 					<Image :src="modelValue.image.source" :imageCover="true"
 						:alt="modelValue.image.alt || 'Image preview'"
 						class="w-full h-full object-cover md:absolute md:inset-0"
-						:imgAttributes="modelValue.image.attributes" />
+						:imgAttributes="modelValue.image.attributes"
+						:height="getStyles(modelValue?.image?.properties, screenType, false)?.height"
+						:width="getStyles(modelValue?.image?.properties, screenType, false)?.width"
+						/>
 				</div>
 
 				<!-- TEXT -->

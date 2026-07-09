@@ -237,11 +237,11 @@ class IndexRawMaterials extends OrgAction
 
                 RawMaterialsTabsEnum::RAW_MATERIALS->value => $this->tab == RawMaterialsTabsEnum::RAW_MATERIALS->value ?
                     fn () => RawMaterialsResource::collection($rawMaterials)
-                    : Inertia::lazy(fn () => RawMaterialsResource::collection($rawMaterials)),
+                    : Inertia::optional(fn () => RawMaterialsResource::collection($rawMaterials)),
 
                 RawMaterialsTabsEnum::RAW_MATERIALS_HISTORIES->value => $this->tab == RawMaterialsTabsEnum::RAW_MATERIALS_HISTORIES->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($rawMaterials))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($rawMaterials)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($rawMaterials)))
 
             ]
         )->table(

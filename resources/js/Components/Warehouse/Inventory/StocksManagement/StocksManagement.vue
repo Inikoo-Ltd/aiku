@@ -527,9 +527,8 @@ const onAddLocationShow = () => {
                                 </div>
                             </div>
 
-                            <!-- TODO ENABLE ON PRODUCTION  -->
                             <!-- Wholesale Icon -->
-                            <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'wholesale')"
+                            <div @click="() => setActivePickingLocation(loc, 'wholesale')"
                                 v-tooltip="trans('Set as active picking location [Wholesale]')"
                                 class="cursor-pointer transition-colors duration-200" :class="{
                                     'text-orange-500': activePickingLocationWholesale === loc.id,
@@ -539,12 +538,8 @@ const onAddLocationShow = () => {
                                 <FontAwesomeIcon v-else :icon="activePickingLocationWholesale === loc.id ? 'fas fa-dolly-flatbed-empty' : 'fal fa-dolly-flatbed-empty'"
                                     class="" fixed-width aria-hidden="true" />
                             </div>
-                            <div v-else>
-                                <FontAwesomeIcon :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
-                            </div>
 
-                            <!-- TODO ENABLE ON PRODUCTION  -->
-                            <div v-if="layout.app.environment === 'local'" @click="() => setActivePickingLocation(loc, 'dropshipping')"
+                            <div @click="() => setActivePickingLocation(loc, 'dropshipping')"
                                 v-tooltip="trans('Set as active picking location [Dropshipping]')"
                                 class="transition-colors duration-200 cursor-pointer" :class="{
                                     'text-gray-400': activePickingLocationDropshipping !== loc.id,
@@ -555,9 +550,6 @@ const onAddLocationShow = () => {
                                 <LoadingIcon v-if="isLoadingActiveLocationDropshipping === loc.id" />
                                 <FontAwesomeIcon v-else :icon="activePickingLocationDropshipping === loc.id ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
                                     class="" fixed-width aria-hidden="true" />
-                            </div>
-                            <div v-else>
-                                <FontAwesomeIcon :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
                             </div>
 
                             <span class="font-medium">
@@ -672,18 +664,11 @@ const onAddLocationShow = () => {
         </div>
 
         <!-- Action Buttons -->
-        <!-- TODO ENABLE ON PRODUCTION  -->
-        <div class="flex justify-between border-t pt-3 gap-2" v-if="layout.app.environment === 'local'">
-            <Button @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.EDIT_LOCATION)" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
-            <Button @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" />
-        </div>
-        <div class="flex justify-between border-t pt-3 gap-2" v-else>
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" />
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" />
-            <Button @click="() => { WINDOW.alert('Work in Progres') }" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" v-if="layout.app.environment === 'local'"/>
+        <div class="grid grid-cols-2 lg:grid-cols-4 border-t pt-3 gap-2">
+            <Button @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" full />
+            <Button @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" full />
+            <Button @click="openModal(MODALS.EDIT_LOCATION)" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" full />
+            <Button @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" full />
         </div>
 
         <!-- Popover: Notes -->

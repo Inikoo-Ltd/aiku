@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\UI\IndexAllReviewsInOrder;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
@@ -45,6 +46,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 class ShowRetinaDropshippingOrder extends RetinaAction
 {
     use GetPlatformLogo;
+    use WithOrderForbiddenCountryCheck;
 
     public function handle(Order $order): Order
     {
@@ -85,6 +87,8 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         $hasReviews           = $reviewAvailable && Review::where('order_id', $order->id)->exists();
 
         $customerSalesChannel = $order->customerSalesChannel;
+
+        $orderBanStatus = $this->isForbiddenDetailed($order);
 
         $action = $reviewAvailable ? [
             [
@@ -155,6 +159,9 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
 
+                'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),
+                'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
+
                 'box_stats' => $this->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
                 'order'     => OrderResource::make($order),
@@ -168,11 +175,11 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
+                    : Inertia::optional(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
                 RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value
                     ? fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])
-                    : Inertia::lazy(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])),
+                    : Inertia::optional(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])),
 
             ]
         )

@@ -89,20 +89,6 @@ class CreateBlogWebpage extends OrgAction
                                     'value'    => '',
                                     'required' => true,
                                 ],
-//                                'type' => [
-//                                    'type'     => 'select',
-//                                    'label'    => __('Type'),
-//                                    'options'  => Options::forEnum(WebpageTypeEnum::class),
-//                                    'value'    => '',
-//                                    'required' => true,
-//                                ],
-//                                'sub_type' => [
-//                                    'type'     => 'select',
-//                                    'label'    => __('sub type'),
-//                                    'options'  => Options::forEnum(WebpageSubTypeEnum::class),
-//                                    'value'    => '',
-//                                    'required' => true,
-//                                ],
                                 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
@@ -113,14 +99,6 @@ class CreateBlogWebpage extends OrgAction
                                     'value'     => '',
                                     'required'  => true,
                                 ],
-                                'seo_structure_type' => [
-                                        'type'     => 'select',
-                                        'label'    => __('seo structure type'),
-                                        'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                        'value'    => '',
-                                        'required' => false,
-                                ],
-
                             ]
                         ]
                     ],

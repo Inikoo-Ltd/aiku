@@ -71,7 +71,7 @@ const emits = defineEmits<{
 const layout = inject("layout", {})
 const screenType = inject("screenType", ref('desktop'))
 const expanded = ref(false)
-const webpage_slug = inject("webpage_slug", {})
+const webpage_id = inject("webpage_id", {})
 
 const onSelectProduct = (p: ProductResource) => emits("selectProduct", p)
 const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
@@ -100,7 +100,7 @@ const openBundlePanel = (product:any) => {
                     <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
                 </div>
 
-                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="product?.tags?.length">
+                <div v-if="props?.fieldValue?.product?.is_single_trade_unit && product?.tags?.length" class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in product.tags" :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
                         <div v-else class="aspect-square w-full h-[15px]">
@@ -270,7 +270,7 @@ const openBundlePanel = (product:any) => {
             <ProductPrices :field-value="fieldValue" />
         </div>
 
-        <div class="flex flex-wrap gap-2 mt-4" v-if="product?.tags?.length">
+        <div v-if="props?.fieldValue?.product?.is_single_trade_unit && product?.tags?.length" class="flex flex-wrap gap-2 mt-4">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in product.tags"
                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
@@ -343,7 +343,7 @@ const openBundlePanel = (product:any) => {
         </div>
     </div>
 
-  <ReviewsIris  :webpage_slug="webpage_slug"/>
+  <ReviewsIris  :webpage_id="webpage_id"/>
 </template>
 
 

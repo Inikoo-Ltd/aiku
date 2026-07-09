@@ -74,6 +74,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_webpages_sub_type_landing_page
  * @property int $number_visitors_last_24_hours
  * @property int $number_hits_last_24_hours
+ * @property int $number_announcements
+ * @property int $number_active_announcements
+ * @property int $number_inactive_announcements
  * @property-read \App\Models\Web\Website|null $website
  * @method static Builder<static>|WebsiteStats newModelQuery()
  * @method static Builder<static>|WebsiteStats newQuery()

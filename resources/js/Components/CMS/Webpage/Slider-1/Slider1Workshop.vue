@@ -174,6 +174,8 @@ onBeforeUnmount(stopAutoMove)
                     :src="data.image.source"
                     :alt="data?.image?.alt || `image-${index}`"
                     class="slider-image"
+                    :height="getStyles(modelValue?.image?.properties, screenType, false)?.height"
+                    :width="getStyles(modelValue?.image?.properties, screenType, false)?.width"
                   />
 
                   <div

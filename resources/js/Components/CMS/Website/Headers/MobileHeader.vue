@@ -131,7 +131,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
             <!-- Section: Profile -->
             <div class="xcol-span-2 flex items-center justify-end gap-x-2 w-full mr-3">
                 <!-- Not Logged In -->
-                <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="px-1">
+                <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="px-1" aria-label="Login icon">
                     <FontAwesomeIcon icon="fal fa-sign-in" fixed-width aria-hidden="true"
                         :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
                         class="text-3xl"

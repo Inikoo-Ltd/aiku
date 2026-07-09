@@ -54,6 +54,7 @@ class InvoiceResource extends JsonResource
                 'number'    => $invoice->identity_document_number_alt,
             ] : null,
             'name'                => $invoice->customer_name,
+            'fiscal_name'         => $invoice->fiscal_name,
             'contact_name'        => $invoice->customer_contact_name,
             'invoice_category_id' => $invoice->invoice_category_id,
             'category'            => InvoiceCategoryResource::make($invoice->invoiceCategory),

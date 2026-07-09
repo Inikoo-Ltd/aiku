@@ -25,14 +25,17 @@ enum RetinaOrderReviewTabsEnum: string
     {
         return match ($this) {
             RetinaOrderReviewTabsEnum::OVERALL_REVIEW => [
+                'scope' => 'order',
                 'title' => __('Overall review'),
                 'icon'  => 'fal fa-star',
             ],
             RetinaOrderReviewTabsEnum::FAMILY_REVIEWS => [
+                'scope' => 'family',
                 'title' => __('Families review'),
                 'icon'  => 'fal fa-folder',
             ],
             RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS => [
+                'scope' => 'product',
                 'title' => __('Products review'),
                 'icon'  => 'fal fa-cube',
             ],

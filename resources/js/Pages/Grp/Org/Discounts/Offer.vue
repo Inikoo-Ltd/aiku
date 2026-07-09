@@ -294,7 +294,7 @@ const irisOffersData = computed(() => {
                                 <span v-if="data.offer.settings?.can_customer_reuse" v-tooltip="ctrans('Voucher are allowed to reuse')">
                                     <FontAwesomeIcon icon='fas fa-check-circle' class='text-green-500' fixed-width aria-hidden='true' />
                                 </span>
-                                <span v-else v-tooltip="ctrans('Voucher not allowed to reuse')">
+                                <span v-else v-tooltip="ctrans('A customer cannot use the same voucher twice')">
                                     <FontAwesomeIcon icon='fas fa-times-circle' class='text-red-500' fixed-width aria-hidden='true' />
                                 </span>
                             </dd>

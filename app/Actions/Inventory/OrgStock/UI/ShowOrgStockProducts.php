@@ -75,7 +75,7 @@ class ShowOrgStockProducts extends OrgAction
 
                 $this->tabsEnum::PRODUCTS->value => $this->tab == $this->tabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInOrgStock::run($orgStock, $this->tabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInOrgStock::run($orgStock, $this->tabsEnum::PRODUCTS->value))),
+                    : Inertia::optional(fn () => ProductsResource::collection(IndexProductsInOrgStock::run($orgStock, $this->tabsEnum::PRODUCTS->value))),
 
 
             ]

@@ -44,6 +44,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Reviews\Review;
@@ -147,6 +148,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $eori
  * @property string|null $ukims
  * @property string|null $identity_document_number_alt
+ * @property string|null $fiscal_name
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AllegroUser> $allegroUsers
@@ -162,6 +164,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, CustomerSalesChannel> $customerSalesChannels
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, DeliveryNote> $deliveryNotes
+ * @property-read Collection<int, ReviewReaction> $dislikeReactions
  * @property-read Collection<int, DispatchedEmail> $dispatchedEmails
  * @property-read EbayUser|null $ebayUser
  * @property-read Collection<int, Product> $exclusiveProducts
@@ -172,6 +175,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, Media> $images
  * @property-read \App\Models\CRM\CustomerInterest|null $interests
  * @property-read Collection<int, Invoice> $invoices
+ * @property-read Collection<int, ReviewReaction> $likeReactions
  * @property-read Collection<int, MagentoUser> $magentoUsers
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, MitSavedCard> $mitSavedCard
@@ -185,6 +189,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Asset> $products
  * @property-read Collection<int, \App\Models\CRM\Prospect> $prospects
  * @property-read Collection<int, ReturnDeliveryNote> $returnDeliveryNotes
+ * @property-read Collection<int, ReviewReaction> $reviewReactions
  * @property-read Collection<int, Review> $reviews
  * @property-read Media|null $seoImage
  * @property-read Shop|null $shop
@@ -273,6 +278,7 @@ class Customer extends Model implements HasMedia, Auditable
                 'name',
                 'contact_name',
                 'company_name',
+                'fiscal_name',
                 'eori',
                 'email',
                 'phone',
@@ -298,6 +304,7 @@ class Customer extends Model implements HasMedia, Auditable
             'name'                     => (string)$this->name,
             'contact_name'             => (string)$this->contact_name,
             'company_name'             => (string)$this->company_name,
+            'fiscal_name'              => (string)$this->fiscal_name,
             'email'                    => (string)$this->email,
             'phone'                    => (string)$this->phone,
             'contact_website'          => (string)$this->contact_website,
@@ -323,6 +330,7 @@ class Customer extends Model implements HasMedia, Auditable
         'reference',
         'contact_name',
         'company_name',
+        'fiscal_name',
         'eori',
         'ukims',
         'email',
@@ -443,6 +451,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
     }
 
     public function payments(): HasMany

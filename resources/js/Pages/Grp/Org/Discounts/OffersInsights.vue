@@ -19,15 +19,11 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { Table as TableTS } from "@/types/Table"
 import { Intervals } from "@/types/Components/Dashboard"
 import { RouteParams } from "@/types/route-params"
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler } from "chart.js"
-import { Line } from "vue-chartjs"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faAnalytics, faBadgePercent, faShoppingCart, faUsers, faCoin, faPiggyBank, faPercent, faTrophy, faThumbsDown, faTags, faClock } from "@fal"
 
 library.add(faAnalytics, faBadgePercent, faShoppingCart, faUsers, faCoin, faPiggyBank, faPercent, faTrophy, faThumbsDown, faTags)
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
 
 interface OfferPerformance {
     slug: string
@@ -131,21 +127,21 @@ const kpis = computed(() => [
     {
         label: trans("Customers redeeming"),
         icon: "fal fa-users",
-        color: "#10b981",
+        color: "#3b82f6",
         value: locale.number(insights.value.totals.customers),
         subtitle: trans("Avg savings per customer") + ": " + currency(insights.value.totals.avg_savings_per_customer),
     },
     {
         label: trans("Revenue influenced (net)"),
         icon: "fal fa-coin",
-        color: "#f59e0b",
+        color: "#8b5cf6",
         value: currency(insights.value.totals.revenue_net_amount),
         subtitle: trans("Gross") + ": " + currency(insights.value.totals.revenue_gross_amount),
     },
     {
         label: trans("Discount given"),
         icon: "fal fa-piggy-bank",
-        color: "#ef4444",
+        color: "#10b981",
         value: currency(insights.value.totals.discounted_amount),
         subtitle: trans("Avg per redemption") + ": " + currency(insights.value.totals.avg_discount),
     },
@@ -173,68 +169,21 @@ const statusBreakdown = computed(() => [
     { label: trans("Suspended"), value: insights.value.offer_counts.suspended, class: "text-red-500" },
 ])
 
-const chartData = computed(() => ({
-    labels: insights.value.trend.map(record => record.period),
-    datasets: [
-        {
-            label: trans("Redemptions"),
-            data: insights.value.trend.map(record => record.redemptions),
-            borderColor: "#6366f1",
-            backgroundColor: "#6366f133",
-            fill: true,
-            tension: 0.3,
-            yAxisID: "y",
-        },
-        {
-            label: trans("Discount given"),
-            data: insights.value.trend.map(record => record.discounted_amount),
-            borderColor: "#ef4444",
-            backgroundColor: "#ef444433",
-            fill: false,
-            tension: 0.3,
-            yAxisID: "y1",
-        },
-    ],
-}))
+const activeMetric = ref<"redemptions" | "discounted_amount">("redemptions")
 
-const chartOptions = computed(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-        mode: "index" as const,
-        intersect: false,
-    },
-    plugins: {
-        legend: {
-            position: "top" as const,
-        },
-        tooltip: {
-            callbacks: {
-                label: (context: any) => {
-                    if (context.dataset.yAxisID === "y1") {
-                        return `${context.dataset.label}: ${currency(context.parsed.y)}`
-                    }
-                    return `${context.dataset.label}: ${locale.number(context.parsed.y)}`
-                },
-            },
-        },
-    },
-    scales: {
-        y: {
-            type: "linear" as const,
-            position: "left" as const,
-            beginAtZero: true,
-            title: { display: true, text: trans("Redemptions") },
-        },
-        y1: {
-            type: "linear" as const,
-            position: "right" as const,
-            beginAtZero: true,
-            grid: { drawOnChartArea: false },
-            title: { display: true, text: trans("Discount given") },
-        },
-    },
-}))
+const trendBars = computed(() => {
+    const trend = insights.value.trend
+    const metric = activeMetric.value
+    const max = Math.max(...trend.map(record => record[metric]), 1)
+
+    return trend.map(record => ({
+        label: record.period,
+        height: `${(record[metric] / max) * 100}%`,
+        tooltip: metric === "redemptions"
+            ? `${record.period} — ${locale.number(record.redemptions)} ${trans("redemptions")}`
+            : `${record.period} — ${currency(record.discounted_amount)}`,
+    }))
+})
 
 const offerRoute = (offer: { slug: string }, extraParams?: {}) => {
     return route("grp.org.shops.show.discounts.offers.show", {
@@ -315,15 +264,54 @@ const offerRoute = (offer: { slug: string }, extraParams?: {}) => {
         </dl>
 
         <!-- Section: redemption trend -->
-        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <h3 class="text-sm font-medium text-gray-400 mb-2">
-                <FontAwesomeIcon icon="fal fa-analytics" class="mr-1" fixed-width aria-hidden="true" />
-                {{ trans("Redemptions over time") }}
-            </h3>
-            <div v-if="insights.trend.length" class="h-72">
-                <Line :data="chartData" :options="chartOptions" />
+        <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+            <div class="flex items-start justify-end gap-8">
+                <button
+                    type="button"
+                    @click="activeMetric = 'redemptions'"
+                    class="text-right transition-opacity"
+                    :class="activeMetric === 'redemptions' ? '' : 'opacity-40 hover:opacity-70'">
+                    <div class="flex items-center justify-end gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <span class="inline-block h-2 w-2 rounded-full bg-indigo-500" />
+                        {{ trans("Redemptions over time") }}
+                    </div>
+                    <div class="mt-1 text-3xl font-semibold tabular-nums text-gray-900">
+                        {{ locale.number(insights.totals.redemptions) }}
+                    </div>
+                </button>
+                <button
+                    type="button"
+                    @click="activeMetric = 'discounted_amount'"
+                    class="text-right transition-opacity"
+                    :class="activeMetric === 'discounted_amount' ? '' : 'opacity-40 hover:opacity-70'">
+                    <div class="flex items-center justify-end gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <span class="inline-block h-2 w-2 rounded-full bg-green-600" />
+                        {{ trans("Discount given") }}
+                    </div>
+                    <div class="mt-1 text-3xl font-semibold tabular-nums text-gray-900">
+                        {{ currency(insights.totals.discounted_amount) }}
+                    </div>
+                </button>
             </div>
-            <div v-else class="h-32 flex items-center justify-center text-sm text-gray-400">
+
+            <div v-if="insights.trend.length" class="mt-6">
+                <div class="flex h-40 items-end gap-px">
+                    <div
+                        v-for="(bar, idxBar) in trendBars"
+                        :key="idxBar"
+                        v-tooltip="bar.tooltip"
+                        class="group flex-1 min-w-0 rounded-t-sm transition-colors"
+                        :class="activeMetric === 'redemptions'
+                            ? 'bg-indigo-500 hover:bg-indigo-600'
+                            : 'bg-green-600 hover:bg-green-700'"
+                        :style="{ height: bar.height }" />
+                </div>
+                <div class="mt-3 flex justify-between text-xs text-gray-400">
+                    <span>{{ trendBars[0].label }}</span>
+                    <span>{{ trendBars[trendBars.length - 1].label }}</span>
+                </div>
+            </div>
+            <div v-else class="mt-6 flex h-32 items-center justify-center text-sm text-gray-400">
                 {{ trans("No redemptions in the selected period") }}
             </div>
         </div>
@@ -396,10 +384,10 @@ const offerRoute = (offer: { slug: string }, extraParams?: {}) => {
                 <span v-if="offer.last_used_at">{{ useFormatTime(offer.last_used_at, { localeCode: locale.language.code, formatTime: "aiku" }) }}</span>
                 <span v-else class="text-gray-400">-</span>
             </template>
-            
+
             <template #cell(created_by)="{ item }">
                 <Link :href="offerRoute(item, {tab: 'history'})" class="hover:opacity-80 transition text-black primaryLink">
-                    <FontAwesomeIcon 
+                    <FontAwesomeIcon
                         :icon="faClock"
                     />
                 </Link>

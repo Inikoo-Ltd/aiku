@@ -241,8 +241,10 @@ const props = defineProps<{
     delivery_note?: {
         reference: string
     },
+    is_forbidden_delivery: boolean
+    is_forbidden_billing: boolean
     route_recalculate_vat: {
-        showButton?: bool,
+        showButton?: boolean,
         name: string,
         parameters: {
             order: string
@@ -824,7 +826,7 @@ const setShippingManualAmount = (v: number) => {
         }
     )
 }
-const setShippingToAuto = () => {
+const setShippingToAuto = (fieldSummary) => {
     // Section: Submit
     router.get(
         route('grp.models.order.set_shipping_engine_auto', {
@@ -845,9 +847,10 @@ const setShippingToAuto = () => {
                 })
             },
             onError: errors => {
+                set(fieldSummary, ['data', 'engine'], 'manual')
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to set shipping method to auto"),
+                    text: errors?.message || trans("Failed to set shipping method to auto"),
                     type: "error"
                 })
             },
@@ -1439,7 +1442,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <div class="space-y-0.5 pl-1">
 
                     <!-- Field: Client -->
-                    <div v-if="box_stats?.customer_client" class="pl-1 pb-2 flex items-center w-full gap-x-2">
+                    <div v-if="box_stats?.customer_client" class="pl-1 xpb-2 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer client')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
@@ -1518,8 +1521,13 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
-                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52"
-                            v-html="box_stats?.customer.addresses.billing.formatted_address">
+                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 rounded min-w-52" 
+                            :class="is_forbidden_billing ? 'bg-red-50 ring-red-300' : 'ring-gray-300'"
+                        >
+                            <div v-html="box_stats?.customer.addresses.billing.formatted_address"></div>
+                            <div v-if="is_forbidden_billing" v-tooltip="ctrans('This billing address was banned (listed in Shop settings)')" class="absolute top-2 right-2">
+                                <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
+                            </div>
                         </dd>
                     </dl>
 
@@ -1529,7 +1537,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
                         <ToggleSwitch v-model="isCollection" @change="updateCollection" />
-                        <span class="text-sm text-gray-500">Collection</span>
+                        <span class="text-sm text-gray-500">{{ ctrans("Collection") }}</span>
                     </div>
 
                     <div class="pl-1 pb-2 flex items-start w-full gap-x-2" v-if="box_stats?.customer?.tax_number?.number">
@@ -1580,8 +1588,12 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                 <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
-                            <dd
-                                class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
+                            <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 border rounded min-w-52"
+                                :class="is_forbidden_delivery ? 'border-red-500 bg-red-50' : 'ring-gray-300'"
+                            >
+                                <div v-if="is_forbidden_delivery" v-tooltip="ctrans('Delivery to this address was banned (listed in Shop settings)') + ' ' + (state === 'creating' ? ctrans('You can submit the order anyway') : '')" class="absolute top-2 right-2">
+                                    <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
+                                </div>
                                 <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
@@ -2099,14 +2111,17 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                             {{ trans("Select to change shipping price method") }}:
                                         </div>
                                         <div class="grid grid-cols-1 gap-2">
+                                            <!-- Radio: Auto -->
                                             <div class="flex items-center gap-2">
                                                 <input type="radio"
                                                     :checked="get(fieldSummary, ['data', 'engine'], null) === 'auto'"
-                                                    @change="() => { set(fieldSummary, ['data', 'engine'], 'auto'); setShippingToAuto(); }"
+                                                    @change="() => { set(fieldSummary, ['data', 'engine'], 'auto'); setShippingToAuto(fieldSummary); }"
                                                     id="ingredient1" name="pizza" value="auto"
                                                     class="focus:ring-0 focus:border-none" />
                                                 <label for="ingredient1">{{ trans("Auto") }}</label>
                                             </div>
+
+                                            <!-- Radio: Manual -->
                                             <div>
                                                 <div class="flex items-start gap-2">
                                                     <input type="radio"

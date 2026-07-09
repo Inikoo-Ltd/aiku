@@ -82,6 +82,12 @@ interface Customer {
     company_name: string
     location: string[]
     email: string
+    fiscal_name: string | null
+    identity_document_number_alt: {
+        number: string
+        label: string
+    } | null
+
 
     created_at: string
     number_current_customer_clients: number | null
@@ -852,6 +858,20 @@ const submitNote = async () => {
                         </div>
                     </div>
                 </dd>
+            </div>
+
+            <!-- Field: Fiscal Name -->
+            <div v-if="data?.customer.fiscal_name"
+                 class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
+                <dt v-tooltip="data.customer.fiscal_name" class="flex-none">
+                    <span class="sr-only">{{ data.customer.fiscal_name }}</span>
+                    <FontAwesomeIcon :icon="faIdCard" class="text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
+                <dd class="text-gray-500">
+                    {{ data?.customer?.fiscal_name }}
+                    <span class="text-xs text-gray-400">{{trans('Fiscal name')}}</span>
+                </dd>
+
             </div>
 
             <!-- Offers Section -->

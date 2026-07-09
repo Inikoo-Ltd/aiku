@@ -49,6 +49,7 @@ class ShowIrisCollection extends IrisAction
                 'mini_breadcrumbs' => array_filter([
                     [
                         'label'   => $collection->name,
+                        'url'     => route('iris.catalogue.collection.show', ['collection' => $collection->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.collection.show',
                             'parameters' => [
@@ -77,7 +78,7 @@ class ShowIrisCollection extends IrisAction
                             IrisCollectionTabsEnum::FAMILIES->value
                         )
                     )
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'family',
@@ -102,7 +103,7 @@ class ShowIrisCollection extends IrisAction
                             IrisCollectionTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => ProductsResource::collection(
+                    : Inertia::optional(fn () => ProductsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'product',

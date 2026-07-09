@@ -430,9 +430,11 @@ const getValueColumn4Transleted = (value: string) => {
                     <div v-html="modelValue?.columns.column_4.data.textBox4"></div>
                 </h2> -->
 
-                <div v-if="modelValue?.socialMedia?.length" class="flex gap-x-6 justify-center">
-                    <a v-for="(socmed,index) of modelValue?.socialMedia" target="_blank" :href="socmed.link" :name="socmed.type || 'sosmed' + index">
-                        <FontAwesomeIcon :icon="socmed.icon" class="text-4xl md:text-2xl"></FontAwesomeIcon>
+                <div v-if="modelValue?.socialMedia?.length" class="flex gap-x-5 justify-center">
+                    <a v-for="(socmed,index) of modelValue?.socialMedia" target="_blank" :href="socmed.link" :name="socmed.type || 'sosmed' + index"
+                        :aria-label="socmed.type || 'socmed' + index"
+                    >
+                        <FontAwesomeIcon :icon="socmed.icon" class="text-4xl md:text-2xl" fixed-width />
                     </a>
                 </div>
             </div>

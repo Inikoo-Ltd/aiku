@@ -230,22 +230,28 @@ class EditOrganisationSettings extends OrgAction
                                 ]
                             ],
                         ],
+                        // [
+                        //     'label' => __('Shipping'),
+                        //     'icon' => 'fa-light fa-truck',
+                        //     'fields' => [
+                        //     ],
+                        // ],
                         [
-                            'label' => __('Shipping'),
-                            'icon' => 'fa-light fa-truck',
+                            'label' => __('Banned Countries') . ' (' . __('territories') . ')',
+                            'icon' => 'fa-light fa-ban',
                             'fields' => [
-                                'forbidden_dispatch_countries' => [
-                                    'type' => 'multiselect-tags',
-                                    'label' => __('Forbidden Countries'),
-                                    'placeholder' => __('Select countries'),
+                                'banned_countries' => [
+                                    'full' => true,
+                                    'hidden' => app()->environment('production'),
+                                    'type' => 'banned-countries',
+                                    'label' => __('Banned Countries'),
                                     'required' => true,
-                                    'value' => $organisation->forbidden_dispatch_countries ?? [],
-                                    'options' => GetCountriesOptions::run(),
-                                    'searchable' => true,
-                                    'mode' => 'tags',
-                                    'labelProp' => 'label',
-                                    'valueProp' => 'id'
-                                ]
+                                    'hideFollowOrganisation' => true,
+                                    'value' => [
+                                        'banned_list' => $organisation->banned_country_regions,
+                                    ],
+                                    'options' => GetCountriesOptions::run(true, true),
+                                ],
                             ],
                         ],
                         [

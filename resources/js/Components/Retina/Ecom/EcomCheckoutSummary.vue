@@ -54,12 +54,14 @@ const props = defineProps<{
     }
     balance?: string
     address_management?: AddressManagement
-    is_unable_dispatch?: boolean
+    is_forbidden_delivery?: boolean
+    is_forbidden_billing?: boolean
     contact_address?: Address | null
-    isInBasket?: boolean
     isShowAllOffersMeter?: boolean  // Whether to show all offers meter or only the achieved offers
     updateRoute: routeType
     missed_offers: {}
+    isInBasket?: boolean
+    isInCheckout?: boolean
 }>()
 
 const locale = inject('locale', {})
@@ -129,6 +131,10 @@ const updateCollection = (value: boolean) => {
                 <div v-else class="text-gray-400 italic pl-6 pr-3">
                     {{ trans("No billing address") }}
                 </div>
+
+                <div v-if="is_forbidden_billing" class="text-red-500 mt-3 text-xs">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}
+                </div>
             </div>
             
             <div class="">
@@ -177,7 +183,7 @@ const updateCollection = (value: boolean) => {
                         <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
                     </div>
                 
-                    <div v-if="is_unable_dispatch" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
+                    <div v-if="is_forbidden_delivery" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
                     </div>
                 </div>
@@ -265,7 +271,7 @@ const updateCollection = (value: boolean) => {
         <!-- Section: amount of balance, charges, shipping, tax -->
         <div class="col-span-2 md:col-span-1">
             <div v-if="!order" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
-                <div class="">{{ trans("Current balance") }}:</div>
+                <div class="">{{ ctrans("Current balance") }}:</div>
                 <div>
                     {{ locale.currencyFormat(layout?.iris?.currency?.code, balance ?? 0) }}
                 </div>
@@ -278,7 +284,11 @@ const updateCollection = (value: boolean) => {
                 </div>
             </div>
 
-            <template v-else-if="summary?.products?.payment?.pay_status != 'no_need' && !isInBasket">
+            <div v-else-if="order?.state === 'handling_blocked'">
+                <!-- INI-1521: hide payment status if handling_blocked -->
+            </div>
+
+            <template v-else-if="summary?.products?.payment?.pay_status != 'no_need' && !(isInBasket || isInCheckout)">
                 <div class="w-full mb-2.5">
                     <!-- Section: pay with balance (if order Submit without paid) -->
                     <div class="w-full rounded-md shadow pxb-2 isolate border overflow-hidden"
@@ -308,7 +318,7 @@ const updateCollection = (value: boolean) => {
             <div>
                 <!-- Field: weight -->
                 <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                    <dt v-tooltip="trans('Weight')" class="flex-none pl-1">
+                    <dt v-tooltip="ctrans('Weight')" class="flex-none pl-1">
                         <FontAwesomeIcon :icon="faWeight" fixed-width aria-hidden="true" class="text-gray-500" />
                     </dt>
                     <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">

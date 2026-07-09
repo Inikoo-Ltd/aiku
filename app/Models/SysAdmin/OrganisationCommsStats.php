@@ -101,6 +101,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_finish_offer
  * @property int $number_outboxes_type_review_reminder
  * @property int $number_outboxes_type_new_review
+ * @property int $number_outboxes_type_invoice_paid
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationCommsStats newModelQuery()
  * @method static Builder<static>|OrganisationCommsStats newQuery()

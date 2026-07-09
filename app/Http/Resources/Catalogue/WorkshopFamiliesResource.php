@@ -35,27 +35,28 @@ class WorkshopFamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $family = ProductCategory::find($this->id);
+        /** @var ProductCategory $department */
+        $family = $this->resource;
         $webImages = [];
 
-        if (is_string($this->web_images)) {
-            $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
-        } elseif (is_array($this->web_images)) {
-            $webImages = $this->web_images;
+        if (is_string($family->web_images)) {
+            $webImages = json_decode(trim($family->web_images, '"'), true) ?? [];
+        } elseif (is_array($family->web_images)) {
+            $webImages = $family->web_images;
         }
         return [
-            'id' => $this->id,
-            'slug' => $this->slug,
+            'id' => $family->id,
+            'slug' => $family->slug,
             'image' => $family->imageSources(720, 480),
             'web_images' => $webImages,
-            'code' => $this->code,
-            'name' => $this->name,
-            'description' => $this->description,
-            'description_title' => $this->description_title,
-            'description_extra' => $this->description_extra,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'tags'       => $this->tradeUnitFamily?->tags()->limit(3)->get(),
+            'code' => $family->code,
+            'name' => $family->name,
+            'description' => $family->description,
+            'description_title' => $family->description_title,
+            'description_extra' => $family->description_extra,
+            'created_at' => $family->created_at,
+            'updated_at' => $family->updated_at,
+            'tags'       => $family->tradeUnitFamily?->tags->take(3),
         ];
     }
 }

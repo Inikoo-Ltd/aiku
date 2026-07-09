@@ -2,7 +2,6 @@
 import { ref, computed, watch, onUnmounted, onMounted, inject } from "vue"
 import { router } from "@inertiajs/vue3"
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from "@headlessui/vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"

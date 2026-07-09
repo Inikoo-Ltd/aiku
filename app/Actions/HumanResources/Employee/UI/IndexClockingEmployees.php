@@ -591,7 +591,7 @@ class IndexClockingEmployees extends OrgAction
                         'last_clock_out' => $data['last_clock_out'],
                         'timezone' => $data['timezone'],
                     ]
-                    : Inertia::lazy(fn () => ['status' => 'loaded_lazy']),
+                    : Inertia::optional(fn () => ['status' => 'loaded_lazy']),
 
                 ClockingEmployeesTabsEnum::TIMESHEETS->value =>
                 $data['tab'] === ClockingEmployeesTabsEnum::TIMESHEETS->value
@@ -599,7 +599,7 @@ class IndexClockingEmployees extends OrgAction
                         'data' => TimesheetsResource::collection($data['timesheets']),
                         'statistics' => $data['statistics'],
                     ]
-                    : Inertia::lazy(fn () => [
+                    : Inertia::optional(fn () => [
                         'data' => TimesheetsResource::collection($data['timesheets']),
                         'statistics' => $data['statistics'],
                     ]),
@@ -617,7 +617,7 @@ class IndexClockingEmployees extends OrgAction
                         'organisation' => $data['organisation'],
                         'holidays' => $data['holiday_dates'],
                     ]
-                    : Inertia::lazy(fn () => [
+                    : Inertia::optional(fn () => [
                         'data' => LeaveResource::collection($data['leaves']),
                         'balance' => $data['balance'] ? LeaveBalanceResource::make($data['balance']) : null,
                         'type_options' => $data['leave_type_options'],
@@ -635,7 +635,7 @@ class IndexClockingEmployees extends OrgAction
                         'data' => AttendanceAdjustmentResource::collection($data['adjustments']),
                         'organisation' => $data['organisation'],
                     ]
-                    : Inertia::lazy(fn () => [
+                    : Inertia::optional(fn () => [
                         'data' => AttendanceAdjustmentResource::collection($data['adjustments']),
                         'organisation' => $data['organisation'],
                     ]),
@@ -658,7 +658,7 @@ class IndexClockingEmployees extends OrgAction
                             ])
                             ->values(),
                     ]
-                    : Inertia::lazy(fn () => [
+                    : Inertia::optional(fn () => [
                         'data' => $data['overtime'],
                         'organisation' => $data['organisation'],
                         'overtimeTypeOptions' => OvertimeType::query()
@@ -677,7 +677,7 @@ class IndexClockingEmployees extends OrgAction
                 ClockingEmployeesTabsEnum::CALENDAR->value =>
                 $data['tab'] === ClockingEmployeesTabsEnum::CALENDAR->value
                     ? fn () => $this->getCalendarData($request)
-                    : Inertia::lazy(fn () => $this->getCalendarData($request)),
+                    : Inertia::optional(fn () => $this->getCalendarData($request)),
             ]
         )
             ->table(

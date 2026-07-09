@@ -31,6 +31,7 @@ class IndexProspectMailshots extends InertiaAction
 {
     use WithProspectsSubNavigation;
 
+    protected Shop $shop;
 
     protected function getElementGroups(): array
     {
@@ -39,6 +40,7 @@ class IndexProspectMailshots extends InertiaAction
 
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
+        $this->shop = $shop;
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -159,6 +161,13 @@ class IndexProspectMailshots extends InertiaAction
 
         $shop = $request->route()->parameters()['shop'];
         $subNavigation = $this->getSubNavigation($shop, $request);
+
+        // remove later after can setting AWS ses pershop
+        $mailshotCount = $shop?->mailshots()
+            ->where('type', MailshotTypeEnum::INVITE)
+            ->whereDate('created_at', now())
+            ->count() ?? 0;
+
         return Inertia::render(
             'Org/Shop/CRM/ProspectMailshots',
             [
@@ -178,6 +187,9 @@ class IndexProspectMailshots extends InertiaAction
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('New mailshot'),
+
+                            'tooltip' => __('maximum 3 mailshots per day') . ($mailshotCount >= 3 ? ' (' . __('already created') . ')' : ''),
+                            'disabled' => $mailshotCount >= 3, // remove this later
                             'route' => [
                                 'name'       => 'grp.org.shops.show.crm.prospects.mailshots.create',
                                 'parameters' => array_values($this->originalParameters)
@@ -202,11 +214,11 @@ class IndexProspectMailshots extends InertiaAction
 
                 // ProspectsMailshotsTabsEnum::SETTINGS->value => $this->tab == ProspectsMailshotsTabsEnum::SETTINGS->value ?
                 //     fn () => ProspectMailshotSettings::run($shop)
-                //     : Inertia::lazy(fn () => ProspectMailshotSettings::run($shop)),
+                //     : Inertia::optional(fn () => ProspectMailshotSettings::run($shop)),
 
                 ProspectsMailshotsTabsEnum::MAILSHOTS->value => $this->tab == ProspectsMailshotsTabsEnum::MAILSHOTS->value ?
                     fn () => ProspectMailshotsResource::collection($mailshots)
-                    : Inertia::lazy(fn () => ProspectMailshotsResource::collection($mailshots)),
+                    : Inertia::optional(fn () => ProspectMailshotsResource::collection($mailshots)),
 
 
             ]

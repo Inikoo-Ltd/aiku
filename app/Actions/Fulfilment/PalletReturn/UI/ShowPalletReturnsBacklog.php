@@ -119,31 +119,31 @@ class ShowPalletReturnsBacklog extends OrgAction
 
                 PalletReturnsBacklogTabsEnum::IN_PROCESS->value => $this->tab == PalletReturnsBacklogTabsEnum::IN_PROCESS->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::IN_PROCESS, $this->typeScope, PalletReturnStateEnum::IN_PROCESS->value))
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::IN_PROCESS, $this->typeScope, PalletReturnStateEnum::IN_PROCESS->value))),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::IN_PROCESS, $this->typeScope, PalletReturnStateEnum::IN_PROCESS->value))),
 
                 PalletReturnsBacklogTabsEnum::SUBMITTED->value => $this->tab == PalletReturnsBacklogTabsEnum::SUBMITTED->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::SUBMITTED, $this->typeScope, PalletReturnStateEnum::SUBMITTED->value))
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::SUBMITTED, $this->typeScope, PalletReturnStateEnum::SUBMITTED->value))),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::SUBMITTED, $this->typeScope, PalletReturnStateEnum::SUBMITTED->value))),
 
                 PalletReturnsBacklogTabsEnum::CONFIRMED->value => $this->tab == PalletReturnsBacklogTabsEnum::CONFIRMED->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::CONFIRMED, $this->typeScope, PalletReturnStateEnum::CONFIRMED->value))
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::CONFIRMED, $this->typeScope, PalletReturnStateEnum::CONFIRMED->value))),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::CONFIRMED, $this->typeScope, PalletReturnStateEnum::CONFIRMED->value))),
 
                 PalletReturnsBacklogTabsEnum::PICKING->value => $this->tab == PalletReturnsBacklogTabsEnum::PICKING->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKING, $this->typeScope, PalletReturnStateEnum::PICKING->value))
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKING, $this->typeScope, PalletReturnStateEnum::PICKING->value))),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKING, $this->typeScope, PalletReturnStateEnum::PICKING->value))),
 
                 PalletReturnsBacklogTabsEnum::PICKED->value => $this->tab == PalletReturnsBacklogTabsEnum::PICKED->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKED, $this->typeScope, PalletReturnStateEnum::PICKED->value))
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKED, $this->typeScope, PalletReturnStateEnum::PICKED->value))),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKED, $this->typeScope, PalletReturnStateEnum::PICKED->value))),
 
                 PalletReturnsBacklogTabsEnum::WAITING->value => $this->tab == PalletReturnsBacklogTabsEnum::WAITING->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKING, $this->typeScope, PalletReturnsBacklogTabsEnum::WAITING->value))
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKING, $this->typeScope, PalletReturnsBacklogTabsEnum::WAITING->value))),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::PICKING, $this->typeScope, PalletReturnsBacklogTabsEnum::WAITING->value))),
 
                 PalletReturnsBacklogTabsEnum::DISPATCHED->value => $this->tab == PalletReturnsBacklogTabsEnum::DISPATCHED->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::DISPATCHED, $this->typeScope, PalletReturnStateEnum::DISPATCHED->value))
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::DISPATCHED, $this->typeScope, PalletReturnStateEnum::DISPATCHED->value))),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturnsBacklog::run($parent, PalletReturnStateEnum::DISPATCHED, $this->typeScope, PalletReturnStateEnum::DISPATCHED->value))),
 
             ]
         )

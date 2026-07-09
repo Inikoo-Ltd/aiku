@@ -5,7 +5,6 @@ namespace App\Actions\Reviews\ReviewReaction;
 use App\Actions\OrgAction;
 use App\Actions\Reviews\Traits\WithHydrateReviewReactionStats;
 use App\Enums\Catalogue\Review\ReviewReactionTypeEnum;
-use App\Models\Reviews\Review;
 use App\Models\Reviews\ReviewReaction;
 use Illuminate\Validation\Rules\Enum;
 
@@ -25,11 +24,11 @@ class UpdateReviewReaction extends OrgAction
         $reviewReaction->update($modelData);
 
         $this->hydrateReactions($reviewReaction->review);
-        
+
         return $reviewReaction;
     }
 
-    public function rules(): array 
+    public function rules(): array
     {
         return [
             'type'          => ['required', new Enum(ReviewReactionTypeEnum::class)],

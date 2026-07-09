@@ -52,6 +52,7 @@ class ShowReturnDeliveryNote extends OrgAction
     use GetPlatformLogo;
 
     private Order|Shop|Warehouse|Customer $parent;
+    private ?array $countriesAddressData = null;
 
     public function handle(ReturnDeliveryNote $returnDeliveryNote): ReturnDeliveryNote
     {
@@ -229,6 +230,8 @@ class ShowReturnDeliveryNote extends OrgAction
 
     public function getBoxStats(ReturnDeliveryNote $returnDeliveryNote): array
     {
+        $this->countriesAddressData ??= GetAddressData::run();
+
         $deliveryNote = $returnDeliveryNote->deliveryNote;
         $order     = $returnDeliveryNote->order;
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
@@ -277,7 +280,7 @@ class ShowReturnDeliveryNote extends OrgAction
             'address'                      => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => GetAddressData::run()
+                    'countriesAddressData' => $this->countriesAddressData
                 ]
             ],
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
@@ -292,7 +295,7 @@ class ShowReturnDeliveryNote extends OrgAction
                 'address'      => [
                     'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                     'options'  => [
-                        'countriesAddressData' => GetAddressData::run()
+                        'countriesAddressData' => $this->countriesAddressData
                     ]
                 ]
             ],
@@ -358,6 +361,8 @@ class ShowReturnDeliveryNote extends OrgAction
             $isEditable = true;
         }
 
+        $this->countriesAddressData ??= GetAddressData::run();
+
         $actions = $this->getActions($returnDeliveryNote);
 
 
@@ -402,7 +407,7 @@ class ShowReturnDeliveryNote extends OrgAction
             'address'             => [
                 'delivery' => AddressResource::make($returnDeliveryNote->deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
-                    'countriesAddressData' => GetAddressData::run()
+                    'countriesAddressData' => $this->countriesAddressData
                 ]
             ],
             'timelines'           => $this->getTimeline($returnDeliveryNote),
@@ -452,24 +457,24 @@ class ShowReturnDeliveryNote extends OrgAction
         $initArr = [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
                 fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop || $this->parent instanceof Customer)))
-                : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop || $this->parent instanceof Customer)))),
+                : Inertia::optional(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::ITEMS->value, crmMode: ($this->parent instanceof Shop || $this->parent instanceof Customer)))),
         ];
 
         if ($returnDeliveryNote->state == ReturnDeliveryNoteStateEnum::RETURNING) {
             $initArr = array_merge($initArr, [
                 DeliveryNoteTabsEnum::PENDING_ITEMS->value => $this->tab == DeliveryNoteTabsEnum::PENDING_ITEMS->value ?
                     fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, ReturnDeliveryNoteItemStateEnum::HANDLING))
-                    : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, ReturnDeliveryNoteItemStateEnum::HANDLING))),
+                    : Inertia::optional(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::PENDING_ITEMS->value, ReturnDeliveryNoteItemStateEnum::HANDLING))),
                 DeliveryNoteTabsEnum::DONE_ITEMS->value => $this->tab == DeliveryNoteTabsEnum::DONE_ITEMS->value ?
                     fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, ReturnDeliveryNoteItemStateEnum::PROCESSED))
-                    : Inertia::lazy(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, ReturnDeliveryNoteItemStateEnum::PROCESSED))),
+                    : Inertia::optional(fn () => ReturnDeliveryNoteItemsResource::collection(IndexReturnDeliveryNoteItems::run($returnDeliveryNote, DeliveryNoteTabsEnum::DONE_ITEMS->value, ReturnDeliveryNoteItemStateEnum::PROCESSED))),
             ]);
         }
 
         return array_merge($initArr, [
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($returnDeliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($returnDeliveryNote, DeliveryNoteTabsEnum::HISTORY->value)))
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($returnDeliveryNote, DeliveryNoteTabsEnum::HISTORY->value)))
         ]);
     }
 

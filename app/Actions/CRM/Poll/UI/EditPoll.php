@@ -108,14 +108,14 @@ class EditPoll extends OrgAction
                                 'in_registration'           => [
                                     'type'          => 'toggle',
                                     'information'   => __('If active, the poll will be shown in the registration form of Retina app'),
-                                    'label'         => __('in registration'),
+                                    'label'         => __('Display in registration?'),
                                     'value'         => $poll->in_registration
                                 ],
                                 'in_registration_required' => [
                                     'type'          => 'toggle',
                                     'information'   => __('If active, will show the icon asterisk (*) and user need to fill the poll before being able to register'),
                                     'hidden'        => !$poll->in_registration,
-                                    'label'         => __('registration required'),
+                                    'label'         => __('Registration Required'),
                                     'value'         => $poll->in_registration_required
                                 ],
                             ],

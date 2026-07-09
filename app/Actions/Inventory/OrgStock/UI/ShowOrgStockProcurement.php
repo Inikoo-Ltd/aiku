@@ -74,7 +74,7 @@ class ShowOrgStockProcurement extends OrgAction
 
                 $this->tabsEnum::PURCHASE_ORDERS->value => $this->tab == $this->tabsEnum::PURCHASE_ORDERS->value ?
                     fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, $this->tabsEnum::PURCHASE_ORDERS->value))
-                    : Inertia::lazy(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, $this->tabsEnum::PURCHASE_ORDERS->value))),
+                    : Inertia::optional(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, $this->tabsEnum::PURCHASE_ORDERS->value))),
 
             ]
         )->table(IndexPurchaseOrders::make()->tableStructure($orgStock, prefix: $this->tabsEnum::PURCHASE_ORDERS->value));

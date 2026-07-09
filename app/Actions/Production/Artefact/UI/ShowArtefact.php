@@ -125,11 +125,11 @@ class ShowArtefact extends OrgAction
                 ],
                 ArtefactTabsEnum::SHOWCASE->value => $this->tab == ArtefactTabsEnum::SHOWCASE->value ?
                     fn () => GetArtefactShowcase::run($artefact)
-                    : Inertia::lazy(fn () => GetArtefactShowcase::run($artefact)),
+                    : Inertia::optional(fn () => GetArtefactShowcase::run($artefact)),
 
                 ArtefactTabsEnum::MANUFACTURE_TASKS->value => $this->tab == ArtefactTabsEnum::MANUFACTURE_TASKS->value
                     ? fn () => ManufactureTasksResource::collection(GetArtefactManufactureTasks::run($artefact, $request))
-                    : Inertia::lazy(fn () => ManufactureTasksResource::collection(GetArtefactManufactureTasks::run($artefact, $request))),
+                    : Inertia::optional(fn () => ManufactureTasksResource::collection(GetArtefactManufactureTasks::run($artefact, $request))),
 
                 // ArtefactTabsEnum::LOCATIONS->value => $this->tab == ArtefactTabsEnum::LOCATIONS->value
                 //     ?
@@ -139,7 +139,7 @@ class ShowArtefact extends OrgAction
                 //             prefix: ArtefactTabsEnum::LOCATIONS->value
                 //         )
                 //     )
-                //     : Inertia::lazy(fn () => LocationResource::collection(
+                //     : Inertia::optional(fn () => LocationResource::collection(
                 //         IndexLocations::run(
                 //             parent: $artefact,
                 //             prefix: ArtefactTabsEnum::LOCATIONS->value
@@ -148,7 +148,7 @@ class ShowArtefact extends OrgAction
 
                 ArtefactTabsEnum::HISTORY->value => $this->tab == ArtefactTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($artefact))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($artefact)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($artefact)))
 
             ]
             // )->table(

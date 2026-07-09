@@ -91,7 +91,7 @@ class ShowTimesheet extends OrgAction
                     fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))->additional([
                         'can_edit_time_trackers' => $this->canEdit,
                     ])
-                    : Inertia::lazy(fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))->additional([
+                    : Inertia::optional(fn () => TimeTrackersResource::collection(IndexTimeTrackers::run($timesheet, TimesheetTabsEnum::TIME_TRACKERS->value))->additional([
                         'can_edit_time_trackers' => $this->canEdit,
                     ])),
 
@@ -100,14 +100,14 @@ class ShowTimesheet extends OrgAction
                     fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))->additional([
                         'can_edit_clockings' => $this->canEdit,
                     ])
-                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))->additional([
+                    : Inertia::optional(fn () => ClockingsResource::collection(IndexClockings::run($timesheet, TimesheetTabsEnum::CLOCKINGS->value))->additional([
                         'can_edit_clockings' => $this->canEdit,
                     ])),
 
 
                 TimesheetTabsEnum::HISTORY->value => $this->tab == TimesheetTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($timesheet))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($timesheet))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($timesheet))),
 
             ]
         )->table(

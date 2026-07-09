@@ -395,19 +395,19 @@ class IndexMasterFamiliesGR extends OrgAction
 
         $baseData[MasterGoldRewardTabsEnum::WITH->value] = $this->tab === MasterGoldRewardTabsEnum::WITH->value
             ? fn () => MasterFamiliesResource::collection($masterFamilies)
-            : Inertia::lazy(fn () => MasterFamiliesResource::collection(
+            : Inertia::optional(fn () => MasterFamiliesResource::collection(
                 $this->handle(parent: $this->parent, prefix: MasterGoldRewardTabsEnum::WITH->value, isGR: true)
             ));
 
         $baseData[MasterGoldRewardTabsEnum::WITHOUT->value] = $this->tab === MasterGoldRewardTabsEnum::WITHOUT->value
             ? fn () => MasterFamiliesResource::collection($masterFamilies)
-            : Inertia::lazy(fn () => MasterFamiliesResource::collection(
+            : Inertia::optional(fn () => MasterFamiliesResource::collection(
                 $this->handle(parent: $this->parent, prefix: MasterGoldRewardTabsEnum::WITHOUT->value, isGR: false)
             ));
 
         $baseData[MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value] = $this->tab === MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value
             ? fn () => FamiliesResource::collection($masterFamilies)
-            : Inertia::lazy(fn () => FamiliesResource::collection(
+            : Inertia::optional(fn () => FamiliesResource::collection(
                 $this->handleNotFollowMaster(parent: $this->parent, prefix: MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value)
             ));
 

@@ -172,7 +172,9 @@ const layout = inject("layout", {})
                  @click="() => sendMessageToParent('panelOpen', 'logo')">
                 <Image v-if="modelValue?.logo?.source" :src="modelValue?.logo?.source" :imageCover="true"
                        :alt="modelValue?.logo?.alt" :imgAttributes="modelValue?.logo?.attributes"
-                       :style="getStyles(modelValue?.logo?.properties)" />
+                       :style="getStyles(modelValue?.logo?.properties)"
+                       :height="getStyles(modelValue?.logo?.properties, screenType, false)?.height"
+                       :width="getStyles(modelValue?.logo?.properties, screenType, false)?.width" />
             </div>
 
             <div v-if="modelValue?.email" @click="() => sendMessageToParent('panelOpen', 'email')"
@@ -545,11 +547,13 @@ const layout = inject("layout", {})
         <div
             class="mt-8 border-0 border-t border-solid border-white/10 flex flex-col md:flex-row-reverse justify-between pt-6 items-center gap-y-8 ">
             <div class="grid gap-y-2 text-center md:text-left ">
-                <div class="group relative flex gap-x-6 justify-center hover-dashed">
+                <div class="group relative flex gap-x-5 justify-center hover-dashed">
                     <a v-for="item of modelValue.socialMedia" target="_blank" :key="item.icon">
                         <font-awesome-icon
                             :icon="item.icon" class="text-2xl"
-                            @click="() => sendMessageToParent('panelOpen', 'social-media')" />
+                            @click="() => sendMessageToParent('panelOpen', 'social-media')"
+                            fixed-width
+                        />
                     </a>
                 </div>
             </div>

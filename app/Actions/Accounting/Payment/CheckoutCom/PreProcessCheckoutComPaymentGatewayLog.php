@@ -10,9 +10,9 @@ namespace App\Actions\Accounting\Payment\CheckoutCom;
 
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStateEnum;
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStatusEnum;
+use App\Models\Accounting\PaymentGatewayLog;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 use App\Models\Ordering\Order;
-use App\Models\PaymentGatewayLog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;

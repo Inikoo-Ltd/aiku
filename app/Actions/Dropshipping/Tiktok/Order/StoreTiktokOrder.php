@@ -11,12 +11,11 @@ namespace App\Actions\Dropshipping\Tiktok\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -36,6 +35,7 @@ class StoreTiktokOrder extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedTiktokAddress;
+    use WithPayAndSubmitOrder;
 
     public function handle(TiktokUser $tiktokUser, array $tiktokOrders): void
     {
@@ -89,13 +89,7 @@ class StoreTiktokOrder extends RetinaAction
             // CancelOrder::run($order);
         }
 
-        try {
-            PayOrderAsync::run($order);
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-        }
-
-        SubmitOrder::run($order);
+        $order = $this->payAndSubmitOrder($order);
     }
 
     /**
@@ -173,10 +167,17 @@ class StoreTiktokOrder extends RetinaAction
             })
             ->values();*/
         foreach (Arr::get($tiktokOrderData, 'line_items', []) as $item) {
-            $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')
+
+            $product = $tiktokUser->getProduct($item['product_id']);
+            $externalProductId = Arr::get($product, 'data.external_product_id');
+
+            $portfolioData = DB::table('portfolios')->select('item_id')
+                ->where('item_type', 'Product')
                 ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
                 ->where('platform_product_id', $item['product_id'])
+                ->orWhere('id', $externalProductId)
                 ->first();
+
             if ($portfolioData && $portfolioData->item_id) {
                 $product = Product::find($portfolioData->item_id);
                 if ($product) {

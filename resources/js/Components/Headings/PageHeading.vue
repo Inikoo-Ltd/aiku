@@ -26,7 +26,7 @@ import {
 	faStore,
 	faExchange,
     faFileCertificate,
-    faEnvelopeOpenText
+    faEnvelopeOpenText, faPaperclip
 } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MetaLabel from "@/Components/Headings/MetaLabel.vue"
@@ -71,7 +71,8 @@ library.add(
 	faExchange,
 	faWarehouseAlt,
     faFileCertificate,
-    faEnvelopeOpenText
+    faEnvelopeOpenText,
+    faPaperclip
 )
 
 const props = defineProps<{
@@ -79,7 +80,7 @@ const props = defineProps<{
 	dataToSubmit?: any
 	dataToSubmitIsDirty?: any
 	isButtonGroupWithBorder?: boolean
-	ignoreIsolate: boolean
+	ignoreIsolate?: boolean
 }>()
 
 const isButtonLoading = ref<boolean | string>(false)
@@ -537,5 +538,5 @@ const setError = (e) => {
 			</div>
 		</slot>
 	</div>
-	<hr class="border-gray-300" />
+	<hr class="border-gray-300 !my-0" />
 </template>

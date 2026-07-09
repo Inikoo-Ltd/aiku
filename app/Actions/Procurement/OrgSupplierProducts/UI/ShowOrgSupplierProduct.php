@@ -96,18 +96,18 @@ class ShowOrgSupplierProduct extends OrgAction
                 ],
                 OrgSupplierProductTabsEnum::SHOWCASE->value          => $this->tab == OrgSupplierProductTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgSupplierProductShowcase::run($orgSupplierProduct)
-                    : Inertia::lazy(fn () => GetOrgSupplierProductShowcase::run($orgSupplierProduct)),
+                    : Inertia::optional(fn () => GetOrgSupplierProductShowcase::run($orgSupplierProduct)),
                 // OrgSupplierProductTabsEnum::SUPPLIER_PRODUCTS->value => $this->tab == OrgSupplierProductTabsEnum::SUPPLIER_PRODUCTS->value ?
                 //     fn () => SupplierProductResource::collection(IndexOrgSupplierProducts::run($orgSupplierProduct))
-                //     : Inertia::lazy(fn () => SupplierProductResource::collection(IndexOrgSupplierProducts::run($orgSupplierProduct))),
+                //     : Inertia::optional(fn () => SupplierProductResource::collection(IndexOrgSupplierProducts::run($orgSupplierProduct))),
 
                 OrgSupplierProductTabsEnum::PURCHASE_ORDERS->value => $this->tab == OrgSupplierProductTabsEnum::PURCHASE_ORDERS->value ?
                     fn () => PurchaseOrderResource::collection(IndexPurchaseOrders::run($orgSupplierProduct))
-                    : Inertia::lazy(fn () => PurchaseOrderResource::collection(IndexPurchaseOrders::run($orgSupplierProduct))),
+                    : Inertia::optional(fn () => PurchaseOrderResource::collection(IndexPurchaseOrders::run($orgSupplierProduct))),
 
                 OrgSupplierProductTabsEnum::HISTORY->value => $this->tab == OrgSupplierProductTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplierProduct)))
 
             ]
         )

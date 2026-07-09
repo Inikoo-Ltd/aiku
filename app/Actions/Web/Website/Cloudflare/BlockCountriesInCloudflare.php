@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website\Cloudflare;
 
+use App\Actions\Web\Website\BlockedCountries\UpdateWebsiteBlockedCountriesRegions;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -54,7 +55,6 @@ class BlockCountriesInCloudflare
         );
 
 
-
         if (empty($countryCodes)) {
             // Just remove the rule, keep everything else untouched
             $updatedRules = $otherRules;
@@ -84,6 +84,17 @@ class BlockCountriesInCloudflare
         ]);
 
         $update->throw();
+
+        foreach ($countryCodes as $countryCode) {
+            UpdateWebsiteBlockedCountriesRegions::run(
+                $website,
+                [
+                    'country' => $countryCode
+                ],
+                true
+            );
+        }
+
 
         return $update->json();
     }
@@ -118,6 +129,7 @@ class BlockCountriesInCloudflare
         ]);
 
         $create->throw();
+
 
         return $create->json('result.id');
     }

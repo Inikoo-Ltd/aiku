@@ -377,15 +377,15 @@ class IndexDepartments extends OrgAction
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => DepartmentsResource::collection($departments)
-                    : Inertia::lazy(fn () => DepartmentsResource::collection($departments)),
+                    : Inertia::optional(fn () => DepartmentsResource::collection($departments)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
                     fn () => DepartmentsResource::collection(IndexDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => DepartmentsResource::collection(IndexDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    : Inertia::optional(fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))

@@ -87,7 +87,7 @@ class CreateWarehouseArea extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Response
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($warehouse, $request);
     }

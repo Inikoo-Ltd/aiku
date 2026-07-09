@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getIrisComponent } from "@/Iris/Composables/getIrisComponents";
 import { routeType } from "@/types/route";
-import { inject, provide, computed, ref } from "vue";
+import { inject, provide, computed, ref, onErrorCaptured } from "vue";
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import axios from "axios";
@@ -9,6 +9,7 @@ import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
 import { set } from "lodash-es"
 import { router } from "@inertiajs/vue3"
+import * as Sentry from "@sentry/vue"
 
 const props = defineProps<{
   data: {
@@ -73,6 +74,30 @@ const onClickLogout = () => {
 
 
 provide("onLogout", onClickLogout);
+
+onErrorCaptured((error, _instance, info) => {
+    const blockCode = (props.data as any)?.header?.code;
+
+    console.error(
+        `[IrisHeader] header block "${blockCode}" failed to render (${info}):`,
+        error
+    );
+
+    Sentry.captureException(error, {
+        tags: {
+            area: "iris-header",
+            header_block: blockCode,
+        },
+        contexts: {
+            vue: {
+                lifecycleHook: info,
+                headerBlock: blockCode,
+            },
+        },
+    });
+
+    return false;
+});
 
 </script>
 

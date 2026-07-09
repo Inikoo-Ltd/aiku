@@ -98,23 +98,23 @@ class ShowCrmDashboard extends OrgAction
 
                 CrmDashboardTabsEnum::CUSTOMERS->value => $this->tab == CrmDashboardTabsEnum::CUSTOMERS->value ?
                     fn () => GetCustomersDashboard::run($this->shop, $request)
-                    : Inertia::lazy(fn () => GetCustomersDashboard::run($this->shop, $request)),
+                    : Inertia::optional(fn () => GetCustomersDashboard::run($this->shop, $request)),
 
                 CrmDashboardTabsEnum::PROSPECTS->value => $this->tab == CrmDashboardTabsEnum::PROSPECTS->value ?
                     fn () => GetProspectsDashboard::run($this->shop, $request)
-                    : Inertia::lazy(fn () => GetProspectsDashboard::run($this->shop, $request)),
+                    : Inertia::optional(fn () => GetProspectsDashboard::run($this->shop, $request)),
 
                 CrmDashboardTabsEnum::COUNTRIES->value => $this->tab == CrmDashboardTabsEnum::COUNTRIES->value ?
                     fn () => CustomerCountriesResource::collection(IndexCustomerCountries::run($this->shop, CrmDashboardTabsEnum::COUNTRIES->value))
-                    : Inertia::lazy(fn () => CustomerCountriesResource::collection(IndexCustomerCountries::run($this->shop, CrmDashboardTabsEnum::COUNTRIES->value))),
+                    : Inertia::optional(fn () => CustomerCountriesResource::collection(IndexCustomerCountries::run($this->shop, CrmDashboardTabsEnum::COUNTRIES->value))),
 
                 CrmDashboardTabsEnum::CHATS->value => $this->tab == CrmDashboardTabsEnum::CHATS->value ?
                     fn () => ChatSessionResource::collection(IndexChatSessions::run($this->shop, CrmDashboardTabsEnum::CHATS->value))
-                    : Inertia::lazy(fn () => ChatSessionResource::collection(IndexChatSessions::run($this->shop, CrmDashboardTabsEnum::CHATS->value))),
+                    : Inertia::optional(fn () => ChatSessionResource::collection(IndexChatSessions::run($this->shop, CrmDashboardTabsEnum::CHATS->value))),
 
                 CrmDashboardTabsEnum::TOP_CUSTOMERS->value => $this->tab == CrmDashboardTabsEnum::TOP_CUSTOMERS->value ?
                     $getTopCustomersData
-                    : Inertia::lazy($getTopCustomersData),
+                    : Inertia::optional($getTopCustomersData),
             ]
         );
 

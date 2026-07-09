@@ -72,7 +72,7 @@ const props = withDefaults(
                 discounted_profit: number
                 discounted_profit_per_unit: number
                 discounted_margin: number
-
+                is_single_trade_unit : boolean
                 offers_data: {
                     number_offers: 1
                     offers: {
@@ -94,6 +94,11 @@ const props = withDefaults(
                     }
                 }
             }
+            paymentData: {
+                name: string
+                image: string
+                value: string
+            }[]
         }
         webpageData?: any
         blockData?: object
@@ -110,7 +115,7 @@ const props = withDefaults(
     }>(),
     {}
 )
-console.log(props.fieldValue.reviews)
+console.log('product',props.fieldValue)
 const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
@@ -123,7 +128,7 @@ const emits = defineEmits<{
 
 const product = ref(props.product)
 const layout = inject("layout", {})
-const webpage_slug = inject("webpage_slug", {})
+const webpage_id = inject("webpage_id", {})
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 
@@ -140,7 +145,6 @@ watch(
     () => props.product,
     (newProduct) => {
        product.value = newProduct
-       console.log('product',product.value)
     },
     { deep: true }
 )
@@ -204,7 +208,6 @@ onMounted(async () => {
   varinatNavigation.value.prevEl = variantPrevEl.value
   varinatNavigation.value.nextEl = variantNextEl.value
 })
-console.log(props)
 </script>
 
 
@@ -224,7 +227,7 @@ console.log(props)
                 </div>
 
                 <!-- TAGS -->
-                <div class="flex gap-x-10 text-gray-400 text-xs mb-6 mt-4">
+                <div v-if="props?.fieldValue?.product?.is_single_trade_unit" class="flex gap-x-10 text-gray-400 text-xs mb-6 mt-4">
                     <div v-for="(tag, index) in product.tags" :key="index" class="flex items-center gap-1">
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`"
@@ -473,8 +476,12 @@ console.log(props)
                     </h2>
 
                     <div class="flex flex-wrap items-center gap-6 py-2">
-                        <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
-                            class="h-4 px-1" />
+                        <template v-for="logo in fieldValue.paymentData" :key="logo.value">
+                            <img :src="logo.image"
+                                class="h-4 px-1"
+                                :alt="ctrans('Logo of :paymentLabel', { paymentLabel: logo.name })"
+                            />
+                        </template>
                     </div>
                 </div>
             </div>
@@ -598,7 +605,7 @@ console.log(props)
         </div>
 
         <!-- TAGS -->
-        <div class="flex flex-wrap gap-2 mt-4 text-xs text-gray-500">
+        <div v-if="props?.fieldValue?.product?.is_single_trade_unit" class="flex flex-wrap gap-2 mt-4 text-xs text-gray-500">
             <div
                 v-for="(tag, index) in product.tags"
                 :key="index"
@@ -744,8 +751,9 @@ console.log(props)
                 <div class="flex flex-wrap gap-4">
                     <img
                         v-for="logo in fieldValue.paymentData"
-                        :key="logo.code"
+                        :key="logo.value"
                         :src="logo.image"
+                        :alt="ctrans('Logo of :paymentLabel', { paymentLabel: logo.name })"
                         class="h-4"
                     />
                 </div>
@@ -754,7 +762,7 @@ console.log(props)
 
     </div>
 
-    <ReviewsIris  :webpage_slug="webpage_slug"/>
+    <ReviewsIris  :webpage_id="webpage_id"/>
 
 
 </template>

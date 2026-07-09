@@ -13,7 +13,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
-use App\Models\PlatformPortfolioLogs;
+use App\Models\Dropshipping\PlatformPortfolioLogs;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 

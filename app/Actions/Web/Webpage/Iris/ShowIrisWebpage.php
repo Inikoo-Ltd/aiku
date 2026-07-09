@@ -8,13 +8,9 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
-use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
-use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -65,9 +61,7 @@ class ShowIrisWebpage
         // Prioritize webpage prefix/suffix -> website prefix/suffix
         $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null));
         $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
-
         $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
-
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -82,6 +76,7 @@ class ShowIrisWebpage
                 'type'          => $webpage->type,
                 'sub_type'      => $webpage->sub_type,  // 'sub_department', 'department', 'product', 'category'
                 'model_type'    => $webpage->model_type,  // Product, ProductCategory, etc
+                'model_slug'   => $webpage->model?->slug,
                 'product_page'  => $webpage->model instanceof Product
                     ? ['department' => [
                         'name'          => $webpage->model->department?->name,
@@ -93,12 +88,12 @@ class ShowIrisWebpage
             'index_page'                        => $webpage->index_page,
             'follow_link'                       => $webpage->follow_link,
             'webpage_slug'                      => $webpage->slug,
+            'webpage_id'                        => $webpage->id,
             'allow_review_reaction'             => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
             'allow_review_reply_reaction'       => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
             'minimum_reviews_to_show'           => Arr::get($webpage->shop->settings, 'reviews.minimum_reviews_to_show', 0),
             'show_staff_who_reply'              => Arr::get($webpage->shop->settings, 'reviews.show_staff_who_reply', false),
             'is_different_when_logged_in'       => $webpage->is_different_when_logged_in,
-            'webpage_slug'                      => $webpage->slug
         ];
 
         return array_merge($baseWebpageData, [
@@ -150,14 +145,13 @@ class ShowIrisWebpage
 
 
         if (!empty($canonicalUrl)) {
-            // Use current URL without query parameters for canonical comparison
-            $currentUrl = rtrim($request->url(), '/');
-
-
-            $normalizedCanon = $this->getEnvironmentUrl($canonicalUrl);
+            $currentUrl      = rtrim($request->url(), '/');
+            $normalizedCanon = rtrim($this->getEnvironmentUrl($canonicalUrl), '/');
 
             if ($normalizedCanon !== $currentUrl) {
-                return $this->getEnvironmentUrl($canonicalUrl);
+                $request->attributes->set('iris_redirect_webpage_id', $webpageID);
+
+                return $normalizedCanon;
             }
         }
 
@@ -268,11 +262,20 @@ class ShowIrisWebpage
             }
 
 
-            return redirect()->to($webpageData, 301)
+            $redirectResponse = redirect()->to($webpageData, 301)
                 ->withHeaders([
                     'Cache-Control'             => 'public, s-maxage=300, max-age=0',
                     'X-Aiku-Cacheable-Redirect' => $cacheRedirectInVarnish,
                 ]);
+
+            $redirectResponse->header('X-AIKU-WEBSITE', (string)request()->website->id);
+
+            $redirectWebpageID = request()->attributes->get('iris_redirect_webpage_id');
+            if ($redirectWebpageID) {
+                $redirectResponse->header('X-AIKU-WEBPAGE', (string)$redirectWebpageID);
+            }
+
+            return $redirectResponse;
         }
 
         $browserTitle            = Arr::get($webpageData, 'webpage_data.title', '');

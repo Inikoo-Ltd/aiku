@@ -18,6 +18,7 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\Review\ReviewAutoPublishingEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
+use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
@@ -59,20 +60,6 @@ class EditShop extends OrgAction
      */
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-        $merged = array_merge(
-            $shop->organisation->forbidden_dispatch_countries ?? [],
-            $shop->forbidden_dispatch_countries ?? []
-        );
-
-        $result = array_reduce($merged, function ($carry, $item) {
-            if (!in_array($item, $carry)) {
-                $carry[] = $item;
-            }
-
-            return $carry;
-        }, []);
-
-
         $mergedBannedCountryRegions = $shop->banned_country_regions;
 
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
@@ -535,37 +522,6 @@ class EditShop extends OrgAction
                             'options'     => GetLanguagesOptions::make()->all(),
                             'searchable'  => true
                         ],
-                        /*   'extra_languages' => [
-                              'type'        => 'select',
-                              'label'       => __('Extra language'),
-                              'placeholder' => __('Select your language'),
-                              'required'    => true,
-                              'value'       => $shop->extra_languages,
-                              'options'     => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
-                              'searchable'  => true,
-                              'mode'        => 'tags',
-                              'labelProp'   => 'name',
-                              'valueProp'   => 'id',
-                          ] */
-                    ],
-                ],
-                [
-                    'label'  => __('Shipping'),
-                    'icon'   => 'fa-light fa-truck',
-                    'fields' => [
-                        'forbidden_dispatch_countries' => [
-                            'type'        => 'multiselect-tags',
-                            'placeholder' => __('Select countries'),
-                            'information' => __('Customer cannot submit order that delivered to these countries'),
-                            'label'       => __('Forbidden Countries'),
-                            'required'    => true,
-                            'value'       => $result,
-                            'options'     => GetCountriesOptions::run(),
-                            'searchable'  => true,
-                            'mode'        => 'tags',
-                            'labelProp'   => 'label',
-                            'valueProp'   => 'id'
-                        ],
                     ],
                 ],
 
@@ -576,12 +532,14 @@ class EditShop extends OrgAction
                     'fields' => [
                         'banned_countries' => [
                             'full'     => true,
-                            'hidden'   => app()->environment('production'),
                             'type'     => 'banned-countries',
                             'label'    => __('Banned Countries'),
                             'required' => true,
-                            'value'    => $mergedBannedCountryRegions,
-                            'options'  => GetCountriesOptions::run(),
+                            'value'    => [
+                                'banned_list'                        => $mergedBannedCountryRegions,
+                                'is_follow_organisation_banned_list' => Arr::get($shop->settings, 'banned_countries.is_follow_organisation_banned_list', false),
+                            ],
+                            'options'  => GetCountriesOptions::run(true, true),
                         ],
                     ],
                 ],
@@ -708,7 +666,7 @@ class EditShop extends OrgAction
                         ? __('This shop is connected to Google Ads. Set the Customer ID and User List ID below to sync customers to your Google Ads user list.')
                         : __('Connect your Google account to authorize syncing customers, then set the Customer ID and User List ID below.'),
                     'fields'      => [
-                        'gads__connect'     => [
+                        'gads__connect'          => [
                             'type'        => 'action',
                             'label'       => __('Google Account'),
                             'information' => $isGoogleAdsConnected
@@ -724,7 +682,7 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
-                        'gads_customer_id'  => [
+                        'gads_customer_id'       => [
                             'type'        => 'input',
                             'label'       => __('Customer ID'),
                             'placeholder' => '123-456-7890',
@@ -736,7 +694,7 @@ class EditShop extends OrgAction
                             'placeholder' => __('Only if the account is accessed through a manager account'),
                             'value'       => Arr::get($shop->settings, 'google_ads.login_customer_id', ''),
                         ],
-                        'gads_user_list_id' => [
+                        'gads_user_list_id'      => [
                             'type'  => 'input',
                             'label' => __('User List ID'),
                             'value' => Arr::get($shop->settings, 'google_ads.user_list_id', ''),
@@ -769,18 +727,18 @@ class EditShop extends OrgAction
                     'label'  => __('Reviews'),
                     'icon'   => 'fal fa-star',
                     'fields' => [
-                        'reviews' => [
+                        'reviews'                        => [
                             'type'        => 'toggle',
                             'label'       => __('Enable reviews'),
                             'information' => __('Enable the reviews feature for this shop.'),
                             'value'       => $shop->settings['reviews']['enabled'] ?? true,
                         ],
-                        'review_rating_labels' => [
+                        'review_rating_labels'           => [
                             'type'  => 'review_rating_labels',
                             'label' => __('Review rating labels'),
                             'value' => $this->loadReviewRatingLabels($shop),
                         ],
-                        'review_visibility' => [
+                        'review_visibility'              => [
                             'type'        => 'review_visibility',
                             'label'       => __('Visibility'),
                             'information' => __('Visibility modes available to customers (one or both).'),
@@ -791,7 +749,7 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
-                        'review_publishing' => [
+                        'review_publishing'              => [
                             'type'        => 'review_publishing',
                             'label'       => __('Publishing'),
                             'information' => __('When public reviews are published after submission.'),
@@ -803,13 +761,13 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
-                        'review_approval_required' => [
+                        'review_approval_required'       => [
                             'type'        => 'toggle',
                             'label'       => __('Require approval before publishing'),
                             'information' => __('When enabled, customer reviews must be approved by an admin before they are published.'),
                             'value'       => Arr::get($shop->settings, 'reviews.data.approval_required', false),
                         ],
-                        'review_hours_after_dispatched' => [
+                        'review_hours_after_dispatched'  => [
                             'type'        => 'input_number',
                             'label'       => __('Hours after dispatch before review is available'),
                             'information' => __('Number of hours after an order is dispatched before the review menu appears to the customer.'),
@@ -826,7 +784,7 @@ class EditShop extends OrgAction
                             ],
                             'value'       => Arr::get($shop->settings, 'reviews.public_rating_threshold', 3),
                         ],
-                        'review_minimum_rating_to_show' => [
+                        'review_minimum_rating_to_show'  => [
                             'type'        => 'input_number',
                             'label'       => __('Minimum rating to show on website'),
                             'information' => __('Only reviews with a rating equal to or above this value are shown on the website.'),
@@ -845,23 +803,29 @@ class EditShop extends OrgAction
                             ],
                             'value'       => Arr::get($shop->settings, 'reviews.minimum_reviews_to_show', 0),
                         ],
-                        'review_allow_reactions' => [
+                        'review_allow_reactions'         => [
                             'type'        => 'toggle',
                             'label'       => __('Allow likes/dislikes'),
                             'information' => __('Allow customers to like or dislike reviews left by other customers.'),
                             'value'       => Arr::get($shop->settings, 'reviews.allow_reactions', true),
                         ],
-                        'review_allow_reply_reactions' => [
+                        'review_allow_reply_reactions'   => [
                             'type'        => 'toggle',
                             'label'       => __('Allow likes/dislikes on replies'),
                             'information' => __('Allow customers to like or dislike replies to reviews.'),
                             'value'       => Arr::get($shop->settings, 'reviews.allow_reply_reactions', true),
                         ],
-                        'review_show_staff_who_reply' => [
+                        'review_show_staff_who_reply'    => [
                             'type'        => 'toggle',
                             'label'       => __('Show staff who reply'),
                             'information' => __('Show the name of the staff member who replied to a review.'),
                             'value'       => Arr::get($shop->settings, 'reviews.show_staff_who_reply', false),
+                        ],
+                        'review_validation_scope'   => [
+                            'type'        => 'review_validation_scope',
+                            'label'       => __('Include other shops'),
+                            'information' => __('Here you can configure whether you want to include other shops reviews.'),
+                            'value'       => $this->loadReviewValidationScopes($shop),
                         ],
                     ],
                 ]
@@ -936,19 +900,49 @@ class EditShop extends OrgAction
             ->get()
             ->groupBy(fn ($item) => $item->review_context instanceof ReviewContextEnum
                 ? $item->review_context->value
-                : (string) $item->review_context)
+                : (string)$item->review_context)
             ->map(fn ($items) => $items->mapWithKeys(fn ($item) => [
                 $item->dimension instanceof ReviewRatingDimensionEnum
                     ? $item->dimension->value
-                    : (string) $item->dimension => $item->label,
+                    : (string)$item->dimension => $item->label,
             ])->all())
             ->all();
 
         $emptyDimensions = array_fill_keys(ReviewRatingDimensionEnum::values(), '');
 
-        return collect(ReviewContextEnum::values())
+        $tabLabels = $shop->getCustomReviewCategoryLabel();
+        $reviewLabel = collect(ReviewContextEnum::values())
             ->mapWithKeys(fn (string $context) => [
-                $context => [...$emptyDimensions, ...($stored[$context] ?? [])],
+                $context => [
+                    ...$emptyDimensions,
+                    ...($stored[$context] ?? []),
+                    'label_tab' => data_get($tabLabels, $context)
+                ],
+            ])
+            ->all();
+
+        return $reviewLabel;
+    }
+
+    /**
+     * @return array<int, array{context: string, label: string, enabled: bool, scope: string}>
+     */
+    private function loadReviewValidationScopes(Shop $shop): array
+    {
+        $tabLabels = $shop->getCustomReviewCategoryLabel();
+
+        $contexts = [
+            ReviewContextEnum::SHOP->value,
+            ReviewContextEnum::FAMILY->value,
+            ReviewContextEnum::PRODUCT->value,
+        ];
+
+        return collect($contexts)
+            ->map(fn (string $context) => [
+                'context' => $context,
+                'label'   => data_get($tabLabels, $context, Arr::get(ReviewContextEnum::shortLabels(), $context, $context)),
+                'enabled' => (bool)Arr::get($shop->settings, "reviews.validation_scope.$context.enabled", false),
+                'scope'   => Arr::get($shop->settings, "reviews.validation_scope.$context.scope", ReviewValidationScopeEnum::ORGANISATION->value),
             ])
             ->all();
     }

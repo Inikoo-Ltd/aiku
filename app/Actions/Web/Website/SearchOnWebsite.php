@@ -24,7 +24,7 @@ class SearchOnWebsite extends IrisAction
         $webBlockData = [];
 
         if ($website) {
-            $layout = $website->liveProductsSnapshot->layout;
+            $layout = $website->liveProductsSnapshot?->layout;
 
             $webBlockData = data_get($layout, 'data');
         }

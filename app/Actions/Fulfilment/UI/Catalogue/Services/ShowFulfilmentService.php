@@ -84,7 +84,7 @@ class ShowFulfilmentService extends OrgAction
 
                 FulfilmentServiceTabsEnum::SHOWCASE->value => $this->tab == ServiceTabsEnum::SHOWCASE->value ?
                     fn () => GetFulfilmentServiceShowcase::run($service)
-                    : Inertia::lazy(fn () => GetFulfilmentServiceShowcase::run($service)),
+                    : Inertia::optional(fn () => GetFulfilmentServiceShowcase::run($service)),
             ]
         );
     }

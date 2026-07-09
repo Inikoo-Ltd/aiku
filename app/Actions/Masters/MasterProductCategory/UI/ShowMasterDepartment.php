@@ -146,35 +146,35 @@ class ShowMasterDepartment extends GrpAction
                 ],
                 MasterDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
+                    : Inertia::optional(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
 
                  MasterDepartmentTabsEnum::CONTENT->value => $this->tab == MasterDepartmentTabsEnum::CONTENT->value ?
                     fn () => GetMasterProductCategoryContent::run($masterDepartment)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryContent::run($masterDepartment)),
+                    : Inertia::optional(fn () => GetMasterProductCategoryContent::run($masterDepartment)),
 
                 MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab === MasterDepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
                     fn () => GetRelatedMasterProductCategories::run($masterDepartment)
-                    : Inertia::lazy(fn () => GetRelatedMasterProductCategories::run($masterDepartment)),
+                    : Inertia::optional(fn () => GetRelatedMasterProductCategories::run($masterDepartment)),
 
                 // MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
                 //     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
-                //     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
+                //     : Inertia::optional(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
 
                 'salesData' => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryTimeSeriesData::run($masterDepartment)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryTimeSeriesData::run($masterDepartment)),
+                    : Inertia::optional(fn () => GetMasterProductCategoryTimeSeriesData::run($masterDepartment)),
 
                 MasterDepartmentTabsEnum::SALES->value => $this->tab == MasterDepartmentTabsEnum::SALES->value ?
                     fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterDepartment, MasterDepartmentTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterDepartment, MasterDepartmentTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterDepartment, MasterDepartmentTabsEnum::SALES->value))),
 
                 MasterDepartmentTabsEnum::IMAGES->value => $this->tab == MasterDepartmentTabsEnum::IMAGES->value ?
                     fn () =>  GetMasterProductCategoryImages::run($masterDepartment)
-                    : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterDepartment)),
+                    : Inertia::optional(fn () => GetMasterProductCategoryImages::run($masterDepartment)),
 
                 MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))),
 
 
             ]

@@ -18,7 +18,7 @@ import {
     faPersonDolly
 } from '@fal';
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import { computed, defineAsyncComponent, ref } from "vue";
+import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue";
 import ModelDetails from "@/Components/ModelDetails.vue";
@@ -46,7 +46,6 @@ library.add(
     faPersonDolly
 );
 
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 const props = defineProps<{
     title: string,

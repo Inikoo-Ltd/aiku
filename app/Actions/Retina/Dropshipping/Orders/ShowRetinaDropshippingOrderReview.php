@@ -72,6 +72,16 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
             ReviewContextEnum::FAMILY->value  => $this->ratingLabelsForShop($order->shop_id, ReviewContextEnum::FAMILY),
         ];
 
+        $navigation = RetinaOrderReviewTabsEnum::navigation();
+        $tabLabels  = $this->shop->getCustomReviewCategoryLabel();
+
+        $navigation = collect($navigation)->mapWithKeys(fn ($item, $key) => [
+            $key    => [
+                'title' => data_get($tabLabels, $item['scope'], $item['title']),
+                'icon'  => $item['icon'],
+            ]
+        ])->toArray();
+
         $customerSalesChannel = $order->customerSalesChannel;
 
         return Inertia::render(
@@ -105,7 +115,7 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                 ],
                 'tabs'           => [
                     'current'    => $this->tab,
-                    'navigation' => RetinaOrderReviewTabsEnum::navigation()
+                    'navigation' => $navigation
                 ],
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
                 'box_stats' => $this->getOrderBoxStats($order),
@@ -122,7 +132,7 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
 
                 RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value => $this->tab == RetinaOrderReviewTabsEnum::OVERALL_REVIEW->value ?
                     fn () => $this->getOverallReview($order)
-                    : Inertia::lazy(fn () => $this->getOverallReview($order)),
+                    : Inertia::optional(fn () => $this->getOverallReview($order)),
 
                 RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value => $this->tab == RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value
                     ? fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
@@ -133,7 +143,7 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                             'scope'         => ReviewScopeEnum::FAMILY->value,
                             'rating_labels' => $ratingLabels[ReviewContextEnum::FAMILY->value],
                         ])
-                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
+                    : Inertia::optional(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewFamiliesInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::FAMILY_REVIEWS->value)))
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,
@@ -151,7 +161,7 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                             'scope'         => ReviewScopeEnum::PRODUCT->value,
                             'rating_labels' => $ratingLabels[ReviewContextEnum::PRODUCT->value],
                         ])
-                    : Inertia::lazy(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
+                    : Inertia::optional(fn () => RetinaOrderReviewableResource::collection($this->withReviewMedia(IndexReviewProductsInOrder::run(order: $order, prefix: RetinaOrderReviewTabsEnum::PRODUCT_REVIEWS->value)))
                         ->additional([
                             'order_id'      => $order->id,
                             'shop_id'       => $order->shop_id,

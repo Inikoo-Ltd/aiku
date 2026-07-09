@@ -71,6 +71,12 @@ task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
         run("cd {{release_path}} && {{bin/npm}} run build");
+        run(
+            'for dir in retina iris grp pupil aiku-public; do '
+            .'if [ -d {{previous_release}}/public/$dir/assets ]; then '
+            .'rsync -a --ignore-existing {{previous_release}}/public/$dir/assets/ {{release_path}}/public/$dir/assets/; '
+            .'fi; done'
+        );
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
@@ -101,9 +107,6 @@ task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod'
 
 desc('Refresh vue after deployment');
 task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
-
-desc('Log deployment');
-task('artisan:log-app-deployment', artisan('deploy:record-deployment --commit={{release_revision}}'))->select('env=prod');
 
 
 desc('Refresh vue after deployment');
@@ -254,7 +257,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 
     if ($shouldRestartSSR) {
-        run("sudo supervisorctl restart inertia-ssr-production");
+        run("sudo /usr/bin/supervisorctl restart inertia-ssr-production");
     }
 })->select('env=prod');
 
@@ -298,6 +301,10 @@ task('deploy:view-cache', function () {
     artisan('view:cache', ['skipIfNoEnv', 'showOutput'])();
 });
 
+desc('Log deployment');
+task('artisan:log-app-deployment', artisan('deploy:record-deployment --commit={{release_revision}}'))->select('env=prod');
+
+
 desc('Log app deployment');
 task('deploy:log-app-deployment', function () {
     if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
@@ -305,9 +312,19 @@ task('deploy:log-app-deployment', function () {
 
         return;
     }
-
     invoke('artisan:log-app-deployment');
 });
+
+
+desc('Artisan Setup guess language');
+task('artisan:translations:setup-guess-language', artisan('translations:setup-guess-language'))->select('env=prod');
+
+
+desc('Setup guess language');
+task('deploy:translations:setup-guess-language', function () {
+    invoke('artisan:translations:setup-guess-language');
+});
+
 
 desc('Deploys your project');
 task('deploy', [
@@ -329,8 +346,9 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
-    'deploy:restart-ssr-by-supervisorctl',
+    //'deploy:restart-ssr-by-supervisorctl',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
     'deploy:log-app-deployment',
+    'deploy:translations:setup-guess-language',
 ]);

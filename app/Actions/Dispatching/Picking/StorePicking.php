@@ -21,21 +21,16 @@ use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use App\Actions\Audits\DispatchSimpleAudit;
 
 class StorePicking extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
-
     protected DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): Picking
     {
-        $oldPickingQuantity = (int) ($deliveryNoteItem->quantity_picked ?? 0);
+        $oldPickingQuantity = (int)($deliveryNoteItem->quantity_picked ?? 0);
         data_forget($modelData, 'location_org_stock_id');
 
         data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
@@ -53,36 +48,32 @@ class StorePicking extends OrgAction
         $picking->refresh();
 
 
-        if (app()->environment('production')) {
-            SavePickingInAurora::dispatch($picking);
-        }
-
         StoreOrgStockMovement::dispatch(
             $locationOrgStock->orgStock,
             $locationOrgStock->location,
             [
                 'quantity' => -$picking->quantity,
                 'type'     => OrgStockMovementTypeEnum::PICKED
-            ]
+            ],
+            $picking
         );
-
 
 
         CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
         $deliveryNoteItem->refresh();
-        $newPickingQuantity = (int) $deliveryNoteItem->quantity_picked;
+        $newPickingQuantity = (int)$deliveryNoteItem->quantity_picked;
 
-        $productCode  = $deliveryNoteItem->orgStock?->code ?? 'Unknown Item';
+        $productCode = $deliveryNoteItem->orgStock?->code ?? 'Unknown Item';
 
         $oldAuditString = "$oldPickingQuantity pcs of $productCode";
         $newAuditString = "$newPickingQuantity pcs of $productCode";
 
         DispatchSimpleAudit::run(
-            auditableModel  : $deliveryNoteItem->deliveryNote,
-            logKey          : 'picked_item',
-            oldValue        : $oldAuditString,
-            newValue        : $newAuditString,
-            eventName       : 'item_picked'
+            auditableModel: $deliveryNoteItem->deliveryNote,
+            logKey: 'picked_item',
+            oldValue: $oldAuditString,
+            newValue: $newAuditString,
+            eventName: 'item_picked'
         );
 
         return $picking;
