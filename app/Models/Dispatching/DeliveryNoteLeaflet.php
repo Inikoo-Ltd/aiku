@@ -10,7 +10,7 @@ namespace App\Models\Dispatching;
 
 use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteLeaflet\DeliveryNoteLeafletStateEnum;
-use App\Models\Catalogue\ModelHasLeaflet;
+use App\Models\Billables\ModelHasLeaflet;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;

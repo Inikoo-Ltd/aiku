@@ -8,8 +8,8 @@
 
 namespace App\Models\CRM;
 
-use App\Models\Catalogue\ModelHasLeaflet;
-use App\Models\Catalogue\Packaging;
+use App\Models\Billables\ModelHasLeaflet;
+use App\Models\Billables\Packaging;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

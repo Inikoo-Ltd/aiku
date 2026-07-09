@@ -6,18 +6,16 @@
  * Copyright (c) 2026, Inikoo Ltd
  */
 
-namespace App\Models\Catalogue;
+namespace App\Models\Billables;
 
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
-use App\Models\Helpers\Currency;
-use App\Models\Traits\HasHistory;
+use App\Models\Helpers\Media;
 use App\Models\Traits\InShop;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -25,24 +23,28 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $organisation_id
  * @property int|null $shop_id
  * @property int|null $packaging_id
- * @property string $name
+ * @property string $model_type
+ * @property int $model_id
+ * @property int $leaflet_id
  * @property LeafletTypeEnum $type
- * @property numeric $price
- * @property int $currency_id
+ * @property string $name
+ * @property int|null $media_id
  * @property LeafletStateEnum $state
+ * @property int|null $number_pages
+ * @property string|null $print_size
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read Currency $currency
+ * @property-read Leaflet $leaflet
+ * @property-read Media|null $media
+ * @property-read Model $model
  * @property-read Packaging|null $packaging
  * @mixin \Eloquent
  */
-class Leaflet extends Model implements Auditable
+class ModelHasLeaflet extends Model
 {
     use SoftDeletes;
-    use HasHistory;
-    use HasFactory;
     use InShop;
 
     protected $guarded = [];
@@ -50,7 +52,6 @@ class Leaflet extends Model implements Auditable
     protected $casts = [
         'type'  => LeafletTypeEnum::class,
         'state' => LeafletStateEnum::class,
-        'price' => 'decimal:2',
         'data'  => 'array',
     ];
 
@@ -58,28 +59,23 @@ class Leaflet extends Model implements Auditable
         'data' => '{}',
     ];
 
-    protected array $auditInclude = [
-        'name',
-        'type',
-        'price',
-        'state',
-        'packaging_id',
-    ];
-
-    public function generateTags(): array
+    public function model(): MorphTo
     {
-        return [
-            'catalogue',
-        ];
+        return $this->morphTo();
     }
 
-    public function currency(): BelongsTo
+    public function leaflet(): BelongsTo
     {
-        return $this->belongsTo(Currency::class);
+        return $this->belongsTo(Leaflet::class);
     }
 
     public function packaging(): BelongsTo
     {
         return $this->belongsTo(Packaging::class);
+    }
+
+    public function media(): BelongsTo
+    {
+        return $this->belongsTo(Media::class);
     }
 }

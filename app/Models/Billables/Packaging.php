@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Inikoo Ltd
  */
 
-namespace App\Models\Catalogue;
+namespace App\Models\Billables;
 
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingTypeEnum;
