@@ -70,7 +70,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
         Route::get('/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('show');
     });
 
-    Route::prefix('upcoming-transactions')->name('upcoming_transactions.')->group(function () {
+    Route::prefix('upcoming-transactions')->name('.upcoming_transactions.')->group(function () {
         Route::get('', IndexUpcomingTransactions::class)->name('index')->withoutScopedBindings();
     });
 
