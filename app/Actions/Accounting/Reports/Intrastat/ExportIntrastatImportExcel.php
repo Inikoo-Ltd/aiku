@@ -6,16 +6,16 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Accounting\Intrastat;
+namespace App\Actions\Accounting\Reports\Intrastat;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
-use App\Exports\Accounting\IntrastatExportExcel;
+use App\Exports\Accounting\IntrastatImportExcel;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ExportIntrastatExcel extends OrgAction
+class ExportIntrastatImportExcel extends OrgAction
 {
     use WithExportData;
 
@@ -29,9 +29,9 @@ class ExportIntrastatExcel extends OrgAction
 
     public function handle(Organisation $organisation, array $filters): BinaryFileResponse
     {
-        $export = new IntrastatExportExcel($organisation, $filters);
+        $export = new IntrastatImportExcel($organisation, $filters);
 
-        return $this->export($export, 'intrastat-export', $filters['type'] ?? 'xlsx');
+        return $this->export($export, 'intrastat-import', $filters['type'] ?? 'xlsx');
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
@@ -42,9 +42,8 @@ class ExportIntrastatExcel extends OrgAction
         $this->validateAttributes();
 
         $filters = [
-            'type'     => $request->input('type', 'xlsx'),
-            'between'  => $request->input('between', []),
-            'elements' => $request->input('elements', []),
+            'type'    => $request->input('type', 'xlsx'),
+            'between' => $request->input('between', []),
         ];
 
         return $this->handle($organisation, $filters);

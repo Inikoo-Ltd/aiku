@@ -1,16 +1,21 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 09 Jul 2026 22:43:45 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Accounting\SageInvoices;
+namespace App\Actions\Accounting\Reports\MontanaInvoices;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
-use App\Exports\Accounting\SageInvoicesExport;
+use App\Exports\Accounting\MontanaInvoicesExport;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ExportSageInvoices extends OrgAction
+class ExportMontanaInvoices extends OrgAction
 {
     use WithExportData;
 
@@ -37,10 +42,10 @@ class ExportSageInvoices extends OrgAction
             $endDate = Carbon::now()->endOfMonth()->format('Y-m-d');
         }
 
-        $export = new SageInvoicesExport($organisation, $startDate, $endDate);
+        $export = new MontanaInvoicesExport($organisation, $startDate, $endDate);
 
         $filename = sprintf(
-            'sage_invoices_%s_%s_to_%s',
+            'montana_invoices_%s_%s_to_%s',
             $organisation->slug,
             Carbon::parse($startDate)->format('Y-m-d'),
             Carbon::parse($endDate)->format('Y-m-d')

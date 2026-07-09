@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Accounting\IntrastatImportTimeSeries;
+namespace App\Actions\Accounting\Reports\IntrastatImportTimeSeries;
 
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;

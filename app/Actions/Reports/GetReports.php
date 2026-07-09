@@ -2,13 +2,13 @@
 
 namespace App\Actions\Reports;
 
-use App\Actions\OrgAction;
-use App\Actions\Accounting\Intrastat\UI\IndexIntrastatExportReport;
-use App\Actions\Accounting\Intrastat\UI\IndexIntrastatImportReport;
-use App\Actions\Accounting\MontanaInvoices\UI\IndexMontanaInvoicesReport;
-use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
+use App\Actions\Accounting\Reports\Intrastat\UI\IndexIntrastatExportReport;
+use App\Actions\Accounting\Reports\Intrastat\UI\IndexIntrastatImportReport;
+use App\Actions\Accounting\Reports\MontanaInvoices\UI\IndexMontanaInvoicesReport;
+use App\Actions\Accounting\Reports\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Actions\Dispatching\Reports\IndexPackerPerformanceReport;
 use App\Actions\Dispatching\Reports\IndexPickerPerformanceReport;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SysAdmin\OverviewResource;

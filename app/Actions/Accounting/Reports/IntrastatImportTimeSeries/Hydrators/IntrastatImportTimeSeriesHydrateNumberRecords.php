@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Accounting\IntrastatImportTimeSeries\Hydrators;
+namespace App\Actions\Accounting\Reports\IntrastatImportTimeSeries\Hydrators;
 
 use App\Models\Accounting\IntrastatImportTimeSeries;
 use Illuminate\Contracts\Queue\ShouldBeUnique;

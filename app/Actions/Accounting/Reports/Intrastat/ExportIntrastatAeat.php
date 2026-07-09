@@ -1,6 +1,11 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 09 Jul 2026 22:44:06 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Accounting\Intrastat;
+namespace App\Actions\Accounting\Reports\Intrastat;
 
 use App\Actions\OrgAction;
 use App\Models\Accounting\IntrastatExportTimeSeriesRecord;

@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Accounting\Intrastat\UI;
+namespace App\Actions\Accounting\Reports\Intrastat\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Reports\IndexReports;

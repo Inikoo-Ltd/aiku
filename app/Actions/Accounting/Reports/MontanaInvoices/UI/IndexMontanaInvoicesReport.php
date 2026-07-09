@@ -1,12 +1,17 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 09 Jul 2026 22:43:45 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Accounting\SageInvoices\UI;
+namespace App\Actions\Accounting\Reports\MontanaInvoices\UI;
 
 use App\Actions\Accounting\Invoice\WithInvoicesSubNavigation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\UI\Reports\IndexReports;
-use App\Http\Resources\Accounting\SageInvoiceResource;
+use App\Http\Resources\Accounting\MontanaInvoiceResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
@@ -20,7 +25,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexSageInvoicesReport extends OrgAction
+class IndexMontanaInvoicesReport extends OrgAction
 {
     use WithInvoicesSubNavigation;
 
@@ -34,7 +39,7 @@ class IndexSageInvoicesReport extends OrgAction
                 $query->whereWith('invoices.reference', $value)
                     ->orWhereWith('customers.name', $value)
                     ->orWhereWith('customers.company_name', $value)
-                    ->orWhereWith('customers.accounting_reference', $value);
+                    ->orWhereWith('customers.contact_name', $value);
             });
         });
 
@@ -53,13 +58,13 @@ class IndexSageInvoicesReport extends OrgAction
         $queryBuilder->where('invoices.in_process', false);
         $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
         $queryBuilder->leftJoin('currencies', 'invoices.currency_id', '=', 'currencies.id');
-        $queryBuilder->leftJoin('tax_categories', 'invoices.tax_category_id', '=', 'tax_categories.id');
+        $queryBuilder->leftJoin('addresses', 'customers.address_id', '=', 'addresses.id');
 
         $this->records = $queryBuilder->count('invoices.id');
 
         $queryBuilder
             ->defaultSort('-date')
-            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount', 'is_credit_customer', 'accounting_reference'])
+            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix)
@@ -72,6 +77,10 @@ class IndexSageInvoicesReport extends OrgAction
                 'invoices.reference',
                 'invoices.date',
                 'invoices.type',
+                'invoices.goods_amount',
+                'invoices.services_amount',
+                'invoices.shipping_amount',
+                'invoices.charges_amount',
                 'invoices.net_amount',
                 'invoices.tax_amount',
                 'invoices.total_amount',
@@ -81,11 +90,16 @@ class IndexSageInvoicesReport extends OrgAction
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
                 'customers.company_name as customer_company',
-                'customers.is_credit_customer as is_credit_customer',
-                'customers.accounting_reference',
+                'customers.contact_name as customer_contact',
+                'invoices.tax_number',
                 'currencies.code as currency_code',
                 'currencies.symbol as currency_symbol',
-                'tax_categories.name as tax_category_name',
+                'addresses.address_line_1',
+                'addresses.address_line_2',
+                'addresses.locality',
+                'addresses.administrative_area',
+                'addresses.postal_code',
+                'addresses.country_code',
             ])
             ->paginate(perPage: 50);
     }
@@ -101,8 +115,8 @@ class IndexSageInvoicesReport extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title'       => __('No Sage invoices'),
-                        'description' => __('No credit customer invoices found for the selected period. Enable credit customers in customer settings.'),
+                        'title'       => __('No Montana invoices'),
+                        'description' => __('No invoices found for the selected period.'),
                         'count'       => $this->records,
                     ]
                 )
@@ -110,9 +124,9 @@ class IndexSageInvoicesReport extends OrgAction
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'reference', label: __('Reference'), sortable: true, searchable: true)
                 ->column(key: 'customer_name', label: __('Customer'), sortable: true, searchable: true)
-                ->column(key: 'accounting_reference', label: 'Sage Ref', sortable: true)
+                ->column(key: 'customer_contact', label: __('Contact'), sortable: false)
+                ->column(key: 'tax_number', label: __('VAT'), sortable: false)
                 ->column(key: 'type', label: __('Type'))
-                ->column(key: 'is_credit_customer', label: __('Credit Customer'), sortable: true)
                 ->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency')
                 ->column(key: 'tax_amount', label: __('Tax'), sortable: true, type: 'currency')
                 ->column(key: 'total_amount', label: __('Total'), sortable: true, type: 'currency')
@@ -165,43 +179,43 @@ class IndexSageInvoicesReport extends OrgAction
     {
         if ($this->parent instanceof Shop) {
             return Inertia::render(
-                'Org/Reports/SageInvoicesReport',
+                'Org/Reports/MontanaInvoicesReport',
                 [
                     'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                    'title'       => __('Sage Invoices Report'),
+                    'title'       => __('Montana Invoices Report'),
                     'pageHead'    => [
-                        'title'         => __('Sage Invoices Export Report'),
+                        'title'         => __('Montana Invoices Export Report'),
                         'icon'          => [
-                            'title' => __('Sage Invoices'),
+                            'title' => __('Montana Invoices'),
                             'icon'  => 'fal fa-file-invoice'
                         ],
                         'subNavigation' => $this->getInvoicesNavigation($this->parent)
                     ],
-                    'data'        => SageInvoiceResource::collection($invoices),
+                    'data'        => MontanaInvoiceResource::collection($invoices),
                 ]
             )->table($this->tableStructure());
         }
 
         return Inertia::render(
-            'Org/Reports/SageInvoicesReport',
+            'Org/Reports/MontanaInvoicesReport',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Sage Invoices Report'),
+                'title'       => __('Montana Invoices Report'),
                 'pageHead'    => [
-                    'title' => __('Sage Invoices Export Report'),
+                    'title' => __('Montana Invoices Export Report'),
                     'icon'  => [
-                        'title' => __('Sage Invoices'),
+                        'title' => __('Montana Invoices'),
                         'icon'  => 'fal fa-file-invoice'
                     ],
                 ],
-                'data'        => SageInvoiceResource::collection($invoices),
+                'data'        => MontanaInvoiceResource::collection($invoices),
             ]
         )->table($this->tableStructure());
     }
 
     public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
     {
-        return SageInvoiceResource::collection($invoices);
+        return MontanaInvoiceResource::collection($invoices);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -214,9 +228,9 @@ class IndexSageInvoicesReport extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'icon'  => 'fal fa-file-invoice',
-                            'label' => __('Sage Invoices'),
+                            'label' => __('Montana Invoices'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.dashboard.invoices.sage.index',
+                                'name'       => 'grp.org.shops.show.dashboard.invoices.montana.index',
                                 'parameters' => $routeParameters
                             ]
                         ]
@@ -232,9 +246,9 @@ class IndexSageInvoicesReport extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'icon'  => 'fal fa-file-invoice',
-                        'label' => __('Sage Invoices'),
+                        'label' => __('Montana Invoices'),
                         'route' => [
-                            'name'       => 'grp.org.reports.sage-invoices',
+                            'name'       => 'grp.org.reports.montana-invoices',
                             'parameters' => $routeParameters
                         ]
                     ]

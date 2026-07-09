@@ -6,9 +6,9 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Actions\Accounting\IntrastatImportTimeSeries;
+namespace App\Actions\Accounting\Reports\IntrastatImportTimeSeries;
 
-use App\Actions\Accounting\IntrastatImportTimeSeries\Hydrators\IntrastatImportTimeSeriesHydrateNumberRecords;
+use App\Actions\Accounting\Reports\IntrastatImportTimeSeries\Hydrators\IntrastatImportTimeSeriesHydrateNumberRecords;
 use App\Enums\Accounting\Intrastat\IntrastatDeliveryTermsEnum;
 use App\Enums\Accounting\Intrastat\IntrastatNatureOfTransactionEnum;
 use App\Enums\Accounting\Intrastat\IntrastatTransportModeEnum;
