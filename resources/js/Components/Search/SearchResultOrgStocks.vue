@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link } from '@inertiajs/vue3'
 import Skeleton from 'primevue/skeleton'
 import { ref } from 'vue'
@@ -12,6 +13,7 @@ type OrgStock = {
 
 type OrgStocksResults = {
     org_stocks: OrgStock[]
+    org_stock_families: OrgStock[]
 }
 
 const model = defineModel('open')
@@ -22,7 +24,10 @@ defineProps<{
     query: string
 }>()
 
-const isLoading = ref<number|null>(null)
+type Tab = 'org_stocks' | 'org_stock_families'
+
+const activeTab = ref<Tab>('org_stocks')
+const loadingId = ref<number | null>(null)
 </script>
 
 <template>
@@ -31,13 +36,36 @@ const isLoading = ref<number|null>(null)
         <p class="font-semibold text-sm mb-4">{{ query }}</p>
         <p class="text-xs text-gray-400 mb-2">{{ ctrans("Summary") }}</p>
         <div v-if="isLoading" class="space-y-2">
-            <Skeleton height="2.5rem" borderRadius="0.75rem" />
+            <Skeleton height="2.5rem" borderRadius="0.375rem" />
+            <Skeleton height="2.5rem" borderRadius="0.375rem" />
         </div>
         <div v-else class="space-y-2">
-            <div class="p-3 rounded-md bg-white text-sm flex items-center justify-between cursor-pointer transition hover:bg-slate-100 hover:shadow-sm active:scale-[0.98]">
-                <span class="font-medium text-slate-700">{{ ctrans("Org Stocks") }}</span>
+            <button
+                type="button"
+                class="w-full p-3 rounded-md text-sm flex items-center justify-between transition active:scale-[0.98]"
+                :class="activeTab === 'org_stocks'
+                    ? 'bg-white shadow-sm ring-1 ring-slate-200 text-slate-900'
+                    : 'bg-white/60 text-slate-600 hover:bg-slate-100'"
+                @click="activeTab = 'org_stocks'"
+            >
+            <span class="font-medium">
+                    <FontAwesomeIcon icon='fal fa-box' class='' fixed-width aria-hidden='true' />
+                    {{ ctrans("Org Stocks") }}</span>
                 <span class="text-xs text-gray-400">{{ results?.org_stocks?.length ?? 0 }}</span>
-            </div>
+            </button>
+            <button
+                type="button"
+                class="w-full p-3 rounded-md text-sm flex items-center justify-between transition active:scale-[0.98]"
+                :class="activeTab === 'org_stock_families'
+                    ? 'bg-white shadow-sm ring-1 ring-slate-200 text-slate-900'
+                    : 'bg-white/60 text-slate-600 hover:bg-slate-100'"
+                @click="activeTab = 'org_stock_families'"
+            >
+            <span class="font-medium">
+                    <FontAwesomeIcon icon='fal fa-boxes-alt' class='' fixed-width aria-hidden='true' />
+                    {{ ctrans("Org Stock Families") }}</span>
+                <span class="text-xs text-gray-400">{{ results?.org_stock_families?.length ?? 0 }}</span>
+            </button>
         </div>
     </div>
 
@@ -52,28 +80,57 @@ const isLoading = ref<number|null>(null)
                     <Skeleton width="40%" height="0.75rem" />
                 </div>
             </div>
-            <div v-else-if="results?.org_stocks?.length">
-                <Link
-                    v-for="orgStock in results.org_stocks"
-                    :key="orgStock.id"
-                    :href="route('grp.helpers.redirect_org_stock', [orgStock.id])"
-                    class="block group p-4 rounded-md border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer mb-3"
-                    @start="() => model = false"
-                    @finish="() => isLoading = null"
-                >
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-semibold">{{ orgStock.name }}</p>
-                        <span
-                            class="text-[10px] px-2 py-0.5 rounded-full capitalize"
-                            :class="orgStock.state === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'"
-                        >
-                            {{ orgStock.state }}
-                        </span>
+
+            <template v-else-if="activeTab === 'org_stocks'">
+                <div v-if="results?.org_stocks?.length">
+                    <Link
+                        v-for="orgStock in results.org_stocks"
+                        :key="orgStock.id"
+                        :href="route('grp.helpers.redirect_org_stock', [orgStock.id])"
+                        class="block group p-4 rounded-md border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer mb-3"
+                        @start="() => { model = false; loadingId = orgStock.id }"
+                        @finish="() => loadingId = null"
+                    >
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm font-semibold">{{ orgStock.name }}</p>
+                            <span
+                                class="text-[10px] px-2 py-0.5 rounded-full capitalize"
+                                :class="orgStock.state === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'"
+                            >
+                                {{ orgStock.state }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">{{ ctrans("Code") }}: {{ orgStock.code }}</p>
+                    </Link>
+                </div>
+                <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">
+                    {{ ctrans("No org stocks") }}
+                </div>
+            </template>
+
+            <template v-else>
+                <div v-if="results?.org_stock_families?.length">
+                    <div
+                        v-for="family in results.org_stock_families"
+                        :key="family.id"
+                        class="block p-4 rounded-md border border-transparent bg-slate-50 mb-3"
+                    >
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm font-semibold">{{ family.name }}</p>
+                            <span
+                                class="text-[10px] px-2 py-0.5 rounded-full capitalize"
+                                :class="family.state === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'"
+                            >
+                                {{ family.state }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">{{ ctrans("Code") }}: {{ family.code }}</p>
                     </div>
-                    <p class="text-xs text-gray-400 mt-2">{{ ctrans("Code") }}: {{ orgStock.code }}</p>
-                </Link>
-            </div>
-            <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">{{ ctrans("No org stocks") }}</div>
+                </div>
+                <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">
+                    {{ ctrans("No org stock families") }}
+                </div>
+            </template>
         </div>
     </div>
 </template>
