@@ -62,6 +62,16 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    [
+                        "label"   => __("Changelogs"),
+                        "tooltip" => __("Changelogs"),
+                        "icon"    => ["fal", "fa-history"],
+                        'root'    => 'grp.org.shops.show.dashboard.changelogs',
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.dashboard.changelogs.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ]
                 ],
             ]
         ];
@@ -619,6 +629,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.ordering.couriers.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.ordering.couriers.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Abandoned Checkouts"),
+                            "tooltip" => __("Abandoned Checkouts"),
+                            "icon"    => ["fal", "fa-shopping-cart"],
+                            'root'    => 'grp.org.shops.show.ordering.checkout_abandonments.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.checkout_abandonments.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

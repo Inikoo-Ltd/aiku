@@ -5,6 +5,7 @@ import { Colors } from "@/types/Color"
 import { Navigation, grpNavigation, orgNavigation } from "@/types/Navigation"
 import { Image } from "@/types/Image"
 import { Notification } from '@/types/Notification'
+import { Bookmark } from '@/types/Bookmark'
 
 export const layoutStructure = {
     agents: {
@@ -70,4 +71,5 @@ export const layoutStructure = {
     dispatching_waiting_count: 0 as number,
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,
+    bookmarks: [] as Bookmark[],
 }

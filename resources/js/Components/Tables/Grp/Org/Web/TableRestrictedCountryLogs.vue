@@ -46,7 +46,7 @@ const flagUrl = (code: string) => `/flags/${code.toLowerCase()}.png`
             </span>
         </template>
         <template  #cell(last_request_at)="{ item }">
-            <span class="whitespace-nowrap">{{ useFormatTime(item.last_request_at, { formatTime: 'PPPP HH:mm:ss OOOO', timeZone: 'UTC' }) }}</span>
+            <span class="whitespace-nowrap">{{ useFormatTime(item.last_request_at, { formatTime: "dd MMM yyyy, HH:mm", timeZone: 'UTC', keepTimezone: true }) }} UTC</span>
         </template>
     </Table>
 </template>

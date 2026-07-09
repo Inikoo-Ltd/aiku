@@ -78,6 +78,7 @@ use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Procurement\OrgAgent;
@@ -793,6 +794,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function purges(): HasMany
     {
         return $this->hasMany(Purge::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
     }
 
     public function serialReferences(): MorphMany

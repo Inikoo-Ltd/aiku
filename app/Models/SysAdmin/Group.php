@@ -83,6 +83,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\SalesChannel;
@@ -847,6 +848,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function purges(): HasMany
     {
         return $this->hasMany(Purge::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
     }
 
     public function queries(): HasMany

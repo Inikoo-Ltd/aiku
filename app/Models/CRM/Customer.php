@@ -44,6 +44,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Reviews\Review;
@@ -450,6 +451,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
     }
 
     public function payments(): HasMany

@@ -24,6 +24,7 @@ class LocationsSearchResultResource extends JsonResource
             'code'   => $location->code,
             'status' => $location->status,
             'id'     => $location->id,
+            'slug'   => $location->slug,
         ];
     }
 }

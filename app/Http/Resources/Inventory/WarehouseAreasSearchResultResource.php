@@ -24,6 +24,7 @@ class WarehouseAreasSearchResultResource extends JsonResource
             'code' => $warehouseArea->code,
             'name' => $warehouseArea->name,
             'id'   => $warehouseArea->id,
+            'slug' => $warehouseArea->slug,
         ];
     }
 }
