@@ -103,11 +103,12 @@ class StoreOrgStockMovement extends OrgAction
                 );
             }
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
+            BroadcastStockMovement::dispatch($locationOrgStock);
+
         }
 
         $this->hydrateOrgStockMovement($orgStockMovement);
 
-        BroadcastStockMovement::dispatch($locationOrgStock);
 
         $picking?->update(
             [
