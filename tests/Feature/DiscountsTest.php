@@ -488,6 +488,7 @@ test('check voucher code existence', function () {
         'start_at'           => now()->toDateTimeString(),
         'end_at'             => now()->addDays(10)->toDateTimeString(),
         'percentage_off'     => 10,
+        'allowance_type'     => 'percentage_off',
         'target_type'        => 'shop',
         'target_id'          => $shop->id,
     ]);
