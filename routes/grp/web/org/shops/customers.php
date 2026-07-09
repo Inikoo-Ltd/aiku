@@ -36,6 +36,7 @@ use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Ordering\Order\UI\IndexOrdersInCustomerSalesChannel;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\UpcomingTransaction\UI\IndexUpcomingTransactions;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', IndexCustomers::class)->name('index');
@@ -67,6 +68,10 @@ Route::prefix('{customer}')->as('show')->group(function () {
     Route::prefix('/invoices')->as('.invoices.')->group(function () {
         Route::get('/', [IndexInvoices::class, 'inCustomer'])->name('index');
         Route::get('/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('show');
+    });
+
+    Route::prefix('upcoming-transactions')->name('upcoming_transactions.')->group(function () {
+        Route::get('', IndexUpcomingTransactions::class)->name('index')->withoutScopedBindings();
     });
 
     Route::prefix('/orders')->as('.orders')->group(function () {

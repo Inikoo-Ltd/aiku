@@ -506,9 +506,9 @@ Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
 
 Route::prefix('customer/{customer:id}/upcoming-transactions')->name('customer.upcoming_transactions.')->group(function () {
-    Route::get('', IndexUpcomingTransactions::class)->name('index')->withoutScopedBindings();
     Route::post('', StoreUpcomingTransaction::class)->name('store')->withoutScopedBindings();
 });
+
 Route::prefix('upcoming-transaction/{upcomingTransaction:id}')->name('upcoming_transaction.')->group(function () {
     Route::patch('', UpdateUpcomingTransaction::class)->name('update');
     Route::delete('', DeleteUpcomingTransaction::class)->name('delete');
