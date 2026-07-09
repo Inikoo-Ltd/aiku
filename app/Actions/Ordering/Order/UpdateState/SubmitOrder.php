@@ -36,13 +36,14 @@ use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Ordering\UpcomingTransaction;
-use Illuminate\Console\Command;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
 
 class SubmitOrder extends OrgAction
 {
@@ -83,7 +84,11 @@ class SubmitOrder extends OrgAction
         $this->processGrGift($order);
         $this->processGiftOffers($order);
         $this->processVoucherGiftOffers($order);
-        $this->processUpComingTransactions($order);
+        try {
+            $this->processUpComingTransactions($order);
+        } catch (Exception $e) {
+            Sentry::captureException($e);
+        }
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
@@ -159,7 +164,7 @@ class SubmitOrder extends OrgAction
             /** @var Product $upComingTransactionProduct */
             $upComingTransactionProduct = $upComingTransaction->product;
 
-            $isGift = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
+            $isGift     = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
             $isFollowOn = $upComingTransaction->type === UpcomingTransactionTypeEnum::FOLLOW_ON;
 
             $transaction = StoreTransaction::make()->action(
@@ -167,17 +172,17 @@ class SubmitOrder extends OrgAction
                 $upComingTransactionProduct->currentHistoricProduct,
                 [
                     'quantity_ordered' => $isFollowOn ? $upComingTransaction->quantity : 0,
-                    'quantity_bonus' => $isGift ? $upComingTransaction->quantity : 0,
+                    'quantity_bonus'   => $isGift ? $upComingTransaction->quantity : 0,
                     'is_gift'          => $isGift,
                     'is_follow_on'     => $isFollowOn,
-                    'label' => $upComingTransaction->notes ?? ''
+                    'label'            => $upComingTransaction->notes ?? ''
                 ]
             );
 
             UpdateUpcomingTransaction::run($upComingTransaction, [
-                'order_id' => $order->id,
+                'order_id'       => $order->id,
                 'transaction_id' => $transaction->id,
-                'state' => UpcomingTransactionStateEnum::APPLIED
+                'state'          => UpcomingTransactionStateEnum::APPLIED
             ]);
         }
     }

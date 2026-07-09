@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 09 Jul 2026 13:43:35 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
@@ -15,7 +20,7 @@ return new class () extends Migration {
             $table->id();
 
             $table = $this->groupOrgRelationship($table);
-            $table->unsignedSmallInteger('shop_id');
+            $table->unsignedSmallInteger('shop_id')->index();
             $table->foreign('shop_id')->references('id')->on('shops');
             $table->unsignedInteger('customer_id')->index();
             $table->foreign('customer_id')->references('id')->on('customers');
@@ -31,8 +36,8 @@ return new class () extends Migration {
             $table->decimal('quantity', 16, 3)->nullable();
             $table->text('notes')->nullable();
 
-            $table->string('type');
-            $table->string('state')->default(UpcomingTransactionStateEnum::READY->value);
+            $table->string('type')->index();
+            $table->string('state')->index()->default(UpcomingTransactionStateEnum::READY->value);
 
             $table->timestampsTz();
         });
