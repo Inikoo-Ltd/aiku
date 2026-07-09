@@ -40,6 +40,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $balance
  * @property mixed $tags
  * @property mixed $number_customer_sales_channels
+ * @property mixed $is_vip
  */
 class CustomersResource extends JsonResource
 {
@@ -74,6 +75,7 @@ class CustomersResource extends JsonResource
             'currency_code'                   => $this->currency_code,
             'balance'                         => $this->balance,
             'tags'                            => $this->whenLoaded('tags', fn () => TagsResource::collection($this->tags)->toArray(request())),
+            'is_vip'                          => $this->is_vip,
         ];
 
         if ($this->organisation_name) {

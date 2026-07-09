@@ -12,9 +12,7 @@ use DOMDocument;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 trait WithAllegroApiServices
 {
@@ -500,6 +498,7 @@ trait WithAllegroApiServices
     {
         $data = [
             'name'             => Arr::get($data, 'name', 'Default return policy'),
+            'isFulfillment' => false,
             'availability'     => [
                 'range' => 'FULL'
             ],

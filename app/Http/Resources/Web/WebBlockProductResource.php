@@ -124,7 +124,7 @@ class WebBlockProductResource extends JsonResource
             'discounted_margin'          => $marginDiscounted,
             'discounted_percentage'      => percentage($bestPercentageOff, 1),
 
-
+            'is_single_trade_unit'       => $product->is_single_trade_unit,
         ];
     }
 }

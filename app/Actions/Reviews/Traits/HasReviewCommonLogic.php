@@ -134,7 +134,7 @@ trait HasReviewCommonLogic
     protected function resolveRatingMain(array $modelData, ?Review $review = null): float
     {
         $dimensionKeys          = ['rating_a', 'rating_b', 'rating_c', 'rating_d', 'rating_e'];
-        $dimensionsWereProvided = collect($dimensionKeys)->contains(fn(string $key): bool => array_key_exists($key, $modelData));
+        $dimensionsWereProvided = collect($dimensionKeys)->contains(fn (string $key): bool => array_key_exists($key, $modelData));
 
         $rating            = data_get($modelData, 'rating');
         $ratingWasProvided = array_key_exists('rating', $modelData) && is_numeric($rating);
@@ -144,9 +144,9 @@ trait HasReviewCommonLogic
         }
 
         $detailedRatings = collect($dimensionKeys)
-            ->map(fn(string $key) => data_get($modelData, $key))
-            ->filter(fn($value): bool => is_numeric($value))
-            ->map(fn($value): float => (float)$value)
+            ->map(fn (string $key) => data_get($modelData, $key))
+            ->filter(fn ($value): bool => is_numeric($value))
+            ->map(fn ($value): float => (float)$value)
             ->values();
 
         if ($detailedRatings->isNotEmpty()) {

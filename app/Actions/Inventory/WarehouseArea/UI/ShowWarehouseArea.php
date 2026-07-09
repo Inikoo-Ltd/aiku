@@ -109,7 +109,7 @@ class ShowWarehouseArea extends OrgAction
                 ],
                 WarehouseAreaTabsEnum::SHOWCASE->value => $this->tab == WarehouseAreaTabsEnum::SHOWCASE->value ?
                     fn () => GetWarehouseAreaShowcase::run($warehouseArea)
-                    : Inertia::lazy(fn () => GetWarehouseAreaShowcase::run($warehouseArea)),
+                    : Inertia::optional(fn () => GetWarehouseAreaShowcase::run($warehouseArea)),
 
                 WarehouseAreaTabsEnum::LOCATIONS->value => $this->tab == WarehouseAreaTabsEnum::LOCATIONS->value
                     ?
@@ -119,7 +119,7 @@ class ShowWarehouseArea extends OrgAction
                             prefix: WarehouseAreaTabsEnum::LOCATIONS->value
                         )
                     )
-                    : Inertia::lazy(fn () => LocationResource::collection(
+                    : Inertia::optional(fn () => LocationResource::collection(
                         IndexLocations::run(
                             parent: $warehouseArea,
                             prefix: WarehouseAreaTabsEnum::LOCATIONS->value
@@ -128,7 +128,7 @@ class ShowWarehouseArea extends OrgAction
 
                 WarehouseAreaTabsEnum::HISTORY->value => $this->tab == WarehouseAreaTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($warehouseArea))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($warehouseArea)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($warehouseArea)))
 
             ]
         )->table(

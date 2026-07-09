@@ -34,7 +34,7 @@ class SeedGroupPermissions
         $currentPermissions = Permission::where('scope_type', 'Group')->pluck('name');
         $currentPermissions->diff($groupPermissions)
             ->each(function ($permissionName) {
-                Permission::where('name', $permissionName)->first()->delete();
+                Permission::where('name', $permissionName)->delete();
             });
 
 
@@ -43,7 +43,7 @@ class SeedGroupPermissions
         $currentRoles->diff($groupRoles)
             ->each(function ($roleName) {
 
-                Role::where('name', $roleName)->first()->delete();
+                Role::where('name', $roleName)->delete();
             });
 
 

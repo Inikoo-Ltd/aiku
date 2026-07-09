@@ -18,6 +18,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { onMounted } from "vue"
 import { watch } from "vue"
 import { useBreadcrumbStructuredData } from "@/Iris/Composables/useBreadcrumbStructuredData"
+import { Popover } from "primevue"
 
 library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot)
 
@@ -151,6 +152,8 @@ watch(() => props.breadcrumbs, () => {
 onUnmounted(() => {
     removeStructuredDataScript(breadcrumbStructuredDataScript.value)
 })
+
+const _breadcrumbPopover = ref()
 </script>
 
 <template>
@@ -220,20 +223,16 @@ onUnmounted(() => {
             </li>
         </TransitionGroup>
 
+
         <!-- Popup for Breadcrumb List on Mobile -->
-        <Menu as="div" class="z-50 w-fit h-8 absolute top-0 md:hidden">
-            <MenuButton class="absolute w-64 h-full" aria-label="Transparency clickable area for breadcrumb popup"></MenuButton>
-            <transition enter-active-class="transition ease-out duration-100"
-                enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100"
-                leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100"
-                leave-to-class="transform opacity-0 scale-95">
-                <MenuItems
-                    class="origin-top-right absolute left-4 top-9 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-200 focus:outline-none">
-                    <MenuItem v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx" class="">
+        <div @click="_breadcrumbPopover?.toggle" class="z-50 md:hidden absolute w-64 h-full xbg-red-500" aria-label="Transparency clickable area for breadcrumb popup"></div>
+        <Popover ref="_breadcrumbPopover">
+            <div>
+                <div v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx" class="">
                     <template v-if="breadcrumb.type === 'simple'">
                         <component :is="breadcrumb.simple?.url || breadcrumb.simple?.route?.name ? Link : 'span'"
                             xclass="'' || ''"
-                            class="pl-3 py-2 grid grid-flow-col items-center justify-start"
+                            class="xpl-3 py-2 grid grid-flow-col items-center justify-start"
                             :href="breadcrumb.simple?.url ? breadcrumb.simple?.url : breadcrumb.simple?.route?.name ? route(breadcrumb.simple.route.name, breadcrumb.simple.route.parameters) : ''"
                             xstyle="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
                         >
@@ -243,7 +242,7 @@ onUnmounted(() => {
                             <!-- Icon Arrow -->
                             <FontAwesomeIcon v-if="breadcrumbIdx != 0" class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
                             <span v-if="breadcrumbIdx == 0 && !breadcrumb.simple.label" class="grid grid-flow-cols justify-center font-bold ml-2">
-                                DASHBOARD
+                                {{ ctrans("Storefront") }}
                             </span>
                             <span class="grid grid-flow-col items-center ml-4 mr-3">
                                 {{ breadcrumb.simple.label }}
@@ -287,10 +286,9 @@ onUnmounted(() => {
                             </component>
                         </div>
                     </template>
-                    </MenuItem>
-                </MenuItems>
-            </transition>
-        </Menu>
+                </div>
+            </div>
+        </Popover>
 
         <div v-if="props.navigation?.previous || props.navigation?.next" class="shrink-0 flex justify-end items-center space-x-2 text-xs md:text-sm text-gray-700 font-semibold">
             <!-- Button: Previous -->

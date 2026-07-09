@@ -11,7 +11,7 @@ import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import Icon from "@/Components/Icon.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
-import { debounce, get, set } from "lodash-es"
+import { get, set } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { ref, onMounted, reactive, inject } from "vue"
@@ -20,6 +20,7 @@ import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox
 import { faSkull, faStickyNote, faPeopleArrows} from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton } from "primevue"
@@ -33,7 +34,6 @@ import { RouteParams } from "@/types/route-params"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import SelectPickingLocation from "../DeliveryNotes/SelectPickingLocation.vue"
 import LabelPickingLocation from "../DeliveryNotes/LabelPickingLocation.vue"
-import { notify } from "@kyvg/vue3-notification"
 
 library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows)
 
@@ -51,6 +51,7 @@ const props = defineProps<{
 const locale = inject("locale", aikuLocaleStructure)
 
 const modalDetail = ref(false)
+
 
 const currentRouteParams = route().params as RouteParams
 
@@ -116,96 +117,23 @@ const generateLocationRoute = (location: any) => {
     return locationRouteCache.get(location.location_slug)!
 }
 
-// Section: Axios row actions (same pattern as TableDeliveryNoteItems): the action goes via
-// axios, then only the affected row is re-fetched and replaced with a new object so v-memo
-// re-renders just that row. In the grouped tab a row is a delivery note (rowId = delivery
-// note id, its `id` field); in the other tabs a row is a delivery note item.
-const rowActionLoading = reactive<{ [rowId: string]: string | null }>({})
 
-const replaceRowInTable = (rowId: number | string, newRow: any) => {
-    const rows = props.data?.data
-    if (!Array.isArray(rows)) {
-        return
-    }
-
-    const index = rows.findIndex((row: any) => row.id == rowId)
-    if (index === -1) {
-        return
-    }
-
-    const newRows = [...rows]
-    if (newRow) {
-        newRows[index] = newRow
-    } else {
-        newRows.splice(index, 1)
-        if (props.data.meta?.total > 0) {
-            props.data.meta.total--
-        }
-    }
-    props.data.data = newRows
-}
-
-const refreshRow = async (rowId: number | string) => {
+// Button: undo pick
+const isLoadingUndoPick = reactive({})
+const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadingKey: string) => {
     try {
-        const response = await axios.get(
-            route('grp.json.picking_session_item_row', { pickingSession: props.pickingSession.id }),
-            { params: { tab: props.tab, row_id: rowId } }
+        pallet_stored_item.isLoadingUndo = true
+        set(isLoadingUndoPick, loadingKey, true)
+        await axios[routeTarget.method || "get"](
+            route(routeTarget.name, routeTarget.parameters)
         )
-        replaceRowInTable(rowId, response.data?.data ?? null)
+        pallet_stored_item.state = "picking"
+
     } catch (error) {
-        console.error('Failed to refresh row, falling back to full reload', error)
-        router.reload({ preserveScroll: true })
-    }
-}
+        console.error("error A:", error)
 
-const itemsPropsToSkipOnReload = ['items', 'itemized', 'grouped']
-const reloadPageExceptItems = debounce(() => {
-    const stateBeforeReload = props.pickingSession?.state
-    router.reload({
-        except: itemsPropsToSkipOnReload,
-        preserveScroll: true,
-        onSuccess: () => {
-            if (props.pickingSession?.state !== stateBeforeReload) {
-                router.reload({ preserveScroll: true })
-            }
-        },
-    })
-}, 400)
-
-const onRowAction = async (
-    rowId: number | string,
-    routeTarget: routeType,
-    actionKey: string,
-    body: Record<string, any> = {},
-): Promise<boolean> => {
-    if (!routeTarget?.name) {
-        return false
-    }
-
-    const method = (routeTarget.method || 'post').toLowerCase()
-    const url = route(routeTarget.name, routeTarget.parameters)
-
-    rowActionLoading[rowId] = actionKey
-    try {
-        if (method === 'delete') {
-            await axios.delete(url, { data: body })
-        } else {
-            await axios[method](url, body)
-        }
-
-        await refreshRow(rowId)
-        reloadPageExceptItems()
-
-        return true
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Failed to process this action. Try again"),
-            type: "error",
-        })
-        return false
     } finally {
-        rowActionLoading[rowId] = null
+        set(isLoadingUndoPick, loadingKey, false)
     }
 }
 
@@ -272,44 +200,10 @@ const showReturnStoredItemsRoute = (item: any) => {
     return returnStoredItemsRouteCache.get(cacheKey)!
 }
 
-// Grouped rows hold one delivery note with its nested items; the other tabs hold one
-// delivery note item per row
-const estimateRowHeight = (item: any) => {
-    if (Array.isArray(item.items)) {
-        return 60 + Math.max(item.items.length, 1) * 110
-    }
-
-    let height = 100
-    const pickingRowsCount = item.pickings?.length ?? 0
-    if (pickingRowsCount > 1) {
-        height += (pickingRowsCount - 1) * 28
-    }
-    return height
-}
-
-const rowSelectedLocationSignature = (item: any) => {
-    if (Array.isArray(item.items)) {
-        return item.items.map((nested: any) => get(selectedLocationCode, [nested.id], '')).join('|')
-    }
-    return get(selectedLocationCode, [item.id], null)
-}
-
-// Every external reactive value a row's cells read must be listed here (see virtualRowMemo
-// in Table.vue): a row only re-renders when one of these values changes.
-const virtualRowMemo = (item: any) => [
-    item,
-    item.errors,
-    rowSelectedLocationSignature(item),
-    rowActionLoading[item.id],
-    twBreakPoint().join(','),
-    innerWidth.value,
-    props.pickingSession?.state,
-]
-
 </script>
 
 <template>
-    <Table :resource="data" class="mt-5" rowAlignTop :name="tab" virtualScroll :virtualItemHeight="estimateRowHeight" :virtualRowMemo="virtualRowMemo">
+    <Table :resource="data" class="mt-5" rowAlignTop :name="tab" xisUseVMemo>
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -327,7 +221,9 @@ const virtualRowMemo = (item: any) => [
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
-
+            <div class="mb-2">
+                <!-- Helper to make the row's height consistent -->
+            </div>
         </template>
 
         <template #cell(delivery_note_reference)="{ item }">
@@ -369,12 +265,14 @@ const virtualRowMemo = (item: any) => [
 
             <template v-if="pickingSession.state === 'handling'">
                 <span v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2">
-
-                    <Button v-if="!item.is_handled" type="negative"
+                    <ButtonWithLink v-if="!item.is_handled" type="negative"
                         :label="locale.number(item.quantity_to_pick)" v-tooltip="trans('Set as not picked')" icon="fal fa-debug"
                         size="xs"
-                        :loading="rowActionLoading[item.id] === 'not-pick'"
-                        @click="() => onRowAction(item.id, item.not_picking_route, 'not-pick')" />
+                        :routeTarget="item.not_picking_route"
+                        :bindToLink="{
+                            preserveScroll: true,
+                        }"
+                    />
                 </span>
 
                 <div v-else v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
@@ -429,24 +327,28 @@ const virtualRowMemo = (item: any) => [
                     </div>
 
                     <!-- Button: Undo -->
-                    <Button v-if="!item.is_packed && pickingSession.state == 'handling'"
-                        v-tooltip="trans('Undo')" type="negative" :size="twBreakPoint().includes('lg') ? 'xxs' : 'sm'"
+                    <ButtonWithLink v-if="!item.is_packed && pickingSession.state == 'handling'"
+                        v-tooltip="ctrans('Undo')"
+                        type="negative"
+                        :size="twBreakPoint().includes('lg') ? 'xxs' : 'sm'"
                         icon="fal fa-undo-alt"
-                        @click="() => onRowAction(item.id, picking.undo_picking_route, `undo-pick-${picking.id}`)"
-                        :loading="rowActionLoading[item.id] === `undo-pick-${picking.id}`" />
+                        :routeTarget="picking.undo_picking_route"
+                        :bindToLink="{ preserveScroll: true }"
+                        @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
+                        :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
+                    />
                 </div>
 
             </div>
 
             <div v-else class="text-xs text-gray-400 italic">
-                {{ trans("No item picked yet") }}
+                {{ ctrans("No item picked yet") }}
             </div>
         </template>
 
-        <!-- Column: 'Items' (grouped) -->
         <template #cell(items)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.items.length" v-for="(deliveryItem, index) in itemValue.items"
-                :key="deliveryItem.id || index" class="min-h-11">
+                :key="deliveryItem.id || index" class="space-y-2">
 
                 <div class="flex justify-between items-center">
                     <div>
@@ -473,14 +375,15 @@ const virtualRowMemo = (item: any) => [
                                         v-if="!deliveryItem.is_handled && findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).quantity > 0"
                                         :key="findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).location_code"
                                         noUndoButton
-                                        @onError="(error: any) => proxyItem.errors = error?.errors ? Object.values(error.errors).flat() : [error?.message || trans('Failed to save quantity')]"
+                                        @onError="(error: any) => proxyItem.errors = Object.values(error || {})"
                                         :modelValue="findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).quantity_picked"
                                         @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
-                                        @onSuccess="() => { refreshRow(itemValue.id); reloadPageExceptItems() }"
-                                        saveOnForm isUseAxios :routeSubmit="{
+                                        saveOnForm
+                                        :routeSubmit="{
                                             name: deliveryItem.upsert_picking_route.name,
                                             parameters: deliveryItem.upsert_picking_route.parameters
-                                        }" :bindToTarget="{
+                                        }"
+                                        :bindToTarget="{
                                             step: 1,
                                             min: 0,
                                             max: Math.min(
@@ -488,36 +391,50 @@ const virtualRowMemo = (item: any) => [
                                                 deliveryItem.quantity_required,
                                                 deliveryItem.quantity_to_pick + findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).quantity_picked
                                             )
-                                        }" :additionalData="{
+                                        }"
+                                        :additionalData="{
                                             location_org_stock_id: findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).id,
                                             picking_id: deliveryItem.pickings.find(p => p.location_id === findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).location_id)?.id
-                                        }" autoSave xxisWithRefreshModel
+                                        }"
+                                        autoSave xxisWithRefreshModel
                                         :readonly="deliveryItem.is_handled || deliveryItem.quantity_required === deliveryItem.quantity_picked">
                                         <template #save="{ isProcessing }">
-                                            <Button
+                                            <ButtonWithLink
                                                 v-tooltip="trans('Pick all required quantity in this location')"
                                                 icon="fal fa-clipboard-list-check"
                                                 :disabled="deliveryItem.is_handled || deliveryItem.quantity_required === deliveryItem.quantity_picked"
                                                 size="xs" type="secondary"
-                                                :loading="isProcessing || rowActionLoading[itemValue.id] === `pick-all-${deliveryItem.id}`"
-                                                @click="() => onRowAction(itemValue.id, deliveryItem.picking_all_route, `pick-all-${deliveryItem.id}`, {
+                                                :loading="isProcessing"
+                                                :routeTarget="deliveryItem.picking_all_route"
+                                                :bind-to-link="{
+                                                    preserveScroll: true,
+                                                    preserveState: true
+                                                }"
+                                                :body="{
                                                     location_org_stock_id: findLocation(deliveryItem.locations, get(selectedLocationCode, [deliveryItem.id], null)).id
-                                                })">
+                                                }"
+                                                isWithError
+                                            >
                                                 <template #label>
                                                     <FractionDisplay v-if="GetQuantityToPickFractional(deliveryItem)"
                                                         :fractionData="GetQuantityToPickFractional(deliveryItem)" />
                                                     <span v-else>{{ locale.number(deliveryItem.quantity_to_pick ?? 0)
                                                         }}</span>
                                                 </template>
-                                            </Button>
+                                            </ButtonWithLink>
                                         </template>
                                     </NumberWithButtonSave>
 
                                     <!-- Not Picked Button -->
-                                    <Button v-if="!deliveryItem.is_handled" type="negative"
-                                        v-tooltip="trans('Set as not picked')" icon="fal fa-debug" size="xs"
-                                        :loading="rowActionLoading[itemValue.id] === `not-pick-${deliveryItem.id}`"
-                                        @click="() => onRowAction(itemValue.id, deliveryItem.not_picking_route, `not-pick-${deliveryItem.id}`)" />
+                                    <ButtonWithLink
+                                        v-if="!deliveryItem.is_handled"
+                                        type="negative"
+                                        v-tooltip="ctrans('Set as not picked')"
+                                        icon="fal fa-debug"
+                                        size="xs"
+                                        :routeTarget="deliveryItem.not_picking_route"
+                                        :bindToLink="{ preserveScroll: true }"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -525,7 +442,11 @@ const virtualRowMemo = (item: any) => [
 
                     <Button
                         v-if="pickingSession.state === 'picking_finished' && deliveryItem.delivery_note_state === 'handling'"
-                        type="save" label="Set as packed" size="sm" @click="onOpenModalDetail(deliveryItem)" />
+                        type="save"
+                        :label="ctrans('Set as packed')"
+                        size="sm"
+                        @click="onOpenModalDetail(deliveryItem)"
+                    />
 
                     <div v-if="deliveryItem.pickings?.length && deliveryItem.state == 'handling'" class="space-y-1">
                         <div v-for="picking in deliveryItem.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
@@ -535,7 +456,7 @@ const virtualRowMemo = (item: any) => [
                                 {{ picking.location_code }}
                                 </Link>
 
-                                <div v-tooltip="trans('Total picked quantity in this location')"
+                                <div v-tooltip="ctrans('Total picked quantity in this location')"
                                     class="text-gray-500 whitespace-nowrap">
                                     <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width
                                         aria-hidden="true" />
@@ -547,7 +468,7 @@ const virtualRowMemo = (item: any) => [
                                 </div>
                             </div>
 
-                            <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
+                            <div v-if="picking.type === 'not-pick'" v-tooltip="ctrans('Quantity not gonna be picked')"
                                 class="text-red-500 w-fit mr-auto">
                                 <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                                 <FractionDisplay v-if="picking.quantity_picked_fractional"
@@ -557,10 +478,17 @@ const virtualRowMemo = (item: any) => [
                                 </span>
                             </div>
 
-                            <Button v-if="!deliveryItem.is_packed && deliveryItem.state == 'handling'"
-                                v-tooltip="trans('Undo')" type="negative" size="xxs" icon="fal fa-undo-alt"
-                                @click="() => onRowAction(itemValue.id, picking.undo_picking_route, `undo-pick-${picking.id}`)"
-                                :loading="rowActionLoading[itemValue.id] === `undo-pick-${picking.id}`" />
+                            <ButtonWithLink
+                                v-if="!deliveryItem.is_packed && deliveryItem.state == 'handling'"
+                                v-tooltip="ctrans('Undo')"
+                                type="negative"
+                                size="xxs"
+                                icon="fal fa-undo-alt"
+                                :routeTarget="picking.undo_picking_route"
+                                :bindToLink="{ preserveScroll: true }"
+                                @click="onUndoPick(picking.undo_picking_route, deliveryItem, `undo-pick-${picking.id}`)"
+                                :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
+                            />
                         </div>
 
                     </div>
@@ -579,7 +507,7 @@ const virtualRowMemo = (item: any) => [
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0 && pickingSession.state == 'handling'">
                 <div v-if="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))"
-                    class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
+                    class="rounded xp-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
                     <!-- Action: decrease and increase quantity -->
                     <div class="xmb-3 w-full flex justify-between gap-x-6 items-center">
                         <!-- Section: Location list and their stocks -->
@@ -596,11 +524,12 @@ const virtualRowMemo = (item: any) => [
                                     v-if="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                                     :key="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code" noUndoButton
                                     @onError="(error: any) => {
-                                        proxyItem.errors = error?.errors ? Object.values(error.errors).flat() : [error?.message || trans('Failed to save quantity')]
-                                    }" :modelValue="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity_picked"
+                                        proxyItem.errors = Object.values(error || {})
+                                    }"
+                                    :modelValue="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity_picked"
                                     @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
-                                    @onSuccess="() => { refreshRow(itemValue.id); reloadPageExceptItems() }"
-                                    saveOnForm isUseAxios :routeSubmit="{
+                                    saveOnForm
+                                    :routeSubmit="{
                                         name: itemValue.upsert_picking_route.name,
                                         parameters: itemValue.upsert_picking_route.parameters,
                                     }" :bindToTarget="{
@@ -615,15 +544,22 @@ const virtualRowMemo = (item: any) => [
                                     :readonly="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked">
                                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                                         <div class="hidden lg:flex gap-x-8 w-fit">
-                                            <Button
+                                            <ButtonWithLink
                                                 v-tooltip="trans('Pick all required quantity in this location')"
                                                 icon="fal fa-clipboard-list-check"
                                                 :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
-                                                size="xs" type="secondary" class="py-0"
-                                                :loading="isProcessing || rowActionLoading[itemValue.id] === 'pick-all'"
-                                                @click="() => onRowAction(itemValue.id, itemValue.picking_all_route, 'pick-all', {
+                                                size="xs" type="secondary"
+                                                :loading="isProcessing"
+                                                class="py-0"
+                                                :routeTarget="itemValue.picking_all_route"
+                                                :bind-to-link="{
+                                                    preserveScroll: true,
+                                                    preserveState: true,
+                                                }"
+                                                :body="{
                                                     location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id
-                                                })">
+                                                }"
+                                                isWithError>
                                                 <template #label>
                                                     <div>
                                                         <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)"
@@ -632,18 +568,27 @@ const virtualRowMemo = (item: any) => [
                                                             }}</span>
                                                     </div>
                                                 </template>
-                                            </Button>
+                                            </ButtonWithLink>
                                         </div>
                                         <div class="lg:hidden space-y-1">
-                                            <Button
-                                                v-tooltip="trans('Pick all required quantity in this location')"
+                                            <ButtonWithLink
+                                                v-tooltip="ctrans('Pick all required quantity in this location')"
                                                 icon="fal fa-clipboard-list-check"
                                                 :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
-                                                type="secondary" class="py-0" full
-                                                :loading="isProcessing || rowActionLoading[itemValue.id] === 'pick-all'"
-                                                @click="() => onRowAction(itemValue.id, itemValue.picking_all_route, 'pick-all', {
+                                                type="secondary"
+                                                :loading="isProcessing"
+                                                class="py-0"
+                                                :routeTarget="itemValue.picking_all_route"
+                                                :bind-to-link="{
+                                                    preserveScroll: true,
+                                                    preserveState: true,
+                                                }"
+                                                :body="{
                                                     location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id
-                                                })">
+                                                }"
+                                                isWithError
+                                                full
+                                            >
                                                 <template #label>
                                                     <div>
                                                         <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)"
@@ -652,22 +597,29 @@ const virtualRowMemo = (item: any) => [
                                                             }}</span>
                                                     </div>
                                                 </template>
-                                            </Button>
+                                            </ButtonWithLink>
                                         </div>
                                     </template>
                                 </NumberWithButtonSave>
 
                                 <div class="md:hidden">
-                                    <Button v-if="!itemValue.is_handled" type="negative"
-                                        v-tooltip="trans('Set as not picked')" icon="fal fa-debug" size="lg"
-                                        :loading="rowActionLoading[itemValue.id] === 'not-pick'"
-                                        @click="() => onRowAction(itemValue.id, itemValue.not_picking_route, 'not-pick')" />
+                                    <ButtonWithLink v-if="!itemValue.is_handled"
+                                        type="negative"
+                                        v-tooltip="ctrans('Set as not picked')"
+                                        icon="fal fa-debug"
+                                        size="lg"
+                                        :routeTarget="itemValue.not_picking_route"
+                                        :bindToLink="{ preserveScroll: true }"
+                                    />
                                 </div>
                                 <div class="hidden md:block">
-                                    <Button v-if="!itemValue.is_handled" type="negative"
-                                        v-tooltip="trans('Set as not picked')" icon="fal fa-debug"
-                                        :loading="rowActionLoading[itemValue.id] === 'not-pick'"
-                                        @click="() => onRowAction(itemValue.id, itemValue.not_picking_route, 'not-pick')" />
+                                    <ButtonWithLink v-if="!itemValue.is_handled"
+                                        type="negative"
+                                        v-tooltip="ctrans('Set as not picked')"
+                                        icon="fal fa-debug"
+                                        :routeTarget="itemValue.not_picking_route"
+                                        :bindToLink="{ preserveScroll: true }"
+                                    />
                                 </div>
                             </div>
 
@@ -686,18 +638,41 @@ const virtualRowMemo = (item: any) => [
             </div>
 
             <div v-else-if="pickingSession.state == 'handling'">
-                <Button v-if="!itemValue.is_handled" type="negative" v-tooltip="trans('Set as not picked')"
-                    icon="fal fa-debug" :size="innerWidth > 768 ? undefined : 'lg'"
-                    :loading="rowActionLoading[itemValue.id] === 'not-pick'"
-                    @click="() => onRowAction(itemValue.id, itemValue.not_picking_route, 'not-pick')" />
+                <ButtonWithLink v-if="!itemValue.is_handled"
+                    type="negative"
+                    v-tooltip="ctrans('Set as not picked')"
+                    icon="fal fa-debug"
+                    :size="innerWidth > 768 ? undefined : 'lg'"
+                    :routeTarget="itemValue.not_picking_route"
+                    :bindToLink="{ preserveScroll: true }"
+                />
             </div>
 
-            <Button v-if="pickingSession.state === 'picking_finished' && (itemValue.delivery_note_state === 'handling' || itemValue.delivery_note_state === 'packing')"
-                type="save" label="Set as packed" size="sm" @click="onOpenModalDetail(itemValue)" />
+            <Button
+                v-if="
+                    pickingSession.state === 'picking_finished'
+                    && (
+                        itemValue.delivery_note_state === 'handling'
+                        || itemValue.delivery_note_state === 'packing'
+                    )
+                    "
+                type="save"
+                :label="ctrans('Set as packed')"
+                size="sm"
+                @click="onOpenModalDetail(itemValue)"
+            />
+            <div v-else-if="itemValue.delivery_note_state === 'dispatched'" class="italic text-xs opacity-60">
+                {{ ctrans("Nothing to do. Delivery was dispatched.") }}
+            </div>
 
 
-            <Button v-if="itemValue.delivery_note_state == 'packed'" :icon="faPencil" label="Edit Detail" size="sm"
-                @click="onOpenModalDetail(itemValue)" />
+            <Button
+                v-if="itemValue.delivery_note_state == 'packed'"
+                :icon="faPencil"
+                :label="ctrans('Edit Detail')"
+                size="sm"
+                @click="onOpenModalDetail(itemValue)"
+            />
             <div>
                 <!-- Empty div to avoid print unexpected from BE -->
             </div>

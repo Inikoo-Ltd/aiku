@@ -265,11 +265,11 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
                 MasterCollectionsTabsEnum::INDEX->value => $this->tab == MasterCollectionsTabsEnum::INDEX->value ?
                     MasterCollectionsResource::collection($masterCollections)
-                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterProductCategory::run($this->parent, prefix: MasterCollectionsTabsEnum::INDEX->value))),
+                    : Inertia::optional(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterProductCategory::run($this->parent, prefix: MasterCollectionsTabsEnum::INDEX->value))),
 
                 MasterCollectionsTabsEnum::SALES->value => $this->tab == MasterCollectionsTabsEnum::SALES->value ?
                     MasterCollectionsResource::collection($masterCollections)
-                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterProductCategory::run($this->parent, prefix: MasterCollectionsTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterProductCategory::run($this->parent, prefix: MasterCollectionsTabsEnum::SALES->value))),
 
 
             ]

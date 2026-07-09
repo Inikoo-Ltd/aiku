@@ -48,7 +48,7 @@ class ShowReviewsBacklog extends OrgAction
         foreach (ReviewsBacklogTabsEnum::values() as $bucket) {
             $props[$bucket] = $this->tab == $bucket
                 ? fn () => $this->getReviewsData($shop, $bucket)
-                : Inertia::lazy(fn () => $this->getReviewsData($shop, $bucket));
+                : Inertia::optional(fn () => $this->getReviewsData($shop, $bucket));
         }
 
         $response = Inertia::render('Org/Catalogue/ShopReviewsBacklog', $props);

@@ -10,7 +10,6 @@ import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
 	faCube,
-	faLayerGroup,
 	faThumbsUp,
 	faThumbsDown,
 	faChevronCircleLeft,
@@ -66,7 +65,7 @@ const scopeLabel = (scope: string) => {
 const previewImages = ref<any[]>([])
 const previewIndex = ref(0)
 const showImagePreview = ref(false)
-
+const isLoggedIn = layout?.iris?.is_logged_in ?? false
 const openImagePreview = (images: any[], index: number | string) => {
 	previewImages.value = images
 	previewIndex.value = Number(index)
@@ -212,10 +211,10 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 						<!-- Review -->
 						<p class="whitespace-pre-line text-sm leading-6 text-gray-700">
 							{{ displayMessage(item.review) }}
-							<div v-if="layout.app.environment == 'local'">
+						<!-- 	<div v-if="layout?.app?.environment == 'local'">
   							   <span class="text-red-500">{{ item?.review?.message }}</span>
 							   <span class="text-green-500">{{ item?.review?.message_translated }}</span>
-							</div>
+							</div> -->
 						</p>
 
 						<!-- Images -->
@@ -238,8 +237,8 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 					</div>
 
 					<!-- Actions -->
-					<div class="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
-						<div class="flex items-center gap-1">
+					<div  class="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+						<div  v-if="isLoggedIn" class="flex items-center gap-1">
 							<button :disabled="reactingKeys[`${item.review.review_id}-review`]"
 								@click="() => toggleReaction(item, 'review', true)" :class="[
 									'flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-all duration-200 disabled:opacity-50',
@@ -263,14 +262,14 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 								]">
 								<FontAwesomeIcon :icon="faThumbsDown" />
 
-								<span>
+								<div>
 									{{ item.review.dislikes ?? 0 }}
-								</span>
+								</div>
 							</button>
 						</div>
 
 						  
-                        <div class="mt-auto text-[11px] text-gray-400 w-fit">
+                        <div class="mt-auto ml-auto text-[11px] text-gray-400 w-fit">
                             <AddressLocation :data="item['location']" :use_flag="item?.location[1] != layout?.iris?.shop?.location[1]" />
                         </div>
 					</div>
@@ -307,10 +306,10 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 								<p class="mt-2 whitespace-pre-line text-sm leading-6 text-gray-700">
 									{{ displayReply(item.review) }}
 
-									<div v-if="layout.app.environment == 'local'">
+									<!-- <div v-if="layout.app.environment == 'local'">
   							   			<span class="text-red-500">{{ item?.review?.reply?.reply }}</span>
 										<span class="text-green-500">{{ item?.review?.reply?.reply_translated }}</span>
-									</div>
+									</div> -->
 								</p>
 
 								<div v-if="hasReplyTranslation(item.review.reply)"
@@ -320,7 +319,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 								</div>
 
 								<!-- Reply Actions -->
-								<div class="mt-2 flex items-center gap-1">
+								<div v-if="isLoggedIn" class="mt-2 flex items-center gap-1">
 									<button :disabled="reactingKeys[`${item.review.review_id}-reply`]"
 										@click="() => toggleReaction(item, 'review_reply', true)" :class="[
 											'flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-all duration-200 disabled:opacity-50',

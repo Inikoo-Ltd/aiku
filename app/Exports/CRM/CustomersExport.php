@@ -35,6 +35,7 @@ class CustomersExport implements FromArray, ShouldAutoSize, WithHeadings
             'name'             => ['heading' => 'Name', 'select' => 'customers.name'],
             'contact_name'     => ['heading' => 'Contact', 'select' => 'customers.contact_name'],
             'company_name'     => ['heading' => 'Company', 'select' => 'customers.company_name'],
+            'fiscal_name'      => ['heading' => 'Fiscal Name', 'select' => 'customers.fiscal_name'],
             'email'            => ['heading' => 'Email', 'select' => 'customers.email'],
             'phone'            => ['heading' => 'Phone', 'select' => 'customers.phone'],
             'tax_number'       => ['heading' => 'Tax Number', 'select' => 'customers.identity_document_number'],

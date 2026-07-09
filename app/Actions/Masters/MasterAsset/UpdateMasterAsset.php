@@ -239,19 +239,19 @@ class UpdateMasterAsset extends OrgAction
 
                 // Updates the affected field name using translation if follow_master_{field} is true
                 if ($masterAsset->wasChanged('name')) {
-                    $dataToBeUpdated['name']             = Translate::run($masterAsset->name, $english, $shopLanguage,'gpt-5-nano');
+                    $dataToBeUpdated['name']             = Translate::run($masterAsset->name, $english, $shopLanguage, 'gpt-5-nano');
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
                 if ($masterAsset->wasChanged('description_title')) {
-                    $dataToBeUpdated['description_title']             = Translate::run($masterAsset->description_title, $english, $shopLanguage,'gpt-5-nano');
+                    $dataToBeUpdated['description_title']             = Translate::run($masterAsset->description_title, $english, $shopLanguage, 'gpt-5-nano');
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
                 if ($masterAsset->wasChanged('description')) {
-                    $dataToBeUpdated['description']             = Translate::run($masterAsset->description, $english, $shopLanguage,'gpt-5-nano');
+                    $dataToBeUpdated['description']             = Translate::run($masterAsset->description, $english, $shopLanguage, 'gpt-5-nano');
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
                 if ($masterAsset->wasChanged('description_extra')) {
-                    $dataToBeUpdated['description_extra']             = Translate::run($masterAsset->description_extra, $english, $shopLanguage,'gpt-5-nano');
+                    $dataToBeUpdated['description_extra']             = Translate::run($masterAsset->description_extra, $english, $shopLanguage, 'gpt-5-nano');
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
                 }
 

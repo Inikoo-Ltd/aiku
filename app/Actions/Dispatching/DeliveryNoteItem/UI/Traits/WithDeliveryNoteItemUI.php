@@ -31,9 +31,14 @@ trait WithDeliveryNoteItemUI
             })
             ->whereColumn('model_has_trade_units.model_id', 'org_stocks.id')
             ->whereNotNull('trade_units.un_number')
-            ->whereNotNull('trade_units.proper_shipping_name')
             ->where('trade_units.un_number', '<>', 'None')
-            ->selectRaw('jsonb_object_agg(trade_units.proper_shipping_name, trade_units.un_number)');
+            ->selectRaw("jsonb_object_agg(
+                trade_units.id,
+                jsonb_build_object(
+                    'number', trade_units.un_number,
+                    'shipping_name', trade_units.proper_shipping_name
+                )
+            )");
     }
 
     protected function getPickingsSubquery(): Builder

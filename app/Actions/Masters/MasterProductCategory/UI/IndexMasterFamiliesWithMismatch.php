@@ -374,11 +374,11 @@ class IndexMasterFamiliesWithMismatch extends OrgAction
 
         $baseData[MasterProductCategoryTabsEnum::INDEX->value] = $this->tab == MasterProductCategoryTabsEnum::INDEX->value ?
             fn () => MasterFamiliesResource::collection($masterFamilies)
-            : Inertia::lazy(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::INDEX->value)));
+            : Inertia::optional(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::INDEX->value)));
 
         $baseData[MasterProductCategoryTabsEnum::SALES->value] = $this->tab == MasterProductCategoryTabsEnum::SALES->value ?
             fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::SALES->value))
-            : Inertia::lazy(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::SALES->value)));
+            : Inertia::optional(fn () => MasterFamiliesResource::collection(IndexMasterFamilies::run($this->parent, parentType: $parentType, prefix: MasterProductCategoryTabsEnum::SALES->value)));
 
         return Inertia::render('Masters/MasterFamilies', $baseData)
             ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))

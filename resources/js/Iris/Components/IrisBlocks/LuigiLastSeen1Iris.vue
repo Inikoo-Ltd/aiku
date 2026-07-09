@@ -128,7 +128,7 @@ const fetchRecommenders = async () => {
             console.error('Error fetching recommenders:', response.statusText)
         }
 
-        console.log('LLS:', response.data)
+        console.log(`LLS (${response.data?.[0]?.hits?.length}): `, response.data)
         RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProductsFromLuigi.value = response.data[0].hits

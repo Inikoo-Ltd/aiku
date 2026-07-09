@@ -31,7 +31,10 @@ class SendSesEmail
 
     public mixed $message;
 
-    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false, bool $debug = false): DispatchedEmail
+    /**
+     * @param array<int, array{content: string, filename: string}> $attachments
+     */
+    public function handle(string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail, string $sender, ?string $unsubscribeUrl = null, ?string $senderName = null, bool $isTest = false, bool $debug = false, array $attachments = []): DispatchedEmail
     {
         if ($dispatchedEmail->state != DispatchedEmailStateEnum::READY) {
             return $dispatchedEmail;
@@ -82,7 +85,8 @@ class SendSesEmail
             $emailTo,
             $emailHtmlBody,
             $unsubscribeUrl,
-            $senderName
+            $senderName,
+            $attachments
         );
 
 
@@ -200,7 +204,7 @@ class SendSesEmail
         return $this->getSesClient($outboxId)->sendRawEmail($this->getRawEmail($emailData));
     }
 
-    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null): array
+    public function getEmailData($subject, $sender, $to, $emailHtmlBody, $unsubscribeUrl = null, ?string $senderName = null, array $attachments = []): array
     {
         $message = [
             'Message' => [
@@ -231,7 +235,8 @@ class SendSesEmail
                 ]
             ],
             'Message'     => $message['Message'],
-            'Headers'     => $headers
+            'Headers'     => $headers,
+            'Attachments' => $attachments,
         ];
     }
 
@@ -248,6 +253,11 @@ class SendSesEmail
         foreach (Arr::get($emailData, 'Headers', []) as $key => $header) {
             $mail->addCustomHeader($key, $header);
         }
+
+        foreach (Arr::get($emailData, 'Attachments', []) as $attachment) {
+            $mail->addStringAttachment($attachment['content'], $attachment['filename']);
+        }
+
         $mail->isHTML();
         $mail->Subject = $emailData['Message']['Subject']['Data'];
         $mail->CharSet = 'UTF-8';

@@ -189,7 +189,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
                 'is_orphan_families'                  => true,
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    : Inertia::optional(fn () => FamiliesResource::collection($families)),
             ]
         )->table($this->tableStructure(shop: $this->shop, prefix: ProductCategoryTabsEnum::INDEX->value));
     }

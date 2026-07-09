@@ -33,7 +33,7 @@ class SeedProductionPermissions
         $currentPermissions = Permission::where('scope_type', 'Production')->where('scope_id', $production->id)->pluck('name');
         $currentPermissions->diff($productionPermissions)
             ->each(function ($permissionName) use ($production) {
-                Permission::where('name', $permissionName)->first()->delete();
+                Permission::where('name', $permissionName)->delete();
             });
 
         $productionPermissions->each(function ($permissionName) use ($production) {
@@ -55,10 +55,7 @@ class SeedProductionPermissions
         $currentRoles = Role::where('scope_type', 'Production')->where('scope_id', $production->id)->pluck('name');
         $currentRoles->diff($productionRoles)
             ->each(function ($roleName) use ($production) {
-                Role::where(
-                    'name',
-                    $roleName
-                )->first()->delete();
+                Role::where('name', $roleName)->delete();
             });
 
 

@@ -40,6 +40,8 @@ use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Ordering\SalesChannel;
 use Closure;
+use App\Actions\Web\Website\BreakWebsiteCache;
+use App\Enums\Web\Crawl\CrawlTriggerEnum;
 
 class UpdateShop extends OrgAction
 {
@@ -59,7 +61,10 @@ class UpdateShop extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Shop
     {
-        if (Arr::exists($modelData, 'review_rating_labels')) {
+        $originalReviewSettings   = Arr::get($shop->settings ?? [], 'reviews');
+        $reviewRatingLabelsTouched = Arr::exists($modelData, 'review_rating_labels');
+
+        if ($reviewRatingLabelsTouched) {
             $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
         }
 
@@ -412,6 +417,10 @@ class UpdateShop extends OrgAction
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
         $shop->refresh();
+
+        if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings)) {
+            BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
+        }
 
         if (Arr::hasAny($changes, ['state', 'type'])) {
             GroupHydrateShops::dispatch($shop->group)->delay($this->hydratorsDelay);

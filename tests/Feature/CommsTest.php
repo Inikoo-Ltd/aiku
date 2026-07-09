@@ -261,12 +261,9 @@ test('outbox seeded when website created', function (Shop $shop) {
 
     $forgotPasswordEmailOngoingRun = $forgotPasswordOutbox->emailOngoingRun;
     expect($forgotPasswordEmailOngoingRun)->toBeInstanceOf(EmailOngoingRun::class)
-        ->and($forgotPasswordEmailOngoingRun->email)->toBeInstanceOf(Email::class);
+        ->and($forgotPasswordEmailOngoingRun->email)->toBeInstanceOf(Email::class)
+        ->and($forgotPasswordOutbox->refresh()->state)->toBe(OutboxStateEnum::IN_PROCESS);
 
-    // ponytail: an outbox auto-activates once seeding wires a matching EmailTemplate (see WithOutboxBuilder::createEmail).
-    // An active EmailTemplate exists for password_reminder, so it's already ACTIVE here; assert the actual invariant
-    // rather than a fixed state, since whether a template matches at seed time isn't this test's concern.
-    expect($forgotPasswordOutbox->refresh()->state)->toBe(OutboxStateEnum::ACTIVE);
 
     $email = $forgotPasswordEmailOngoingRun->email;
 
@@ -1984,14 +1981,7 @@ test('index previous mailshot templates includes own shop sent mailshots', funct
 
 test('UI show mailshot recipients', function (Mailshot $mailshot) {
     $this->withoutExceptionHandling();
-    dump([
-        'mailshot_id' => $mailshot->id,
-        'slug' => $mailshot->slug,
-        'trashed' => $mailshot->trashed(),
-        'fresh' => \App\Models\Comms\Mailshot::withTrashed()->find($mailshot->id)?->only(['id','slug','deleted_at']),
-        'this_shop_id' => $this->shop->id,
-        'mailshot_shop_id' => $mailshot->shop_id,
-    ]);
+
     $response = $this->get(route('grp.org.shops.show.marketing.mailshots.recipients', [$this->organisation, $this->shop, $mailshot->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {

@@ -405,11 +405,11 @@ class IndexProductsInCatalogue extends OrgAction
                 'variantSlugs'                 => $shop->type != ShopTypeEnum::EXTERNAL ? ProductsResource::collection($products)->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]) : [],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => $this->displayProductsShopTypeDependant($products, $shop)
-                    : Inertia::lazy(fn () => $this->displayProductsShopTypeDependant($products, $shop)),
+                    : Inertia::optional(fn () => $this->displayProductsShopTypeDependant($products, $shop)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))),
+                    : Inertia::optional(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value, $this->bucket))),
 
 
             ]

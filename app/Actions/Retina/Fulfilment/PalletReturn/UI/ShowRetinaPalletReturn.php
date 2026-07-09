@@ -262,19 +262,19 @@ class ShowRetinaPalletReturn extends RetinaAction
 
                 RetinaPalletReturnTabsEnum::GOODS->value => $this->tab == RetinaPalletReturnTabsEnum::GOODS->value ?
                     fn () => PalletReturnItemsUIResource::collection(IndexRetinaPalletsInReturnPalletWholePallets::run($palletReturn, RetinaPalletReturnTabsEnum::GOODS->value))
-                    : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexRetinaPalletsInReturnPalletWholePallets::run($palletReturn, RetinaPalletReturnTabsEnum::GOODS->value))),
+                    : Inertia::optional(fn () => PalletReturnItemsUIResource::collection(IndexRetinaPalletsInReturnPalletWholePallets::run($palletReturn, RetinaPalletReturnTabsEnum::GOODS->value))),
 
                 RetinaPalletReturnTabsEnum::SERVICES->value => $this->tab == RetinaPalletReturnTabsEnum::SERVICES->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::SERVICES->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::SERVICES->value))),
+                    : Inertia::optional(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::SERVICES->value))),
 
                 RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value => $this->tab == RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value))),
+                    : Inertia::optional(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::PHYSICAL_GOODS->value))),
 
                 RetinaPalletReturnTabsEnum::ATTACHMENTS->value => $this->tab == RetinaPalletReturnTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, RetinaPalletReturnTabsEnum::ATTACHMENTS->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, RetinaPalletReturnTabsEnum::ATTACHMENTS->value))),
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($palletReturn, RetinaPalletReturnTabsEnum::ATTACHMENTS->value))),
             ]
         )->table(
             IndexRetinaPalletsInReturnPalletWholePallets::make()->tableStructure(

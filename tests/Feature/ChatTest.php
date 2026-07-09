@@ -69,6 +69,7 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatEvent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\ShopHasChatAgent;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
@@ -925,7 +926,7 @@ test('updating chat agent scope removes stale shop assignments and adds new ones
         'shop_id'         => [$otherShop->id],
     ], $agent);
 
-    $this->assertDatabaseMissing('shop_has_chat_agents', [
+    $this->assertSoftDeleted('shop_has_chat_agents', [
         'chat_agent_id' => $agent->id,
         'shop_id'       => $this->shop->id,
     ]);
@@ -1596,16 +1597,49 @@ test('IndexChatConversations returns a paginator scoped to organisation sessions
     $response->assertOk();
 });
 
-test('ForceDeleteChatAgent handle runs without error (stub action)', function () {
-    expect(ForceDeleteChatAgent::make()->handle())->toBeNull();
+test('ForceDeleteChatAgent handle runs without error', function () {
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => false,
+        'is_available'         => false,
+        'current_chat_count'   => 0,
+    ]);
+    expect(ForceDeleteChatAgent::make()->handle($agent, $this->organisation))->toBeNull();
 });
 
-test('RestoreChatAgent handle runs without error (stub action)', function () {
-    expect(RestoreChatAgent::make()->handle())->toBeNull();
+test('RestoreChatAgent handle runs without error', function () {
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => false,
+        'is_available'         => false,
+        'current_chat_count'   => 0,
+    ]);
+    $assignment = ShopHasChatAgent::create([
+        'chat_agent_id' => $agent->id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id' => $this->shop->id,
+    ]);
+    $assignment->delete();
+    expect(RestoreChatAgent::make()->handle($agent, $this->organisation))->toBeNull();
 });
 
-test('DeleteChatAgent handle runs without error (stub action)', function () {
-    expect(DeleteChatAgent::make()->handle())->toBeNull();
+test('DeleteChatAgent handle runs without error', function () {
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => false,
+        'is_available'         => false,
+        'current_chat_count'   => 0,
+    ]);
+    expect(DeleteChatAgent::make()->handle($agent, $this->organisation))->toBeNull();
 });
 
 test('GetChatDashboardVisitors returns grouped visitor stats by website', function () {

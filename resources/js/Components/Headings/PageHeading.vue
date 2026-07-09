@@ -26,7 +26,7 @@ import {
 	faStore,
 	faExchange,
     faFileCertificate,
-    faEnvelopeOpenText
+    faEnvelopeOpenText, faPaperclip
 } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MetaLabel from "@/Components/Headings/MetaLabel.vue"
@@ -71,7 +71,8 @@ library.add(
 	faExchange,
 	faWarehouseAlt,
     faFileCertificate,
-    faEnvelopeOpenText
+    faEnvelopeOpenText,
+    faPaperclip
 )
 
 const props = defineProps<{

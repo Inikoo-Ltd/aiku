@@ -211,19 +211,19 @@ class ShowRecurringBill extends OrgAction
 
                 RecurringBillTabsEnum::TRANSACTIONS->value => $this->tab == RecurringBillTabsEnum::TRANSACTIONS->value ?
                     fn () => RecurringBillTransactionsResource::collection(IndexRecurringBillTransactions::run($recurringBill, RecurringBillTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => RecurringBillTransactionsResource::collection(IndexRecurringBillTransactions::run($recurringBill, RecurringBillTabsEnum::TRANSACTIONS->value))),
+                    : Inertia::optional(fn () => RecurringBillTransactionsResource::collection(IndexRecurringBillTransactions::run($recurringBill, RecurringBillTabsEnum::TRANSACTIONS->value))),
 
                 RecurringBillTabsEnum::PALLET_DELIVERIES->value => $this->tab == RecurringBillTabsEnum::PALLET_DELIVERIES->value ?
                     fn () => PalletDeliveriesResource::collection(IndexPalletDeliveries::run($recurringBill, RecurringBillTabsEnum::PALLET_DELIVERIES->value))
-                    : Inertia::lazy(fn () => PalletDeliveriesResource::collection(IndexPalletDeliveries::run($recurringBill, RecurringBillTabsEnum::PALLET_DELIVERIES->value))),
+                    : Inertia::optional(fn () => PalletDeliveriesResource::collection(IndexPalletDeliveries::run($recurringBill, RecurringBillTabsEnum::PALLET_DELIVERIES->value))),
 
                 RecurringBillTabsEnum::PALLET_RETURNS->value => $this->tab == RecurringBillTabsEnum::PALLET_RETURNS->value ?
                     fn () => PalletReturnsResource::collection(IndexPalletReturns::run($recurringBill, RecurringBillTabsEnum::PALLET_RETURNS->value))
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection(IndexPalletReturns::run($recurringBill, RecurringBillTabsEnum::PALLET_RETURNS->value))),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection(IndexPalletReturns::run($recurringBill, RecurringBillTabsEnum::PALLET_RETURNS->value))),
 
                 RecurringBillTabsEnum::HISTORY->value => $this->tab == RecurringBillTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($recurringBill))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($recurringBill)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($recurringBill)))
             ]
         )->table(
             IndexRecurringBillTransactions::make()->tableStructure(

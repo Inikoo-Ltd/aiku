@@ -18,7 +18,6 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Reviews\Review;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowIrisReviews extends IrisAction
@@ -55,13 +54,14 @@ class ShowIrisReviews extends IrisAction
 
     private function allTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $reviews      = $indexer->handleAllScopeReviews(shop: $shop, prefix: 'all');
+        $allSetting   = $this->broadestScopeSetting($shop);
+        $reviews      = $indexer->handleAllScopeReviews(shop: $shop, prefix: 'all', setting: $allSetting);
         $avgReview    = $indexer->avgByScopeReview($shop, [
             ReviewScopeEnum::SHOP,
             ReviewScopeEnum::ORDER,
             ReviewScopeEnum::PRODUCT,
             ReviewScopeEnum::FAMILY,
-        ]);
+        ], $allSetting);
         $totalReviews = $reviews->total();
 
         return [
@@ -74,16 +74,39 @@ class ShowIrisReviews extends IrisAction
             'recommend_percent' => $this->recommendPercent($shop, [
                 ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER,
                 ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY,
-            ]),
+            ], $allSetting),
         ];
+    }
+
+    private function broadestScopeSetting($shop): array
+    {
+        $settings = [
+            Arr::get($shop->settings, 'reviews.validation_scope.shop', []),
+            Arr::get($shop->settings, 'reviews.validation_scope.family', []),
+            Arr::get($shop->settings, 'reviews.validation_scope.product', []),
+        ];
+
+        foreach ($settings as $setting) {
+            if (Arr::get($setting, 'enabled') && Arr::get($setting, 'scope') === 'group') {
+                return ['enabled' => true, 'scope' => 'group'];
+            }
+        }
+
+        foreach ($settings as $setting) {
+            if (Arr::get($setting, 'enabled')) {
+                return ['enabled' => true, 'scope' => 'organisation'];
+            }
+        }
+
+        return [];
     }
 
     private function productTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $includeOtherShops = $indexer->includesOtherShops($shop);
-        $reviews           = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'product');
-        $avgReview         = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::PRODUCT], $includeOtherShops);
-        $totalReviews      = $reviews->total();
+        $setting      = Arr::get($shop->settings, 'reviews.validation_scope.product', []);
+        $reviews      = $indexer->handleProductScopeReviews(shop: $shop, prefix: 'product');
+        $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::PRODUCT], $setting);
+        $totalReviews = $reviews->total();
 
         return [
             'type'              => 'product',
@@ -92,16 +115,16 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::PRODUCT], $includeOtherShops),
+            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::PRODUCT], $setting),
         ];
     }
 
     private function familyTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
-        $includeOtherShops = $indexer->includesOtherShops($shop);
-        $reviews           = $indexer->handleFamilyScopeReviews(shop: $shop, prefix: 'family');
-        $avgReview         = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::FAMILY], $includeOtherShops);
-        $totalReviews      = $reviews->total();
+        $setting      = Arr::get($shop->settings, 'reviews.validation_scope.family', []);
+        $reviews      = $indexer->handleFamilyScopeReviews(shop: $shop, prefix: 'family');
+        $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::FAMILY], $setting);
+        $totalReviews = $reviews->total();
 
         return [
             'type'              => 'family',
@@ -110,7 +133,7 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::FAMILY], $includeOtherShops),
+            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::FAMILY], $setting),
         ];
     }
 
@@ -131,15 +154,20 @@ class ShowIrisReviews extends IrisAction
         ];
     }
 
-    private function recommendPercent($shop, array $scopes, bool $includeOtherShops = false): int
+    private function recommendPercent($shop, array $scopes, array $setting = []): int
     {
-        $baseQuery = Review::query()
-            ->when(
-                !$includeOtherShops,
-                fn ($query) => $query->where('shop_id', $shop->id),
-                fn ($query) => $query->where('organisation_id', $shop->organisation_id)
-            )
-            ->whereIn('scope', $scopes)
+        $enabled   = Arr::get($setting, 'enabled', false);
+        $baseQuery = Review::query();
+
+        if ($enabled && Arr::get($setting, 'scope') === 'group') {
+            $baseQuery->where('group_id', $shop->group_id);
+        } elseif ($enabled) {
+            $baseQuery->where('organisation_id', $shop->organisation_id);
+        } else {
+            $baseQuery->where('shop_id', $shop->id);
+        }
+
+        $baseQuery->whereIn('scope', $scopes)
             ->where('state', ReviewStateEnum::PUBLISHED)
             ->where('is_public', true)
             ->where('review_status', ReviewStatusEnum::APPROVED);
@@ -180,25 +208,33 @@ class ShowIrisReviews extends IrisAction
         ];
     }
 
-    public function htmlResponse(array $data): Response
+    public function htmlResponse(array $data): \Symfony\Component\HttpFoundation\Response
     {
-        $indexer           = IndexReviewsInIris::make($this->shop);
-        $shop              = $this->shop;
-        $includeOtherShops = $indexer->includesOtherShops($shop);
+        $indexer        = IndexReviewsInIris::make($this->shop);
+        $shop           = $this->shop;
+        $productSetting = Arr::get($shop->settings, 'reviews.validation_scope.product', []);
+        $familySetting  = Arr::get($shop->settings, 'reviews.validation_scope.family', []);
 
-        return Inertia::render('AllReviews', $data)
+        $allSetting = $this->broadestScopeSetting($shop);
+
+        $response = Inertia::render('AllReviews', $data)
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
                 ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER, ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY,
-            ])($t->name('all')->pageName('reviewsPage')))
+            ], setting: $allSetting)($t->name('all')->pageName('reviewsPage')))
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
                 ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER,
             ])($t->name('company')->pageName('reviewsPage')))
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
                 ReviewScopeEnum::FAMILY,
-            ], includeOtherShops: $includeOtherShops)($t->name('family')->pageName('reviewsPage')))
+            ], setting: $familySetting)($t->name('family')->pageName('reviewsPage')))
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
                 ReviewScopeEnum::PRODUCT,
-            ], includeOtherShops: $includeOtherShops)($t->name('product')->pageName('reviewsPage')));
+            ], setting: $productSetting)($t->name('product')->pageName('reviewsPage')))
+            ->toResponse(request());
+
+        $response->headers->set('Cache-Control', 'public, s-maxage=300, max-age=0');
+
+        return $response;
     }
 
     public function asController(ActionRequest $request): array

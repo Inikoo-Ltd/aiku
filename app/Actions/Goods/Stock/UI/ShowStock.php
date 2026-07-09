@@ -106,19 +106,19 @@ class ShowStock extends OrgAction
                 ],
                 StockTabsEnum::SHOWCASE->value => $this->tab == StockTabsEnum::SHOWCASE->value ?
                     fn () => GetStockShowcase::run($stock)
-                    : Inertia::lazy(fn () => GetStockShowcase::run($stock)),
+                    : Inertia::optional(fn () => GetStockShowcase::run($stock)),
 
                 StockTabsEnum::ORG_STOCKS->value => $this->tab == StockTabsEnum::ORG_STOCKS->value ?
                     fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))
-                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))),
+                    : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))),
 
                 StockTabsEnum::TRADE_UNITS->value => $this->tab == StockTabsEnum::TRADE_UNITS->value ?
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInStock::run($stock, StockTabsEnum::TRADE_UNITS->value))
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInStock::run($stock, StockTabsEnum::TRADE_UNITS->value))),
+                    : Inertia::optional(fn () => TradeUnitsResource::collection(IndexTradeUnitsInStock::run($stock, StockTabsEnum::TRADE_UNITS->value))),
 
                 StockTabsEnum::HISTORY->value => $this->tab == StockTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($stock, StockTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($stock, StockTabsEnum::HISTORY->value)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stock, StockTabsEnum::HISTORY->value)))
 
 
             ]

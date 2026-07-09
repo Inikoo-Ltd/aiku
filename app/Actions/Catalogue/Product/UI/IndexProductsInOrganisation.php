@@ -192,11 +192,11 @@ class IndexProductsInOrganisation extends OrgAction
                 ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
 
             ]

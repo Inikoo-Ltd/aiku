@@ -212,20 +212,20 @@ class IndexShops extends OrgAction
 
                 ShopsTabsEnum::SHOPS->value => $this->tab == ShopsTabsEnum::SHOPS->value ?
                     fn () => ShopResource::collection($shops)
-                    : Inertia::lazy(fn () => ShopResource::collection($shops)),
+                    : Inertia::optional(fn () => ShopResource::collection($shops)),
 
 
                 ShopsTabsEnum::DEPARTMENTS->value => $this->tab == ShopsTabsEnum::DEPARTMENTS->value ?
                     fn () => DepartmentsResource::collection(IndexDepartmentsInOrganisation::run($this->organisation, ShopsTabsEnum::DEPARTMENTS->value))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartmentsInOrganisation::run($this->organisation, ShopsTabsEnum::DEPARTMENTS->value))),
+                    : Inertia::optional(fn () => DepartmentsResource::collection(IndexDepartmentsInOrganisation::run($this->organisation, ShopsTabsEnum::DEPARTMENTS->value))),
 
                 ShopsTabsEnum::FAMILIES->value => $this->tab == ShopsTabsEnum::FAMILIES->value ?
                     fn () => FamiliesResource::collection(IndexFamilies::run($this->organisation, ShopsTabsEnum::FAMILIES->value))
-                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->organisation, ShopsTabsEnum::FAMILIES->value))),
+                    : Inertia::optional(fn () => FamiliesResource::collection(IndexFamilies::run($this->organisation, ShopsTabsEnum::FAMILIES->value))),
 
                 ShopsTabsEnum::PRODUCTS->value => $this->tab == ShopsTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection($productIndex::run($this->organisation, ShopsTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection($productIndex::run($this->organisation, ShopsTabsEnum::PRODUCTS->value))),
+                    : Inertia::optional(fn () => ProductsResource::collection($productIndex::run($this->organisation, ShopsTabsEnum::PRODUCTS->value))),
 
             ]
         )->table($this->tableStructure(organisation: $this->organisation, prefix: 'shops'))

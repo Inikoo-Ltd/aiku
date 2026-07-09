@@ -60,11 +60,11 @@ class ShowBrand extends GrpAction
 
                 BrandTabsEnum::SHOWCASE->value => $this->tab == BrandTabsEnum::SHOWCASE->value ?
                     fn () => BrandResource::make($brand)
-                    : Inertia::lazy(fn () => BrandResource::make($brand)),
+                    : Inertia::optional(fn () => BrandResource::make($brand)),
 
                 BrandTabsEnum::HISTORY->value => $this->tab == BrandTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($brand))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($brand))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($brand))),
             ]
         )
         ->table(IndexHistory::make()->tableStructure(BrandTabsEnum::HISTORY->value));

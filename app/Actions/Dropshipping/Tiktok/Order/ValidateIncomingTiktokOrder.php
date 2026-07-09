@@ -55,10 +55,18 @@ class ValidateIncomingTiktokOrder extends RetinaAction
             ->filter()
             ->toArray();
 
+        $externalProductIds = [];
+
+        foreach ($lineItems as $lineItemId) {
+            $product = $tiktokUser->getProduct($lineItemId);
+            $externalProductIds[] = Arr::get($product, 'data.external_product_id');
+        }
+
         $hasOutProducts = DB::table('portfolios')
             ->where('customer_sales_channel_id', $tiktokUser->customer_sales_channel_id)
             ->whereIn('platform_product_id', $lineItems)
-            ->exists();
+            ->orWhereIn('id', $externalProductIds)
+            ->first();
 
         if ($hasOutProducts) {
             StoreTiktokOrder::run($tiktokUser, $order);

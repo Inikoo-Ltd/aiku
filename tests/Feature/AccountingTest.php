@@ -1230,6 +1230,7 @@ test('UI show invoice in Organisation', function () {
                             ->has('name')
                             ->has('location')
                             ->has('phone')
+                            ->has('fiscal_name')
                     )
                     ->has(
                         'information',
@@ -1288,6 +1289,7 @@ test('UI show invoice in Shop', function () {
                             ->has('name')
                             ->has('location')
                             ->has('phone')
+                            ->has('fiscal_name')
                     )
                     ->has(
                         'information',

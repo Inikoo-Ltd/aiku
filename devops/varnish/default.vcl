@@ -193,7 +193,7 @@ sub vcl_recv {
     }
 
     # Aiku non-cacheable iris paths
-    if (req.url ~ "^/(app|json|disclosure|unsubscribe|locale|models|catalogue|invoice|attachment)(/|$)") {
+    if (req.url ~ "^/(app|json|disclosure|unsubscribe|locale|models|catalogue|invoice|attachment|reviews|customer-reviews)(/|$)") {
         return (pass);
     }
 

@@ -11,6 +11,9 @@ import { FulfilmentCustomer } from "@/types/fulfilment-customer"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { RouteParams } from "@/types/route-params"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faStar } from "@fas"
+import { trans } from "laravel-vue-i18n"
 
 defineProps<{
     data: object,
@@ -75,6 +78,13 @@ function tagColorClass(scope?: string) {
             <span v-else>
                 {{ customer["reference"] }}
             </span>
+            <FontAwesomeIcon
+                v-if="customer.is_vip"
+                :icon="faStar"
+                size="sm"
+                color="#FFC000"
+                v-tooltip="trans('VIP Customer')"
+            />
         </template>
         <template #cell(shop)="{ item: customer }" class="primaryLink">
             <Link :href="shopRoute(customer)">

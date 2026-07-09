@@ -17,6 +17,7 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class IndexDeliveryNoteItems extends OrgAction
 {
@@ -45,16 +46,14 @@ class IndexDeliveryNoteItems extends OrgAction
             $join->on('packings.delivery_note_item_id', 'delivery_note_items.id');
         });
 
-        if ($stateFilter) {
-            if ($stateFilter === DeliveryNoteItemStateEnum::PACKING) {
-                $query->whereNull('packings.id')
-                    ->where('delivery_note_items.quantity_picked', '!=', 0);
-            } else {
-                $query->where(function ($query) {
-                    $query->whereNotNull('packings.id')
-                        ->orWhereColumn('delivery_note_items.quantity_picked', 'delivery_note_items.quantity_packed');
-                });
-            }
+        if ($stateFilter === DeliveryNoteItemStateEnum::PACKING) {
+            $query->whereNull('packings.id')
+                ->where('delivery_note_items.quantity_picked', '!=', 0);
+        } elseif ($stateFilter) {
+            $query->where(function ($query) {
+                $query->whereNotNull('packings.id')
+                    ->orWhereColumn('delivery_note_items.quantity_picked', 'delivery_note_items.quantity_packed');
+            });
         }
 
         return $query->defaultSort('org_stocks.code')
@@ -62,10 +61,19 @@ class IndexDeliveryNoteItems extends OrgAction
                 array_merge(
                     $this->getDeliveryNoteItemBaseSelect(),
                     [
+                        'org_stocks.main_batch_code_id as org_stocks_batch_code_id',
+                        'org_stocks.current_batch_codes as org_stocks_batch_code_count',
+                        'batch_codes.code as org_stocks_batch_code',
                         'packings.id as packing_id',
+                        DB::raw("'{$parent->warehouse->slug}' as warehouse_slug"),
+                        DB::raw("'{$parent->warehouse->code}' as warehouse_code"),
                     ]
                 )
             )
+            ->addSelect([
+                'un_numbers' => $this->getUnNumbersSubquery(),
+                'pickings'   => $this->getPickingsSubquery(),
+            ])
             ->allowedSorts($this->getDeliveryNoteItemBaseSorts())
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -90,17 +98,17 @@ class IndexDeliveryNoteItems extends OrgAction
                 );
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $this->addDeliveryNoteItemBaseTableColumns($table);
-
             $allowAction = $this->canHandleDeliveryNote($parent);
 
-            $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false);
+
+
+            $this->addDeliveryNoteItemBaseTableColumns($table);
+
+
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction);
             if ($allowAction && $isEditable) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, className: 'w-[250px]');
             }
         };
     }
-
-
 }

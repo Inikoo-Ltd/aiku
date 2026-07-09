@@ -214,11 +214,11 @@ class IndexProspectMailshots extends InertiaAction
 
                 // ProspectsMailshotsTabsEnum::SETTINGS->value => $this->tab == ProspectsMailshotsTabsEnum::SETTINGS->value ?
                 //     fn () => ProspectMailshotSettings::run($shop)
-                //     : Inertia::lazy(fn () => ProspectMailshotSettings::run($shop)),
+                //     : Inertia::optional(fn () => ProspectMailshotSettings::run($shop)),
 
                 ProspectsMailshotsTabsEnum::MAILSHOTS->value => $this->tab == ProspectsMailshotsTabsEnum::MAILSHOTS->value ?
                     fn () => ProspectMailshotsResource::collection($mailshots)
-                    : Inertia::lazy(fn () => ProspectMailshotsResource::collection($mailshots)),
+                    : Inertia::optional(fn () => ProspectMailshotsResource::collection($mailshots)),
 
 
             ]

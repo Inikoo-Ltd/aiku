@@ -121,15 +121,15 @@ class ShowUser extends OrgAction
                 ],
                 UserTabsEnum::SHOWCASE->value => $this->tab == UserTabsEnum::SHOWCASE->value ?
                     fn () => UserShowcaseResource::make($user)
-                    : Inertia::lazy(fn () => UserShowcaseResource::make($user)),
+                    : Inertia::optional(fn () => UserShowcaseResource::make($user)),
 
                 UserTabsEnum::API_TOKENS->value => $this->tab == UserTabsEnum::API_TOKENS->value ?
                     fn () => ApiTokensResource::collection(IndexApiTokens::run($user, prefix: UserTabsEnum::API_TOKENS->value))
-                    : Inertia::lazy(fn () => ApiTokensResource::collection(IndexApiTokens::run($user, prefix: UserTabsEnum::API_TOKENS->value))),
+                    : Inertia::optional(fn () => ApiTokensResource::collection(IndexApiTokens::run($user, prefix: UserTabsEnum::API_TOKENS->value))),
 
                 UserTabsEnum::HISTORY->value => $this->tab == UserTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($user))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($user)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($user)))
 
             ]
         )

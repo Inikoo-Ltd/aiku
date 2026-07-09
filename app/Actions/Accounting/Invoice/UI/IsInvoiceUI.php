@@ -117,6 +117,7 @@ trait IsInvoiceUI
                 'contact_name' => $invoice->customer_contact_name,
                 'location'     => $invoice->customer->location,
                 'phone'        => $invoice->customer->phone,
+                'fiscal_name'  => $invoice->fiscal_name,
             ],
             'delivery_notes' => $deliveryNotesData,
             'information'    => [
@@ -528,7 +529,7 @@ trait IsInvoiceUI
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => $routeName,
+                            'name'       => $routeName,
                             'parameters' => $routeParameters
                         ],
                         'label' => __('Invoice').' '.$invoice->reference,

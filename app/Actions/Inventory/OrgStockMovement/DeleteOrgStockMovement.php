@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
+use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Inventory\LocationOrgStock;
@@ -17,6 +18,7 @@ use App\Models\Inventory\OrgStockMovement;
 class DeleteOrgStockMovement extends OrgAction
 {
     use WithActionUpdate;
+    use WithOrgStockMovementHydrator;
 
     public function handle(OrgStockMovement $orgStockMovement): OrgStockMovement
     {
@@ -33,7 +35,10 @@ class DeleteOrgStockMovement extends OrgAction
             );
         }
 
+        $orgStock = $orgStockMovement->orgStock;
         $orgStockMovement->delete();
+
+        $this->hydrateOrgStockMovement($orgStockMovement);
 
         return $orgStockMovement;
     }

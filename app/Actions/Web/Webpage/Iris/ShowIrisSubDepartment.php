@@ -93,7 +93,7 @@ class ShowIrisSubDepartment extends IrisAction
                             IrisSubDepartmentTabsEnum::FAMILIES->value
                         )
                     )
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'family',
@@ -118,7 +118,7 @@ class ShowIrisSubDepartment extends IrisAction
                             IrisSubDepartmentTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => ProductsResource::collection(
+                    : Inertia::optional(fn () => ProductsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'product',
@@ -143,7 +143,7 @@ class ShowIrisSubDepartment extends IrisAction
                             IrisSubDepartmentTabsEnum::COLLECTIONS->value
                         )
                     )
-                    : Inertia::lazy(fn () => CollectionsResource::collection(
+                    : Inertia::optional(fn () => CollectionsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'collection',

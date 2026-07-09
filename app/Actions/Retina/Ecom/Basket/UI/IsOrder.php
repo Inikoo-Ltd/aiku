@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\GetVoucherData;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -240,7 +241,9 @@ trait IsOrder
             [
                 'label'       => __('Shipping'),
                 'information' => '',
-                'price_total_old'   => null, // TODO: Raul put old shipping amount (amount before discount)
+                'price_total_old'   => $order->discounted_shipping_offer_id
+                    ? null  //  TODO: check CalculateOrderShipping::make()->getUndiscountedShippingAmount($order)
+                    : null,
                 'price_total' => $order->shipping_amount,
                 'slot_name'   => 'shipping',
                 'data'        => [

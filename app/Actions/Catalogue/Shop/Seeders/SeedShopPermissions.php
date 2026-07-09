@@ -33,7 +33,7 @@ class SeedShopPermissions
         $currentPermissions = Permission::where('scope_type', 'Shop')->where('scope_id', $shop->id)->pluck('name');
         $currentPermissions->diff($shopPermissions)
             ->each(function ($permissionName) {
-                Permission::where('name', $permissionName)->first()->delete();
+                Permission::where('name', $permissionName)->delete();
             });
 
         $shopPermissions->each(function ($permissionName) use ($shop) {
@@ -56,10 +56,7 @@ class SeedShopPermissions
         $currentRoles = Role::where('scope_type', 'Shop')->where('scope_id', $shop->id)->pluck('name');
         $currentRoles->diff($shopRoles)
             ->each(function ($roleName) {
-                Role::where(
-                    'name',
-                    $roleName
-                )->first()->delete();
+                Role::where('name', $roleName)->delete();
             });
 
 

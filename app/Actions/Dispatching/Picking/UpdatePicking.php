@@ -3,13 +3,14 @@
 /*
  * author Arya Permana - Kirin
  * created on 22-05-2025-13h-37m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
@@ -30,13 +31,31 @@ class UpdatePicking extends OrgAction
 
     private Picking $picking;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Picking $picking, array $modelData): Picking|bool
     {
+        $oldQuantity = $picking->quantity;
+        $oldType = $picking->type;
+
         if (Arr::has($modelData, 'quantity') && Arr::get($modelData, 'quantity') == 0) {
             return DeletePicking::make()->action($picking, null);
         }
 
         $picking = $this->update($picking, $modelData);
+
+
+        if ($picking->orgStockMovement) {
+
+            if ($oldQuantity != $picking->quantity) {
+                UpdateOrgStockMovement::make()->action($picking->orgStockMovement, [
+                    'quantity' => -($picking->quantity),
+                ]);
+            }
+
+        }
+
 
         /** @var DeliveryNoteItem $deliveryNoteItem */
         $deliveryNoteItem = $picking->deliveryNoteItem;
@@ -58,7 +77,10 @@ class UpdatePicking extends OrgAction
         ];
     }
 
-    public function asController(Picking $picking, ActionRequest $request)
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Picking $picking, ActionRequest $request): void
     {
         $this->picking = $picking;
         $this->initialisationFromShop($picking->shop, $request);
@@ -66,6 +88,9 @@ class UpdatePicking extends OrgAction
         $this->handle($picking, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Picking $picking, array $modelData): Picking|bool
     {
         $this->picking = $picking;

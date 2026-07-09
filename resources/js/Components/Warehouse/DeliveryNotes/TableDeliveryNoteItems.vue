@@ -20,6 +20,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton } from "primevue"
@@ -39,6 +40,8 @@ import { ctrans } from "@/Composables/useTrans"
 import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
+
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
 
 
@@ -66,7 +69,7 @@ const currentRouteParams = route().params
 const currentRouteName = route().current()
 
 const orgStockRouteCache = new Map<number | string, string>()
-function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
+function orgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
     if(!deliveryNoteItem.org_stock_id){
         return '';
     }
@@ -144,6 +147,9 @@ const generateLocationRoute = (location: any) => {
 };
 
 
+// Button: undo pick
+const isLoadingUndoPick = reactive({});
+
 // Section: Modal for a location list
 const isModalLocation = ref(false)
 const selectedItemValue = ref()
@@ -204,161 +210,45 @@ const onCloseModalExpiryDate = () => {
     }, 300);
 }
 const isLoadingSubmitExpiryDate = ref(false)
-const onSubmitEditExpiryDate = async () => {
+const onSubmitEditExpiryDate = () => {
     if (!selectedItemToEditExpiryDate.value) {
         return
     }
 
-    const itemId = selectedItemToEditExpiryDate.value.id
-    isLoadingSubmitExpiryDate.value = true
-    const isSuccess = await onRowAction(
-        itemId,
+    router.patch(
+        route('grp.models.delivery_note_item.update', {
+            deliveryNoteItem: selectedItemToEditExpiryDate.value?.id
+        }),
         {
-            name: 'grp.models.delivery_note_item.update',
-            parameters: { deliveryNoteItem: itemId },
-            method: 'patch',
+            batch_code_id: selectedBatchCode.value?.id ?? null,
         },
-        'edit-expiry-date',
-        { batch_code_id: selectedBatchCode.value?.id ?? null },
-        trans("Successfully set batch code"),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmitExpiryDate.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully set batch code"),
+                    type: "success"
+                })
+                onCloseModalExpiryDate()
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set batch code. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitExpiryDate.value = false
+            },
+        }
     )
-    isLoadingSubmitExpiryDate.value = false
-
-    if (isSuccess) {
-        onCloseModalExpiryDate()
-    }
 }
-
-const estimateDeliveryNoteItemRowHeight = (item) => {
-    let height = 90
-
-    const pickingRowsCount = Math.max(item.pickings?.length ?? 0, item.picking_locations?.length ?? 0)
-    if (pickingRowsCount > 1) {
-        height += (pickingRowsCount - 1) * 28
-    }
-
-    if (Number(item.quantity_waiting_warehouse) > 0) {
-        height += 36
-    }
-
-    if (Number(item.quantity_waiting_crm) > 0) {
-        height += 36
-    }
-
-    return height
-}
-
-// Section: Axios row actions. Row actions no longer go through Inertia: the action is sent
-// via axios, then only the affected row is re-fetched (same resource shape as the table) and
-// replaced with a new object, so v-memo re-renders just that row. Page-level props are synced
-// with a debounced partial reload that skips the heavy items props.
-const rowActionLoading = reactive<{ [rowId: string]: string | null }>({})
-
-const replaceRowInTable = (itemId: number | string, newRow: any) => {
-    const rows = props.data?.data
-    if (!Array.isArray(rows)) {
-        return
-    }
-
-    const index = rows.findIndex((row: any) => row.id == itemId)
-    if (index === -1) {
-        return
-    }
-
-    const newRows = [...rows]
-    if (newRow) {
-        newRows[index] = newRow
-    } else {
-        newRows.splice(index, 1)
-        if (props.data.meta?.total > 0) {
-            props.data.meta.total--
-        }
-    }
-    props.data.data = newRows
-}
-
-const refreshRow = async (itemId: number | string) => {
-    try {
-        const response = await axios.get(
-            route('grp.json.delivery_note_item_row', { deliveryNoteItem: itemId }),
-            { params: { tab: props.tab } }
-        )
-        replaceRowInTable(itemId, response.data?.data ?? null)
-    } catch (error) {
-        console.error('Failed to refresh row, falling back to full reload', error)
-        router.reload({ preserveScroll: true })
-    }
-}
-
-const itemsPropsToSkipOnReload = ['items', 'pending_items', 'done_items', 'history', 'pickings']
-const reloadPageExceptItems = debounce(() => {
-    const stateBeforeReload = props.state
-    router.reload({
-        except: itemsPropsToSkipOnReload,
-        preserveScroll: true,
-        onStart: () => {
-            console.log('ewdfsfds')
-        },
-        onSuccess: () => {
-            if (props.state !== stateBeforeReload) {
-                router.reload({ preserveScroll: true })
-            }
-        },
-    })
-}, 400)
-
-const onRowAction = async (
-    itemId: number | string,
-    routeTarget: routeType,
-    actionKey: string,
-    body: Record<string, any> = {},
-    successMessage?: string,
-): Promise<boolean> => {
-    if (!routeTarget?.name) {
-        return false
-    }
-
-    const method = (routeTarget.method || 'post').toLowerCase()
-    const url = route(routeTarget.name, routeTarget.parameters)
-
-    rowActionLoading[itemId] = actionKey
-    try {
-        if (method === 'delete') {
-            await axios.delete(url, { data: body })
-        } else {
-            await axios[method](url, body)
-        }
-
-        await refreshRow(itemId)
-        reloadPageExceptItems()
-
-        if (successMessage) {
-            notify({ title: trans("Success"), text: successMessage, type: "success" })
-        }
-        return true
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message || trans("Failed to process this action. Try again"),
-            type: "error",
-        })
-        return false
-    } finally {
-        rowActionLoading[itemId] = null
-    }
-}
-
-// Every external reactive value a row's cells read must be listed here: a row is only
-// re-rendered when one of these values changes (item identity changes on every Inertia reload
-// and when refreshRow replaces the row object).
-const virtualRowMemo = (item: any) => [
-    item,
-    item.errors,
-    get(selectedLocationCode, [item.id], null),
-    rowActionLoading[item.id],
-    screenType.value,
-    props.state,
-]
 
 const countStockInAllLocations = (loc?: {}[]) => {
     if (!!(loc?.length)) {
@@ -380,30 +270,46 @@ const onCloseModalPickMagicPlace = () => {
     }, 300);
 }
 const isLoadingSubmitPickMagicPlace = ref(false)
-const onSubmitPickMagicPlace = async () => {
+const onSubmitPickMagicPlace = () => {
+
     if (!selectedItemToPickMagicPlace.value) {
         console.log('No item expiry date selected')
         return
     }
 
-    const itemId = selectedItemToPickMagicPlace.value.id
-    isLoadingSubmitPickMagicPlace.value = true
-    const isSuccess = await onRowAction(
-        itemId,
+    router.post(
+        route('grp.models.delivery_note_item.picking.magic_place', {
+            deliveryNoteItem: selectedItemToPickMagicPlace.value?.id
+        }),
         {
-            name: 'grp.models.delivery_note_item.picking.magic_place',
-            parameters: { deliveryNoteItem: itemId },
-            method: 'post',
+            
         },
-        'pick-magic-place',
-        {},
-        trans("Successfully pick from magic place"),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSubmitPickMagicPlace.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully pick from magic place"),
+                    type: "success"
+                })
+                onCloseModalPickMagicPlace()
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to pick from magic place. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitPickMagicPlace.value = false
+            },
+        }
     )
-    isLoadingSubmitPickMagicPlace.value = false
-
-    if (isSuccess) {
-        onCloseModalPickMagicPlace()
-    }
 }
 
 const GetQuantityToPickFractional = (item) => {
@@ -421,34 +327,44 @@ const dataToSendAsWaiting = ref({
 const isOpenModalSetAsWaiting = ref(false)
 const selectedTransactionToSetAsWaiting = ref(null)
 const isLoadingSetAsWaiting = ref(false)
-const submitTransactionAsWaiting = async () => {
-    if (!selectedTransactionToSetAsWaiting.value) {
-        return
-    }
-
-    const itemId = selectedTransactionToSetAsWaiting.value.id
-    isLoadingSetAsWaiting.value = true
-    const isSuccess = await onRowAction(
-        itemId,
-        {
-            name: 'grp.models.delivery_note_item.set_as_waiting_warehouse',
-            parameters: { deliveryNoteItem: itemId },
-            method: 'post',
-        },
-        'set-as-waiting',
+const submitTransactionAsWaiting = () => {
+    // Section: Submit
+    router.post(
+        route('grp.models.delivery_note_item.set_as_waiting_warehouse', {
+            deliveryNoteItem: selectedTransactionToSetAsWaiting.value?.id
+        }),
         {
             ...dataToSendAsWaiting.value,
-            transaction_id: itemId,
+            transaction_id: selectedTransactionToSetAsWaiting.value?.id,
             quantity: selectedTransactionToSetAsWaiting.value?.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.value?.quantity_waiting_warehouse || 0)
         },
-        trans("Successfully set item as waiting"),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSetAsWaiting.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully set item as waiting"),
+                    type: "success"
+                })
+                dataToSendAsWaiting.value.note = ''
+                isOpenModalSetAsWaiting.value = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set item as waiting. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSetAsWaiting.value = false
+            },
+        }
     )
-    isLoadingSetAsWaiting.value = false
-
-    if (isSuccess) {
-        dataToSendAsWaiting.value.note = ''
-        isOpenModalSetAsWaiting.value = false
-    }
 }
 
 const isModalPackingInfo = ref(false)
@@ -542,9 +458,6 @@ const isModalPickingBatchCode = ref(false)
 const selectedPickingForBatchCode = ref(null)
 const selectedPickingBatchCode = ref(null)
 const isLoadingSubmitPickingBatchCode = ref(false)
-// PickingResource has no delivery_note_item_id, so the row's item id is captured when a
-// picking-level modal (batch code, split) is opened, to know which row to refresh after
-const selectedPickingRowItemId = ref<number | string | null>(null)
 
 watch(isModalPickingBatchCode, (isOpen) => {
     if (isOpen && selectedPickingForBatchCode.value?.batch_code_id) {
@@ -566,22 +479,26 @@ const onCloseModalPickingBatchCode = () => {
     }, 300)
 }
 
-const onSubmitPickingBatchCode = async () => {
-    if (!selectedPickingForBatchCode.value || !selectedPickingRowItemId.value) return
+const onSubmitPickingBatchCode = () => {
+    if (!selectedPickingForBatchCode.value) return
 
-    isLoadingSubmitPickingBatchCode.value = true
-    const isSuccess = await onRowAction(
-        selectedPickingRowItemId.value,
-        { ...selectedPickingForBatchCode.value.update_route, method: 'patch' },
-        'picking-batch-code',
+    router.patch(
+        route(selectedPickingForBatchCode.value.update_route.name, selectedPickingForBatchCode.value.update_route.parameters),
         { batch_code_id: selectedPickingBatchCode.value?.id ?? null },
-        trans("Successfully set batch code"),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { isLoadingSubmitPickingBatchCode.value = true },
+            onSuccess: () => {
+                notify({ title: trans("Success"), text: trans("Successfully set batch code"), type: "success" })
+                onCloseModalPickingBatchCode()
+            },
+            onError: () => {
+                notify({ title: trans("Something went wrong"), text: trans("Failed to set batch code. Try again"), type: "error" })
+            },
+            onFinish: () => { isLoadingSubmitPickingBatchCode.value = false },
+        }
     )
-    isLoadingSubmitPickingBatchCode.value = false
-
-    if (isSuccess) {
-        onCloseModalPickingBatchCode()
-    }
 }
 
 const isModalSplitPicking = ref(false)
@@ -597,7 +514,7 @@ const onCloseModalSplitPicking = () => {
     }, 300)
 }
 
-const onSubmitSplitPicking = async () => {
+const onSubmitSplitPicking = () => {
     if (!selectedPickingForSplit.value) {
         return
     }
@@ -609,55 +526,94 @@ const onSubmitSplitPicking = async () => {
         return
     }
 
-    if (!selectedPickingRowItemId.value) return
-
-    isLoadingSubmitSplitPicking.value = true
-    const isSuccess = await onRowAction(
-        selectedPickingRowItemId.value,
-        { ...selectedPickingForSplit.value.split_route, method: 'post' },
-        'split-picking',
+    router.post(
+        route(selectedPickingForSplit.value.split_route.name, selectedPickingForSplit.value.split_route.parameters),
         { split_quantity: qty },
-        trans("Successfully split picking"),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { isLoadingSubmitSplitPicking.value = true },
+            onSuccess: () => {
+                notify({ title: trans("Success"), text: trans("Successfully split picking"), type: "success" })
+                onCloseModalSplitPicking()
+            },
+            onError: (errors) => {
+                const errorMsg = get(errors, 'message') || trans("Failed to split picking. Try again")
+                notify({ title: trans("Something went wrong"), text: errorMsg, type: "error" })
+            },
+            onFinish: () => { isLoadingSubmitSplitPicking.value = false },
+        }
     )
-    isLoadingSubmitSplitPicking.value = false
-
-    if (isSuccess) {
-        onCloseModalSplitPicking()
-    }
 }
 
 // Section: Undo Quantity Waiting Warehouse
 const isOpenModalUndoWaitingWarehouse = ref(false)
 const selectedItemToUndoWaitingWarehouse = ref(null)
 const isLoadingUndoWaitingWarehouse = ref(false)
-const onSetItemToUndoWaitingWarehouse = async () => {
-    if (!selectedItemToUndoWaitingWarehouse.value) {
-        return
-    }
-
-    const itemId = selectedItemToUndoWaitingWarehouse.value.id
-    isLoadingUndoWaitingWarehouse.value = true
-    const isSuccess = await onRowAction(
-        itemId,
-        {
-            name: 'grp.models.delivery_note_item.undo_set_as_waiting_warehouse',
-            parameters: { deliveryNoteItem: itemId },
-            method: 'post',
+const onSetItemToUndoWaitingWarehouse = () => {
+    router.post(route('grp.models.delivery_note_item.undo_set_as_waiting_warehouse', {
+        deliveryNoteItem: selectedItemToUndoWaitingWarehouse.value?.id
+    }),
+    { },
+    {
+        preserveScroll: true,
+        onStart: () => {
+            isLoadingUndoWaitingWarehouse.value = true
         },
-        'undo-waiting-warehouse',
-        {},
-        ctrans('Item :itemName undo the quantity waiting warehouse', { itemName: selectedItemToUndoWaitingWarehouse.value?.org_stock_name }),
-    )
-    isLoadingUndoWaitingWarehouse.value = false
-
-    if (isSuccess) {
-        isOpenModalUndoWaitingWarehouse.value = false
+        onSuccess: () => {
+            isOpenModalUndoWaitingWarehouse.value = false
+            notify({
+                title: trans("Success") + '!',
+                text: ctrans('Item :itemName undo the quantity waiting warehouse', { itemName: selectedItemToUndoWaitingWarehouse.value?.org_stock_name}),
+                type: "success",
+            })
+        },
+        onFinish: () => isLoadingUndoWaitingWarehouse.value = false,
     }
+)}
+
+const isLoadingImage = ref(false);
+
+watch(
+    () => isOpenModalUndoWaitingWarehouse.value, 
+    async (isOpened) => {
+        if (isOpened) {
+            isLoadingImage.value = true
+            let imageData = await fetchImage(isOpenModalUndoWaitingWarehouse);
+            if (imageData && isOpenModalUndoWaitingWarehouse.value) {
+                isOpenModalUndoWaitingWarehouse.value.org_stock_image_thumbnail = imageData;
+            }
+        }
+    }
+)
+
+watch(
+    () => isOpenModalSetAsWaiting.value, 
+    async (isOpened) => {
+        if (isOpened) {
+            isLoadingImage.value = true
+            let imageData = await fetchImage(selectedTransactionToSetAsWaiting);
+            console.log(imageData);
+            if (imageData ) {
+                selectedTransactionToSetAsWaiting.value.org_stock_image_thumbnail = imageData;
+            }
+        }
+    }
+)
+
+const fetchImage = async (deliveryNoteItem: any)   => {
+    const response = await axios.get(route('grp.json.fetch_single_delivery_note_item.image', {
+        deliveryNoteItem: deliveryNoteItem.value.id,
+    }))
+
+    isLoadingImage.value = false;
+
+    return response.data ?? null;
 }
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop virtualScroll :virtualItemHeight="estimateDeliveryNoteItemRowHeight" :virtualRowMemo="virtualRowMemo">
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo>
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
@@ -705,14 +661,14 @@ const onSetItemToUndoWaitingWarehouse = async () => {
             <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
                 {{ deliveryNoteItem.org_stock_code }}
             </Link>
-            <span v-for="(un_number, packing_name) in deliveryNoteItem.un_numbers" v-tooltip="packing_name ? packing_name : ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="packing_name ? 'cursor-pointer' : ''">
-                {{ un_number }}
+            <span v-for="un_number in deliveryNoteItem.un_numbers" v-tooltip="un_number?.shipping_name ?? ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="un_number?.shipping_name ? 'cursor-pointer' : ''">
+                {{ un_number.number }}
             </span>
         </template>
 
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
-            <div class="max-w-[400px]">{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
 
             <!-- Section: DNI Expired date -->
             <div v-if="false" class="flex items-center flex-wrap">
@@ -762,7 +718,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                     <!-- Batch code display and edit -->
                     <button
                         v-if="picking.show_batch_code_ui"
-                        @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking, selectedPickingRowItemId = item.id)"
+                        @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking)"
                         v-tooltip="picking.batch_code ? ctrans('Change batch code: :code', { code: picking.batch_code }) : ctrans('Set batch code')"
                         class="text-xs px-1.5 py-0.5 rounded border transition-colors"
                         :class="picking.batch_code ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600'"
@@ -774,7 +730,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                     <!-- Split picking button -->
                     <button
                         v-if="picking.show_batch_code_ui && Number(picking.quantity_picked) > 1"
-                        @click="() => (isModalSplitPicking = true, selectedPickingForSplit = picking, selectedPickingRowItemId = item.id)"
+                        @click="() => (isModalSplitPicking = true, selectedPickingForSplit = picking)"
                         v-tooltip="ctrans('Split picking')"
                         class="text-xs px-1.5 py-0.5 rounded border transition-colors border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 bg-white"
                     >
@@ -799,17 +755,17 @@ const onSetItemToUndoWaitingWarehouse = async () => {
             <template v-if="state === 'handling'">
                 <span v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2">
 
-                    <Button v-if="!item.is_handled" type="negative"
-                        :label="locale.number(item.quantity_to_pick)" v-tooltip="trans('Set as not picked')" icon="fal fa-debug"
-                        size="xs"
-                        :loading="rowActionLoading[item.id] === 'not-pick'"
-                        @click="() => onRowAction(item.id, item.not_picking_route, 'not-pick')" />
+                    <ButtonWithLink v-if="!item.is_handled" type="negative"
+                        :label="locale.number(item.quantity_to_pick)"  v-tooltip="ctrans('Set as not picked')" icon="fal fa-debug"
+                        size="xs" :routeTarget="item.not_picking_route" :bindToLink="{
+                            preserveScroll: true,
+                        }" />
                 </span>
 
-                <div v-else v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
+                <!-- <div v-else-if="Number(item.quantity_not_picked > 0)" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
                     <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
-                    {{ item.quantity_not_picked }}
-                </div>
+                    {{ Number(item.quantity_not_picked) }}
+                </div> -->
             </template>
 
         </template>
@@ -818,7 +774,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
             <FractionDisplay v-if="item.quantity_dispatched_fractional"
                 :fractionData="item.quantity_dispatched_fractional" />
             <span v-else>{{ item.quantity_dispatched }}</span>
-
+ 
         </template>
 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
@@ -894,7 +850,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                         <!-- Section: Picking Batch Code -->
                         <button
                             v-if="picking.show_batch_code_ui"
-                            @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking, selectedPickingRowItemId = item.id)"
+                            @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking)"
                             v-tooltip="picking.batch_code ? ctrans('Change batch code: :code', { code: picking.batch_code }) : ctrans('Set batch code')"
                             class="text-xs px-1.5 py-0.5 rounded border transition-colors"
                             :class="picking.batch_code ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600'"
@@ -906,7 +862,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                         <!-- Split picking button -->
                         <button
                             v-if="picking.show_batch_code_ui && Number(picking.quantity_picked) > 1"
-                            @click="() => (isModalSplitPicking = true, selectedPickingForSplit = picking, selectedPickingRowItemId = item.id)"
+                            @click="() => (isModalSplitPicking = true, selectedPickingForSplit = picking)"
                             v-tooltip="ctrans('Split picking')"
                             class="text-xs px-1.5 py-0.5 rounded border transition-colors border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 bg-white ml-2"
                         >
@@ -916,7 +872,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
 
                     </div>
 
-                    <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
+                    <div v-if="picking.type === 'not-pick'" v-tooltip="ctrans(':qtyPicked quantities not gonna be picked', { qtyPicked: Number(picking.quantity_picked)})"
                         class="text-red-500 w-fit mr-auto">
                         <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                         <FractionDisplay v-if="picking.quantity_picked_fractional"
@@ -942,14 +898,15 @@ const onSetItemToUndoWaitingWarehouse = async () => {
 
                     <!-- Button: Undo Pick from Pickings -->
                     <div v-if="isEditable" class="">
-                        <Button
+                        <ButtonWithLink
                             v-if="item.quantity_picked!=0 || item.quantity_not_picked!=0"
                             v-tooltip="ctrans('Undo pick :qtyPicked items', { qtyPicked: Number(picking.quantity_picked).toString()})"
                             type="negative"
                             :size="screenType != 'mobile' ? 'xxs' : 'md'"
                             icon="fal fa-undo-alt"
-                            :loading="rowActionLoading[item.id] === `undo-pick-${picking.id}`"
-                            @click="() => onRowAction(item.id, picking.undo_picking_route, `undo-pick-${picking.id}`)"
+                            :routeTarget="picking.undo_picking_route"
+                            :bindToLink="{ preserveScroll: true }"
+                            :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
                         />
                     </div>
                 </div>
@@ -966,7 +923,6 @@ const onSetItemToUndoWaitingWarehouse = async () => {
             </div>
         </template>
 
-        <!-- Column: To do actions -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="false" class="hidden">
                 <div><span class="bg-yellow-400">itemValue.is_picked</span>: {{ itemValue.is_picked }}</div>
@@ -999,11 +955,10 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                                 v-if="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
                                 :key="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code" noUndoButton
                                 @onError="(error: any) => {
-                                    proxyItem.errors = error?.errors ? Object.values(error.errors).flat() : [error?.message || trans('Failed to save quantity')]
+                                    proxyItem.errors = Object.values(error || {})
                                 }" :modelValue="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity_picked"
                                 @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
-                                @onSuccess="() => { refreshRow(itemValue.id); reloadPageExceptItems() }"
-                                saveOnForm isUseAxios :routeSubmit="{
+                                saveOnForm :routeSubmit="{
                                     name: itemValue.upsert_picking_route.name,
                                     parameters: itemValue.upsert_picking_route.parameters,
                                 }" :bindToTarget="{
@@ -1017,17 +972,23 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                                 :readonly="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked">
                                 <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                                     <div class="flex gap-x-8 w-fit">
-                                        <Button
+                                        <ButtonWithLink
                                             v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
                                             icon="fal fa-clipboard-list-check"
                                             :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                                             :size="screenType != 'mobile' ? 'xs' : 'md'"
                                             type="secondary"
-                                            :loading="isProcessing || rowActionLoading[itemValue.id] === 'pick-all'"
+                                            :loading="isProcessing"
                                             class="py-0"
-                                            @click="() => onRowAction(itemValue.id, itemValue.picking_all_route, 'pick-all', {
+                                            :routeTarget="itemValue.picking_all_route"
+                                            :bind-to-link="{
+                                                preserveScroll: true,
+                                                preserveState: true,
+                                            }"
+                                            :body="{
                                                 location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id
-                                            })"
+                                            }"
+                                            isWithError
                                         >
                                             <template #label>
                                                 <div>
@@ -1035,7 +996,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                                                     <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
                                                 </div>
                                             </template>
-                                        </Button>
+                                        </ButtonWithLink>
                                     </div>
                                 </template>
                             </NumberWithButtonSave>
@@ -1068,13 +1029,13 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                                 <!-- Button: Set Transaction as Waiting (only on Ecom) -->
                                 <template v-if="allowWaiting">                                   
                                     <!-- Button: Not picked -->
-                                    <Button
+                                    <ButtonWithLink
                                         v-if="allowPickerSetNotPicked"
                                         type="negative"
                                         iconRight="fal fa-debug"
                                         :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                                        :loading="rowActionLoading[itemValue.id] === 'not-pick'"
-                                        @click="() => onRowAction(itemValue.id, itemValue.not_picking_route, 'not-pick')"
+                                        :routeTarget="itemValue.not_picking_route"
+                                        :bindToLink="{preserveScroll: true}"
                                         v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
                                     >
                                         <template #label>
@@ -1083,7 +1044,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                                                 <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
                                             </div>
                                         </template>
-                                    </Button>
+                                    </ButtonWithLink>
 
                                     <Button
                                         @click="() => (isOpenModalSetAsWaiting = true, dataToSendAsWaiting.note = itemValue.notes, selectedTransactionToSetAsWaiting = itemValue)"
@@ -1102,13 +1063,13 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                                 </template>
 
                                 <!-- Button: Not picked -->
-                                <Button
+                                <ButtonWithLink
                                     v-else
                                     type="negative"
                                     iconRight="fal fa-debug"
                                     :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                                    :loading="rowActionLoading[itemValue.id] === 'not-pick'"
-                                    @click="() => onRowAction(itemValue.id, itemValue.not_picking_route, 'not-pick')"
+                                    :routeTarget="itemValue.not_picking_route"
+                                    :bindToLink="{preserveScroll: true}"
                                     v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
                                 >
                                     <template #label>
@@ -1117,7 +1078,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                                             <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
                                         </div>
                                     </template>
-                                </Button>
+                                </ButtonWithLink>
                             </template>
 
 
@@ -1152,14 +1113,14 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                             </template>
                         </Button>
                         
-                        <Button
+                        <ButtonWithLink
                             type="negative"
-                            v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
+                            v-tooltip="ctrans('Set :numberNotPicked as not picked', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
                             iconRight="fal fa-debug"
                             :label="itemValue.quantity_to_pick.toString() || '0'"
                             :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                            :loading="rowActionLoading[itemValue.id] === 'not-pick'"
-                            @click="() => onRowAction(itemValue.id, itemValue.not_picking_route, 'not-pick')"
+                            :routeTarget="itemValue.not_picking_route"
+                            :bindToLink="{ preserveScroll: true }"
                         />
                     </div>
                 </div>
@@ -1167,18 +1128,18 @@ const onSetItemToUndoWaitingWarehouse = async () => {
 
             <div v-else-if="Number(itemValue.quantity_waiting_warehouse) < 1 && Number(itemValue.quantity_waiting_crm) < 1" class="flex justify-between gap-x-2 gap-y-1">
                 <div v-if="!itemValue.is_handled" class="text-gray-400 italic text-sm">
-                    {{ trans("No quantity to pick") }}
+                    {{ ctrans("No quantity to pick") }}
                 </div>
 
                 <div class="flex gap-x-2 gap-y-1">
-                    <Button
+                    <ButtonWithLink
                         v-if="!itemValue.is_handled"
                         type="negative"
                         v-tooltip="ctrans('No quantity to pick. Click to ignore.')"
                         label="Click to ignore"
                         :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                        :loading="rowActionLoading[itemValue.id] === 'not-pick'"
-                        @click="() => onRowAction(itemValue.id, itemValue.not_picking_route, 'not-pick')"
+                        :routeTarget="itemValue.not_picking_route"
+                        :bindToLink="{preserveScroll: true}"
                     />
                 </div>
             </div>
@@ -1212,34 +1173,35 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                 <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0" >
                     
                     <div class="flex justify-start items-center">
-                    <Button
+                    <ButtonWithLink
                         v-if="!item.is_done_packing"
                         :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_picked) })"
                         type="secondary"
+                        xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :key="screenType"
-                        :loading="rowActionLoading[item.id] === 'pack'"
-                        @click="() => onRowAction(item.id, {
+                        :bindToLink="{preserveScroll: true}"
+                        :routeTarget="{
                             name: 'grp.models.delivery_note_item.packing.store',
                             method: 'patch',
                             parameters: {
                                 deliveryNoteItem: item.id
                             }
-                        }, 'pack')"
+                        }"
                     />
-                    <Button
+                    <ButtonWithLink
                         v-else
                         v-tooltip="ctrans('Undo packing')"
                         type="negative"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
-                        :loading="rowActionLoading[item.id] === 'undo-pack'"
-                        @click="() => onRowAction(item.id, {
+                        :bindToLink="{preserveScroll: true}"
+                        :routeTarget="{
                             name: 'grp.models.delivery_note_item.packing.delete',
                             method: 'delete',
                             parameters: {
                                 deliveryNoteItem: item.id
                             }
-                        }, 'undo-pack')"
+                        }"
                         :icon="faUndo"
                     />
                      <Button
@@ -1282,13 +1244,16 @@ const onSetItemToUndoWaitingWarehouse = async () => {
             </template>
 
             <template #cell(action)="{ item: item }">
-                <Button
+                <!-- {{ item.not_picking_route }} -->
+                <!-- icon="fal fa-debug" -->
+                <ButtonWithLink
                     type="negative"
                     v-tooltip="ctrans('No quantity to pick. Click to ignore.')"
                     label="Click to ignore"
                     :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                    :loading="rowActionLoading[item.id] === 'not-pick'"
-                    @click="async () => { if (await onRowAction(item.id, item.not_picking_route, 'not-pick')) closePackingModal() }"
+                    :routeTarget="item.not_picking_route"
+                    :bindToLink="{preserveScroll: true}"
+                    @success="closePackingModal"
                 />
             </template>
         </Table>
@@ -1425,13 +1390,22 @@ const onSetItemToUndoWaitingWarehouse = async () => {
         </div>
 
         <div class="flex items-center gap-4 mb-2">
-            <div class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+            <div 
+                class="shrink-0 size-16 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center"
+                :class="[selectedTransactionToSetAsWaiting?.org_stock_image_thumbnail ? '' : 'grid']""
+            >
                 <Image
                     v-if="selectedTransactionToSetAsWaiting?.org_stock_image_thumbnail"
                     :src="selectedTransactionToSetAsWaiting.org_stock_image_thumbnail"
                     :alt="selectedTransactionToSetAsWaiting.org_stock_name"
                 />
-                <FontAwesomeIcon v-else icon="fal fa-box" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon 
+                    v-else
+                    icon="fal fa-box" 
+                    class="text-2xl text-gray-400" 
+                    fixed-width aria-hidden="true" 
+                />
+                <LoadingIcon v-if="isLoadingImage" class="text-xs justify-self-center" />
             </div>
 
             <div class="min-w-0">
@@ -1456,7 +1430,7 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                     :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                 />
                 <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) ?? 0) }}</template> -->
-                {{ selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) }}
+                {{ Number(selectedTransactionToSetAsWaiting?.quantity_to_pick ?? 0) + Number(selectedTransactionToSetAsWaiting?.quantity_waiting_warehouse || 0) }}
                 
             </span>
         </div>
@@ -1519,13 +1493,22 @@ const onSetItemToUndoWaitingWarehouse = async () => {
                     </div>
 
                     <div class="mt-4 bg-amber-50 border border-amber-200 rounded flex items-center gap-4 mb-2 py-2 px-3">
-                        <div class="shrink-0 size-16 rounded-lg overflow-hidden xbg-gray-100 border border-black/10 flex items-center justify-center">
+                        <div 
+                            class="shrink-0 size-16 rounded-lg overflow-hidden xbg-gray-100 border border-black/10 flex items-center justify-center"   
+                            :class="[selectedItemToUndoWaitingWarehouse?.org_stock_image_thumbnail ? '' : 'grid']""
+                        >
                             <Image
                                 v-if="selectedItemToUndoWaitingWarehouse?.org_stock_image_thumbnail"
                                 :src="selectedItemToUndoWaitingWarehouse.org_stock_image_thumbnail"
                                 :alt="selectedItemToUndoWaitingWarehouse.org_stock_name"
                             />
-                            <FontAwesomeIcon v-else icon="fal fa-image" class="text-2xl text-gray-400" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon 
+                                v-else
+                                icon="fal fa-image"
+                                class="text-2xl text-gray-400" 
+                                fixed-width aria-hidden="true" 
+                            />
+                            <LoadingIcon v-if="isLoadingImage" class="text-xs justify-self-center" />
                         </div>
 
                         <div class="min-w-0">

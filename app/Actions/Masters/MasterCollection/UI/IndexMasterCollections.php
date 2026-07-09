@@ -305,11 +305,11 @@ class IndexMasterCollections extends OrgAction
 
                 MasterCollectionsTabsEnum::INDEX->value => $this->tab == MasterCollectionsTabsEnum::INDEX->value ?
                     fn () => MasterCollectionsResource::collection($masterCollections)
-                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollections::run($this->parent, prefix: MasterCollectionsTabsEnum::INDEX->value))),
+                    : Inertia::optional(fn () => MasterCollectionsResource::collection(IndexMasterCollections::run($this->parent, prefix: MasterCollectionsTabsEnum::INDEX->value))),
 
                 MasterCollectionsTabsEnum::SALES->value => $this->tab == MasterCollectionsTabsEnum::SALES->value ?
                     fn () => MasterCollectionsResource::collection(IndexMasterCollections::run($this->parent, prefix: MasterCollectionsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollections::run($this->parent, prefix: MasterCollectionsTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => MasterCollectionsResource::collection(IndexMasterCollections::run($this->parent, prefix: MasterCollectionsTabsEnum::SALES->value))),
 
 
             ]
