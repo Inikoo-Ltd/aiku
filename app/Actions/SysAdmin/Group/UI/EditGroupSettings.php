@@ -107,6 +107,23 @@ class EditGroupSettings extends GrpAction
 
                         ],
                     ],
+                     [
+                        'label'  => __('Page Builder'),
+                        'icon'   => 'fa-light fa-satellite-dish',
+                        'fields' => [
+                            "page_builder_client_id" => [
+                                "type"        => "input",
+                                "label"       => __("Beefree Client ID"),
+                                "value"       => Arr::get($group->settings, 'beefree.page_builder.client_id', ''),
+                            ],
+                            "page_builder_client_secret" => [
+                                "type"        => "input",
+                                "label"       => __("Beefree Client Secret"),
+                                "value"       => Arr::get($group->settings, 'beefree.page_builder.client_secret', ''),
+                            ],
+                        ],
+
+                    ],
                     [
                         'label'  => __('Email Builder'),
                         'icon'   => 'fa-light fa-satellite-dish',
