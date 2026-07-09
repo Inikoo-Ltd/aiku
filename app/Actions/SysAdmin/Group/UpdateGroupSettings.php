@@ -11,11 +11,13 @@ namespace App\Actions\SysAdmin\Group;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Http\Resources\SysAdmin\Group\GroupResource;
 use App\Models\SysAdmin\Group;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -134,10 +136,10 @@ class UpdateGroupSettings extends GrpAction
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
             'access_id'                    => ['sometimes', 'string', 'nullable'],
             'access_key'                   => ['sometimes', 'string', 'nullable'],
-            'region'                       => ['sometimes', 'string', 'nullable'],
+            'region'                       => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'user_notification_access_id' => ['sometimes', 'string', 'nullable'],
             'user_notification_access_key' => ['sometimes', 'string', 'nullable'],
-            'user_notification_region'     => ['sometimes', 'string', 'nullable'],
+            'user_notification_region'     => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
 
         ];
     }

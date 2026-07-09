@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin\Group\UI;
 use App\Actions\GrpAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -136,17 +137,18 @@ class EditGroupSettings extends GrpAction
                             "access_id" => [
                                 "type"        => "input",
                                 "label"       => __("Access ID"),
-                                "value"       => Arr::get($group->settings,'email.provider.failover.access_id',''),
+                                "value"       => Arr::get($group->settings, 'email.provider.failover.access_id', ''),
                             ],
                             "access_key" => [
                                 "type"        => "input",
                                 "label"       => __("Access Key"),
-                                "value"       =>  Arr::get($group->settings,'email.provider.failover.access_key',''),
+                                "value"       =>  Arr::get($group->settings, 'email.provider.failover.access_key', ''),
                             ],
                             "region" => [
-                                "type"        => "input",
+                                "type"        => "select",
                                 "label"       => __("Region"),
-                                "value"       =>  Arr::get($group->settings,'email.provider.failover.region',''),
+                                "options"     => SesRegionEnum::options(),
+                                "value"       =>  Arr::get($group->settings, 'email.provider.failover.region', ''),
                             ]
                         ]
                     ],
@@ -157,17 +159,18 @@ class EditGroupSettings extends GrpAction
                             "customer_notification_access_id" => [
                                 "type"        => "input",
                                 "label"       => __("Access ID"),
-                                "value"       => Arr::get($group->settings,'email.provider.customer_notification.access_id',''),
+                                "value"       => Arr::get($group->settings, 'email.provider.customer_notification.access_id', ''),
                             ],
                             "cutomer_notification_access_key" => [
                                 "type"        => "input",
                                 "label"       => __("Access Key"),
-                                "value"       => Arr::get($group->settings,'email.provider.customer_notification.access_key',''),
+                                "value"       => Arr::get($group->settings, 'email.provider.customer_notification.access_key', ''),
                             ],
                             "customer_notification_region" => [
-                                "type"        => "input",
+                                "type"        => "select",
                                 "label"       => __("Region"),
-                                "value"       => Arr::get($group->settings,'email.provider.customer_notification.region',''),
+                                "options"     => SesRegionEnum::options(),
+                                "value"       => Arr::get($group->settings, 'email.provider.customer_notification.region', ''),
                             ]
                         ]
                     ],
@@ -178,17 +181,18 @@ class EditGroupSettings extends GrpAction
                             "user_notification_access_id" => [
                                 "type"        => "input",
                                 "label"       => __("Access ID"),
-                                "value"       => Arr::get($group->settings,'email.provider.user_notification.access_id',''),
+                                "value"       => Arr::get($group->settings, 'email.provider.user_notification.access_id', ''),
                             ],
                             "user_notification_access_key" => [
                                 "type"        => "input",
                                 "label"       => __("Access Key"),
-                                "value"       => Arr::get($group->settings,'email.provider.user_notification.access_key',''),
+                                "value"       => Arr::get($group->settings, 'email.provider.user_notification.access_key', ''),
                             ],
                             "user_notification_region" => [
-                                "type"        => "input",
+                                "type"        => "select",
                                 "label"       => __("Region"),
-                                "value"       => Arr::get($group->settings,'email.provider.user_notification.region',''),
+                                "options"     => SesRegionEnum::options(),
+                                "value"       => Arr::get($group->settings, 'email.provider.user_notification.region', ''),
                             ]
                         ]
                     ],

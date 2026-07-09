@@ -14,6 +14,7 @@ use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -170,17 +171,18 @@ class EditOrganisationSettings extends OrgAction
                                 "access_id" => [
                                     "type" => "input",
                                     "label" => __("Access ID"),
-                                    "value"       => Arr::get($organisation->settings,'email.provider.failover.access_id',''),
+                                    "value"       => Arr::get($organisation->settings, 'email.provider.failover.access_id', ''),
                                 ],
                                 "access_key" => [
                                     "type" => "input",
                                     "label" => __("Access Key"),
-                                    "value"       =>  Arr::get($organisation->settings,'email.provider.failover.access_key',''),
+                                    "value"       =>  Arr::get($organisation->settings, 'email.provider.failover.access_key', ''),
                                 ],
                                 "region" => [
-                                    "type" => "input",
+                                    "type" => "select",
                                     "label" => __("Region"),
-                                    "value"       =>  Arr::get($organisation->settings,'email.provider.failover.region',''),
+                                    "options"     => SesRegionEnum::options(),
+                                    "value"       =>  Arr::get($organisation->settings, 'email.provider.failover.region', ''),
                                 ],
                             ],
                         ],
@@ -191,17 +193,18 @@ class EditOrganisationSettings extends OrgAction
                                 "customer_notification_access_id" => [
                                     "type"        => "input",
                                     "label"       => __("Access ID"),
-                                    "value"       => Arr::get($organisation->settings,'email.provider.customer_notification.access_id',''),
+                                    "value"       => Arr::get($organisation->settings, 'email.provider.customer_notification.access_id', ''),
                                 ],
                                 "cutomer_notification_access_key" => [
                                     "type"        => "input",
                                     "label"       => __("Access Key"),
-                                    "value"       => Arr::get($organisation->settings,'email.provider.customer_notification.access_key',''),
+                                    "value"       => Arr::get($organisation->settings, 'email.provider.customer_notification.access_key', ''),
                                 ],
                                 "customer_notification_region" => [
-                                    "type"        => "input",
+                                    "type"        => "select",
                                     "label"       => __("Region"),
-                                    "value"       => Arr::get($organisation->settings,'email.provider.customer_notification.region',''),
+                                    "options"     => SesRegionEnum::options(),
+                                    "value"       => Arr::get($organisation->settings, 'email.provider.customer_notification.region', ''),
                                 ]
                             ]
                         ],

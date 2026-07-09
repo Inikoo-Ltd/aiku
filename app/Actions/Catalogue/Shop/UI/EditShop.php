@@ -23,6 +23,7 @@ use App\Models\Reviews\ReviewRatingLabel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -640,17 +641,18 @@ class EditShop extends OrgAction
                         "access_id" => [
                             "type" => "input",
                             "label" => __("Access ID"),
-                            "value"       => Arr::get($shop->settings,'email.provider.failover.access_id',''),
+                            "value"       => Arr::get($shop->settings, 'email.provider.failover.access_id', ''),
                         ],
                         "access_key" => [
                             "type" => "input",
                             "label" => __("Access Key"),
-                            "value"       =>  Arr::get($shop->settings,'email.provider.failover.access_key',''),
+                            "value"       =>  Arr::get($shop->settings, 'email.provider.failover.access_key', ''),
                         ],
                         "region" => [
-                            "type" => "input",
+                            "type" => "select",
                             "label" => __("Region"),
-                            "value"       =>  Arr::get($shop->settings,'email.provider.failover.region',''),
+                            "options"     => SesRegionEnum::options(),
+                            "value"       =>  Arr::get($shop->settings, 'email.provider.failover.region', ''),
                         ],
                     ],
                 ],
@@ -661,17 +663,18 @@ class EditShop extends OrgAction
                         "customer_notification_access_id" => [
                             "type"        => "input",
                             "label"       => __("Access ID"),
-                            "value"       => Arr::get($shop->settings,'email.provider.customer_notification.access_id',''),
+                            "value"       => Arr::get($shop->settings, 'email.provider.customer_notification.access_id', ''),
                         ],
                         "cutomer_notification_access_key" => [
                             "type"        => "input",
                             "label"       => __("Access Key"),
-                            "value"       => Arr::get($shop->settings,'email.provider.customer_notification.access_key',''),
+                            "value"       => Arr::get($shop->settings, 'email.provider.customer_notification.access_key', ''),
                         ],
                         "customer_notification_region" => [
-                            "type"        => "input",
+                            "type"        => "select",
                             "label"       => __("Region"),
-                            "value"       => Arr::get($shop->settings,'email.provider.customer_notification.region',''),
+                            "options"     => SesRegionEnum::options(),
+                            "value"       => Arr::get($shop->settings, 'email.provider.customer_notification.region', ''),
                         ]
                     ]
                 ],

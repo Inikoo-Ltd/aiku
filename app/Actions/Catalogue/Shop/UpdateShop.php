@@ -25,6 +25,7 @@ use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
@@ -679,10 +680,10 @@ class UpdateShop extends OrgAction
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'access_id'                                               => ['sometimes', 'nullable', 'string'],
             'access_key'                                              => ['sometimes', 'nullable', 'string'],
-            'region'                                                  => ['sometimes', 'nullable', 'string'],
+            'region'                                                  => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'customer_notification_access_id'                         => ['sometimes', 'nullable', 'string'],
             'customer_notification_access_key'                        => ['sometimes', 'nullable', 'string'],
-            'customer_notification_region'                            => ['sometimes', 'nullable', 'string'],
+            'customer_notification_region'                            => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],

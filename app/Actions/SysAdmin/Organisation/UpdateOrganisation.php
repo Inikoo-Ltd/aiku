@@ -13,11 +13,13 @@ use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
@@ -173,10 +175,10 @@ class UpdateOrganisation extends OrgAction
             'google_drive_folder_key'               => ['sometimes', 'string'],
             'access_id'                             => ['sometimes', 'string', 'nullable'],
             'access_key'                            => ['sometimes', 'string', 'nullable'],
-            'region'                                => ['sometimes', 'string', 'nullable'],
+            'region'                                => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'customer_notification_access_id'       => ['sometimes', 'string', 'nullable'],
             'customer_notification_access_key'      => ['sometimes', 'string', 'nullable'],
-            'customer_notification_region'          => ['sometimes', 'string', 'nullable'],
+            'customer_notification_region'          => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'address'                               => ['sometimes', 'required', new ValidAddress()],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
