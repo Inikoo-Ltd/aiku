@@ -35,7 +35,7 @@ class ConvertMailshotToBlog extends OrgAction
                 'title'        => $mailshot->subject,
                 'code'         => $mailshot->slug,
                 'type'         => WebpageTypeEnum::BLOG,
-                'sub_type'     => WebpageSubTypeEnum::BLOG,
+                'sub_type'     => WebpageSubTypeEnum::MAILSHOT,
                 'layout_style' => 'Beefree',
             ]
         );

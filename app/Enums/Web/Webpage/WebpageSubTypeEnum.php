@@ -48,6 +48,7 @@ enum WebpageSubTypeEnum: string
 
     case BLOG = 'blog';
     case ARTICLE = 'article';
+    case MAILSHOT = 'mailshot';
 
 
     public static function labels(): array
@@ -58,6 +59,7 @@ enum WebpageSubTypeEnum: string
             'login'       => __('login'),
             'register'    => __('register'),
             'blog'        => __('blog'),
+            'mailshot'    => __('mailshot'),
             'article'     => __('article'),
             'content'     => __('content'),
 
