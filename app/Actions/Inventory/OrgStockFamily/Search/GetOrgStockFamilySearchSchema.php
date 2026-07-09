@@ -24,6 +24,10 @@ class GetOrgStockFamilySearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name' => 'organisation_id',
+                        'type' => 'int32',
+                    ],
+                    [
                         'name' => 'code',
                         'type' => 'string',
                     ],
