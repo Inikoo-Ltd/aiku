@@ -94,7 +94,8 @@ class ShowBlogWebpageWorkshop extends OrgAction
                 ],
                 'url'           => $url,
                 'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
-                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes)
+                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes),
+                'webpage_sub_type' => $webpage->sub_type,
 
             ]
         );

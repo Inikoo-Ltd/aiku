@@ -10,7 +10,7 @@ import BeefreeDynamicProducts from './BeefreeDynamicProducts.vue'
 import { trans } from "laravel-vue-i18n";
 
 const props = withDefaults(defineProps<{
-    updateRoute: routeType;
+    updateRoute?: routeType;
     imagesUploadRoute?: routeType
     snapshot: any
     unpublished_layout?: any

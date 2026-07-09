@@ -83,9 +83,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
-
     <PageHeading :data="pageHead">
         <template #other>
             <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
@@ -93,7 +91,6 @@ onUnmounted(() => {
             </a>
         </template>
     </PageHeading>
-
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :tab="currentTab" :data="props[currentTab]" :redirected_to="redirected_to"></component>
 </template>
