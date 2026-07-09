@@ -48,7 +48,7 @@ function customerRoute(row: any) {
         </template>
         <template #cell(checkout_visited_at)="{ item: row }">
             <span class="whitespace-nowrap">
-                {{ useFormatTime(row["checkout_visited_at"], { formatTime: "dd MMM yyyy, HH:mm", keepTimezone: true }) }} UTC
+                {{ useFormatTime(row["checkout_visited_at"], { formatTime: "dd MMM yyyy, HH:mm", timeZone: 'UTC', keepTimezone: true }) }} UTC
             </span>
         </template>
     </Table>

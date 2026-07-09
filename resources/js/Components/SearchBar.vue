@@ -11,17 +11,19 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash-es'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { faTimes, faSearch } from '@fal'
+import { faTimes, faSearch, faSpinnerThird } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Skeleton from 'primevue/skeleton'
+import LoadingIcon from './Utils/LoadingIcon.vue'
 
-library.add(faTimes, faSearch)
+library.add(faTimes, faSearch, faSpinnerThird)
 
 const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
     sysadmin: defineAsyncComponent(() => import('@/Components/Search/SearchResultSysAdmin.vue')),
     catalogue: defineAsyncComponent(() => import('@/Components/Search/SearchResultCatalogue.vue')),
     customers: defineAsyncComponent(() => import('@/Components/Search/SearchResultCustomers.vue')),
     inventory: defineAsyncComponent(() => import('@/Components/Search/SearchResultOrgStocks.vue')),
+    locations: defineAsyncComponent(() => import('@/Components/Search/SearchResultLocations.vue')),
 }
 
 const isOpen = defineModel<boolean>()
@@ -36,6 +38,10 @@ let abortController: AbortController | null = null
 const activeComponent = computed(() => {
     return scope.value ? scopeComponents[scope.value] ?? null : null
 })
+
+const hasResults = computed(() => resultsSearch.value !== null)
+const isInitialLoading = computed(() => isLoadingSearch.value && !hasResults.value)
+const isRefreshing = computed(() => isLoadingSearch.value && hasResults.value)
 
 const paramsToString = () => {
     return route().routeParams
@@ -55,7 +61,6 @@ const fetchApi = debounce(async (query: string) => {
     abortController?.abort()
     abortController = new AbortController()
 
-    resultsSearch.value = null
     isLoadingSearch.value = true
 
     try {
@@ -101,8 +106,9 @@ const closeModal = () => {
                     <DialogPanel
                         class="w-full max-w-lg sm:max-w-2xl md:min-w-[60vw] lg:max-w-4xl xl:max-w-[1200px] h-[75vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
 
-                        <div class="border-b p-3 flex items-center gap-2">
-                            <FontAwesomeIcon icon="fal fa-search" class="text-gray-400" />
+                        <div class="border-b p-5 flex items-center gap-2">
+                            <LoadingIcon v-if="isLoadingSearch" class="text-gray-400" />
+                            <FontAwesomeIcon v-else icon="fal fa-search" class="text-gray-400" fixed-width />
                             <input
                                 v-model="searchValue"
                                 @input="onTypeSearch"
@@ -111,22 +117,22 @@ const closeModal = () => {
                                 :placeholder="trans('Search...')"
                             />
                             <button @click="closeModal">
-                                <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
+                                <FontAwesomeIcon icon="fal fa-times" class="text-lg" fixed-width />
                             </button>
                         </div>
 
-                        <div v-if="!searchValue" class="flex flex-1 items-center justify-center text-center text-gray-400 p-6">
+                        <div v-if="!searchValue && !hasResults" class="flex flex-1 items-center justify-center text-center text-gray-400 p-6">
                             <div class="space-y-2">
-                                <p class="text-base font-medium text-gray-500">{{ trans('Type to search...') }}</p>
-                                <p class="text-sm">{{ trans('Search across orders, customers, prospects and more') }}</p>
+                                <p class="text-base font-medium text-gray-500">{{ ctrans('Type to search...') }}</p>
+                                <p class="text-sm">{{ ctrans('Search across orders, customers, prospects and more') }}</p>
                             </div>
                         </div>
 
                         <div v-else-if="!isLoadingSearch && !activeComponent" class="flex flex-1 items-center justify-center text-gray-400 p-6">
-                            <p class="text-sm">{{ trans('No results found') }}</p>
+                            <p class="text-sm">{{ ctrans('No results found') }}</p>
                         </div>
 
-                        <div v-else-if="isLoadingSearch && !activeComponent" class="grid grid-cols-12 flex-1 min-h-0">
+                        <div v-else-if="isInitialLoading && !activeComponent" class="grid grid-cols-12 flex-1 min-h-0">
                             <div class="col-span-3 border-r p-4 bg-gray-50 space-y-2">
                                 <Skeleton height="2.5rem" borderRadius="0.75rem" />
                                 <Skeleton height="2.5rem" borderRadius="0.75rem" />
@@ -139,12 +145,16 @@ const closeModal = () => {
                             </div>
                         </div>
 
-                        <div v-else class="grid grid-cols-12 flex-1 min-h-0">
+                        <div
+                            v-else
+                            class="grid grid-cols-12 flex-1 min-h-0 overflow-hidden transition-opacity duration-200 [&>*]:min-w-0"
+                            :class="isRefreshing ? 'opacity-60' : 'opacity-100'"
+                        >
                             <component
                                 v-model:open="isOpen"
                                 :is="activeComponent"
                                 :results="resultsSearch"
-                                :is-loading="isLoadingSearch"
+                                :is-loading="isInitialLoading"
                                 :query="searchValue"
                             />
                         </div>

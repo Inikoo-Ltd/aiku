@@ -11,11 +11,13 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use App\Models\Reviews\Review;
+use App\Services\CustomSort\RandomSort;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 trait WithGetIrisReviewsTrait
 {
@@ -127,11 +129,23 @@ trait WithGetIrisReviewsTrait
             }
         }
 
-        return $queryBuilder
+        $queryBuilder
             ->leftJoin('customers', 'customers.id', '=', 'reviews.customer_id')
             ->leftJoin('users as reply_users', 'reviews.reply_by', '=', 'reply_users.id')
-            ->select($select)
-            ->defaultSort('-created_at')
+            ->select($select);
+
+        if ($parent instanceof Shop) {
+            $randomSort = AllowedSort::custom('random', new RandomSort());
+            array_push($allowedSort, $randomSort);
+            $queryBuilder
+                ->defaultSort($randomSort);
+
+        } else {
+            $queryBuilder
+                ->defaultSort('-created_at');
+        }
+
+        return $queryBuilder
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
