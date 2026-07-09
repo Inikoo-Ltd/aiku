@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\EmailAddress;
 
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Arr;
@@ -60,6 +61,13 @@ class ProcessGetSesClient
             $candidates = [
                 'organisation.failover' => [$outbox->organisation?->settings, 'email.provider.failover'],
                 'group'                 => [$outbox->group?->settings, 'email.provider'],
+            ];
+        } elseif ($outbox->type === OutboxTypeEnum::USER_NOTIFICATION) {
+            // Internal comms: organisation failover → group
+            $candidates = [
+                // email.provider.user_notification.access_id
+                'group'                 => [$outbox->group?->settings, 'email.provider'],
+                'group.failover'         => [$outbox->group?->settings, 'email.provider.failover'],
             ];
         } else {
             // Add the internal group new setting if is internal comms
