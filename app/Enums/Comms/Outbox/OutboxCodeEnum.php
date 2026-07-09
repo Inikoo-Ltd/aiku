@@ -396,12 +396,12 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::REVIEW_REMINDER,
-            OutboxCodeEnum::INVOICE_PAID
+            OutboxCodeEnum::INVOICE_PAID,
+            OutboxCodeEnum::ABANDONED_CART
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
-            OutboxCodeEnum::INVITE,
-            OutboxCodeEnum::ABANDONED_CART
+            OutboxCodeEnum::INVITE
             => 'Mailshot',
 
             default => null
@@ -448,7 +448,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
-            OutboxCodeEnum::REVIEW_REMINDER
+            OutboxCodeEnum::REVIEW_REMINDER,
+            OutboxCodeEnum::ABANDONED_CART
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
@@ -527,6 +528,7 @@ enum OutboxCodeEnum: string
             self::REORDER_REMINDER_2ND,
             self::REORDER_REMINDER_3RD,
             self::BASKET_LOW_STOCK,
+            self::ABANDONED_CART,
             self::PRICE_CHANGE_NOTIFICATION => true,
             default => false,
         };
