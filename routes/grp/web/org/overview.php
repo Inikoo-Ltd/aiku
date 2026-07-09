@@ -18,6 +18,7 @@ use App\Actions\Catalogue\Shop\UI\IndexShopsInOrganisation;
 use App\Actions\CRM\Customer\UI\IndexCustomersInOverview;
 use App\Actions\CRM\Customer\UI\ShowCrmDashboardInOverview;
 use App\Actions\CRM\WebUser\UI\IndexWebUsersInOrganisation;
+use App\Actions\Ordering\CheckoutAbandonment\UI\IndexCheckoutAbandonments;
 use App\Actions\Ordering\Order\UI\IndexOrdersInBasketInOrganisation;
 use App\Actions\Ordering\Order\UI\IndexOrdersInOrganisation;
 use App\Actions\Ordering\UI\ShowOrdersBacklog;
@@ -32,6 +33,7 @@ Route::get('/invoices', IndexInvoicesInOrganisation::class)->name('invoices.inde
 Route::get('/refunds', [IndexRefunds::class, 'inOrganisation'])->name('refunds.index');
 Route::get('/orders', IndexOrdersInOrganisation::class)->name('orders.index');
 Route::get('/orders-in-basket', IndexOrdersInBasketInOrganisation::class)->name('orders_in_basket.index');
+Route::get('/checkout-abandonments', [IndexCheckoutAbandonments::class, 'inOrganisation'])->name('checkout_abandonments.index');
 Route::get('/orders-backlog', [ShowOrdersBacklog::class, 'inOrganisation'])->name('ordering.backlog');
 
 Route::get('/shops', IndexShopsInOrganisation::class)->name('shops.index');
