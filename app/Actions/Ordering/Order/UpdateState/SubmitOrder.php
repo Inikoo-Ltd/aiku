@@ -165,16 +165,16 @@ class SubmitOrder extends OrgAction
             $upComingTransactionProduct = $upComingTransaction->product;
 
             $isGift     = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
-            $isFollowOn = $upComingTransaction->type === UpcomingTransactionTypeEnum::FOLLOW_ON;
+
 
             $transaction = StoreTransaction::make()->action(
                 $order,
                 $upComingTransactionProduct->currentHistoricProduct,
                 [
-                    'quantity_ordered' => $isFollowOn ? $upComingTransaction->quantity : 0,
-                    'quantity_bonus'   => $isGift ? $upComingTransaction->quantity : 0,
+                    'quantity_ordered' => 0,
+                    'quantity_bonus'   => $upComingTransaction->quantity,
                     'is_gift'          => $isGift,
-                    'is_follow_on'     => $isFollowOn,
+                    'is_follow_on'     => true,
                     'label'            => $upComingTransaction->notes ?? ''
                 ]
             );

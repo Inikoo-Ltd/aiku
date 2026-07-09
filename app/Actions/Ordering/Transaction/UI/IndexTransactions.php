@@ -69,6 +69,7 @@ class IndexTransactions extends OrgAction
                 'transactions.id',
                 'transactions.state',
                 'transactions.status',
+                'transactions.is_follow_on',
                 'transactions.quantity_ordered',
                 'transactions.quantity_bonus',
                 'transactions.quantity_picked',

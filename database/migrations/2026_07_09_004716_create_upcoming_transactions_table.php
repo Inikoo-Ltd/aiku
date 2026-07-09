@@ -35,6 +35,7 @@ return new class () extends Migration {
 
             $table->decimal('quantity', 16, 3)->nullable();
             $table->text('notes')->nullable();
+            $table->text('private_notes')->nullable();
 
             $table->string('type')->index();
             $table->string('state')->index()->default(UpcomingTransactionStateEnum::READY->value);
