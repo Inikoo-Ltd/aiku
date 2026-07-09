@@ -153,11 +153,6 @@
                     {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
                 </div>
             @endif
-            @if($invoice->originalInvoice)
-                <div style="text-align: right">
-                    {{ __('Invoice number') }}: <b>{{ $invoice->originalInvoice->reference }}</b>
-                </div>
-            @endif
 
         </td>
     </tr>
