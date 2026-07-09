@@ -220,7 +220,7 @@ class IndexOrdersInOrganisation extends OrgAction
 
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
                     fn () => OrdersResource::collection($orders)
-                    : Inertia::lazy(fn () => OrdersResource::collection($orders)),
+                    : Inertia::optional(fn () => OrdersResource::collection($orders)),
             ]
         )->table($this->tableStructure($this->organisation, OrdersTabsEnum::ORDERS->value));
     }

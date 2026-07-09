@@ -206,7 +206,7 @@ class IndexProductsInMasterProduct extends OrgAction
                     ],
                     ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                         fn () => ProductsResource::collection($products)
-                        : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                        : Inertia::optional(fn () => ProductsResource::collection($products)),
                 ]
         )->table($this->tableStructure(ProductsTabsEnum::INDEX->value, $this->parent));
     }

@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 12-03-2025-11h-30m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -39,27 +39,27 @@ class IndexRedirects extends OrgAction
     public function htmlResponse(LengthAwarePaginator $redirects, ActionRequest $request): Response
     {
         return Inertia::render('Org/Web/Redirect/Redirects', [
-            'title'       => __('Redirects'),
-            'breadcrumbs' => $this->getBreadcrumbs(
+            'title'                            => __('Redirects'),
+            'breadcrumbs'                      => $this->getBreadcrumbs(
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
-            'pageHead'    => [
-                'title'     => $this->website->name,
-                'model'     => __('Redirects'),
-                'icon'      => [
+            'pageHead'                         => [
+                'title'   => $this->website->name,
+                'model'   => __('Redirects'),
+                'icon'    => [
                     'title' => __('Redirects'),
                     'icon'  => 'fal fa-terminal'
                 ],
                 // 'iconRight' => $this->website->state->stateIcon()[$this->website->state->value],
-                'actions'   => [
+                'actions' => [
                 ]
             ],
-            'tabs'        => [
+            'tabs'                             => [
                 'current'    => $this->tab,
                 'navigation' => RedirectTabsEnum::navigation()
             ],
-            'route_redirects' => [
+            'route_redirects'                  => [
                 'submit'              => [
                     'name'       => 'grp.models.website.redirect.store',
                     'parameters' => [
@@ -75,15 +75,15 @@ class IndexRedirects extends OrgAction
                     ]
                 ],
             ],
-            'download_route' => [
+            'download_route'                   => [
                 'name'       => str_replace('.index', '.export', $request->route()->getName()),
                 'parameters' => $request->route()->originalParameters(),
             ],
             RedirectTabsEnum::REDIRECTS->value => $this->tab == RedirectTabsEnum::REDIRECTS->value ?
                 RedirectsResource::collection($this->handle(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value))
-                : Inertia::lazy(fn () => RedirectsResource::collection($this->handle(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value))),
+                : Inertia::optional(fn() => RedirectsResource::collection($this->handle(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value))),
         ])
-        ->table(IndexRedirects::make()->tableStructure(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value));
+            ->table(IndexRedirects::make()->tableStructure(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value));
     }
 
     public function handle(Website|Webpage $parent, $prefix = null): LengthAwarePaginator
@@ -139,17 +139,17 @@ class IndexRedirects extends OrgAction
     ): Closure {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix . 'Page');
+                $table->name($prefix)->pageName($prefix.'Page');
             }
 
             $table
                 ->withGlobalSearch()
-                ->withLabelRecord([__('redirect'),__('redirects')])
+                ->withLabelRecord([__('redirect'), __('redirects')])
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Website', 'Webpage' => [
-                            'title'       => __("No redirects found"),
+                            'title' => __("No redirects found"),
                         ],
                         default => null
                     }
@@ -162,10 +162,11 @@ class IndexRedirects extends OrgAction
             if ($parent instanceof Website) {
                 $table->column(key: 'to_webpage_url', label: __('To Webpage'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'actions_from_website', label: '', canBeHidden: false, sortable: false, searchable: true);
+            $table->column(key: 'actions_from_website', label: '', canBeHidden: false, searchable: true);
         };
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->website = $website;

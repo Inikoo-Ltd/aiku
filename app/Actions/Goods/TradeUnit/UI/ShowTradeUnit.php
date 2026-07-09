@@ -88,31 +88,31 @@ class ShowTradeUnit extends GrpAction
                 'tradeUnitFamilySlug'   => $tradeUnit->tradeUnitFamily?->slug,
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
                     fn () => GetTradeUnitShowcase::run($tradeUnit)
-                    : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
+                    : Inertia::optional(fn () => GetTradeUnitShowcase::run($tradeUnit)),
 
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
                     fn () => GetTradeUnitAttachment::run($tradeUnit)
-                    : Inertia::lazy(fn () => GetTradeUnitAttachment::run($tradeUnit)),
+                    : Inertia::optional(fn () => GetTradeUnitAttachment::run($tradeUnit)),
 
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
                     fn () => GetTradeUnitImages::run($tradeUnit)
-                    : Inertia::lazy(fn () => GetTradeUnitImages::run($tradeUnit)),
+                    : Inertia::optional(fn () => GetTradeUnitImages::run($tradeUnit)),
 
                 TradeUnitTabsEnum::MASTER_PRODUCTS->value => $this->tab == TradeUnitTabsEnum::MASTER_PRODUCTS->value ?
                     fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))),
+                    : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProductsInTradeUnit::run($tradeUnit))),
 
                 TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))),
+                    : Inertia::optional(fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))),
 
                 TradeUnitTabsEnum::STOCKS->value => $this->tab == TradeUnitTabsEnum::STOCKS->value ?
                     fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))),
+                    : Inertia::optional(fn () => StocksResource::collection(IndexStocksInTradeUnit::run($tradeUnit))),
 
                 TradeUnitTabsEnum::ORG_STOCKS->value => $this->tab == TradeUnitTabsEnum::ORG_STOCKS->value ?
                     fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))
-                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))),
+                    : Inertia::optional(fn () => OrgStocksResource::collection(IndexOrgStocksInTradeUnit::run($tradeUnit))),
 
             ]
         )

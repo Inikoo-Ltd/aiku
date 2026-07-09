@@ -156,19 +156,19 @@ class IndexOrganisationStockHistories extends OrgAction
 
                 OrganisationStockHistoriesTabsEnum::DAILY->value => $this->tab == OrganisationStockHistoriesTabsEnum::DAILY->value
                     ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation))),
+                    : Inertia::optional(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation))),
 
                 OrganisationStockHistoriesTabsEnum::WEEKLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::WEEKLY->value
                     ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
+                    : Inertia::optional(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'weekly'))),
 
                 OrganisationStockHistoriesTabsEnum::MONTHLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::MONTHLY->value
                     ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
+                    : Inertia::optional(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'monthly'))),
 
                 OrganisationStockHistoriesTabsEnum::YEARLY->value => $this->tab == OrganisationStockHistoriesTabsEnum::YEARLY->value
                     ? fn () => OrganisationStockHistoriesResource::collection($histories)
-                    : Inertia::lazy(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
+                    : Inertia::optional(fn () => OrganisationStockHistoriesResource::collection($this->handle($this->organisation, 'yearly'))),
             ]
         )
             ->table($this->tableStructure($this->organisation))

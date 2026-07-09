@@ -94,7 +94,7 @@ class ShowTrolley extends OrgAction
 
                 TrolleyTabsEnum::SHOWCASE->value => $this->tab == TrolleyTabsEnum::SHOWCASE->value ?
                     fn () => GetTrolleyShowcase::run($trolley)
-                    : Inertia::lazy(fn () => GetTrolleyShowcase::run($trolley)),
+                    : Inertia::optional(fn () => GetTrolleyShowcase::run($trolley)),
 
             ]
         );

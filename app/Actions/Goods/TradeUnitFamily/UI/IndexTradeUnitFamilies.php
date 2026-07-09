@@ -200,11 +200,11 @@ class IndexTradeUnitFamilies extends GrpAction
 
                 TradeUnitFamiliesTabsEnum::INDEX->value => $this->tab == TradeUnitFamiliesTabsEnum::INDEX->value
                     ? fn () => TradeUnitFamiliesResource::collection($tradeUnitFamilies)
-                    : Inertia::lazy(fn () => TradeUnitFamiliesResource::collection($tradeUnitFamilies)),
+                    : Inertia::optional(fn () => TradeUnitFamiliesResource::collection($tradeUnitFamilies)),
 
                 TradeUnitFamiliesTabsEnum::SALES->value => $this->tab == TradeUnitFamiliesTabsEnum::SALES->value
                     ? fn () => TradeUnitFamiliesResource::collection($this->handle(prefix: TradeUnitFamiliesTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => TradeUnitFamiliesResource::collection($this->handle(prefix: TradeUnitFamiliesTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => TradeUnitFamiliesResource::collection($this->handle(prefix: TradeUnitFamiliesTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitFamiliesTabsEnum::INDEX->value))
          ->table($this->tableStructure(parent: $this->parent, prefix: TradeUnitFamiliesTabsEnum::SALES->value, sales: true));

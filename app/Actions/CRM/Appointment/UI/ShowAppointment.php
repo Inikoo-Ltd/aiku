@@ -85,7 +85,7 @@ class ShowAppointment extends InertiaAction
 
                 AppointmentTabsEnum::SHOWCASE->value => $this->tab == AppointmentTabsEnum::SHOWCASE->value ?
                     fn () => $appointment
-                    : Inertia::lazy(fn () => $appointment),
+                    : Inertia::optional(fn () => $appointment),
             ]
         );
     }

@@ -81,7 +81,7 @@ class ShowBlogWebpage extends OrgAction
 
                 BlogWebpageTabsEnum::SHOWCASE->value => $this->tab == BlogWebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
-                    : Inertia::lazy(fn () => WebpageResource::make($webpage)->getArray()),
+                    : Inertia::optional(fn () => WebpageResource::make($webpage)->getArray()),
             ]
         );
     }

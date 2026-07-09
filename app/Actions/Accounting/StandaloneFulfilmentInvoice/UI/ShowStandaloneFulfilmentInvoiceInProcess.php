@@ -241,7 +241,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
 
                 StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value => $this->tab == StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value ?
                     fn () => StandaloneFulfilmentInvoiceTransactionsResource::collection(IndexStandaloneFulfilmentInvoiceTransactions::run($invoice, StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => StandaloneFulfilmentInvoiceTransactionsResource::collection(IndexStandaloneFulfilmentInvoiceTransactions::run($invoice, StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value))),
+                    : Inertia::optional(fn () => StandaloneFulfilmentInvoiceTransactionsResource::collection(IndexStandaloneFulfilmentInvoiceTransactions::run($invoice, StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value))),
             ]
         )->table(IndexPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
             ->table(IndexStandaloneFulfilmentInvoiceTransactions::make()->tableStructure(StandaloneFulfilmentInvoiceTabsEnum::ITEMS->value));

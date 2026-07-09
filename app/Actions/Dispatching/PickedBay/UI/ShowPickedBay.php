@@ -100,7 +100,7 @@ class ShowPickedBay extends OrgAction
 
                 PickedBayTabsEnum::SHOWCASE->value => $this->tab == PickedBayTabsEnum::SHOWCASE->value ?
                     fn () => GetPickedBayShowcase::run($pickedBay)
-                    : Inertia::lazy(fn () => GetPickedBayShowcase::run($pickedBay)),
+                    : Inertia::optional(fn () => GetPickedBayShowcase::run($pickedBay)),
 
             ]
         );

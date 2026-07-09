@@ -78,15 +78,15 @@ class ShowProspect extends OrgAction
 
                 ProspectTabsEnum::SHOWCASE->value => $this->tab == ProspectTabsEnum::SHOWCASE->value ?
                     fn () => $this->getProspectShowcase($prospect)
-                    : Inertia::lazy(fn () => $this->getProspectShowcase($prospect)),
+                    : Inertia::optional(fn () => $this->getProspectShowcase($prospect)),
 
                 ProspectTabsEnum::DISPATCHED_EMAILS->value => $this->tab == ProspectTabsEnum::DISPATCHED_EMAILS->value ?
                     fn () => ProspectsResource::collection(IndexDispatchedEmails::run($prospect, ProspectTabsEnum::DISPATCHED_EMAILS->value))
-                    : Inertia::lazy(fn () => ProspectsResource::collection(IndexDispatchedEmails::run($prospect, ProspectTabsEnum::DISPATCHED_EMAILS->value))),
+                    : Inertia::optional(fn () => ProspectsResource::collection(IndexDispatchedEmails::run($prospect, ProspectTabsEnum::DISPATCHED_EMAILS->value))),
 
                 ProspectTabsEnum::HISTORY->value => $this->tab == ProspectTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($prospect, ProspectTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($prospect, ProspectTabsEnum::HISTORY->value))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($prospect, ProspectTabsEnum::HISTORY->value))),
 
             ]
         )->table(

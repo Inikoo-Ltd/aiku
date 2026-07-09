@@ -109,19 +109,19 @@ class ShowLocation extends OrgAction
 
                 LocationTabsEnum::SHOWCASE->value => $this->tab == LocationTabsEnum::SHOWCASE->value ?
                     fn () => GetLocationShowcase::run($location)
-                    : Inertia::lazy(fn () => GetLocationShowcase::run($location)),
+                    : Inertia::optional(fn () => GetLocationShowcase::run($location)),
 
                 LocationTabsEnum::ORG_STOCKS->value => $this->tab == LocationTabsEnum::ORG_STOCKS->value ?
                     fn () => OrgStocksInLocationResource::collection(IndexOrgStocksInLocation::run($location))
-                    : Inertia::lazy(fn () => OrgStocksInLocationResource::collection(IndexOrgStocksInLocation::run($location))),
+                    : Inertia::optional(fn () => OrgStocksInLocationResource::collection(IndexOrgStocksInLocation::run($location))),
 
                 LocationTabsEnum::PALLETS->value => $this->tab == LocationTabsEnum::PALLETS->value ?
                     fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))
-                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),
+                    : Inertia::optional(fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),
 
                 LocationTabsEnum::HISTORY->value => $this->tab == LocationTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($location))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($location)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($location)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: LocationTabsEnum::HISTORY->value))
             ->table(IndexOrgStocksInLocation::make()->tableStructure($location, prefix: LocationTabsEnum::ORG_STOCKS->value))

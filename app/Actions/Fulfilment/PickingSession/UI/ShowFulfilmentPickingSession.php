@@ -202,7 +202,7 @@ class ShowFulfilmentPickingSession extends OrgAction
                 return [
                     PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value
                         ? fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexFulfilmentPickingSessionStoredItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
-                        : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexFulfilmentPickingSessionStoredItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
+                        : Inertia::optional(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexFulfilmentPickingSessionStoredItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
                 ];
             }
 
@@ -210,10 +210,10 @@ class ShowFulfilmentPickingSession extends OrgAction
                 return [
                     PickingSessionTabsEnum::GROUPED->value => $this->tab == PickingSessionTabsEnum::GROUPED->value
                         ? fn () => FulfilmentPickingSessionStoredItemsGroupedResource::collection(IndexFulfilmentPickingSessionStoredItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))
-                        : Inertia::lazy(fn () => FulfilmentPickingSessionStoredItemsGroupedResource::collection(IndexFulfilmentPickingSessionStoredItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
+                        : Inertia::optional(fn () => FulfilmentPickingSessionStoredItemsGroupedResource::collection(IndexFulfilmentPickingSessionStoredItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
                     PickingSessionTabsEnum::ITEMS->value   => $this->tab == PickingSessionTabsEnum::ITEMS->value
                         ? fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexFulfilmentPickingSessionStoredItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
-                        : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexFulfilmentPickingSessionStoredItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
+                        : Inertia::optional(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexFulfilmentPickingSessionStoredItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
                 ];
             }
 
@@ -221,14 +221,14 @@ class ShowFulfilmentPickingSession extends OrgAction
                 return [
                     PickingSessionTabsEnum::GROUPED->value => $this->tab == PickingSessionTabsEnum::GROUPED->value
                         ? fn () => FulfilmentPickingSessionStoredItemsGroupedResource::collection(IndexFulfilmentPickingSessionStoredItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))
-                        : Inertia::lazy(fn () => FulfilmentPickingSessionStoredItemsGroupedResource::collection(IndexFulfilmentPickingSessionStoredItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
+                        : Inertia::optional(fn () => FulfilmentPickingSessionStoredItemsGroupedResource::collection(IndexFulfilmentPickingSessionStoredItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
                 ];
             }
 
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value
                     ? fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexFulfilmentPickingSessionStoredItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexFulfilmentPickingSessionStoredItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
+                    : Inertia::optional(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexFulfilmentPickingSessionStoredItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
             ];
         }
 
@@ -236,7 +236,7 @@ class ShowFulfilmentPickingSession extends OrgAction
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value
                     ? fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
+                    : Inertia::optional(fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
             ];
         }
 
@@ -244,10 +244,10 @@ class ShowFulfilmentPickingSession extends OrgAction
             return [
                 PickingSessionTabsEnum::GROUPED->value => $this->tab == PickingSessionTabsEnum::GROUPED->value
                     ? fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))
-                    : Inertia::lazy(fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
+                    : Inertia::optional(fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
                 PickingSessionTabsEnum::ITEMS->value   => $this->tab == PickingSessionTabsEnum::ITEMS->value
                     ? fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
-                    : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
+                    : Inertia::optional(fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
             ];
         }
 
@@ -255,14 +255,14 @@ class ShowFulfilmentPickingSession extends OrgAction
             return [
                 PickingSessionTabsEnum::GROUPED->value => $this->tab == PickingSessionTabsEnum::GROUPED->value
                     ? fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))
-                    : Inertia::lazy(fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
+                    : Inertia::optional(fn () => FulfilmentPickingSessionPalletReturnsGroupedResource::collection(IndexFulfilmentPickingSessionPalletItemsGrouped::run($pickingSession, PickingSessionTabsEnum::GROUPED->value))),
             ];
         }
 
         return [
             PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value
                 ? fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))
-                : Inertia::lazy(fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
+                : Inertia::optional(fn () => PalletReturnItemsUIResource::collection(IndexFulfilmentPickingSessionPalletItems::run($pickingSession, PickingSessionTabsEnum::ITEMS->value))),
         ];
     }
 

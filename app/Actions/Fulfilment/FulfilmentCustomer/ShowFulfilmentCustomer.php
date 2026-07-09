@@ -219,29 +219,29 @@ class ShowFulfilmentCustomer extends OrgAction
 
                 FulfilmentCustomerTabsEnum::SHOWCASE->value => $this->tab == FulfilmentCustomerTabsEnum::SHOWCASE->value ?
                     fn () => GetFulfilmentCustomerShowcase::run($fulfilmentCustomer, $request)
-                    : Inertia::lazy(fn () => GetFulfilmentCustomerShowcase::run($fulfilmentCustomer, $request)),
+                    : Inertia::optional(fn () => GetFulfilmentCustomerShowcase::run($fulfilmentCustomer, $request)),
 
                 FulfilmentCustomerTabsEnum::AGREED_PRICES->value => $this->tab == FulfilmentCustomerTabsEnum::AGREED_PRICES->value ?
                     fn () => RentalAgreementClausesResource::collection(IndexRentalAgreementClauses::run($fulfilmentCustomer, FulfilmentCustomerTabsEnum::AGREED_PRICES->value))
-                    : Inertia::lazy(fn () => RentalAgreementClausesResource::collection(IndexRentalAgreementClauses::run($fulfilmentCustomer, FulfilmentCustomerTabsEnum::AGREED_PRICES->value))),
+                    : Inertia::optional(fn () => RentalAgreementClausesResource::collection(IndexRentalAgreementClauses::run($fulfilmentCustomer, FulfilmentCustomerTabsEnum::AGREED_PRICES->value))),
 
 
                 FulfilmentCustomerTabsEnum::BALANCE->value => $this->tab == FulfilmentCustomerTabsEnum::BALANCE->value ?
                     fn () => CustomerBalanceTransactionsResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))
-                    : Inertia::lazy(fn () => CustomerBalanceTransactionsResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))),
+                    : Inertia::optional(fn () => CustomerBalanceTransactionsResource::collection(IndexCustomerBalanceTransaction::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::BALANCE->value))),
 
                 FulfilmentCustomerTabsEnum::EMAIL->value => $this->tab == FulfilmentCustomerTabsEnum::EMAIL->value ?
                     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::EMAIL->value))
-                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::EMAIL->value))),
+                    : Inertia::optional(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::EMAIL->value))),
 
 
                 FulfilmentCustomerTabsEnum::HISTORY->value => $this->tab == FulfilmentCustomerTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($fulfilmentCustomer->customer))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($fulfilmentCustomer->customer))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($fulfilmentCustomer->customer))),
 
                 FulfilmentCustomerTabsEnum::ATTACHMENTS->value => $this->tab == FulfilmentCustomerTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::ATTACHMENTS->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::ATTACHMENTS->value))),
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($fulfilmentCustomer->customer, FulfilmentCustomerTabsEnum::ATTACHMENTS->value))),
             ]
         )
             ->table(IndexStoredItems::make()->tableStructure($fulfilmentCustomer->storedItems))

@@ -158,7 +158,7 @@ class IndexFulfilmentServices extends OrgAction
 
                 ServicesTabsEnum::SERVICES->value => $this->tab == ServicesTabsEnum::SERVICES->value ?
                     fn () => ServicesResource::collection($services)
-                    : Inertia::lazy(fn () => ServicesResource::collection($services)),
+                    : Inertia::optional(fn () => ServicesResource::collection($services)),
 
             ]
         )->table(

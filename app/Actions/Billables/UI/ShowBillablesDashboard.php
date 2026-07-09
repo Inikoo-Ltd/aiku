@@ -57,7 +57,7 @@ class ShowBillablesDashboard extends OrgAction
 
                 BillablesTabsEnum::DASHBOARD->value => $this->tab == BillablesTabsEnum::DASHBOARD->value ?
                     fn () => GetBillablesDashboard::run($this->shop)
-                    : Inertia::lazy(fn () => GetBillablesDashboard::run($this->shop)),
+                    : Inertia::optional(fn () => GetBillablesDashboard::run($this->shop)),
 
             ]
         );

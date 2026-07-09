@@ -78,7 +78,7 @@ class ShowIrisCollection extends IrisAction
                             IrisCollectionTabsEnum::FAMILIES->value
                         )
                     )
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'family',
@@ -103,7 +103,7 @@ class ShowIrisCollection extends IrisAction
                             IrisCollectionTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => ProductsResource::collection(
+                    : Inertia::optional(fn () => ProductsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'product',

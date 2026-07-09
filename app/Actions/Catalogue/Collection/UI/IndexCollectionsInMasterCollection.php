@@ -176,7 +176,7 @@ class IndexCollectionsInMasterCollection extends GrpAction
 
                 CollectionsTabsEnum::INDEX->value => $this->tab == CollectionsTabsEnum::INDEX->value ?
                     fn () => CollectionsResource::collection($collections)
-                    : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
+                    : Inertia::optional(fn () => CollectionsResource::collection($collections)),
             ]
         )
         ->table($this->tableStructure($this->parent, prefix: CollectionsTabsEnum::INDEX->value));

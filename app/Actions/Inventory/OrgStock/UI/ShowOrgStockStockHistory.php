@@ -75,11 +75,11 @@ class ShowOrgStockStockHistory extends OrgAction
 
                 OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value => $this->tab == OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value ?
                     fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))
-                    : Inertia::lazy(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))),
+                    : Inertia::optional(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::STOCK_HISTORY->value))),
 
                 OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value => $this->tab == OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value ?
                     fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value, type: OrgStockMovementTypeEnum::PURCHASE))
-                    : Inertia::lazy(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value, type: OrgStockMovementTypeEnum::PURCHASE))),
+                    : Inertia::optional(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($orgStock, OrgStockStockHistoryTabsEnum::PURCHASE_HISTORY->value, type: OrgStockMovementTypeEnum::PURCHASE))),
 
             ]
         )

@@ -146,7 +146,7 @@ class IndexPendingBackInStockRemindersProducts extends OrgAction
 
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductIndexPendingBackInStockReminderResource::collection($products)
-                    : Inertia::lazy(fn () => ProductIndexPendingBackInStockReminderResource::collection($products)),
+                    : Inertia::optional(fn () => ProductIndexPendingBackInStockReminderResource::collection($products)),
 
             ]
         )

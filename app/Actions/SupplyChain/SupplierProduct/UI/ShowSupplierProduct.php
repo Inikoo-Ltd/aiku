@@ -83,10 +83,10 @@ class ShowSupplierProduct extends InertiaAction
                 ],
                 SupplierProductTabsEnum::SHOWCASE->value => $this->tab == SupplierProductTabsEnum::SHOWCASE->value ?
                     fn () => GetSupplierProductShowcase::run($supplierProduct)
-                    : Inertia::lazy(fn () => GetSupplierProductShowcase::run($supplierProduct)),
+                    : Inertia::optional(fn () => GetSupplierProductShowcase::run($supplierProduct)),
                 SupplierProductTabsEnum::HISTORY->value => $this->tab == SupplierProductTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplierProduct))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($supplierProduct)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplierProduct)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierProductTabsEnum::HISTORY->value));

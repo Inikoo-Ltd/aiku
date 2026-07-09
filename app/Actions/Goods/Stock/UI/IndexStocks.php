@@ -413,11 +413,11 @@ class IndexStocks extends OrgAction
 
                 StocksTabsEnum::INDEX->value => $this->tab == StocksTabsEnum::INDEX->value
                     ? fn () => StocksResource::collection($stocks)
-                    : Inertia::lazy(fn () => StocksResource::collection($stocks)),
+                    : Inertia::optional(fn () => StocksResource::collection($stocks)),
 
                 StocksTabsEnum::SALES->value => $this->tab == StocksTabsEnum::SALES->value
                     ? fn () => StocksResource::collection($this->handle(parent: $this->parent, prefix: StocksTabsEnum::SALES->value, bucket: $this->bucket))
-                    : Inertia::lazy(fn () => StocksResource::collection($this->handle(parent: $this->parent, prefix: StocksTabsEnum::SALES->value, bucket: $this->bucket))),
+                    : Inertia::optional(fn () => StocksResource::collection($this->handle(parent: $this->parent, prefix: StocksTabsEnum::SALES->value, bucket: $this->bucket))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: StocksTabsEnum::INDEX->value, bucket: $this->bucket))
          ->table($this->tableStructure(parent: $this->parent, prefix: StocksTabsEnum::SALES->value, bucket: $this->bucket, sales: true));

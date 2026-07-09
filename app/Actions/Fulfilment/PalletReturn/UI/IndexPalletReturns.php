@@ -387,12 +387,12 @@ class IndexPalletReturns extends OrgAction
 
                 PalletReturnsTabsEnum::RETURNS->value => $this->tab == PalletReturnsTabsEnum::RETURNS->value ?
                     fn () => PalletReturnsResource::collection($returns)
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection($returns)),
+                    : Inertia::optional(fn () => PalletReturnsResource::collection($returns)),
 
 
                 PalletReturnsTabsEnum::UPLOADS->value => $this->tab == PalletReturnsTabsEnum::UPLOADS->value ?
                     fn () => PalletReturnItemUploadsResource::collection(IndexPalletReturnItemUploads::run($this->parent, PalletReturnsTabsEnum::UPLOADS->value))
-                    : Inertia::lazy(fn () => PalletReturnItemUploadsResource::collection(IndexPalletReturnItemUploads::run($this->parent, PalletReturnsTabsEnum::UPLOADS->value))),
+                    : Inertia::optional(fn () => PalletReturnItemUploadsResource::collection(IndexPalletReturnItemUploads::run($this->parent, PalletReturnsTabsEnum::UPLOADS->value))),
 
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: PalletReturnsTabsEnum::RETURNS->value, restriction: $this->restriction))

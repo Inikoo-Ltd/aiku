@@ -106,15 +106,15 @@ class ShowPostRoom extends OrgAction
                 ],
                 PostRoomsTabsEnum::SHOWCASE->value => $this->tab == PostRoomsTabsEnum::SHOWCASE->value ?
                     fn () => GetPostRoomShowcase::run($postRoom)
-                    : Inertia::lazy(fn () => GetPostRoomShowcase::run($postRoom)),
+                    : Inertia::optional(fn () => GetPostRoomShowcase::run($postRoom)),
 
                 PostRoomsTabsEnum::OUTBOXES->value => $this->tab == PostRoomsTabsEnum::OUTBOXES->value ?
                     fn () => OutboxesResource::collection(IndexOutboxes::run($postRoom, PostRoomsTabsEnum::OUTBOXES->value))
-                    : Inertia::lazy(fn () => OutboxesResource::collection(IndexOutboxes::run($postRoom, PostRoomsTabsEnum::OUTBOXES->value))),
+                    : Inertia::optional(fn () => OutboxesResource::collection(IndexOutboxes::run($postRoom, PostRoomsTabsEnum::OUTBOXES->value))),
 
                 PostRoomsTabsEnum::MAILSHOTS->value => $this->tab == PostRoomsTabsEnum::MAILSHOTS->value ?
                     fn () => MailshotResource::collection(IndexMailshots::run($postRoom, PostRoomsTabsEnum::MAILSHOTS->value))
-                    : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($postRoom, PostRoomsTabsEnum::MAILSHOTS->value))),
+                    : Inertia::optional(fn () => MailshotResource::collection(IndexMailshots::run($postRoom, PostRoomsTabsEnum::MAILSHOTS->value))),
 
 
                 'data'   => PostRoomResource::make($postRoom)
