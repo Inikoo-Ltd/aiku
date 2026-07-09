@@ -35,7 +35,7 @@ class StoreSowing extends OrgAction
     public function handle(DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem $parent, array $modelData): Sowing
     {
         $locationOrgStock   = null;
-        $locationOrgStockId = Arr::pull($modelData, 'location_org_stock_id', null);
+        $locationOrgStockId = Arr::pull($modelData, 'location_org_stock_id');
         if ($locationOrgStockId) {
             $locationOrgStock = LocationOrgStock::find($locationOrgStockId);
         }
@@ -71,8 +71,8 @@ class StoreSowing extends OrgAction
 
         if ($sowType === SowingTypeEnum::SOW && $locationOrgStock) {
             $orgStockMovement = StoreOrgStockMovement::run(
-                $locationOrgStock?->orgStock,
-                $locationOrgStock?->location,
+                $locationOrgStock->orgStock,
+                $locationOrgStock->location,
                 [
                     'quantity' => $sowing->quantity,
                     'type'     => $orgStockMovement

@@ -15,13 +15,9 @@ use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\Sowing;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpdateSowing extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     private Sowing $sowing;
@@ -35,13 +31,11 @@ class UpdateSowing extends OrgAction
         }
 
         if ($sowing->orgStockMovement) {
-
             if ($oldQuantity != $sowing->quantity) {
                 UpdateOrgStockMovement::make()->action($sowing->orgStockMovement, [
                     'quantity' => $sowing->quantity,
                 ]);
             }
-
         }
 
         return $this->update($sowing, $modelData);

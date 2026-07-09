@@ -9,6 +9,9 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
+use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -31,7 +34,7 @@ class UpdateOrgStockMovement extends OrgAction
         $locationOrgStock = LocationOrgStock::where('location_id', $orgStockMovement->location_id)
             ->where('org_stock_id', $orgStockMovement->org_stock_id)
             ->first();
-        
+
         if (Arr::has($modelData, 'quantity')) {
             $orgAmount = $modelData['quantity'] * $orgStockMovement->orgStock->value_in_locations;
             data_set($modelData, 'org_amount', $orgAmount);
@@ -50,30 +53,33 @@ class UpdateOrgStockMovement extends OrgAction
                 $flow = OrgStockMovementFlowEnum::IN;
             }
             data_set($modelData, 'flow', $flow);
-
-
         }
 
         $orgStockMovement->update($modelData);
 
-        //        if($oldQuantity != $orgStockMovement->quantity){
-        //            // Todo: create or find a action that , will update location_org_stocks from the point of time of this change in the past until present
-        //        }
+        if ($oldQuantity != $orgStockMovement->quantity) {
+            $currentLocationOrgStockQuantity = GetLocationOrgStockQuantity::run($orgStockMovement->orgStock, $orgStockMovement->location);
+            UpdateLocationOrgStock::run(
+                $locationOrgStock,
+                [
+                    'quantity' => $currentLocationOrgStockQuantity
+                ]
+            );
+            CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
+        }
 
         $this->hydrateOrgStockMovement($orgStockMovement);
 
         BroadcastStockMovement::dispatch($locationOrgStock);
 
         return $orgStockMovement;
-
-
     }
 
 
     public function rules(): array
     {
         $rules = [
-            'quantity'         => ['sometimes',  'numeric'],
+            'quantity' => ['sometimes', 'numeric'],
         ];
 
         if (!$this->strict) {

@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
@@ -17,6 +18,7 @@ use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Events\BroadcastStockMovement;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
@@ -92,7 +94,7 @@ class StoreOrgStockMovement extends OrgAction
                     ]
                 );
             } else {
-                $stock = $this->getStockQuantity($orgStock, $location);
+                $stock = GetLocationOrgStockQuantity::run($orgStock, $location);
                 UpdateLocationOrgStock::run(
                     $locationOrgStock,
                     [
