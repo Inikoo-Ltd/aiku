@@ -34,13 +34,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property UpcomingTransactionStateEnum $state
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\CRM\Customer $customer
- * @property-read \App\Models\SysAdmin\Group $group
- * @property-read Order|null $order
+ * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\SysAdmin\Group|null $group
+ * @property-read \App\Models\Ordering\Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read Product $product
- * @property-read \App\Models\Catalogue\Shop $shop
- * @property-read Transaction|null $transaction
+ * @property-read Product|null $product
+ * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read \App\Models\Ordering\Transaction|null $transaction
  * @method static Builder<static>|UpcomingTransaction newModelQuery()
  * @method static Builder<static>|UpcomingTransaction newQuery()
  * @method static Builder<static>|UpcomingTransaction query()

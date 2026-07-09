@@ -16,6 +16,7 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -27,11 +28,14 @@ use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Models\Ordering\UpcomingTransaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -79,6 +83,7 @@ class SubmitOrder extends OrgAction
         $this->processGrGift($order);
         $this->processGiftOffers($order);
         $this->processVoucherGiftOffers($order);
+        $this->processUpComingTransactions($order);
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
@@ -141,6 +146,40 @@ class SubmitOrder extends OrgAction
         CustomerHydrateTrafficSource::dispatch($order->customer_id);
 
         return $order;
+    }
+
+    public function processUpComingTransactions(Order $order): void
+    {
+        $upComingTransactions = UpComingTransaction::where('customer_id', $order->customer_id)
+            ->where('state', UpComingTransactionStateEnum::READY)
+            ->get();
+
+        /** @var UpcomingTransaction $upComingTransaction */
+        foreach ($upComingTransactions as $upComingTransaction) {
+            /** @var Product $upComingTransactionProduct */
+            $upComingTransactionProduct = $upComingTransaction->product;
+
+            $isGift = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
+            $isFollowOn = $upComingTransaction->type === UpcomingTransactionTypeEnum::FOLLOW_ON;
+
+            $transaction = StoreTransaction::make()->action(
+                $order,
+                $upComingTransactionProduct->currentHistoricProduct,
+                [
+                    'quantity_ordered' => $isFollowOn ? $upComingTransaction->quantity : 0,
+                    'quantity_bonus' => $isGift ? $upComingTransaction->quantity : 0,
+                    'is_gift'          => $isGift,
+                    'is_follow_on'     => $isFollowOn,
+                    'label' => $upComingTransaction->notes
+                ]
+            );
+
+            UpdateUpcomingTransaction::run($upComingTransaction, [
+                'order_id' => $order->id,
+                'transaction_id' => $transaction->id,
+                'state' => UpcomingTransactionStateEnum::APPLIED
+            ]);
+        }
     }
 
     public function processGiftOffers(Order $order): Order

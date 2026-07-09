@@ -170,6 +170,9 @@ use App\Audits\Transformer\RelationTransformer;
  * @property int|null $discounted_shipping_offer_id
  * @property bool $is_pastpay
  * @property bool $is_bypass_platform_update
+ * @property int|null $packaging_id
+ * @property string|null $personalised_message
+ * @property string|null $insert_types
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

@@ -108,7 +108,6 @@ use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
-use App\Actions\Ordering\UpcomingTransaction\UI\IndexUpcomingTransactions;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
