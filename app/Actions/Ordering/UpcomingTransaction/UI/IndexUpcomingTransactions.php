@@ -12,8 +12,10 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\OrgAction;
 use App\Http\Resources\Ordering\UpcomingTransactionsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\UpcomingTransaction;
+use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -120,7 +122,7 @@ class IndexUpcomingTransactions extends OrgAction
         )->table($this->tableStructure($this->parent));
     }
 
-    public function asController(Customer $customer, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $customer;
         $this->initialisationFromShop($customer->shop, $request);
