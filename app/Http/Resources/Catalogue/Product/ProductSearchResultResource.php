@@ -26,7 +26,7 @@ class ProductSearchResultResource extends JsonResource
             'slug'  => $product->slug,
             'code'  => $product->code,
             'name'  => $product->name,
-            'image' => Arr::get($product->web_images, 'main.thumbnail'),
+            'image' => Arr::get($product->web_images, 'main.gallery'),
 
         ];
     }
