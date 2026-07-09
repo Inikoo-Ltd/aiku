@@ -85,6 +85,15 @@ class ShowVariant extends OrgAction
                     ]
                 ]
             ],
+            [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('Edit'),
+                'route' => [
+                    'name'       => preg_replace('/show$/', 'edit', request()->route()->getName()),
+                    'parameters' => request()->route()->originalParameters()
+                ]
+            ]
         ];
 
         return Inertia::render(
