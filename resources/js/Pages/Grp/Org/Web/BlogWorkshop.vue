@@ -103,6 +103,7 @@ const beforePublish = (route, popover) => {
 
 const openWebsite = () => window.open(props.url, '_blank');
 
+console.log('webpage_sub_type', props)
 </script>
 
 <template>
@@ -132,9 +133,10 @@ const openWebsite = () => window.open(props.url, '_blank');
   {{ webpage_sub_type }}
   <EditorBlogWorkshop v-if="webpage_sub_type === 'blog'" v-bind="props"/>
 
+
   <Beefree 
     v-if="webpage_sub_type === 'mailshot'"
-    :snapshot="{}"
+    :snapshot="webpage.layout"
     :mergeTags="mergeTags" 
     :organisationSlug="route().params?.organisation" 
     :shopSlug="route().params?.shop" 
