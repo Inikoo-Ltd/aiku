@@ -529,7 +529,7 @@ class IndexWarehousePalletReturns extends OrgAction
 
                 PalletReturnsTabsEnum::RETURNS->value => $this->tab == PalletReturnsTabsEnum::RETURNS->value ?
                     fn () => PalletReturnsResource::collection($returns)
-                    : Inertia::lazy(fn () => PalletReturnsResource::collection($returns))
+                    : Inertia::optional(fn () => PalletReturnsResource::collection($returns))
 
             ]
         )->table($this->tableStructure(warehouse: $warehouse, prefix: PalletReturnsTabsEnum::RETURNS->value, restriction: $this->restriction));

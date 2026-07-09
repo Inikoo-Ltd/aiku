@@ -81,7 +81,7 @@ class ShowStockFamily extends OrgAction
 
                 StockFamilyTabsEnum::SHOWCASE->value => $this->tab == StockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetStockFamilyShowcase::run($stockFamily)
-                    : Inertia::lazy(fn () => GetStockFamilyShowcase::run($stockFamily)),
+                    : Inertia::optional(fn () => GetStockFamilyShowcase::run($stockFamily)),
                 StockFamilyTabsEnum::STOCKS->value    => $this->tab == StockFamilyTabsEnum::STOCKS->value
                     ?
                     fn () => StocksResource::collection(
@@ -91,7 +91,7 @@ class ShowStockFamily extends OrgAction
                             bucket: 'all'
                         )
                     )
-                    : Inertia::lazy(fn () => StocksResource::collection(
+                    : Inertia::optional(fn () => StocksResource::collection(
                         IndexStocks::run(
                             parent: $stockFamily,
                             prefix: StockFamilyTabsEnum::STOCKS->value,
@@ -100,7 +100,7 @@ class ShowStockFamily extends OrgAction
                     )),
                 StockFamilyTabsEnum::HISTORY->value  => $this->tab == StockFamilyTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($stockFamily))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($stockFamily)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockFamily)))
             ]
         ) ->table(
             IndexStocks::make()->tableStructure(

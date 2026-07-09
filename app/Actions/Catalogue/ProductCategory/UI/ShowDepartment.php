@@ -156,35 +156,35 @@ class ShowDepartment extends OrgAction
 
                 DepartmentTabsEnum::SHOWCASE->value => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($department)
-                    : Inertia::lazy(fn () => GetProductCategoryShowcase::run($department)),
+                    : Inertia::optional(fn () => GetProductCategoryShowcase::run($department)),
 
                 'salesData' => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryTimeSeriesData::run($department)
-                    : Inertia::lazy(fn () => GetProductCategoryTimeSeriesData::run($department)),
+                    : Inertia::optional(fn () => GetProductCategoryTimeSeriesData::run($department)),
 
                 DepartmentTabsEnum::SALES->value => $this->tab == DepartmentTabsEnum::SALES->value ?
                     fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))),
 
                 DepartmentTabsEnum::CUSTOMERS->value => $this->tab == DepartmentTabsEnum::CUSTOMERS->value ?
                     fn () => CustomersResource::collection(IndexCustomers::run(parent: $department->shop, prefix: 'customers'))
-                    : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $department->shop, prefix: 'customers'))),
+                    : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run(parent: $department->shop, prefix: 'customers'))),
 
                 DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == DepartmentTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
                     fn () => GetRelatedProductCategories::run($department)
-                    : Inertia::lazy(fn () => GetRelatedProductCategories::run($department)),
+                    : Inertia::optional(fn () => GetRelatedProductCategories::run($department)),
 
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
                     fn () =>  GetProductCategoryImages::run($department)
-                    : Inertia::lazy(fn () => GetProductCategoryImages::run($department)),
+                    : Inertia::optional(fn () => GetProductCategoryImages::run($department)),
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($department))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($department))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($department))),
 
                 DepartmentTabsEnum::OFFERS->value => $this->tab == DepartmentTabsEnum::OFFERS->value ?
                     fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))
-                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))),
+                    : Inertia::optional(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $department, prefix: DepartmentTabsEnum::OFFERS->value))),
 
             ]
         )

@@ -270,11 +270,11 @@ class IndexMasterSubDepartments extends GrpAction
                 ],
                 MasterProductCategoryTabsEnum::INDEX->value => $this->tab == MasterProductCategoryTabsEnum::INDEX->value ?
                     fn () => MasterSubDepartmentsResource::collection($masterSubDepartments)
-                    : Inertia::lazy(fn () => MasterSubDepartmentsResource::collection(IndexMasterSubDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))),
+                    : Inertia::optional(fn () => MasterSubDepartmentsResource::collection(IndexMasterSubDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))),
 
                 MasterProductCategoryTabsEnum::SALES->value => $this->tab == MasterProductCategoryTabsEnum::SALES->value ?
                     fn () => MasterSubDepartmentsResource::collection(IndexMasterSubDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterSubDepartmentsResource::collection(IndexMasterSubDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => MasterSubDepartmentsResource::collection(IndexMasterSubDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))
             ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value, sales: true));

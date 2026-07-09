@@ -189,17 +189,17 @@ class IndexFamiliesGR extends OrgAction
                 ],
                 MasterGoldRewardTabsEnum::WITH->value => $this->tab === MasterGoldRewardTabsEnum::WITH->value
                     ? fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         $this->handle(shop: $this->parent, prefix: MasterGoldRewardTabsEnum::WITH->value, isGR: true)
                     )),
                 MasterGoldRewardTabsEnum::WITHOUT->value => $this->tab === MasterGoldRewardTabsEnum::WITHOUT->value
                     ? fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         $this->handle(shop: $this->parent, prefix: MasterGoldRewardTabsEnum::WITHOUT->value, isGR: false)
                     )),
                 MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value => $this->tab === MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value
                     ? fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         $this->handle(shop: $this->parent, prefix: MasterGoldRewardTabsEnum::NOT_FOLLOW_MASTER->value, notFollowMaster: true)
                     )),
             ]

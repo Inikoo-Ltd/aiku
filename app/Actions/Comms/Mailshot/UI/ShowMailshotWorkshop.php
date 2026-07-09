@@ -98,7 +98,7 @@ class ShowMailshotWorkshop extends OrgAction
                     fn () => EmailTemplateResource::collection(
                         IndexEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::TEMPLATES->value)
                     )
-                    : Inertia::lazy(fn () => EmailTemplateResource::collection(
+                    : Inertia::optional(fn () => EmailTemplateResource::collection(
                         IndexEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::TEMPLATES->value)
                     )),
 
@@ -106,7 +106,7 @@ class ShowMailshotWorkshop extends OrgAction
                     fn () => EmailTemplateResource::collection(
                         IndexOtherStoreEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value)
                     )
-                    : Inertia::lazy(fn () => EmailTemplateResource::collection(
+                    : Inertia::optional(fn () => EmailTemplateResource::collection(
                         IndexOtherStoreEmailTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value)
                     )),
 
@@ -118,7 +118,7 @@ class ShowMailshotWorkshop extends OrgAction
                             EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => MailshotTemplatesResource::collection(
+                    : Inertia::optional(fn () => MailshotTemplatesResource::collection(
                         IndexPreviousMailshotTemplates::run(
                             $mailshot->shop,
                             EmailTemplateTabsEnum::PREVIOUS_MAILSHOTS->value
@@ -128,7 +128,7 @@ class ShowMailshotWorkshop extends OrgAction
                     fn () => MailshotTemplatesResource::collection(
                         IndexMailshotFromOtherStoreTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS->value)
                     )
-                    : Inertia::lazy(fn () => MailshotTemplatesResource::collection(
+                    : Inertia::optional(fn () => MailshotTemplatesResource::collection(
                         IndexMailshotFromOtherStoreTemplates::run($mailshot->shop, EmailTemplateTabsEnum::OTHER_STORE_MAILSHOTS->value)
                     )),
 

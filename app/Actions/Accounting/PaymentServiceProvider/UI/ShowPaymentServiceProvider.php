@@ -125,7 +125,7 @@ class ShowPaymentServiceProvider extends OrgAction
                 ],
                 PaymentServiceProviderTabsEnum::SHOWCASE->value => $this->tab == PaymentServiceProviderTabsEnum::SHOWCASE->value ?
                     fn () => GetPaymentServiceProviderShowcase::run($paymentServiceProvider)
-                    : Inertia::lazy(fn () => GetPaymentServiceProviderShowcase::run($paymentServiceProvider)),
+                    : Inertia::optional(fn () => GetPaymentServiceProviderShowcase::run($paymentServiceProvider)),
 
                 PaymentServiceProviderTabsEnum::PAYMENTS->value         => $this->tab == PaymentServiceProviderTabsEnum::PAYMENTS->value
                     ?
@@ -135,7 +135,7 @@ class ShowPaymentServiceProvider extends OrgAction
                             prefix: PaymentServiceProviderTabsEnum::PAYMENTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => PaymentsResource::collection(
+                    : Inertia::optional(fn () => PaymentsResource::collection(
                         IndexPayments::run(
                             parent: $paymentServiceProvider,
                             prefix: PaymentServiceProviderTabsEnum::PAYMENTS->value
@@ -149,7 +149,7 @@ class ShowPaymentServiceProvider extends OrgAction
                             prefix: PaymentServiceProviderTabsEnum::PAYMENT_ACCOUNTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => PaymentAccountsResource::collection(
+                    : Inertia::optional(fn () => PaymentAccountsResource::collection(
                         IndexPaymentAccounts::run(
                             parent: $paymentServiceProvider,
                             prefix: PaymentServiceProviderTabsEnum::PAYMENT_ACCOUNTS->value
@@ -158,7 +158,7 @@ class ShowPaymentServiceProvider extends OrgAction
 
                 PaymentServiceProviderTabsEnum::HISTORY->value => $this->tab == PaymentServiceProviderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($paymentServiceProvider))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($paymentServiceProvider)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($paymentServiceProvider)))
             ]
         )
             ->table(

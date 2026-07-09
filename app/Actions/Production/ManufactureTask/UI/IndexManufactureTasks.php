@@ -233,7 +233,7 @@ class IndexManufactureTasks extends OrgAction
 
                 ManufactureTasksTabsEnum::MANUFACTURE_TASKS->value => $this->tab == ManufactureTasksTabsEnum::MANUFACTURE_TASKS->value ?
                     fn () => ManufactureTasksResource::collection($manufactureTasks)
-                    : Inertia::lazy(fn () => ManufactureTasksResource::collection($manufactureTasks)),
+                    : Inertia::optional(fn () => ManufactureTasksResource::collection($manufactureTasks)),
 
             ]
         )->table(

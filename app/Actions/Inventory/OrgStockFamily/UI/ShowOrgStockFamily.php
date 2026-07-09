@@ -110,19 +110,19 @@ class ShowOrgStockFamily extends OrgAction
 
                 OrgStockFamilyTabsEnum::SHOWCASE->value => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)
-                    : Inertia::lazy(fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)),
+                    : Inertia::optional(fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)),
 
                 OrgStockFamilyTabsEnum::SALES->value => $this->tab == OrgStockFamilyTabsEnum::SALES->value ?
                     fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))),
 
                 OrgStockFamilyTabsEnum::HISTORY->value => $this->tab == OrgStockFamilyTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))),
 
                 'salesData' => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)
-                    : Inertia::lazy(fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)),
+                    : Inertia::optional(fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: OrgStockFamilyTabsEnum::HISTORY->value))
          ->table(IndexOrgStockFamilyTimeSeries::make()->tableStructure(prefix: OrgStockFamilyTabsEnum::SALES->value));

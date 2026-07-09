@@ -145,7 +145,7 @@ class IndexFulfilments extends OrgAction
 
                 FulfilmentsTabsEnum::FULFILMENT_SHOPS->value => $this->tab == FulfilmentsTabsEnum::FULFILMENT_SHOPS->value ?
                     fn () => FulfilmentsResource::collection($fulfilments)
-                    : Inertia::lazy(fn () => FulfilmentsResource::collection($fulfilments)),
+                    : Inertia::optional(fn () => FulfilmentsResource::collection($fulfilments)),
 
 
             ]

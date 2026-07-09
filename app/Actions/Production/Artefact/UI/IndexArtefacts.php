@@ -231,7 +231,7 @@ class IndexArtefacts extends OrgAction
 
                 ArtefactsTabsEnum::ARTEFACTS->value => $this->tab == ArtefactsTabsEnum::ARTEFACTS->value ?
                     fn () => ArtefactsResource::collection($artefacts)
-                    : Inertia::lazy(fn () => ArtefactsResource::collection($artefacts)),
+                    : Inertia::optional(fn () => ArtefactsResource::collection($artefacts)),
 
             ]
         )->table(

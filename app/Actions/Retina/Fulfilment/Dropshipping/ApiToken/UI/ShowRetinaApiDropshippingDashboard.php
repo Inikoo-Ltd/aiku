@@ -131,10 +131,10 @@ class ShowRetinaApiDropshippingDashboard extends RetinaAction
                 // ],
                 ApiTokenRetinaTabsEnum::API_TOKENS->value => $this->tab == ApiTokenRetinaTabsEnum::API_TOKENS->value ?
                     fn () => ApiTokensRetinaResource::collection($apiTokens)
-                    : Inertia::lazy(fn () => ApiTokensRetinaResource::collection($apiTokens)),
+                    : Inertia::optional(fn () => ApiTokensRetinaResource::collection($apiTokens)),
                 ApiTokenRetinaTabsEnum::HISTORY->value => $this->tab == ApiTokenRetinaTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($this->customer, prefix: ApiTokenRetinaTabsEnum::HISTORY->value))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->customer, prefix: ApiTokenRetinaTabsEnum::HISTORY->value))),
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($this->customer, prefix: ApiTokenRetinaTabsEnum::HISTORY->value))),
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: ApiTokenRetinaTabsEnum::HISTORY->value))

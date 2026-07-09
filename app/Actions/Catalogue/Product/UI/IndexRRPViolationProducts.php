@@ -3,7 +3,7 @@
 /*
  * author Louis Perez
  * created on 02-04-2026-15h-30m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
@@ -160,7 +160,7 @@ class IndexRRPViolationProducts extends OrgAction
 
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
             ]
         )->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value));

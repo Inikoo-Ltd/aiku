@@ -392,11 +392,11 @@ class IndexTimesheets extends OrgAction
 
                 TimesheetsTabsEnum::ALL_EMPLOYEES->value => $this->tab == TimesheetsTabsEnum::ALL_EMPLOYEES->value
                     ? fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))
-                    : Inertia::lazy(fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))),
+                    : Inertia::optional(fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::ALL_EMPLOYEES->value))),
 
                 TimesheetsTabsEnum::PER_EMPLOYEE->value => $this->tab == TimesheetsTabsEnum::PER_EMPLOYEE->value
                     ? fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))
-                    : Inertia::lazy(fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))),
+                    : Inertia::optional(fn () => $this->jsonResponse($this->handle($this->parent, TimesheetsTabsEnum::PER_EMPLOYEE->value))),
             ]
         )
             ->table($this->tableStructure($this->parent, null, TimesheetsTabsEnum::ALL_EMPLOYEES->value))

@@ -72,11 +72,11 @@ class IndexOrphanTradeUnits extends GrpAction
 
                 TradeUnitsTabsEnum::INDEX->value => $this->tab == TradeUnitsTabsEnum::INDEX->value
                     ? fn () => $this->jsonResponse($tradeUnits)
-                    : Inertia::lazy(fn () => $this->jsonResponse($tradeUnits)),
+                    : Inertia::optional(fn () => $this->jsonResponse($tradeUnits)),
 
                 TradeUnitsTabsEnum::SALES->value => $this->tab == TradeUnitsTabsEnum::SALES->value
                     ? fn () => $this->jsonResponse($this->handle(prefix: TradeUnitsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => $this->jsonResponse($this->handle(prefix: TradeUnitsTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => $this->jsonResponse($this->handle(prefix: TradeUnitsTabsEnum::SALES->value))),
             ]
         )->table($this->standardTradeUnitTableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::INDEX->value))
          ->table($this->standardTradeUnitTableStructure(parent: $this->parent, prefix: TradeUnitsTabsEnum::SALES->value, sales: true));

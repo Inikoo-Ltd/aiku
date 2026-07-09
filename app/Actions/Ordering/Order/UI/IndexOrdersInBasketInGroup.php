@@ -131,7 +131,7 @@ class IndexOrdersInBasketInGroup extends OrgAction
 
                 OrdersInBasketTabsEnum::ORDERS->value => $this->tab == OrdersInBasketTabsEnum::ORDERS->value ?
                     fn () => OrdersResource::collection($orders)
-                    : Inertia::lazy(fn () => OrdersResource::collection($orders)),
+                    : Inertia::optional(fn () => OrdersResource::collection($orders)),
             ]
         )->table($this->tableStructure($this->group, OrdersInBasketTabsEnum::ORDERS->value));
     }

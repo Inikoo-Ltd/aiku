@@ -120,11 +120,11 @@ class IndexStoredItemsInWarehouse extends OrgAction
                 ],
                 StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value => $this->tab == StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value ?
                     fn () => StoredItemResource::collection($storedItems)
-                    : Inertia::lazy(fn () => StoredItemResource::collection($storedItems)),
+                    : Inertia::optional(fn () => StoredItemResource::collection($storedItems)),
 
                 StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value => $this->tab == StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS->value ?
                     fn () => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run($warehouse))
-                    : Inertia::lazy(fn () => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run($warehouse))),
+                    : Inertia::optional(fn () => ReturnStoredItemsResource::collection(IndexPalletStoredItems::run($warehouse))),
 
             ]
         )->table($this->tableStructure(prefix: StoredItemsInWarehouseTabsEnum::STORED_ITEMS->value))
