@@ -14,6 +14,7 @@ use App\Models\Dispatching\Box;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasImage;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -53,12 +55,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Leaflet> $leaflets
  * @mixin \Eloquent
  */
-class Packaging extends Model implements Auditable
+class Packaging extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
     use HasHistory;
     use HasFactory;
+    use HasImage;
     use InShop;
 
     protected $guarded = [];
@@ -112,11 +115,6 @@ class Packaging extends Model implements Auditable
     public function box(): BelongsTo
     {
         return $this->belongsTo(Box::class);
-    }
-
-    public function image(): BelongsTo
-    {
-        return $this->belongsTo(Media::class, 'image_id');
     }
 
     public function leaflets(): HasMany

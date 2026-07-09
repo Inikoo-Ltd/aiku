@@ -9,6 +9,10 @@
 namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Packaging\PackagingStateEnum;
+use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Billables\Packaging;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -43,8 +47,64 @@ class ShowRetinaPackagingPreferences extends RetinaAction
                         'title' => $title
                     ],
                 ],
+                'packagingOptions' => $this->getPackagingOptions(),
+                'currencyCode'     => $this->shop->currency->code,
             ]
         );
+    }
+
+    private function getPackagingOptions(): array
+    {
+        return Packaging::where('shop_id', $this->shop->id)
+            ->where('state', PackagingStateEnum::ACTIVE)
+            ->with('image')
+            ->orderBy('position')
+            ->orderBy('price')
+            ->get()
+            ->groupBy('family_code')
+            ->map(function (Collection $packagings, string $familyCode) {
+                $image = $packagings->first(fn (Packaging $packaging) => $packaging->image)?->image;
+
+                return [
+                    'family_code' => $familyCode,
+                    'type'        => $packagings->first()->type->value,
+                    'label'       => $this->getFamilyLabel($packagings),
+                    'sizes'       => $packagings->count() > 1
+                        ? __('Various sizes')
+                        : $this->getDimensionsLabel($packagings->first()),
+                    'price_min'   => (float) $packagings->min('price'),
+                    'price_max'   => (float) $packagings->max('price'),
+                    'image'       => $image ? ImageResource::make($image)->resolve() : null,
+                ];
+            })
+            ->sortBy('price_min')
+            ->values()
+            ->all();
+    }
+
+    private function getFamilyLabel(Collection $packagings): string
+    {
+        $names  = $packagings->pluck('name')->all();
+        $prefix = array_shift($names);
+
+        foreach ($names as $name) {
+            while ($prefix !== '' && !str_starts_with($name, $prefix)) {
+                $prefix = substr($prefix, 0, -1);
+            }
+        }
+
+        $prefix = trim($prefix, " -–");
+
+        return strlen($prefix) >= 3 ? $prefix : $packagings->first()->name;
+    }
+
+    private function getDimensionsLabel(Packaging $packaging): ?string
+    {
+        if (!$packaging->width || !$packaging->height || !$packaging->depth) {
+            return null;
+        }
+
+        return "{$packaging->width} × {$packaging->height} × {$packaging->depth} mm";
     }
 
     public function getBreadcrumbs(): array

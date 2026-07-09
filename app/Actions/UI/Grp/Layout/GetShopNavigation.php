@@ -179,6 +179,16 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
+                            [
+                                "label" => __("Packagings"),
+                                "tooltip" => __("Packagings"),
+                                "icon" => ["fal", "fa-box-open"],
+                                'root' => 'grp.org.shops.show.billables.packagings.',
+                                "route" => [
+                                    "name" => "grp.org.shops.show.billables.packagings.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ];

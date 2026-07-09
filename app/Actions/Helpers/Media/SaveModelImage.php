@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Media;
 
 use App\Actions\Catalogue\Collection\UpdateCollectionWebImages;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryWebImages;
+use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -37,11 +38,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging $model,
         array $imageData,
         string $scope = 'image',
         string $foreignKeyMedia = 'image_id'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate {
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);

@@ -5,13 +5,16 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { Head } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import { capitalize } from "@/Composables/capitalize"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import type { Image as ImageProxy } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Image from "@common/Components/Image.vue"
 import Textarea from "primevue/textarea"
 import Checkbox from "primevue/checkbox"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -30,10 +33,26 @@ import {
 
 library.add(faBoxOpen, faCheck, faEllipsisV, faFileAlt, faFilePdf, faGift, faInfoCircle, faPencil, faUpload)
 
-defineProps<{
+interface PackagingOption {
+    family_code: string
+    type: string
+    label: string
+    sizes: string | null
+    price_min: number
+    price_max: number
+    image: { thumbnail?: ImageProxy, source?: ImageProxy } | null
+}
+
+const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    packagingOptions?: PackagingOption[]
+    currencyCode?: string
 }>()
+
+const locale = inject("locale", aikuLocaleStructure)
+
+const packagingOptions = computed(() => props.packagingOptions ?? [])
 
 const layout = useLayoutStore()
 const accentColor = computed(() => layout?.app?.theme?.[4] ?? "#f97316")
@@ -44,15 +63,29 @@ const accentStyle = computed(() => ({
     text: `color-mix(in srgb, ${accentColor.value} 85%, black)`,
 }))
 
-// Static placeholder data, will be replaced by backend props later
-const packagingOptions = ref([
-    { code: "pink-pbe", label: "Pink Poly Bubble Envelopes", sizes: "Various sizes", price: "£0.11 – £0.84", color: "#f9a8d4" },
-    { code: "black-pbe", label: "Black Poly Bubble Envelopes", sizes: "Various sizes", price: "£0.21 – £0.84", color: "#1f2937" },
-    { code: "green-pbe", label: "Green Poly Bubble Envelopes", sizes: "Various sizes", price: "£0.11 – £0.47", color: "#a3e635" },
-    { code: "bio-mailer", label: "100% Biodegradable Mailers", sizes: "Various sizes", price: "£0.06 – £0.82", color: "#e5e7eb" },
-    { code: "standard", label: "Standard Packaging", sizes: "No extra charge", price: "Used when item does not fit other options", color: null },
-])
-const selectedPackaging = ref("pink-pbe")
+const fallbackIconColors: Record<string, string> = {
+    standard: "text-amber-600",
+    eco: "text-green-600",
+    premium: "text-purple-600",
+    gift: "text-pink-500",
+    branded: "text-blue-600",
+}
+
+const formatPriceRange = (option: PackagingOption) => {
+    if (option.price_max === 0) {
+        return trans("No extra charge")
+    }
+
+    const currencyCode = props.currencyCode ?? "USD"
+    const min = locale.currencyFormat(currencyCode, option.price_min)
+    if (option.price_min === option.price_max) {
+        return min
+    }
+
+    return `${min} – ${locale.currencyFormat(currencyCode, option.price_max)}`
+}
+
+const selectedPackaging = ref(packagingOptions.value[0]?.family_code ?? null)
 
 const inserts = ref([
     { type: "thank_you_card", label: "Thank You Card", description: "Upload your thank you card.", price: "£0.20", enabled: true },
@@ -72,7 +105,7 @@ const leaflets = ref([
 ])
 
 const summary = computed(() => ({
-    defaultPackaging: packagingOptions.value.find(option => option.code === selectedPackaging.value)?.label,
+    defaultPackaging: packagingOptions.value.find(option => option.family_code === selectedPackaging.value)?.label,
     insertsSelected: inserts.value.filter(insert => insert.enabled).length,
     hasMessage: personalisedMessage.value.trim().length > 0,
     leafletsUploaded: leaflets.value.length,
@@ -126,36 +159,46 @@ const saveSettings = () => {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <button
                     v-for="option in packagingOptions"
-                    :key="option.code"
+                    :key="option.family_code"
                     type="button"
                     class="relative rounded-lg border p-4 text-center transition"
-                    :class="selectedPackaging === option.code ? '' : 'border-gray-200 hover:border-gray-300'"
-                    :style="selectedPackaging === option.code ? { borderColor: accentColor, boxShadow: `0 0 0 1px ${accentColor}` } : undefined"
-                    @click="selectedPackaging = option.code"
+                    :class="selectedPackaging === option.family_code ? '' : 'border-gray-200 hover:border-gray-300'"
+                    :style="selectedPackaging === option.family_code ? { borderColor: accentColor, boxShadow: `0 0 0 1px ${accentColor}` } : undefined"
+                    @click="selectedPackaging = option.family_code"
                 >
                     <!-- Radio indicator -->
                     <span
                         class="absolute left-3 top-3 flex h-4 w-4 items-center justify-center rounded-full border"
-                        :class="selectedPackaging === option.code ? '' : 'border-gray-300'"
-                        :style="selectedPackaging === option.code ? { borderColor: accentColor } : undefined"
+                        :class="selectedPackaging === option.family_code ? '' : 'border-gray-300'"
+                        :style="selectedPackaging === option.family_code ? { borderColor: accentColor } : undefined"
                     >
-                        <span v-if="selectedPackaging === option.code" class="h-2 w-2 rounded-full" :style="{ backgroundColor: accentColor }" />
+                        <span v-if="selectedPackaging === option.family_code" class="h-2 w-2 rounded-full" :style="{ backgroundColor: accentColor }" />
                     </span>
 
-                    <!-- Packaging image placeholder -->
                     <div class="mx-auto mb-3 flex h-24 w-20 items-center justify-center">
-                        <div
-                            v-if="option.color"
-                            class="h-full w-full rounded shadow-inner"
-                            :style="{ backgroundColor: option.color }"
+                        <Image
+                            v-if="option.image"
+                            :src="option.image.source"
+                            :alt="option.label"
+                            class="h-full w-full rounded object-contain"
                         />
-                        <FontAwesomeIcon v-else :icon="['fal', 'box-open']" class="text-5xl text-amber-600" aria-hidden="true" />
+                        <FontAwesomeIcon
+                            v-else
+                            :icon="['fal', 'box-open']"
+                            class="text-5xl"
+                            :class="fallbackIconColors[option.type] ?? 'text-amber-600'"
+                            aria-hidden="true"
+                        />
                     </div>
 
                     <div class="text-sm font-medium">{{ option.label }}</div>
-                    <div class="text-xs text-gray-500">{{ option.sizes }}</div>
-                    <div class="mt-1 text-sm font-semibold" :style="{ color: accentStyle.text }">{{ option.price }}</div>
+                    <div class="text-xs text-gray-500">{{ option.sizes ?? trans("One size") }}</div>
+                    <div class="mt-1 text-sm font-semibold" :style="{ color: accentStyle.text }">{{ formatPriceRange(option) }}</div>
                 </button>
+            </div>
+
+            <div v-if="!packagingOptions.length" class="rounded-md border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
+                {{ trans("No packaging options are available yet.") }}
             </div>
 
             <div class="mt-4 rounded-md px-4 py-2 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, color: accentStyle.text }">
