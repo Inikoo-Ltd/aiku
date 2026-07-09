@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\UpcomingTransaction\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\OrgAction;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Http\Resources\Ordering\UpcomingTransactionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -43,7 +44,9 @@ class IndexUpcomingTransactions extends OrgAction
         }
 
         $query = QueryBuilder::for(UpcomingTransaction::class);
-        $query->where('upcoming_transactions.customer_id', $customer->id);
+        $query
+            ->where('upcoming_transactions.customer_id', $customer->id)
+            ->where('upcoming_transactions.state', UpcomingTransactionStateEnum::READY);
 
         $query->leftJoin('products', 'upcoming_transactions.product_id', '=', 'products.id');
 
