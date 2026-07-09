@@ -396,11 +396,11 @@ const isOffersData = (offersData: any): boolean => {
                     </div>
                     <div v-else class="text-gray-500 italic text-xs">
                         Stock: {{ locale.number(item.available_quantity || 0) }} available
+                        <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
+                            <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-1" aria-hidden="true" />
+                        </span>
                         <span v-if="item.is_gift" v-tooltip="ctrans('Free gift')">
                             <FontAwesomeIcon icon="fal fa-gift" class="text-green-500 not-italic mx-2" aria-hidden="true" />
-                        </span>
-                        <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
-                            <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic" aria-hidden="true" />
                         </span>
                         <div v-if="item.upcoming_transaction_public_notes">{{ trans('Public Notes ')}}: {{ item.upcoming_transaction_public_notes }}</div>
                         <div v-if="item.upcoming_transaction_private_notes">{{ trans('Private Notes ')}}: {{ item.upcoming_transaction_private_notes }}</div>
