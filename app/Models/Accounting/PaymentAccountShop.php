@@ -130,7 +130,7 @@ class PaymentAccountShop extends Model implements Auditable
         if (app()->environment('production')) {
             return Arr::get($this->data, 'credentials.payment_channel');
         } else {
-            return config('app.sandbox.checkout_com.payment_channel');
+            return config('app.sandbox.checkout_com.payment_channel', '');
         }
     }
 
