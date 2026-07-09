@@ -20,7 +20,9 @@ const props = withDefaults(defineProps<{
     shopSlug?: string
     shopId?: number
     builderType?: string
-}>(), {});
+}>(), {
+    builderType: 'email',
+});
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -56,7 +58,7 @@ const initializeBeefree = async () => {
             route("grp.json.beefree.authenticate", {
                 organisation: props.organisationSlug,
             }),
-            { uid: 'CmsUserName', builder_type: props.builderType || 'email' }
+            { uid: 'CmsUserName', builder_type: props.builderType }
         )
 
         // Check if response is successful

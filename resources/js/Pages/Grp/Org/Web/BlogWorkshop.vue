@@ -133,14 +133,14 @@ console.log('webpage_sub_type', props)
   {{ webpage_sub_type }}
   <EditorBlogWorkshop v-if="webpage_sub_type === 'blog'" v-bind="props"/>
 
-
   <Beefree 
     v-if="webpage_sub_type === 'mailshot'"
-    :snapshot="webpage.layout"
+    :snapshot="webpage"
     :mergeTags="mergeTags" 
     :organisationSlug="route().params?.organisation" 
     :shopSlug="route().params?.shop" 
     ref="_beefree" 
+    :builderType="'email'"
   />
 </template>
 
