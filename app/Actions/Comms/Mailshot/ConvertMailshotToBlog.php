@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\Web\Webpage;
@@ -25,6 +26,9 @@ class ConvertMailshotToBlog extends OrgAction
     {
         $pageJson = BeefreeConvertEmailJsonToPageJson::make()->handle($mailshot->organisation, $mailshot);
 
+        // For testing Blogspot with product blogspot
+        $product = Product::where('shop_id', $mailshot->shop_id)->inRandomOrder()->first();
+
         $webpage = StoreWebpage::make()->action(
             $mailshot->shop->website,
             [
@@ -36,9 +40,11 @@ class ConvertMailshotToBlog extends OrgAction
             ]
         );
 
+        $layout = array_merge(['web_blocks' => []], $pageJson);
+
         $webpage->unpublishedSnapshot->update([
-            'layout'   => $pageJson,
-            'checksum' => hash('sha256', json_encode($pageJson)),
+            'layout'   => $layout,
+            'checksum' => hash('sha256', json_encode($layout)),
         ]);
 
         return $webpage;
