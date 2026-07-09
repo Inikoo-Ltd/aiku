@@ -11,10 +11,14 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { trans } from "laravel-vue-i18n"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Textarea from "primevue/textarea"
+import Checkbox from "primevue/checkbox"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faBoxOpen,
+    faCheck,
     faEllipsisV,
     faFileAlt,
     faFilePdf,
@@ -24,7 +28,7 @@ import {
     faUpload,
 } from "@fal"
 
-library.add(faBoxOpen, faEllipsisV, faFileAlt, faFilePdf, faGift, faInfoCircle, faPencil, faUpload)
+library.add(faBoxOpen, faCheck, faEllipsisV, faFileAlt, faFilePdf, faGift, faInfoCircle, faPencil, faUpload)
 
 defineProps<{
     title: string
@@ -73,6 +77,18 @@ const summary = computed(() => ({
     hasMessage: personalisedMessage.value.trim().length > 0,
     leafletsUploaded: leaflets.value.length,
 }))
+
+// Static save simulation, will submit to backend later
+const isSaving = ref(false)
+const justSaved = ref(false)
+const saveSettings = () => {
+    isSaving.value = true
+    setTimeout(() => {
+        isSaving.value = false
+        justSaved.value = true
+        setTimeout(() => justSaved.value = false, 2000)
+    }, 600)
+}
 </script>
 
 <template>
@@ -163,7 +179,7 @@ const summary = computed(() => ({
                         :key="insert.type"
                         class="flex items-center gap-3 py-3 cursor-pointer"
                     >
-                        <input v-model="insert.enabled" type="checkbox" class="h-4 w-4 rounded border-gray-300" :style="{ accentColor: accentColor }" />
+                        <Checkbox v-model="insert.enabled" :binary="true" />
                         <span class="flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-400">
                             <FontAwesomeIcon :icon="['fal', 'file-alt']" fixed-width aria-hidden="true" />
                         </span>
@@ -199,11 +215,11 @@ const summary = computed(() => ({
                 <p class="text-sm text-gray-500 mb-4">{{ trans("This message will be printed and included with all orders.") }}</p>
 
                 <div class="relative">
-                    <textarea
+                    <Textarea
                         v-model="personalisedMessage"
                         :maxlength="maxMessageLength"
                         rows="5"
-                        class="w-full rounded-md border-gray-300 text-sm"
+                        class="w-full text-sm"
                         :placeholder="trans('Write your message here')"
                     />
                     <div class="absolute bottom-2 right-3 text-xs text-gray-400">
@@ -224,10 +240,7 @@ const summary = computed(() => ({
                 <div class="mb-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h2 class="text-base font-semibold">4. {{ trans("Manage Your Leaflets & Inserts") }}</h2>
-                        <button type="button" class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium hover:bg-gray-50">
-                            <FontAwesomeIcon :icon="['fal', 'upload']" fixed-width aria-hidden="true" />
-                            {{ trans("Upload new leaflet") }}
-                        </button>
+                        <Button type="tertiary" icon="fal fa-upload" :label="trans('Upload new leaflet')" />
                     </div>
                     <p class="text-sm text-gray-500">{{ trans("Upload and manage the leaflets and inserts available for your orders.") }}</p>
                 </div>
@@ -300,6 +313,16 @@ const summary = computed(() => ({
                 <p class="mt-4 text-sm font-medium" :style="{ color: accentStyle.text }">
                     {{ trans("These preferences will be applied to all new orders.") }}
                 </p>
+
+                <Button
+                    type="save"
+                    class="mt-4"
+                    full
+                    :loading="isSaving"
+                    :icon="justSaved ? 'fal fa-check' : undefined"
+                    :label="justSaved ? trans('Saved') : trans('Save settings')"
+                    @click="saveSettings"
+                />
             </aside>
         </div>
     </div>
