@@ -46,6 +46,7 @@ use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Models\Ordering\UpcomingTransaction;
 use App\Models\Reviews\Review;
 use App\Models\Reviews\ReviewReaction;
 use App\Models\SysAdmin\Group;
@@ -450,6 +451,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function upcomingTransactions(): HasMany
+    {
+        return $this->hasMany(UpcomingTransaction::class);
     }
 
     public function payments(): HasMany

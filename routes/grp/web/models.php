@@ -106,6 +106,10 @@ use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
+use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\UI\IndexUpcomingTransactions;
+use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
@@ -500,6 +504,15 @@ Route::patch('credit-transaction/{customer:id}/increase', IncreaseCreditTransact
 Route::patch('credit-transaction/{customer:id}/decrease', DecreaseCreditTransactionCustomer::class)->name('credit_transaction.decrease')->withoutScopedBindings();
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
+
+Route::prefix('customer/{customer:id}/upcoming-transactions')->name('customer.upcoming_transactions.')->group(function () {
+    Route::get('', IndexUpcomingTransactions::class)->name('index')->withoutScopedBindings();
+    Route::post('', StoreUpcomingTransaction::class)->name('store')->withoutScopedBindings();
+});
+Route::prefix('upcoming-transaction/{upcomingTransaction:id}')->name('upcoming_transaction.')->group(function () {
+    Route::patch('', UpdateUpcomingTransaction::class)->name('update');
+    Route::delete('', DeleteUpcomingTransaction::class)->name('delete');
+});
 
 Route::patch('master-product-category/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product_category.update')->withoutScopedBindings();
 Route::post('master-product-category/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_category_image.upload')->withoutScopedBindings();
