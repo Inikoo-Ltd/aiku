@@ -41,6 +41,7 @@ class IndexBasketTransactions extends OrgAction
 
         $query->leftjoin('assets', 'transactions.asset_id', '=', 'assets.id');
         $query->leftjoin('products', 'assets.model_id', '=', 'products.id');
+        $query->leftjoin('upcoming_transactions', 'transactions.id', '=', 'upcoming_transactions.id');
 
         return $query->defaultSort('transactions.id')
             ->select([
@@ -67,6 +68,11 @@ class IndexBasketTransactions extends OrgAction
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
                 'transactions.offers_data',
+
+                'upcoming_transactions.public_notes as upcoming_transaction_public_notes',
+                'upcoming_transactions.private_notes as upcoming_transaction_private_notes',
+                'upcoming_transactions.type as upcoming_transaction_type',
+
             ])
             ->selectRaw("'{$order->currency->code}'  as currency_code")
             ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered', 'price'])

@@ -138,7 +138,9 @@ class TransactionsResource extends JsonResource
             'is_cut_view'                    => $this->is_cut_view,
             'is_gift'                        => $this->is_gift,
             'batch_codes'                    => $this->batch_codes,
-
+            'upcoming_transaction_type'          => $this->upcoming_transaction_type,
+            'upcoming_transaction_private_notes' => $this->upcoming_transaction_private_notes,
+            'upcoming_transaction_public_notes'  => $this->upcoming_transaction_public_notes,
 
             'deleteRoute' => $request->user() instanceof User
                 ? [

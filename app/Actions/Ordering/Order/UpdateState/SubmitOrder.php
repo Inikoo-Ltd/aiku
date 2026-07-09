@@ -174,8 +174,7 @@ class SubmitOrder extends OrgAction
                     'quantity_ordered' => 0,
                     'quantity_bonus'   => $upComingTransaction->quantity,
                     'is_gift'          => $isGift,
-                    'is_follow_on'     => true,
-                    'label'            => $upComingTransaction->notes ?? ''
+                    'is_follow_on'     => true
                 ]
             );
 

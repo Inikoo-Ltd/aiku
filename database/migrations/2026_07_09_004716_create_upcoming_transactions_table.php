@@ -34,7 +34,7 @@ return new class () extends Migration {
             $table->foreign('transaction_id')->references('id')->on('transactions');
 
             $table->decimal('quantity', 16, 3)->nullable();
-            $table->text('notes')->nullable();
+            $table->text('public_notes')->nullable();
             $table->text('private_notes')->nullable();
 
             $table->string('type')->index();

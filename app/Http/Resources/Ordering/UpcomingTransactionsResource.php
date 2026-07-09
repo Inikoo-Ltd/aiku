@@ -17,7 +17,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $order_id
  * @property mixed $transaction_id
  * @property mixed $quantity
- * @property mixed $notes
+ * @property mixed $public_notes
+ * @property mixed $private_notes
  * @property mixed $type
  * @property mixed $state
  * @property mixed $product_code
@@ -38,7 +39,8 @@ class UpcomingTransactionsResource extends JsonResource
             'order_id'       => $this->order_id,
             'transaction_id' => $this->transaction_id,
             'quantity'       => $this->quantity,
-            'notes'          => $this->notes,
+            'public_notes'   => $this->public_notes,
+            'private_notes'  => $this->private_notes,
             'type'           => $this->type,
             'state'          => $this->state,
             'created_at'     => $this->created_at,

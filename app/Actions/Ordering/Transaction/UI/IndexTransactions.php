@@ -63,6 +63,7 @@ class IndexTransactions extends OrgAction
         $query->leftJoin('products', 'assets.model_id', '=', 'products.id');
         $query->leftJoin('orders', 'transactions.order_id', '=', 'orders.id');
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
+        $query->leftJoin('upcoming_transactions', 'transactions.id', '=', 'upcoming_transactions.transaction_id');
 
         return $query->defaultSort('transactions.id')
             ->select([
@@ -97,6 +98,9 @@ class IndexTransactions extends OrgAction
                 'currencies.code as currency_code',
                 'orders.id as order_id',
                 'transactions.offers_data',
+                'upcoming_transactions.public_notes as upcoming_transaction_public_notes',
+                'upcoming_transactions.private_notes as upcoming_transaction_private_notes',
+                'upcoming_transactions.type as upcoming_transaction_type',
                 DB::raw("(
                     SELECT STRING_AGG(DISTINCT bc.code, ', ')
                     FROM delivery_note_items dni2

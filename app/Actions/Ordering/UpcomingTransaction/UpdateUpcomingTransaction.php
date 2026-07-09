@@ -32,7 +32,8 @@ class UpdateUpcomingTransaction extends OrgAction
             'order_id'       => ['sometimes', 'nullable', 'exists:orders,id'],
             'transaction_id' => ['sometimes', 'nullable', 'exists:transactions,id'],
             'quantity'       => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'notes'          => ['sometimes', 'nullable', 'string'],
+            'public_notes'   => ['sometimes', 'nullable', 'string'],
+            'private_notes'  => ['sometimes', 'nullable', 'string'],
             'type'           => ['sometimes', 'required', Rule::enum(UpcomingTransactionTypeEnum::class)],
             'state'          => ['sometimes', 'required', Rule::enum(UpcomingTransactionStateEnum::class)],
         ];
