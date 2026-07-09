@@ -227,8 +227,11 @@ const formatQuantity = (quantity: number | string) => Number(quantity).toLocaleS
                                 {{ transaction.product_name }}
                             </div>
 
-                            <p v-if="transaction.notes" class="mt-1 text-xs italic text-gray-500">
-                                {{trans('Notes')}}: {{ transaction.notes }}
+                            <p v-if="transaction.public_notes" class="mt-1 text-xs italic text-gray-500">
+                                {{trans('Public Notes')}}: {{ transaction.public_notes }}
+                            </p>
+                            <p v-if="transaction.private_notes" class="mt-1 text-xs italic text-gray-500">
+                                {{trans('Private Notes')}}: {{ transaction.private_notes }}
                             </p>
                         </div>
 

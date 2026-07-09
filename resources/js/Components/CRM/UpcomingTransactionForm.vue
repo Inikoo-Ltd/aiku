@@ -34,7 +34,8 @@ const isEditing = computed(() => !!props.transaction)
 const quantity = ref<number | null>(props.transaction?.quantity ?? 1)
 const productId = ref<number | null>(props.transaction?.product_id ?? null)
 const type = ref<UpcomingTransactionType>(props.transaction?.type ?? "gift")
-const notes = ref(props.transaction?.notes ?? "")
+const privateNotes = ref(props.transaction?.private_notes ?? "")
+const publicNotes = ref(props.transaction?.public_notes ?? "")
 const selectedProduct = ref<any | null>(null)
 const isLoadingSubmit = ref(false)
 
@@ -76,7 +77,8 @@ const submit = () => {
         product_id: productId.value,
         quantity: quantity.value,
         type: type.value,
-        notes: notes.value.trim() || null,
+        public_notes: publicNotes.value.trim() || null,
+        private_notes: privateNotes.value.trim() || null,
     }
 
     const request = props.transaction
@@ -231,18 +233,36 @@ const submit = () => {
         </div>
 
         <div class="space-y-2">
-            <label for="upcoming_notes" class="font-medium text-sm text-gray-700 block">
-                {{ trans("Note") }}
-            </label>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="col">
+                    <label for="upcoming_notes" class="font-medium text-sm text-gray-700 block">
+                        {{ trans("Public Note") }}
+                    </label>
 
-            <PureTextarea
-                v-model="notes"
-                full
-                inputName="upcoming_notes"
-                :rows="3"
-                :maxlength="500"
-                :placeholder="trans('Add a note for the warehouse or customer service...')"
-            />
+                    <PureTextarea
+                        v-model="publicNotes"
+                        full
+                        inputName="upcoming_notes"
+                        :rows="3"
+                        :maxlength="500"
+                        :placeholder="trans('Add a note for the warehouse or customer service...')"
+                    />
+                </div>
+                <div class="col">
+                    <label for="upcoming_notes" class="font-medium text-sm text-gray-700 block">
+                        {{ trans("Private Note") }}
+                    </label>
+
+                    <PureTextarea
+                        v-model="privateNotes"
+                        full
+                        inputName="upcoming_notes"
+                        :rows="3"
+                        :maxlength="500"
+                        :placeholder="trans('Add a note for the warehouse or customer service...')"
+                    />
+                </div>
+            </div>
         </div>
 
         <div class="flex justify-end gap-x-3 pt-2">

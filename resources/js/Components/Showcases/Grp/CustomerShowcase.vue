@@ -204,8 +204,7 @@ const props = defineProps<{
             color: string
             metadata: Record<string, unknown>
         }[]
-    }
-    openUpcomingFormSignal?: number
+    }    
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -516,8 +515,7 @@ const submitNote = async () => {
             <UpcomingTransactionsPanel
                 v-if="data.upcoming_transaction_route"
                 :routes="data.upcoming_transaction_route"
-                :shopSlug="data.shop.slug"
-                :openFormSignal="openUpcomingFormSignal"
+                :shopSlug="data.shop.slug"                
             />
         </div>
     </div>
