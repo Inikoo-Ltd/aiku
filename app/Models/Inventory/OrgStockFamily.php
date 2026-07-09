@@ -94,11 +94,12 @@ class OrgStockFamily extends Model
     {
         return [
 
-            'id'          => (string)$this->id,
-            'code'        => $this->code,
-            'state'       => $this->state,
-            'name'        => (string)$this->name,
-            'created_at'  => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'id'              => (string)$this->id,
+            'organisation_id' => $this->organisation_id,
+            'code'            => $this->code,
+            'state'           => $this->state,
+            'name'            => (string)$this->name,
+            'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
 
