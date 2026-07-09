@@ -30,7 +30,7 @@ class ProcessGetSesClient
     ];
 
     /**
-     * @return array{key: string|null, secret: string|null, region: string|null}
+     * @return array<int, array{key: string, secret: string, region: string, level: string}>
      */
     public function handle(?int $outboxId = null): array
     {
@@ -38,44 +38,58 @@ class ProcessGetSesClient
             'key'    => config('services.ses.key'),
             'secret' => config('services.ses.secret'),
             'region' => config('services.ses.region'),
+            'level'  => 'default',
         ];
 
         $outbox = $outboxId ? Outbox::find($outboxId) : null;
 
         if (!$outbox) {
-            return $default;
+            return [$default];
         }
 
-        // Mailshot: shop → organisation → group
+        // Mailshot: shop → shop failover → organisation failover → group
         if ($outbox->model_type === class_basename(Mailshot::class)) {
-            return $this->fromSettings($outbox->shop?->settings)
-                ?? $this->fromSettings($outbox->organisation?->settings)
-                ?? $this->fromSettings($outbox->group?->settings)
-                ?? $default;
+            $candidates = [
+                'shop'                  => [$outbox->shop?->settings, 'email.provider'],
+                'shop.failover'         => [$outbox->shop?->settings, 'email.provider.failover'],
+                'organisation.failover' => [$outbox->organisation?->settings, 'email.provider.failover'],
+                'group'                 => [$outbox->group?->settings, 'email.provider'],
+            ];
+        } elseif (in_array($outbox->code, self::OUTBOX_BULK_GROUP, true)) {
+            // Bulk: organisation failover → group
+            $candidates = [
+                'organisation.failover' => [$outbox->organisation?->settings, 'email.provider.failover'],
+                'group'                 => [$outbox->group?->settings, 'email.provider'],
+            ];
+        } else {
+            // Add the internal group new setting if is internal comms
+
+            // Everything else: group only
+            $candidates = [
+                'group' => [$outbox->group?->settings, 'email.provider'],
+            ];
         }
 
-        // Bulk: organisation → group
-        if (in_array($outbox->code, self::OUTBOX_BULK_GROUP, true)) {
-            return $this->fromSettings($outbox->organisation?->settings)
-                ?? $this->fromSettings($outbox->group?->settings)
-                ?? $default;
+        $result = [];
+        foreach ($candidates as $level => [$settings, $path]) {
+            $credentials = $this->fromSettings($settings, $path);
+            if ($credentials) {
+                $result[] = [...$credentials, 'level' => $level];
+            }
         }
+        $result[] = $default;
 
-        // Add the internal group new setting if is internal comms
-
-
-        // Everything else: group only
-        return $this->fromSettings($outbox->group?->settings) ?? $default;
+        return $result;
     }
 
     /**
-     * @return array{key: string|null, secret: string|null, region: string|null}|null
+     * @return array{key: string, secret: string, region: string}|null
      */
-    private function fromSettings(?array $settings): ?array
+    private function fromSettings(?array $settings, string $path = 'email.provider'): ?array
     {
-        $key    = Arr::get($settings, 'email.provider.access_id');
-        $secret = Arr::get($settings, 'email.provider.access_key');
-        $region = Arr::get($settings, 'email.provider.region');
+        $key    = Arr::get($settings, "$path.access_id");
+        $secret = Arr::get($settings, "$path.access_key");
+        $region = Arr::get($settings, "$path.region");
 
         if (!$key || !$secret || !$region) {
             return null;

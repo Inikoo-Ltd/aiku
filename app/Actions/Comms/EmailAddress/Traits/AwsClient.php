@@ -15,8 +15,13 @@ trait AwsClient
 {
     public function getSesClient(?int $outboxId = null): SesClient
     {
-        $credentials = ProcessGetSesClient::run($outboxId);
+        $candidates = ProcessGetSesClient::run($outboxId);
 
+        return $this->buildSesClient($candidates[0]);
+    }
+
+    public function buildSesClient(array $credentials): SesClient
+    {
         return new SesClient([
             'version'     => 'latest',
             'region'      => $credentials['region'],
