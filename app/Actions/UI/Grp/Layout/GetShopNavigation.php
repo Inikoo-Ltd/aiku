@@ -622,6 +622,16 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
+                        [
+                            "label"   => __("Abandoned Checkouts"),
+                            "tooltip" => __("Abandoned Checkouts"),
+                            "icon"    => ["fal", "fa-shopping-cart"],
+                            'root'    => 'grp.org.shops.show.ordering.checkout_abandonments.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.checkout_abandonments.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
                     ],
                 ],
             ];
