@@ -130,23 +130,44 @@ class EditGroupSettings extends GrpAction
 
                     ],
                     [
-                        'label'  => __('Email Provider'),
-                        'icon'   => 'fa-light fa-satellite-dish',
+                        'label'  => 'AWS SES '.__('Failover credentials'),
+                        'icon'   => 'fa-light fa-key',
                         'fields' => [
                             "access_id" => [
                                 "type"        => "input",
                                 "label"       => __("Access ID"),
-                                "value"       => $group->settings['email']['provider']['access_id'] ?? '',
+                                "value"       => Arr::get($group->settings,'email.provider.failover.access_id',''),
                             ],
                             "access_key" => [
                                 "type"        => "input",
                                 "label"       => __("Access Key"),
-                                "value"       => $group->settings['email']['provider']['access_key'] ?? '',
+                                "value"       =>  Arr::get($group->settings,'email.provider.failover.access_key',''),
                             ],
                             "region" => [
                                 "type"        => "input",
                                 "label"       => __("Region"),
-                                "value"       => $group->settings['email']['provider']['region'] ?? '',
+                                "value"       =>  Arr::get($group->settings,'email.provider.failover.region',''),
+                            ]
+                        ]
+                    ],
+                    [
+                        'label'  => 'AWS SES '.__('User notification credentials'),
+                        'icon'   => 'fa-light fa-key',
+                        'fields' => [
+                            "user_notification_access_id" => [
+                                "type"        => "input",
+                                "label"       => __("Access ID"),
+                                "value"       => Arr::get($group->settings,'email.provider.user_notification.access_id',''),
+                            ],
+                            "user_notification_access_key" => [
+                                "type"        => "input",
+                                "label"       => __("Access Key"),
+                                "value"       => Arr::get($group->settings,'email.provider.user_notification.access_key',''),
+                            ],
+                            "user_notification_region" => [
+                                "type"        => "input",
+                                "label"       => __("Region"),
+                                "value"       => Arr::get($group->settings,'email.provider.user_notification.region',''),
                             ]
                         ]
                     ],

@@ -18,7 +18,7 @@ class ProcessGetSesClient
 {
     use AsAction;
 
-    private const OUTBOX_BULK_GROUP = [
+    private const array OUTBOX_BULK_GROUP = [
         OutboxCodeEnum::BASKET_LOW_STOCK,
         OutboxCodeEnum::REORDER_REMINDER,
         OutboxCodeEnum::REORDER_REMINDER_2ND,
@@ -60,6 +60,9 @@ class ProcessGetSesClient
                 ?? $this->fromSettings($outbox->group?->settings)
                 ?? $default;
         }
+
+        // Add the internal group new setting if is internal comms
+
 
         // Everything else: group only
         return $this->fromSettings($outbox->group?->settings) ?? $default;
