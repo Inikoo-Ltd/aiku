@@ -151,6 +151,27 @@ class EditGroupSettings extends GrpAction
                         ]
                     ],
                     [
+                        'label'  => 'AWS SES '.__('Customer notification credentials'),
+                        'icon'   => 'fa-light fa-key',
+                        'fields' => [
+                            "customer_notification_access_id" => [
+                                "type"        => "input",
+                                "label"       => __("Access ID"),
+                                "value"       => Arr::get($group->settings,'email.provider.customer_notification.access_id',''),
+                            ],
+                            "cutomer_notification_access_key" => [
+                                "type"        => "input",
+                                "label"       => __("Access Key"),
+                                "value"       => Arr::get($group->settings,'email.provider.customer_notification.access_key',''),
+                            ],
+                            "customer_notification_region" => [
+                                "type"        => "input",
+                                "label"       => __("Region"),
+                                "value"       => Arr::get($group->settings,'email.provider.customer_notification.region',''),
+                            ]
+                        ]
+                    ],
+                    [
                         'label'  => 'AWS SES '.__('User notification credentials'),
                         'icon'   => 'fa-light fa-key',
                         'fields' => [

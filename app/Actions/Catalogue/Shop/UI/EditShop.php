@@ -634,25 +634,46 @@ class EditShop extends OrgAction
                         default => []
                     } : [],
                 [
-                    'label'  => __('Email Provider'),
-                    'icon'   => 'fa-light fa-satellite-dish',
+                    'label'  => 'AWS SES '.__('Failover organisation credentials'),
+                    'icon'   => 'fa-light fa-key',
                     'fields' => [
-                        'access_id'  => [
-                            'type'  => 'input',
-                            'label' => __('Access ID'),
-                            'value' => Arr::get($shop->settings, 'email.provider.access_id', ''),
+                        "access_id" => [
+                            "type" => "input",
+                            "label" => __("Access ID"),
+                            "value"       => Arr::get($shop->settings,'email.provider.failover.access_id',''),
                         ],
-                        'access_key' => [
-                            'type'  => 'input',
-                            'label' => __('Access Key'),
-                            'value' => Arr::get($shop->settings, 'email.provider.access_key', ''),
+                        "access_key" => [
+                            "type" => "input",
+                            "label" => __("Access Key"),
+                            "value"       =>  Arr::get($shop->settings,'email.provider.failover.access_key',''),
                         ],
-                        'region'     => [
-                            'type'  => 'input',
-                            'label' => __('Region'),
-                            'value' => Arr::get($shop->settings, 'email.provider.region', ''),
+                        "region" => [
+                            "type" => "input",
+                            "label" => __("Region"),
+                            "value"       =>  Arr::get($shop->settings,'email.provider.failover.region',''),
                         ],
                     ],
+                ],
+                [
+                    'label'  => 'AWS SES '.__('Customer notification credentials'),
+                    'icon'   => 'fa-light fa-key',
+                    'fields' => [
+                        "customer_notification_access_id" => [
+                            "type"        => "input",
+                            "label"       => __("Access ID"),
+                            "value"       => Arr::get($shop->settings,'email.provider.customer_notification.access_id',''),
+                        ],
+                        "cutomer_notification_access_key" => [
+                            "type"        => "input",
+                            "label"       => __("Access Key"),
+                            "value"       => Arr::get($shop->settings,'email.provider.customer_notification.access_key',''),
+                        ],
+                        "customer_notification_region" => [
+                            "type"        => "input",
+                            "label"       => __("Region"),
+                            "value"       => Arr::get($shop->settings,'email.provider.customer_notification.region',''),
+                        ]
+                    ]
                 ],
                 [
                     'label'  => __('Chat'),
