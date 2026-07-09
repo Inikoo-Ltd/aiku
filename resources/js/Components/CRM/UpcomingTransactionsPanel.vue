@@ -31,8 +31,6 @@ const canReturnToList = ref(false)
 const deletingId = ref<number | null>(null)
 const confirmingDeleteId = ref<number | null>(null)
 
-const modalWidth = computed(() => (modalView.value === "list" ? "w-full max-w-3xl" : "w-full max-w-2xl"))
-
 const fetchTransactions = async () => {
     isLoading.value = true
 
@@ -146,7 +144,7 @@ const formatQuantity = (quantity: number | string) => Number(quantity).toLocaleS
             <span class="text-xs font-medium text-indigo-600">{{ trans("View list") }}</span>
         </button>
 
-        <Modal :isOpen="isModalOpen" @onClose="closeModal" :width="modalWidth">
+        <Modal :isOpen="isModalOpen" @onClose="closeModal" width="w-full max-w-2xl">
             <UpcomingTransactionForm
                 v-if="modalView === 'form'"
                 :key="editingTransaction?.id ?? 'new'"
@@ -230,7 +228,7 @@ const formatQuantity = (quantity: number | string) => Number(quantity).toLocaleS
                             </div>
 
                             <p v-if="transaction.notes" class="mt-1 text-xs italic text-gray-500">
-                                {{ transaction.notes }}
+                                {{trans('Notes')}}: {{ transaction.notes }}
                             </p>
                         </div>
 
