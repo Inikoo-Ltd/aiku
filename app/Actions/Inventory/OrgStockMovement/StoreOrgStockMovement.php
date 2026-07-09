@@ -105,6 +105,8 @@ class StoreOrgStockMovement extends OrgAction
 
         $this->hydrateOrgStockMovement($orgStockMovement);
 
+        BroadcastStockMovement::dispatch($locationOrgStock);
+
         $picking?->update(
             [
                 'org_stock_movement_id' => $orgStockMovement->id,

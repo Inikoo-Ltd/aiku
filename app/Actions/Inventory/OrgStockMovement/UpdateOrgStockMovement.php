@@ -14,6 +14,8 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Events\BroadcastStockMovement;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use Illuminate\Support\Arr;
 
@@ -26,6 +28,10 @@ class UpdateOrgStockMovement extends OrgAction
     {
         $oldQuantity = $orgStockMovement->quantity;
 
+        $locationOrgStock = LocationOrgStock::where('location_id', $orgStockMovement->location_id)
+            ->where('org_stock_id', $orgStockMovement->org_stock_id)
+            ->first();
+        
         if (Arr::has($modelData, 'quantity')) {
             $orgAmount = $modelData['quantity'] * $orgStockMovement->orgStock->value_in_locations;
             data_set($modelData, 'org_amount', $orgAmount);
@@ -55,6 +61,8 @@ class UpdateOrgStockMovement extends OrgAction
         //        }
 
         $this->hydrateOrgStockMovement($orgStockMovement);
+
+        BroadcastStockMovement::dispatch($locationOrgStock);
 
         return $orgStockMovement;
 

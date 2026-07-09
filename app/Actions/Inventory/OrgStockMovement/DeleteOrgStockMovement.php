@@ -12,6 +12,7 @@ use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Events\BroadcastStockMovement;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
 
@@ -39,6 +40,8 @@ class DeleteOrgStockMovement extends OrgAction
         $orgStockMovement->delete();
 
         $this->hydrateOrgStockMovement($orgStockMovement);
+
+        BroadcastStockMovement::dispatch($locationOrgStock);
 
         return $orgStockMovement;
     }
