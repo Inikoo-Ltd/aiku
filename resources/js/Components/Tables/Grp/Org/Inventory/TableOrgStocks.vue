@@ -5,10 +5,12 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
+import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
-import { inject } from "vue"
+import { inject, ref } from "vue"
+import Dialog from "primevue/dialog"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Icon from "@/Components/Icon.vue"
 import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus } from "@fas"
@@ -17,16 +19,70 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { OrgStock } from "@/types/org-stock"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import { faForklift } from "@fal"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import Organisation from "@/Pages/Grp/Organisations/Organisation.vue"
+import Warehouse from "@/Pages/Grp/Org/Warehouse/Warehouse.vue"
+import { overflow } from "html2canvas/dist/types/css/property-descriptors/overflow"
 
 library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus)
 
 defineProps<{
     data: object
     tab?: string
+    canMoveAllSku?:boolean
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
 const layout = inject("layout", {})
+const location = ref(null)
+const isOpenMoveAllSku = ref(false)
+const isSavingMoveAllSku = ref(false)
+
+function onSaveMoveAllSku() {
+    const params = route().params as RouteParams
+
+    isSavingMoveAllSku.value = true
+
+    console.log(location.value)
+
+    /* router.post(
+        route("grp.models.warehouse.move_all_sku", {
+            organisation: params.organisation,
+            warehouse: params.warehouse,
+        }),
+        {
+            location_id: location.value,
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                isOpenMoveAllSku.value = false
+                location.value = null
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("All SKU moved successfully"),
+                    type: "success",
+                })
+            },
+            onError: () => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to move all SKU"),
+                    type: "error",
+                })
+            },
+            onFinish: () => {
+                isSavingMoveAllSku.value = false
+            },
+        }
+    ) */
+}
+
+function onCancelMoveAllSku() {
+    isOpenMoveAllSku.value = false
+}
 
 function orgStockRoute(orgStock: OrgStock) {
     const current = route().current()
@@ -168,6 +224,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+          <template #add-on-button v-if="canMoveAllSku">
+                <Button :label="ctrans('Move All SKU')" type="white" :icon="faForklift" size="xs" @click="isOpenMoveAllSku = true"></Button>
+          </template>
         <template #cell(state)="{ item: stock }">
             <Icon :data="stock.state"></Icon>
         </template>
@@ -320,4 +379,36 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 
 
     </Table>
+
+    <Dialog
+        :header="ctrans('Move All SKU')"
+        v-model:visible="isOpenMoveAllSku"
+        modal
+        closable
+        :content-style="{ width: '500px', overflow : 'visible' }"
+    >
+        <div class="px-2">
+            <PureMultiselectInfiniteScroll
+                mode="single"
+                v-model="location"
+                :fetchRoute="{
+                    name: 'grp.org.warehouses.show.infrastructure.locations.index',
+                    parameters: {
+                        organisation: (route().params as RouteParams).organisation,
+                        warehouse: (route().params as RouteParams).warehouse,
+                    },
+                }"
+                valueProp="id"
+                labelProp="code"
+                :placeholder="ctrans('Select a location')"
+            />
+        </div>
+
+        <template #footer>
+            <div class="flex justify-end gap-2">
+                <Button type="cancel" :label="ctrans('Cancel')" @click="onCancelMoveAllSku" />
+                <Button type="save" :label="ctrans('Save')" :loading="isSavingMoveAllSku" :disabled="!location" @click="onSaveMoveAllSku" />
+            </div>
+        </template>
+    </Dialog>
 </template>
