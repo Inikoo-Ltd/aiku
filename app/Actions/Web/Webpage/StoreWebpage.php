@@ -63,6 +63,8 @@ class StoreWebpage extends OrgAction
      */
     public function handle(Website|Webpage $parent, array $modelData): Webpage
     {
+        $newBlogModelData = [];
+
         if (!Arr::exists($modelData, 'type')) {
             $modelData['type'] = WebpageTypeEnum::CONTENT;
         }
@@ -75,6 +77,10 @@ class StoreWebpage extends OrgAction
             $modelData['data'] = [
                 'seo_structure_type' => Arr::pull($modelData, 'seo_structure_type')
             ];
+        }
+
+        if ($modelData['sub_type'] == WebPageSubTypeEnum::MAILSHOT && Arr::exists($modelData, 'fieldValue')) {
+            $newBlogModelData['fieldValue'] = Arr::pull($modelData, 'fieldValue');
         }
 
         data_set($modelData, 'url', '', overwrite: false);
@@ -91,7 +97,7 @@ class StoreWebpage extends OrgAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
-        $webpage = DB::transaction(function () use ($parent, $modelData) {
+        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData) {
             /** @var Webpage $webpage */
             $webpage = $parent->webpages()->create($modelData);
             $webpage->stats()->create();
@@ -200,7 +206,12 @@ class StoreWebpage extends OrgAction
                 }
 
                 if ($webpage->type == WebpageTypeEnum::BLOG) {
-                    $this->createWebBlock($webpage, 'blog', $webpage);
+                    if ($webpage->sub_type == WebpageSubTypeEnum::MAILSHOT) {
+                        $this->createWebBlock($webpage, 'blog', $newBlogModelData);
+                    } else {
+                        $this->createWebBlock($webpage, 'blog', $webpage);
+                    }
+
                 }
             }
 
@@ -302,7 +313,8 @@ class StoreWebpage extends OrgAction
             'model_id'           => ['sometimes', 'integer'],
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
-            'layout_style'       => ['sometimes', 'string']
+            'layout_style'       => ['sometimes', 'string'],
+            'fieldValue'         => ['sometimes', 'array'],
 
         ];
 
@@ -377,6 +389,7 @@ class StoreWebpage extends OrgAction
      */
     public function action(Website|Webpage $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Webpage
     {
+        \Log::info(json_encode($modelData));
         if (!$audit) {
             Webpage::disableAuditing();
         }
@@ -387,7 +400,7 @@ class StoreWebpage extends OrgAction
         $this->parent         = $parent;
         $this->website        = $parent instanceof Website ? $parent : $parent->website;
         $this->initialisationFromShop($this->website->shop, $modelData);
-
+        \Log::info("checkpoint 1 here, and is strict: ".($this->strict ? 'true' : 'false')." and is audit: ".($audit ? 'true' : 'false'));
         return $this->handle($parent, $this->validatedData);
     }
 
