@@ -33,7 +33,8 @@ class LocationHydrateStocks implements ShouldBeUnique
 
 
         $stats = [
-            'number_org_stock_slots' => $location->locationOrgStocks()->count()
+            'number_org_stock_slots'   => $location->locationOrgStocks()->count(),
+            'number_empty_stock_slots' => $location->locationOrgStocks()->where('quantity', 0)->count()
         ];
 
         $location->stats()->update($stats);
