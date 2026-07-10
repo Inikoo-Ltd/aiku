@@ -22,8 +22,7 @@ import { faFragile, faGhost, faSkull, faWandMagic } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import Modal from "@/Components/Utils/Modal.vue"
-import { InputNumber, RadioButton } from "primevue"
+import { InputNumber, RadioButton, Dialog } from "primevue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -664,12 +663,21 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         </template>
     </Table>
 
-    <Modal :isOpen="isModalLocation" @onClose="isModalLocation = false" width="w-full max-w-3xl" xdialogStyle="{ background: '#ffffff' }">
+    <!-- Modal: Location picker (PrimeVue Dialog so the nested Stock Management dialog doesn't fight a Headless UI focus trap) -->
+    <Dialog
+        v-model:visible="isModalLocation"
+        modal
+        :draggable="false"
+        dismissableMask
+        :style="{ width: '48rem' }"
+        :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
+        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+    >
         <SelectPickingLocation
             :item="selectedItemValue"
             :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
             @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
             :ignoreNoQty="true"
         />
-    </Modal>
+    </Dialog>
 </template>

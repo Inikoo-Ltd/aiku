@@ -23,7 +23,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import Modal from "@/Components/Utils/Modal.vue"
-import { RadioButton } from "primevue"
+import { RadioButton, Dialog } from "primevue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -1351,15 +1351,23 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
     </Modal>
 
 
-    <!-- Modal: Location picker -->
-    
-    <Modal :isOpen="isModalLocation" @onClose="isModalLocation = false" width="w-full max-w-3xl" xdialogStyle="{ background: '#ffffff' }">
+    <!-- Modal: Location picker (PrimeVue Dialog so the nested Stock Management dialog doesn't fight a Headless UI focus trap) -->
+    <Dialog
+        v-model:visible="isModalLocation"
+        modal
+        :draggable="false"
+        dismissableMask
+        :style="{ width: '48rem' }"
+        :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
+        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+        @hide="onCloseModal"
+    >
         <SelectPickingLocation
             :item="selectedItemValue"
             :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
             @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
         />
-    </Modal>
+    </Dialog>
 
     <!-- Modal: Select batch code -->
     <Modal :isOpen="isModalEditExpiryDate" @onClose="() => onCloseModalExpiryDate()" width="w-full max-w-lg">

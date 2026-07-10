@@ -23,7 +23,7 @@ import axios from "axios"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Modal from "@/Components/Utils/Modal.vue"
-import { RadioButton, Tab } from "primevue"
+import { RadioButton, Tab, Dialog } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import { faAnalytics, faPencil } from "@far"
@@ -769,16 +769,23 @@ onUnmounted(() => {
         </template>
     </Table>
 
-    <!-- Modal: Location list -->
-    <Modal :isOpen="isModalLocation" @onClose="() => onCloseModal()" width="w-full max-w-2xl" :dialogStyle="{
-        background: '#ffffffcc'
-    }">
+    <!-- Modal: Location list (PrimeVue Dialog so the nested Stock Management dialog doesn't fight a Headless UI focus trap) -->
+    <Dialog
+        v-model:visible="isModalLocation"
+        modal
+        :draggable="false"
+        dismissableMask
+        :style="{ width: '42rem' }"
+        :breakpoints="{ '1280px': '65vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
+        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+        @hide="onCloseModal"
+    >
         <SelectPickingLocation
             :item="selectedItemValue"
             :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
             @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
         />
-    </Modal>
+    </Dialog>
 
     <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-1/2">
         <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal"
