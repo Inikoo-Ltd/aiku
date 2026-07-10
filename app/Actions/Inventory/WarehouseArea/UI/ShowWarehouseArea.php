@@ -16,7 +16,7 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Enums\UI\Inventory\WarehouseAreaTabsEnum;
 use App\Http\Resources\History\HistoryResource;
-use App\Http\Resources\Inventory\LocationResource;
+use App\Http\Resources\Inventory\LocationsResource;
 use App\Http\Resources\Inventory\WarehouseAreaResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
@@ -108,18 +108,18 @@ class ShowWarehouseArea extends OrgAction
                     'navigation' => WarehouseAreaTabsEnum::navigation()
                 ],
                 WarehouseAreaTabsEnum::SHOWCASE->value => $this->tab == WarehouseAreaTabsEnum::SHOWCASE->value ?
-                    fn () => GetWarehouseAreaShowcase::run($warehouseArea)
-                    : Inertia::optional(fn () => GetWarehouseAreaShowcase::run($warehouseArea)),
+                    fn() => GetWarehouseAreaShowcase::run($warehouseArea)
+                    : Inertia::optional(fn() => GetWarehouseAreaShowcase::run($warehouseArea)),
 
                 WarehouseAreaTabsEnum::LOCATIONS->value => $this->tab == WarehouseAreaTabsEnum::LOCATIONS->value
                     ?
-                    fn () => LocationResource::collection(
+                    fn() => LocationsResource::collection(
                         IndexLocations::run(
                             parent: $warehouseArea,
                             prefix: WarehouseAreaTabsEnum::LOCATIONS->value
                         )
                     )
-                    : Inertia::optional(fn () => LocationResource::collection(
+                    : Inertia::optional(fn() => LocationsResource::collection(
                         IndexLocations::run(
                             parent: $warehouseArea,
                             prefix: WarehouseAreaTabsEnum::LOCATIONS->value
@@ -127,8 +127,8 @@ class ShowWarehouseArea extends OrgAction
                     )),
 
                 WarehouseAreaTabsEnum::HISTORY->value => $this->tab == WarehouseAreaTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($warehouseArea))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($warehouseArea)))
+                    fn() => HistoryResource::collection(IndexHistory::run($warehouseArea))
+                    : Inertia::optional(fn() => HistoryResource::collection(IndexHistory::run($warehouseArea)))
 
             ]
         )->table(

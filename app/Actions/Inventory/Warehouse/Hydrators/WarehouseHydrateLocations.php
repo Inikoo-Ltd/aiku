@@ -25,7 +25,7 @@ class WarehouseHydrateLocations implements ShouldBeUnique
 
     public function handle(Warehouse $warehouse): void
     {
-        $locations = $warehouse->locations;
+        $locations = $warehouse->locations()->with('stats')->get();
 
         $numberLocations                    = $locations->count();
         $numberOperationalLocations         = $locations->where('status', LocationStatusEnum::OPERATIONAL)->count();
@@ -35,16 +35,27 @@ class WarehouseHydrateLocations implements ShouldBeUnique
         $numberAllowFulfilmentLocations     = $locations->where('allow_fulfilment', true)->count();
         $numberAllowDropshippingLocations   = $locations->where('allow_dropshipping', true)->count();
 
+        $numberAllEmptyStockSlots           = $locations->filter(function ($location) {
+            return $location->stats && $location->stats->number_org_stock_slots > 0
+                && $location->stats->number_empty_stock_slots >= $location->stats->number_org_stock_slots;
+        })->count();
+        $numberPartialEmptyStockSlots       = $locations->filter(function ($location) {
+            return $location->stats && $location->stats->number_empty_stock_slots > 0
+                && $location->stats->number_empty_stock_slots < $location->stats->number_org_stock_slots;
+        })->count();
+
         $warehouse->stats()->update(
             [
-                'number_locations'                    => $numberLocations,
-                'number_empty_locations'              => $numberEmptyLocations,
-                'number_locations_status_operational' => $numberOperationalLocations,
-                'number_locations_status_broken'      => $numberLocations - $numberOperationalLocations,
-                'number_locations_no_stock_slots'     => $numberNoStockSlotsLocations,
-                'number_locations_allow_stocks'       => $numberAllowStocksLocations,
-                'number_locations_allow_fulfilment'   => $numberAllowFulfilmentLocations,
-                'number_locations_allow_dropshipping' => $numberAllowDropshippingLocations
+                'number_locations'                          => $numberLocations,
+                'number_empty_locations'                    => $numberEmptyLocations,
+                'number_locations_status_operational'       => $numberOperationalLocations,
+                'number_locations_status_broken'            => $numberLocations - $numberOperationalLocations,
+                'number_locations_no_stock_slots'           => $numberNoStockSlotsLocations,
+                'number_locations_stock_slots_all_empty'    => $numberAllEmptyStockSlots,
+                'number_locations_stock_slots_partial_empty' => $numberPartialEmptyStockSlots,
+                'number_locations_allow_stocks'             => $numberAllowStocksLocations,
+                'number_locations_allow_fulfilment'         => $numberAllowFulfilmentLocations,
+                'number_locations_allow_dropshipping'       => $numberAllowDropshippingLocations
             ]
         );
     }

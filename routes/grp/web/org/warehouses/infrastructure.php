@@ -52,6 +52,8 @@ Route::scopeBindings()->prefix('locations')->name('locations.')->group(function 
     Route::get('export', [ExportLocations::class, 'inWarehouse'])->name('export');
     Route::get('create', [CreateLocation::class, 'inWarehouse'])->name('create');
     Route::get('', [IndexLocations::class, 'inWarehouse'])->name('index');
+    Route::get('all-empty', [IndexLocations::class, 'inWarehouseAllEmpty'])->name('all_empty');
+    Route::get('partial-empty', [IndexLocations::class, 'inWarehousePartialEmpty'])->name('partial_empty');
 
     Route::scopeBindings()->prefix('{location}')->group(function () {
         Route::get('', ShowLocation::class)->name('show');
