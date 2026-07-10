@@ -157,6 +157,7 @@ class SubmitOrder extends OrgAction
             ->with('product.currentHistoricProduct')
             ->get();
 
+        /** @var UpcomingTransaction $upComingTransaction */
         foreach ($upComingTransactions as $upComingTransaction) {
             try {
                 /** @var Product $upComingTransactionProduct */
