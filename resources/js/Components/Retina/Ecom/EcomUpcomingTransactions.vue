@@ -42,7 +42,7 @@ const formatQuantity = (quantity: UpcomingTransaction['quantity']) => Number(qua
 <template>
     <div v-if="upcomingTransactions?.data?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
         <div class="text-sm font-semibold text-gray-700 mb-2">
-            {{ trans("Included with your order") }}
+            {{ trans("Will included with your order") }}
             <span class="text-gray-400 font-normal">({{ upcomingTransactions.data.length }})</span>
         </div>
 
