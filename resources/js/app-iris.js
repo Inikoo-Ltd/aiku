@@ -7,7 +7,7 @@
 import "./bootstrap_iris";
 import "../css/app.css";
 
-import { createApp, h } from "vue";
+import { createSSRApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
 import { ZiggyVue } from "ziggy-js";
 import { i18nVue } from "laravel-vue-i18n";
@@ -69,7 +69,7 @@ createInertiaApp(
         return page
     },
     setup({ el, App, props, plugin }) {
-      const app = createApp({ render: () => h(App, props) });
+      const app = createSSRApp({ render: () => h(App, props) });
       if (import.meta.env.VITE_SENTRY_IRIS_DSN) {
         const initSentry = () => import("@sentry/vue").then((Sentry) => {
           Sentry.init({
