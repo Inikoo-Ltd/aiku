@@ -10,11 +10,17 @@ use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Models\Inventory\Location;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class MassMoveLocationOrgStocks extends OrgAction
 {
     use WithWarehouseEditAuthorisation;
+
+    /**
+     * @var \App\Models\Inventory\Location
+     */
+    private Location $location;
 
     /**
      * @throws \Throwable
@@ -28,8 +34,7 @@ class MassMoveLocationOrgStocks extends OrgAction
                 $targetLocationOrgStock = $targetLocation->locationOrgStocks()->where('org_stock_id', $locationOrgStock->org_stock_id)->first();
 
                 if (!$targetLocationOrgStock) {
-                    
-                    $movedData = $locationOrgStock->only([
+                    $movedData              = $locationOrgStock->only([
                         'notes',
                         'picking_priority',
                         'type',
@@ -55,7 +60,11 @@ class MassMoveLocationOrgStocks extends OrgAction
     public function rules(): array
     {
         return [
-            'location_id'       => ['required', 'exists:location,id'],
+            'location_id'       => [
+                'required',
+                Rule::exists('locations', 'id')->where('organisation_id', $this->organisation->id),
+                'not_in:'.$this->location->id
+            ],
             'remove_after_move' => ['sometimes', 'nullable', 'boolean']
         ];
     }
@@ -65,6 +74,7 @@ class MassMoveLocationOrgStocks extends OrgAction
      */
     public function asController(Location $location, ActionRequest $request): Location
     {
+        $this->location = $location;
         $this->initialisationFromWarehouse($location->warehouse, $request);
 
         return $this->handle($location, $this->validatedData);
