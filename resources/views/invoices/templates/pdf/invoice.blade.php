@@ -169,7 +169,7 @@
             @endif
             @if($invoice->originalInvoice)
                 <div style="text-align: right">
-                    {{ __('Invoice number') }}: <b>{{ $invoice->originalInvoice->reference }}</b>
+                    {{ __('Original invoice number') }}: <b>{{ $invoice->originalInvoice->reference }}</b>
                 </div>
             @endif
 
