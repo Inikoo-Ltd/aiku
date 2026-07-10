@@ -129,10 +129,6 @@ onUnmounted(() => {
 
 <template>
     <div>
-        <div class="text-center font-semibold mb-4 text-2xl">
-            {{ ctrans('Location list for') }} {{ item?.org_stock_code }}
-        </div>
-
         <div class="flex justify-center mb-4">
             <Button
                 type="tertiary"
