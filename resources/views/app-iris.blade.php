@@ -6,31 +6,33 @@
     <title inertia>{{ $browserTitle ?? config('app.name') }}</title>
 
 
-    <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.bunny.net/css?family=fira-sans:200,400,500,700,900&display=swap"
-          onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="preload" as="style"
-          href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Inter&family=Laila&family=Lobster&family=Playfair&family=Port+Lligat+Slab&family=Quicksand&family=Yatra+One&family=Raleway:ital,wght@0,200;0,400;0,500;0,700;0,900;1,200;1,400;1,500;1,700;1,900&display=swap"
-          onload="this.onload=null;this.rel='stylesheet'">
-    <noscript>
-        <link rel="stylesheet" href="https://fonts.bunny.net/css?family=fira-sans:200,400,500,700,900&display=swap">
-        <link
-            href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Inter&family=Laila&family=Lobster&family=Playfair&family=Port+Lligat+Slab&family=Quicksand&family=Yatra+One&family=Raleway:ital,wght@0,200;0,400;0,500;0,700;0,900;1,200;1,400;1,500;1,700;1,900&display=swap"
-            rel="stylesheet">
-    </noscript>
-{{--Note: this not work because of varnish X-Logged-Status is not longer set--}}
-{{--    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', ''))--}}
-{{--        @if(request()->header('X-Logged-Status') !== null || auth()->check())--}}
-{{--            @if(request()->header('X-Logged-Status') === 'In' || auth()->check())--}}
-{{--                <script async data-jsd-embedded--}}
-{{--                        data-key="{{Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', '') }}"--}}
-{{--                        data-base-url="https://jsd-widget.atlassian.com"--}}
-{{--                        src="https://jsd-widget.atlassian.com/assets/embed.js"></script>--}}
-{{--            @endif--}}
-{{--        @endif--}}
-{{--    @endif--}}
+@php
+    $irisSiteFontCss = Arr::get(request()->input('website')?->published_layout ?? [], 'theme.container.properties.text.fontFamily');
+    preg_match("/'([^']+)'/", (string) $irisSiteFontCss, $irisFontMatch);
+    $irisSiteFont = $irisFontMatch[1] ?? null;
+    $irisFontPreloads = [
+        'Inter'     => [
+            'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiJ-Ck-8.woff2',
+            'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZFhiJ-Ck-_seA.woff2',
+        ],
+        'Raleway'   => [
+            'https://fonts.gstatic.com/s/raleway/v37/1Ptug8zYS_SKggPNyC0IT4ttDfA.woff2',
+            'https://fonts.gstatic.com/s/raleway/v37/1Ptug8zYS_SKggPNyCMIT4ttDfCmxA.woff2',
+        ],
+        'Quicksand' => [
+            'https://fonts.gstatic.com/s/quicksand/v37/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o58a-wjw3UD0.woff2',
+            'https://fonts.gstatic.com/s/quicksand/v37/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o58i-wjw3UD2uFw.woff2',
+        ],
+    ];
+    $irisPreloadFontUrls = collect(['Inter', $irisSiteFont])->filter()->unique()->flatMap(fn ($f) => $irisFontPreloads[$f] ?? [])->all();
+@endphp
+    @foreach($irisPreloadFontUrls as $irisFontUrl)
+        <link rel="preload" as="font" type="font/woff2" href="{{ $irisFontUrl }}" crossorigin>
+    @endforeach
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Inter&family=Laila&family=Lobster&family=Playfair&family=Port+Lligat+Slab&family=Quicksand&family=Yatra+One&family=Raleway:ital,wght@0,200;0,400;0,500;0,700;0,900;1,200;1,400;1,500;1,700;1,900&display=swap">
 
 
     @if(request()->input('favicons'))
