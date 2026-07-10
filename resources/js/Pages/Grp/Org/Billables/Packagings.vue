@@ -22,12 +22,20 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
+    createActions?: Record<string, {}> | null
     packagings?: {}
     leaflets?: {}
 }>()
 
 const currentTab = ref<string>(props.tabs?.current ?? 'packagings')
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const pageHeadWithActions = computed(() => ({
+    ...props.pageHead,
+    actions: props.createActions?.[currentTab.value]
+        ? [props.createActions[currentTab.value]]
+        : [],
+}))
 
 const component = computed(() => {
     const components: Record<string, unknown> = {
@@ -41,7 +49,7 @@ const component = computed(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHeadWithActions" />
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
     <component

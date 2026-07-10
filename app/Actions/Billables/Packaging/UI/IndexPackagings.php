@@ -69,6 +69,14 @@ class IndexPackagings extends OrgAction
                 'packagings.updated_at',
                 'currencies.code as currency_code',
             ])
+            ->selectRaw("(
+                select coalesce(json_agg(json_build_object('name', leaflets.name, 'type', leaflets.type) order by leaflets.name), '[]'::json)
+                from leaflets
+                where leaflets.shop_id = packagings.shop_id
+                    and leaflets.state = 'active'
+                    and leaflets.deleted_at is null
+                    and jsonb_exists(leaflets.family_codes, packagings.family_code)
+            ) as leaflets_data")
             ->allowedSorts(['code', 'family_code', 'name', 'type', 'price'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -102,6 +110,7 @@ class IndexPackagings extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type_label', label: __('Type'), canBeHidden: false)
                 ->column(key: 'dimensions', label: __('Dimensions'), canBeHidden: false)
+                ->column(key: 'leaflets', label: __('Default leaflets'), canBeHidden: false)
                 ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, align: 'right', type: 'currency')
                 ->column(key: 'actions', label: '', canBeHidden: false);
         };

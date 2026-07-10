@@ -46,6 +46,7 @@ class PackagingsResource extends JsonResource
             'dimensions'    => $this->width && $this->height && $this->depth
                 ? "{$this->width} × {$this->height} × {$this->depth} mm"
                 : null,
+            'leaflets'      => json_decode($this->leaflets_data ?? '[]', true),
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
         ];

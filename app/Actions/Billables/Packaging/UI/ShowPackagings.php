@@ -49,19 +49,29 @@ class ShowPackagings extends OrgAction
                         'icon'  => ['fal', 'fa-box-open'],
                         'title' => __('Packagings')
                     ],
-                    'actions' => [
-                        $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New packaging'),
-                            'label'   => __('Packaging'),
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.billables.packagings.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-                    ]
                 ],
+                'createActions' => $this->canEdit ? [
+                    PackagingsTabsEnum::PACKAGINGS->value => [
+                        'type'    => 'button',
+                        'style'   => 'create',
+                        'tooltip' => __('New packaging'),
+                        'label'   => __('Packaging'),
+                        'route'   => [
+                            'name'       => 'grp.org.shops.show.billables.packagings.create',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ],
+                    PackagingsTabsEnum::LEAFLETS->value => [
+                        'type'    => 'button',
+                        'style'   => 'create',
+                        'tooltip' => __('New leaflet'),
+                        'label'   => __('Leaflet'),
+                        'route'   => [
+                            'name'       => 'grp.org.shops.show.billables.leaflets.create',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ],
+                ] : null,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => PackagingsTabsEnum::navigation(),
