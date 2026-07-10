@@ -55,12 +55,12 @@ class IndexDeliveryNoteTariffCodes extends OrgAction
                 'title' => __('No tariff codes found'),
             ]);
 
-            $table->column(key: 'tariff_code', label: __('Tariff code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'tariff_code', label: __('Tariff code'), canBeHidden: false, sortable: true, searchable: true, className: 'whitespace-nowrap');
             $table->column(key: 'description', label: __('Description'), canBeHidden: true);
             $table->column(key: 'origin', label: __('Origin'), sortable: true);
             $table->column(key: 'dg', label: __('DG'), align: 'center');
             $table->column(key: 'parts', label: __('Parts'), canBeHidden: false);
-            $table->column(key: 'un_numbers', label: __('UN numbers'), canBeHidden: true);
+            $table->column(key: 'un_numbers', label: __('UN numbers'), canBeHidden: true, className: 'whitespace-nowrap');
             $table->column(key: 'units', label: __('Units'), sortable: true, align: 'right');
             $table->column(key: 'weight', label: __('Weight'), sortable: true, align: 'right');
             $table->column(key: 'amount', label: __('Amount'), sortable: true, align: 'right');

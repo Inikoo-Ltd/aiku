@@ -32,7 +32,7 @@ trait WithDeliveryNoteTariffCodesQuery
                 DB::raw("string_agg(DISTINCT os.code, ', ' ORDER BY os.code) FILTER (WHERE os.code IS NOT NULL) as parts"),
                 DB::raw('COUNT(DISTINCT os.code) as num_parts'),
                 DB::raw('COALESCE(SUM(dni.quantity_required), 0) as units'),
-                DB::raw('ROUND(COALESCE(SUM(dni.weight), 0)::numeric, 3) as weight'),
+                DB::raw('ROUND(COALESCE(SUM(tu.gross_weight * mhtu.quantity * dni.quantity_required), 0)::numeric / 1000, 3) as weight'),
                 DB::raw('ROUND(COALESCE(SUM(t.net_amount), 0)::numeric, 2) as amount'),
             ]);
     }
