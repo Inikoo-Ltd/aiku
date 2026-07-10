@@ -15,6 +15,7 @@ use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Billables\Leaflet;
 use App\Models\Billables\ModelHasLeaflet;
 use App\Models\Billables\Packaging;
+use App\Models\CRM\CustomerHasPackaging;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -51,11 +52,16 @@ class ShowRetinaPackagingPreferences extends RetinaAction
                         'title' => $title
                     ],
                 ],
-                'packagingOptions'   => $this->getPackagingOptions(),
-                'leafletOptions'     => $this->getLeafletOptions(),
-                'selectedLeafletIds' => $this->getSelectedLeafletIds(),
-                'customerLeaflets'   => $this->getCustomerLeaflets(),
-                'currencyCode'       => $this->shop->currency->code,
+                'packagingOptions'    => $this->getPackagingOptions(),
+                'leafletOptions'      => $this->getLeafletOptions(),
+                'selectedFamilyCode'  => $this->getSelectedFamilyCode(),
+                'personalisedMessage' => $this->getPersonalisedMessage(),
+                'selectedLeafletIds'  => $this->getSelectedLeafletIds(),
+                'customerLeaflets'    => $this->getCustomerLeaflets(),
+                'currencyCode'        => $this->shop->currency->code,
+                'updateRoute'         => [
+                    'name' => 'retina.sysadmin.packaging-preferences.update',
+                ],
             ]
         );
     }
@@ -107,6 +113,26 @@ class ShowRetinaPackagingPreferences extends RetinaAction
             ])->all();
     }
 
+    private function customerPackagingQuery(): Builder
+    {
+        return CustomerHasPackaging::where('customer_id', $this->customer->id)
+            ->whereHas('packaging', fn (Builder $query) => $query->where('shop_id', $this->shop->id));
+    }
+
+    private function getSelectedFamilyCode(): ?string
+    {
+        return $this->customerPackagingQuery()
+            ->with('packaging')
+            ->first()
+            ?->packaging
+            ?->family_code;
+    }
+
+    private function getPersonalisedMessage(): ?string
+    {
+        return $this->customerPackagingQuery()->first()?->personalised_message;
+    }
+
     private function customerLeafletQuery(): Builder
     {
         return ModelHasLeaflet::where('shop_id', $this->shop->id)
@@ -118,6 +144,7 @@ class ShowRetinaPackagingPreferences extends RetinaAction
     private function getSelectedLeafletIds(): array
     {
         return $this->customerLeafletQuery()
+            ->where('state', LeafletStateEnum::ACTIVE)
             ->pluck('leaflet_id')
             ->unique()
             ->values()

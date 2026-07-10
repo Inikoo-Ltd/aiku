@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Retina\SysAdmin\UpdateRetinaPackagingPreferences;
 use App\Actions\Retina\UI\SysAdmin\CreateRetinaWebUser;
 use App\Actions\Retina\UI\SysAdmin\EditRetinaWebUser;
 use App\Actions\Retina\UI\SysAdmin\IndexRetinaVATValidationHistory;
@@ -25,6 +26,7 @@ Route::get('/vat-validation-history', IndexRetinaVATValidationHistory::class)->n
 Route::get('/settings', ShowRetinaAccountManagement::class)->name('settings.edit');
 Route::get('/email', ShowRetinaEmailManagement::class)->name('email.edit');
 Route::get('/packaging-preferences', ShowRetinaPackagingPreferences::class)->name('packaging-preferences.show');
+Route::post('/packaging-preferences', UpdateRetinaPackagingPreferences::class)->name('packaging-preferences.update');
 Route::get('/users', IndexRetinaWebUsers::class)->name('web-users.index');
 Route::get('/users/create', CreateRetinaWebUser::class)->name('web-users.create');
 Route::get('/users/{webUser}', ShowRetinaWebUser::class)->name('web-users.show');

@@ -5,8 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { computed, inject, ref } from "vue"
-import { Head } from "@inertiajs/vue3"
+import { computed, inject, ref, watch } from "vue"
+import { Head, router } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import { capitalize } from "@/Composables/capitalize"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -67,9 +67,12 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     packagingOptions?: PackagingOption[]
     leafletOptions?: LeafletOption[]
+    selectedFamilyCode?: string | null
+    personalisedMessage?: string | null
     selectedLeafletIds?: number[]
     customerLeaflets?: CustomerLeaflet[]
     currencyCode?: string
+    updateRoute?: { name: string }
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -107,18 +110,24 @@ const formatPriceRange = (option: PackagingOption) => {
     return `${min} – ${locale.currencyFormat(currencyCode, option.price_max)}`
 }
 
-const selectedPackaging = ref(packagingOptions.value[0]?.family_code ?? null)
+const selectedPackaging = ref(props.selectedFamilyCode ?? packagingOptions.value[0]?.family_code ?? null)
 
 const leafletOptions = computed(() => props.leafletOptions ?? [])
 
-const enabledInserts = ref<Record<number, boolean>>(
+const savedEnabledInserts = (familyCode: string | null) =>
     Object.fromEntries(
         leafletOptions.value.map(leaflet => [
             leaflet.id,
-            (props.selectedLeafletIds ?? []).includes(leaflet.id),
+            familyCode === props.selectedFamilyCode
+                && (props.selectedLeafletIds ?? []).includes(leaflet.id),
         ])
     )
-)
+
+const enabledInserts = ref<Record<number, boolean>>(savedEnabledInserts(selectedPackaging.value))
+
+watch(selectedPackaging, (familyCode) => {
+    enabledInserts.value = savedEnabledInserts(familyCode)
+})
 
 const inserts = computed(() =>
     leafletOptions.value.filter(leaflet =>
@@ -134,7 +143,7 @@ const formatInsertPrice = (price: number) => {
     return locale.currencyFormat(props.currencyCode ?? "USD", price)
 }
 
-const personalisedMessage = ref("Thank you for your order!\nWe hope you love our products.")
+const personalisedMessage = ref(props.personalisedMessage ?? "Thank you for your order!\nWe hope you love our products.")
 const maxMessageLength = 200
 
 const leaflets = computed(() => props.customerLeaflets ?? [])
@@ -146,16 +155,32 @@ const summary = computed(() => ({
     leafletsUploaded: leaflets.value.length,
 }))
 
-// Static save simulation, will submit to backend later
 const isSaving = ref(false)
 const justSaved = ref(false)
 const saveSettings = () => {
-    isSaving.value = true
-    setTimeout(() => {
-        isSaving.value = false
-        justSaved.value = true
-        setTimeout(() => justSaved.value = false, 2000)
-    }, 600)
+    if (!props.updateRoute?.name || !selectedPackaging.value) {
+        return
+    }
+
+    router.post(
+        route(props.updateRoute.name),
+        {
+            family_code: selectedPackaging.value,
+            leaflet_ids: inserts.value
+                .filter(insert => enabledInserts.value[insert.id])
+                .map(insert => insert.id),
+            personalised_message: personalisedMessage.value.trim() || null,
+        },
+        {
+            preserveScroll: true,
+            onStart: () => isSaving.value = true,
+            onFinish: () => isSaving.value = false,
+            onSuccess: () => {
+                justSaved.value = true
+                setTimeout(() => justSaved.value = false, 2000)
+            },
+        }
+    )
 }
 </script>
 
