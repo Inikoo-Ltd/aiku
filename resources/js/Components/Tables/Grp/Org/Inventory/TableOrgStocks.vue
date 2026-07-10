@@ -215,6 +215,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         <template #cell(quantity)="{ item: stock }">
             <div class="text-right">
                 <FractionDisplay v-if="stock.pick_fractional?.length > 0" :fractionData="stock.pick_fractional"/>
+                <span v-else>
+                    {{ stock.quantity }}
+                </span>
             </div>
         </template>
 

@@ -77,11 +77,12 @@ class IndexOrgStocksInLocation extends OrgAction
                 ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'picking_priority', label: __('picking priority'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'value', label: __('Sku value'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'dropshipping_pipe', label: __('dropshipping pipe'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'notes', label: __('notes'), canBeHidden: false, sortable: true, searchable: true);
+            $table
+                // ->column(key: 'picking_priority', label: __('picking priority'), canBeHidden: false, sortable: true, searchable: true)
+                // ->column(key: 'value', label: __('Sku value'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'dropshipping_pipe', label: __('Dropshipping Pipe'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 }
