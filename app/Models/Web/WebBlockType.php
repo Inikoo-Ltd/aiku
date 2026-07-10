@@ -61,15 +61,17 @@ class WebBlockType extends Model implements HasMedia
     use HasImage;
 
     protected $casts = [
-        'blueprint' => 'array',
-        'data'      => 'array',
-        'scope'     => WebBlockTypeScopeEnum::class,
-        'website_type' => 'array',
+        'blueprint'         => 'array',
+        'data'              => 'array',
+        'scope'             => WebBlockTypeScopeEnum::class,
+        'website_type'      => 'array',
+        'shop_availability' => 'array',
     ];
 
     protected $attributes = [
-        'blueprint' => '{}',
-        'data'      => '{}',
+        'blueprint'         => '{}',
+        'data'              => '{}',
+        'shop_availability' => '{}',
     ];
 
     protected $guarded = [];
