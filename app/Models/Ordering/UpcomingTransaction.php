@@ -29,7 +29,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $order_id
  * @property int|null $transaction_id
  * @property numeric|null $quantity
- * @property string|null $notes
+ * @property string|null $public_notes
+ * @property string|null $private_notes
  * @property UpcomingTransactionTypeEnum $type
  * @property UpcomingTransactionStateEnum $state
  * @property \Illuminate\Support\Carbon|null $created_at

@@ -85,11 +85,7 @@ class SubmitOrder extends OrgAction
         $this->processGrGift($order);
         $this->processGiftOffers($order);
         $this->processVoucherGiftOffers($order);
-        try {
-            $this->processUpComingTransactions($order);
-        } catch (Exception $e) {
-            Sentry::captureException($e);
-        }
+        $this->processUpComingTransactions($order);
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
@@ -156,40 +152,44 @@ class SubmitOrder extends OrgAction
 
     public function processUpComingTransactions(Order $order): void
     {
-        $upComingTransactions = UpComingTransaction::where('customer_id', $order->customer_id)
-            ->where('state', UpComingTransactionStateEnum::READY)
+        $upComingTransactions = UpcomingTransaction::where('customer_id', $order->customer_id)
+            ->where('state', UpcomingTransactionStateEnum::READY)
+            ->with('product.currentHistoricProduct')
             ->get();
 
-        /** @var UpcomingTransaction $upComingTransaction */
         foreach ($upComingTransactions as $upComingTransaction) {
-            /** @var Product $upComingTransactionProduct */
-            $upComingTransactionProduct = $upComingTransaction->product;
+            try {
+                /** @var Product $upComingTransactionProduct */
+                $upComingTransactionProduct = $upComingTransaction->product;
+                $historicAsset              = $upComingTransactionProduct?->currentHistoricProduct;
 
-            if(in_array($upComingTransactionProduct->status, [ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::NOT_FOR_SALE])) {
-                continue;
+                if (!$historicAsset || in_array($upComingTransactionProduct->status, [ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::NOT_FOR_SALE])) {
+                    continue;
+                }
+
+                $isGift = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
+
+                $transaction = StoreTransaction::make()->action(
+                    order: $order,
+                    historicAsset: $historicAsset,
+                    modelData: [
+                        'quantity_ordered' => 0,
+                        'quantity_bonus'   => $upComingTransaction->quantity,
+                        'is_gift'          => $isGift,
+                        'is_follow_on'     => true
+                    ],
+                    strict: false,
+                    forceHydrators: true
+                );
+
+                UpdateUpcomingTransaction::run($upComingTransaction, [
+                    'order_id'       => $order->id,
+                    'transaction_id' => $transaction->id,
+                    'state'          => UpcomingTransactionStateEnum::APPLIED
+                ]);
+            } catch (Exception $e) {
+                Sentry::captureException($e);
             }
-
-            $isGift     = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
-
-
-            $transaction = StoreTransaction::make()->action(
-                order:$order,
-                historicAsset: $upComingTransactionProduct->currentHistoricProduct,
-                modelData:[
-                    'quantity_ordered' => 0,
-                    'quantity_bonus'   => $upComingTransaction->quantity,
-                    'is_gift'          => $isGift,
-                    'is_follow_on'     => true
-                ],
-                strict: false,
-                forceHydrators:true
-            );
-
-            UpdateUpcomingTransaction::run($upComingTransaction, [
-                'order_id'       => $order->id,
-                'transaction_id' => $transaction->id,
-                'state'          => UpcomingTransactionStateEnum::APPLIED
-            ]);
         }
     }
 

@@ -1515,6 +1515,30 @@ test('submit order skips upcoming transactions for out of stock products', funct
         ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::READY);
 });
 
+test('submit order skips upcoming transaction when product has no current historic asset', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+    $originalHistoricAssetId = $this->product->current_historic_asset_id;
+    $this->product->update(['status' => ProductStatusEnum::FOR_SALE, 'current_historic_asset_id' => null]);
+
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 3,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->transactions()->where('is_follow_on', true)->count())->toBe(0)
+        ->and($upcomingTransaction->refresh()->state)->toBe(UpcomingTransactionStateEnum::READY);
+
+    $this->product->update(['current_historic_asset_id' => $originalHistoricAssetId]);
+});
+
 test('transactions resource adds bonus to ordered quantity for follow-on', function () {
     $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
 

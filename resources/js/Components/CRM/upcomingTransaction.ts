@@ -9,18 +9,12 @@ export interface UpcomingTransaction {
     product_code: string
     product_name: string
     quantity: number
-    notes: string | null
+    public_notes: string | null
+    private_notes: string | null
     type: UpcomingTransactionType
     state: string
     update: routeType
     delete: routeType
-}
-
-export interface UpcomingTransactionPayload {
-    product_id: number | null
-    quantity: number
-    type: UpcomingTransactionType
-    notes: string | null
 }
 
 export interface UpcomingTransactionRoutes {

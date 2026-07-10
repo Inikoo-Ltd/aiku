@@ -39,7 +39,7 @@ class StoreUpcomingTransaction extends OrgAction
             'product_id'     => ['required', 'exists:products,id'],
             'order_id'       => ['sometimes', 'nullable', 'exists:orders,id'],
             'transaction_id' => ['sometimes', 'nullable', 'exists:transactions,id'],
-            'quantity'       => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'quantity'       => ['sometimes', 'nullable', 'numeric', 'min:1'],
             'public_notes'   => ['sometimes', 'nullable', 'string'],
             'private_notes'  => ['sometimes', 'nullable', 'string'],
             'type'           => ['required', Rule::enum(UpcomingTransactionTypeEnum::class)],
