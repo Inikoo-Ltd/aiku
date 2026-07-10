@@ -52,22 +52,22 @@ export default {
 				{
 					key: ["text1"],
 					label :'Text 1',
-					type: "text",
+					type: "editorhtml",
 				},
 				{
 					key: ["text2"],
 					label :'Text 2',
-					type: "text",
+					type: "editorhtml",
 				},
 				{
 					key: ["text3"],
 					label :'Text 3',
-					type: "text",
+					type: "editorhtml",
 				},
 				{
 					key: ["text4"],
 					label :'Text 4',
-					type: "text",
+					type: "editorhtml",
 				},
 			],
 		},

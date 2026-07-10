@@ -81,6 +81,7 @@ const props = defineProps<{
 
 const layout = inject('layout', layoutStructure)
 const isLoggedIn = computed(() => layout?.iris?.is_logged_in || false)
+const displayUsername = computed(() => layout?.user?.username?.split('@')[0] || '')
 const loadingRedirect = ref(false)
 const isLoadingLogout = ref(false)
 
@@ -164,7 +165,7 @@ const onClickLogout = () => {
 						v-tooltip="ctrans('My Interest')">
 						<FontAwesomeIcon :icon="faHeart" class="text-[20px]" />
 						<span class="text-sm font-medium">
-							{{ ctrans('My Interest') }}
+							{{ ctrans('My Interests') }}
 						</span>
 					</button>
 				</LinkIris>
@@ -197,7 +198,7 @@ const onClickLogout = () => {
 
 						<div class="leading-tight">
 							<div class="flex items-center gap-2 text-sm font-medium">
-								<span>{{ layout?.user?.username }}</span>
+								<span>{{ displayUsername }}</span>
 
 								<img v-if="layout?.offer_data?.amnesty || layout?.offer_data?.type === 'gr'"
 									:src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo"
