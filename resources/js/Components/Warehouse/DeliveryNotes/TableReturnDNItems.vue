@@ -672,6 +672,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         :style="{ width: '48rem' }"
         :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+        :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
     >
         <SelectPickingLocation
             :item="selectedItemValue"

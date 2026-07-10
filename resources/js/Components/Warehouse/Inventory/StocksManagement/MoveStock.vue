@@ -330,15 +330,15 @@ onMounted(() => {
                 <!-- Left: Source forklift -->
                 <FontAwesomeIcon
                     icon="fas fa-forklift"
-                    v-tooltip="isSource(form) ? trans('Unset as source') : trans('Set as source location')"
+                    v-tooltip="isSource(form) ? trans('Unset as source') : ctrans('Set as source location')"
                     :class="[
                         'text-xl transition shrink-0',
                         isSource(form)
                             ? 'cursor-pointer text-green-600 scale-110' :
                         isTarget(form)
-                            ? 'text-gray-300 opacity-20 cursor-not-allowed' :
+                            ? 'text-gray-400 opacity-70 cursor-pointer' :
                         form.stock <= 0
-                            ? 'text-gray-300 opacity-40 cursor-not-allowed' :
+                            ? 'text-gray-400 opacity-90 cursor-not-allowed' :
                         moveStock.from
                             ? 'cursor-pointer text-gray-400 opacity-30 hover:opacity-80' :
                         'cursor-pointer text-gray-400 hover:text-green-600'

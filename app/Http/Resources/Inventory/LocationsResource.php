@@ -14,32 +14,34 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property mixed $pivot
+ * @property mixed $id
+ * @property mixed $slug
  */
 class LocationsResource extends JsonResource
 {
     public static $wrap = null;
+
     public function toArray($request): array
     {
-        /** @var Location $location */
-        $location = $this->resource;
-
         return [
-            'id'                     => $location->id,
-            'slug'                   => $location->slug,
-            'code'                   => $location->code,
-            'stock_value'            => $location->stock_value ?? 0,
-            'stock_commercial_value' => $location->stock_commercial_value,
-            'allow_stocks'           => $location->allow_stocks,
-            'allow_fulfilment'       => $location->allow_fulfilment,
-            'allow_dropshipping'     => $location->allow_dropshipping,
-            'has_stock_slots'        => $location->has_stock_slots,
-            'has_fulfilment'         => $location->has_fulfilment,
-            'has_dropshipping_slots' => $location->has_dropshipping_slots,
-            'organisation_slug'      => $location->organisation_slug,
-            'organisation_name'      => $location->organisation_name,
-            'warehouse_slug'          => $location->warehouse_slug,
-            'max_weight'             => $location->max_weight ?? 0,
-            'max_volume'             => $location->max_volume ?? 0,
+            'id'                       => $this->id,
+            'slug'                     => $this->slug,
+            'code'                     => $this->code,
+            'stock_value'              => $this->stock_value ?? 0,
+            'stock_commercial_value'   => $this->stock_commercial_value,
+            'allow_stocks'             => $this->allow_stocks,
+            'allow_fulfilment'         => $this->allow_fulfilment,
+            'allow_dropshipping'       => $this->allow_dropshipping,
+            'has_stock_slots'          => $this->has_stock_slots,
+            'has_fulfilment'           => $this->has_fulfilment,
+            'has_dropshipping_slots'   => $this->has_dropshipping_slots,
+            'organisation_slug'        => $this->organisation_slug,
+            'organisation_name'        => $this->organisation_name,
+            'warehouse_slug'           => $this->warehouse_slug,
+            'max_weight'               => $this->max_weight ?? 0,
+            'max_volume'               => $this->max_volume ?? 0,
+            'number_org_stock_slots'   => $this->number_org_stock_slots,
+            'number_empty_stock_slots' => $this->number_empty_stock_slots,
 
             'quantity' => $this->whenPivotLoaded(new LocationOrgStock(), function () {
                 return $this->pivot->quantity;

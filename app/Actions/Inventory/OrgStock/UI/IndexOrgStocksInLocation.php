@@ -80,7 +80,7 @@ class IndexOrgStocksInLocation extends OrgAction
             $table
                 // ->column(key: 'picking_priority', label: __('picking priority'), canBeHidden: false, sortable: true, searchable: true)
                 // ->column(key: 'value', label: __('Sku value'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'dropshipping_pipe', label: __('Dropshipping Pipe'), canBeHidden: false, sortable: true, searchable: true)
+             //   ->column(key: 'dropshipping_pipe', label: __('Dropshipping Pipe'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: true, searchable: true);
         };

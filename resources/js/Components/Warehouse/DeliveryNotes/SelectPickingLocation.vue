@@ -12,12 +12,12 @@ import { faInventory, faForklift } from "@fal"
 import { RadioButton, Dialog } from "primevue"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { RouteParams } from "@/types/route-params"
-import { ref, onUnmounted } from "vue"
+import { ref, computed, onUnmounted } from "vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
+import MoveStock from "@/Components/Warehouse/Inventory/StocksManagement/MoveStock.vue"
 import { ctrans } from "@/Composables/useTrans"
 
 library.add(faInventory, faForklift)
@@ -49,11 +49,20 @@ const generateLocationRoute = (location: any): string => {
     ])
 }
 
-// Section: Stock management (move stock while picking)
+// Section: Move stock (move stock between locations while picking)
 const isStockManagementOpen = ref(false)
 const isLoadingStockManagement = ref(false)
 const stockManagementData = ref<any>(null)
 let removeInertiaSuccessListener: (() => void) | null = null
+
+const moveStockLocations = computed<any[]>(() => stockManagementData.value?.stocks_management?.locations ?? [])
+const moveStockReplenishmentData = computed<Record<number, { replenishment_stock?: number }>>(() => {
+    const map: Record<number, { replenishment_stock?: number }> = {}
+    for (const location of moveStockLocations.value) {
+        map[location.id] = { replenishment_stock: location.settings?.replenishment_stock ?? undefined }
+    }
+    return map
+})
 
 const fetchStockManagement = async () => {
     const response = await axios.get(
@@ -129,16 +138,12 @@ onUnmounted(() => {
 
 <template>
     <div>
-        <div class="text-center font-semibold mb-4 text-2xl">
-            {{ ctrans('Location list for') }} {{ item?.org_stock_code }}
-        </div>
-
         <div class="flex justify-center mb-4">
             <Button
                 type="tertiary"
                 size="sm"
                 icon="fal fa-forklift"
-                :label="ctrans('Manage stock')"
+                :label="ctrans('Move stock')"
                 v-tooltip="ctrans('Move stock between locations')"
                 @click="openStockManagement"
             />
@@ -181,11 +186,11 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <!-- Modal: Stock management (closable only via X to avoid misclicks messing the process) -->
+        <!-- Modal: Move stock (closable only via X to avoid misclicks messing the process) -->
         <Dialog
             v-model:visible="isStockManagementOpen"
             modal
-            :header="ctrans('Stocks management')"
+            :header="ctrans('Move stock')"
             :draggable="false"
             :dismissableMask="false"
             :closeOnEscape="false"
@@ -197,18 +202,14 @@ onUnmounted(() => {
         >
             <div v-if="isLoadingStockManagement" class="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
                 <LoadingIcon class="text-3xl" />
-                <span class="italic text-sm">{{ ctrans('Loading stock management...') }}</span>
+                <span class="italic text-sm">{{ ctrans('Loading...') }}</span>
             </div>
 
-            <StocksManagement
-                v-else-if="stockManagementData?.stocks_management"
-                :stocks_management="stockManagementData.stocks_management"
-                :trade_units="stockManagementData.trade_units"
-                :actions="['move_stock']"
-                :data="{
-                    is_quantity_excess: stockManagementData.is_quantity_excess,
-                    currency_code: stockManagementData.currency_code,
-                }"
+            <MoveStock
+                v-else-if="moveStockLocations.length"
+                :part_locations="moveStockLocations"
+                :replenishment_data="moveStockReplenishmentData"
+                @close="isStockManagementOpen = false"
             />
         </Dialog>
     </div>
