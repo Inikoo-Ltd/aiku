@@ -29,9 +29,9 @@ return new class () extends Migration {
             $table->foreign('product_id')->references('id')->on('products');
 
             $table->unsignedInteger('order_id')->index()->nullable();
-            $table->foreign('order_id')->references('id')->on('orders');
+            $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
             $table->unsignedInteger('transaction_id')->index()->nullable();
-            $table->foreign('transaction_id')->references('id')->on('transactions');
+            $table->foreign('transaction_id')->references('id')->on('transactions')->nullOnDelete();
 
             $table->decimal('quantity', 16, 3)->nullable();
             $table->text('public_notes')->nullable();
