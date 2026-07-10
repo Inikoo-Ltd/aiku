@@ -41,7 +41,7 @@ class IndexLocations extends OrgAction
 
     private Group|Warehouse|WarehouseArea|Organisation $parent;
     private OrgStock|null $orgStock = null;
-    private $mode = 'exclude';
+    private string $mode = 'exclude';
 
     public function maya(Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
@@ -140,6 +140,8 @@ class IndexLocations extends OrgAction
                     'warehouses.slug as warehouse_slug',
                     'warehouse_areas.slug as warehouse_area_slug',
                     'warehouse_area_id',
+                    'number_org_stock_slots',
+                    'number_empty_stock_slots',
                     'organisations.slug as organisation_slug',
                     'organisations.name as organisation_name'
                 ]
@@ -212,8 +214,12 @@ class IndexLocations extends OrgAction
             }
             $table->column(key: 'max_weight', label: __('Weight'), canBeHidden: false, align: 'right');
             $table->column(key: 'max_volume', label: __("CBM (Cubic meter)"), canBeHidden: false, align: 'right');
-            $table->column(key: 'stock_value', label: __('stock value'), canBeHidden: false, align: 'right')
-                ->defaultSort('code');
+            $table->column(key: 'number_org_stock_slots', label: __("Slots"), canBeHidden: false, align: 'right');
+            $table->column(key: 'number_empty_stock_slots', label: __("Empty slots"), canBeHidden: false, align: 'right');
+
+
+            //   $table->column(key: 'stock_value', label: __('Stock value'), canBeHidden: false, align: 'right');
+            $table->defaultSort('code');
         };
     }
 
@@ -241,7 +247,7 @@ class IndexLocations extends OrgAction
             'max_volume',
             'barcode'
         ])->map(fn ($col) => [
-            'label' => __(str_replace('_', ' ', ucfirst($col))), // Convert _ to space and capitalize the first letter
+            'label' => __(str_replace('_', ' ', ucfirst($col))),
             'value' => $col
         ])->toArray();
 

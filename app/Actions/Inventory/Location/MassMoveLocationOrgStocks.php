@@ -28,13 +28,13 @@ class MassMoveLocationOrgStocks extends OrgAction
                 $targetLocationOrgStock = $targetLocation->locationOrgStocks()->where('org_stock_id', $locationOrgStock->org_stock_id)->first();
 
                 if (!$targetLocationOrgStock) {
-                    $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $locationOrgStock->only([
-                        'data',
-                        'settings',
+                    
+                    $movedData = $locationOrgStock->only([
                         'notes',
                         'picking_priority',
-                        'type'
-                    ]));
+                        'type',
+                    ]);
+                    $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData);
                 }
 
                 MoveOrgStockToOtherLocation::make()->action($locationOrgStock, $targetLocationOrgStock, [
