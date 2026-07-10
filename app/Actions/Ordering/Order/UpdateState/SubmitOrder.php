@@ -20,6 +20,7 @@ use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -163,6 +164,10 @@ class SubmitOrder extends OrgAction
         foreach ($upComingTransactions as $upComingTransaction) {
             /** @var Product $upComingTransactionProduct */
             $upComingTransactionProduct = $upComingTransaction->product;
+
+            if(in_array($upComingTransactionProduct->status, [ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::NOT_FOR_SALE])) {
+                continue;
+            }
 
             $isGift     = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
 
