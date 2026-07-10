@@ -63,6 +63,17 @@ const props = defineProps<{
         customer_name: string
         slug: string
     }
+    upcoming_transactions: {
+        data: {
+            id: number
+            product_code: string | null
+            product_name: string | null
+            quantity: number | string
+            public_notes: string | null
+            type: 'gift' | 'follow_on'
+            state: string
+        }[]
+    }
     transactions: {
         data: {
             id: string
@@ -607,6 +618,7 @@ const onChangeInsurance = async (val: boolean) => {
         :isInBasket="true"
         :updateRoute="routes.update_route"
         :missed_offers
+        :upcoming_transactions
         :isShowAllOffersMeter="true"
     />
     

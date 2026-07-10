@@ -91,6 +91,11 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'luigi_identity'      => $luigiIdentity,
             'offers_data'         => $transaction->offers_data,
             'is_cut_view'         => $transaction->is_cut_view,
+
+            'upcoming_transaction_type'          => $this->upcoming_transaction_type,
+            'upcoming_transaction_private_notes' => $this->upcoming_transaction_private_notes,
+            'upcoming_transaction_public_notes'  => $this->upcoming_transaction_public_notes,
+
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
                 'parameters' => [
