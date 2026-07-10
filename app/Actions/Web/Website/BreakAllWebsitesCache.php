@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
