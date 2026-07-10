@@ -83,6 +83,8 @@ class ShowMailshot extends OrgAction
         $isHasParentMailshot = $mailshot->parentMailshot()->exists();
 
         $canLoadTemplates = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
+
+        $webpage = $mailshot->webpages()->first();
         /* NOTE:
          * is_second_wave_enabled is perspective from parent mailshot
          * is_second_wave  is perspective from child mailshot
@@ -148,7 +150,7 @@ class ShowMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
-                        $isShowEditName ? [
+                        $isShowEditName && !$webpage ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Convert to Page'),
@@ -188,6 +190,21 @@ class ShowMailshot extends OrgAction
                                     $mailshot->id
                                 ],
                                 'method'     => 'post'
+                            ]
+                        ] : [],
+                        $webpage ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Go to webpage'),
+                            'icon'  => ["fal", "fa-external-link"],
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.web.blogs.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'website'      => $webpage->website->slug,
+                                    'webpage'      => $webpage->slug,
+                                ]
                             ]
                         ] : []
                     ]
