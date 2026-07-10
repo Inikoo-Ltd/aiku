@@ -7,7 +7,7 @@ import Tag from "@/Components/Tag.vue"
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
 import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt, faPlus, faMinus } from "@far"
-import { faBarcode } from "@fal"
+import { faBarcode, faGift, faRepeat } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -28,7 +28,7 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
 import error from "@iris/Pages/Errors/Error.vue"
 
-library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode)
+library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode, faGift, faRepeat)
 
 type ProductRow = {
     id: number
@@ -396,6 +396,14 @@ const isOffersData = (offersData: any): boolean => {
                     </div>
                     <div v-else class="text-gray-500 italic text-xs">
                         Stock: {{ locale.number(item.available_quantity || 0) }} available
+                        <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
+                            <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-1" aria-hidden="true" />
+                        </span>
+                        <span v-if="item.is_gift" v-tooltip="ctrans('Free gift')">
+                            <FontAwesomeIcon icon="fal fa-gift" class="text-green-500 not-italic mx-2" aria-hidden="true" />
+                        </span>
+                        <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>
+                        <div v-if="item.upcoming_transaction_private_notes">{{ item.upcoming_transaction_private_notes }}</div>
                     </div>
 
                     <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />

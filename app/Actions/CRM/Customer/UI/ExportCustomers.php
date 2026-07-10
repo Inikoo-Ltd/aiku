@@ -36,9 +36,10 @@ class ExportCustomers extends OrgAction
         $recipe = $modelData['filters'] ?? [];
         $states = $this->getStateFilter($modelData['state'] ?? []);
         $statuses = $this->getStatusFilter($modelData['status'] ?? []);
+        $upcoming = in_array($modelData['upcoming'] ?? null, ['ready', 'out_of_stock'], true) ? $modelData['upcoming'] : null;
         $fields = $modelData['columns'] ?? [];
 
-        $export = new CustomersExport($parent, $recipe, $states, $statuses, $fields);
+        $export = new CustomersExport($parent, $recipe, $states, $statuses, $fields, $upcoming);
 
         if ($type === ExportTypeEnum::XLSX->value && $export->query()->toBase()->count() < self::STREAM_THRESHOLD) {
             return $this->export($export, 'customers', $type);
@@ -56,6 +57,7 @@ class ExportCustomers extends OrgAction
             'state.*'   => ['string'],
             'status'    => ['sometimes', 'nullable', 'array'],
             'status.*'  => ['string'],
+            'upcoming'  => ['sometimes', 'nullable', 'string', Rule::in('ready', 'out_of_stock')],
             'columns'   => ['sometimes', 'nullable', 'array'],
             'columns.*' => ['string', Rule::in(array_keys(CustomersExport::fieldDefinitions()))],
         ];

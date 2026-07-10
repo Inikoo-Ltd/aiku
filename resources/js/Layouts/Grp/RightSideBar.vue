@@ -60,7 +60,8 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 					</div>
 				</div>
 
-			<template
+			<div class="overflow-y-auto max-h-[calc(100vh-8rem)]">
+				<template
 					v-for="(user, index) in useLiveUsers().liveUsers"
 					:key="`${user?.id}` + user?.action + index">
 					<template
@@ -161,6 +162,7 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 						</Link>
 					</template>
 				</template>
+				</div>
 			</li>
 		</TransitionGroup>
 

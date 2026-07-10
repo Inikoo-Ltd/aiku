@@ -152,8 +152,8 @@ class IndexBarcode extends GrpAction
                 'navigation' => BarcodesTabsEnum::navigation(),
             ],
             BarcodesTabsEnum::INDEX->value => $this->tab == BarcodesTabsEnum::INDEX->value
-                ? fn() => $this->jsonResponse($this->handle(group(), BarcodesTabsEnum::INDEX->value))
-                : Inertia::optional(fn() => $this->jsonResponse($this->handle(group(), BarcodesTabsEnum::INDEX->value))),
+                ? fn () => $this->jsonResponse($this->handle(group(), BarcodesTabsEnum::INDEX->value))
+                : Inertia::optional(fn () => $this->jsonResponse($this->handle(group(), BarcodesTabsEnum::INDEX->value))),
         ])
             ->table($this->tableStructure($this->parent, prefix: BarcodesTabsEnum::INDEX->value));
     }

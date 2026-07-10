@@ -38,6 +38,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $website_type
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property bool $is_in_test
+ * @property array<array-key, mixed> $shop_availability
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images

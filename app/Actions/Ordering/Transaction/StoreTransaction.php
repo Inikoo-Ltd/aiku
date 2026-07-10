@@ -178,6 +178,7 @@ class StoreTransaction extends OrgAction
             'label'                   => ['sometimes', 'string', 'max:255'],
             'commission_amount'       => ['sometimes', 'numeric'],
             'is_gift'                 => ['sometimes', 'boolean'],
+            'is_follow_on'            => ['sometimes', 'boolean'],
             'marketplace_id'          => [
                 'sometimes',
                 Rule::unique('transactions', 'marketplace_id')->where(function ($query) {
