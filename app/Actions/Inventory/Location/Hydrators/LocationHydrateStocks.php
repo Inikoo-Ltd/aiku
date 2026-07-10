@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\Location\Hydrators;
 
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Models\Inventory\Location;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -38,6 +39,8 @@ class LocationHydrateStocks implements ShouldBeUnique
         ];
 
         $location->stats()->update($stats);
+
+        WarehouseHydrateLocations::dispatch($location->warehouse);
     }
 
 }

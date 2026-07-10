@@ -26,6 +26,8 @@ function locationRoute(location: Location) {
     switch (route().current()) {
         case "grp.org.warehouses.show.infrastructure.dashboard":
         case "grp.org.warehouses.show.infrastructure.locations.index":
+        case "grp.org.warehouses.show.infrastructure.locations.all_empty":
+        case "grp.org.warehouses.show.infrastructure.locations.partial_empty":
             return route(
                 "grp.org.warehouses.show.infrastructure.locations.show",
                 [
