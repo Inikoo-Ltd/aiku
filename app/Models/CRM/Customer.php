@@ -154,7 +154,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AllegroUser> $allegroUsers
  * @property-read Collection<int, AmazonUser> $amazonUsers
- * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, BackInStockReminder> $backInStockReminder
@@ -484,12 +483,6 @@ class Customer extends Model implements HasMedia, Auditable
     public function fulfilmentCustomer(): HasOne
     {
         return $this->hasOne(FulfilmentCustomer::class);
-    }
-
-
-    public function appointments(): HasMany
-    {
-        return $this->hasMany(Appointment::class);
     }
 
     public function hasUsers(): bool
