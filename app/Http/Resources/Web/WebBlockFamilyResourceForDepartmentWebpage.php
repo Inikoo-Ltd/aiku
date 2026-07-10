@@ -27,8 +27,7 @@ class WebBlockFamilyResourceForDepartmentWebpage extends JsonResource
             'slug'                      => $family->slug,
             'name'                      => $family->name,
             'url'                       => $family->webpage->url,
-            'image'                     => Arr::get($family->web_images, 'main.original'),
-            'web_images'                => $family->web_images,
+            'image'                     => Arr::get($family->web_images, 'main.gallery', Arr::get($family->web_images, 'main.original')),
         ];
     }
 }

@@ -72,6 +72,12 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {})
 const videoDialogVisible = ref(false)
+const videoReady = ref(false)
+const enableVideo = () => {
+	window.setTimeout(() => {
+		videoReady.value = true
+	}, 1500)
+}
 const _sidebar = ref()
 const _content = ref()
 
@@ -151,6 +157,12 @@ const calculateSidebarHeight = async () => {
 
 onMounted(async () => {
 	await nextTick()
+
+	if (document.readyState === "complete") {
+		enableVideo()
+	} else {
+		window.addEventListener("load", enableVideo, { once: true })
+	}
 
 	calculateDescriptionHeight()
 	calculateSidebarHeight()
@@ -325,7 +337,7 @@ watch(
 									<div
 										class="relative w-full h-[220px] md:h-[280px] lg:h-[360px] 2xl:h-[500px]">
 										<iframe
-											v-if="screenType === 'desktop' && !videoDialogVisible"
+											v-if="screenType === 'desktop' && !videoDialogVisible && videoReady"
 											:src="embedUrl"
 											frameborder="0"
 											allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
@@ -398,7 +410,7 @@ watch(
 							<template v-if="fieldValue.department.showcase_video">
 								<div class="relative w-full h-full">
 									<iframe
-									    v-if="screenType === 'mobile'  && !videoDialogVisible"
+									    v-if="screenType === 'mobile' && !videoDialogVisible && videoReady"
 										:src="embedUrl"
 										class="absolute inset-0 w-full h-full"
 										frameborder="0"
