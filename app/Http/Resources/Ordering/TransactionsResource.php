@@ -57,12 +57,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class TransactionsResource extends JsonResource
 {
-
     public function toArray($request): array
     {
-        $quantityOrdered=$this->quantity_ordered;
-        if($this->is_follow_on){
-            $quantityOrdered=$this->quantity_ordered+$this->quantity_bonus;
+        $quantityOrdered = $this->quantity_ordered;
+        if ($this->is_follow_on) {
+            $quantityOrdered = $this->quantity_ordered + $this->quantity_bonus;
         }
 
         $quantityOrderedFractional = riseDivisor(

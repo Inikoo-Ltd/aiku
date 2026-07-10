@@ -20,7 +20,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrganisation extends GrpAction
 {
-
     public function handle(Organisation $organisation): Organisation
     {
         return $organisation;
@@ -66,12 +65,12 @@ class ShowOrganisation extends GrpAction
                     'navigation' => OrgTabsEnum::navigation()
                 ],
                 OrgTabsEnum::SHOWCASE->value => $this->tab == OrgTabsEnum::SHOWCASE->value ?
-                    fn() => OrganisationResource::make($organisation)
-                    : Inertia::optional(fn() => OrganisationResource::make($organisation)),
+                    fn () => OrganisationResource::make($organisation)
+                    : Inertia::optional(fn () => OrganisationResource::make($organisation)),
 
                 OrgTabsEnum::HISTORY->value => $this->tab == OrgTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($organisation))
-                    : Inertia::optional(fn() => HistoryResource::collection(IndexHistory::run($organisation)))
+                    fn () => HistoryResource::collection(IndexHistory::run($organisation))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($organisation)))
 
 
             ]

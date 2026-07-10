@@ -128,10 +128,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $email
  * @property string|null $phone
  * @property bool $status
- * @property bool $is_aiku_stock_control
- * @property bool $is_aiku_stock_hr
- * @property bool $is_aiku_stock_procurement
- * @property bool $is_aiku_stock_production
  * @property int|null $address_id
  * @property array<array-key, mixed> $location
  * @property array<array-key, mixed> $data
@@ -153,6 +149,10 @@ use App\Models\HumanResources\WorkSchedule;
  * @property array<array-key, mixed> $opening_hours
  * @property int $late_grace_period_minutes
  * @property array<array-key, mixed> $banned_country_regions
+ * @property bool $is_aiku_stock_control
+ * @property bool $is_aiku_stock_hr
+ * @property bool $is_aiku_stock_procurement
+ * @property bool $is_aiku_stock_production
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
@@ -166,6 +166,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Box> $boxes
  * @property-read \App\Models\SysAdmin\OrganisationCatalogueStats|null $catalogueStats
  * @property-read LaravelCollection<int, Charge> $charges
+ * @property-read LaravelCollection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read LaravelCollection<int, ClockingMachine> $clockingMachines
  * @property-read LaravelCollection<int, Collection> $collections

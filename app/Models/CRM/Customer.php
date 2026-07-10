@@ -158,6 +158,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, BackInStockReminder> $backInStockReminder
+ * @property-read Collection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read Collection<int, CustomerClient> $clients
  * @property-read \App\Models\CRM\CustomerComms|null $comms
  * @property-read Collection<int, CreditTransaction> $creditTransactions
@@ -459,7 +460,7 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(UpcomingTransaction::class);
     }
-  
+
     public function checkoutAbandonments(): HasMany
     {
         return $this->hasMany(CheckoutAbandonment::class);

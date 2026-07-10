@@ -19,7 +19,6 @@ use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\InteractsWithOrderInBasket;
 use App\Actions\RetinaAction;
-use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Helpers\AddressResource;
