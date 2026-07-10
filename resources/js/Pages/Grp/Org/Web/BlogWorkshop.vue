@@ -51,6 +51,8 @@ const props = defineProps<{
   webBlockTypes: WebBlockTypes,
   url: string
   webpage_sub_type : string
+  updateRoute?: routeType
+  mergeTags?: Array<any>
 }>();
 
 provide('isInWorkshop', true);
@@ -60,6 +62,44 @@ const data = ref(props.webpage);
 const comment = ref("");
 const isSavingBlock = ref(false);
 const isLoadingPublish = ref(false);
+const isBeefreeReady = ref(false);
+
+// Beefree auto save
+const persistBeefreeLayout = async (layout: any, compiledLayout: string | null = null) => {
+  if (!props.updateRoute?.name) {
+    notify({
+      title: trans("Something went wrong"),
+      text: trans("No update route is configured for this page"),
+      type: "error"
+    });
+    return;
+  }
+
+  isSavingBlock.value = true;
+
+  try {
+    await axios[props.updateRoute.method ?? "patch"](
+      route(props.updateRoute.name, props.updateRoute.parameters),
+      { layout, compiled_layout: compiledLayout }
+    );
+  } catch (error) {
+    notify({
+      title: trans("Failed to save"),
+      text: error?.response?.data?.message || error.message || "Unknown error occurred",
+      type: "error"
+    });
+  } finally {
+    isSavingBlock.value = false;
+  }
+};
+
+const onBeefreeAutoSave = (jsonFile: any) => {
+  persistBeefreeLayout(JSON.parse(jsonFile));
+};
+
+const onBeefreeSave = (payload: any) => {
+  persistBeefreeLayout(JSON.parse(payload.jsonFile), payload.htmlFile);
+};
 
 // Publish Actions
 const onPublish = async (action: routeType, popover) => {
@@ -102,8 +142,6 @@ const beforePublish = (route, popover) => {
 };
 
 const openWebsite = () => window.open(props.url, '_blank');
-
-console.log('webpage_sub_type', props)
 </script>
 
 <template>
@@ -130,17 +168,20 @@ console.log('webpage_sub_type', props)
     </template>
   </ConfirmDialog>
 
-  {{ webpage_sub_type }}
   <EditorBlogWorkshop v-if="webpage_sub_type === 'blog'" v-bind="props"/>
 
-  <Beefree 
+  <Beefree
     v-if="webpage_sub_type === 'mailshot'"
     :snapshot="webpage"
-    :mergeTags="mergeTags" 
-    :organisationSlug="route().params?.organisation" 
-    :shopSlug="route().params?.shop" 
-    ref="_beefree" 
+    :mergeTags="mergeTags ?? []"
+    :updateRoute="updateRoute"
+    :organisationSlug="route().params?.organisation"
+    :shopSlug="route().params?.shop"
+    ref="_beefree"
     :builderType="'page'"
+    @auto-save="onBeefreeAutoSave"
+    @onSave="onBeefreeSave"
+    @ready="isBeefreeReady = $event"
   />
 </template>
 

@@ -40,8 +40,16 @@ const inProgress = ref(false)
     </PageHeading>
 
     <!-- beefree -->
-    <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSave"
-        :shopSlug="shopSlug" @sendTest="openSendTest" @saveTemplate="onSaveTemplate" ref="_beefree" />
+    <Beetree 
+        v-if="builder == 'beefree'" 
+        :updateRoute="updateRoute" 
+        :imagesUploadRoute="imagesUploadRoute"
+        :snapshot="snapshot" 
+        :mergeTags="mergeTags" 
+        :organisationSlug="organisationSlug" 
+        @onSave="onSave"
+        :shopSlug="shopSlug"
+        ref="_beefree" 
+    />
 
 </template>
