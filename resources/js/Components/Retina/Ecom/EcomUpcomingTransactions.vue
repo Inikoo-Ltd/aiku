@@ -74,7 +74,7 @@ const formatQuantity = (quantity: UpcomingTransaction['quantity']) => Number(qua
                         {{ upcomingTransaction.product_name }}
                     </div>
 
-                    <div v-if="upcomingTransaction.public_notes" class="text-xs text-gray-500 mt-0.5">
+                    <div v-if="upcomingTransaction.public_notes" v-tooltip="upcomingTransaction.public_notes" class="text-xs text-gray-500 mt-0.5 truncate">
                         {{ upcomingTransaction.public_notes }}
                     </div>
                 </div>
