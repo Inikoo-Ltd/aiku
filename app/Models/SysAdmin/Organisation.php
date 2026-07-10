@@ -128,6 +128,10 @@ use App\Models\HumanResources\WorkSchedule;
  * @property string|null $email
  * @property string|null $phone
  * @property bool $status
+ * @property bool $is_aiku_stock_control
+ * @property bool $is_aiku_stock_hr
+ * @property bool $is_aiku_stock_procurement
+ * @property bool $is_aiku_stock_production
  * @property int|null $address_id
  * @property array<array-key, mixed> $location
  * @property array<array-key, mixed> $data
@@ -292,7 +296,11 @@ class Organisation extends Model implements HasMedia, Auditable
         'forbidden_dispatch_countries' => 'array',
         'banned_country_regions'       => 'array',
         'type'                         => OrganisationTypeEnum::class,
-        'opening_hours'                => 'array'
+        'opening_hours'                => 'array',
+        'is_aiku_stock_control'        => 'boolean',
+        'is_aiku_stock_hr'             => 'boolean',
+        'is_aiku_stock_procurement'    => 'boolean',
+        'is_aiku_stock_production'     => 'boolean',
     ];
 
     protected $attributes = [
@@ -302,7 +310,11 @@ class Organisation extends Model implements HasMedia, Auditable
         'location'                     => '{}',
         'forbidden_dispatch_countries' => '{}',
         'banned_country_regions'       => '{}',
-        'opening_hours'                => '{}'
+        'opening_hours'                => '{}',
+        'is_aiku_stock_control'        => false,
+        'is_aiku_stock_hr'             => false,
+        'is_aiku_stock_procurement'    => false,
+        'is_aiku_stock_production'     => false,
     ];
 
     protected $guarded = [];
