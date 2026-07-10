@@ -863,8 +863,7 @@ class ShowDeliveryNote extends OrgAction
 
         $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
-        // Disable waiting on DS no?
-        $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false) && $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
+        $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
 
         if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
