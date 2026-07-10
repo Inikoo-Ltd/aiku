@@ -140,7 +140,7 @@ console.log('webpage_sub_type', props)
     :organisationSlug="route().params?.organisation" 
     :shopSlug="route().params?.shop" 
     ref="_beefree" 
-    :builderType="'email'"
+    :builderType="'page'"
   />
 </template>
 
