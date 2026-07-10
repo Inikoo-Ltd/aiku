@@ -66,7 +66,7 @@ const isBeefreeReady = ref(false);
 
 // Beefree auto save
 const persistBeefreeLayout = async (layout: any, compiledLayout: string | null = null) => {
-  if (!props.updateRoute?.name) {
+  if (!props.webpage.updateRoute?.name) {
     notify({
       title: trans("Something went wrong"),
       text: trans("No update route is configured for this page"),
@@ -78,8 +78,8 @@ const persistBeefreeLayout = async (layout: any, compiledLayout: string | null =
   isSavingBlock.value = true;
 
   try {
-    await axios[props.updateRoute.method ?? "patch"](
-      route(props.updateRoute.name, props.updateRoute.parameters),
+    await axios[props.webpage.updateRoute.method ?? "patch"](
+      route(props.webpage.updateRoute.name, props.webpage.updateRoute.parameters),
       { layout, compiled_layout: compiledLayout }
     );
   } catch (error) {
@@ -111,10 +111,9 @@ const onPublish = async (action: routeType, popover) => {
 
     const response = await axios[action.method](
       route(action.name, action.parameters),
-      {
-        comment: comment.value,
-        publishLayout: { blocks: data.value.layout }
-      }
+      props.webpage_sub_type === 'mailshot'
+        ? { comment: comment.value, layout: data.value.layout }
+        : { comment: comment.value, publishLayout: { blocks: data.value.layout } }
     );
 
     if (response.status === 200) {
