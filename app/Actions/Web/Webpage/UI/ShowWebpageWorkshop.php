@@ -44,20 +44,37 @@ class ShowWebpageWorkshop extends OrgAction
 
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
-        $url = $webpage->website->domain.'/'.$webpage->url;
-        if ($webpage->website->is_migrating) {
+        $website = $webpage->website;
+        $url = $website->domain.'/'.$webpage->url;
+        if ($website->is_migrating) {
             $url = 'https://v2.'.$url;
         } else {
             $url = 'https://'.$url;
         }
-        $webBlockTypes = $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get();
-        if (!in_array($webpage->sub_type, [WebpageSubTypeEnum::PRODUCT, WebpageSubTypeEnum::FAMILY])) {
-            $webBlockTypes = $this->organisation->group
+        $webBlockTypes = $this
+            ->organisation
+            ->group
             ->webBlockTypes()
             ->where('fixed', false)
             ->where('scope', 'webpage')
-            ->where('name', 'not like', '%see-also%')
+            ->whereJsonContains('website_type', $website->shop->type)
+            ->where(function ($q) use ($website) {
+                $q->whereJsonContains('shop_availability', $website->shop->slug)
+                    ->orWhere('shop_availability', '[]');
+            })
             ->get();
+        if (!in_array($webpage->sub_type, [WebpageSubTypeEnum::PRODUCT, WebpageSubTypeEnum::FAMILY])) {
+            $webBlockTypes = $this->organisation->group
+                ->webBlockTypes()
+                ->where('fixed', false)
+                ->where('scope', 'webpage')
+                ->where('name', 'not like', '%see-also%')
+                ->whereJsonContains('website_type', $website->shop->type)
+                ->where(function ($q) use ($website) {
+                    $q->whereJsonContains('shop_availability', $website->shop->slug)
+                        ->orWhere('shop_availability', '[]');
+                })
+                ->get();
         }
 
         $canonicalPath = parse_url($webpage->canonical_url ?? '', PHP_URL_PATH);
@@ -105,7 +122,7 @@ class ShowWebpageWorkshop extends OrgAction
                         ],
                     ],
                 ],
-                'luigi_tracker_id' => Arr::get($webpage->website->settings, 'luigisbox.tracker_id'),
+                'luigi_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
                 'url'           => $url,
                 'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
                 'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes),

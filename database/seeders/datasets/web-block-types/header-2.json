@@ -5,7 +5,7 @@
 	"name": "Header 2",
 	"component": "header",
 	"website_type" : ["b2b","b2c","dropshipping","fulfilment"],
-	"shop_contained" : ["uk"],
+	"shop_availability": ["uk"],
 	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
