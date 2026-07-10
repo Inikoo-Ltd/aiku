@@ -125,26 +125,6 @@ class IndexSageInvoicesReport extends OrgAction
         };
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        // todo: uncomment this when show between dates works on UI
-        //
-        //        if (!$request->has('between')) {
-        //            $start   = Carbon::now()->startOfMonth()->format('Ymd');
-        //            $end     = Carbon::now()->format('Ymd');
-        //            $between = [
-        //                'date' => "$start-$end",
-        //            ];
-        //
-        //            // Keep action attributes in sync
-        //            $this->set('between', $between);
-        //
-        //            // Also merge into request so request()->input('between') returns this value
-        //            $request->merge(['between' => $between]);
-        //            request()->merge(['between' => $between]);
-        //        }
-    }
-
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;

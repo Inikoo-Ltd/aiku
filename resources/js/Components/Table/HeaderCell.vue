@@ -54,7 +54,8 @@ const isDebug = false   //  True will show the column key in the header
     <th v-show="!cell?.hidden" class="font-normal"
         :class="[
             cell?.type == 'avatar' || cell?.type == 'icon' ? 'thead-avatar px-3 w-1' : 'px-6 w-auto',
-            cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms' ? 'text-right' : 'text-left'
+            cell?.align === 'right' || isCellNumber() || cell?.type == 'number' || cell?.type == 'currency' || cell?.type === 'date' || cell?.type === 'date_hm' || cell?.type === 'date_hms' ? 'text-right' : 'text-left',
+            cell?.className
         ]"
     >
         <component :is="cell?.sortable ? 'button' : 'div'" class="py-1"

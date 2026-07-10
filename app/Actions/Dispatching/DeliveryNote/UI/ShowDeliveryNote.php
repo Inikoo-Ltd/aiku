@@ -1007,6 +1007,7 @@ class ShowDeliveryNote extends OrgAction
                 : Inertia::optional(fn () => DeliveryNoteTariffCodeResource::collection(IndexDeliveryNoteTariffCodes::run($deliveryNote, DeliveryNoteTabsEnum::TARIFF_CODES->value))),
 
             'tariff_codes_export' => [
+                'currency_code'  => $deliveryNote->shop->currency->code,
                 'fields'         => $this->getTariffCodesExportFields(),
                 'download_route' => [
                     'xlsx' => [

@@ -2,6 +2,8 @@
 /bootstrap/ssr
 /node_modules
 /.qodo
+/.agents
+/.codex
 
 /public/build
 /public/hot

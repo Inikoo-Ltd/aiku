@@ -22,7 +22,9 @@ import {
 	faSignInAlt,
 	faFileAlt,
 	faUser,
-	faHeart
+	faHeart,
+	faMeat,
+	faMedal
 } from "@fas"
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -200,14 +202,16 @@ const onClickLogout = () => {
 							<div class="flex items-center gap-2 text-sm font-medium">
 								<span>{{ displayUsername }}</span>
 
-								<img v-if="layout?.offer_data?.amnesty || layout?.offer_data?.type === 'gr'"
+								<!-- <img v-if="layout?.offer_data?.amnesty || layout?.offer_data?.type === 'gr'"
 									:src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo"
-									class="w-auto h-6" />
+									class="w-auto h-6" /> -->
+								<FontAwesomeIcon v-if="layout?.offer_data?.amnesty || layout?.offer_data?.type === 'gr'"
+									:icon="faMedal" class="text-[#E87928]" fixed-width aria-hidden="true" />
 							</div>
 
 							<template v-if="layout?.offer_data?.amnesty">
 								<span
-									class="inline-flex items-center gap-1 text-[11px] text-amber-500 whitespace-nowrap">
+									class="inline-flex items-center gap-1 text-[11px] text-[#E87928] whitespace-nowrap">
 									<FontAwesomeIcon icon="fas fa-candle-holder" fixed-width aria-hidden="true" />
 
 									{{
