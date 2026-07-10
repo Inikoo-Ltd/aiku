@@ -37,6 +37,9 @@ const props = defineProps<{
     stateFilter?: string[]
     statusOptions?: { value: string; label: string; count: number }[]
     statusFilter?: string[]
+    upcomingReadyCount?: number
+    upcomingOutOfStockCount?: number
+    upcomingFilter?: string | null
     exportFields?: { key: string; label: string }[]
 }>()
 
@@ -69,7 +72,8 @@ const downloadUrl = (type: string) => {
         :shop-slug="(shop_slug as string)" :estimated-recipients="estimatedRecipients ?? 0"
         :export-routes="download_route" :show-save="false" :state-options="stateOptions" :state-filter="stateFilter ?? []"
         :status-options="statusOptions" :status-filter="statusFilter ?? []" estimate-label="Estimated Customers"
-        :export-fields="exportFields" />
+        :upcoming-ready-count="upcomingReadyCount" :upcoming-out-of-stock-count="upcomingOutOfStockCount"
+        :upcoming-filter="upcomingFilter ?? null" :export-fields="exportFields" />
 
     <TableCustomers :data="customers" />
 </template>

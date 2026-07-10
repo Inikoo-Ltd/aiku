@@ -15,10 +15,12 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\UI\CRM\CustomersTabsEnum;
 use App\Exports\CRM\CustomersExport;
 use App\Http\Resources\CRM\CustomersResource;
@@ -28,6 +30,7 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSource;
 use App\Models\Discounts\Offer;
+use App\Models\Ordering\UpcomingTransaction;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasSearchableText;
@@ -55,6 +58,12 @@ class IndexCustomers extends OrgAction
     private array $stateFilter = [];
 
     private array $statusFilter = [];
+
+    private ?string $upcomingFilter = null;
+
+    private int $upcomingReadyCount = 0;
+
+    private int $upcomingOutOfStockCount = 0;
 
     protected function recipeHasFilters(array $recipe): bool
     {
@@ -113,6 +122,55 @@ class IndexCustomers extends OrgAction
         }
 
         return array_values(array_intersect($statuses, array_keys(CustomerStatusEnum::labels())));
+    }
+
+    protected function getUpcomingFilter(): ?string
+    {
+        $value = request()->input('upcoming');
+
+        return in_array($value, ['ready', 'out_of_stock'], true) ? $value : null;
+    }
+
+    protected function outOfStockStatuses(): array
+    {
+        return [
+            ProductStatusEnum::OUT_OF_STOCK->value,
+            ProductStatusEnum::NOT_FOR_SALE->value,
+        ];
+    }
+
+    protected function getUpcomingCounts(int $shopId): array
+    {
+        $base = UpcomingTransaction::query()
+            ->where('shop_id', $shopId)
+            ->where('state', UpcomingTransactionStateEnum::READY->value);
+
+        return [
+            'ready'      => (clone $base)->distinct()->count('customer_id'),
+            'outOfStock' => (clone $base)
+                ->whereHas('product', fn ($query) => $query->whereIn('status', $this->outOfStockStatuses()))
+                ->distinct()
+                ->count('customer_id'),
+        ];
+    }
+
+    protected function applyUpcomingFilter($query, int $shopId): void
+    {
+        if (!in_array($this->upcomingFilter, ['ready', 'out_of_stock'], true)) {
+            return;
+        }
+
+        $query->whereIn('customers.id', function ($sub) use ($shopId) {
+            $sub->select('customer_id')
+                ->from('upcoming_transactions')
+                ->where('upcoming_transactions.shop_id', $shopId)
+                ->where('upcoming_transactions.state', UpcomingTransactionStateEnum::READY->value);
+
+            if ($this->upcomingFilter === 'out_of_stock') {
+                $sub->join('products', 'products.id', '=', 'upcoming_transactions.product_id')
+                    ->whereIn('products.status', $this->outOfStockStatuses());
+            }
+        });
     }
 
     protected function getStateOptions(Shop $shop): array
@@ -221,6 +279,11 @@ class IndexCustomers extends OrgAction
         if ($parent instanceof Shop) {
             $this->stateFilter = $this->getStateFilter();
             $this->statusFilter = $this->getStatusFilter();
+            $this->upcomingFilter = $this->getUpcomingFilter();
+
+            $upcomingCounts = $this->getUpcomingCounts($parent->id);
+            $this->upcomingReadyCount = $upcomingCounts['ready'];
+            $this->upcomingOutOfStockCount = $upcomingCounts['outOfStock'];
 
             $recipe = request()->input('filters', []);
 
@@ -244,6 +307,8 @@ class IndexCustomers extends OrgAction
                 $estimateQuery->whereIn('customers.status', $this->statusFilter);
             }
 
+            $this->applyUpcomingFilter($estimateQuery, $parent->id);
+
             $this->estimatedRecipients = $estimateQuery->count('customers.id');
         }
 
@@ -266,6 +331,8 @@ class IndexCustomers extends OrgAction
             if (count($this->statusFilter) > 0) {
                 $queryBuilder->whereIn('customers.status', $this->statusFilter);
             }
+
+            $this->applyUpcomingFilter($queryBuilder, $parent->id);
         }
 
         if ($parent instanceof Product) {
@@ -339,6 +406,13 @@ class IndexCustomers extends OrgAction
         }
 
         $queryBuilder->with('tags');
+
+        if ($this->upcomingFilter !== null) {
+            $queryBuilder->with(['upcomingTransactions' => function ($query) {
+                $query->where('state', UpcomingTransactionStateEnum::READY->value)
+                    ->with('product:id,code,name,status');
+            }]);
+        }
 
         return $queryBuilder
             ->defaultSort('-created_at')
@@ -440,8 +514,17 @@ class IndexCustomers extends OrgAction
                 $table->column(key: 'location', label: __('Location'), canBeHidden: false, searchable: true);
             }
 
-            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
+            $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($this->upcomingFilter !== null) {
+                $table->column(
+                    key: 'upcoming_products',
+                    label: __('Upcoming Products'),
+                    canBeHidden: false
+                );
+            }
+
+            $table->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
 
             if ($isDropshipping) {
                 $table->column(
@@ -515,6 +598,9 @@ class IndexCustomers extends OrgAction
                 'stateFilter'         => $this->stateFilter,
                 'statusOptions'       => $this->getStatusOptions($this->parent),
                 'statusFilter'        => $this->statusFilter,
+                'upcomingReadyCount'  => $this->upcomingReadyCount,
+                'upcomingOutOfStockCount' => $this->upcomingOutOfStockCount,
+                'upcomingFilter'      => $this->upcomingFilter,
                 'exportFields'        => $this->getExportFields(),
             ];
         }
