@@ -10,7 +10,7 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditCustomer extends OrgAction
 {
-    use WithCRMAuthorisation;
+    use WithCRMEditAuthorisation;
 
     public function handle(Customer $customer): Customer
     {

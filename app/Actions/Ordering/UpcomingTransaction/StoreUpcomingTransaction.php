@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\UpcomingTransaction;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Models\CRM\Customer;
@@ -18,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreUpcomingTransaction extends OrgAction
 {
+    use WithCRMEditAuthorisation;
+
     public function handle(Customer $customer, array $modelData): UpcomingTransaction
     {
         data_set($modelData, 'group_id', $customer->group_id);

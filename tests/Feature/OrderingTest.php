@@ -61,6 +61,10 @@ use App\Actions\Ordering\Transaction\StoreTransactionFromAdjustment;
 use App\Actions\Ordering\Transaction\StoreTransactionFromCharge;
 use App\Actions\Ordering\Transaction\StoreTransactionFromShipping;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\UI\IndexUpcomingTransactions;
+use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -76,6 +80,11 @@ use App\Enums\Ordering\Adjustment\AdjustmentTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Purge\PurgeTypeEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Http\Resources\Ordering\TransactionsResource;
+use App\Models\Ordering\UpcomingTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\PaymentServiceProvider;
@@ -1306,4 +1315,167 @@ test('reset daily intervals action dispatches expected jobs', function () {
     ProcessResetIntervalsGroups::assertPushed(1);
     ProcessResetIntervalsOrganisations::assertPushed(1);
     ProcessResetIntervalsShops::assertPushed(1);
+});
+
+test('store upcoming transaction', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id'    => $this->product->id,
+        'quantity'      => 3,
+        'type'          => UpcomingTransactionTypeEnum::GIFT->value,
+        'public_notes'  => 'send it over',
+        'private_notes' => 'warehouse only',
+    ]);
+
+    expect($upcomingTransaction)->toBeInstanceOf(UpcomingTransaction::class)
+        ->and($upcomingTransaction->customer_id)->toBe($this->customer->id)
+        ->and($upcomingTransaction->group_id)->toBe($this->customer->group_id)
+        ->and($upcomingTransaction->organisation_id)->toBe($this->customer->organisation_id)
+        ->and($upcomingTransaction->shop_id)->toBe($this->customer->shop_id)
+        ->and($upcomingTransaction->product_id)->toBe($this->product->id)
+        ->and((float)$upcomingTransaction->quantity)->toBe(3.0)
+        ->and($upcomingTransaction->type)->toBe(UpcomingTransactionTypeEnum::GIFT)
+        ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::READY);
+
+    return $upcomingTransaction;
+});
+
+test('update upcoming transaction', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    $updated = UpdateUpcomingTransaction::make()->action($upcomingTransaction, [
+        'quantity' => 5,
+        'type'     => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    expect((float)$updated->quantity)->toBe(5.0)
+        ->and($updated->type)->toBe(UpcomingTransactionTypeEnum::FOLLOW_ON);
+});
+
+test('delete upcoming transaction', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    DeleteUpcomingTransaction::make()->action($upcomingTransaction);
+
+    expect(UpcomingTransaction::find($upcomingTransaction->id))->toBeNull();
+});
+
+test('index upcoming transactions handle only returns ready', function () {
+    $ready = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 2,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    $applied = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 2,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+        'state'      => UpcomingTransactionStateEnum::APPLIED->value,
+    ]);
+
+    $result = IndexUpcomingTransactions::make()->handle($this->customer);
+
+    expect($result)->toBeInstanceOf(LengthAwarePaginator::class)
+        ->and($result->total())->toBe(1)
+        ->and($result->first()->id)->toBe($ready->id);
+
+    $jsonResponse = IndexUpcomingTransactions::make()->jsonResponse($result);
+    $array        = $jsonResponse->toArray(request());
+    expect($array)->toHaveKey(0)
+        ->and($array[0]['product_code'])->toBe($this->product->code)
+        ->and($array[0]['update']['name'])->toBe('grp.models.upcoming_transaction.update')
+        ->and($array[0]['delete']['name'])->toBe('grp.models.upcoming_transaction.delete');
+});
+
+test('UI index upcoming transactions', function () {
+    StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    $response = get(route('grp.org.shops.show.crm.customers.show.upcoming_transactions.index', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->customer->slug,
+    ]));
+
+    $response->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Ordering/UpcomingTransactions')
+            ->has('data.data', 1));
+});
+
+test('submit order applies ready upcoming transactions as follow-on bonus', function () {
+    $this->product->update(['status' => ProductStatusEnum::FOR_SALE]);
+
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 4,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $upcomingTransaction->refresh();
+
+    $transaction = $order->transactions()->where('is_follow_on', true)->first();
+
+    expect($transaction)->not->toBeNull()
+        ->and((float)$transaction->quantity_bonus)->toBe(4.0)
+        ->and((float)$transaction->quantity_ordered)->toBe(0.0)
+        ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::APPLIED)
+        ->and($upcomingTransaction->order_id)->toBe($order->id)
+        ->and($upcomingTransaction->transaction_id)->toBe($transaction->id);
+});
+
+test('submit order skips upcoming transactions for out of stock products', function () {
+    $this->product->update(['status' => ProductStatusEnum::OUT_OF_STOCK]);
+
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 4,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $upcomingTransaction->refresh();
+
+    expect($order->transactions()->where('is_follow_on', true)->count())->toBe(0)
+        ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::READY);
+});
+
+test('transactions resource adds bonus to ordered quantity for follow-on', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $transaction = StoreTransaction::make()->action(
+        $order,
+        $this->product->currentHistoricProduct,
+        [
+            'quantity_ordered' => 0,
+            'quantity_bonus'   => 6,
+            'is_follow_on'     => true,
+        ]
+    );
+
+    $array = (new TransactionsResource($transaction->refresh()))->toArray(request());
+
+    expect((float)$array['quantity_ordered'])->toBe(6.0)
+        ->and((float)$array['quantity_bonus'])->toBe(6.0)
+        ->and($array['is_follow_on'])->toBeTrue();
 });

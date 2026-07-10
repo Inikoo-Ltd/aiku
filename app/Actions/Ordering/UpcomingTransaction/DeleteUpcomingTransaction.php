@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\UpcomingTransaction;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\UpcomingTransaction;
 use Lorisleiva\Actions\ActionRequest;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 class DeleteUpcomingTransaction extends OrgAction
 {
     use WithActionUpdate;
+    use WithCRMEditAuthorisation;
 
     public function handle(UpcomingTransaction $upcomingTransaction): UpcomingTransaction
     {

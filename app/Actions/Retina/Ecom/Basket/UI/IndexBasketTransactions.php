@@ -41,7 +41,7 @@ class IndexBasketTransactions extends OrgAction
 
         $query->leftjoin('assets', 'transactions.asset_id', '=', 'assets.id');
         $query->leftjoin('products', 'assets.model_id', '=', 'products.id');
-        $query->leftjoin('upcoming_transactions', 'transactions.id', '=', 'upcoming_transactions.id');
+        $query->leftjoin('upcoming_transactions', 'transactions.id', '=', 'upcoming_transactions.transaction_id');
 
         return $query->defaultSort('transactions.id')
             ->select([

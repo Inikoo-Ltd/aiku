@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\UpcomingTransaction;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateUpcomingTransaction extends OrgAction
 {
     use WithActionUpdate;
+    use WithCRMEditAuthorisation;
 
     public function handle(UpcomingTransaction $upcomingTransaction, array $modelData): UpcomingTransaction
     {
