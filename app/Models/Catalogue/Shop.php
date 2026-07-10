@@ -181,6 +181,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Brand> $brands
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, ChatEmailRecipient> $chatEmailRecipients
+ * @property-read LaravelCollection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read Address|null $collectionAddress
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -545,9 +546,10 @@ class Shop extends Model implements HasMedia, Auditable
 
     public function getPaymentAccountTypeAccount(): ?PaymentAccount
     {
+        /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $this->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
 
-        return $paymentAccountShop ? $paymentAccountShop->paymentAccount : null;
+        return $paymentAccountShop?->paymentAccount;
     }
 
     public function salesChannels(): BelongsToMany

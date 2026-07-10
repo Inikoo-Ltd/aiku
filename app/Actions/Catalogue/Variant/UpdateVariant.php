@@ -16,6 +16,7 @@ use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Http\Resources\Catalogue\VariantsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Variant;
@@ -180,5 +181,10 @@ class UpdateVariant extends OrgAction
         $this->initialisationFromShop($variant->shop, $request);
 
         return $this->handle($variant, $this->validatedData);
+    }
+
+    public function jsonResponse(Variant $variant): VariantsResource
+    {
+        return new VariantsResource($variant);
     }
 }

@@ -3,12 +3,13 @@
 /*
  * author Arya Permana - Kirin
  * created on 28-04-2025-14h-18m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
 namespace App\Actions\Accounting\CreditTransaction\UI;
 
+use App\Actions\Accounting\CreditTransaction\UI\Traits\WithCreditTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\Accounting\CreditTransactionsResource;
@@ -19,59 +20,28 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCreditTransactions extends OrgAction
 {
     use WithCRMAuthorisation;
+    use WithCreditTransactions;
 
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                // Cast credit_transactions.amount as char so it is searchable using ILIKE function on PSQL
-                $query->whereRaw("credit_transactions.amount::text ILIKE ?", ["%{$value}%"])
-                    ->orWhereAnyWordStartWith('credit_transactions.type', $value);
-            });
-        });
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
-
 
         $query = QueryBuilder::for(CreditTransaction::class);
 
         $query->where('credit_transactions.customer_id', $customer->id);
 
-
-        $query->leftJoin('payments', 'credit_transactions.payment_id', '=', 'payments.id');
-        $query->leftJoin('currencies', 'credit_transactions.currency_id', '=', 'currencies.id');
-        $query->leftJoin('model_has_payments', function ($join) {
-            $join->on('model_has_payments.payment_id', '=', 'payments.id')
-                ->where('model_has_payments.model_type', '=', 'Order');
-        });
-        $query->leftJoin('orders', function ($join) {
-            $join->on('model_has_payments.model_id', '=', 'orders.id');
-        });
+        $this->applyBaseJoins($query);
 
         return $query->defaultSort('credit_transactions.id')
-            ->select([
-                'credit_transactions.id',
-                'credit_transactions.date as created_at',
-                'credit_transactions.type',
-                'credit_transactions.amount',
-                'credit_transactions.running_amount',
-                'payments.reference as payment_reference',
-                'payments.id as payment_id',
-                'payments.type as payment_type',
-                'currencies.code as currency_code',
-                'orders.slug as order_slug',
-                'orders.reference as order_reference',
-                'credit_transactions.notes'
-            ])
-            ->allowedSorts(['amount', 'running_amount', 'type', 'created_at','payment_reference'])
-            ->allowedFilters([$globalSearch])
+            ->select($this->getBaseColumns())
+            ->allowedSorts(['amount', 'running_amount', 'type', 'created_at', 'payment_reference'])
+            ->allowedFilters([$this->getGlobalSearchFilter()])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -103,12 +73,8 @@ class IndexCreditTransactions extends OrgAction
                     ]
                 );
 
-            $table->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hm');
-            $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'payment_reference', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'order_reference', label: __('Order'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
-            $table->column(key: 'running_amount', label: __('Running amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            $this->addBaseTableColumns($table);
+
             $table->column(key: 'actions', label: __('Actions'));
         };
     }

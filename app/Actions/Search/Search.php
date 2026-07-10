@@ -34,9 +34,6 @@ class Search extends OrgAction
             return [];
         }
 
-        // $dummy='JSON_SERACH_RESULTS';
-        //return json_decode($dummy,true);
-
         return $actions[$scope]();
     }
 

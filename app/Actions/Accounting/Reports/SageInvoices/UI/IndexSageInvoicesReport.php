@@ -1,0 +1,231 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 09 Jul 2026 22:43:48 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Accounting\Reports\SageInvoices\UI;
+
+use App\Actions\Accounting\Invoice\WithInvoicesSubNavigation;
+use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\OrgAction;
+use App\Actions\UI\Reports\IndexReports;
+use App\Http\Resources\Accounting\SageInvoiceResource;
+use App\InertiaTable\InertiaTable;
+use App\Models\Accounting\Invoice;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
+
+class IndexSageInvoicesReport extends OrgAction
+{
+    use WithInvoicesSubNavigation;
+
+    private int $records;
+    private Organisation|Shop $parent;
+
+    public function handle(Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
+    {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereWith('invoices.reference', $value)
+                    ->orWhereWith('customers.name', $value)
+                    ->orWhereWith('customers.company_name', $value)
+                    ->orWhereWith('customers.accounting_reference', $value);
+            });
+        });
+
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
+        $queryBuilder = QueryBuilder::for(Invoice::class);
+
+        if ($parent instanceof Organisation) {
+            $queryBuilder->where('invoices.organisation_id', $parent->id);
+        } else {
+            $queryBuilder->where('invoices.shop_id', $parent->id);
+        }
+
+        $queryBuilder->where('invoices.in_process', false);
+        $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
+        $queryBuilder->leftJoin('currencies', 'invoices.currency_id', '=', 'currencies.id');
+        $queryBuilder->leftJoin('tax_categories', 'invoices.tax_category_id', '=', 'tax_categories.id');
+
+        $this->records = $queryBuilder->count('invoices.id');
+
+        $queryBuilder
+            ->defaultSort('-date')
+            ->allowedSorts(['date', 'reference', 'customer_name', 'net_amount', 'tax_amount', 'total_amount', 'is_credit_customer', 'accounting_reference'])
+            ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['date'])
+            ->withPaginator($prefix)
+            ->withQueryString();
+
+        return $queryBuilder
+            ->select([
+                'invoices.id',
+                'invoices.slug',
+                'invoices.reference',
+                'invoices.date',
+                'invoices.type',
+                'invoices.net_amount',
+                'invoices.tax_amount',
+                'invoices.total_amount',
+                'invoices.pay_status',
+                'invoices.created_at',
+                'invoices.updated_at',
+                'customers.name as customer_name',
+                'customers.slug as customer_slug',
+                'customers.company_name as customer_company',
+                'customers.is_credit_customer as is_credit_customer',
+                'customers.accounting_reference',
+                'currencies.code as currency_code',
+                'currencies.symbol as currency_symbol',
+                'tax_categories.name as tax_category_name',
+            ])
+            ->paginate(perPage: 50);
+    }
+
+    public function tableStructure($prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table->name($prefix)->pageName($prefix.'Page');
+            }
+
+            $table
+                ->withGlobalSearch()
+                ->withEmptyState(
+                    [
+                        'title'       => __('No Sage invoices'),
+                        'description' => __('No credit customer invoices found for the selected period. Enable credit customers in customer settings.'),
+                        'count'       => $this->records,
+                    ]
+                )
+                ->betweenDates(['date'])
+                ->column(key: 'date', label: __('Date'), sortable: true)
+                ->column(key: 'reference', label: __('Reference'), sortable: true, searchable: true)
+                ->column(key: 'customer_name', label: __('Customer'), sortable: true, searchable: true)
+                ->column(key: 'accounting_reference', label: 'Sage Ref', sortable: true)
+                ->column(key: 'type', label: __('Type'))
+                ->column(key: 'is_credit_customer', label: __('Credit Customer'), sortable: true)
+                ->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency')
+                ->column(key: 'tax_amount', label: __('Tax'), sortable: true, type: 'currency')
+                ->column(key: 'total_amount', label: __('Total'), sortable: true, type: 'currency')
+                ->defaultSort('-date');
+        };
+    }
+
+    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $organisation;
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function inReports(Organisation|Shop $parent): int
+    {
+        return $this->handle($parent)->total();
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop);
+    }
+
+    public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
+    {
+        if ($this->parent instanceof Shop) {
+            return Inertia::render(
+                'Org/Reports/SageInvoicesReport',
+                [
+                    'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                    'title'       => __('Sage Invoices Report'),
+                    'pageHead'    => [
+                        'title'         => __('Sage Invoices Export Report'),
+                        'icon'          => [
+                            'title' => __('Sage Invoices'),
+                            'icon'  => 'fal fa-file-invoice'
+                        ],
+                        'subNavigation' => $this->getInvoicesNavigation($this->parent)
+                    ],
+                    'data'        => SageInvoiceResource::collection($invoices),
+                ]
+            )->table($this->tableStructure());
+        }
+
+        return Inertia::render(
+            'Org/Reports/SageInvoicesReport',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'title'       => __('Sage Invoices Report'),
+                'pageHead'    => [
+                    'title' => __('Sage Invoices Export Report'),
+                    'icon'  => [
+                        'title' => __('Sage Invoices'),
+                        'icon'  => 'fal fa-file-invoice'
+                    ],
+                ],
+                'data'        => SageInvoiceResource::collection($invoices),
+            ]
+        )->table($this->tableStructure());
+    }
+
+    public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
+    {
+        return SageInvoiceResource::collection($invoices);
+    }
+
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    {
+        if ($this->parent instanceof Shop) {
+            return array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'icon'  => 'fal fa-file-invoice',
+                            'label' => __('Sage Invoices'),
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.dashboard.invoices.sage.index',
+                                'parameters' => $routeParameters
+                            ]
+                        ]
+                    ],
+                ],
+            );
+        }
+
+        return array_merge(
+            IndexReports::make()->getBreadcrumbs($routeName, $routeParameters),
+            [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'icon'  => 'fal fa-file-invoice',
+                        'label' => __('Sage Invoices'),
+                        'route' => [
+                            'name'       => 'grp.org.reports.sage-invoices',
+                            'parameters' => $routeParameters
+                        ]
+                    ]
+                ],
+            ],
+        );
+    }
+}

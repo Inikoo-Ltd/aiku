@@ -34,6 +34,8 @@ use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
+use App\Http\Resources\Dispatching\DeliveryNoteTariffCodeResource;
+use App\Exports\Dispatching\DeliveryNoteTariffCodesExport;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\History\HistoryResource;
@@ -794,6 +796,16 @@ class ShowDeliveryNote extends OrgAction
         return PickersResource::collection(GetPickerUsers::run($this->organisation, true))->resolve();
     }
 
+    public function getTariffCodesExportFields(): array
+    {
+        $definitions = DeliveryNoteTariffCodesExport::fieldDefinitions();
+
+        return array_map(fn ($key) => [
+            'key'   => $key,
+            'label' => __($definitions[$key]['heading']),
+        ], array_keys($definitions));
+    }
+
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $isEditable = false;
@@ -850,8 +862,7 @@ class ShowDeliveryNote extends OrgAction
 
         $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
 
-        // Disable waiting on DS no?
-        $allowWaiting = data_get($this->organisation->settings, 'orders.allow_waiting', false) && $deliveryNote->shop?->type !== ShopTypeEnum::DROPSHIPPING;
+        $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
 
         if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
@@ -989,6 +1000,31 @@ class ShowDeliveryNote extends OrgAction
             DeliveryNoteTabsEnum::HISTORY->value => $this->tab == DeliveryNoteTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))
                 : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($deliveryNote, DeliveryNoteTabsEnum::HISTORY->value))),
+
+            DeliveryNoteTabsEnum::TARIFF_CODES->value => $this->tab == DeliveryNoteTabsEnum::TARIFF_CODES->value ?
+                fn () => DeliveryNoteTariffCodeResource::collection(IndexDeliveryNoteTariffCodes::run($deliveryNote, DeliveryNoteTabsEnum::TARIFF_CODES->value))
+                : Inertia::optional(fn () => DeliveryNoteTariffCodeResource::collection(IndexDeliveryNoteTariffCodes::run($deliveryNote, DeliveryNoteTabsEnum::TARIFF_CODES->value))),
+
+            'tariff_codes_export' => [
+                'currency_code'  => $deliveryNote->shop->currency->code,
+                'fields'         => $this->getTariffCodesExportFields(),
+                'download_route' => [
+                    'xlsx' => [
+                        'name'       => 'grp.models.delivery_note.tariff_codes.export',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id,
+                            'type'         => 'xlsx',
+                        ],
+                    ],
+                    'csv'  => [
+                        'name'       => 'grp.models.delivery_note.tariff_codes.export',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id,
+                            'type'         => 'csv',
+                        ],
+                    ],
+                ],
+            ],
             'shop'                               => [
                 'type' => $deliveryNote->shop?->type?->value,
             ]
@@ -1018,6 +1054,7 @@ class ShowDeliveryNote extends OrgAction
         }
 
         $inertiaResponse->table(IndexHistory::make()->tableStructure(DeliveryNoteTabsEnum::HISTORY->value));
+        $inertiaResponse->table(IndexDeliveryNoteTariffCodes::make()->tableStructure($deliveryNote, DeliveryNoteTabsEnum::TARIFF_CODES->value));
 
         return $inertiaResponse;
     }

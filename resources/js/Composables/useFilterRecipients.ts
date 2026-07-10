@@ -227,7 +227,7 @@ export function useFilterRecipients(props: any) {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
-                only: ['customers', 'filters', 'estimatedRecipients']
+                only: ['customers', 'filters', 'estimatedRecipients', 'queryBuilderProps']
             }
         )
     }, 400)

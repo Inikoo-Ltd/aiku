@@ -113,7 +113,7 @@ class ShowCustomer extends OrgAction
         return Inertia::render(
             'Org/Shop/CRM/Customer',
             [
-                'title'            => __('Customer'),
+                'title'            => __('Customer') . ' #' . $customer->reference,
                 'breadcrumbs'      => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

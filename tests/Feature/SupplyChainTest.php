@@ -8,7 +8,6 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
@@ -21,6 +20,7 @@ use App\Actions\SupplyChain\Supplier\DeleteSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\TradeUnit;

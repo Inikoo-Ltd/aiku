@@ -81,7 +81,7 @@ class IndexRedirects extends OrgAction
             ],
             RedirectTabsEnum::REDIRECTS->value => $this->tab == RedirectTabsEnum::REDIRECTS->value ?
                 RedirectsResource::collection($this->handle(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value))
-                : Inertia::optional(fn() => RedirectsResource::collection($this->handle(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value))),
+                : Inertia::optional(fn () => RedirectsResource::collection($this->handle(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value))),
         ])
             ->table(IndexRedirects::make()->tableStructure(parent: $this->website, prefix: RedirectTabsEnum::REDIRECTS->value));
     }

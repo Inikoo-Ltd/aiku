@@ -23,7 +23,8 @@ import {
     faBan,
     faUsers,
     faSpinner,
-    faDownload
+    faDownload,
+    faCalendarPlus
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { reactive, computed, watch, ref, onMounted, nextTick } from "vue";
@@ -71,7 +72,8 @@ library.add(
     faTimes,
     faPlus,
     faSpinner,
-    faDownload
+    faDownload,
+    faCalendarPlus
 );
 
 const props = withDefaults(defineProps<{
@@ -88,6 +90,9 @@ const props = withDefaults(defineProps<{
     stateFilter?: string[]
     statusOptions?: { value: string, label: string, count: number }[]
     statusFilter?: string[]
+    upcomingReadyCount?: number
+    upcomingOutOfStockCount?: number
+    upcomingFilter?: string | null
     estimateLabel?: string
     exportFields?: { key: string, label: string }[]
 }>(), {
@@ -139,6 +144,18 @@ const onStatusChange = () => {
     fetchCustomers()
 }
 
+const selectedUpcoming = ref<string | null>(props.upcomingFilter ?? null)
+
+if (props.upcomingReadyCount !== undefined) {
+    extraQuery.upcoming = selectedUpcoming.value
+}
+
+const toggleUpcoming = (value: 'ready' | 'out_of_stock') => {
+    selectedUpcoming.value = selectedUpcoming.value === value ? null : value
+    extraQuery.upcoming = selectedUpcoming.value
+    fetchCustomers()
+}
+
 const exportPanel = ref()
 
 const selectedColumns = ref<string[]>(props.exportFields ? props.exportFields.map(f => f.key) : [])
@@ -159,7 +176,7 @@ const exportUrl = (type: 'csv' | 'xlsx') => {
     const current = new URLSearchParams(window.location.search)
     const filterQuery = new URLSearchParams()
     current.forEach((value, key) => {
-        if (key === 'filters' || key.startsWith('filters[') || key === 'state' || key.startsWith('state[') || key === 'status' || key.startsWith('status[')) {
+        if (key === 'filters' || key.startsWith('filters[') || key === 'state' || key.startsWith('state[') || key === 'status' || key.startsWith('status[') || key === 'upcoming') {
             filterQuery.append(key, value)
         }
     })
@@ -414,6 +431,24 @@ watch(
                         </div>
                     </template>
                 </MultiSelect>
+
+                <Button v-if="upcomingReadyCount !== undefined"
+                    :key="'ready-' + (selectedUpcoming === 'ready')" @click="toggleUpcoming('ready')"
+                    :type="selectedUpcoming === 'ready' ? 'primary' : 'secondary'"
+                    :tooltip="trans('Upcoming Transactions Ready')" class="h-10 px-4 shrink-0 whitespace-nowrap">
+                    <FontAwesomeIcon :icon="faCalendarPlus" />
+                    <span>{{ trans("Upcoming Transactions") }}</span>
+                    <Badge :value="upcomingReadyCount" class="ml-2" />
+                </Button>
+
+                <Button v-if="upcomingOutOfStockCount !== undefined"
+                    :key="'oos-' + (selectedUpcoming === 'out_of_stock')" @click="toggleUpcoming('out_of_stock')"
+                    :type="selectedUpcoming === 'out_of_stock' ? 'red' : 'red_outline'"
+                    :tooltip="trans('Upcoming Transactions Out of Stock / Not for Sale')" class="h-10 px-4 shrink-0 whitespace-nowrap">
+                    <FontAwesomeIcon :icon="faBan" />
+                    <span>{{ trans("Upcoming Transactions") }}</span>
+                    <Badge :value="upcomingOutOfStockCount" class="ml-2" />
+                </Button>
 
                 <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4 shrink-0 whitespace-nowrap" @click="fetchCustomers" />
 
