@@ -62,10 +62,10 @@ class CleanUserCaches
             1000,
             function (Collection $modelsData) use ($bar) {
                 foreach ($modelsData as $modelId) {
-                    $user = (new User());
+                    $user = new User();
                     $instance = $user->withTrashed()->find($modelId->id);
 
-                    $patterns = ['auth-user:'.$user->id.';*'];
+                    $patterns = ['auth-user:'.$instance->id.';*'];
 
                     $this->handle($instance, $patterns);
                     $bar->advance();

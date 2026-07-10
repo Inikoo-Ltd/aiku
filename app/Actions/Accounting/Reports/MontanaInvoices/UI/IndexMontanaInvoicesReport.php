@@ -124,34 +124,14 @@ class IndexMontanaInvoicesReport extends OrgAction
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'reference', label: __('Reference'), sortable: true, searchable: true)
                 ->column(key: 'customer_name', label: __('Customer'), sortable: true, searchable: true)
-                ->column(key: 'customer_contact', label: __('Contact'), sortable: false)
-                ->column(key: 'tax_number', label: __('VAT'), sortable: false)
+                ->column(key: 'customer_contact', label: __('Contact'))
+                ->column(key: 'tax_number', label: __('VAT'))
                 ->column(key: 'type', label: __('Type'))
                 ->column(key: 'net_amount', label: __('Net'), sortable: true, type: 'currency')
                 ->column(key: 'tax_amount', label: __('Tax'), sortable: true, type: 'currency')
                 ->column(key: 'total_amount', label: __('Total'), sortable: true, type: 'currency')
                 ->defaultSort('-date');
         };
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        // todo: uncomment this when show between dates works on UI
-        //
-        //        if (!$request->has('between')) {
-        //            $start   = Carbon::now()->startOfMonth()->format('Ymd');
-        //            $end     = Carbon::now()->format('Ymd');
-        //            $between = [
-        //                'date' => "$start-$end",
-        //            ];
-        //
-        //            // Keep action attributes in sync
-        //            $this->set('between', $between);
-        //
-        //            // Also merge into request so request()->input('between') returns this value
-        //            $request->merge(['between' => $between]);
-        //            request()->merge(['between' => $between]);
-        //        }
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
