@@ -16,9 +16,11 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -27,17 +29,22 @@ use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Models\Ordering\UpcomingTransaction;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
 
 class SubmitOrder extends OrgAction
 {
@@ -47,7 +54,6 @@ class SubmitOrder extends OrgAction
 
 
     private Order $order;
-
 
     /**
      * @throws \Throwable
@@ -79,6 +85,7 @@ class SubmitOrder extends OrgAction
         $this->processGrGift($order);
         $this->processGiftOffers($order);
         $this->processVoucherGiftOffers($order);
+        $this->processUpComingTransactions($order);
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
@@ -141,6 +148,49 @@ class SubmitOrder extends OrgAction
         CustomerHydrateTrafficSource::dispatch($order->customer_id);
 
         return $order;
+    }
+
+    public function processUpComingTransactions(Order $order): void
+    {
+        $upComingTransactions = UpcomingTransaction::where('customer_id', $order->customer_id)
+            ->where('state', UpcomingTransactionStateEnum::READY)
+            ->with('product.currentHistoricProduct')
+            ->get();
+
+        foreach ($upComingTransactions as $upComingTransaction) {
+            try {
+                /** @var Product $upComingTransactionProduct */
+                $upComingTransactionProduct = $upComingTransaction->product;
+                $historicAsset              = $upComingTransactionProduct?->currentHistoricProduct;
+
+                if (!$historicAsset || in_array($upComingTransactionProduct->status, [ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::NOT_FOR_SALE])) {
+                    continue;
+                }
+
+                $isGift = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
+
+                $transaction = StoreTransaction::make()->action(
+                    order: $order,
+                    historicAsset: $historicAsset,
+                    modelData: [
+                        'quantity_ordered' => 0,
+                        'quantity_bonus'   => $upComingTransaction->quantity,
+                        'is_gift'          => $isGift,
+                        'is_follow_on'     => true
+                    ],
+                    strict: false,
+                    forceHydrators: true
+                );
+
+                UpdateUpcomingTransaction::run($upComingTransaction, [
+                    'order_id'       => $order->id,
+                    'transaction_id' => $transaction->id,
+                    'state'          => UpcomingTransactionStateEnum::APPLIED
+                ]);
+            } catch (Exception $e) {
+                Sentry::captureException($e);
+            }
+        }
     }
 
     public function processGiftOffers(Order $order): Order

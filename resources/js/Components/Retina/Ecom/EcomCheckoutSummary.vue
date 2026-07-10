@@ -18,6 +18,7 @@ import { router } from "@inertiajs/vue3"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import payments from "@/Pages/Grp/Overview/Accounting/Payments.vue"
 import MissedOfferFOB from "@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue"
+import EcomUpcomingTransactions from "@/Components/Retina/Ecom/EcomUpcomingTransactions.vue"
 
 const props = defineProps<{
     summary: {
@@ -62,6 +63,17 @@ const props = defineProps<{
     missed_offers: {}
     isInBasket?: boolean
     isInCheckout?: boolean
+    upcoming_transactions?: {
+        data: {
+            id: number
+            product_code: string | null
+            product_name: string | null
+            quantity: number | string
+            public_notes: string | null
+            type: 'gift' | 'follow_on'
+            state: string
+        }[]
+    }
 }>()
 
 const locale = inject('locale', {})
@@ -188,6 +200,9 @@ const updateCollection = (value: boolean) => {
                     </div>
                 </div>
             </div>
+
+            <!-- Section: Upcoming transactions (gift, follow on) -->
+            <EcomUpcomingTransactions v-if="upcoming_transactions" :upcomingTransactions="upcoming_transactions" />
 
             <!-- Section: Offer meters (free gift, etc)-->
             <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">

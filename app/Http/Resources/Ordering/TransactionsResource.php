@@ -53,15 +53,22 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property bool $is_cut_view
  * @property string|null $batch_codes
  * @property mixed $is_gift
+ * @property mixed $is_follow_on
  */
 class TransactionsResource extends JsonResource
 {
+
     public function toArray($request): array
     {
+        $quantityOrdered=$this->quantity_ordered;
+        if($this->is_follow_on){
+            $quantityOrdered=$this->quantity_ordered+$this->quantity_bonus;
+        }
+
         $quantityOrderedFractional = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
-                    $this->quantity_ordered ?? 0
+                    $quantityOrdered ?? 0
                 )
             ),
             $this->product_units
@@ -101,7 +108,7 @@ class TransactionsResource extends JsonResource
             'id'                             => $this->id,
             'state'                          => $this->state,
             'status'                         => $this->status,
-            'quantity_ordered'               => trimDecimalZeros($this->quantity_ordered),
+            'quantity_ordered'               => trimDecimalZeros($quantityOrdered),
             'quantity_ordered_fractional'    => $quantityOrderedFractional,
             'quantity_bonus'                 => trimDecimalZeros($this->quantity_bonus),
             'quantity_picked'                => trimDecimalZeros($this->quantity_picked),
@@ -130,8 +137,11 @@ class TransactionsResource extends JsonResource
             'product_units'                  => $this->product_units,
             'is_cut_view'                    => $this->is_cut_view,
             'is_gift'                        => $this->is_gift,
+            'is_follow_on'                   => $this->is_follow_on,
             'batch_codes'                    => $this->batch_codes,
-
+            'upcoming_transaction_type'          => $this->upcoming_transaction_type,
+            'upcoming_transaction_private_notes' => $this->upcoming_transaction_private_notes,
+            'upcoming_transaction_public_notes'  => $this->upcoming_transaction_public_notes,
 
             'deleteRoute' => $request->user() instanceof User
                 ? [

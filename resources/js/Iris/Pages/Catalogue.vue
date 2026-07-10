@@ -29,7 +29,6 @@ const componentMap: Record<string, Component> = {
     collection: TableIrisCollection,
 }
 
-console.log("data", props.data)
 const activeComponent = computed(() => componentMap[props.tabs.current] ?? null)
 </script>
 

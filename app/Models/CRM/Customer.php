@@ -47,6 +47,7 @@ use App\Models\Helpers\TaxNumber;
 use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Models\Ordering\UpcomingTransaction;
 use App\Models\Reviews\Review;
 use App\Models\Reviews\ReviewReaction;
 use App\Models\SysAdmin\Group;
@@ -208,6 +209,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\CRM\TrafficSource|null $trafficSource
  * @property-read Collection<int, \App\Models\CRM\TrafficSource> $trafficSources
  * @property-read Collection<int, Transaction> $transactions
+ * @property-read Collection<int, UpcomingTransaction> $upcomingTransactions
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
  * @property-read WooCommerceUser|null $wooCommerceUser
  * @method static \Database\Factories\CRM\CustomerFactory factory($count = null, $state = [])
@@ -453,6 +455,11 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Order::class);
     }
 
+    public function upcomingTransactions(): HasMany
+    {
+        return $this->hasMany(UpcomingTransaction::class);
+    }
+  
     public function checkoutAbandonments(): HasMany
     {
         return $this->hasMany(CheckoutAbandonment::class);
