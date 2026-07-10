@@ -19,7 +19,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { OrgStock } from "@/types/org-stock"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
-import { faForklift } from "@fal"
+import { faForklift, faCheck, faHandPaper } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
@@ -225,6 +225,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         <template #cell(state)="{ item: stock }">
             <Icon :data="stock.state"></Icon>
         </template>
+        <template #cell(type)="{ item: stock }">
+            <FontAwesomeIcon v-if="stock.type" :icon="stock.type == 'picking' ? faCheck : faHandPaper  " :data="stock.type"></FontAwesomeIcon>
+        </template>
         <template #cell(org_sku)="{ item: stock }">
             <Link :href="orgStockRoute(stock) as string" class="primaryLink">
                 {{ stock["organisation_code"] }}
@@ -250,9 +253,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 {{ stock["family_code"] }}
             </Link>
         </template>
-        <template #cell(type)="{ item: stock }">
+        <!-- <template #cell(type)="{ item: stock }">
             {{ stock.type ?? "" }}
-        </template>
+        </template> -->
 
         <template #cell(picking_priority)="{ item: stock }">
             {{ stock.picking_priority ?? "" }}
