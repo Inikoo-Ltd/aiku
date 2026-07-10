@@ -714,7 +714,7 @@ const onAddLocationShow = () => {
                 <div class="flex justify-end gap-2">
                     <Button
                         @click="() => _popoverNotes?.hide()"
-                        type="negative"
+                        type="tertiary"
                         label="Cancel"
                     />
                     <Button
