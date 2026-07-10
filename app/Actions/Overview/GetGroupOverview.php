@@ -323,6 +323,12 @@ class GetGroupOverview extends OrgAction
                 'route' => route('grp.overview.ordering.transactions.index'),
                 'count' => $group->orderingStats->number_invoice_transactions ?? 0
             ],
+            [
+                'name'  => __('Abandoned Checkouts'),
+                'icon'  => 'fal fa-shopping-cart',
+                'route' => route('grp.overview.ordering.checkout_abandonments.index'),
+                'count' => $group->checkoutAbandonments()->count(),
+            ],
         ];
     }
 

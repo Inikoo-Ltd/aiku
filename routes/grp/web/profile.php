@@ -18,6 +18,7 @@ use App\Actions\UI\Profile\ShowProfileIndexTodo;
 use App\Actions\UI\Profile\ShowProfilePageHeadTabs;
 use App\Actions\UI\Profile\ShowProfileShowcase;
 use App\Actions\UI\Profile\UpdateProfile;
+use App\Actions\UI\Profile\UpdateUserBookmarks;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowProfile::class)->name('show');
@@ -25,6 +26,7 @@ Route::get('/edit', EditProfile::class)->name('edit');
 Route::get('/settings', EditProfileSettings::class)->name('settings');
 
 Route::post('/', UpdateProfile::class)->name('update');
+Route::patch('/bookmarks', UpdateUserBookmarks::class)->name('bookmarks.update');
 Route::get('/can-visit', CanVisit::class)->name('can_visit');
 
 

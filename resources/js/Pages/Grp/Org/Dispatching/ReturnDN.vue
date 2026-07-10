@@ -160,6 +160,15 @@ watch(pickingView, (val) => {
     localStorage.setItem('return-delivery-note:pickingView', String(val));
 })
 
+
+watch(
+	(item) => props.tabs,
+	(item: TSTabs) => {
+		if (item.current !== currentTab.value) currentTab.value = item.current;
+	},
+	{ immediate: true }
+);
+
 library.add(
 	faUserSlash,
 	faExchangeAlt,

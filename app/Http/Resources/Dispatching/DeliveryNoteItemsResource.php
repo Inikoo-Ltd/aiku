@@ -30,6 +30,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_id
  * @property mixed $quantity_waiting_warehouse
  * @property mixed $quantity_waiting_crm
+ * @property mixed $pickings
+ * @property mixed $packing_id
+ * @property mixed $is_picked
+ * @property mixed $is_packed
+ * @property mixed $warehouse_slug
+ * @property mixed $warehouse_code
+ * @property mixed $org_stocks_batch_code_count
+ * @property mixed $org_stocks_batch_code
+ * @property mixed $un_numbers
  */
 class DeliveryNoteItemsResource extends JsonResource
 {
@@ -61,7 +70,18 @@ class DeliveryNoteItemsResource extends JsonResource
             $packedInMessage = '('.__('Pack of').": $packedIn".")";
         }
 
-        $pickings = @json_decode($this->pickings) ?? [];
+        if ($this->pickings) {
+            $pickings = @json_decode($this->pickings) ?? [];
+        } else {
+            $pickings = [];
+        }
+
+        if ($this->un_numbers) {
+            $unNumbers = @json_decode($this->un_numbers) ?? null;
+        } else {
+            $unNumbers = null;
+        }
+
 
         return [
             'id'                             => $this->id,
@@ -100,26 +120,26 @@ class DeliveryNoteItemsResource extends JsonResource
             'picking_locations'              => collect($pickings)
                 ->map(function ($picking, $pickingId) {
                     return [
-                        'id'                       => $pickingId,
-                        'quantity_picked'          => (float) $picking->quantity,
-                        'location_slug'            => $picking->location_slug,
-                        'location_code'            => $picking->location_code,
-                        'warehouse_slug'           => $this->warehouse_slug,
-                        'warehouse_code'           => $this->warehouse_code,
-                        'show_batch_code_ui'       => $this->org_stocks_batch_code_count > 0,
-                        'batch_code_id'            => $picking->batch_code_id ?? $this->org_stocks_batch_code_count,
-                        'batch_code'               => $picking->batch_code ?? $this->org_stocks_batch_code,
-                        'update_route'             => [
+                        'id'                      => $pickingId,
+                        'quantity_picked'         => (float)$picking->quantity,
+                        'location_slug'           => $picking->location_slug,
+                        'location_code'           => $picking->location_code,
+                        'warehouse_slug'          => $this->warehouse_slug,
+                        'warehouse_code'          => $this->warehouse_code,
+                        'show_batch_code_ui'      => $this->org_stocks_batch_code_count > 0,
+                        'batch_code_id'           => $picking->batch_code_id ?? $this->org_stocks_batch_code_count,
+                        'batch_code'              => $picking->batch_code ?? $this->org_stocks_batch_code,
+                        'update_route'            => [
                             'name'       => 'grp.models.picking.update',
                             'parameters' => ['picking' => $pickingId],
                             'method'     => 'patch',
                         ],
-                        'split_route'              => [
+                        'split_route'             => [
                             'name'       => 'grp.models.picking.split',
                             'parameters' => ['picking' => $pickingId],
                             'method'     => 'post',
                         ],
-                        'batch_codes_fetch_route'  => [
+                        'batch_codes_fetch_route' => [
                             'name'       => 'grp.json.org_stock.batch_codes.index',
                             'parameters' => [
                                 'organisation' => $this->organisation_id,
@@ -128,14 +148,14 @@ class DeliveryNoteItemsResource extends JsonResource
                         ],
                     ];
                 })->values()->toArray(),
-            'not_picking_route' => [
+            'not_picking_route'              => [
                 'name'       => 'grp.models.delivery_note_item.not_picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method'     => 'post'
             ],
-            'un_numbers'                     => @json_decode($this->un_numbers) ?? null,
+            'un_numbers'                     => $unNumbers
         ];
     }
 }

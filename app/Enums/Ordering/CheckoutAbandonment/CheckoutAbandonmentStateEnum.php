@@ -16,4 +16,12 @@ enum CheckoutAbandonmentStateEnum: string
 
     case ABANDONED = 'abandoned';
     case RECOVERED = 'recovered';
+
+    public static function labels(): array
+    {
+        return [
+            'abandoned' => __('Abandoned'),
+            'recovered' => __('Recovered'),
+        ];
+    }
 }

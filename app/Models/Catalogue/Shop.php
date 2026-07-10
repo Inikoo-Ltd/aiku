@@ -68,6 +68,7 @@ use App\Models\Helpers\Timezone;
 use App\Models\Helpers\Upload;
 use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\ShippingCountry;
@@ -544,9 +545,10 @@ class Shop extends Model implements HasMedia, Auditable
 
     public function getPaymentAccountTypeAccount(): ?PaymentAccount
     {
+        /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $this->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
 
-        return $paymentAccountShop ? $paymentAccountShop->paymentAccount : null;
+        return $paymentAccountShop?->paymentAccount;
     }
 
     public function salesChannels(): BelongsToMany
@@ -728,6 +730,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function purges(): HasMany
     {
         return $this->hasMany(Purge::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
     }
 
     public function polls(): HasMany

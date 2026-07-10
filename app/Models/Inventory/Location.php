@@ -111,6 +111,7 @@ class Location extends Model implements Auditable
                 'code',
                 'status',
                 'created_at',
+                'organisation_id',
                 'warehouse_area_id',
                 'warehouse_id'
             ]);
@@ -120,6 +121,7 @@ class Location extends Model implements Auditable
     {
         return [
             'id'                => (string)$this->id,
+            'organisation_id'   => $this->organisation_id,
             'warehouse_id'      => $this->warehouse_id,
             'warehouse_area_id' => $this->warehouse_area_id,
             'code'              => $this->code,

@@ -190,6 +190,13 @@ export const initialiseApp = () => {
             layout.navigation = usePage().props.layout.navigation ?? null
         }
 
+        // Set Bookmarks (for Breadcrumbs), sent on first load only
+        if (usePage().props.layout?.bookmarks) {
+            layout.bookmarks = Array.isArray(usePage().props.layout.bookmarks)
+                ? usePage().props.layout.bookmarks
+                : []
+        }
+
 
         // Set data of Locale (Language)
         if (usePage().props.localeData) {

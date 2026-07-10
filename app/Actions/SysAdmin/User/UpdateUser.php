@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin\User;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Http\Resources\SysAdmin\User\UsersResource;
 use App\Models\SysAdmin\User;
@@ -53,6 +54,10 @@ class UpdateUser extends OrgAction
                 });
             }
 
+        }
+
+        if ($user->wasChanged('language_id')) {
+            BreakUserUiProps::run($user);
         }
 
         return $user;

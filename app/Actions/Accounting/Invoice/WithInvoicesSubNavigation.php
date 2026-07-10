@@ -10,7 +10,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\Accounting\SageInvoices\UI\IndexSageInvoicesReport;
+use App\Actions\Accounting\Reports\SageInvoices\UI\IndexSageInvoicesReport;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;

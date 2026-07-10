@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\CRM\Customer;
 
+use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -19,13 +20,17 @@ class CustomerSearchResultResource extends JsonResource
     {
         /** @var Customer $customer */
         $customer = $this;
-
         return [
-            'name'         => $customer->name,
-            'contact_name' => $customer->contact_name,
-            'company_name' => $customer->company_name,
-            'email'        => $customer->email,
-            'phone'        => $customer->phone,
+            'id'                        => $customer->id,
+            'slug'                      => $customer->slug,
+            'name'                      => $customer->name,
+            'location'                  => $customer->location,
+            'state_icon'                => CustomerStateEnum::stateIcon()[$customer->state->value],
+            'contact_name'              => $customer->contact_name,
+            'company_name'              => $customer->company_name,
+            'email'                     => $customer->email,
+            'phone'                     => $customer->phone,
+            'average_order_value'       => '$average_order_value', // TODO
 
 
         ];

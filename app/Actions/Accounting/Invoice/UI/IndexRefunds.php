@@ -181,8 +181,8 @@ class IndexRefunds extends OrgAction
 
 
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'payment_amount', label: __('Refunded amount'), canBeHidden: false, sortable: false, searchable: true, type: 'currency');
-            $table->column(key: 'total_to_pay', label: __('Total to refund'), canBeHidden: false, sortable: false, searchable: true, type: 'currency');
+            $table->column(key: 'payment_amount', label: __('Refunded amount'), canBeHidden: false, searchable: true, type: 'currency');
+            $table->column(key: 'total_to_pay', label: __('Total to refund'), canBeHidden: false, searchable: true, type: 'currency');
         };
     }
 
@@ -327,6 +327,15 @@ class IndexRefunds extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'paid';
+        $this->parent = $organisation;
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'all';
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
