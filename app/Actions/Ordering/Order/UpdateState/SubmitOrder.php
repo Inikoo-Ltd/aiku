@@ -173,14 +173,16 @@ class SubmitOrder extends OrgAction
 
 
             $transaction = StoreTransaction::make()->action(
-                $order,
-                $upComingTransactionProduct->currentHistoricProduct,
-                [
+                order:$order,
+                historicAsset: $upComingTransactionProduct->currentHistoricProduct,
+                modelData:[
                     'quantity_ordered' => 0,
                     'quantity_bonus'   => $upComingTransaction->quantity,
                     'is_gift'          => $isGift,
                     'is_follow_on'     => true
-                ]
+                ],
+                strict: false,
+                forceHydrators:true
             );
 
             UpdateUpcomingTransaction::run($upComingTransaction, [
