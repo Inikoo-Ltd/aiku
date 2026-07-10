@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link, router, useForm } from "@inertiajs/vue3"
+import { Link, useForm } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
@@ -19,25 +19,22 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { OrgStock } from "@/types/org-stock"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
-import { faForklift } from "@fal"
+import { faForklift, faCheck, faHandPaper } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
-import Organisation from "@/Pages/Grp/Organisations/Organisation.vue"
-import Warehouse from "@/Pages/Grp/Org/Warehouse/Warehouse.vue"
-import { overflow } from "html2canvas/dist/types/css/property-descriptors/overflow"
 import { ctrans } from "@/Composables/useTrans"
 
 library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus)
 
-defineProps<{
+const props=defineProps<{
     data: object
     tab?: string
-    canMoveAllSku?:boolean
+    canMoveAllSku?:boolean,
+    location_id: number,
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
-const layout = inject("layout", {})
 const isOpenMoveAllSku = ref(false)
 const form = useForm({
     location_id: null,
@@ -45,13 +42,10 @@ const form = useForm({
 })
 
 function onSaveMoveAllSku() {
-    const params = route().params as RouteParams
 
     form.post(
         route("grp.models.location.mass_move_stock", {
-            organisation: params.organisation,
-            warehouse: params.warehouse,
-            location: params.location,
+            location: props.location_id,
         }),
         {
             preserveScroll: true,
@@ -225,6 +219,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         <template #cell(state)="{ item: stock }">
             <Icon :data="stock.state"></Icon>
         </template>
+        <template #cell(type)="{ item: stock }">
+            <FontAwesomeIcon v-if="stock.type" :icon="stock.type == 'picking' ? faCheck : faHandPaper  " :data="stock.type"></FontAwesomeIcon>
+        </template>
         <template #cell(org_sku)="{ item: stock }">
             <Link :href="orgStockRoute(stock) as string" class="primaryLink">
                 {{ stock["organisation_code"] }}
@@ -250,9 +247,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 {{ stock["family_code"] }}
             </Link>
         </template>
-        <template #cell(type)="{ item: stock }">
+        <!-- <template #cell(type)="{ item: stock }">
             {{ stock.type ?? "" }}
-        </template>
+        </template> -->
 
         <template #cell(picking_priority)="{ item: stock }">
             {{ stock.picking_priority ?? "" }}
