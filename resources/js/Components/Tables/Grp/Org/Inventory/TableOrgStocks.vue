@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link, router, useForm } from "@inertiajs/vue3"
+import { Link, useForm } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
@@ -23,21 +23,18 @@ import { faForklift } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
-import Organisation from "@/Pages/Grp/Organisations/Organisation.vue"
-import Warehouse from "@/Pages/Grp/Org/Warehouse/Warehouse.vue"
-import { overflow } from "html2canvas/dist/types/css/property-descriptors/overflow"
 import { ctrans } from "@/Composables/useTrans"
 
 library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus)
 
-defineProps<{
+const props=defineProps<{
     data: object
     tab?: string
-    canMoveAllSku?:boolean
+    canMoveAllSku?:boolean,
+    location_id: number,
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
-const layout = inject("layout", {})
 const isOpenMoveAllSku = ref(false)
 const form = useForm({
     location_id: null,
@@ -45,13 +42,10 @@ const form = useForm({
 })
 
 function onSaveMoveAllSku() {
-    const params = route().params as RouteParams
 
     form.post(
         route("grp.models.location.mass_move_stock", {
-            organisation: params.organisation,
-            warehouse: params.warehouse,
-            location: params.location,
+            location: props.location_id,
         }),
         {
             preserveScroll: true,
