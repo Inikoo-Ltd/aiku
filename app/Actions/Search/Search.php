@@ -10,11 +10,14 @@ namespace App\Actions\Search;
 
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
+use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\ActionRequest;
 
 class Search extends OrgAction
 {
     protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers'];
+    protected const array WAREHOUSE_SCOPES = ['inventory', 'dispatching', 'locations'];
+
 
     public function handle(string $scope, string $query, array $options = []): array
     {
@@ -23,6 +26,8 @@ class Search extends OrgAction
             'catalogue' => static fn () => SearchCatalogue::run($query, $options),
             'prospects' => static fn () => SearchProspects::run($query, $options),
             'customers' => static fn () => SearchCustomers::run($query, $options),
+            'inventory' => static fn () => SearchInventory::run($query, $options),
+            'locations' => static fn () => SearchLocations::run($query, $options),
         ];
 
         if (!isset($actions[$scope])) {
@@ -44,11 +49,20 @@ class Search extends OrgAction
     {
         $route = $request->string('route_src')->toString();
         $scope = $this->getRouteScope($route);
-
         if ($scope === 'sysadmin') {
             $this->initialisationFromGroup(app('group'), $request);
 
             return $this->handle($scope, $this->validatedData['q']);
+        }
+
+        if (in_array($scope, self::WAREHOUSE_SCOPES, true)) {
+            $warehouse = Warehouse::where('slug', $request->query('warehouse'))->firstOrFail();
+            $this->initialisationFromWarehouse($warehouse, $request);
+
+            return $this->handle($scope, $this->validatedData['q'], [
+                'warehouse_id'    => $warehouse->id,
+                'organisation_id' => $warehouse->organisation_id,
+            ]);
         }
 
         if (in_array($scope, self::SHOP_SCOPES, true)) {
@@ -66,11 +80,14 @@ class Search extends OrgAction
     public function getRouteScope(string $route): ?string
     {
         $scopes = [
-            'grp.sysadmin'                     => 'sysadmin',
-            'grp.org.shops.show.catalogue'     => 'catalogue',
-            'grp.org.shops.show.crm.prospects' => 'prospects',
-            'grp.org.shops.show.crm'           => 'customers',
+            'grp.sysadmin'                            => 'sysadmin',
+            'grp.org.shops.show.catalogue'            => 'catalogue',
+            'grp.org.shops.show.crm.prospects'        => 'prospects',
+            'grp.org.shops.show.crm'                  => 'customers',
+            'grp.org.warehouses.show.inventory.'      => 'inventory',
+            'grp.org.warehouses.show.infrastructure.' => 'locations',
         ];
+
         return array_find($scopes, fn ($scope, $prefix) => str_starts_with($route, $prefix));
     }
 

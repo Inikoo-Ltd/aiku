@@ -69,6 +69,7 @@ use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
@@ -1311,6 +1312,7 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
+Route::patch('variant/{variant:id}', UpdateVariant::class)->name('variant.update');
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
 Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');

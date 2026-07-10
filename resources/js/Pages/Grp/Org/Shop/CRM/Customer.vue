@@ -101,7 +101,6 @@ const props = defineProps<{
 let currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
 const isOrderModalOpen = ref(false)
-const openUpcomingFormSignal = ref(0)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const orderForm = useForm({
@@ -147,9 +146,7 @@ const layout = inject('layout')
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
             <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
-                icon="plus" />
-            <Button v-if="currentTab === 'showcase'" @click="openUpcomingFormSignal++" label="Upcoming Transaction"
-                style="create" icon="plus" />
+                icon="plus" />            
         </template>
     </PageHeading>
 
@@ -177,8 +174,7 @@ const layout = inject('layout')
         :gr_data
         :handleTabUpdate
         :timeline="props.timeline"
-        :detachRoute="attachmentRoutes.detachRoute"
-        :openUpcomingFormSignal="openUpcomingFormSignal"
+        :detachRoute="attachmentRoutes.detachRoute"        
     />
 
   <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{

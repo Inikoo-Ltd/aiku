@@ -33,6 +33,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInCustomerSalesChannels;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
+use App\Actions\Ordering\CheckoutAbandonment\UI\IndexCheckoutAbandonments;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Ordering\Order\UI\IndexOrdersInCustomerSalesChannel;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -88,6 +89,8 @@ Route::prefix('{customer}')->as('show')->group(function () {
             Route::get('/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerInShop'])->name('.delivery-note.show');
         });
     });
+
+    Route::get('/checkout-abandonments', [IndexCheckoutAbandonments::class, 'inCustomer'])->name('.checkout_abandonments.index');
 
     Route::prefix('/channels')->as('.customer_sales_channels')->group(function () {
         Route::get('', IndexCustomerSalesChannels::class)->name('.index');

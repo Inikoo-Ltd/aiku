@@ -137,6 +137,7 @@ class TransactionsResource extends JsonResource
             'product_units'                  => $this->product_units,
             'is_cut_view'                    => $this->is_cut_view,
             'is_gift'                        => $this->is_gift,
+            'is_follow_on'                   => $this->is_follow_on,
             'batch_codes'                    => $this->batch_codes,
             'upcoming_transaction_type'          => $this->upcoming_transaction_type,
             'upcoming_transaction_private_notes' => $this->upcoming_transaction_private_notes,

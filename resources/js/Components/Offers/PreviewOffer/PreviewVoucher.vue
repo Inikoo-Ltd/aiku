@@ -15,27 +15,31 @@ const props = defineProps<{
             percentage_off?: number
         }
         name?: string
+        allowances?: Array<{
+            type?: string
+            label?: string
+            percentage_off?: number | string
+            product_code?: string | null
+            product_name?: string | null
+            quantity?: number
+            min_order_amount?: number | null
+        }>
     }
 }>()
 
 const voucherLabel = computed(() => {
-    if (!props.offer.data_allowance_signature?.percentage_off) {
-        return props.offer.code
+    const allowance = props.offer.allowances?.[0]
+
+    let detail = ''
+    if (allowance?.type === 'gift') {
+        detail = `${ctrans('Free gift')} (${allowance.product_code ?? ctrans('unknown')})`
+    } else if (allowance?.type === 'shipping') {
+        detail = ctrans('Discounted shipping')
+    } else if (props.offer.data_allowance_signature?.percentage_off) {
+        detail = `${Number(props.offer.data_allowance_signature.percentage_off) * 100}%`
     }
 
-    const percentageOff = `${Number(props.offer.data_allowance_signature?.percentage_off) * 100}%`
-
-    // const voucher = currentVoucher.value
-    
-    // if (!voucher?.discount) {
-    //     return props.offer?.code ?? ''
-    // }
-
-    const detail = props.offer.allowances?.[0]?.type === 'gift'
-        ? `${ctrans('Free gift')} (${props.offer?.gift_product_code ?? ctrans('unknown')})`
-        : percentageOff
-
-    return `${props.offer?.code} - ${detail}`
+    return detail ? `${props.offer.code} - ${detail}` : props.offer.code
 })
 </script>
 

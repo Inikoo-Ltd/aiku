@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
+use App\Actions\Dispatching\DeliveryNote\UI\ExportDeliveryNoteTariffCodes;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteDeliveryAddress;
@@ -42,6 +43,8 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::name('return.')->prefix('return')->group(function () {
         Route::patch('process', ProcessReturnDeliveryNote::class)->name('process');
     });
+
+    Route::get('tariff-codes/export', ExportDeliveryNoteTariffCodes::class)->name('tariff_codes.export');
 
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
     Route::patch('update-address', UpdateDeliveryNoteDeliveryAddress::class)->name('update_address');
