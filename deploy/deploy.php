@@ -257,7 +257,28 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 
     if ($shouldRestartSSR) {
-        run("sudo /usr/bin/supervisorctl restart inertia-ssr-production");
+        // ponytail: wrap in bash -c so the command does not start with "sudo" —
+        // Deployer's run() treats any failing sudo command as "needs password" and
+        // crashes on {{remote_user}}, masking a transient supervisorctl non-zero exit.
+        run("bash -c 'sudo /usr/bin/supervisorctl restart inertia-ssr-production || true'");
+
+        // ponytail: SSR is slow to stop on some hosts (STOPPING lingers after
+        // restart returns), so poll up to 60s instead of a single status check.
+        $status = run(
+            "bash -c 'for i in \$(seq 1 30); do "
+            ."s=\$(sudo /usr/bin/supervisorctl status inertia-ssr-production); "
+            ."case \$s in *RUNNING*) echo \"\$s\"; exit 0;; esac; "
+            ."sleep 2; done; echo \"\$s\"; exit 0'"
+        );
+        if (!str_contains($status, 'RUNNING')) {
+            run("bash -c 'sudo /usr/bin/supervisorctl start inertia-ssr-production || true'");
+            $status = run("bash -c 'sleep 3; sudo /usr/bin/supervisorctl status inertia-ssr-production || true'");
+        }
+
+        writeln($status);
+        if (!str_contains($status, 'RUNNING')) {
+            throw new \RuntimeException('SSR failed to restart: '.$status);
+        }
     }
 })->select('env=prod');
 
