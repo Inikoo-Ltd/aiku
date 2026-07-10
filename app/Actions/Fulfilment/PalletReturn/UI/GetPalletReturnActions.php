@@ -451,6 +451,7 @@ class GetPalletReturnActions
     public function addCancelButton(PalletReturn $palletReturn, array $actions): array
     {
         if (in_array($palletReturn->state, [
+            PalletReturnStateEnum::IN_PROCESS,
             PalletReturnStateEnum::CONFIRMED,
             PalletReturnStateEnum::PICKING,
             PalletReturnStateEnum::PICKED,
