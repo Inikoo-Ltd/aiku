@@ -32,12 +32,14 @@ class PackagingsResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'            => $this->id,
             'slug'          => $this->slug,
             'family_code'   => $this->family_code,
             'code'          => $this->code,
             'name'          => $this->name,
             'type'          => $this->type->value,
             'type_label'    => $this->type->labels()[$this->type->value],
+            'state'         => $this->state->value,
             'state_icon'    => $this->state->stateIcon()[$this->state->value],
             'price'         => $this->price,
             'currency_code' => $this->currency_code,

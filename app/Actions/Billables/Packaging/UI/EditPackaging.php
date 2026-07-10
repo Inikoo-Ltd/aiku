@@ -10,6 +10,7 @@ namespace App\Actions\Billables\Packaging\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingTypeEnum;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Billables\Packaging;
@@ -68,9 +69,11 @@ class EditPackaging extends OrgAction
                     'width'       => $packaging->width,
                     'height'      => $packaging->height,
                     'depth'       => $packaging->depth,
+                    'state'       => $packaging->state->value,
                     'image'       => $packaging->image ? ImageResource::make($packaging->image)->resolve() : null,
                 ],
                 'typeOptions'  => Options::forEnum(PackagingTypeEnum::class),
+                'stateOptions' => Options::forEnum(PackagingStateEnum::class),
                 'currencyCode' => $packaging->shop->currency->code,
                 'updateRoute'  => [
                     'name'       => 'grp.models.billables.packagings.update',
@@ -92,7 +95,7 @@ class EditPackaging extends OrgAction
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
-            IndexPackagings::make()->getBreadcrumbs(
+            ShowPackagings::make()->getBreadcrumbs(
                 routeName: preg_replace('/edit$/', 'index', $routeName),
                 routeParameters: Arr::only($routeParameters, ['organisation', 'shop']),
             ),

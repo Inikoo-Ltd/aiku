@@ -13,7 +13,7 @@ use App\Actions\Billables\Charge\UI\IndexCustomersInCharge;
 use App\Actions\Billables\Charge\UI\ShowCharge;
 use App\Actions\Billables\Packaging\UI\CreatePackaging;
 use App\Actions\Billables\Packaging\UI\EditPackaging;
-use App\Actions\Billables\Packaging\UI\IndexPackagings;
+use App\Actions\Billables\Packaging\UI\ShowPackagings;
 use App\Actions\Billables\Service\UI\IndexShopServices;
 use App\Actions\Billables\ShippingZone\ReorderShippingZones;
 use App\Actions\Billables\ShippingZone\UI\EditShippingZone;
@@ -80,7 +80,7 @@ Route::name("charges.")->prefix('charges')
 
 Route::name("packagings.")->prefix('packagings')
     ->group(function () {
-        Route::get('', IndexPackagings::class)->name('index');
+        Route::get('', ShowPackagings::class)->name('index');
         Route::get('create', CreatePackaging::class)->name('create');
         Route::get('{packaging}/edit', EditPackaging::class)->name('edit');
     });

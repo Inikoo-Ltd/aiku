@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Billables\Packaging\DeletePackaging;
 use App\Actions\Billables\Packaging\StorePackaging;
 use App\Actions\Billables\Packaging\StorePackagingFamily;
 use App\Actions\Billables\Packaging\UpdatePackaging;
@@ -28,4 +29,5 @@ Route::name('billables.')->prefix('shop/{shop:id}/billables')->group(function ()
 
 Route::name('billables.packagings.')->prefix('packaging/{packaging:id}')->group(function () {
     Route::patch('update', UpdatePackaging::class)->name('update');
+    Route::delete('', DeletePackaging::class)->name('delete');
 });

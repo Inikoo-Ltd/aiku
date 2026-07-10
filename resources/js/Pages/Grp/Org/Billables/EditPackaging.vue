@@ -38,9 +38,11 @@ const props = defineProps<{
         width: number | null
         height: number | null
         depth: number | null
+        state: string
         image: { thumbnail?: ImageProxy, source?: ImageProxy } | null
     }
     typeOptions: { label: string, value: string }[]
+    stateOptions: { label: string, value: string }[]
     currencyCode: string
     updateRoute: routeType
 }>()
@@ -54,6 +56,7 @@ const form = useForm<{
     width: number | null
     height: number | null
     depth: number | null
+    state: string
     image: File | null
 }>({
     family_code: props.packaging.family_code,
@@ -64,6 +67,7 @@ const form = useForm<{
     width: props.packaging.width,
     height: props.packaging.height,
     depth: props.packaging.depth,
+    state: props.packaging.state,
     image: null,
 })
 
@@ -167,12 +171,26 @@ const submit = () => {
                             <PureInput v-model="form.code" :placeholder="trans('e.g. GIFT-BOX-S')" required />
                             <p v-if="form.errors.code" class="mt-1 text-xs text-red-500">{{ form.errors.code }}</p>
                         </div>
-                        <div class="sm:col-span-2">
+                        <div>
                             <label class="block text-sm font-medium mb-1">
                                 {{ trans("Name") }} <span class="text-red-500">*</span>
                             </label>
                             <PureInput v-model="form.name" :placeholder="trans('e.g. Gift Box Small')" required />
                             <p v-if="form.errors.name" class="mt-1 text-xs text-red-500">{{ form.errors.name }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">
+                                {{ trans("State") }} <span class="text-red-500">*</span>
+                            </label>
+                            <Select
+                                v-model="form.state"
+                                :options="stateOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                :placeholder="trans('Select a state')"
+                                class="w-full"
+                            />
+                            <p v-if="form.errors.state" class="mt-1 text-xs text-red-500">{{ form.errors.state }}</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1">

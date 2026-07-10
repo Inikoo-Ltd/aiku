@@ -72,7 +72,7 @@ class CreatePackaging extends OrgAction
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
-            IndexPackagings::make()->getBreadcrumbs(
+            ShowPackagings::make()->getBreadcrumbs(
                 routeName: preg_replace('/create$/', 'index', $routeName),
                 routeParameters: $routeParameters,
             ),

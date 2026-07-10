@@ -8,7 +8,6 @@
 
 namespace App\Actions\Billables\Packaging\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Http\Resources\Catalogue\PackagingsResource;
@@ -19,8 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -56,6 +54,7 @@ class IndexPackagings extends OrgAction
             ->where('packagings.shop_id', $shop->id)
             ->defaultSort('packagings.code')
             ->select([
+                'packagings.id',
                 'packagings.slug',
                 'packagings.family_code',
                 'packagings.code',
@@ -103,63 +102,13 @@ class IndexPackagings extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type_label', label: __('Type'), canBeHidden: false)
                 ->column(key: 'dimensions', label: __('Dimensions'), canBeHidden: false)
-                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, align: 'right', type: 'currency');
+                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, align: 'right', type: 'currency')
+                ->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 
-    public function htmlResponse(LengthAwarePaginator $packagings, ActionRequest $request): Response
+    public function jsonResponse(LengthAwarePaginator $packagings): AnonymousResourceCollection
     {
-        return Inertia::render(
-            'Org/Billables/Packagings',
-            [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
-                'title'       => __('Packagings'),
-                'pageHead'    => [
-                    'title'   => __('Packagings'),
-                    'model'   => $this->shop->code,
-                    'icon'    => [
-                        'icon'  => ['fal', 'fa-box-open'],
-                        'title' => __('Packagings')
-                    ],
-                    'actions' => [
-                        $this->canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New packaging'),
-                            'label'   => __('Packaging'),
-                            'route'   => [
-                                'name'       => 'grp.org.shops.show.billables.packagings.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-                    ]
-                ],
-                'data'        => PackagingsResource::collection($packagings),
-            ]
-        )->table($this->tableStructure(shop: $this->shop, canEdit: $this->canEdit));
-    }
-
-    public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array
-    {
-        return array_merge(
-            ShowShop::make()->getBreadcrumbs($routeParameters),
-            [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => [
-                            'name'       => $routeName,
-                            'parameters' => $routeParameters
-                        ],
-                        'label' => __('Packagings'),
-                        'icon'  => 'fal fa-bars'
-                    ],
-                    'suffix' => $suffix
-                ]
-            ]
-        );
+        return PackagingsResource::collection($packagings);
     }
 }
