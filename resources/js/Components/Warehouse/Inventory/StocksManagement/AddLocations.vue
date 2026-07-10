@@ -132,7 +132,6 @@ defineExpose({
                 </div>
 
                 <Button
-                    v-if="layout.app.environment === 'local'"
                     @click="() => onAddNewLocation()"
                     :disabled="!newLocation"
                     :loading="isLoadingAddNewLocation"
