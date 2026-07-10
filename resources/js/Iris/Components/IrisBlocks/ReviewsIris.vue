@@ -353,7 +353,7 @@ const reviewLink = computed(() => {
 
                         <div class="flex justify-between mt-auto text-[11px] text-gray-400 w-full">
                             <div class="flex items-center w-fit">
-                                <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location[1] != layout?.iris?.shop?.location[1]" />
+                                <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location?.[1] != layout?.iris?.shop?.location?.[1]" />
                             </div>
                             <div v-if="hasTranslation(review)" @click.stop="toggleTranslation(review)"
                                  class="text-gray-400 hover:text-gray-700 cursor-pointer">
@@ -496,7 +496,7 @@ const reviewLink = computed(() => {
                     {{
                         show_staff_who_reply
                             ? selectedReview.reply_by
-                            : layout.iris.shop.name
+                            : layout?.iris?.shop?.name
                     }}
                 </div>
 
