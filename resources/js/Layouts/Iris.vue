@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed, defineAsyncComponent } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -25,12 +25,12 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
-import IrisRightSideBasket from '@iris/Components/IrisRightSideBasket.vue'
+const IrisRightSideBasket = defineAsyncComponent(() => import('@iris/Components/IrisRightSideBasket.vue'))
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
-import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
+const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
 import axios from 'axios'
 import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
-import BundleSidebar from '@/Components/Dropshipping/BundleSidebar.vue'
+const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshipping/BundleSidebar.vue'))
 import { useBundle } from '@/Composables/useBundle'
 
 interface ChatConfig {

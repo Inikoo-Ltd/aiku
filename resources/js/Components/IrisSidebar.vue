@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Drawer from 'primevue/drawer';
-import { ref, inject, onMounted, onUnmounted, computed, watch, type Ref } from 'vue';
+import { ref, inject, onMounted, onUnmounted, computed, watch, defineAsyncComponent, type Ref } from 'vue';
+const Drawer = defineAsyncComponent(() => import('primevue/drawer'));
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faBars } from '@fal';
 import { getStyles } from '@/Composables/styles';
