@@ -110,8 +110,8 @@ class IndexPackagings extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type_label', label: __('Type'), canBeHidden: false)
                 ->column(key: 'dimensions', label: __('Dimensions'), canBeHidden: false)
-                ->column(key: 'leaflets', label: __('Default leaflets'), canBeHidden: false)
                 ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, align: 'right', type: 'currency')
+                ->column(key: 'leaflets', label: __('Default leaflets'), canBeHidden: false)
                 ->column(key: 'actions', label: '', canBeHidden: false);
         };
     }

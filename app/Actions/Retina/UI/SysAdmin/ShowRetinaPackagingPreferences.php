@@ -9,9 +9,13 @@
 namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Billables\Leaflet;
+use App\Models\Billables\ModelHasLeaflet;
 use App\Models\Billables\Packaging;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -47,8 +51,11 @@ class ShowRetinaPackagingPreferences extends RetinaAction
                         'title' => $title
                     ],
                 ],
-                'packagingOptions' => $this->getPackagingOptions(),
-                'currencyCode'     => $this->shop->currency->code,
+                'packagingOptions'   => $this->getPackagingOptions(),
+                'leafletOptions'     => $this->getLeafletOptions(),
+                'selectedLeafletIds' => $this->getSelectedLeafletIds(),
+                'customerLeaflets'   => $this->getCustomerLeaflets(),
+                'currencyCode'       => $this->shop->currency->code,
             ]
         );
     }
@@ -80,6 +87,62 @@ class ShowRetinaPackagingPreferences extends RetinaAction
             ->sortBy('price_min')
             ->values()
             ->all();
+    }
+
+    /** @return array<int, array{id: int, label: string, type: string, type_label: string, price: float, family_codes: array<int, string>}> */
+    private function getLeafletOptions(): array
+    {
+        return Leaflet::where('shop_id', $this->shop->id)
+            ->where('state', LeafletStateEnum::ACTIVE)
+            ->orderBy('price')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Leaflet $leaflet) => [
+                'id'           => $leaflet->id,
+                'label'        => $leaflet->name,
+                'type'         => $leaflet->type->value,
+                'type_label'   => $leaflet->type->labels()[$leaflet->type->value],
+                'price'        => (float) $leaflet->price,
+                'family_codes' => $leaflet->family_codes ?? [],
+            ])->all();
+    }
+
+    private function customerLeafletQuery(): Builder
+    {
+        return ModelHasLeaflet::where('shop_id', $this->shop->id)
+            ->where('model_type', 'Customer')
+            ->where('model_id', $this->customer->id);
+    }
+
+    /** @return array<int, int> */
+    private function getSelectedLeafletIds(): array
+    {
+        return $this->customerLeafletQuery()
+            ->pluck('leaflet_id')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, array{id: int, name: string, type_label: string, size: string|null, uploaded_at: string|null, state: string, state_label: string}> */
+    private function getCustomerLeaflets(): array
+    {
+        return $this->customerLeafletQuery()
+            ->whereNotNull('media_id')
+            ->with('media')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (ModelHasLeaflet $customerLeaflet) => [
+                'id'          => $customerLeaflet->id,
+                'name'        => $customerLeaflet->media?->file_name ?? $customerLeaflet->name,
+                'type_label'  => $customerLeaflet->type->labels()[$customerLeaflet->type->value],
+                'size'        => $customerLeaflet->media
+                    ? round($customerLeaflet->media->size / 1048576, 1).' MB'
+                    : null,
+                'uploaded_at' => $customerLeaflet->created_at?->format('d/m/Y'),
+                'state'       => $customerLeaflet->state->value,
+                'state_label' => $customerLeaflet->state->labels()[$customerLeaflet->state->value],
+            ])->all();
     }
 
     private function getFamilyLabel(Collection $packagings): string

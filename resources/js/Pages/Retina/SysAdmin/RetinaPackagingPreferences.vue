@@ -43,10 +43,32 @@ interface PackagingOption {
     image: { thumbnail?: ImageProxy, source?: ImageProxy } | null
 }
 
+interface LeafletOption {
+    id: number
+    label: string
+    type: string
+    type_label: string
+    price: number
+    family_codes: string[]
+}
+
+interface CustomerLeaflet {
+    id: number
+    name: string
+    type_label: string
+    size: string | null
+    uploaded_at: string | null
+    state: string
+    state_label: string
+}
+
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     packagingOptions?: PackagingOption[]
+    leafletOptions?: LeafletOption[]
+    selectedLeafletIds?: number[]
+    customerLeaflets?: CustomerLeaflet[]
     currencyCode?: string
 }>()
 
@@ -87,26 +109,39 @@ const formatPriceRange = (option: PackagingOption) => {
 
 const selectedPackaging = ref(packagingOptions.value[0]?.family_code ?? null)
 
-const inserts = ref([
-    { type: "thank_you_card", label: "Thank You Card", description: "Upload your thank you card.", price: "£0.20", enabled: true },
-    { type: "promotional_leaflet", label: "Promotional Leaflet", description: "Upload your promotional leaflet.", price: "£0.20", enabled: true },
-    { type: "care_instructions", label: "Care Instructions", description: "Upload product care and safety information.", price: "£0.20", enabled: true },
-    { type: "custom_leaflet", label: "Custom Leaflet", description: "Upload your custom leaflet.", price: "£0.30", enabled: true },
-])
+const leafletOptions = computed(() => props.leafletOptions ?? [])
+
+const enabledInserts = ref<Record<number, boolean>>(
+    Object.fromEntries(
+        leafletOptions.value.map(leaflet => [
+            leaflet.id,
+            (props.selectedLeafletIds ?? []).includes(leaflet.id),
+        ])
+    )
+)
+
+const inserts = computed(() =>
+    leafletOptions.value.filter(leaflet =>
+        selectedPackaging.value && leaflet.family_codes.includes(selectedPackaging.value)
+    )
+)
+
+const formatInsertPrice = (price: number) => {
+    if (price === 0) {
+        return trans("Free")
+    }
+
+    return locale.currencyFormat(props.currencyCode ?? "USD", price)
+}
 
 const personalisedMessage = ref("Thank you for your order!\nWe hope you love our products.")
 const maxMessageLength = 200
 
-const leaflets = ref([
-    { name: "Thank_You_Card_AW.pdf", type: "Thank You Card", size: "0.8 MB", uploadedAt: "12/05/2026", status: "Active" },
-    { name: "Promotional_Leaflet_AW.pdf", type: "Promotional Leaflet", size: "1.2 MB", uploadedAt: "12/05/2026", status: "Active" },
-    { name: "Care_Instructions_AW.pdf", type: "Care Instructions", size: "0.8 MB", uploadedAt: "05/05/2026", status: "Active" },
-    { name: "Custom_Leaflet_AW.pdf", type: "Custom Leaflet", size: "0.9 MB", uploadedAt: "01/05/2026", status: "Active" },
-])
+const leaflets = computed(() => props.customerLeaflets ?? [])
 
 const summary = computed(() => ({
     defaultPackaging: packagingOptions.value.find(option => option.family_code === selectedPackaging.value)?.label,
-    insertsSelected: inserts.value.filter(insert => insert.enabled).length,
+    insertsSelected: inserts.value.filter(insert => enabledInserts.value[insert.id]).length,
     hasMessage: personalisedMessage.value.trim().length > 0,
     leafletsUploaded: leaflets.value.length,
 }))
@@ -219,10 +254,10 @@ const saveSettings = () => {
                 <div class="divide-y divide-gray-100">
                     <label
                         v-for="insert in inserts"
-                        :key="insert.type"
+                        :key="insert.id"
                         class="flex items-center gap-3 py-3 cursor-pointer"
                     >
-                        <Checkbox v-model="insert.enabled" :binary="true" />
+                        <Checkbox v-model="enabledInserts[insert.id]" :binary="true" />
                         <span class="flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-400">
                             <FontAwesomeIcon :icon="['fal', 'file-alt']" fixed-width aria-hidden="true" />
                         </span>
@@ -231,13 +266,17 @@ const saveSettings = () => {
                                 <span class="font-medium">{{ insert.label }}</span>
                                 <span class="ml-1 text-xs font-medium" :style="{ color: accentStyle.text }">({{ trans("Size to be confirmed") }})</span>
                             </span>
-                            <span class="block text-xs text-gray-500">{{ insert.description }}</span>
+                            <span class="block text-xs text-gray-500">{{ insert.type_label }}</span>
                         </span>
-                        <span class="text-sm text-gray-600">{{ insert.price }}</span>
+                        <span class="text-sm text-gray-600">{{ formatInsertPrice(insert.price) }}</span>
                         <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="trans('More actions')">
                             <FontAwesomeIcon :icon="['fal', 'ellipsis-v']" fixed-width aria-hidden="true" />
                         </button>
                     </label>
+                </div>
+
+                <div v-if="!inserts.length" class="rounded-md border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
+                    {{ trans("No inserts or leaflets are available for the selected packaging.") }}
                 </div>
 
                 <div class="mt-3 rounded-md px-4 py-2 text-xs flex gap-2 items-start" :style="{ backgroundColor: accentStyle.softBg, color: accentStyle.text }">
@@ -301,19 +340,22 @@ const saveSettings = () => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="leaflet in leaflets" :key="leaflet.name">
+                            <tr v-for="leaflet in leaflets" :key="leaflet.id">
                                 <td class="py-3 pr-4 whitespace-nowrap">
                                     <span class="inline-flex items-center gap-2">
                                         <FontAwesomeIcon :icon="['fal', 'file-pdf']" class="text-red-500" fixed-width aria-hidden="true" />
                                         {{ leaflet.name }}
                                     </span>
                                 </td>
-                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.type }}</td>
-                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.size }}</td>
-                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.uploadedAt }}</td>
+                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.type_label }}</td>
+                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.size ?? "-" }}</td>
+                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.uploaded_at ?? "-" }}</td>
                                 <td class="py-3 pr-4 whitespace-nowrap">
-                                    <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                                        {{ leaflet.status }}
+                                    <span
+                                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                                        :class="leaflet.state === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+                                    >
+                                        {{ leaflet.state_label }}
                                     </span>
                                 </td>
                                 <td class="py-3 text-right whitespace-nowrap">
@@ -327,6 +369,10 @@ const saveSettings = () => {
                             </tr>
                         </tbody>
                     </table>
+
+                    <div v-if="!leaflets.length" class="rounded-md border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
+                        {{ trans("You have not uploaded any leaflets yet.") }}
+                    </div>
                 </div>
             </section>
 
