@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * Author Louis Perez
+ * Created on 10-07-2026-17h-09m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
+
 namespace App\Actions\Inventory\Location;
 
 use App\Actions\Inventory\LocationOrgStock\DeleteLocationOrgStock;
