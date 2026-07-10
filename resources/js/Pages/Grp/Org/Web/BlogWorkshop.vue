@@ -141,6 +141,8 @@ const beforePublish = (route, popover) => {
 };
 
 const openWebsite = () => window.open(props.url, '_blank');
+
+console.log('props',props)
 </script>
 
 <template>
@@ -172,8 +174,8 @@ const openWebsite = () => window.open(props.url, '_blank');
   <Beefree
     v-if="webpage_sub_type === 'mailshot'"
     :snapshot="webpage"
-    :mergeTags="mergeTags ?? []"
-    :updateRoute="updateRoute"
+    :mergeTags="webpage.mergeTags ?? []"
+    :updateRoute="webpage.updateRoute"
     :organisationSlug="route().params?.organisation"
     :shopSlug="route().params?.shop"
     ref="_beefree"

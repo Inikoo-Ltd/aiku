@@ -35,7 +35,6 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
-
 const primaryColor = computed(() => {
   return layout?.iris?.theme?.color?.[4] || "#3b82f6"
 })
