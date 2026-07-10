@@ -13,7 +13,6 @@ use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactionsInGroup
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccountsInGroup;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
-use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequestsInGroup;
 use App\Actions\Billables\Charge\UI\IndexCharges;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInGroup;
 use App\Actions\Catalogue\Product\UI\IndexProductsInGroup;
@@ -52,6 +51,7 @@ use App\Actions\Inventory\Location\UI\IndexLocations;
 use App\Actions\Inventory\OrgStockMovement\UI\IndexOrgStockMovements;
 use App\Actions\Inventory\Warehouse\UI\IndexWarehouses;
 use App\Actions\Inventory\WarehouseArea\UI\IndexWarehouseAreas;
+use App\Actions\Ordering\CheckoutAbandonment\UI\IndexCheckoutAbandonments;
 use App\Actions\Ordering\Order\UI\IndexOrdersInBasketInGroup;
 use App\Actions\Ordering\Order\UI\IndexOrdersInGroup;
 use App\Actions\Ordering\Purge\UI\IndexPurges;
@@ -62,6 +62,7 @@ use App\Actions\SupplyChain\Agent\UI\IndexAgents;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
 use App\Actions\SysAdmin\Group\UI\IndexHistoryInGroup;
+use App\Actions\SysAdmin\WebUserRequest\UI\IndexWebUserRequestsInGroup;
 use App\Actions\Web\Banner\UI\IndexBanners;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
 use App\Actions\Web\Website\UI\IndexWebsites;
@@ -123,6 +124,7 @@ Route::name('crm.')->prefix('crm')->group(function () {
 Route::name('ordering.')->prefix('ordering')->group(function () {
     Route::get('/orders-in-basket', IndexOrdersInBasketInGroup::class)->name('orders_in_basket.index');
     Route::get('/orders', IndexOrdersInGroup::class)->name('orders.index');
+    Route::get('/checkout-abandonments', [IndexCheckoutAbandonments::class, 'inGroup'])->name('checkout_abandonments.index');
     Route::get('/backlog', [ShowOrdersBacklog::class, 'inGroup'])->name('backlog');
     Route::get('/purges', [IndexPurges::class, 'inGroup'])->name('purges.index');
     Route::get('/delivery-notes', IndexDeliveryNotesInGroup::class)->name('delivery_notes.index');

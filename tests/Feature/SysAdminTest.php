@@ -8,7 +8,6 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Helpers\Address\HydrateAddress;
 use App\Actions\Helpers\Address\ParseCountryID;
@@ -23,6 +22,7 @@ use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\Maintenance\Appearance\ResetModelColours;
 use App\Actions\Maintenance\SysAdmin\RepairUsersAdminsAuth;
 use App\Actions\SysAdmin\Admin\StoreAdmin;
+use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\SysAdmin\Group\HydrateGroup;
 use App\Actions\SysAdmin\Group\StoreGroup;
 use App\Actions\SysAdmin\Group\UpdateGroup;

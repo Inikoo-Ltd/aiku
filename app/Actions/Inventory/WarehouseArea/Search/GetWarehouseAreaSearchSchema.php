@@ -24,6 +24,10 @@ class GetWarehouseAreaSearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name' => 'organisation_id',
+                        'type' => 'int32',
+                    ],
+                    [
                         'name' => 'warehouse_id',
                         'type' => 'int32',
                     ],

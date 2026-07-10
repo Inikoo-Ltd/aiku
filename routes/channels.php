@@ -125,6 +125,10 @@ Broadcast::channel("updateWebblocks.{websiteSlug}", function () {
     return true;
 });
 
+Broadcast::channel("grp.{organisation}.stock_movement", function () {
+    return true;
+});
+
 Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $ulid) {
     $session = ChatSession::where('ulid', $ulid)->first();
     if ($session) {

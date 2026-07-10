@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 28-10-2024-10h-42m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2024
 */
 
@@ -39,7 +39,6 @@ enum InvoiceCategoryTypeEnum: string
             'in_sales_channel'                 => __('In sales channel'),
             'in_sales_channel_shop'            => __('In sales channel/shop'),
             'in_shop_or_in_sales_channel_shop' => __('In shop or in sales channel/shop'),
-            ''                                 => __('In sales channel/shop'),
         ];
     }
 }

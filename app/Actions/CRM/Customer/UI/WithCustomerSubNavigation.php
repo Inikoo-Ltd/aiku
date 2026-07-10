@@ -60,6 +60,18 @@ trait WithCustomerSubNavigation
                 ]
             ],
             [
+                'label'    => __('Checkout abandonments'),
+                'number'   => $customer->checkoutAbandonments()->count(),
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.crm.customers.show.checkout_abandonments.index',
+                    'parameters' => [$this->organisation->slug, $customer->shop->slug, $customer->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-shopping-cart'],
+                    'tooltip' => __('Checkout abandonments')
+                ]
+            ],
+            [
                 'label'    => $deliveryNotedLabel,
                 'number'   => $customer->stats->number_delivery_notes,
                 'route'     => [

@@ -23,7 +23,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
     use WithDeliveryNoteItemUI;
 
-    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null): LengthAwarePaginator
+    public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
     {
         $globalSearch = $this->getGlobalSearchFilter();
 
@@ -34,6 +34,10 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
+
+        if ($deliveryNoteItemId) {
+            $query->where('delivery_note_items.id', $deliveryNoteItemId);
+        }
 
         if ($stateFilter) {
             if (is_array($stateFilter)) {

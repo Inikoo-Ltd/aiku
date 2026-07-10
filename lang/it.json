@@ -4208,7 +4208,7 @@
     "Or enter this code on your Authenticator App": "Oppure inserisci questo codice sulla tua app Authenticator",
     "Orange": "Arancione",
     "Order": "Ordine",
-    "Order :n+ from :category range to get :percentage off": "Ordina :n+ dall'intervallo :category per ottenere :percentuale di sconto",
+    "Order :n+ from :category range to get :percentage off": "Ordina almeno :n+ articoli della categoria :category e ottieni il :percentage di sconto.",
     "Order :xorder is not paid yet": "Ordine :xorder non è ancora stato pagato",
     "Order Details": "Dettagli dell'ordine",
     "Order Information": "Informazioni sull'ordine",
