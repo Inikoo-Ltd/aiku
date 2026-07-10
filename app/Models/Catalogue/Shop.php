@@ -545,9 +545,10 @@ class Shop extends Model implements HasMedia, Auditable
 
     public function getPaymentAccountTypeAccount(): ?PaymentAccount
     {
+        /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $this->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
 
-        return $paymentAccountShop ? $paymentAccountShop->paymentAccount : null;
+        return $paymentAccountShop?->paymentAccount;
     }
 
     public function salesChannels(): BelongsToMany
