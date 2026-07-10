@@ -27,6 +27,7 @@ trait WithDeliveryNoteTariffCodesQuery
                 'tu.tariff_code',
                 DB::raw('MAX(tc.description) as description'),
                 DB::raw('COALESCE(c.code, tu.country_of_origin) as origin'),
+                DB::raw('MAX(c.name) as origin_name'),
                 DB::raw("bool_or(tu.un_number IS NOT NULL AND tu.un_number <> 'None') as dg"),
                 DB::raw("string_agg(DISTINCT tu.un_number, ', ') FILTER (WHERE tu.un_number IS NOT NULL AND tu.un_number <> 'None') as un_numbers"),
                 DB::raw("string_agg(DISTINCT os.code, ', ' ORDER BY os.code) FILTER (WHERE os.code IS NOT NULL) as parts"),
