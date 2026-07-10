@@ -389,7 +389,7 @@ class StoreWebpage extends OrgAction
      */
     public function action(Website|Webpage $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Webpage
     {
-        \Log::info(json_encode($modelData));
+
         if (!$audit) {
             Webpage::disableAuditing();
         }
@@ -400,7 +400,7 @@ class StoreWebpage extends OrgAction
         $this->parent         = $parent;
         $this->website        = $parent instanceof Website ? $parent : $parent->website;
         $this->initialisationFromShop($this->website->shop, $modelData);
-        \Log::info("checkpoint 1 here, and is strict: ".($this->strict ? 'true' : 'false')." and is audit: ".($audit ? 'true' : 'false'));
+
         return $this->handle($parent, $this->validatedData);
     }
 
