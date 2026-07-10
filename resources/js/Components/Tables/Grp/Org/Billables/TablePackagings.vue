@@ -9,8 +9,17 @@ import Table from "@/Components/Table/Table.vue"
 import type { Links, Meta } from "@/types/Table"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { inject } from "vue"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Icon from "@/Components/Icon.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import ToggleSwitch from "primevue/toggleswitch"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPencil, faTrashAlt } from "@far"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
+import { ref } from "vue"
+
+library.add(faPencil, faTrashAlt)
 
 defineProps<{
     data: {
@@ -22,6 +31,20 @@ defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
+
+const togglingStateId = ref<number | null>(null)
+
+const toggleState = (packaging: { id: number, state: string }, isActive: boolean) => {
+    router.patch(
+        route('grp.models.billables.packagings.update', [packaging.id]),
+        { state: isActive ? 'active' : 'in_process' },
+        {
+            preserveScroll: true,
+            onStart: () => togglingStateId.value = packaging.id,
+            onFinish: () => togglingStateId.value = null,
+        }
+    )
+}
 
 const packagingEditRoute = (packaging: { slug: string }) => {
     const params = route().params as Record<string, string>
@@ -50,6 +73,42 @@ const packagingEditRoute = (packaging: { slug: string }) => {
         </template>
         <template #cell(price)="{ item: packaging }">
             {{ locale.currencyFormat(packaging.currency_code, packaging.price) }}
+        </template>
+        <template #cell(actions)="{ item: packaging }">
+            <div class="flex items-center gap-3 justify-end">
+                <ToggleSwitch
+                    :modelValue="packaging.state === 'active'"
+                    :disabled="togglingStateId === packaging.id || packaging.state === 'discontinued'"
+                    v-tooltip="packaging.state === 'active' ? trans('Deactivate') : trans('Activate')"
+                    @update:modelValue="(value: boolean) => toggleState(packaging, value)"
+                />
+                <Link
+                    :href="packagingEditRoute(packaging)"
+                    class="text-gray-400 hover:text-gray-600"
+                    v-tooltip="trans('Edit')"
+                >
+                    <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
+                </Link>
+
+                <ModalConfirmationDelete
+                    :routeDelete="{
+                        name: 'grp.models.billables.packagings.delete',
+                        parameters: [packaging.id],
+                    }"
+                    :title="trans('Delete packaging :code?', { code: packaging.code })"
+                    @success="router.reload()"
+                >
+                    <template #default="{ changeModel }">
+                        <button
+                            class="text-red-400 hover:text-red-600"
+                            v-tooltip="trans('Delete')"
+                            @click="changeModel"
+                        >
+                            <FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />
+                        </button>
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
         </template>
     </Table>
 </template>
