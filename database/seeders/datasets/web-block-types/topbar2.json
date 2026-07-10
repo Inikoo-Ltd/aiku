@@ -6,7 +6,7 @@
 	"component": "topbar",
 	"fixed": false,
 	"website_type" : ["b2b","b2c"],
-	"shop_contained" : ["uk"],
+	"shop_availability" : ["uk"],
 	"is_in_test" : false,
 	"data": {
 		"fieldValue": {
