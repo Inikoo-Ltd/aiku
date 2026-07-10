@@ -10,7 +10,7 @@ import { faCheck, faPlus, faMinus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
-import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
+import IrisBlockRenderer from "@/Iris/Components/IrisBlockRenderer.vue"
 import { useStructuredData } from "@/Iris/Composables/useStructuredData"
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 library.add(faCheck, faPlus, faMinus)
@@ -42,7 +42,13 @@ defineOptions({ layout: LayoutIris })
 
 const layout: any = inject("layout", {})
 const review = ref(usePage().props?.iris?.website?.reviews_settings)
-const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
+const getScreenType = (): "mobile" | "tablet" | "desktop" => {
+    if (typeof window === "undefined") return "desktop"
+    if (window.innerWidth < 640) return "mobile"
+    if (window.innerWidth < 1024) return "tablet"
+    return "desktop"
+}
+const screenType = ref<"mobile" | "tablet" | "desktop">(getScreenType())
 const currentUrl = ref("")
 const structuredDataScript = ref<HTMLScriptElement | null>(null)
 const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
@@ -55,10 +61,7 @@ provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
 provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
 
 const checkScreenType = () => {
-    const width = window.innerWidth
-    if (width < 640) screenType.value = "mobile"
-    else if (width >= 640 && width < 1024) screenType.value = "tablet"
-    else screenType.value = "desktop"
+    screenType.value = getScreenType()
 }
 
 const robotsContent = computed(() => {
@@ -123,10 +126,11 @@ onBeforeUnmount(() => {
                 class="w-full"
                 :id="`v-${web_block_data.type}-${index}`"
             >
-                <component
+                <IrisBlockRenderer
+                    :type="web_block_data.type"
+                    :shopType="layout.retina.type"
                     :screenType="screenType"
                     :code="web_block_data.type"
-                    :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
                     :fieldValue="web_block_data?.web_block?.layout?.data?.fieldValue || web_block_data.structure"
                     :indexBlock="Number(index)"
                 />

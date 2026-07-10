@@ -75,7 +75,13 @@ const propsAnnouncementsTopFooter = announcementsByPosition('top-footer')
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
-const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const getInitialScreenType = (): 'mobile' | 'tablet' | 'desktop' => {
+    if (typeof window === 'undefined') return 'desktop'
+    if (window.innerWidth < 640) return 'mobile'
+    if (window.innerWidth < 1024) return 'tablet'
+    return 'desktop'
+}
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>(getInitialScreenType())
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
