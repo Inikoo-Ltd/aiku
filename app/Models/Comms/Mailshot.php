@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Web\Webpage;
 
 /**
  * App\Models\Comms\Mailshot
@@ -224,5 +225,10 @@ class Mailshot extends Model implements Auditable
     public function parentMailshot(): BelongsTo
     {
         return $this->belongsTo(Mailshot::class, 'parent_mailshot_id');
+    }
+
+    public function webpages(): MorphMany
+    {
+        return $this->morphMany(Webpage::class, 'model');
     }
 }
