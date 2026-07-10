@@ -102,7 +102,7 @@ class BlogWebpageWorkshopResource extends JsonResource
             ],
             'updateRoute'   => [
                     'name'       => 'grp.models.model_has_web_block.update',
-                    'parameters' => $webpage->modelHasWebBlocks->first()?->webBlock?->id,
+                    'parameters' => $webpage->modelHasWebBlocks?->first()?->webBlock?->id,
                     'method'     => 'patch',
                 ],
             'publishRoute'  => [

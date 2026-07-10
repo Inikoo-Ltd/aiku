@@ -25,6 +25,7 @@ use App\Models\Catalogue\Product;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use OwenIt\Auditing\Resolvers\UserResolver;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 
 class PublishWebpage extends OrgAction
 {
@@ -54,7 +55,15 @@ class PublishWebpage extends OrgAction
             ]);
         }
 
-        $currentUnpublishedLayout = $webpage->unpublishedSnapshot->layout;
+        $currentUnpublishedLayout = $webpage->sub_type == WebpageSubTypeEnum::MAILSHOT ? [
+            'builderType' => "beefree",
+            'beefree' => [
+                'json' => Arr::get($modelData, 'layout', []),
+                'html' => Arr::get($modelData, 'compiled_layout', ''),
+            ]
+        ] : $webpage->unpublishedSnapshot->layout;
+
+
 
         /** @var Snapshot $snapshot */
         $snapshot = StoreWebpageSnapshot::run(
@@ -111,6 +120,8 @@ class PublishWebpage extends OrgAction
     {
         $rules = [
             'comment' => ['sometimes', 'required', 'string', 'max:1024'],
+            'layout'  => ['sometimes', 'required', 'array'],
+            'compiled_layout' => ['sometimes', 'required', 'string'],
         ];
 
         if (!$this->strict) {

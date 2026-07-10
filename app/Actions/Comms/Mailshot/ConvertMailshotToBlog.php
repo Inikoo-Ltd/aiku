@@ -25,7 +25,13 @@ class ConvertMailshotToBlog extends OrgAction
     {
         $pageJson = BeefreeConvertEmailJsonToPageJson::make()->handle($mailshot->organisation, $mailshot);
 
-        $fieldValue = array_merge(['builder_type' => "beefree"], $pageJson);
+        $fieldValue = [
+            'builderType' => "beefree",
+            'beefree' => [
+                'json' => $pageJson,
+                'html' => '',
+            ]
+        ];
 
         $webpage = StoreWebpage::make()->action(
             $mailshot->shop->website,
