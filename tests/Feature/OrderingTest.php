@@ -63,7 +63,6 @@ use App\Actions\Ordering\Transaction\StoreTransactionFromShipping;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
-use App\Actions\Ordering\UpcomingTransaction\UI\IndexUpcomingTransactions;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -116,7 +115,11 @@ use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
+use function Pest\Laravel\patchJson;
+use function Pest\Laravel\postJson;
 
 beforeAll(function () {
     loadDB();
@@ -1326,6 +1329,8 @@ test('store upcoming transaction', function () {
         'private_notes' => 'warehouse only',
     ]);
 
+    $upcomingTransaction->refresh();
+
     expect($upcomingTransaction)->toBeInstanceOf(UpcomingTransaction::class)
         ->and($upcomingTransaction->customer_id)->toBe($this->customer->id)
         ->and($upcomingTransaction->group_id)->toBe($this->customer->group_id)
@@ -1367,35 +1372,80 @@ test('delete upcoming transaction', function () {
     expect(UpcomingTransaction::find($upcomingTransaction->id))->toBeNull();
 });
 
-test('index upcoming transactions handle only returns ready', function () {
+test('store upcoming transaction via controller', function () {
+    $response = postJson(route('grp.models.customer.upcoming_transactions.store', [$this->customer->id]), [
+        'product_id' => $this->product->id,
+        'quantity'   => 2,
+        'type'       => UpcomingTransactionTypeEnum::FOLLOW_ON->value,
+    ]);
+
+    $response->assertSuccessful();
+    expect(UpcomingTransaction::where('customer_id', $this->customer->id)
+        ->where('product_id', $this->product->id)
+        ->where('type', UpcomingTransactionTypeEnum::FOLLOW_ON)
+        ->exists())->toBeTrue();
+});
+
+test('update upcoming transaction via controller', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    $response = patchJson(route('grp.models.upcoming_transaction.update', [$upcomingTransaction->id]), [
+        'quantity' => 9,
+    ]);
+
+    $response->assertOk();
+    expect((float)$upcomingTransaction->refresh()->quantity)->toBe(9.0);
+});
+
+test('delete upcoming transaction via controller', function () {
+    $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
+        'product_id' => $this->product->id,
+        'quantity'   => 1,
+        'type'       => UpcomingTransactionTypeEnum::GIFT->value,
+    ]);
+
+    deleteJson(route('grp.models.upcoming_transaction.delete', [$upcomingTransaction->id]))->assertOk();
+
+    expect(UpcomingTransaction::find($upcomingTransaction->id))->toBeNull();
+});
+
+test('index upcoming transactions json only returns ready', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+
     $ready = StoreUpcomingTransaction::make()->action($this->customer, [
         'product_id' => $this->product->id,
         'quantity'   => 2,
         'type'       => UpcomingTransactionTypeEnum::GIFT->value,
     ]);
 
-    $applied = StoreUpcomingTransaction::make()->action($this->customer, [
+    StoreUpcomingTransaction::make()->action($this->customer, [
         'product_id' => $this->product->id,
         'quantity'   => 2,
         'type'       => UpcomingTransactionTypeEnum::GIFT->value,
         'state'      => UpcomingTransactionStateEnum::APPLIED->value,
     ]);
 
-    $result = IndexUpcomingTransactions::make()->handle($this->customer);
+    $response = getJson(route('grp.org.shops.show.crm.customers.show.upcoming_transactions.index', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->customer->slug,
+    ]));
 
-    expect($result)->toBeInstanceOf(LengthAwarePaginator::class)
-        ->and($result->total())->toBe(1)
-        ->and($result->first()->id)->toBe($ready->id);
-
-    $jsonResponse = IndexUpcomingTransactions::make()->jsonResponse($result);
-    $array        = $jsonResponse->toArray(request());
-    expect($array)->toHaveKey(0)
-        ->and($array[0]['product_code'])->toBe($this->product->code)
-        ->and($array[0]['update']['name'])->toBe('grp.models.upcoming_transaction.update')
-        ->and($array[0]['delete']['name'])->toBe('grp.models.upcoming_transaction.delete');
+    $response->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $ready->id)
+        ->assertJsonPath('data.0.product_code', $this->product->code)
+        ->assertJsonPath('data.0.update.name', 'grp.models.upcoming_transaction.update')
+        ->assertJsonPath('data.0.delete.name', 'grp.models.upcoming_transaction.delete');
 });
 
 test('UI index upcoming transactions', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
+
     StoreUpcomingTransaction::make()->action($this->customer, [
         'product_id' => $this->product->id,
         'quantity'   => 1,
@@ -1415,6 +1465,7 @@ test('UI index upcoming transactions', function () {
 });
 
 test('submit order applies ready upcoming transactions as follow-on bonus', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
     $this->product->update(['status' => ProductStatusEnum::FOR_SALE]);
 
     $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
@@ -1437,10 +1488,14 @@ test('submit order applies ready upcoming transactions as follow-on bonus', func
         ->and((float)$transaction->quantity_ordered)->toBe(0.0)
         ->and($upcomingTransaction->state)->toBe(UpcomingTransactionStateEnum::APPLIED)
         ->and($upcomingTransaction->order_id)->toBe($order->id)
-        ->and($upcomingTransaction->transaction_id)->toBe($transaction->id);
+        ->and($upcomingTransaction->transaction_id)->toBe($transaction->id)
+        ->and($upcomingTransaction->order->id)->toBe($order->id)
+        ->and($upcomingTransaction->transaction->id)->toBe($transaction->id)
+        ->and($upcomingTransaction->product->id)->toBe($this->product->id);
 });
 
 test('submit order skips upcoming transactions for out of stock products', function () {
+    UpcomingTransaction::where('customer_id', $this->customer->id)->delete();
     $this->product->update(['status' => ProductStatusEnum::OUT_OF_STOCK]);
 
     $upcomingTransaction = StoreUpcomingTransaction::make()->action($this->customer, [
