@@ -7,7 +7,9 @@ use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -42,9 +44,11 @@ class MassMoveLocationOrgStocks extends OrgAction
                     $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData);
                 }
 
-                MoveOrgStockToOtherLocation::make()->action($locationOrgStock, $targetLocationOrgStock, [
-                    'quantity' => $locationOrgStock->quantity
-                ]);
+                if($locationOrgStock->quantity>0) {
+                    MoveOrgStockToOtherLocation::make()->action($locationOrgStock, $targetLocationOrgStock, [
+                        'quantity' => $locationOrgStock->quantity
+                    ]);
+                }
 
                 if (Arr::get($modelData, 'remove_after_move', false)) {
                     DeleteLocationOrgStock::make()->action($locationOrgStock);
@@ -55,6 +59,16 @@ class MassMoveLocationOrgStocks extends OrgAction
         $location->refresh();
 
         return $location;
+    }
+
+    public function jsonResponse(Location $location)
+    {
+        return LocationResource::make($location)->resolve();
+    }
+
+    public function htmlResponse(Location $location): RedirectResponse
+    {
+        return redirect()->back();
     }
 
     public function rules(): array
