@@ -402,8 +402,8 @@ const isOffersData = (offersData: any): boolean => {
                         <span v-if="item.is_gift" v-tooltip="ctrans('Free gift')">
                             <FontAwesomeIcon icon="fal fa-gift" class="text-green-500 not-italic mx-2" aria-hidden="true" />
                         </span>
-                        <div v-if="item.upcoming_transaction_public_notes">{{ trans('Public Notes ')}}: {{ item.upcoming_transaction_public_notes }}</div>
-                        <div v-if="item.upcoming_transaction_private_notes">{{ trans('Private Notes ')}}: {{ item.upcoming_transaction_private_notes }}</div>
+                        <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>
+                        <div v-if="item.upcoming_transaction_private_notes">{{ item.upcoming_transaction_private_notes }}</div>
                     </div>
 
                     <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />
