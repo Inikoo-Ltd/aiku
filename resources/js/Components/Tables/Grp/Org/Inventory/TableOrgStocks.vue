@@ -26,6 +26,7 @@ import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
 import Organisation from "@/Pages/Grp/Organisations/Organisation.vue"
 import Warehouse from "@/Pages/Grp/Org/Warehouse/Warehouse.vue"
 import { overflow } from "html2canvas/dist/types/css/property-descriptors/overflow"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus)
 
@@ -58,15 +59,15 @@ function onSaveMoveAllSku() {
                 isOpenMoveAllSku.value = false
                 form.reset()
                 notify({
-                    title: trans("Success"),
-                    text: trans("All SKU moved successfully"),
+                    title: ctrans("Success"),
+                    text: ctrans("All SKU moved successfully"),
                     type: "success",
                 })
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to move all SKU"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to move all SKU"),
                     type: "error",
                 })
             },
