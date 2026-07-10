@@ -80,7 +80,19 @@ const persistBeefreeLayout = async (layout: any, compiledLayout: string | null =
   try {
     await axios[props.webpage.updateRoute.method ?? "patch"](
       route(props.webpage.updateRoute.name, props.webpage.updateRoute.parameters),
-      { layout: { ...layout, builderType: "beefree" }, compiled_layout: compiledLayout }
+      {
+        layout: {
+          data: {
+            fieldValue: {
+              builderType: "beefree",
+              beefree: {
+                json: layout,
+                html: compiledLayout ?? ""
+              }
+            }
+          }
+        }
+      }
     );
   } catch (error) {
     notify({
