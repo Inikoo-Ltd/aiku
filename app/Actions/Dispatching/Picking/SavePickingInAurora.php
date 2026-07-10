@@ -33,8 +33,7 @@ class SavePickingInAurora implements ShouldBeUnique
     public function handle(Picking $picking): void
     {
 
-        if(!$picking->organisation->is_aiku_stock_control)
-        {
+        if (!$picking->organisation->is_aiku_stock_control) {
             return;
         }
 

@@ -33,8 +33,7 @@ class DeletePickingInAurora implements ShouldBeUnique
     public function handle(int $pickingID, Organisation $organisation, string $name, OrgStock $orgStock): void
     {
 
-        if(!$organisation->is_aiku_stock_control)
-        {
+        if (!$organisation->is_aiku_stock_control) {
             return;
         }
 

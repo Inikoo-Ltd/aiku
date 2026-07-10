@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Inventory;
 
-use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Http\Resources\Json\JsonResource;
 

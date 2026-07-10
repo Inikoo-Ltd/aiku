@@ -51,7 +51,7 @@ class MassMoveLocationOrgStocks extends OrgAction
                     $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData);
                 }
 
-                if($locationOrgStock->quantity>0) {
+                if ($locationOrgStock->quantity > 0) {
                     MoveOrgStockToOtherLocation::make()->action($locationOrgStock, $targetLocationOrgStock, [
                         'quantity' => $locationOrgStock->quantity
                     ]);
