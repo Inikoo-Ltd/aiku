@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
-import { inject, onMounted, nextTick } from 'vue'
+import { inject, onMounted, nextTick, computed } from 'vue'
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -36,6 +36,8 @@ const props = defineProps<{
         is_quantity_excess: boolean
         currency_code: string
     }
+    actions?: ('stock_check' | 'move_stock' | 'edit_location' | 'add_location')[]
+    header_title?: string
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -332,6 +334,18 @@ const MODALS = {
     ADD_LOCATION: 'add_location'
 }
 
+const visibleActions = computed(() => props.actions ?? Object.values(MODALS))
+const showAction = (action: string) => visibleActions.value.includes(action)
+const actionGridClass = computed(() => {
+    const count = Object.values(MODALS).filter(action => showAction(action)).length
+    return {
+        1: 'lg:grid-cols-1',
+        2: 'lg:grid-cols-2',
+        3: 'lg:grid-cols-3',
+        4: 'lg:grid-cols-4',
+    }[count] ?? 'lg:grid-cols-4'
+})
+
 const isStockCheckModalOpen = ref(false)
 const isMoveStockModalOpen = ref(false)
 const isEditLocationModalOpen = ref(false)
@@ -407,9 +421,12 @@ const onAddLocationShow = () => {
 
         <!-- Header Section -->
         <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold flex items-center gap-2">
-                <!-- <FontAwesomeIcon :icon="faBox"></FontAwesomeIcon> Active -->
-            </h2>
+            <span>
+                <h2 v-if="header_title" class="text-xl font-bold flex items-center gap-2">
+                    {{ header_title }}
+                    <!-- <FontAwesomeIcon :icon="faBox"></FontAwesomeIcon> Active -->
+                </h2>
+            </span>
             <div v-if="data.is_quantity_excess" v-tooltip="ctrans('Excess stock')" class="text-gray-500 hover:text-gray-700">
                 <FontAwesomeIcon :icon="faPlusCircle" class="text-xl"></FontAwesomeIcon>
             </div>
@@ -429,7 +446,7 @@ const onAddLocationShow = () => {
             </div>
 
             <div class="grid align-item-middle border-l">
-                <span class="my-auto text-lg text-center font-semibold mx-1 py-2 border border-green-200 bg-green-100 rounded" v-tooltip="trans('Stock in Location')">
+                <span class="my-auto text-lg text-center font-semibold mx-1 py-2 border border-green-200 bg-green-100 rounded tabular-nums" v-tooltip="trans('Stock in Location')">
                     {{ locale.number(stocks_management.qty_in_location ?? 0) }}
                 </span>
             </div>
@@ -654,7 +671,7 @@ const onAddLocationShow = () => {
                         <div class="text-center font-semibold border-l">
                             <span
                                 v-tooltip="trans('Stock quantity')"
-                                class="cursor-pointer hover:text-blue-500 transition"
+                                class="cursor-pointer hover:text-blue-500 transition tabular-nums"
                                 @dblclick="openModal(MODALS.STOCK_CHECK, loc.id)"
                             >
                                 {{ Number(loc.quantity) }}
@@ -664,11 +681,11 @@ const onAddLocationShow = () => {
         </div>
 
         <!-- Action Buttons -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 border-t pt-3 gap-2">
-            <Button @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" full />
-            <Button @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" full />
-            <Button @click="openModal(MODALS.EDIT_LOCATION)" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" full />
-            <Button @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" full />
+        <div class="grid grid-cols-2 border-t pt-3 gap-2" :class="actionGridClass">
+            <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" iconRight="fal fa-clipboard-check" :label="trans('Audit Stock')" size="sm" type="tertiary" full />
+            <Button v-if="showAction(MODALS.MOVE_STOCK)" @click="openModal(MODALS.MOVE_STOCK)" iconRight="fal fa-forklift" :label="trans('Move Stock')" size="sm" type="tertiary" full />
+            <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" iconRight="fal fa-edit" :label="trans('Edit Locations')" size="sm" type="tertiary" full />
+            <Button v-if="showAction(MODALS.ADD_LOCATION)" @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="trans('Add Location')" size="sm" type="tertiary" full />
         </div>
 
         <!-- Popover: Notes -->
