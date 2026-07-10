@@ -7,3 +7,16 @@
 
 @import url("Iris/blockTextContent.css");
 @import url("Iris/editor.css");
+
+.swiper {
+    overflow: hidden;
+}
+
+.swiper-wrapper {
+    display: flex;
+}
+
+.swiper-slide {
+    flex-shrink: 0;
+    width: 100%;
+}

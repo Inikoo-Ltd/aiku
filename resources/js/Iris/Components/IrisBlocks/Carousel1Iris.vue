@@ -92,7 +92,7 @@ watch(
     spaceBetween.value = (newVal || 0)
     refreshCarousel()
   },
-  { immediate: true, deep: true }
+  { deep: true }
 )
 
 const breakpoints = computed(() => {

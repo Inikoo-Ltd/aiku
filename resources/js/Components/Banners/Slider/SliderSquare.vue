@@ -192,13 +192,14 @@ onMounted(() => {
                 :modules="[Autoplay, Pagination, Navigation]"
                 class="mySwiper h-full w-full"
             >
-                <SwiperSlide v-for="component in visibleComponents" :key="component.id"
+                <SwiperSlide v-for="(component, index) in visibleComponents" :key="component.id"
                     class="h-full overflow-hidden aspect-square">
                     <!-- Section: image or background -->
                     <div v-if="get(component, ['layout', 'backgroundType',props.view || 'desktop'], 'image') === 'image'"
                         class="relative w-full h-full">
                         <Image :src="get(component, ['image',props.view || 'desktop', 'source'], null)"
-                            alt="Wowsbar" />
+                            alt="Wowsbar"
+                            :imgAttributes="index === 0 ? { loading: 'eager', fetchpriority: 'high', decoding: 'async' } : { loading: 'lazy', decoding: 'async' }" />
                     </div>
                     <!-- Video -->
                     <div

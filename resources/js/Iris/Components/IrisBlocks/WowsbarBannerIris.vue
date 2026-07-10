@@ -204,8 +204,8 @@ onMounted(() => {
 
 <template>  
   <div :id="fieldValue?.id ? fieldValue?.id : 'banner'+indexBlock" component="banner">
-    <div v-if="isLoading" class="flex justify-center items-center mx-auto" :style="reservedBannerStyle">
-      <LoadingIcon class="text-4xl" />
+    <div v-if="activeId && !data" class="flex justify-center items-center mx-auto" :style="reservedBannerStyle">
+      <LoadingIcon v-if="isLoading" class="text-4xl" />
     </div>
 
     <section v-else-if="data" class="relative mx-auto" :style="reservedBannerStyle">
