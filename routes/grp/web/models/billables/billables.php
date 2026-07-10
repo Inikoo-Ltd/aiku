@@ -7,6 +7,9 @@
  */
 
 use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Billables\Leaflet\DeleteLeaflet;
+use App\Actions\Billables\Leaflet\StoreLeaflet;
+use App\Actions\Billables\Leaflet\UpdateLeaflet;
 use App\Actions\Billables\Packaging\DeletePackaging;
 use App\Actions\Billables\Packaging\StorePackaging;
 use App\Actions\Billables\Packaging\StorePackagingFamily;
@@ -22,6 +25,9 @@ Route::name('billables.')->prefix('shop/{shop:id}/billables')->group(function ()
         Route::post('store', StorePackaging::class)->name('store');
         Route::post('family/store', StorePackagingFamily::class)->name('family.store');
     });
+    Route::name('leaflets.')->prefix('leaflets')->group(function () {
+        Route::post('store', StoreLeaflet::class)->name('store');
+    });
     Route::name('shipping-zone-schemas.')->prefix('shipping-one-schemas')->group(function () {
         Route::post('store', StoreShippingZoneSchema::class)->name('store');
     });
@@ -30,4 +36,9 @@ Route::name('billables.')->prefix('shop/{shop:id}/billables')->group(function ()
 Route::name('billables.packagings.')->prefix('packaging/{packaging:id}')->group(function () {
     Route::patch('update', UpdatePackaging::class)->name('update');
     Route::delete('', DeletePackaging::class)->name('delete');
+});
+
+Route::name('billables.leaflets.')->prefix('leaflet/{leaflet:id}')->group(function () {
+    Route::patch('update', UpdateLeaflet::class)->name('update');
+    Route::delete('', DeleteLeaflet::class)->name('delete');
 });

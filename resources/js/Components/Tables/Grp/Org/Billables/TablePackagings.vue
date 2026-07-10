@@ -15,11 +15,12 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import ToggleSwitch from "primevue/toggleswitch"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPencil, faTrashAlt } from "@far"
+import { faFileAlt, faPrint } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { ref } from "vue"
 
-library.add(faPencil, faTrashAlt)
+library.add(faPencil, faTrashAlt, faFileAlt, faPrint)
 
 defineProps<{
     data: {
@@ -69,6 +70,26 @@ const packagingEditRoute = (packaging: { slug: string }) => {
         </template>
         <template #cell(dimensions)="{ item: packaging }">
             <span v-if="packaging.dimensions" class="whitespace-nowrap">{{ packaging.dimensions }}</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+        <template #cell(leaflets)="{ item: packaging }">
+            <div v-if="packaging.leaflets?.length" class="space-y-1">
+                <div
+                    v-for="leaflet in packaging.leaflets"
+                    :key="leaflet.name"
+                    class="flex items-center gap-2 whitespace-nowrap"
+                >
+                    <FontAwesomeIcon :icon="faFileAlt" fixed-width class="text-gray-500" aria-hidden="true" />
+                    <span class="font-medium">{{ leaflet.name }}</span>
+                    <!-- <FontAwesomeIcon
+                        :icon="faPrint"
+                        fixed-width
+                        class="text-orange-500"
+                        v-tooltip="trans('Printable')"
+                        aria-hidden="true"
+                    /> -->
+                </div>
+            </div>
             <span v-else class="text-gray-400">-</span>
         </template>
         <template #cell(price)="{ item: packaging }">

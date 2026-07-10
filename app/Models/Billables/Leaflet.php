@@ -25,6 +25,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $organisation_id
  * @property int|null $shop_id
  * @property int|null $packaging_id
+ * @property array<array-key, string>|null $family_codes
  * @property string $name
  * @property LeafletTypeEnum $type
  * @property numeric $price
@@ -48,10 +49,11 @@ class Leaflet extends Model implements Auditable
     protected $guarded = [];
 
     protected $casts = [
-        'type'  => LeafletTypeEnum::class,
-        'state' => LeafletStateEnum::class,
-        'price' => 'decimal:2',
-        'data'  => 'array',
+        'type'         => LeafletTypeEnum::class,
+        'state'        => LeafletStateEnum::class,
+        'price'        => 'decimal:2',
+        'family_codes' => 'array',
+        'data'         => 'array',
     ];
 
     protected $attributes = [

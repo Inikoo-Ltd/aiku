@@ -21,7 +21,6 @@ enum LeafletTypeEnum: string
     case MARKETING_FLYER = 'marketing_flyer';
     case VOUCHER = 'voucher';
     case BRAND_STORY = 'brand_story';
-    case PERSONALISED_MESSAGE = 'personalised_message';
 
     public static function labels(): array
     {
@@ -33,7 +32,6 @@ enum LeafletTypeEnum: string
             'marketing_flyer'      => __('Marketing Flyer'),
             'voucher'              => __('Promotional Voucher'),
             'brand_story'          => __('Brand Story Leaflet'),
-            'personalised_message' => __('Personalised Message'),
         ];
     }
 }

@@ -49,7 +49,6 @@ class IndexLeaflets extends OrgAction
 
         return $queryBuilder
             ->leftJoin('currencies', 'leaflets.currency_id', '=', 'currencies.id')
-            ->leftJoin('packagings', 'leaflets.packaging_id', '=', 'packagings.id')
             ->where('leaflets.shop_id', $shop->id)
             ->defaultSort('leaflets.name')
             ->select([
@@ -58,10 +57,10 @@ class IndexLeaflets extends OrgAction
                 'leaflets.type',
                 'leaflets.state',
                 'leaflets.price',
+                'leaflets.family_codes',
                 'leaflets.created_at',
                 'leaflets.updated_at',
                 'currencies.code as currency_code',
-                'packagings.code as packaging_code',
             ])
             ->allowedSorts(['name', 'type', 'price'])
             ->allowedFilters([$globalSearch])
@@ -93,8 +92,9 @@ class IndexLeaflets extends OrgAction
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type_label', label: __('Type'), canBeHidden: false)
-                ->column(key: 'packaging_code', label: __('Packaging'), canBeHidden: false)
-                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, align: 'right', type: 'currency');
+                ->column(key: 'family_codes', label: __('Applies to'), canBeHidden: false)
+                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, align: 'right', type: 'currency')
+                ->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 

@@ -19,6 +19,7 @@ return new class () extends Migration {
             $table->foreign('shop_id')->references('id')->on('shops');
             $table->unsignedInteger('packaging_id')->nullable()->index();
             $table->foreign('packaging_id')->references('id')->on('packagings');
+            $table->jsonb('family_codes')->nullable();
             $table->string('name');
             $table->string('type', 64)->index()->comment('Values: '.implode(', ', LeafletTypeEnum::values()));
             $table->decimal('price', 12, 2)->default(0);

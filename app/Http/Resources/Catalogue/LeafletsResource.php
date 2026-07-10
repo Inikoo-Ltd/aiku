@@ -19,7 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property LeafletStateEnum $state
  * @property numeric $price
  * @property string $currency_code
- * @property string|null $packaging_code
+ * @property array<array-key, string>|null $family_codes
  * @property mixed $created_at
  * @property mixed $updated_at
  */
@@ -32,10 +32,11 @@ class LeafletsResource extends JsonResource
             'name'           => $this->name,
             'type'           => $this->type->value,
             'type_label'     => $this->type->labels()[$this->type->value],
+            'state'          => $this->state->value,
             'state_icon'     => $this->state->stateIcon()[$this->state->value],
             'price'          => $this->price,
             'currency_code'  => $this->currency_code,
-            'packaging_code' => $this->packaging_code,
+            'family_codes'   => $this->family_codes ?? [],
             'created_at'     => $this->created_at,
             'updated_at'     => $this->updated_at,
         ];
