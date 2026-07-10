@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link, router } from "@inertiajs/vue3"
+import { Link, router, useForm } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
@@ -22,6 +22,7 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import { faForklift } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
 import Organisation from "@/Pages/Grp/Organisations/Organisation.vue"
 import Warehouse from "@/Pages/Grp/Org/Warehouse/Warehouse.vue"
 import { overflow } from "html2canvas/dist/types/css/property-descriptors/overflow"
@@ -36,48 +37,41 @@ defineProps<{
 
 const locale = inject("locale", aikuLocaleStructure)
 const layout = inject("layout", {})
-const location = ref(null)
 const isOpenMoveAllSku = ref(false)
-const isSavingMoveAllSku = ref(false)
+const form = useForm({
+    location_id: null,
+    remove_after_move : false
+})
 
 function onSaveMoveAllSku() {
     const params = route().params as RouteParams
 
-    isSavingMoveAllSku.value = true
-
-    console.log(location.value)
-
-    /* router.post(
-        route("grp.models.warehouse.move_all_sku", {
+    form.post(
+        route("grp.models.location.mass_move_stock", {
             organisation: params.organisation,
             warehouse: params.warehouse,
+            location: params.location,
         }),
-        {
-            location_id: location.value,
-        },
         {
             preserveScroll: true,
             onSuccess: () => {
                 isOpenMoveAllSku.value = false
-                location.value = null
+                form.reset()
                 notify({
-                    title: ctrans("Success"),
-                    text: ctrans("All SKU moved successfully"),
+                    title: trans("Success"),
+                    text: trans("All SKU moved successfully"),
                     type: "success",
                 })
             },
             onError: () => {
                 notify({
-                    title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to move all SKU"),
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to move all SKU"),
                     type: "error",
                 })
             },
-            onFinish: () => {
-                isSavingMoveAllSku.value = false
-            },
         }
-    ) */
+    )
 }
 
 function onCancelMoveAllSku() {
@@ -390,7 +384,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         <div class="px-2">
             <PureMultiselectInfiniteScroll
                 mode="single"
-                v-model="location"
+                v-model="form.location_id"
                 :fetchRoute="{
                     name: 'grp.org.warehouses.show.infrastructure.locations.index',
                     parameters: {
@@ -402,12 +396,17 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 labelProp="code"
                 :placeholder="ctrans('Select a location')"
             />
+
+            <label class="mt-4 flex items-center gap-2 cursor-pointer">
+                <PureCheckbox v-model="form.remove_after_move" />
+                <span>{{ ctrans('Remove after move') }}</span>
+            </label>
         </div>
 
         <template #footer>
             <div class="flex justify-end gap-2">
                 <Button type="cancel" :label="ctrans('Cancel')" @click="onCancelMoveAllSku" />
-                <Button type="save" :label="ctrans('Save')" :loading="isSavingMoveAllSku" :disabled="!location" @click="onSaveMoveAllSku" />
+                <Button type="save" :label="ctrans('Save')" :loading="form.processing" :disabled="!form.location_id" @click="onSaveMoveAllSku" />
             </div>
         </template>
     </Dialog>
