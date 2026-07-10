@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link, router, useForm } from "@inertiajs/vue3"
+import { Link, useForm } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
@@ -26,9 +26,6 @@ import { faForklift, faCheck, faHandPaper } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
-import Organisation from "@/Pages/Grp/Organisations/Organisation.vue"
-import Warehouse from "@/Pages/Grp/Org/Warehouse/Warehouse.vue"
-import { overflow } from "html2canvas/dist/types/css/property-descriptors/overflow"
 import { ctrans } from "@/Composables/useTrans"
 
 library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus)
@@ -36,11 +33,11 @@ library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, fa
 const props = defineProps<{
     data: object
     tab?: string
-    canMoveAllSku?:boolean
+    canMoveAllSku?:boolean,
+    location_id: number,
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
-const layout = inject("layout", {})
 const isOpenMoveAllSku = ref(false)
 const form = useForm({
     location_id: null,
@@ -142,14 +139,106 @@ function onCancelPartialMoveSku() {
     isOpenPartialMove.value = false
 }
 
-function onSaveMoveAllSku() {
+interface PartialMoveRow {
+    org_stock_id: number
+    code: string
+    name: string
+    available: number
+    quantity: number
+    remove_after_move: boolean
+}
+
+const isOpenPartialMove = ref(false)
+const selectedRows = ref<Record<string, boolean>>({})
+
+const selectedStocks = computed(() => {
+    const rows = (props.data as { data?: OrgStock[] })?.data ?? []
+    return rows.filter((row) => selectedRows.value[row.id])
+})
+
+const hasSelection = computed(() => selectedStocks.value.length > 0)
+
+function onSelectRow(value: Record<string, boolean>) {
+    selectedRows.value = { ...value }
+}
+
+const partialForm = useForm<{ location_id: number | null; org_stocks: PartialMoveRow[] }>({
+    location_id: null,
+    org_stocks: [],
+})
+
+const isPartialMoveValid = computed(() => {
+    if (!partialForm.location_id || partialForm.org_stocks.length === 0) {
+        return false
+    }
+
+    return partialForm.org_stocks.every((row) => Number(row.quantity) > 0 && Number(row.quantity) <= row.available)
+})
+
+function openPartialMoveSku() {
+    partialForm.reset()
+    partialForm.location_id = null
+    partialForm.org_stocks = selectedStocks.value.map((stock) => ({
+        org_stock_id: stock.id,
+        code: stock.code,
+        name: stock.name,
+        available: Number(stock.quantity),
+        quantity_to_move: Number(stock.quantity),
+        remove_after_move: false,
+    }))
+    isOpenPartialMove.value = true
+}
+
+function onSavePartialMoveSku() {
     const params = route().params as RouteParams
+    console.log(partialForm)
+  /*   partialForm
+        .transform((data) => ({
+            location_id: data.location_id,
+            org_stocks: data.org_stocks.map((row) => ({
+                org_stock_id: row.org_stock_id,
+                quantity: row.quantity,
+                remove_after_move: row.remove_after_move,
+            })),
+        }))
+        .post(
+            route("grp.models.location.partial_move_stock", {
+                organisation: params.organisation,
+                warehouse: params.warehouse,
+                location: params.location,
+            }),
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    isOpenPartialMove.value = false
+                    partialForm.reset()
+                    selectedRows.value = {}
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("SKU moved successfully"),
+                        type: "success",
+                    })
+                },
+                onError: () => {
+                    notify({
+                        title: ctrans("Something went wrong"),
+                        text: ctrans("Failed to move SKU"),
+                        type: "error",
+                    })
+                },
+            }
+        ) */
+}
+
+function onCancelPartialMoveSku() {
+    isOpenPartialMove.value = false
+}
+
+function onSaveMoveAllSku() {
 
     form.post(
         route("grp.models.location.mass_move_stock", {
-            organisation: params.organisation,
-            warehouse: params.warehouse,
-            location: params.location,
+            location: props.location_id,
         }),
         {
             preserveScroll: true,
