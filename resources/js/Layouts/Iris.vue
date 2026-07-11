@@ -142,6 +142,59 @@ const handleTabFocus = () => {
     }
 }
 
+// The CMS container padding is per-device but SSR always renders desktop values and
+// Varnish shares one cache across devices; emitting the horizontal padding as CSS
+// variables keeps the markup device-independent and lets media queries pick the value.
+const resolvePaddingProp = (padding: any, screen: string, side?: string) => {
+    const read = (obj: any) => {
+        if (!obj || typeof obj !== 'object') return undefined
+        return side ? obj?.[side]?.value : obj?.unit
+    }
+    const fromScreen = read(padding?.[screen])
+    if (fromScreen !== undefined) return fromScreen
+    if (screen !== 'desktop') {
+        const fromDesktop = read(padding?.desktop)
+        if (fromDesktop !== undefined) return fromDesktop
+    }
+    return read(padding)
+}
+
+const containerPaddingCss = (() => {
+    const padding = theme?.container?.properties?.padding
+    if (!padding || typeof padding !== 'object') return null
+    if (padding.__irisCssVars) {
+        return padding.__irisCssVars
+    }
+
+    const sides: [string, string][] = [['left', '--iris-cp-l'], ['right', '--iris-cp-r']]
+    const rulesByScreen: Record<string, string> = {}
+
+    for (const screen of ['mobile', 'tablet', 'desktop']) {
+        const rules: string[] = []
+        for (const [side, cssVar] of sides) {
+            const value = resolvePaddingProp(padding, screen, side)
+            const unit = resolvePaddingProp(padding, screen)
+            if (value === null || value === undefined || !unit || (typeof value === 'string' && value.startsWith('var('))) {
+                return null
+            }
+            rules.push(`${cssVar}:${value}${unit}`)
+        }
+        rulesByScreen[screen] = rules.join(';')
+    }
+
+    for (const [side, cssVar] of sides) {
+        for (const target of [padding, padding.mobile, padding.tablet, padding.desktop]) {
+            if (target?.[side]) {
+                target[side].value = `var(${cssVar})`
+            }
+        }
+    }
+
+    padding.__irisCssVars = `:root{${rulesByScreen.mobile}}@media(min-width:640px){:root{${rulesByScreen.tablet}}}@media(min-width:1024px){:root{${rulesByScreen.desktop}}}`
+
+    return padding.__irisCssVars
+})()
+
 layout.app.webpage_layout = theme
 
 onMounted(() => {
@@ -217,6 +270,8 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
 
 <template>
     <div class="editor-class">
+        <component :is="'style'" v-if="containerPaddingCss">{{ containerPaddingCss }}</component>
+
         <ScreenWarning v-if="layout.app.environment === 'staging'">
             {{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
         </ScreenWarning>

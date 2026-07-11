@@ -67,6 +67,9 @@ export const resolveResponsiveValue = (
 			return v == undefined || v == null ? null : v
 		}
 
+		const withUnit = (v: any, u: any) =>
+			typeof v === "string" && v.startsWith("var(") ? v : `${v}${u}`
+
 		const isValid = (v: any) => {
 			if (!useValidation) {
 				// ❌ when validation is OFF, 0 should be ignored
@@ -119,28 +122,19 @@ export const resolveResponsiveValue = (
 			paddingBottom:
 				isValid(getVal(properties?.padding, ["bottom", "value"])) &&
 				isValid(getVal(properties.padding, ["unit"]))
-					? `${getVal(properties.padding, ["bottom", "value"])}${getVal(
-							properties.padding,
-							["unit"]
-					  )}`
+					? withUnit(getVal(properties.padding, ["bottom", "value"]), getVal(properties.padding, ["unit"]))
 					: null,
 
 			paddingLeft:
 				isValid(getVal(properties?.padding, ["left", "value"])) &&
 				isValid(getVal(properties.padding, ["unit"]))
-					? `${getVal(properties.padding, ["left", "value"])}${getVal(
-							properties.padding,
-							["unit"]
-					  )}`
+					? withUnit(getVal(properties.padding, ["left", "value"]), getVal(properties.padding, ["unit"]))
 					: null,
 
 			paddingRight:
 				isValid(getVal(properties?.padding, ["right", "value"])) &&
 				isValid(getVal(properties.padding, ["unit"]))
-					? `${getVal(properties.padding, ["right", "value"])}${getVal(
-							properties.padding,
-							["unit"]
-					  )}`
+					? withUnit(getVal(properties.padding, ["right", "value"]), getVal(properties.padding, ["unit"]))
 					: null,
 
 			marginTop:

@@ -28,6 +28,11 @@ const reviewsData = ref({ data: [] as any[], meta: { current_page: 0, last_page:
 const reviewSummary = ref<any>(null)
 const isFetchingMoreReviews = ref(false)
 const minimum_reviews_to_show = inject<number>("minimum_reviews_to_show", 0)
+const webpage_reviews_count = inject<number | null>("webpage_reviews_count", null)
+const mayHaveReviewsToShow = computed(() =>
+    webpage_reviews_count === null
+    || (webpage_reviews_count > 0 && webpage_reviews_count >= minimum_reviews_to_show)
+)
 const allow_review_reaction = inject<number>("allow_review_reaction", 0)
 const allow_review_reply_reaction = inject<number>("allow_review_reply_reaction", 0)
 const show_staff_who_reply = inject<boolean>("show_staff_who_reply", false)
@@ -78,7 +83,9 @@ const updateWindowWidth = () => {
 onMounted(() => {
     updateWindowWidth() // get actual width after hydration
     window.addEventListener("resize", updateWindowWidth)
-    fetchMoreReviews()
+    if (mayHaveReviewsToShow.value) {
+        fetchMoreReviews()
+    }
 })
 
 onBeforeUnmount(() => {
@@ -255,7 +262,7 @@ const reviewLink = computed(() => {
 
 <template>
     <div class="editor-class overflow-hidden"
-         v-if="isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length">
+         v-if="mayHaveReviewsToShow && (isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length)">
         <div v-if="isInitialLoading"
              class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary skeleton -->

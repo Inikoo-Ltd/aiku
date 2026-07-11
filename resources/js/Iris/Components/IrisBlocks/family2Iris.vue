@@ -349,7 +349,7 @@ const contentClass = computed(() =>
     2xl:space-y-2
     2xl:text-[19px]
     overflow-hidden
-  " ref="descriptionRef" :style="!expanded && showReadMore
+  " ref="descriptionRef" :class="!expanded ? 'max-lg:max-h-[265px]' : ''" :style="!expanded && showReadMore && screenType === 'desktop'
     ? { maxHeight: `${maxDescriptionHeight}px` }
     : {}">
             <div v-html="cleanedDescription"></div>
