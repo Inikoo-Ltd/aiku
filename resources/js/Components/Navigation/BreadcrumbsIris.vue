@@ -299,6 +299,7 @@ const _breadcrumbPopover = ref()
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
                     class="rounded w-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.previous?.label"
+                    :aria-label="ctrans('Previous')"
                 >
                     <LoadingIcon v-if="isLoading === 'bcBack'" />
                     <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="" aria-hidden="true" />
@@ -313,6 +314,7 @@ const _breadcrumbPopover = ref()
                     @finish="() => isLoading = false"
                     class="rounded w-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.next?.label"
+                    :aria-label="ctrans('Next')"
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
                 >
                     <LoadingIcon v-if="isLoading === 'bcNext'" />

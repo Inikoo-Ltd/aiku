@@ -325,13 +325,13 @@ const reviewLink = computed(() => {
             <!-- Reviews -->
             <div class="relative lg:col-span-6">
                 <!-- Previous -->
-                <button @click="prev" :disabled="current === 0"
+                <button @click="prev" :disabled="current === 0" :aria-label="ctrans('Previous')"
                         class="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:-left-5">
                     <FontAwesomeIcon :icon="faChevronLeft" class="text-[10px] text-gray-600" />
                 </button>
 
                 <!-- Next -->
-                <button @click="next" :disabled="isNextDisabled"
+                <button @click="next" :disabled="isNextDisabled" :aria-label="ctrans('Next')"
                         class="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:right-3">
                     <FontAwesomeIcon v-if="isFetchingMoreReviews" :icon="faChevronRight"
                                      class="text-[10px] text-gray-600 animate-pulse" />
