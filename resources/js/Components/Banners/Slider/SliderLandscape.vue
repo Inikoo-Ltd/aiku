@@ -71,10 +71,16 @@ watch(() => props.data.components.filter(component => component.ulid == props.ju
     swiperRef.value?.$el.swiper.slideToLoop(compIndexCurrentComponent.value, 0, false)
 })
 
-onMounted(() => {
-    setTimeout(() => {
+const onPageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) {
         intSwiperKey.value++  // To handle bug on Browser back navigation (Agnest & Cat)
-    }, 600)
+    }
+}
+onMounted(() => {
+    window.addEventListener('pageshow', onPageShow)
+})
+onBeforeUnmount(() => {
+    window.removeEventListener('pageshow', onPageShow)
 })
 
 const compColorNav = computed(() => {
@@ -84,7 +90,7 @@ const compColorNav = computed(() => {
 const renderImage = (component) => {
     if (props.production) {
         let view = "desktop"
-        if (window) {
+        if (typeof window !== "undefined") {
             if (window?.matchMedia("(max-width: 767px)").matches) {
                 view = "mobile";
             } else if (window?.matchMedia("(min-width: 768px) and (max-width: 1023px)").matches) {
@@ -98,7 +104,7 @@ const renderImage = (component) => {
 const renderBackground = (component) => {
     if (props.production) {
         let view = "desktop"
-        if (window) {
+        if (typeof window !== "undefined") {
             if (window?.matchMedia("(max-width: 767px)").matches) {
                 view = "mobile";
             } else if (window?.matchMedia("(min-width: 768px) and (max-width: 1023px)").matches) {
@@ -241,7 +247,7 @@ onBeforeUnmount(() => {
         <div class="relative mx-auto w-full h-full overflow-hidden" :style="wrapperStyle">
 
             <!-- Add v-if to avoid error in SSR -->
-            <template v-if="isMounted">
+            <template v-if="data">
                 <Swiper class="w-full h-full" ref="swiperRef" :key="'banner' + intSwiperKey" :slideToClickedSlide="true"
                     :spaceBetween="get(data, ['common', 'spaceBetween']) ? data.common.spaceBetween : 0"
                     :slidesPerView="1" :centeredSlides="true"

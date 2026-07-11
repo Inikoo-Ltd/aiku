@@ -1,0 +1,66 @@
+<?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 11 Jul 2026 12:24:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Web\WebBlock\Iris;
+
+use App\Models\Web\Banner;
+use App\Models\Web\Webpage;
+use Illuminate\Support\Arr;
+use Lorisleiva\Actions\Concerns\AsObject;
+
+class GetIrisWebBlockBanner
+{
+    use AsObject;
+
+    public function handle(Webpage $webpage, array $webBlock): array
+    {
+        $fieldValue = Arr::get($webBlock, 'web_block.layout.data.fieldValue', []);
+
+        $bannerIds = collect(Arr::get($fieldValue, 'banner_responsive', []))
+            ->pluck('id')
+            ->push(Arr::get($fieldValue, 'banner_id'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($bannerIds->isEmpty()) {
+            return $webBlock;
+        }
+
+        $bannersData = Banner::where('website_id', $webpage->website_id)
+            ->whereIn('id', $bannerIds)
+            ->get()
+            ->mapWithKeys(fn (Banner $banner) => [
+                $banner->id => [
+                    'id'              => $banner->id,
+                    'slug'            => $banner->slug,
+                    'type'            => $banner->type?->value,
+                    'state'           => $banner->state,
+                    'ratio'           => $banner->ratio,
+                    'compiled_layout' => $this->onlyVisibleComponents($banner->compiled_layout),
+                ],
+            ])->all();
+
+        data_set($webBlock, 'web_block.layout.data.fieldValue.banners_data', $bannersData);
+
+        return $webBlock;
+    }
+
+    private function onlyVisibleComponents(?array $compiledLayout): ?array
+    {
+        if (!is_array($compiledLayout)) {
+            return null;
+        }
+
+        $components = collect(Arr::get($compiledLayout, 'components', []))
+            ->filter(fn ($component) => Arr::get($component, 'visibility') == true)
+            ->values()
+            ->all();
+
+        return array_merge($compiledLayout, ['components' => $components]);
+    }
+}

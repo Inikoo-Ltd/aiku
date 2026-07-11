@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { get } from 'lodash-es'
 
 import SlideCorner from "@/Components/Banners/Slider/SlideCorner.vue"
@@ -99,10 +99,16 @@ const compHandleBannerLessSlide = computed(() => {
                 : actualSlides.value.length >= 8 ? actualSlides.value : [...actualSlides.value, ...actualSlides.value]
 })
 
-onMounted(() => {
-    setTimeout(() => {
+const onPageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) {
         intSwiperKey.value++  // To handle bug on Browser back navigation (Agnest & Cat)
-    }, 600)
+    }
+}
+onMounted(() => {
+    window.addEventListener('pageshow', onPageShow)
+})
+onBeforeUnmount(() => {
+    window.removeEventListener('pageshow', onPageShow)
 })
 
 // Handle color of arrow navigation (default is blue)
@@ -170,7 +176,7 @@ onMounted(() => {
             : `${compWidthBanner}/1`
         }">
         <!-- Add v-if to avoid error in SSR -->
-        <template v-if="isMounted">
+        <template v-if="data">
             <Swiper ref="swiperRef"
                 :key="'banner' + intSwiperKey"
                 :slideToClickedSlide="false"

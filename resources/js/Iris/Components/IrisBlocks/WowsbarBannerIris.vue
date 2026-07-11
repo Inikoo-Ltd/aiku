@@ -46,6 +46,14 @@ const activeId = computed(() => {
   return current ?? null;
 });
 
+const embeddedBannerData = (id: number | string | null) => {
+  const banner = id != null ? props.fieldValue?.banners_data?.[id] : null;
+
+  return banner?.compiled_layout ? banner : null;
+};
+
+data.value = embeddedBannerData(activeId.value);
+
 const MOBILE_BANNER_HEIGHT = '300px'
 const MOBILE_BANNER_WIDTH = '375px'
 const SQUARE_BANNER_HEIGHT = '400px'
@@ -153,6 +161,12 @@ const getDataBanner = async (): Promise<void> => {
 
   if (!activeId.value) {
     data.value = null;
+    return;
+  }
+
+  const embedded = embeddedBannerData(activeId.value);
+  if (embedded) {
+    data.value = embedded;
     return;
   }
 
