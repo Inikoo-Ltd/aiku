@@ -213,7 +213,7 @@ onMounted(async () => {
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'+indexBlock"  component="product-ecom-1"
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'+indexBlock"  component="product-ecom-1"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4 rating" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -489,7 +489,7 @@ onMounted(async () => {
     </div>
 
     <!-- MOBILE -->
-    <div v-else class="block sm:hidden px-4 py-6 text-gray-800">
+    <div class="block sm:hidden px-4 py-6 text-gray-800">
 
         <!-- TITLE -->
         <h1 class="text-xl font-bold mb-3">

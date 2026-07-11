@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect } from "vue"
+import { computed, nextTick, ref, watchEffect } from "vue"
 import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
 
 const props = defineProps<{
@@ -28,10 +28,10 @@ watchEffect(() => {
 		return
 	}
 	component.__asyncLoader()
+		.catch(() => null)
+		.then(() => nextTick())
+		.then(() => new Promise((resolve) => setTimeout(resolve, 0)))
 		.then(() => {
-			chunkResolved.value = true
-		})
-		.catch(() => {
 			chunkResolved.value = true
 		})
 })
