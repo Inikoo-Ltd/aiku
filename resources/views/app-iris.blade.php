@@ -336,6 +336,7 @@
         'isLoggedIn' => (bool) request()->user(),
         'shopType' => $shopType,
         'supportsBasket' => $supportsBasket,
+        'chatEnabled' => (bool) Arr::get(request()->input('website')?->settings ?? [], 'enable_chat', false),
         'oosNotificationActive' => $oosNotificationActive,
         'currencyCode' => Arr::get(request()->input('currency_data', []), 'code'),
         'basketTransactionDataUrl' => route('iris.json.basket.transaction_data'),

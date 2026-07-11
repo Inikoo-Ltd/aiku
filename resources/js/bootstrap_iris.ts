@@ -33,6 +33,10 @@ declare global {
 }
 
 const initEcho = async () => {
+    if (!(window as any).lbIrisConfig?.chatEnabled) {
+        return
+    }
+
     const [{ default: Echo }, { default: Pusher }] = await Promise.all([
         import('laravel-echo'),
         import('pusher-js'),
