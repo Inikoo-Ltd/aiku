@@ -296,6 +296,7 @@ onBeforeUnmount(() => {
                             v-if="!!component?.layout?.link"
                             :href="`https://${useRemoveHttps(component?.layout?.link)}`"
                             target="_top"
+                            :aria-label="useRemoveHttps(component?.layout?.link)"
                             class="absolute bg-transparent w-full h-full"
                             @click="startSlideNavigation(component?.ulid, component?.layout?.link)"
                             @dragstart="resetSlideNavigation"

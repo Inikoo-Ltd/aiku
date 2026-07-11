@@ -252,7 +252,7 @@ onMounted(() => {
                         </span>
                     </div>
                     <!-- <FontAwesomeIcon v-if="!!component?.layout?.link" icon='far fa-external-link' class='text-gray-300/50 text-xl absolute top-2 right-2' aria-hidden='true' /> -->
-                    <a target="_top" v-if="!!component?.layout?.link" :href="`https://${useRemoveHttps(component?.layout?.link)}`" class="absolute bg-transparent w-full h-full" />
+                    <a target="_top" v-if="!!component?.layout?.link" :href="`https://${useRemoveHttps(component?.layout?.link)}`" :aria-label="useRemoveHttps(component?.layout?.link)" class="absolute bg-transparent w-full h-full" />
                     <SlideCorner v-for="(slideCorner, position) in filteredNulls(component?.layout?.corners)"
                         :position="position" :corner="slideCorner" />
                     <!-- CentralStage: slide-centralstage (prioritize) and common-centralStage -->

@@ -351,17 +351,17 @@ const reviewLink = computed(() => {
                             {{ displayMessage(review) }}
                         </p>
 
-                        <div class="flex justify-between mt-auto text-[11px] text-gray-400 w-full">
+                        <div class="flex justify-between mt-auto text-[11px] text-gray-500 w-full">
                             <div class="flex items-center w-fit">
                                 <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location?.[1] != layout?.iris?.shop?.location?.[1]" />
                             </div>
                             <div v-if="hasTranslation(review)" @click.stop="toggleTranslation(review)"
-                                 class="text-gray-400 hover:text-gray-700 cursor-pointer">
+                                 class="text-gray-500 hover:text-gray-700 cursor-pointer">
                                 {{ showOriginal[review.id] ? ctrans("See translation") : ctrans("See original") }}
                             </div>
                         </div>
                         <div class="flex items-center justify-between">
-                            <div class="text-[11px] text-gray-400">
+                            <div class="text-[11px] text-gray-500">
                                 {{ useFormatTime(review.date) }}
                             </div>
 
@@ -418,7 +418,7 @@ const reviewLink = computed(() => {
                             {{ selectedReview.name }}
                         </div>
 
-                        <span class="text-xs text-gray-400">
+                        <span class="text-xs text-gray-500">
                             •
                         </span>
 
@@ -439,7 +439,7 @@ const reviewLink = computed(() => {
                 </div>
 
                 <button @click="reviewModalVisible = false"
-                        class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100">
+                        class="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100">
                     <FontAwesomeIcon :icon="faTimes" class="text-xs" />
                 </button>
 
@@ -451,7 +451,7 @@ const reviewLink = computed(() => {
                 {{ displayMessage(selectedReview) }}
             </p>
             <div v-if="hasMessageTranslation(selectedReview)" @click="toggleTranslation(selectedReview)"
-                 class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
+                 class="mt-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer">
                 {{ showOriginal[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
             </div>
             <div v-if="selectedReview.web_images?.length" class="flex gap-3">
@@ -504,7 +504,7 @@ const reviewLink = computed(() => {
                     {{ displayReply(selectedReview) }}
                 </p>
                 <div v-if="hasReplyTranslation(selectedReview)" @click="toggleReplyTranslation(selectedReview)"
-                     class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
+                     class="mt-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer">
                     {{ showOriginalReply[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
                 </div>
                 <div class="flex items-center w-full justify-end gap-2"
