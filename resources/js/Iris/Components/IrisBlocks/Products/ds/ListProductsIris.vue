@@ -609,6 +609,23 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
 
 
 <style scoped>
+.products-grid {
+    grid-template-columns: repeat(var(--cols-mobile), minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-tablet), minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-desktop), minmax(0, 1fr));
+    }
+}
+
+
 .slide-fade-enter-active,
 .slide-fade-leave-active {
     transition: all 0.3s ease;
