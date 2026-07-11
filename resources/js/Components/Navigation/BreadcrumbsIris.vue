@@ -225,7 +225,7 @@ const _breadcrumbPopover = ref()
 
 
         <!-- Popup for Breadcrumb List on Mobile -->
-        <div @click="_breadcrumbPopover?.toggle" class="z-50 md:hidden absolute w-64 h-full xbg-red-500" aria-label="Transparency clickable area for breadcrumb popup"></div>
+        <button type="button" @click="_breadcrumbPopover?.toggle" class="z-50 md:hidden absolute w-64 h-full xbg-red-500" aria-label="Transparency clickable area for breadcrumb popup"></button>
         <Popover ref="_breadcrumbPopover">
             <div>
                 <div v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx" class="">
