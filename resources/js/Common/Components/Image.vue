@@ -30,6 +30,8 @@ const props = withDefaults(defineProps<{
 
   responsive?: ResponsiveSize
   responsiveEnabled?: boolean
+  sizes?: string
+  srcset?: { original?: string; avif?: string; webp?: string }
 
   preload?: boolean
 
@@ -128,8 +130,14 @@ const buildCFUrl = (url: string, width?: number, height?: number) => {
 
 
 
-const buildSrcSet = (url?: string) => {
-  if (!props.responsiveEnabled || !url) return undefined
+const buildSrcSet = (url?: string, url2x?: string) => {
+  if (!url) return undefined
+
+  if (url2x) {
+    return `${url} 1x, ${url2x} 2x`
+  }
+
+  if (!props.responsiveEnabled) return undefined
 
   return Object.keys(responsiveWidths.value)
     .map(key => {
@@ -140,9 +148,9 @@ const buildSrcSet = (url?: string) => {
     .join(', ')
 }
 
-const avif = computed(() => buildSrcSet(props.src?.avif))
-const webp = computed(() => buildSrcSet(props.src?.webp))
-const original = computed(() => buildSrcSet(props.src?.original))
+const avif = computed(() => props.srcset?.avif ?? buildSrcSet(props.src?.avif, props.src?.avif_2x))
+const webp = computed(() => props.srcset?.webp ?? buildSrcSet(props.src?.webp, props.src?.webp_2x))
+const original = computed(() => props.srcset?.original ?? buildSrcSet(props.src?.original, props.src?.original_2x))
 
 
 
@@ -159,7 +167,9 @@ const defaultSrc = computed(() => {
 
 
 const sizes = computed(() => {
-  if (!props.responsiveEnabled) return undefined
+  if (props.sizes) return props.sizes
+
+  if (props.srcset || !props.responsiveEnabled) return undefined
 
   return `
     (max-width: 640px) 100vw,
@@ -179,8 +189,8 @@ const sizes = computed(() => {
       :srcset="original"
       :sizes="sizes"
       :alt="alt"
-      :width="baseWidth"
-      :height="baseHeight"
+      :width="props.srcset ? undefined : baseWidth"
+      :height="props.srcset ? undefined : baseHeight"
       :style="{ height: 'inherit', ...style }"
       :class="imageCover ? 'w-full h-full object-cover' : undefined"
       v-bind="preload ? { ...imgAttributes, loading: 'eager', fetchpriority: 'high' } : imgAttributes"

@@ -17,6 +17,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilies;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamilyDescription;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSeeAlso;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBanner;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCarousel;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsFromMaster;
@@ -88,6 +89,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } elseif ($webBlockType == 'banner') {
             $parsedWebBlocks[$key] = GetIrisWebBlockBanner::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'carousel-1') {
+            $parsedWebBlocks[$key] = GetIrisWebBlockCarousel::run($webpage, $webBlock);
         } elseif ($webBlockType == 'images') {
             $parsedWebBlocks[$key] = SanitiseImagesWebBlock::run($webBlock);
         } elseif ($webBlockType == 'relatedProductCategory') {
