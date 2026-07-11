@@ -140,7 +140,7 @@ const perRow = computed(() => ({
 }))
 
 const familyImageSizes = computed(() =>
-  `(max-width: 767px) ${Math.round(100 / perRow.value.mobile)}vw, (max-width: 1199px) ${Math.round(100 / perRow.value.tablet)}vw, ${Math.round(100 / perRow.value.desktop)}vw`
+  `(max-width: 639px) ${Math.round(100 / perRow.value.mobile)}vw, (max-width: 1023px) ${Math.round(100 / perRow.value.tablet)}vw, ${Math.round(100 / perRow.value.desktop)}vw`
 )
 
 const MOBILE_INITIAL_FAMILIES = 12
@@ -296,13 +296,10 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Family Grid -->
-    <div v-else class="grid gap-5" :style="{
-      gridTemplateColumns: `repeat(${screenType === 'mobile'
-        ? perRow.mobile
-        : screenType === 'tablet'
-          ? perRow.tablet
-          : perRow.desktop
-        }, minmax(0, 1fr))`,
+    <div v-else class="grid gap-5 families-grid" :style="{
+      '--cols-mobile': perRow.mobile,
+      '--cols-tablet': perRow.tablet,
+      '--cols-desktop': perRow.desktop,
     }">
       <LinkIris v-for="(family, familyIndex) in families" :key="family.id" :href="family.url" type="internal"
         class="group block" :class="{ 'max-lg:hidden': isMobileCollapsed && familyIndex >= MOBILE_INITIAL_FAMILIES }">
@@ -340,3 +337,21 @@ onBeforeUnmount(() => {
     </div>
   </section>
 </template>
+
+<style scoped>
+.families-grid {
+  grid-template-columns: repeat(var(--cols-mobile), minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .families-grid {
+    grid-template-columns: repeat(var(--cols-tablet), minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .families-grid {
+    grid-template-columns: repeat(var(--cols-desktop), minmax(0, 1fr));
+  }
+}
+</style>

@@ -16,6 +16,9 @@ const props = defineProps<{
 }>()
 const layout: any = inject("layout", {})
 
+const rawValue = computed(() => get(props.fieldValue, ['value']))
+const isResponsive = computed(() => isPlainObject(rawValue.value) && !!rawValue.value?.use_responsive)
+
 const valueForField = computed({
   get() {
     const rawVal = get(props.fieldValue, ['value'])
@@ -52,7 +55,12 @@ const valueForField = computed({
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType,true,false),
             ...getStyles(fieldValue.container?.properties, screenType, true,false)
         }">
-            <div class="editor-class" v-html="valueForField"></div>
+            <template v-if="isResponsive">
+                <div class="editor-class sm:hidden" v-html="rawValue?.mobile ?? rawValue?.desktop ?? ''"></div>
+                <div class="editor-class hidden sm:block lg:hidden" v-html="rawValue?.tablet ?? rawValue?.desktop ?? ''"></div>
+                <div class="editor-class hidden lg:block" v-html="rawValue?.desktop ?? ''"></div>
+            </template>
+            <div v-else class="editor-class" v-html="valueForField"></div>
         </div>
 
     </div>
