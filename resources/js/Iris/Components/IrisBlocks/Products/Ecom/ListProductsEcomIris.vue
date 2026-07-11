@@ -12,6 +12,7 @@ import Drawer from "primevue/drawer"
 import Skeleton from "primevue/skeleton"
 import { debounce, get } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
+import MobileShowMoreButton from "@/Iris/Components/MobileShowMoreButton.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
@@ -51,6 +52,11 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)
+const MOBILE_INITIAL_PRODUCTS = 16
+const showAllProductsOnMobile = ref(false)
+const mobileHiddenProductsCount = computed(() => products.value.length - MOBILE_INITIAL_PRODUCTS)
+const isMobileCollapsed = computed(() => !showAllProductsOnMobile.value && mobileHiddenProductsCount.value > 4)
+
 const firstLoad = ref(null)
 const products = ref<any[]>(
     props.fieldValue?.products?.meta?.last_page == 1
@@ -521,7 +527,8 @@ watch(
                         <!-- <pre>{{ get(layout, ['family_quantity_ordered'], []) }}</pre> -->
                         <div v-for="(product, index) in products"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class=" relative rounded flex md:flex-1 justify-center">
+                            class=" relative rounded flex md:flex-1 justify-center"
+                            :class="{ 'max-lg:hidden': isMobileCollapsed && index >= MOBILE_INITIAL_PRODUCTS }">
                             <RenderProduct :code="code" :product="product" :key="index"
                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
@@ -553,9 +560,14 @@ watch(
                     </template>
                 </div>
 
+                <!-- Show more (mobile only): reveal CSS-hidden products without fetching -->
+                <div v-if="isMobileCollapsed" class="lg:hidden mt-4 mb-7 px-2">
+                    <MobileShowMoreButton :count="mobileHiddenProductsCount" @show="showAllProductsOnMobile = true" />
+                </div>
+
                 <!-- Load More -->
                 <!--  {{ page   }}{{ lastPage }} -->
-                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12">
+                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12" :class="{ 'max-lg:hidden': isMobileCollapsed }">
                     <Button @click="loadMore" type="tertiary" :disabled="isLoadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
                         <template v-if="isLoadingMore">

@@ -8,6 +8,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from "@/Composables/useTrans";
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import MobileShowMoreButton from '@/Iris/Components/MobileShowMoreButton.vue'
 import { useDepartmentStructuredData } from "@/Iris/Composables/useDepartmentStructuredData"
 
 interface FilterOptions {
@@ -141,6 +142,11 @@ const perRow = computed(() => ({
 const familyImageSizes = computed(() =>
   `(max-width: 767px) ${Math.round(100 / perRow.value.mobile)}vw, (max-width: 1199px) ${Math.round(100 / perRow.value.tablet)}vw, ${Math.round(100 / perRow.value.desktop)}vw`
 )
+
+const MOBILE_INITIAL_FAMILIES = 12
+const showAllFamiliesOnMobile = ref(false)
+const mobileHiddenFamiliesCount = computed(() => families.value.length - MOBILE_INITIAL_FAMILIES)
+const isMobileCollapsed = computed(() => !showAllFamiliesOnMobile.value && mobileHiddenFamiliesCount.value > 4)
 
 const updateQueryParams = () => {
     const url = new URL(window.location.href)
@@ -298,7 +304,8 @@ onBeforeUnmount(() => {
           : perRow.desktop
         }, minmax(0, 1fr))`,
     }">
-      <LinkIris v-for="family in families" :key="family.id" :href="family.url" class="group block" type="internal">
+      <LinkIris v-for="(family, familyIndex) in families" :key="family.id" :href="family.url" type="internal"
+        class="group block" :class="{ 'max-lg:hidden': isMobileCollapsed && familyIndex >= MOBILE_INITIAL_FAMILIES }">
         <div class="aspect-square overflow-hidden bg-gray-100 relative xflex items-center justify-center">
           <div v-if="!family.image" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <FontAwesomeIcon icon="fal fa-image" class="text-5xl opacity-30" fixed-width aria-hidden="true" />
@@ -316,8 +323,13 @@ onBeforeUnmount(() => {
       </LinkIris>
     </div>
 
+    <!-- Show more (mobile only): reveal CSS-hidden families without fetching -->
+    <div v-if="isMobileCollapsed" class="lg:hidden mt-4 mb-7 px-2">
+      <MobileShowMoreButton :count="mobileHiddenFamiliesCount" @show="showAllFamiliesOnMobile = true" />
+    </div>
+
     <!-- Load More -->
-    <div v-if="!loading && meta.current_page < meta.last_page" class="mt-8 flex justify-center">
+    <div v-if="!loading && meta.current_page < meta.last_page" class="mt-8 flex justify-center" :class="{ 'max-lg:hidden': isMobileCollapsed }">
       <Button @click="loadFamilies(meta.current_page + 1, true)" type="tertiary" :disabled="loadingMore"
         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
         <template v-if="loadingMore">
