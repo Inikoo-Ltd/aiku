@@ -142,12 +142,13 @@ const handleTabFocus = () => {
     }
 }
 
+layout.app.webpage_layout = theme
+
 onMounted(() => {
     CustomerIdCollector(layout.iris_variables?.customer_id?.toString())
 
     checkScreenType()
     setColorStyleRoot(theme?.color)
-    layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 
     document.addEventListener('visibilitychange', handleTabFocus)
