@@ -14,6 +14,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { trans } from "laravel-vue-i18n"
 import 'v-calendar/style.css'
 import Multiselect from "@vueform/multiselect"
+import "@vueform/multiselect/themes/default.css"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'

@@ -28,8 +28,7 @@ export default defineConfig(
                 buildDirectory: "iris",
                 input         : [
                   "resources/css/app.css",
-                  "resources/js/app-iris.js",
-                  "node_modules/@fortawesome/fontawesome-free/css/svg-with-js.min.css"
+                  "resources/js/app-iris.js"
                 ],
                 ssr           : "resources/js/ssr-iris.js",
                 refresh       : true
