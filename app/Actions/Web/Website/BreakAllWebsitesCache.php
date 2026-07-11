@@ -16,7 +16,7 @@ class BreakAllWebsitesCache extends OrgAction
 {
     public function handle(?Command $command = null): void
     {
-        foreach (Website::all() as $website) {
+        foreach (Website::orderBy('id', 'desc')->get() as $website) {
             BreakWebsiteCache::run($website, null, $command);
         }
     }
