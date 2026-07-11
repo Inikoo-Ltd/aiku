@@ -20,7 +20,29 @@ class RefreshGrpAssetUrls
      */
     public function handle(array $data): array
     {
-        $json = preg_replace_callback(
+        return $this->walk($data);
+    }
+
+    /**
+     * Only strings and plain arrays are touched: block data may hold live resource
+     * objects whose serialization (pagination meta) must stay with Inertia.
+     */
+    private function walk(mixed $value): mixed
+    {
+        if (is_string($value)) {
+            return str_contains($value, '/grp/assets/') ? $this->remapUrl($value) : $value;
+        }
+
+        if (is_array($value)) {
+            return array_map(fn ($item) => $this->walk($item), $value);
+        }
+
+        return $value;
+    }
+
+    private function remapUrl(string $value): string
+    {
+        return preg_replace_callback(
             '#/grp/assets/([A-Za-z0-9_.-]+)-[A-Za-z0-9_-]{8}\.(png|svg|jpe?g|webp|gif)#',
             function (array $matches) {
                 $entry = $this->grpManifest()["resources/art/payment_service_providers/$matches[1].$matches[2]"] ?? [];
@@ -28,10 +50,8 @@ class RefreshGrpAssetUrls
 
                 return $file ? "/grp/$file" : $matches[0];
             },
-            json_encode($data, JSON_UNESCAPED_SLASHES)
+            $value
         );
-
-        return json_decode($json, true) ?? $data;
     }
 
     private function grpManifest(): array
