@@ -73,6 +73,7 @@ const props = defineProps<{
 const layout: any = inject("layout", {})
 const videoDialogVisible = ref(false)
 const videoReady = ref(false)
+const mobileVideoActivated = ref(false)
 const enableVideo = () => {
 	window.setTimeout(() => {
 		videoReady.value = true
@@ -380,15 +381,38 @@ watch(
 							<template v-if="fieldValue.department.showcase_video">
 								<div class="relative w-full h-full">
 									<iframe
-									:title="fieldValue.department.name || ctrans('Department video')"
-									    v-if="screenType === 'mobile' && !videoDialogVisible && videoReady"
+										v-if="mobileVideoActivated"
+										:title="fieldValue.department.name || ctrans('Department video')"
 										:src="embedUrl"
 										class="absolute inset-0 w-full h-full"
 										frameborder="0"
 										allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
 										referrerpolicy="strict-origin-when-cross-origin"
-  										@load="console.log('iframe loaded')"
 									/>
+									<button
+										v-else
+										type="button"
+										class="absolute inset-0 w-full h-full"
+										:aria-label="ctrans('Play video')"
+										@click="mobileVideoActivated = true">
+										<Image
+											v-if="fieldValue.department.showcase_video_thumbnail"
+											:src="{ original: fieldValue.department.showcase_video_thumbnail }"
+											:responsiveEnabled="false"
+											:alt="fieldValue.department.name || ctrans('Department video')"
+											:imageCover="true"
+											class="absolute inset-0 w-full h-full" />
+										<Image
+											v-else-if="fieldValue.department.showcase_image"
+											:src="fieldValue.department.showcase_image"
+											:alt="fieldValue.department.name || ctrans('Department video')"
+											:imageCover="true"
+											class="absolute inset-0 w-full h-full" />
+										<div v-else class="absolute inset-0 bg-gray-200"></div>
+										<span class="absolute inset-0 flex items-center justify-center">
+											<FontAwesomeIcon :icon="faPlayCircle" class="text-6xl text-white drop-shadow-lg" />
+										</span>
+									</button>
 								</div>
 							</template>
 
