@@ -33,6 +33,7 @@ const props = defineProps<{
     allow_review_reaction : boolean
     allow_review_reply_reaction : boolean
     minimum_reviews_to_show : number
+    webpage_reviews_count?: number | null
     webpage_slug : string
     show_staff_who_reply : boolean
     webpage_id : number
@@ -48,7 +49,9 @@ const getScreenType = (): "mobile" | "tablet" | "desktop" => {
     if (window.innerWidth < 1024) return "tablet"
     return "desktop"
 }
-const screenType = ref<"mobile" | "tablet" | "desktop">(getScreenType())
+// ponytail: init to the SSR value ('desktop') so client hydration matches the server DOM;
+// onMounted -> checkScreenType flips it to the real viewport post-hydration.
+const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
 const currentUrl = ref("")
 const structuredDataScript = ref<HTMLScriptElement | null>(null)
 const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
@@ -56,6 +59,7 @@ const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
 provide('webpage_data', props.webpage_data)
 provide('webpage_id', props.webpage_id)
 provide('minimum_reviews_to_show', props.minimum_reviews_to_show)
+provide('webpage_reviews_count', props.webpage_reviews_count ?? null)
 provide('allow_review_reaction', props.allow_review_reaction)
 provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
 provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
