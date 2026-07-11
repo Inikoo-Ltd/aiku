@@ -116,8 +116,7 @@ onBeforeUnmount(() => {
         <meta name="twitter:description" :content="webpage_data.description || ''" />
         <meta name="twitter:image" :content="webpage_img?.png || webpage_img?.url || ''" />
     </Head>
-    
-    <!-- <pre>{{ blablabla }}</pre> -->
+
     <div class="bg-white">
         <div class="mx-auto w-full">
             <div
