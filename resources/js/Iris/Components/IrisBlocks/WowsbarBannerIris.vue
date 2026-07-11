@@ -137,11 +137,22 @@ const firstBannerImageSource = computed<string | null>(() => {
   return pickSource(image[props.screenType]) ?? pickSource(image.desktop)
 })
 
-// measure the original ratio of the image
-const measureImageRatio = (source: string | null): void => {
-  mobileImageRatio.value = null
+const firstBannerImageEmbeddedRatio = computed<number | null>(() => {
+  const image = data.value?.compiled_layout?.components?.[0]?.image
+  const variant = image?.[props.screenType] ?? image?.desktop
 
-  if (typeof window === "undefined" || !source) {
+  if (variant?.width > 0 && variant?.height > 0) {
+    return variant.width / variant.height
+  }
+
+  return null
+})
+
+// measure the original ratio of the image (fallback for banners without embedded dimensions)
+const measureImageRatio = (source: string | null): void => {
+  mobileImageRatio.value = firstBannerImageEmbeddedRatio.value
+
+  if (mobileImageRatio.value !== null || typeof window === "undefined" || !source) {
     return
   }
 

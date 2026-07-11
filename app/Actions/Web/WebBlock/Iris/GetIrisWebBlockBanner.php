@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 11 Jul 2026 12:24:13 Malaysia Time, Kuala Lumpur, Malaysia
@@ -7,14 +8,17 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use App\Models\Web\Banner;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetIrisWebBlockBanner
 {
     use AsObject;
+    use WithIrisImageVariants;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
@@ -58,9 +62,43 @@ class GetIrisWebBlockBanner
 
         $components = collect(Arr::get($compiledLayout, 'components', []))
             ->filter(fn ($component) => Arr::get($component, 'visibility') == true)
+            ->map(fn ($component) => $this->addImageDimensions($component))
             ->values()
             ->all();
 
         return array_merge($compiledLayout, ['components' => $components]);
+    }
+
+    private function addImageDimensions(array $component): array
+    {
+        foreach (['mobile', 'tablet', 'desktop'] as $view) {
+            $originalUrl = Arr::get($component, "image.$view.source.original");
+            if (!$originalUrl) {
+                continue;
+            }
+
+            $media = $this->findMediaFromImgProxyUrl($originalUrl);
+            if (!$media) {
+                continue;
+            }
+
+            $cacheKey = "media_image_dimensions:$media->id";
+            $dimensions = Cache::get($cacheKey);
+
+            if (!$dimensions) {
+                $size = rescue(fn () => getimagesize($media->getPath()), null, false);
+                if ($size) {
+                    $dimensions = ['width' => $size[0], 'height' => $size[1]];
+                    Cache::forever($cacheKey, $dimensions);
+                }
+            }
+
+            if ($dimensions && $dimensions['width'] && $dimensions['height']) {
+                data_set($component, "image.$view.width", $dimensions['width']);
+                data_set($component, "image.$view.height", $dimensions['height']);
+            }
+        }
+
+        return $component;
     }
 }
