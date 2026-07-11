@@ -404,22 +404,15 @@ const toggleSort = (key: string) => {
 
 
 
-const responsiveGridClass = computed(() => {
+const gridColsVars = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
+    const basketOpen = layout.rightbasket?.show
 
-    const columnCount = {
-        desktop: perRow.desktop ?? 4,
-        tablet: perRow.tablet ?? 3,
-        mobile: perRow.mobile ?? 2
+    return {
+        '--cols-mobile': basketOpen ? 2 : (perRow.mobile ?? 2),
+        '--cols-tablet': basketOpen ? 3 : (perRow.tablet ?? 3),
+        '--cols-desktop': basketOpen ? 3 : (perRow.desktop ?? 4),
     }
-
-    const count = columnCount[props.screenType] ?? 1
-
-    if (layout.rightbasket?.show) {
-        if (props.screenType == 'mobile') return `grid-cols-2`
-        return `grid-cols-3`
-    }
-    return `grid-cols-${count}`
 })
 
 
@@ -508,8 +501,8 @@ watch(
                 </div>
 
                 <!-- Product Grid -->
-                <div :class="responsiveGridClass"
-                    class="grid gap-x-6 gap-y-10 p-3 px-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 2xl:px-[50px]">
+                <div :style="gridColsVars"
+                    class="products-grid grid gap-x-6 gap-y-10 p-3 px-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 2xl:px-[50px]">
                     <!-- <pre>{{ getStyles(fieldValue?.container?.properties, screenType) }}</pre> -->
                     <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
