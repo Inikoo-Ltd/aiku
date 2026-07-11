@@ -138,6 +138,10 @@ const perRow = computed(() => ({
   desktop: props.fieldValue?.settings?.per_row?.desktop ?? 5,
 }))
 
+const familyImageSizes = computed(() =>
+  `(max-width: 767px) ${Math.round(100 / perRow.value.mobile)}vw, (max-width: 1199px) ${Math.round(100 / perRow.value.tablet)}vw, ${Math.round(100 / perRow.value.desktop)}vw`
+)
+
 const updateQueryParams = () => {
     const url = new URL(window.location.href)
 
@@ -200,7 +204,6 @@ onBeforeUnmount(() => {
   removeStructuredDataScript(departmentStructuredDataScript.value)
 })
 
-console.log('sdsd',props)
 </script>
 
 <template>
@@ -224,7 +227,7 @@ console.log('sdsd',props)
           {{ ctrans('Families Found') }}
         </div>
 
-        <select v-model.number="selectedOption"
+        <select v-model.number="selectedOption" :aria-label="ctrans('Filter By Category')"
           class="h-[58px] w-[170px] rounded-[18px] border border-[#B8B8B8] bg-white px-4 text-center text-xl text-slate-800 shadow-[0_4px_0_0_rgba(0,0,0,0.15)]">
           <option :value="null">
             {{ ctrans('All') }}
@@ -249,7 +252,7 @@ console.log('sdsd',props)
               {{ ctrans('Filter By Category') }} :
             </span>
 
-            <select v-model.number="selectedOption"
+            <select v-model.number="selectedOption" :aria-label="ctrans('Filter By Category')"
               class="h-11 min-w-[180px] rounded-md border border-slate-400 bg-white px-4">
               <option :value="null">
                 {{ ctrans('All') }}
@@ -301,6 +304,8 @@ console.log('sdsd',props)
             <FontAwesomeIcon icon="fal fa-image" class="text-5xl opacity-30" fixed-width aria-hidden="true" />
           </div>
           <Image :src="family.image" :alt="family.name"
+            :srcset="family.srcset"
+            :sizes="familyImageSizes"
             class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             :class="!family.image ? 'opacity-0' : ''" />
         </div>

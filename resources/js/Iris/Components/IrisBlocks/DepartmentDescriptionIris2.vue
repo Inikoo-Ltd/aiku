@@ -123,8 +123,6 @@ const mobileDescriptionRef = ref<HTMLElement | null>(null)
 
 const expanded = ref(false)
 const showReadMore = ref(false)
-const maxDescriptionHeight = ref(0)
-const maxSideBarHeight = ref(0)
 let resizeObserver: ResizeObserver | null = null
 
 const calculateDescriptionHeight = async () => {
@@ -136,24 +134,9 @@ const calculateDescriptionHeight = async () => {
 
 	if (!media || !description) return
 
-	maxDescriptionHeight.value = media.offsetHeight - 190
 	showReadMore.value = description.scrollHeight > media.offsetHeight
 }
 
-const calculateSidebarHeight = async () => {
-	await nextTick()
-
-	if (!_content.value) {
-		return
-	}
-
-	const newHeight = _content.value.offsetHeight - 80
-
-
-	if (newHeight != maxSideBarHeight.value) {
-		maxSideBarHeight.value = newHeight
-	}
-}
 
 onMounted(async () => {
 	await nextTick()
@@ -165,12 +148,10 @@ onMounted(async () => {
 	}
 
 	calculateDescriptionHeight()
-	calculateSidebarHeight()
 
 	if (window.ResizeObserver) {
 		resizeObserver = new ResizeObserver(() => {
 			calculateDescriptionHeight()
-			calculateSidebarHeight()
 		})
 
 		if (_content.value) {
@@ -204,17 +185,8 @@ watch(
 	],
 	()=>{
 		calculateDescriptionHeight()
-		calculateSidebarHeight()
 	},
 	{ immediate: true }
-)
-
-watch(
-  () => embedUrl.value,
-  (val) => {
-    console.log("embedUrl changed", val)
-  },
-  { immediate: true }
 )
 
 </script>
@@ -233,7 +205,7 @@ watch(
 			<div
 				class="grid grid-cols-1 lg:grid-cols-[260px_1fr] 2xl:grid-cols-[320px_1fr] gap-6 lg:gap-10 2xl:gap-14">
 				<!-- Sidebar -->
-				<aside class="hidden lg:block border-r border-gray-300 pr-4 2xl:pr-8"
+				<aside class="hidden lg:flex lg:flex-col border-r border-gray-300 pr-4 2xl:pr-8"
 				:style="{
 						...getStyles(fieldValue?.sidebar?.properties, screenType),
 					}">
@@ -241,26 +213,27 @@ watch(
 						{{ ctrans("Browse By Category:") }}
 					</h3>
 
-					<div
-						ref="_sidebar"
-						class="overflow-y-auto pr-4 space-y-4"
-						:style="{ maxHeight: `${maxSideBarHeight}px` }">
-						<LinkIris
-							v-for="item of props.fieldValue.sub_departments"
-							:key="item.url"
-							:type="'internal'"
-							:href="item.url"
-							class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
-							{{ item.name }}
-						</LinkIris>
-						<LinkIris
-							v-for="(collection, idxCol) of props.fieldValue.collections"
-							:key="collection.url"
-							:type="'internal'"
-							:href="collection.url"
-							class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
-							{{ collection.name }}
-						</LinkIris>
+					<div class="relative flex-1 min-h-0">
+						<div
+							ref="_sidebar"
+							class="absolute inset-0 overflow-y-auto pr-4 space-y-4">
+							<LinkIris
+								v-for="item of props.fieldValue.sub_departments"
+								:key="item.url"
+								:type="'internal'"
+								:href="item.url"
+								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
+								{{ item.name }}
+							</LinkIris>
+							<LinkIris
+								v-for="(collection, idxCol) of props.fieldValue.collections"
+								:key="collection.url"
+								:type="'internal'"
+								:href="collection.url"
+								class="block text-[15px] lg:text-[16px] 2xl:text-[18px] text-slate-700 hover:underline">
+								{{ collection.name }}
+							</LinkIris>
+						</div>
 					</div>
 				</aside>
 
@@ -290,11 +263,7 @@ watch(
 									<div
 										ref="desktopDescriptionRef"
 										class="text-[14px] md:text-[15px] 2xl:text-[17px] leading-7 2xl:leading-8 text-slate-700 max-w-[520px] 2xl:max-w-[650px] mx-auto overflow-hidden transition-all duration-300"
-										:style="
-											!expanded && showReadMore
-												? { maxHeight: `${maxDescriptionHeight}px` }
-												: {}
-										"
+										:class="!expanded ? 'lg:max-h-[170px] 2xl:max-h-[310px]' : ''"
 										v-html="fieldValue.department.description_extra" />
 
 									<!-- Fade Overlay -->
@@ -344,6 +313,7 @@ watch(
 											referrerpolicy="strict-origin-when-cross-origin"
 											allowfullscreen
 											class="absolute inset-0 w-full h-full"
+											:title="fieldValue.department.name || ctrans('Department video')"
 											@load="calculateDescriptionHeight" />
 									</div>
 								</template>
@@ -410,6 +380,7 @@ watch(
 							<template v-if="fieldValue.department.showcase_video">
 								<div class="relative w-full h-full">
 									<iframe
+									:title="fieldValue.department.name || ctrans('Department video')"
 									    v-if="screenType === 'mobile' && !videoDialogVisible && videoReady"
 										:src="embedUrl"
 										class="absolute inset-0 w-full h-full"
@@ -452,7 +423,7 @@ watch(
 								<div
 									ref="mobileDescriptionRef"
 									class="overflow-hidden transition-all duration-300"
-									:style="!expanded && showReadMore ? { maxHeight: '90px' } : {}"
+									:class="!expanded ? 'max-h-[90px]' : ''"
 									v-html="fieldValue.department.description_extra" />
 
 								<div
@@ -505,6 +476,7 @@ watch(
 
 			<div class="aspect-video overflow-hidden rounded-xl">
 				<iframe
+					:title="fieldValue.department.name || ctrans('Department video')"
 					v-if="videoDialogVisible && embedUrl"
 					:src="`${embedUrl}`"
 					frameborder="0"
