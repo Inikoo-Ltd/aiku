@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -100,7 +101,7 @@ class ShowIrisWebpage
         return array_merge($baseWebpageData, [
             'status'     => 'ok',
             'webpage_id' => $webpageID,
-            'web_blocks' => $webBlocks,
+            'web_blocks' => RefreshGrpAssetUrls::run($webBlocks),
         ]);
     }
 
