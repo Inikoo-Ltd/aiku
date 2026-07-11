@@ -248,7 +248,7 @@ watch(
 						}}
 					</h1>
 
-					<p
+					<div
 						class="mt-4 text-[14px] md:text-[15px] 2xl:text-[17px] leading-7 text-slate-700"
 						v-html="fieldValue.department.description" />
 
