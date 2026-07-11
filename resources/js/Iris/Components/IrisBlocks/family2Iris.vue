@@ -349,9 +349,7 @@ const contentClass = computed(() =>
     2xl:space-y-2
     2xl:text-[19px]
     overflow-hidden
-  " ref="descriptionRef" :class="!expanded ? 'max-lg:max-h-[265px]' : ''" :style="!expanded && showReadMore && screenType === 'desktop'
-    ? { maxHeight: `${maxDescriptionHeight}px` }
-    : {}">
+  " ref="descriptionRef" :class="!expanded ? 'max-h-[265px] lg:max-h-[195px] 2xl:max-h-[255px]' : ''">
             <div v-html="cleanedDescription"></div>
 
             <!-- Fade overlay -->
