@@ -28,6 +28,7 @@ use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Web\Webpage\HydrateWebpage;
+use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
@@ -77,6 +78,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -1123,7 +1125,7 @@ test('UI smoke iris storefront routes', function (Website $website, array $cat) 
         '/catalogue/sub-department/'.$cat['subDepartment']->slug,
         '/catalogue/products/'.$cat['product']->slug,
         '/blog',
-        '/hello_robot',
+        '/robots.txt',
         '/llms.txt',
         '/search',
         '/warming_base.txt',
@@ -1199,6 +1201,19 @@ test('save website sitemap', function (Website $website) {
     $count = SaveWebsiteSitemap::run($website);
 
     expect($count)->toBeInt()->toBeGreaterThanOrEqual(0);
+})->depends('launch website');
+
+test('robots txt is generated on demand with absolute sitemap urls', function (Website $website) {
+    Storage::disk('local')->delete("robots/robots_$website->id.txt");
+
+    $robotsTxt = ShowIrisRobotsTxt::make()->getRobotText($website);
+
+    expect($robotsTxt)
+        ->toContain('User-agent: *')
+        ->toContain('Disallow: /app/interest/favourites')
+        ->toContain("://www.$website->domain/sitemap.xml")
+        ->toContain("://www.$website->domain/sitemaps/products.xml")
+        ->not->toContain('Sitemap: /');
 })->depends('launch website');
 
 test('update webpage canonical url', function (Webpage $webpage) {
