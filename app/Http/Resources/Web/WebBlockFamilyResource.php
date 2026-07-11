@@ -11,10 +11,12 @@ namespace App\Http\Resources\Web;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Traits\HasCardWebImages;
 use Illuminate\Support\Arr;
 
 class WebBlockFamilyResource extends JsonResource
 {
+    use HasCardWebImages;
     use HasSelfCall;
 
     public function toArray($request): array
@@ -30,14 +32,12 @@ class WebBlockFamilyResource extends JsonResource
             'description_title'         => $family->description_title,
             'description_extra'         => $family->description_extra,
             'id'                        => $family->id,
-            'image'                     => Arr::get($family->web_images, 'main.original'),
-            'description_image'         => Arr::get($family->web_images, 'description'),
+            'description_image'         => collect(Arr::get($family->web_images, 'description', []))->map(fn ($slot) => $this->getPictureFormats($slot))->filter()->all(),
             'description_video'         => $family->desc_video_url,
-            'extra_description_image'   => Arr::get($family->web_images, 'extraDescription'),
+            'extra_description_image'   => collect(Arr::get($family->web_images, 'extraDescription', []))->map(fn ($slot) => $this->getPictureFormats($slot))->filter()->all(),
             'url'                       => $family->webpage->url,
             'offers_data'               => $family->offers_data,
-            'web_images'                => ['main' => Arr::get($family->web_images, 'main')],
-            'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get(),
+            'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => $tag->name, 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
             'faq'                       => $family->faq,
             'marketing_material_route'  => [
                 'name'          => 'iris.catalogue.feeds.product_category.download_img',

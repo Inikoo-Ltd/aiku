@@ -48,7 +48,6 @@
     @endif
 
     <!-- Scripts -->
-    @routes('iris')
     <!-- SSR: add Tailwind -->
     <link rel="stylesheet"
           href="{{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->asset('resources/css/app.css') }}">

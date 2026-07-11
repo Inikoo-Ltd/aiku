@@ -9,7 +9,7 @@ import "../css/app.css";
 
 import { createSSRApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
-import { ZiggyVue } from "ziggy-js";
+import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
 import { i18nVue } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
 import { createPinia } from "pinia";
@@ -92,8 +92,10 @@ createInertiaApp(
       app.config.globalProperties.ctrans = ctrans;  // global function for
                                                     // <template> -- Custom
                                                     // translation
+      const ziggyConfig = props.initialPage.props.ziggy;
+      window.route = (name, params, absolute) => ziggyRoute(name, params, absolute, ziggyConfig);
       app.use(createPinia()).
-        use(ZiggyVue, Ziggy).
+        use(ZiggyVue, { ...ziggyConfig, location: new URL(ziggyConfig.location) }).
         use(Notifications).
         use(FloatingVue).
         use(ConfirmationService).
