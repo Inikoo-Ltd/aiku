@@ -8,7 +8,9 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
+use App\Models\Helpers\Media;
 use App\Models\Web\Banner;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
@@ -69,6 +71,12 @@ class GetIrisWebBlockBanner
         return array_merge($compiledLayout, ['components' => $components]);
     }
 
+    private const VIEW_MAX_WIDTHS = [
+        'mobile'  => 720,
+        'tablet'  => 1024,
+        'desktop' => 1440,
+    ];
+
     private function addImageDimensions(array $component): array
     {
         foreach (['mobile', 'tablet', 'desktop'] as $view) {
@@ -81,6 +89,8 @@ class GetIrisWebBlockBanner
             if (!$media) {
                 continue;
             }
+
+            data_set($component, "image.$view.source", $this->resizedSources($media, self::VIEW_MAX_WIDTHS[$view]));
 
             $cacheKey = "media_image_dimensions:$media->id";
             $dimensions = Cache::get($cacheKey);
@@ -100,5 +110,24 @@ class GetIrisWebBlockBanner
         }
 
         return $component;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function resizedSources(Media $media, int $maxWidth): array
+    {
+        $sources = [
+            'original' => GetImgProxyUrl::run($media->getImage()->resize($maxWidth, $maxWidth)),
+        ];
+
+        if (in_array('avif', config('img-proxy.formats')) && !$media->is_animated) {
+            $sources['avif'] = GetImgProxyUrl::run($media->getImage()->resize($maxWidth, $maxWidth)->extension('avif'));
+        }
+        if (in_array('webp', config('img-proxy.formats'))) {
+            $sources['webp'] = GetImgProxyUrl::run($media->getImage()->resize($maxWidth, $maxWidth)->extension('webp'));
+        }
+
+        return $sources;
     }
 }
