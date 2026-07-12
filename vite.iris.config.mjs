@@ -10,8 +10,59 @@ import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
 import { fileURLToPath, URL } from "node:url";
 import path from "node:path";
+import fs from "node:fs";
 import tailwindcss from 'tailwindcss';
 import { analyzer } from 'vite-bundle-analyzer'
+
+/*
+ * The lang/*.json files hold translations for every app (grp backoffice included).
+ * Iris only ever looks up keys that exist as string literals in resources/js
+ * (dynamic trans(data) keys are backend data with no entries in the lang files),
+ * so the iris locale chunks keep only those keys. Runs in both client and ssr
+ * builds of this config, keeping hydration consistent.
+ */
+const irisLangFilter = () => {
+    let usedKeys = null;
+
+    const collectSourceStrings = () => {
+        const strings = new Set();
+        const stringLiteral = /(['"`])((?:\\.|(?!\1).)*?)\1/g;
+        const walk = (dir) => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                const full = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    walk(full);
+                } else if (/\.(vue|ts|js|mjs)$/.test(entry.name)) {
+                    const code = fs.readFileSync(full, "utf8");
+                    for (const match of code.matchAll(stringLiteral)) {
+                        const value = match[2].replace(/\\'/g, "'").replace(/\\"/g, '"');
+                        if (value && value.length <= 500) {
+                            strings.add(value);
+                        }
+                    }
+                }
+            }
+        };
+        walk(path.resolve(process.cwd(), "resources/js"));
+        return strings;
+    };
+
+    return {
+        name: "iris-lang-filter",
+        enforce: "pre",
+        transform(code, id) {
+            if (!/\/lang\/[A-Za-z-]+\.json$/.test(id)) {
+                return null;
+            }
+            usedKeys ??= collectSourceStrings();
+            const full = JSON.parse(code);
+            const kept = Object.fromEntries(
+                Object.entries(full).filter(([key]) => usedKeys.has(key))
+            );
+            return { code: JSON.stringify(kept), map: null };
+        },
+    };
+};
 
 export default defineConfig(
   {
@@ -41,7 +92,8 @@ export default defineConfig(
               }
             }
           }),
-      i18n()
+      i18n(),
+      irisLangFilter()
      // , analyzer()
     ],
     ssr    : {
