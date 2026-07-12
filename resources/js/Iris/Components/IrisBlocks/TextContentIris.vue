@@ -56,9 +56,9 @@ const valueForField = computed({
             ...getStyles(fieldValue.container?.properties, screenType, true,false)
         }">
             <template v-if="isResponsive">
-                <div class="editor-class sm:hidden" v-html="rawValue?.mobile ?? rawValue?.desktop ?? ''"></div>
-                <div class="editor-class hidden sm:block lg:hidden" v-html="rawValue?.tablet ?? rawValue?.desktop ?? ''"></div>
-                <div class="editor-class hidden lg:block" v-html="rawValue?.desktop ?? ''"></div>
+                <div class="editor-class sm:!hidden" v-html="rawValue?.mobile ?? rawValue?.desktop ?? ''"></div>
+                <div class="editor-class max-sm:!hidden lg:!hidden" v-html="rawValue?.tablet ?? rawValue?.desktop ?? ''"></div>
+                <div class="editor-class max-lg:!hidden" v-html="rawValue?.desktop ?? ''"></div>
             </template>
             <div v-else class="editor-class" v-html="valueForField"></div>
         </div>
