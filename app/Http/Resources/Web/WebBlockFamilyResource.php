@@ -71,18 +71,23 @@ class WebBlockFamilyResource extends JsonResource
 
         $media = is_string($originalUrl) ? $this->findMediaFromImgProxyUrl($originalUrl) : null;
         if (!$media) {
-            return $this->getPictureFormats($slot);
+            return $slot;
         }
 
-        $resized = [
+        $formats = [
             'original' => GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)),
         ];
         if (in_array('avif', config('img-proxy.formats')) && !$media->is_animated) {
-            $resized['avif'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('avif'));
+            $formats['avif'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('avif'));
         }
         if (in_array('webp', config('img-proxy.formats'))) {
-            $resized['webp'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('webp'));
+            $formats['webp'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('webp'));
         }
+
+        $resized = [
+            'original' => $formats,
+            'srcset'   => $this->getWidthSrcSets($media, [360, 720, 1200]),
+        ];
         if (Arr::has($slot, 'alt')) {
             $resized['alt'] = Arr::get($slot, 'alt');
         }
