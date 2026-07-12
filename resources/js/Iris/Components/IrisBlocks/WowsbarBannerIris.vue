@@ -102,7 +102,9 @@ const bannerStyleForView = (view: 'mobile' | 'desktop'): Record<string, string> 
   if (dimensions.width) {
     style.width = dimensions.width
   }
-  if (dimensions.height) {
+  // Percentage heights resolve against a parent with no height (= nothing), which
+  // collapses the reservation; keep the ratio/fallback geometry in that case.
+  if (dimensions.height && !String(dimensions.height).trim().endsWith('%')) {
     style.height = dimensions.height
     delete style.aspectRatio
   }
