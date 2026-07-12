@@ -203,7 +203,7 @@ onMounted(() => {
                     <!-- Section: image or background -->
                     <div v-if="get(component, ['layout', 'backgroundType',props.view || 'desktop'], 'image') === 'image'"
                         class="relative w-full h-full">
-                        <Image :src="get(component, ['image',props.view || 'desktop', 'source'], null)"
+                        <Image :src="get(component, ['image', props.view || 'desktop', 'source'], null) ?? get(component, ['image', 'desktop', 'source'], null)"
                             alt="Wowsbar"
                             :imgAttributes="index === 0 ? { loading: 'eager', fetchpriority: 'high', decoding: 'async' } : { loading: 'lazy', decoding: 'async' }" />
                     </div>
