@@ -139,9 +139,9 @@ const imgAttrsFor = (image: any, index: number) => {
       width: 'auto'
     }" aria-label="Image Gallery Section">
       <!-- Mobile Carousel -->
-      <Swiper v-if="screenType === 'mobile' && fieldValue?.mobile?.type === 'carousel'" :slides-per-view="1"
+      <Swiper v-if="fieldValue?.mobile?.type === 'carousel'" :slides-per-view="1"
         :loop="true" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay, Pagination]"
-        class="w-full" :style="getStyles(fieldValue?.value?.layout?.properties, screenType)">
+        class="w-full sm:!hidden" :style="getStyles(fieldValue?.value?.layout?.properties, screenType)">
         <SwiperSlide v-for="(image, index) in fieldValue?.value?.images" :key="index" class="w-full">
             <component
                 v-if="getHref(index)"
@@ -244,7 +244,8 @@ const imgAttrsFor = (image: any, index: number) => {
     
     
     
-      <div v-else class="grid w-full" :style="{
+      <div v-if="fieldValue?.mobile?.type !== 'carousel' || screenType !== 'mobile'" class="grid w-full"
+        :class="fieldValue?.mobile?.type === 'carousel' ? 'max-sm:hidden' : ''" :style="{
         gap: resolvedGap,
         ...getGridTemplate(getVal(fieldValue.value.layout_type))
       }">
