@@ -152,11 +152,14 @@ const onEditorBlur = () => {
   activeEditorIndex.value = null
 }
 
+const isEditing = computed(() => activeEditorIndex.value !== null)
+
 
 </script>
 
 <template>
-  <div :id="modelValue?.id ? modelValue?.id : 'carousel' + indexBlock" component="carousel" class="relative overflow-hidden">
+  <div :id="modelValue?.id ? modelValue?.id : 'carousel' + indexBlock" component="carousel" class="relative"
+    :class="isEditing ? 'overflow-visible' : 'overflow-hidden'">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
@@ -166,7 +169,7 @@ const onEditorBlur = () => {
         @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
         <FontAwesomeIcon :icon="faChevronLeft" />
       </button>
-      <div class="mx-10 overflow-hidden">
+      <div class="mx-10" :class="isEditing ? 'overflow-visible' : 'overflow-hidden'">
         <Swiper v-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
           :space-between="spaceBetween" :breakpoints="breakpoints" :autoplay="modelValue.carousel_data.carousel_setting?.interval && modelValue.carousel_data.carousel_setting?.autoplay
             ? {
@@ -217,7 +220,6 @@ const onEditorBlur = () => {
                             modelHasWebBlocks: blockData?.id,
                           },
                         }" />
-
                     </div>
                   </div>
 
