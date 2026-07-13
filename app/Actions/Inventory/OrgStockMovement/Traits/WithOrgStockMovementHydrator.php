@@ -12,7 +12,7 @@ use App\Models\Inventory\OrgStockMovement;
 
 trait WithOrgStockMovementHydrator
 {
-    public function hydrateOrgStockMovement(OrgStockMovement $orgStockMovement)
+    public function hydrateOrgStockMovement(OrgStockMovement $orgStockMovement): void
     {
         $orgStock = $orgStockMovement->orgStock;
 
@@ -23,6 +23,6 @@ trait WithOrgStockMovementHydrator
 
         OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
         OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
-        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement)->delay(now()->addMinutes(15));
+        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay(now()->addMinutes(15));
     }
 }

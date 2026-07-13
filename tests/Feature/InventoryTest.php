@@ -1360,7 +1360,7 @@ test('store, update, and delete org stock movement', function () {
     $movement = UpdateOrgStockMovement::make()->action($movement, ['note' => 'updated'], strict: false);
     expect($movement->note)->toBe('updated');
 
-    CalculateRunningQuantityOrgStockMovement::run($movement);
+    CalculateRunningQuantityOrgStockMovement::run($movement->id);
     CalculateRunningQuantityOrgStockMovement::run(null);
 
     $deleted = DeleteOrgStockMovement::make()->action($movement);

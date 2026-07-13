@@ -37,7 +37,7 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
             $orgStock->orgStockMovements()->orderBy('date')->get() as $movement
         ) {
             $command->info("Repairing: $orgStock->slug $movement->date");
-            CalculateRunningQuantityOrgStockMovement::run($movement);
+            CalculateRunningQuantityOrgStockMovement::run($movement->id);
         }
     }
 
