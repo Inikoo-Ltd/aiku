@@ -42,6 +42,7 @@ import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.v
 import {faSpinnerThird, faCheck} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DropshippingSummaryBasket from '@/Components/Retina/Dropshipping/DropshippingSummaryBasket.vue'
+import OrderPackagingPanel from '@/Components/Retina/Dropshipping/OrderPackagingPanel.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -136,6 +137,23 @@ const props = defineProps<{
     }
     is_forbidden_delivery: boolean
     is_forbidden_billing?: boolean
+    packaging_panel: {
+        packagingOptions: { value: number, label: string, price: number, family_code: string | null }[]
+        selectedPackaging: number | null
+        leafletOptions: { id: number, label: string, price: number, family_codes: string[] }[]
+        defaultLeafletsByFamily: Record<string, number[]>
+        personalisedMessage: string
+        customerLeaflets: {
+            id: number
+            leaflet_id: number
+            family_code: string | null
+            name: string
+            mime_type: string | null
+            meta: string | null
+            state: string
+            state_label: string
+        }[]
+    }
 }>()
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
@@ -429,7 +447,8 @@ const onChangeInsurance = async (val: boolean) => {
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
           @update:tab="handleTabUpdate"/>
 
-    <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
+    <div class="mx-4 mt-4 grid grid-cols-1 xl:grid-cols-3 gap-4 items-start">
+      <div class="xl:col-span-2 min-w-0 overflow-x-auto mb-4 rounded-md border border-gray-200">
         <component :is="component"
                    :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
@@ -511,6 +530,22 @@ const onChangeInsurance = async (val: boolean) => {
                 </div>
             </div>
         </template>
+      </div>
+
+      <!-- Packaging & Personalisation panel (frontend only, no order logic) -->
+      <div class="xl:col-span-1">
+        <OrderPackagingPanel
+          :accentColor="layout?.app?.theme?.[4]"
+          :currencyCode="currency?.code"
+          :packagingOptions="packaging_panel.packagingOptions"
+          :selectedPackaging="packaging_panel.selectedPackaging"
+          :leafletOptions="packaging_panel.leafletOptions"
+          :defaultLeafletsByFamily="packaging_panel.defaultLeafletsByFamily"
+          :personalisedMessage="packaging_panel.personalisedMessage"
+          :customerLeaflets="packaging_panel.customerLeaflets"
+          :packagingPreferencesHref="route('retina.sysadmin.packaging-preferences.show')"
+        />
+      </div>
     </div>
 
     <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">

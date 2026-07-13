@@ -205,6 +205,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
 
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
+                'packaging_panel' => GetRetinaOrderPackagingData::run($this->shop, $order->customer),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => RetinaDropshippingBasketResource::make($order),
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
