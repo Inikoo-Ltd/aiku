@@ -113,9 +113,13 @@ class UpdateEmployee extends OrgAction
         data_forget($modelData, 'user_model_status');
 
         $oldUserId = $employee->user_id;
+        $oldState  = $employee->state;
         $employee  = $this->update($employee, $modelData, ['data', 'salary']);
 
-        if ($employee->wasChanged(['user_id', 'state'])) {
+        $userIdChanged = $employee->user_id != $oldUserId;
+        $stateChanged  = $employee->state !== $oldState;
+
+        if ($userIdChanged || $stateChanged) {
             if ($oldUserId) {
                 if ($oldUser = User::find($oldUserId)) {
                     SetUserEmployedInOrganisation::run($oldUser);
@@ -134,7 +138,7 @@ class UpdateEmployee extends OrgAction
             $employee->updateQuietly(['data' => $data]);
         }
 
-        if (Arr::hasAny($employee->getChanges(), ['state'])) {
+        if ($stateChanged) {
             GroupHydrateEmployees::dispatch($employee->group)->delay($this->hydratorsDelay);
             OrganisationHydrateEmployees::dispatch($employee->organisation)->delay($this->hydratorsDelay);
         }
