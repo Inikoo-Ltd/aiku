@@ -17,7 +17,6 @@ use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,6 +24,8 @@ use Lorisleiva\Actions\ActionRequest;
 class PartialMoveLocationOrgStocks extends OrgAction
 {
     use WithWarehouseEditAuthorisation;
+
+    private Location $location;
 
     /**
      * @throws \Throwable
@@ -102,6 +103,7 @@ class PartialMoveLocationOrgStocks extends OrgAction
      */
     public function asController(Location $location, ActionRequest $request): Location
     {
+        $this->location = $location;
         $this->initialisationFromWarehouse($location->warehouse, $request);
 
         return $this->handle($location, $this->validatedData);
