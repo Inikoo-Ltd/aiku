@@ -15,6 +15,7 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -35,6 +36,13 @@ class PublishWebpage extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
+        if ($webpage->sub_type == WebpageSubTypeEnum::MAILSHOT) {
+            // update unpublish layout
+            foreach ($webpage->modelHasWebBlocks as $modelHasWebBlock) {
+                UpdateModelHasWebBlocks::make()->action($modelHasWebBlock, ['layout' => Arr::get($modelData, 'layout')]);
+            }
+        }
+
         /** @var User $user */
         $user = UserResolver::resolve();
 
@@ -55,15 +63,7 @@ class PublishWebpage extends OrgAction
             ]);
         }
 
-        $currentUnpublishedLayout = $webpage->sub_type == WebpageSubTypeEnum::MAILSHOT ? [
-            'builderType' => "beefree",
-            'beefree' => [
-                'json' => Arr::get($modelData, 'layout', []),
-                'html' => Arr::get($modelData, 'compiled_layout', ''),
-            ]
-        ] : $webpage->unpublishedSnapshot->layout;
-
-
+        $currentUnpublishedLayout = $webpage->unpublishedSnapshot->layout;
 
         /** @var Snapshot $snapshot */
         $snapshot = StoreWebpageSnapshot::run(

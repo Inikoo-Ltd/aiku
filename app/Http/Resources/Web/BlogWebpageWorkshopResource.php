@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Web;
 
 use App\Actions\Web\Webpage\WithGetWebpageWebBlocks;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Web\Webpage;
@@ -106,9 +105,7 @@ class BlogWebpageWorkshopResource extends JsonResource
                     'method'     => 'patch',
                 ],
             'publishRoute'  => [
-                'name'       => $webpage->sub_type === WebpageSubTypeEnum::MAILSHOT
-                    ? 'grp.models.webpage.publish-beefree'
-                    : 'grp.models.webpage.publish',
+                'name'       => 'grp.models.webpage.publish',
                 'parameters' => $webpage->id,
                 'method'     => 'post',
             ],
