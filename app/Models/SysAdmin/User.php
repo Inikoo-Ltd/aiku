@@ -247,6 +247,11 @@ class User extends Authenticatable implements HasMedia, Auditable
         return $this->belongsTo(Group::class);
     }
 
+    public function employedInOrganisation(): BelongsTo
+    {
+        return $this->belongsTo(Organisation::class, 'employed_in_organisation_id');
+    }
+
 
     public function stats(): HasOne
     {

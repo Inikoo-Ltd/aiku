@@ -20,7 +20,7 @@ class GerUsersFromSearchResource extends JsonResource
         /** @var User $user */
         $user = $this;
 
-        $organisationCode = $user->getOrganisation()?->code;
+        $organisationCode = $user->employedInOrganisation?->code;
 
         return [
             'id'                   => $user->id,
