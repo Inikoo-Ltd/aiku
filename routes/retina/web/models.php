@@ -98,6 +98,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCa
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToAllChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToMultiChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\BulkUnlinkRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel;
@@ -376,6 +377,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     });
 
     Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink')->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/bulk-unlink-only', BulkUnlinkRetinaPortfolio::class)->name('bulk.unlink_only')->whereNumber('customerSalesChannel');
 
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings()->whereNumber('shopifyUser');
 
