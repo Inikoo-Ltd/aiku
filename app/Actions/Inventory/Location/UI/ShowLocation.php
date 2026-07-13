@@ -63,7 +63,7 @@ class ShowLocation extends OrgAction
 
     public function htmlResponse(Location $location, ActionRequest $request): Response
     {
-        $navigation = LocationTabsEnum::navigation();
+        $navigation = LocationTabsEnum::navigation($location);
 
         if (!$location->allow_stocks) {
             unset($navigation[LocationTabsEnum::ORG_STOCKS->value]);
@@ -103,7 +103,7 @@ class ShowLocation extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => LocationTabsEnum::navigation()
+                    'navigation' => $navigation
 
                 ],
                 'location_id' => $location->id,
