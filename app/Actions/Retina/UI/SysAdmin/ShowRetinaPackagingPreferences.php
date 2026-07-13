@@ -62,6 +62,15 @@ class ShowRetinaPackagingPreferences extends RetinaAction
                 'updateRoute'         => [
                     'name' => 'retina.sysadmin.packaging-preferences.update',
                 ],
+                'uploadRoute'         => [
+                    'name' => 'retina.sysadmin.packaging-preferences.leaflet.upload',
+                ],
+                'leafletUpdateRoute'  => [
+                    'name' => 'retina.sysadmin.packaging-preferences.leaflet.update',
+                ],
+                'leafletDeleteRoute'  => [
+                    'name' => 'retina.sysadmin.packaging-preferences.leaflet.delete',
+                ],
             ]
         );
     }
@@ -151,25 +160,31 @@ class ShowRetinaPackagingPreferences extends RetinaAction
             ->all();
     }
 
-    /** @return array<int, array{id: int, name: string, type_label: string, size: string|null, uploaded_at: string|null, state: string, state_label: string}> */
+    /** @return array<int, array{id: int, leaflet_id: int, family_code: string|null, name: string, mime_type: string|null, type_label: string, size: string|null, uploaded_at: string|null, state: string, state_label: string}> */
     private function getCustomerLeaflets(): array
     {
         return $this->customerLeafletQuery()
             ->whereNotNull('media_id')
-            ->with('media')
-            ->orderByDesc('created_at')
+            ->with(['media', 'packaging'])
+            ->orderByDesc('updated_at')
             ->get()
             ->map(fn (ModelHasLeaflet $customerLeaflet) => [
                 'id'          => $customerLeaflet->id,
-                'name'        => $customerLeaflet->media?->file_name ?? $customerLeaflet->name,
+                'leaflet_id'  => $customerLeaflet->leaflet_id,
+                'family_code' => $customerLeaflet->packaging?->family_code,
+                'name'        => $customerLeaflet->media?->name ?? $customerLeaflet->name,
+                'mime_type'   => $customerLeaflet->media?->mime_type,
                 'type_label'  => $customerLeaflet->type->labels()[$customerLeaflet->type->value],
                 'size'        => $customerLeaflet->media
                     ? round($customerLeaflet->media->size / 1048576, 1).' MB'
                     : null,
-                'uploaded_at' => $customerLeaflet->created_at?->format('d/m/Y'),
+                'uploaded_at' => $customerLeaflet->updated_at?->format('d/m/Y'),
                 'state'       => $customerLeaflet->state->value,
                 'state_label' => $customerLeaflet->state->labels()[$customerLeaflet->state->value],
-            ])->all();
+            ])
+            ->unique(fn (array $row) => $row['leaflet_id'].'|'.$row['family_code'])
+            ->values()
+            ->all();
     }
 
     private function getFamilyLabel(Collection $packagings): string

@@ -14,9 +14,11 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import type { Image as ImageProxy } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
 import Image from "@common/Components/Image.vue"
 import Textarea from "primevue/textarea"
 import Checkbox from "primevue/checkbox"
+import Select from "primevue/select"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
@@ -24,14 +26,16 @@ import {
     faCheck,
     faEllipsisV,
     faFileAlt,
+    faFileImage,
     faFilePdf,
     faGift,
     faInfoCircle,
     faPencil,
+    faTrashAlt,
     faUpload,
 } from "@fal"
 
-library.add(faBoxOpen, faCheck, faEllipsisV, faFileAlt, faFilePdf, faGift, faInfoCircle, faPencil, faUpload)
+library.add(faBoxOpen, faCheck, faEllipsisV, faFileAlt, faFileImage, faFilePdf, faGift, faInfoCircle, faPencil, faTrashAlt, faUpload)
 
 interface PackagingOption {
     family_code: string
@@ -54,7 +58,10 @@ interface LeafletOption {
 
 interface CustomerLeaflet {
     id: number
+    leaflet_id: number
+    family_code: string | null
     name: string
+    mime_type: string | null
     type_label: string
     size: string | null
     uploaded_at: string | null
@@ -73,6 +80,9 @@ const props = defineProps<{
     customerLeaflets?: CustomerLeaflet[]
     currencyCode?: string
     updateRoute?: { name: string }
+    uploadRoute?: { name: string }
+    leafletUpdateRoute?: { name: string }
+    leafletDeleteRoute?: { name: string }
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -146,7 +156,9 @@ const formatInsertPrice = (price: number) => {
 const personalisedMessage = ref(props.personalisedMessage ?? "Thank you for your order!\nWe hope you love our products.")
 const maxMessageLength = 200
 
-const leaflets = computed(() => props.customerLeaflets ?? [])
+const leaflets = computed(() =>
+    (props.customerLeaflets ?? []).filter(leaflet => leaflet.family_code === selectedPackaging.value)
+)
 
 const summary = computed(() => ({
     defaultPackaging: packagingOptions.value.find(option => option.family_code === selectedPackaging.value)?.label,
@@ -154,6 +166,115 @@ const summary = computed(() => ({
     hasMessage: personalisedMessage.value.trim().length > 0,
     leafletsUploaded: leaflets.value.length,
 }))
+
+const uploadedLeafletIds = computed(() => new Set(leaflets.value.map(leaflet => leaflet.leaflet_id)))
+
+const availableUploadLeaflets = computed(() =>
+    inserts.value.filter(insert => !uploadedLeafletIds.value.has(insert.id))
+)
+
+const isUploadOpen = ref(false)
+const uploadLeafletId = ref<number | null>(null)
+const uploadFile = ref<File | null>(null)
+const uploadFileName = computed(() => uploadFile.value?.name ?? null)
+const isUploading = ref(false)
+
+const onUploadFileSelected = (event: Event) => {
+    uploadFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
+}
+
+const submitUpload = () => {
+    if (!props.uploadRoute?.name || !uploadLeafletId.value || !uploadFile.value || !selectedPackaging.value) {
+        return
+    }
+
+    router.post(
+        route(props.uploadRoute.name),
+        {
+            leaflet_id: uploadLeafletId.value,
+            family_code: selectedPackaging.value,
+            file: uploadFile.value,
+            active: !!enabledInserts.value[uploadLeafletId.value],
+        },
+        {
+            preserveScroll: true,
+            forceFormData: true,
+            onStart: () => isUploading.value = true,
+            onFinish: () => isUploading.value = false,
+            onSuccess: () => {
+                isUploadOpen.value = false
+                uploadLeafletId.value = null
+                uploadFile.value = null
+            },
+        }
+    )
+}
+
+const editRow = ref<CustomerLeaflet | null>(null)
+const editName = ref("")
+const editFile = ref<File | null>(null)
+const editFileName = computed(() => editFile.value?.name ?? null)
+const isEditingLeaflet = ref(false)
+
+const openEdit = (leaflet: CustomerLeaflet) => {
+    editRow.value = leaflet
+    editName.value = leaflet.name
+    editFile.value = null
+}
+
+const onEditFileSelected = (event: Event) => {
+    editFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
+}
+
+const submitEdit = () => {
+    if (!props.leafletUpdateRoute?.name || !editRow.value || !selectedPackaging.value) {
+        return
+    }
+
+    router.post(
+        route(props.leafletUpdateRoute.name),
+        {
+            leaflet_id: editRow.value.leaflet_id,
+            family_code: selectedPackaging.value,
+            name: editName.value,
+            ...(editFile.value ? { file: editFile.value } : {}),
+        },
+        {
+            preserveScroll: true,
+            forceFormData: true,
+            onStart: () => isEditingLeaflet.value = true,
+            onFinish: () => isEditingLeaflet.value = false,
+            onSuccess: () => {
+                editRow.value = null
+                editFile.value = null
+            },
+        }
+    )
+}
+
+const leafletFileIcon = (leaflet: CustomerLeaflet) =>
+    leaflet.mime_type?.startsWith("image/") ? "file-image" : "file-pdf"
+
+const deletingLeafletId = ref<number | null>(null)
+
+const deleteLeaflet = (leaflet: CustomerLeaflet) => {
+    if (!props.leafletDeleteRoute?.name || !selectedPackaging.value) {
+        return
+    }
+
+    router.post(
+        route(props.leafletDeleteRoute.name),
+        {
+            leaflet_id: leaflet.leaflet_id,
+            family_code: selectedPackaging.value,
+        },
+        {
+            preserveScroll: true,
+            onStart: () => deletingLeafletId.value = leaflet.id,
+            onFinish: () => deletingLeafletId.value = null,
+        }
+    )
+}
 
 const isSaving = ref(false)
 const justSaved = ref(false)
@@ -347,9 +468,59 @@ const saveSettings = () => {
                 <div class="mb-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h2 class="text-base font-semibold">4. {{ trans("Manage Your Leaflets & Inserts") }}</h2>
-                        <Button type="tertiary" icon="fal fa-upload" :label="trans('Upload new leaflet')" />
+                        <Button
+                            type="tertiary"
+                            icon="fal fa-upload"
+                            :label="trans('Upload new leaflet')"
+                            @click="isUploadOpen = !isUploadOpen"
+                        />
                     </div>
                     <p class="text-sm text-gray-500">{{ trans("Upload and manage the leaflets and inserts available for your orders.") }}</p>
+                </div>
+
+                <div v-if="isUploadOpen" class="mb-4 rounded-lg border border-gray-200 p-4">
+                    <p class="mb-3 text-xs text-gray-500">
+                        {{ trans("This file will be linked to the selected packaging") }}:
+                        <span class="font-medium" :style="{ color: accentStyle.text }">{{ summary.defaultPackaging }}</span>
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">
+                                {{ trans("Leaflet") }} <span class="text-red-500">*</span>
+                            </label>
+                            <Select
+                                v-model="uploadLeafletId"
+                                :options="availableUploadLeaflets"
+                                optionLabel="label"
+                                optionValue="id"
+                                :placeholder="trans('Select a leaflet')"
+                                :emptyMessage="trans('All leaflets already have a file for this packaging')"
+                                class="w-full"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">
+                                {{ trans("File") }} <span class="text-red-500">*</span>
+                            </label>
+                            <label class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 text-sm hover:border-gray-400">
+                                <FontAwesomeIcon :icon="['fal', 'upload']" class="text-gray-400" fixed-width aria-hidden="true" />
+                                <span class="truncate" :class="uploadFileName ? '' : 'text-gray-400'">
+                                    {{ uploadFileName ?? trans("Choose a PDF or image (max 20MB)") }}
+                                </span>
+                                <input type="file" accept=".pdf,image/*" class="hidden" @change="onUploadFileSelected" />
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex justify-end gap-2">
+                        <Button type="cancel" :label="trans('Cancel')" @click="isUploadOpen = false" />
+                        <Button
+                            type="upload"
+                            :loading="isUploading"
+                            :disabled="!uploadLeafletId || !uploadFile"
+                            :label="trans('Upload')"
+                            @click="submitUpload"
+                        />
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -358,40 +529,84 @@ const saveSettings = () => {
                             <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
                                 <th class="py-2 pr-4 font-medium">{{ trans("File name") }}</th>
                                 <th class="py-2 pr-4 font-medium">{{ trans("Type") }}</th>
-                                <th class="py-2 pr-4 font-medium">{{ trans("Size") }}</th>
+                                <!-- <th class="py-2 pr-4 font-medium">{{ trans("Size") }}</th> -->
                                 <th class="py-2 pr-4 font-medium">{{ trans("Uploaded") }}</th>
                                 <th class="py-2 pr-4 font-medium">{{ trans("Status") }}</th>
                                 <th class="py-2 font-medium text-right">{{ trans("Actions") }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="leaflet in leaflets" :key="leaflet.id">
-                                <td class="py-3 pr-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-2">
-                                        <FontAwesomeIcon :icon="['fal', 'file-pdf']" class="text-red-500" fixed-width aria-hidden="true" />
-                                        {{ leaflet.name }}
-                                    </span>
-                                </td>
-                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.type_label }}</td>
-                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.size ?? "-" }}</td>
-                                <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.uploaded_at ?? "-" }}</td>
-                                <td class="py-3 pr-4 whitespace-nowrap">
-                                    <span
-                                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                                        :class="leaflet.state === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
-                                    >
-                                        {{ leaflet.state_label }}
-                                    </span>
-                                </td>
-                                <td class="py-3 text-right whitespace-nowrap">
-                                    <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="trans('Edit')">
-                                        <FontAwesomeIcon :icon="['fal', 'pencil']" fixed-width aria-hidden="true" />
-                                    </button>
-                                    <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="trans('More actions')">
-                                        <FontAwesomeIcon :icon="['fal', 'ellipsis-v']" fixed-width aria-hidden="true" />
-                                    </button>
-                                </td>
-                            </tr>
+                            <template v-for="leaflet in leaflets" :key="leaflet.id">
+                                <tr>
+                                    <td class="py-3 pr-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center gap-2">
+                                            <FontAwesomeIcon
+                                                :icon="['fal', leafletFileIcon(leaflet)]"
+                                                :class="leaflet.mime_type?.startsWith('image/') ? 'text-blue-500' : 'text-red-500'"
+                                                fixed-width
+                                                aria-hidden="true"
+                                            />
+                                            {{ leaflet.name }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.type_label }}</td>
+                                    <td class="py-3 pr-4 whitespace-nowrap">{{ leaflet.uploaded_at ?? "-" }}</td>
+                                    <td class="py-3 pr-4 whitespace-nowrap">
+                                        <span
+                                            class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                                            :class="leaflet.state === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+                                        >
+                                            {{ leaflet.state_label }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 text-right whitespace-nowrap">
+                                        <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="trans('Edit')" @click="openEdit(leaflet)">
+                                            <FontAwesomeIcon :icon="['fal', 'pencil']" fixed-width aria-hidden="true" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="p-1 text-red-400 hover:text-red-600 disabled:text-gray-300"
+                                            :aria-label="trans('Delete')"
+                                            :disabled="deletingLeafletId === leaflet.id"
+                                            @click="deleteLeaflet(leaflet)"
+                                        >
+                                            <FontAwesomeIcon :icon="['fal', 'trash-alt']" fixed-width aria-hidden="true" />
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="editRow?.id === leaflet.id">
+                                    <td colspan="5" class="pb-4">
+                                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium mb-1">{{ trans("File name") }}</label>
+                                                    <PureInput v-model="editName" :placeholder="trans('File name')" />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium mb-1">{{ trans("Replace file") }}</label>
+                                                    <label class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 text-sm hover:border-gray-400 bg-white">
+                                                        <FontAwesomeIcon :icon="['fal', 'upload']" class="text-gray-400" fixed-width aria-hidden="true" />
+                                                        <span class="truncate" :class="editFileName ? '' : 'text-gray-400'">
+                                                            {{ editFileName ?? trans("Keep current file (optional)") }}
+                                                        </span>
+                                                        <input type="file" accept=".pdf,image/*" class="hidden" @change="onEditFileSelected" />
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 flex justify-end gap-2">
+                                                <Button type="cancel" :label="trans('Cancel')" @click="editRow = null" />
+                                                <Button
+                                                    type="save"
+                                                    :loading="isEditingLeaflet"
+                                                    :disabled="!editName.trim()"
+                                                    :label="trans('Save')"
+                                                    @click="submitEdit"
+                                                />
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
                         </tbody>
                     </table>
 
