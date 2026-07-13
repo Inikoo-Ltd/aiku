@@ -21,9 +21,10 @@ class GetUsersFromSearch
     {
         $users = User::search($search)->get();
         if ($onlyActive) {
-            $users->where('status', true);
-
+            $users = $users->where('status', true);
         }
+
+        $users->load('employees.organisation');
 
         return GerUsersFromSearchResource::collection($users);
     }

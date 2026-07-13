@@ -19,12 +19,19 @@ class GerUsersFromSearchResource extends JsonResource
     {
         /** @var User $user */
         $user = $this;
+
+        $organisationCode = $user->getOrganisation()?->code;
+
         return [
-            'id'                    => $user->id,
-            'username'           => $user->username,
-            'email'              => $user->email,
-            'contact_name'       => $user->contact_name,
-            'status'             => $user->status,
+            'id'                   => $user->id,
+            'username'             => $user->username,
+            'email'                => $user->email,
+            'contact_name'         => $user->contact_name,
+            'status'               => $user->status,
+            'organisation_code'    => $organisationCode,
+            'contact_and_org_code' => $organisationCode
+                ? "{$organisationCode} | {$user->contact_name}"
+                : (string) $user->contact_name,
         ];
     }
 }
