@@ -65,7 +65,7 @@ const isLoadingPublish = ref(false);
 const isBeefreeReady = ref(false);
 
 // Beefree auto save
-const persistBeefreeLayout = async (layout: any, compiledLayout: string | null = null) => {
+const persistBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
   if (!props.webpage.updateRoute?.name) {
     notify({
       title: trans("Something went wrong"),
@@ -86,7 +86,9 @@ const persistBeefreeLayout = async (layout: any, compiledLayout: string | null =
             fieldValue: {
               builderType: "beefree",
               beefree: {
-                json: layout,
+                json: {
+                  layout: Jsonlayout
+                },
                 html: compiledLayout ?? ""
               }
             }
