@@ -259,6 +259,7 @@ class IndexCheckoutAbandonments extends OrgAction
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false);
             $table->column(key: 'total_amount', label: __('Value'), canBeHidden: false, sortable: true, type: 'currency');
             $table->column(key: 'email_sent_at', label: __('Reminded'), canBeHidden: false, sortable: true);
+            $table->column(key: 'send_reminder', label: __('Action'), canBeHidden: false);
         };
     }
 

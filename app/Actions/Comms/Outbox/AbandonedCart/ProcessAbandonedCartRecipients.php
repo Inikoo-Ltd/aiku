@@ -15,18 +15,16 @@ use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\StoreEmailDeliveryChannel;
 use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\CheckoutAbandonment;
-use App\Models\Ordering\Order;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessAbandonedCartRecipients
 {
     use AsAction;
+    use WithAbandonedCartRecoveryContent;
 
     public string $jobQueue = 'ses';
 
@@ -107,110 +105,5 @@ class ProcessAbandonedCartRecipients
         UpdateEmailBulkRunRecipientStoredAt::run($emailBulkRun);
 
         SendEmailDeliveryChannel::dispatch($emailDeliveryChannel->id)->delay(5);
-    }
-
-    public function getCheckoutUrl(Outbox $outbox): string
-    {
-        $website = $outbox->shop->website;
-
-        if (!$website) {
-            return '';
-        }
-
-        return $website->getFullUrl() . '/checkout';
-    }
-
-    public function generateRecoveryContent(int $orderId, string $checkoutUrl): string
-    {
-        $order = Order::find($orderId);
-
-        if (!$order) {
-            return '';
-        }
-
-        $productIds = $order->itemTransactions()
-            ->pluck('model_id')
-            ->all();
-
-        $displayProducts = array_slice($productIds, 0, 5);
-        $remainingCount = count($productIds) - count($displayProducts);
-
-        $html = '';
-
-        if ($checkoutUrl) {
-            $html .= '<p style="text-align:center; margin:0 0 20px;">
-                <a ses:no-track href="' . $checkoutUrl . '"
-                   style="display:inline-block;
-                          background:#2563eb;
-                          color:#ffffff;
-                          font-family: Helvetica, Arial, sans-serif;
-                          font-size:15px;
-                          font-weight:600;
-                          text-decoration:none;
-                          padding:12px 24px;
-                          border-radius:6px;">'
-                . __('Complete your order') .
-                '</a>
-            </p>';
-        }
-
-        $html .= '<table width="100%" cellpadding="8" cellspacing="0"
-        style="font-family: Helvetica, Arial, sans-serif;
-               font-size: 14px;
-               border-collapse: collapse;">';
-
-        foreach ($displayProducts as $productId) {
-            $dataProduct = Product::find($productId);
-
-            if (!$dataProduct || !$dataProduct->webpage) {
-                continue;
-            }
-
-            $productImage = Arr::get($dataProduct->imageSources(200, 200), 'png');
-            $url = $dataProduct->webpage->getCanonicalUrl();
-            $name = $dataProduct->name;
-
-            $html .= '
-            <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="vertical-align:middle;">
-                    <table cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td style="padding-right:12px;">';
-
-            if ($productImage) {
-                $html .= '
-                <img src="' . $productImage . '"
-                     width="60"
-                     height="60"
-                     style="display:block;
-                            border-radius:6px;
-                            object-fit:cover;" />';
-            }
-
-            $html .= '
-                            </td>
-                            <td style="vertical-align:middle;">
-                                <a ses:no-track href="' . $url . '"
-                                   style="color:#2563eb;
-                                    text-decoration:underline;
-                                    font-weight:600;">'
-                . $name .
-                '</a>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>';
-        }
-
-        $html .= '</table>';
-
-        if ($remainingCount > 0) {
-            $html .= '<p style="font-family: Helvetica, Arial, sans-serif; font-size: 14px; color: #555; margin-top: 12px;">';
-            $html .= __('and ') . $remainingCount . ($remainingCount > 1 ? __(' mores') : __(' more'));
-            $html .= '</p>';
-        }
-
-        return $html;
     }
 }
