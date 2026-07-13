@@ -16,7 +16,7 @@ use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\HydrateLocation;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
-use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateTotalWeight;
 use App\Actions\Inventory\Location\StoreLocation;
@@ -1204,7 +1204,7 @@ test('OrgStockHydrate simple field hydrators recompute their target fields', fun
         ->and((float) $stats->on_the_way_po_value)->toBe(0.0);
 });
 
-test('LocationHydrateStocks recomputes slot counts and flags', function () {
+test('LocationHydrateOrgStocks recomputes slot counts and flags', function () {
     $location            = Location::first();
     $expectedSlots       = $location->locationOrgStocks()->count();
     $expectedHasStock    = $location->locationOrgStocks()->where('dropshipping_pipe', false)->count() > 0;
@@ -1213,7 +1213,7 @@ test('LocationHydrateStocks recomputes slot counts and flags', function () {
     $location->update(['has_stock_slots' => !$expectedHasStock, 'has_dropshipping_slots' => !$expectedHasDrop]);
     $location->stats->update(['number_org_stock_slots' => 9999]);
 
-    LocationHydrateStocks::run($location);
+    LocationHydrateOrgStocks::run($location);
 
     $location->refresh();
     expect((int) $location->stats->fresh()->number_org_stock_slots)->toBe($expectedSlots)

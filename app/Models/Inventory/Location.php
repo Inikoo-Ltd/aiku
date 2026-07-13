@@ -42,6 +42,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric $stock_value
  * @property numeric $stock_commercial_value
  * @property bool $is_empty
+ * @property bool $is_partially_empty
  * @property numeric|null $max_weight Max weight in Kg
  * @property numeric|null $max_volume Max volume in m3 (cbm)
  * @property bool $allow_stocks
@@ -94,6 +95,7 @@ class Location extends Model implements Auditable
         'stock_value'     => 'decimal:2',
         'max_weight'      => 'decimal:3',
         'max_volume'      => 'decimal:4',
+        'is_partially_empty' => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
