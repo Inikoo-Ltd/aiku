@@ -31,7 +31,7 @@ class SavePickingInAurora implements ShouldBeUnique
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(Picking $picking): void
+    public function handle(Picking $picking, ?Command $command=null): void
     {
 
 //        if (!$picking->organisation->is_aiku_stock_control) {
@@ -62,21 +62,25 @@ class SavePickingInAurora implements ShouldBeUnique
             $picking->deliveryNote->reference
         );
 
-
-        Http::withHeaders([
+        $response = Http::withHeaders([
             'secret' => $auroraApiToken,
         ])->timeout(45)->withQueryParameters(
             [
-                'picker_name' => $picking->picker->contact_name,
-                'action' => 'aiku_picking',
+                'picker_name'  => $picking->picker->contact_name,
+                'action'       => 'aiku_picking',
                 'location_key' => $this->getAuroraObjectKey($picking->location),
-                'part_sku' => $this->getAuroraObjectKey($picking->orgStock),
-                'qty' => $picking->quantity,
-                'note' => $note,
-                'date' => $picking->created_at->format('Y-m-d H:i:s'),
-                'picking_key' => $picking->id
+                'part_sku'     => $this->getAuroraObjectKey($picking->orgStock),
+                'qty'          => $picking->quantity,
+                'note'         => $note,
+                'date'         => $picking->created_at->format('Y-m-d H:i:s'),
+                'picking_key'  => $picking->id
             ]
         )->get($apiUrl);
+
+        if ($command) {
+            $command->line("Response Status: ".$response->status());
+            $command->line("Response Body: ".$response->body());
+        }
     }
 
 
@@ -127,7 +131,7 @@ class SavePickingInAurora implements ShouldBeUnique
                 ->chunk($chunkSize, function ($pickings) use (&$count, $bar, $command) {
                     foreach ($pickings as $picking) {
                         try {
-                            $this->handle($picking);
+                            $this->handle($picking,$command);
                             $count++;
                         } catch (\Exception $e) {
                             $command->error("Error processing picking ID: $picking->id - {$e->getMessage()}");
