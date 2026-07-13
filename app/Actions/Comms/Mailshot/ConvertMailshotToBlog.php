@@ -28,7 +28,9 @@ class ConvertMailshotToBlog extends OrgAction
         $fieldValue = [
             'builderType' => "beefree",
             'beefree' => [
-                'json' => $pageJson,
+                'json' => [
+                    'layout' => $pageJson
+                ],
                 'html' => '',
             ]
         ];

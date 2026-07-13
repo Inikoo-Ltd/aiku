@@ -185,7 +185,7 @@ console.log('props',props)
 
   <Beefree
     v-if="webpage_sub_type === 'mailshot'"
-    :snapshot="webpage"
+    :snapshot="webpage.layout.web_blocks[0].web_block.layout.data.fieldValue.beefree.json"
     :mergeTags="webpage.mergeTags ?? []"
     :updateRoute="webpage.updateRoute"
     :organisationSlug="route().params?.organisation"

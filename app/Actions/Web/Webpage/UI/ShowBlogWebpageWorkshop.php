@@ -103,9 +103,7 @@ class ShowBlogWebpageWorkshop extends OrgAction
                             'label' => __('publish'),
                             'key'   => 'publish',
                             'route' => [
-                                'name'       => $webpage->sub_type === WebpageSubTypeEnum::MAILSHOT
-                                    ? 'grp.models.webpage.publish-beefree'
-                                    : 'grp.models.webpage.publish',
+                                'name'       => 'grp.models.webpage.publish',
                                 'parameters' => $webpage->id,
                                 'method'     => 'post'
                             ]
