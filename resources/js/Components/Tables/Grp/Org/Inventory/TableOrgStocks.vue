@@ -49,21 +49,12 @@ interface PartialMoveRow {
     code: string
     name: string
     available: number
-    quantity: number
+    quantity_to_move: number
     remove_after_move: boolean
 }
 
 function onCancelPartialMoveSku() {
     isOpenPartialMove.value = false
-}
-
-interface PartialMoveRow {
-    org_stock_id: number
-    code: string
-    name: string
-    available: number
-    quantity: number
-    remove_after_move: boolean
 }
 
 const isOpenPartialMove = ref(false)
@@ -90,7 +81,7 @@ const isPartialMoveValid = computed(() => {
         return false
     }
 
-    return partialForm.org_stocks.every((row) => Number(row.quantity) > 0 && Number(row.quantity) <= row.available)
+    return partialForm.org_stocks.every((row) => Number(row.quantity_to_move) > 0 && Number(row.quantity_to_move) <= row.available)
 })
 
 function openPartialMoveSku() {
@@ -107,6 +98,12 @@ function openPartialMoveSku() {
     isOpenPartialMove.value = true
 }
 
+function onToggleRemoveAfterMove(row: PartialMoveRow) {
+    if (row.remove_after_move) {
+        row.quantity_to_move = row.available
+    }
+}
+
 function onSavePartialMoveSku() {
     const params = route().params as RouteParams
     console.log(partialForm)
@@ -115,7 +112,7 @@ function onSavePartialMoveSku() {
             location_id: data.location_id,
             org_stocks: data.org_stocks.map((row) => ({
                 org_stock_id: row.org_stock_id,
-                quantity: row.quantity,
+                quantity: row.quantity_to_move,
                 remove_after_move: row.remove_after_move,
             })),
         }))
@@ -558,7 +555,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 <Column :header="ctrans('Quantity to move')">
                     <template #body="{ data }">
                         <PureInputNumber
-                            v-model="data.quantity"
+                            v-model="data.quantity_to_move"
                             :minValue="0"
                             :maxValue="data.available"
                         />
@@ -567,7 +564,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 <Column :header="ctrans('Remove after move')">
                     <template #body="{ data }">
                         <div class="flex justify-center">
-                            <PureCheckbox v-model="data.remove_after_move" />
+                            <PureCheckbox v-model="data.remove_after_move" @update:modelValue="onToggleRemoveAfterMove(data)" />
                         </div>
                     </template>
                 </Column>
