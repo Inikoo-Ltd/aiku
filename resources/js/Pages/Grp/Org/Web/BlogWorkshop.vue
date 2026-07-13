@@ -107,12 +107,54 @@ const persistBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | nu
   }
 };
 
+const persistPublishBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
+  if (!props.webpage.publishRoute?.name) {
+    notify({
+      title: trans("Something went wrong"),
+      text: trans("No publish route is configured for this page"),
+      type: "error"
+    });
+    return;
+  }
+
+  isSavingBlock.value = true;
+
+  try {
+    await axios[props.webpage.publishRoute.method ?? "post"](
+      route(props.webpage.publishRoute.name, props.webpage.publishRoute.parameters),
+      {
+        layout: {
+          data: {
+            fieldValue: {
+              builderType: "beefree",
+              beefree: {
+                json: {
+                  layout: Jsonlayout
+                },
+                html: compiledLayout ?? ""
+              }
+            }
+          }
+        }
+      }
+    );
+  } catch (error) {
+    notify({
+      title: trans("Failed to save"),
+      text: error?.response?.data?.message || error.message || "Unknown error occurred",
+      type: "error"
+    });
+  } finally {
+    isSavingBlock.value = false;
+  }
+};
+
 const onBeefreeAutoSave = (jsonFile: any) => {
   persistBeefreeLayout(JSON.parse(jsonFile));
 };
 
 const onBeefreeSave = (payload: any) => {
-  persistBeefreeLayout(JSON.parse(payload.jsonFile), payload.htmlFile);
+  persistPublishBeefreeLayout(JSON.parse(payload.jsonFile), payload.htmlFile);
 };
 
 // Publish Actions
