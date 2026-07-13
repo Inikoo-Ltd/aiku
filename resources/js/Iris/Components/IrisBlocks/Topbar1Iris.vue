@@ -136,11 +136,11 @@ const goToBundle = () => {
 </script>
 
 <template>
-    <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4 md:sticky top-0 z-50"
+    <div id="top_bar_1_iris" class="py-[10px] px-4 flex flex-col md:flex-row md:justify-between gap-x-4 md:sticky top-0 z-50"
         :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenTypeInject),
+        ...getStyles(model?.container?.properties, screenTypeInject),
         margin: 0,
-        ...getStyles(model?.container?.properties, screenTypeInject)
     }">
         <!-- layout?.app?.webpage_layout?.container?.properties   // TODO: should exist in Retina -->
 

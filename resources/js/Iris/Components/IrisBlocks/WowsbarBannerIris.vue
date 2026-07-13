@@ -59,8 +59,6 @@ const MOBILE_BANNER_WIDTH = '375px'
 const SQUARE_BANNER_HEIGHT = '400px'
 const LANDSCAPE_RATIO_THRESHOLD = 1.5
 
-const mobileImageRatio = ref<number | null>(null)
-
 const bannerRatio = computed(() => {
   return data.value?.ratio ?? '4/1'
 })
@@ -128,23 +126,8 @@ const bannerBoxVars = computed<Record<string, string>>(() => {
   return vars
 })
 
-const firstBannerImageSource = computed<string | null>(() => {
-  const image = data.value?.compiled_layout?.components?.[0]?.image
-  if (!image) {
-    return null
-  }
 
-  const pickSource = (variant: any): string | null =>
-    variant?.thumbnail?.webp
-    ?? variant?.thumbnail?.original
-    ?? variant?.source?.webp
-    ?? variant?.source?.original
-    ?? null
-
-  return pickSource(image[props.screenType]) ?? pickSource(image.desktop)
-})
-
-const firstBannerImageEmbeddedRatio = computed<number | null>(() => {
+const mobileImageRatio = computed<number | null>(() => {
   const image = data.value?.compiled_layout?.components?.[0]?.image
   const variant = image?.mobile ?? image?.desktop
 
@@ -154,25 +137,6 @@ const firstBannerImageEmbeddedRatio = computed<number | null>(() => {
 
   return null
 })
-
-// measure the original ratio of the image (fallback for banners without embedded dimensions)
-const measureImageRatio = (source: string | null): void => {
-  mobileImageRatio.value = firstBannerImageEmbeddedRatio.value
-
-  if (mobileImageRatio.value !== null || typeof window === "undefined" || !source) {
-    return
-  }
-
-  const image = new window.Image()
-  image.onload = () => {
-    if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-      mobileImageRatio.value = image.naturalWidth / image.naturalHeight
-    }
-  }
-  image.src = source
-}
-
-watch(firstBannerImageSource, (source) => measureImageRatio(source), { immediate: true })
 
 const getDataBanner = async (): Promise<void> => {
   if (typeof window === "undefined") return;
