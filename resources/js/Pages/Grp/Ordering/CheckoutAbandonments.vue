@@ -54,5 +54,11 @@ function customerRoute(row: any) {
                 {{ useFormatTime(row["checkout_visited_at"], { formatTime: "dd MMM yyyy, HH:mm", timeZone: 'UTC', keepTimezone: true }) }} UTC
             </span>
         </template>
+        <template #cell(email_sent_at)="{ item: row }">
+            <span v-if="row['email_sent_at']" class="whitespace-nowrap text-green-600">
+                {{ useFormatTime(row["email_sent_at"], { formatTime: "dd MMM yyyy, HH:mm", timeZone: 'UTC', keepTimezone: true }) }} UTC
+            </span>
+            <span v-else class="text-gray-400">—</span>
+        </template>
     </Table>
 </template>

@@ -52,6 +52,9 @@ class IndexCheckoutAbandonments extends OrgAction
             ->groupBy('state')
             ->pluck('total', 'state');
 
+        $remindedCount    = (clone $query)->whereNotNull('email_sent_at')->count();
+        $notRemindedCount = (clone $query)->whereNull('email_sent_at')->count();
+
         return [
             'state' => [
                 'label'    => __('State'),
@@ -64,6 +67,23 @@ class IndexCheckoutAbandonments extends OrgAction
                 ),
                 'engine' => function ($query, $elements) {
                     $query->whereIn('checkout_abandonments.state', $elements);
+                }
+            ],
+            'reminder' => [
+                'label'    => __('Reminder'),
+                'elements' => [
+                    'reminded'     => [__('Reminded'), $remindedCount],
+                    'not_reminded' => [__('Not reminded'), $notRemindedCount],
+                ],
+                'engine' => function ($query, $elements) {
+                    $query->where(function ($query) use ($elements) {
+                        if (in_array('reminded', $elements)) {
+                            $query->orWhereNotNull('checkout_abandonments.email_sent_at');
+                        }
+                        if (in_array('not_reminded', $elements)) {
+                            $query->orWhereNull('checkout_abandonments.email_sent_at');
+                        }
+                    });
                 }
             ],
         ];
@@ -180,6 +200,7 @@ class IndexCheckoutAbandonments extends OrgAction
                 'checkout_abandonments.checkout_visited_at',
                 'checkout_abandonments.total_amount',
                 'checkout_abandonments.recovered_at',
+                'checkout_abandonments.email_sent_at',
                 'orders.reference',
                 'orders.slug as order_slug',
                 'customers.name as customer_name',
@@ -192,7 +213,7 @@ class IndexCheckoutAbandonments extends OrgAction
                 'organisations.slug as organisation_slug',
                 'currencies.code as currency_code',
             ])
-            ->allowedSorts(['checkout_visited_at', 'total_amount', 'customer_name', 'shop_code', 'organisation_code'])
+            ->allowedSorts(['checkout_visited_at', 'total_amount', 'customer_name', 'shop_code', 'organisation_code', 'email_sent_at'])
             ->withBetweenDates(['checkout_visited_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -237,6 +258,7 @@ class IndexCheckoutAbandonments extends OrgAction
             $table->column(key: 'checkout_visited_at', label: __('Visited checkout'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false);
             $table->column(key: 'total_amount', label: __('Value'), canBeHidden: false, sortable: true, type: 'currency');
+            $table->column(key: 'email_sent_at', label: __('Reminded'), canBeHidden: false, sortable: true);
         };
     }
 
