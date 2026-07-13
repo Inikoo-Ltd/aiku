@@ -109,7 +109,7 @@ class EditGroupSettings extends GrpAction
                     ],
                      [
                         'label'  => __('Page Builder'),
-                        'icon'   => 'fa-light fa-satellite-dish',
+                        'icon'   => 'fa-light fa-pager',
                         'fields' => [
                             "page_builder_client_id" => [
                                 "type"        => "input",
