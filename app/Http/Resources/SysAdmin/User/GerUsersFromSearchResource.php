@@ -2,8 +2,8 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 04 Dec 2023 16:46:55 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Created: Mon, 13 Jul 2026 10:42:14 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Http\Resources\SysAdmin\User;
@@ -13,7 +13,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
 
-class UserSearchResultResource extends JsonResource
+class GerUsersFromSearchResource extends JsonResource
 {
     public function toArray($request): array|Arrayable|JsonSerializable
     {
@@ -24,7 +24,6 @@ class UserSearchResultResource extends JsonResource
             'email'              => $user->email,
             'contact_name'       => $user->contact_name,
             'status'             => $user->status,
-            'organisation_code'  => 'X'
         ];
     }
 }
