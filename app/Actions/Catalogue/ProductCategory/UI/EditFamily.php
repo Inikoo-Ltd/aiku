@@ -314,6 +314,7 @@ class EditFamily extends OrgAction
                                                  'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
+                                    ...$this->seoFields($family),
                                 ]
                             ],
                             [
@@ -397,6 +398,46 @@ class EditFamily extends OrgAction
         );
     }
 
+
+    private function seoFields(ProductCategory $family): array
+    {
+        $webpage = $family->webpage;
+
+        if (!$webpage) {
+            return [];
+        }
+
+        return [
+            'webpage_title'       => [
+                'type'        => 'input',
+                'label'       => __('SEO title'),
+                'information' => __('Used as the browser title and as the meta title for search engines'),
+                'maxLength'   => 70,
+                'options'     => [
+                    'counter' => true,
+                ],
+                'value'       => $webpage->title,
+            ],
+            'webpage_description' => [
+                'type'        => 'textarea',
+                'label'       => __('Meta description'),
+                'information' => __('Used as the meta description for search engines'),
+                'maxLength'   => 160,
+                'counter'     => true,
+                'value'       => $webpage->description,
+            ],
+            'webpage_url'         => [
+                'type'        => 'inputWithAddOn',
+                'label'       => __('URL'),
+                'information' => __('Changing the URL will redirect the old one to the new one'),
+                'leftAddOn'   => [
+                    'label' => 'https://'.$webpage->website->domain.'/'
+                ],
+                'required'    => true,
+                'value'       => $webpage->url,
+            ],
+        ];
+    }
 
     private function grVolSection(ProductCategory $family): ?array
     {
