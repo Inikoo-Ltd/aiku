@@ -16,16 +16,6 @@ return new class () extends Migration {
             ->where('code', 'abandoned_cart')
             ->where('model_type', 'Mailshot')
             ->update(['model_type' => 'EmailOngoingRun']);
-
-        DB::table('outboxes')
-            ->where('code', 'abandoned_cart')
-            ->whereNull('interval')
-            ->update(['interval' => 168]);
-
-        DB::table('outboxes')
-            ->where('code', 'abandoned_cart')
-            ->whereNull('threshold')
-            ->update(['threshold' => 24]);
     }
 
     public function down(): void
