@@ -51,22 +51,18 @@ class ProcessGetSesClient
         // Mailshot: shop → shop failover → organisation failover → group
         if ($outbox->model_type === class_basename(Mailshot::class)) {
             $candidates = [
-                'shop'                  => [$outbox->shop?->settings, 'email.provider'],
-                'shop.failover'         => [$outbox->shop?->settings, 'email.provider.failover'],
-                'organisation.failover' => [$outbox->organisation?->settings, 'email.provider.failover'],
-                'group'                 => [$outbox->group?->settings, 'email.provider'],
+                'shop.customer'         => [$outbox->shop?->settings, 'email.provider.customer_notification'],
+                'shop.failover'         => [$outbox->shop?->settings, 'email.provider.failover']
             ];
         } elseif (in_array($outbox->code, self::OUTBOX_BULK_GROUP, true)) {
-            // Bulk: organisation failover → group
             $candidates = [
-                'organisation.failover' => [$outbox->organisation?->settings, 'email.provider.failover'],
-                'group'                 => [$outbox->group?->settings, 'email.provider'],
-            ];
+                 'shop.customer'         => [$outbox->shop?->settings, 'email.provider.customer_notification'],
+                 'shop.failover'         => [$outbox->shop?->settings, 'email.provider.failover']
+             ];
         } elseif ($outbox->type === OutboxTypeEnum::USER_NOTIFICATION) {
-            // Internal comms: organisation failover → group
             $candidates = [
                 // email.provider.user_notification.access_id
-                'group'                 => [$outbox->group?->settings, 'email.provider'],
+                'group.'                 => [$outbox->group?->settings, 'email.provider'],
                 'group.failover'         => [$outbox->group?->settings, 'email.provider.failover'],
             ];
         } else {
