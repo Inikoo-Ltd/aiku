@@ -17,9 +17,13 @@ class GetUsersFromSearch
 {
     use asAction;
 
-    public function handle(string $search): AnonymousResourceCollection
+    public function handle(string $search, bool $onlyActive=true): AnonymousResourceCollection
     {
         $users = User::search($search)->get();
+        if ($onlyActive) {
+            $users->where('status', true);
+
+        }
 
         return GerUsersFromSearchResource::collection($users);
     }
