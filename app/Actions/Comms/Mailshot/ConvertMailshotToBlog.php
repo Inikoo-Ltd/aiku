@@ -48,12 +48,6 @@ class ConvertMailshotToBlog extends OrgAction
             ]
         );
 
-        $layout = array_merge(['web_blocks' => []], $pageJson);
-
-        $webpage->unpublishedSnapshot->update([
-            'layout'   => $layout,
-        ]);
-
         return $webpage;
     }
 
