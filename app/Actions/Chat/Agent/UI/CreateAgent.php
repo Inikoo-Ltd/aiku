@@ -114,12 +114,13 @@ class CreateAgent extends OrgAction
                                 ],
 
                                 'max_concurrent_chats' => [
-                                    'type'     => 'input_number',
-                                    'label'    => __('Max Concurrent Chats'),
-                                    'bind'      => [
-                                        'min'       => 0,
+                                    'type'        => 'input_number',
+                                    'label'       => __('Max Concurrent Chats'),
+                                    'information' => __('The maximum number of chats this agent can handle at the same time.'),
+                                    'bind'        => [
+                                        'min' => 0,
                                     ],
-                                    'required' => true,
+                                    'required'    => true,
                                 ],
 
                                 'specialization' => [
