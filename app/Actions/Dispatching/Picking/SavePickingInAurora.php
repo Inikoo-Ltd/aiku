@@ -27,22 +27,20 @@ class SavePickingInAurora implements ShouldBeUnique
     }
 
 
-
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(Picking $picking, ?Command $command=null): void
+    public function handle(Picking $picking, ?Command $command = null): void
     {
-
-//        if (!$picking->organisation->is_aiku_stock_control) {
-//            return;
-//        }
+        //        if (!$picking->organisation->is_aiku_stock_control) {
+        //            return;
+        //        }
 
         if ($picking->type == PickingTypeEnum::NOT_PICK) {
             return;
         }
 
-        $apiUrl = $this->getApiUrl($picking->organisation);
+        $apiUrl         = $this->getApiUrl($picking->organisation);
         $auroraApiToken = $this->getApiToken($picking->organisation);
         if (!$auroraApiToken || !app()->environment('production')) {
             return;
@@ -62,24 +60,26 @@ class SavePickingInAurora implements ShouldBeUnique
             $picking->deliveryNote->reference
         );
 
-        $response = Http::withHeaders([
-            'secret' => $auroraApiToken,
-        ])->timeout(45)->withQueryParameters(
-            [
-                'picker_name'  => $picking->picker->contact_name,
-                'action'       => 'aiku_picking',
-                'location_key' => $this->getAuroraObjectKey($picking->location),
-                'part_sku'     => $this->getAuroraObjectKey($picking->orgStock),
-                'qty'          => $picking->quantity,
-                'note'         => $note,
-                'date'         => $picking->created_at->format('Y-m-d H:i:s'),
-                'picking_key'  => $picking->id
-            ]
-        )->get($apiUrl);
+        if ($picking->location && $picking->orgStock) {
+            $response = Http::withHeaders([
+                'secret' => $auroraApiToken,
+            ])->timeout(45)->withQueryParameters(
+                [
+                    'picker_name'  => $picking->picker->contact_name,
+                    'action'       => 'aiku_picking',
+                    'location_key' => $this->getAuroraObjectKey($picking->location),
+                    'part_sku'     => $this->getAuroraObjectKey($picking->orgStock),
+                    'qty'          => $picking->quantity,
+                    'note'         => $note,
+                    'date'         => $picking->created_at->format('Y-m-d H:i:s'),
+                    'picking_key'  => $picking->id
+                ]
+            )->get($apiUrl);
 
-        if ($command) {
-            $command->line("Response Status: ".$response->status());
-            $command->line("Response Body: ".$response->body());
+            if ($command) {
+                $command->line("Response Status: ".$response->status());
+                $command->line("Response Body: ".$response->body());
+            }
         }
     }
 
@@ -131,7 +131,7 @@ class SavePickingInAurora implements ShouldBeUnique
                 ->chunk($chunkSize, function ($pickings) use (&$count, $bar, $command) {
                     foreach ($pickings as $picking) {
                         try {
-                            $this->handle($picking,$command);
+                            $this->handle($picking, $command);
                             $count++;
                         } catch (\Exception $e) {
                             $command->error("Error processing picking ID: $picking->id - {$e->getMessage()}");
