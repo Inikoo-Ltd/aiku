@@ -29,4 +29,23 @@ enum OrgStockMovementTypeEnum: string
     case DISASSOCIATE = 'disassociate';
     case AUDIT = 'audit';
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::PURCHASE              => __('Purchase'),
+            self::RETURN_DISPATCH       => __('Return Dispatch'),
+            self::RETURN_PICKED         => __('Return Picked'),
+            self::RETURN_CONSUMPTION    => __('Return Consumption'),
+            self::PICKED                => __('Picked'),
+            self::LOCATION_TRANSFER     => __('Location Transfer'),
+            self::FOUND                 => __('Found'),
+            self::CONSUMPTION           => __('Consumption'),
+            self::WRITE_OFF             => __('Write Off'),
+            self::ADJUSTMENT            => __('Adjustment'),
+            self::ASSOCIATE             => __('Associate'),
+            self::DISASSOCIATE          => __('Disassociate'),
+            self::AUDIT                 => __('Audit'),
+        };
+    }
+
 }
