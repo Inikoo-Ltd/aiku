@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\LocationOrgStock;
 
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
@@ -69,6 +70,7 @@ class UpdateLocationOrgStock extends OrgAction
         if ($locationOrgStock->wasChanged('quantity')) {
             OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->org_stock_id)->delay(2);
             CalculateOrgStockCurrentStockHistories::dispatch($locationOrgStock->org_stock_id);
+            LocationHydrateStocks::dispatch($locationOrgStock->location);
         }
 
         RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->org_stock_id)->delay(2);

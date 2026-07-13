@@ -9,7 +9,6 @@ import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
 import { set } from "lodash-es"
 import { router } from "@inertiajs/vue3"
-import * as Sentry from "@sentry/vue"
 
 const props = defineProps<{
   data: {
@@ -83,17 +82,19 @@ onErrorCaptured((error, _instance, info) => {
         error
     );
 
-    Sentry.captureException(error, {
-        tags: {
-            area: "iris-header",
-            header_block: blockCode,
-        },
-        contexts: {
-            vue: {
-                lifecycleHook: info,
-                headerBlock: blockCode,
+    import("@sentry/vue").then((Sentry) => {
+        Sentry.captureException(error, {
+            tags: {
+                area: "iris-header",
+                header_block: blockCode,
             },
-        },
+            contexts: {
+                vue: {
+                    lifecycleHook: info,
+                    headerBlock: blockCode,
+                },
+            },
+        });
     });
 
     return false;
@@ -103,9 +104,10 @@ onErrorCaptured((error, _instance, info) => {
 
 <template>
   <!-- Section: Topbar (login, logout) -->
-  <component 
+  <component
     v-if="data?.topBar?.data.fieldValue" :is="getIrisComponent(data?.topBar.code)"
-    :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" 
+    :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue"
+    class="iris-topbar-reserve"
    />
 
   <!-- Section: Header (logo, search, Title) -->
@@ -116,8 +118,14 @@ onErrorCaptured((error, _instance, info) => {
              :colorThemed="colorThemed" class="hidden md:block" />
 
   <!-- Section: Mobile Header -->
-  <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)" class="sticky top-0 z-50"> 
+  <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)" class="sticky top-0 z-50">
       <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :productCategories="menu?.product_categories ?? []" :screenType="screenType" />
   </div>
 
 </template>
+
+<style scoped>
+.iris-topbar-reserve {
+  min-height: 2.25rem;
+}
+</style>

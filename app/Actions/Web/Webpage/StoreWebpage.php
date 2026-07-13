@@ -134,7 +134,6 @@ class StoreWebpage extends OrgAction
                 ]);
             }
 
-            $templates = [];
 
             if ($this->strict) {
                 $usedProductsTemplateCode               = FetchUsedProductsWebBlock::run($this->website);

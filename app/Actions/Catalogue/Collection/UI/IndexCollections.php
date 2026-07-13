@@ -345,12 +345,12 @@ class IndexCollections extends OrgAction
                 'website_domain' => $websiteDomain,
 
                 CollectionsTabsEnum::INDEX->value => $this->tab == CollectionsTabsEnum::INDEX->value ?
-                    fn() => CollectionsResource::collection($collections)
-                    : Inertia::optional(fn() => CollectionsResource::collection($collections)),
+                    fn () => CollectionsResource::collection($collections)
+                    : Inertia::optional(fn () => CollectionsResource::collection($collections)),
 
                 CollectionsTabsEnum::SALES->value => $this->tab == CollectionsTabsEnum::SALES->value ?
-                    fn() => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))
-                    : Inertia::optional(fn() => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
+                    fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))
+                    : Inertia::optional(fn () => CollectionsResource::collection($this->handle($this->shop, prefix: CollectionsTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure($this->shop, prefix: CollectionsTabsEnum::SALES->value));

@@ -23,7 +23,6 @@ use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use Override;
 
 class UpdateVariant extends OrgAction
 {

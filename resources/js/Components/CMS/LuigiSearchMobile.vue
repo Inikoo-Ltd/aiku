@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { LuigiTranslation } from "@/Composables/Unique/LuigiTranslation"
+import { loadLuigiAutocomplete, onFirstInteractionOrIdle } from "@/Composables/useLuigiAutocomplete"
 library.add(faSearch)
 
 
@@ -131,32 +132,15 @@ const LBInitAutocompleteNew = async () => {
 }
 
 
-// Import Luigi CSS style
-const importStyleCSS = () => {
-    const link = document.createElement("link")
-    link.rel = "stylesheet"
-    link.href = "https://cdn.luigisbox.tech/autocomplete.css"
-    document.head.appendChild(link)
-    document.documentElement.style.setProperty('--luigiColor1', layout.iris?.theme?.color?.[0]);
-    document.documentElement.style.setProperty('--luigiColor2', layout.iris?.theme?.color?.[1]);
-    document.documentElement.style.setProperty('--luigiColor3', layout.iris?.theme?.color?.[2]);
-    document.documentElement.style.setProperty('--luigiColor4', layout.iris?.theme?.color?.[3]);
-}
 
 
 
 onMounted(() => {
-    importStyleCSS()
-    const script = document.createElement('script');
-    script.src = "https://cdn.luigisbox.tech/autocomplete.js";
-    script.async = true;
-    document.head.appendChild(script);
-    script.onload = () => {
-        LBInitAutocompleteNew();
-    };
-    script.onerror = () => {
-        console.error('Failed to load Luigi autocomplete script');
-    }
+    onFirstInteractionOrIdle(() => {
+        loadLuigiAutocomplete()
+            .then(() => LBInitAutocompleteNew())
+            .catch(() => console.error('Failed to load Luigi autocomplete script'))
+    })
 })
 
 const visitSearchPage = () => {

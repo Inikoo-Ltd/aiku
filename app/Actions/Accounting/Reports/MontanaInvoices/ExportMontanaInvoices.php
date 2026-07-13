@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 09 Jul 2026 22:43:45 Malaysia Time, Kuala Lumpur, Malaysia
@@ -14,12 +15,15 @@ use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportMontanaInvoices extends OrgAction
 {
     use WithExportData;
 
-    public function handle(Organisation $organisation, array $filters): BinaryFileResponse
+    private const STREAM_THRESHOLD = 20000;
+
+    public function handle(Organisation $organisation, array $filters): BinaryFileResponse|StreamedResponse
     {
         $type = $filters['type'] ?? 'xlsx';
 
@@ -34,27 +38,22 @@ class ExportMontanaInvoices extends OrgAction
             $endDate = Carbon::createFromFormat('Ymd', $end)->format('Y-m-d');
         }
 
-        if (!$startDate) {
-            $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
-        }
-
-        if (!$endDate) {
-            $endDate = Carbon::now()->endOfMonth()->format('Y-m-d');
-        }
-
         $export = new MontanaInvoicesExport($organisation, $startDate, $endDate);
 
-        $filename = sprintf(
-            'montana_invoices_%s_%s_to_%s',
-            $organisation->slug,
-            Carbon::parse($startDate)->format('Y-m-d'),
-            Carbon::parse($endDate)->format('Y-m-d')
-        );
+        $range = $startDate && $endDate
+            ? Carbon::parse($startDate)->format('Y-m-d') . '_to_' . Carbon::parse($endDate)->format('Y-m-d')
+            : 'all';
 
-        return $this->export($export, $filename, $type);
+        $filename = sprintf('montana_invoices_%s_%s', $organisation->slug, $range);
+
+        if ($type === 'xlsx' && $export->query()->toBase()->count() < self::STREAM_THRESHOLD) {
+            return $this->export($export, $filename, $type);
+        }
+
+        return $this->streamMappedCsv($export, $filename);
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse
+    public function asController(Organisation $organisation, ActionRequest $request): BinaryFileResponse|StreamedResponse
     {
         $this->initialisation($organisation, $request);
 

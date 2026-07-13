@@ -31,3 +31,34 @@ declare global {
         Pusher: any
     }
 }
+
+const initEcho = async () => {
+    if (!(window as any).lbIrisConfig?.chatEnabled) {
+        return
+    }
+
+    const [{ default: Echo }, { default: Pusher }] = await Promise.all([
+        import('laravel-echo'),
+        import('pusher-js'),
+    ])
+
+    window.Pusher = Pusher
+    window.Echo = new Echo({
+        broadcaster: 'pusher',
+        key: import.meta.env.VITE_PUSHER_APP_KEY,
+        cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1',
+        wsHost: import.meta.env.VITE_PUSHER_HOST ? import.meta.env.VITE_PUSHER_HOST : `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER}.pusher.com`,
+        wsPort: import.meta.env.VITE_PUSHER_PORT ?? 6002,
+        wssPort: import.meta.env.VITE_PUSHER_PORT ?? 6002,
+        forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
+        enabledTransports: ['ws', 'wss'],
+    })
+}
+
+if (typeof window !== 'undefined') {
+    if (document.readyState === 'complete') {
+        initEcho()
+    } else {
+        window.addEventListener('load', () => initEcho(), { once: true })
+    }
+}

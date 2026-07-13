@@ -56,6 +56,12 @@ class SplitPicking extends OrgAction
             }
             $newPicking->save();
 
+            if (app()->environment('production')) {
+                SavePickingInAurora::dispatch($picking);
+                SavePickingInAurora::dispatch($newPicking);
+            }
+
+
             CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
 
             return $newPicking;

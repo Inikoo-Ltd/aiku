@@ -134,7 +134,7 @@ const layout: any = inject("layout", {})
               <!-- <video class="w-full h-auto" controls :src="videoSource"
 								v-bind="fieldValue.video.video_setup.attributes"
 								:style="getStyles(fieldValue.video.video_setup?.properties, screenType)"></video> -->
-              <iframe class="w-full aspect-video" :src="videoSource" frameborder="0" allowfullscreen />
+              <iframe class="w-full aspect-video" :title="ctrans('Video')" :src="videoSource" frameborder="0" allowfullscreen />
             </template>
 
             <template v-else-if="!isVideoByUrl && videoEmbedCode">

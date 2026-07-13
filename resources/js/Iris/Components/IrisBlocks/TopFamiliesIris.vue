@@ -270,6 +270,7 @@ watch(
 						<SwiperSlide
 							v-for="(item, index) in allItems"
 							:key="'item-' + index"
+							:style="{ width: `${100 / perRow}%` }"
 							class="flex h-auto">
 							<LinkIris
 								:href="item.url"

@@ -106,6 +106,7 @@ class ShowLocation extends OrgAction
                     'navigation' => LocationTabsEnum::navigation()
 
                 ],
+                'location_id' => $location->id,
 
                 LocationTabsEnum::SHOWCASE->value => $this->tab == LocationTabsEnum::SHOWCASE->value ?
                     fn () => GetLocationShowcase::run($location)

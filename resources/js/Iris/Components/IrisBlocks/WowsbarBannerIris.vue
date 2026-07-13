@@ -46,12 +46,18 @@ const activeId = computed(() => {
   return current ?? null;
 });
 
+const embeddedBannerData = (id: number | string | null) => {
+  const banner = id != null ? props.fieldValue?.banners_data?.[id] : null;
+
+  return banner?.compiled_layout ? banner : null;
+};
+
+data.value = embeddedBannerData(activeId.value);
+
 const MOBILE_BANNER_HEIGHT = '300px'
 const MOBILE_BANNER_WIDTH = '375px'
 const SQUARE_BANNER_HEIGHT = '400px'
 const LANDSCAPE_RATIO_THRESHOLD = 1.5
-
-const mobileImageRatio = ref<number | null>(null)
 
 const bannerRatio = computed(() => {
   return data.value?.ratio ?? '4/1'
@@ -63,96 +69,86 @@ const bannerType = computed(() => {
     ?? 'landscape'
 })
 
-const workshopDimensionStyle = computed<{ width: string | null; height: string | null }>(() => {
-  const styles = getStyles(props.fieldValue?.banner_dimension?.properties, props.screenType, false) || {}
-    
-  return {
-    width: styles.width ?? null,
-    height: styles.height ?? null,
-  }
-})
+/*
+ * The box geometry for both views is emitted as CSS variables consumed by the
+ * .banner-box media queries, so the reserved size is correct from first paint
+ * on every device regardless of when the screenType prop settles.
+ */
+const bannerStyleForView = (view: 'mobile' | 'desktop'): Record<string, string> => {
+  let style: Record<string, string>
 
-const defaultBannerStyle = computed<Record<string, string>>(() => {
   if (bannerType.value === 'square') {
-    return props.screenType === 'mobile'
+    style = view === 'mobile'
       ? { width: '100%', aspectRatio: '1 / 1' }
       : { width: '100%', height: SQUARE_BANNER_HEIGHT }
-  }
-
-  if (props.screenType === 'mobile') {
+  } else if (view === 'mobile') {
     const ratio = mobileImageRatio.value
 
-    if (ratio && ratio < LANDSCAPE_RATIO_THRESHOLD) {
-      return { width: MOBILE_BANNER_WIDTH, maxWidth: '100%', aspectRatio: `${ratio}` }
+    style = ratio && ratio < LANDSCAPE_RATIO_THRESHOLD
+      ? { width: MOBILE_BANNER_WIDTH, maxWidth: '100%', aspectRatio: `${ratio}` }
+      : { width: '100%', height: MOBILE_BANNER_HEIGHT }
+  } else {
+    const [w, h] = (bannerRatio.value || '4/1').split('/').map(Number)
+
+    style = {
+      width: '100%',
+      aspectRatio: w > 0 && h > 0 ? `${w} / ${h}` : '4 / 1',
     }
-
-    return { width: '100%', height: MOBILE_BANNER_HEIGHT }
   }
 
-  const [w, h] = (bannerRatio.value || '4/1').split('/').map(Number)
-
-  return {
-    width: '100%',
-    aspectRatio: w > 0 && h > 0 ? `${w} / ${h}` : '4 / 1',
+  const dimensions = getStyles(props.fieldValue?.banner_dimension?.properties, view, false) || {}
+  if (dimensions.width) {
+    style.width = dimensions.width
   }
-})
-
-const reservedBannerStyle = computed<Record<string, string>>(() => {
-  const style = { ...defaultBannerStyle.value }
-  const { width, height } = workshopDimensionStyle.value
-
-  if (width) {
-    style.width = width
-  }
-
-  if (height) {
-    style.height = height
+  // Percentage heights resolve against a parent with no height (= nothing), which
+  // collapses the reservation; keep the ratio/fallback geometry in that case.
+  if (dimensions.height && !String(dimensions.height).trim().endsWith('%')) {
+    style.height = dimensions.height
     delete style.aspectRatio
   }
 
   return style
-})
-
-const firstBannerImageSource = computed<string | null>(() => {
-  const image = data.value?.compiled_layout?.components?.[0]?.image
-  if (!image) {
-    return null
-  }
-
-  const pickSource = (variant: any): string | null =>
-    variant?.thumbnail?.webp
-    ?? variant?.thumbnail?.original
-    ?? variant?.source?.webp
-    ?? variant?.source?.original
-    ?? null
-
-  return pickSource(image[props.screenType]) ?? pickSource(image.desktop)
-})
-
-// measure the original ratio of the image
-const measureImageRatio = (source: string | null): void => {
-  mobileImageRatio.value = null
-
-  if (typeof window === "undefined" || !source) {
-    return
-  }
-
-  const image = new window.Image()
-  image.onload = () => {
-    if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-      mobileImageRatio.value = image.naturalWidth / image.naturalHeight
-    }
-  }
-  image.src = source
 }
 
-watch(firstBannerImageSource, (source) => measureImageRatio(source), { immediate: true })
+const bannerBoxVars = computed<Record<string, string>>(() => {
+  const vars: Record<string, string> = {}
+  const keys: Record<string, string> = { width: 'w', maxWidth: 'mw', height: 'h', aspectRatio: 'ar' }
+
+  for (const [view, suffix] of [['mobile', 'm'], ['desktop', 'd']] as const) {
+    const style = bannerStyleForView(view)
+    for (const [key, short] of Object.entries(keys)) {
+      if (style[key]) {
+        vars[`--bb-${short}-${suffix}`] = style[key]
+      }
+    }
+  }
+
+  return vars
+})
+
+
+const mobileImageRatio = computed<number | null>(() => {
+  const image = data.value?.compiled_layout?.components?.[0]?.image
+  const variant = image?.mobile ?? image?.desktop
+
+  if (variant?.width > 0 && variant?.height > 0) {
+    return variant.width / variant.height
+  }
+
+  return null
+})
 
 const getDataBanner = async (): Promise<void> => {
   if (typeof window === "undefined") return;
 
   if (!activeId.value) {
     data.value = null;
+    return;
+  }
+
+  const embedded = embeddedBannerData(activeId.value);
+  if (embedded) {
+    data.value = embedded;
     return;
   }
 
@@ -204,11 +200,11 @@ onMounted(() => {
 
 <template>  
   <div :id="fieldValue?.id ? fieldValue?.id : 'banner'+indexBlock" component="banner">
-    <div v-if="isLoading" class="flex justify-center items-center mx-auto" :style="reservedBannerStyle">
-      <LoadingIcon class="text-4xl" />
+    <div v-if="activeId && !data" class="banner-box flex justify-center items-center mx-auto" :style="bannerBoxVars">
+      <LoadingIcon v-if="isLoading" class="text-4xl" />
     </div>
 
-    <section v-else-if="data" class="relative mx-auto" :style="reservedBannerStyle">
+    <section v-else-if="data" class="banner-box relative mx-auto" :style="bannerBoxVars">
       <div class="w-full h-full" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
@@ -227,3 +223,4 @@ onMounted(() => {
 
   </div>
 </template>
+

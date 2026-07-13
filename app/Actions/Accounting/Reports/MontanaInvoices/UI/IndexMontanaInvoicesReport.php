@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 09 Jul 2026 22:43:45 Malaysia Time, Kuala Lumpur, Malaysia
@@ -132,26 +133,6 @@ class IndexMontanaInvoicesReport extends OrgAction
                 ->column(key: 'total_amount', label: __('Total'), sortable: true, type: 'currency')
                 ->defaultSort('-date');
         };
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        // todo: uncomment this when show between dates works on UI
-        //
-        //        if (!$request->has('between')) {
-        //            $start   = Carbon::now()->startOfMonth()->format('Ymd');
-        //            $end     = Carbon::now()->format('Ymd');
-        //            $between = [
-        //                'date' => "$start-$end",
-        //            ];
-        //
-        //            // Keep action attributes in sync
-        //            $this->set('between', $between);
-        //
-        //            // Also merge into request so request()->input('between') returns this value
-        //            $request->merge(['between' => $between]);
-        //            request()->merge(['between' => $between]);
-        //        }
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator

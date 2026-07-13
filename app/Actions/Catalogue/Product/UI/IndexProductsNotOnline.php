@@ -205,8 +205,8 @@ class IndexProductsNotOnline extends OrgAction
                 ],
 
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
-                    fn() => ProductsResource::collection($products)
-                    : Inertia::optional(fn() => ProductsResource::collection($products)),
+                    fn () => ProductsResource::collection($products)
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
             ]
         )->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value));
     }

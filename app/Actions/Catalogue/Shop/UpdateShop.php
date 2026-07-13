@@ -114,7 +114,7 @@ class UpdateShop extends OrgAction
             if ($shop->website) {
                 SyncWebsiteBlockedCountries::run($shop->website, $bannedIPCountries);
             }
-            
+
             $newBannedCountriesFull = Arr::get($bannedCountries, 'banned_list', []);
             $oldBannedCountriesFull = $shop->banned_country_regions ?? [];
 

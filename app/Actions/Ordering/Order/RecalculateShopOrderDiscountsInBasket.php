@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,7 +33,6 @@ class RecalculateShopOrderDiscountsInBasket implements ShouldBeUnique
         }
         /** @var Order $order */
         foreach ($shop->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
-
             if ($order->updated_by_customer_at && $order->updated_by_customer_at->isAfter(Carbon::now()->subHours(3))) {
                 CalculateOrderDiscounts::dispatch($order);
             } else {
@@ -40,6 +40,17 @@ class RecalculateShopOrderDiscountsInBasket implements ShouldBeUnique
                 CalculateOrderDiscounts::dispatch($order)->delay($randomDelay)->onQueue('hydrators-slave-low-priority');
             }
         }
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'recalculate-shop-order-discounts-in-basket {shop}';
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+        $this->handle($this->$shop->id);
     }
 
 }

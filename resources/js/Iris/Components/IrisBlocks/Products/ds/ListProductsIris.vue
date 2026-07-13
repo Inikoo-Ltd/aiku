@@ -2,6 +2,7 @@
 import { faFilter } from "@fas";
 import { getStyles } from "@/Composables/styles";
 import { ref, onMounted, watch, computed, toRaw, inject } from "vue";
+import MobileShowMoreButton from "@/Iris/Components/MobileShowMoreButton.vue"
 import axios from "axios";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { notify } from "@kyvg/vue3-notification";
@@ -54,6 +55,11 @@ const props = defineProps<{
 
 const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure);
+const MOBILE_INITIAL_PRODUCTS = 16
+const showAllProductsOnMobile = ref(false)
+const mobileHiddenProductsCount = computed(() => products.value.length - MOBILE_INITIAL_PRODUCTS)
+const isMobileCollapsed = computed(() => !showAllProductsOnMobile.value && mobileHiddenProductsCount.value > 4)
+
 const firstLoad = ref(null)
 const products = ref<any[]>(
     props.fieldValue?.products?.meta?.last_page == 1
@@ -378,17 +384,14 @@ const fetchProductHasPortfolio = async () => {
 };
 
 
-const responsiveGridClass = computed(() => {
+const gridColsVars = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {};
 
-    const columnCount = {
-        desktop: perRow.desktop ?? 4,
-        tablet: perRow.tablet ?? 4,
-        mobile: perRow.mobile ?? 2
+    return {
+        '--cols-mobile': perRow.mobile ?? 2,
+        '--cols-tablet': perRow.tablet ?? 4,
+        '--cols-desktop': perRow.desktop ?? 4,
     };
-
-    const count = columnCount[props.screenType] ?? 1;
-    return `grid-cols-${count}`;
 });
 
 
@@ -509,8 +512,8 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                 </div> -->
 
                 <!-- Product Grid -->
-                <div :class="responsiveGridClass" class="grid gap-6 p-4"
-                    :style="getStyles(fieldValue?.container?.properties, screenType)">
+                <div class="products-grid grid gap-6 p-4"
+                    :style="{ ...gridColsVars, ...getStyles(fieldValue?.container?.properties, screenType) }">
                     <template v-if="loadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
                             <Skeleton height="200px" class="mb-3" />
@@ -523,7 +526,8 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     <template v-else-if="products.length">
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border p-3 relative rounded bg-white">
+                            class="border p-3 relative rounded bg-white"
+                            :class="{ 'max-lg:hidden': isMobileCollapsed && index >= MOBILE_INITIAL_PRODUCTS }">
                            <!--   <component 
                                 :is="getProductsRenderDropshippingComponent(code)" 
                                 :product="product" 
@@ -570,8 +574,13 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                     </template>
                 </div>
 
+                <!-- Show more (mobile only): reveal CSS-hidden products without fetching -->
+                <div v-if="isMobileCollapsed" class="lg:hidden mt-4 mb-7 px-2">
+                    <MobileShowMoreButton :count="mobileHiddenProductsCount" @show="showAllProductsOnMobile = true" />
+                </div>
+
                 <!-- Load More -->
-                <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4  mb-12">
+                <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4  mb-12" :class="{ 'max-lg:hidden': isMobileCollapsed }">
                     <Button @click="loadMore" type="tertiary" :disabled="loadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
                         <template v-if="loadingMore">
@@ -600,6 +609,23 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
 
 
 <style scoped>
+.products-grid {
+    grid-template-columns: repeat(var(--cols-mobile), minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-tablet), minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-desktop), minmax(0, 1fr));
+    }
+}
+
+
 .slide-fade-enter-active,
 .slide-fade-leave-active {
     transition: all 0.3s ease;
