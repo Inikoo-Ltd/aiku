@@ -69,6 +69,50 @@ class IndexCheckoutAbandonments extends OrgAction
         ];
     }
 
+    private function getStats(Group|Organisation|Shop|Customer $parent): array
+    {
+        $query = CheckoutAbandonment::where('checkout_abandonments.group_id', $parent instanceof Group ? $parent->id : $parent->group_id);
+        if ($parent instanceof Organisation) {
+            $query->where('checkout_abandonments.organisation_id', $parent->id);
+        } elseif ($parent instanceof Shop) {
+            $query->where('checkout_abandonments.shop_id', $parent->id);
+        } elseif ($parent instanceof Customer) {
+            $query->where('checkout_abandonments.customer_id', $parent->id);
+        }
+
+        $agg = $query->selectRaw('state, count(*) as cnt, coalesce(sum(total_amount), 0) as revenue')
+            ->groupBy('state')
+            ->get()
+            ->keyBy('state');
+
+        $abandonedCount = (int) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->cnt ?? 0);
+        $recoveredCount = (int) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->cnt ?? 0);
+        $total          = $abandonedCount + $recoveredCount;
+        $recoveryRate   = $total > 0 ? round($recoveredCount / $total * 100, 1) : 0;
+
+        $currency = match (true) {
+            $parent instanceof Shop     => $parent->currency,
+            $parent instanceof Customer => $parent->shop->currency,
+            default                     => null,
+        };
+
+        if ($currency) {
+            return [
+                ['label' => __('Abandoned'), 'value' => $abandonedCount],
+                ['label' => __('Lost revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->revenue ?? 0), 2)],
+                ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%'],
+                ['label' => __('Recovered'), 'value' => $recoveredCount],
+                ['label' => __('Recovered revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->revenue ?? 0), 2)],
+            ];
+        }
+
+        return [
+            ['label' => __('Abandoned'), 'value' => $abandonedCount],
+            ['label' => __('Recovered'), 'value' => $recoveredCount],
+            ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%'],
+        ];
+    }
+
     public function handle(Group|Organisation|Shop|Customer $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -196,18 +240,18 @@ class IndexCheckoutAbandonments extends OrgAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
+    // public function authorize(ActionRequest $request): bool
+    // {
+    //     if ($this->asAction) {
+    //         return true;
+    //     }
 
-        return match (true) {
-            $this->parent instanceof Group,
-            $this->parent instanceof Organisation => $request->user()->authTo('group-overview'),
-            default => $request->user()->authTo("orders.{$this->shop->id}.view"),
-        };
-    }
+    //     return match (true) {
+    //         $this->parent instanceof Group,
+    //         $this->parent instanceof Organisation => $request->user()->authTo('group-overview'),
+    //         default => $request->user()->authTo("orders.{$this->shop->id}.view"),
+    //     };
+    // }
 
     public function jsonResponse(LengthAwarePaginator $abandonments): AnonymousResourceCollection
     {
@@ -237,6 +281,7 @@ class IndexCheckoutAbandonments extends OrgAction
                     'title'         => $title,
                     'subNavigation' => $subNavigation,
                 ],
+                'stats'       => $this->getStats($this->parent),
                 'data'        => CheckoutAbandonmentsResource::collection($abandonments),
             ]
         )->table($this->tableStructure($this->parent));

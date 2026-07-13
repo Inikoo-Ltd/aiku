@@ -2,6 +2,7 @@
 import { Head, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
+import ShowcaseStats from "@/Components/ShowcaseStats.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -13,6 +14,7 @@ defineProps<{
     data: object
     title: string
     pageHead: object
+    stats: { label: string; value: number | string }[]
 }>()
 
 function orderRoute(row: any) {
@@ -35,6 +37,7 @@ function customerRoute(row: any) {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <ShowcaseStats v-if="stats?.length" :data="stats" class="mt-5" />
     <Table :resource="data" class="mt-5">
         <template #cell(reference)="{ item: row }">
             <Link :href="orderRoute(row)" class="primaryLink">
