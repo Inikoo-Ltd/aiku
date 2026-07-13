@@ -75,13 +75,10 @@ class CreateAgent extends OrgAction
                                     'required'    => true,
                                     'mode'        => 'single',
                                     'searchable'  => true,
-                                    'labelProp'   => 'label',
-                                    'valueProp'   => 'value',
+                                    'labelProp'   => 'contact_and_org_code',
+                                    'valueProp'   => 'id',
                                     'fetchRoute'  => [
-                                        'name'       => 'grp.json.chat.agent_users.index',
-                                        'parameters' => [
-                                            'organisation' => $organisation->slug,
-                                        ],
+                                        'name'       => 'grp.search.get_users',
                                     ],
                                 ],
 
@@ -117,12 +114,13 @@ class CreateAgent extends OrgAction
                                 ],
 
                                 'max_concurrent_chats' => [
-                                    'type'     => 'input_number',
-                                    'label'    => __('Max Concurrent Chats'),
-                                    'bind'      => [
-                                        'min'       => 0,
+                                    'type'        => 'input_number',
+                                    'label'       => __('Max Concurrent Chats'),
+                                    'information' => __('The maximum number of chats this agent can handle at the same time.'),
+                                    'bind'        => [
+                                        'min' => 0,
                                     ],
-                                    'required' => true,
+                                    'required'    => true,
                                 ],
 
                                 'specialization' => [

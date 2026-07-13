@@ -55,7 +55,7 @@ class PickAllItem extends OrgAction
 
             data_set($modelData, 'quantity', $toPickQuantity);
 
-            $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+            $picking = StorePicking::make()->action($deliveryNoteItem, request()->user(), $modelData);
 
             $deliveryNoteItem->update(['locked_at' => null]);
 

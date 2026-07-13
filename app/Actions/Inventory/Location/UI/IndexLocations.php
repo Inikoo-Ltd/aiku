@@ -186,7 +186,7 @@ class IndexLocations extends OrgAction
                 $q->where('location_stats.number_empty_stock_slots', '>', 0)
                     ->whereColumn('location_stats.number_empty_stock_slots', '<', 'location_stats.number_org_stock_slots');
             })
-            ->allowedSorts(['code'])
+            ->allowedSorts(['code', 'organisation_name', 'max_weight', 'max_volume', 'number_org_stock_slots', 'number_empty_stock_slots'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -241,10 +241,10 @@ class IndexLocations extends OrgAction
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'max_weight', label: __('Weight'), canBeHidden: false, align: 'right');
-            $table->column(key: 'max_volume', label: __("CBM (Cubic meter)"), canBeHidden: false, align: 'right');
-            $table->column(key: 'number_org_stock_slots', label: __("Slots"), canBeHidden: false, align: 'right');
-            $table->column(key: 'number_empty_stock_slots', label: __("Empty slots"), canBeHidden: false, align: 'right');
+            $table->column(key: 'max_weight', label: __('Weight'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'max_volume', label: __("CBM (Cubic meter)"), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'number_org_stock_slots', label: __("Slots"), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'number_empty_stock_slots', label: __("Empty slots"), canBeHidden: false, sortable: true, align: 'right');
 
 
             //   $table->column(key: 'stock_value', label: __('Stock value'), canBeHidden: false, align: 'right');

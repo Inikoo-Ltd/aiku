@@ -21,6 +21,7 @@ import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks
 import TableLocationOrgStockHistories from "@/Components/Tables/Grp/Org/Inventory/TableLocationOrgStockHistories.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
+import TableOrgStockMovements from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockMovements.vue"
 
 library.add(faInventory, faExchange, faBox, faWarehouse, faMapSigns, faPallet)
 
@@ -33,6 +34,7 @@ const props = defineProps<{
     stocks?: {}
     org_stocks?: {}
     location_org_stocks?: {}
+    stock_movements?: {}
     pallets?: {}
     showcase?: {}
     location_id: number
@@ -47,6 +49,7 @@ const component = computed(() => {
         pallets: TablePallets,
         org_stocks: TableOrgStocks,
         location_org_stocks: TableLocationOrgStockHistories,
+        stock_movements: TableOrgStockMovements,
         details: ModelDetails,
         history: TableHistories
     }

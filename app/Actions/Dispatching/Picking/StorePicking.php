@@ -26,7 +26,7 @@ use App\Actions\Audits\DispatchSimpleAudit;
 class StorePicking extends OrgAction
 {
     protected DeliveryNoteItem $deliveryNoteItem;
-    protected User $user;
+    private User|null $user = null;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): Picking
     {
@@ -57,7 +57,8 @@ class StorePicking extends OrgAction
             $locationOrgStock->location,
             [
                 'quantity' => -$picking->quantity,
-                'type'     => OrgStockMovementTypeEnum::PICKED
+                'type'     => OrgStockMovementTypeEnum::PICKED,
+                'user_id'  => $this->user?->id,
             ],
             $picking
         );

@@ -33,15 +33,16 @@ class ProductsApiResource extends JsonResource
     public function toArray($request): array
     {
         $product_details = [
-            'id'            => $this->id,
-            'slug'          => $this->slug,
-            'code'          => $this->code,
-            'image'         => Arr::get($this->web_images, 'main.gallery'),
-            'price'         => $this->price,
-            'current_stock' => $this->current_stock,
-            'name'          => $this->name,
-            'ean_barcode'   => $this->barcode,
-            'description'   => $this->description,
+            'id'                => $this->id,
+            'slug'              => $this->slug,
+            'code'              => $this->code,
+            'image'             => Arr::get($this->web_images, 'main.gallery'),
+            'price'             => $this->price,
+            'current_stock'     => $this->current_stock,
+            'name'              => $this->name,
+            'ean_barcode'       => $this->barcode,
+            'description'       => $this->description,
+            'description_extra' => $this->description_extra,
         ];
 
         if (isset($this->department_name)) {

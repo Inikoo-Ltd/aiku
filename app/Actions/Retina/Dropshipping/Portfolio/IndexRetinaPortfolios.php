@@ -359,6 +359,12 @@ class IndexRetinaPortfolios extends RetinaAction
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
+                    'bulk_unlink_only'            => [
+                        'name'       => 'retina.models.dropshipping.bulk.unlink_only',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
                     'batch_all_dimensions_update' => [
                         'name'       => 'retina.models.dropshipping.shopify.batch_all_dimensions_update',
                         'parameters' => [
