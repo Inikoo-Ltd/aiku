@@ -660,8 +660,8 @@ if (isClient) {
 
 <template>
     <div>
-        <button ref="buttonRef" @click="toggle" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-36 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
-            <FontAwesomeIcon :icon="faMessage" class="text-base" />
+        <button ref="buttonRef" @click="toggle" :aria-label="trans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-36 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
+            <FontAwesomeIcon :icon="faMessage" class="text-base" aria-hidden="true" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
                bg-red-500 text-white text-[10px] font-semibold
                rounded-full flex items-center justify-center">
