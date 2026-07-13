@@ -101,7 +101,7 @@ const locationRoute = (orgStockMovement) => {
           <FontAwesomeIcon 
             :icon="faBoxFull"
           />
-          {{ orgStockMovement.running_quantity }}
+          {{ orgStockMovement.running_quantity ?? 0 }}
         </span>
       </div>
     </template>
@@ -119,8 +119,8 @@ const locationRoute = (orgStockMovement) => {
     </template>
 
     <template #cell(quantity)="{item: orgStockMovement}">
-      <span :class="orgStockMovement.quantity == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3  border rounded-md w-fit min-w-14 text-center grid justify-self-end">
-        {{ orgStockMovement.quantity }}
+      <span :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3  border rounded-md w-fit min-w-14 text-center grid justify-self-end">
+        {{ Number(orgStockMovement.quantity) }}
       </span>
     </template>
   </Table>
