@@ -30,6 +30,29 @@ const layout = inject("layout");
 const data = ref<any>(null);
 const isLoading = ref(false);
 
+/*
+ * Measure the real viewport directly instead of waiting for the screenType prop
+ * to settle. The prop starts as 'desktop' for SSR hydration and only flips to
+ * the real device after the parent's onMounted, which made mobile devices pick
+ * (and fetch) the desktop banner first before correcting. Reading window here in
+ * setup means the very first client fetch already targets the right device.
+ */
+const detectScreenType = (): "mobile" | "tablet" | "desktop" => {
+  if (typeof window === "undefined") return props.screenType ?? "desktop";
+  if (window.innerWidth < 640) return "mobile";
+  if (window.innerWidth < 1024) return "tablet";
+  return "desktop";
+};
+
+const effectiveScreenType = ref<"mobile" | "tablet" | "desktop">(detectScreenType());
+
+watch(
+  () => props.screenType,
+  () => {
+    effectiveScreenType.value = detectScreenType();
+  }
+);
+
 const activeId = computed(() => {
   const responsive = props.fieldValue?.banner_responsive;
 
@@ -37,9 +60,9 @@ const activeId = computed(() => {
     return props.fieldValue?.banner_id ?? null;
   }
 
-  const current = responsive?.[props.screenType]?.id;
+  const current = responsive?.[effectiveScreenType.value]?.id;
 
-  if (!current && props.screenType !== "desktop") {
+  if (!current && effectiveScreenType.value !== "desktop") {
     return responsive?.desktop?.id ?? null;
   }
 
@@ -206,17 +229,17 @@ onMounted(() => {
 
     <section v-else-if="data" class="banner-box relative mx-auto" :style="bannerBoxVars">
       <div class="w-full h-full" :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(fieldValue.container?.properties, screenType),
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, effectiveScreenType),
+        ...getStyles(fieldValue.container?.properties, effectiveScreenType),
       }">
 
         <div v-if="data?.compiled_layout?.type === 'landscape'" class="mx-auto w-full h-full"
           :class="bannerRatio !== '4/1' && 'max-w-full sm:max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-[1600px]'">
-          <SliderLandscape :data="data.compiled_layout" :production="true" :view="screenType" :ratio="bannerRatio" />
+          <SliderLandscape :data="data.compiled_layout" :production="true" :view="effectiveScreenType" :ratio="bannerRatio" />
         </div>
 
         <SliderSquare v-else-if="data?.compiled_layout?.type === 'square'" :data="data.compiled_layout"
-          :production="true" :view="screenType" :ratio="bannerRatio" />
+          :production="true" :view="effectiveScreenType" :ratio="bannerRatio" />
       </div>
 
     </section>
