@@ -92,8 +92,17 @@ watch(
     spaceBetween.value = (newVal || 0)
     refreshCarousel()
   },
-  { immediate: true, deep: true }
+  { deep: true }
 )
+
+const imageSizes = computed(() => {
+  const settings = props.fieldValue?.carousel_data?.carousel_setting?.slidesPerView || {}
+  const mobile = settings.mobile || 1
+  const tablet = settings.tablet || 2
+  const desktop = settings.desktop || 4
+
+  return `(max-width: 767px) ${Math.round(100 / mobile)}vw, (max-width: 1199px) ${Math.round(100 / tablet)}vw, ${Math.round(100 / desktop)}vw`
+})
 
 const breakpoints = computed(() => {
   const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
@@ -171,12 +180,14 @@ const idxSlideLoading = ref<number | null>(null)
                     :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)" >
                     <div class="overflow-hidden w-full flex items-center justify-center "
                       :style="{  ...getStyles(fieldValue.carousel_data.card_container?.image_properties, screenType) }">
-                      <Image 
-                        v-if="data?.image?.source" 
-                        :src="data.image.source" 
+                      <Image
+                        v-if="data?.image?.source"
+                        :src="data.image.source"
+                        :srcset="data.image.srcset"
+                        :sizes="imageSizes"
                         :alt="data.image.alt || `image-${index}`"
-                        :class="'image-container'" 
-                        class="w-full h-full flex justify-center items-center" 
+                        :class="'image-container'"
+                        class="w-full h-full flex justify-center items-center"
                         :height="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.height"
                         :width="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.width"
                         :preload="Number(indexBlock) === 0 && index === 0"

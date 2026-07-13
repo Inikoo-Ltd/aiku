@@ -7,3 +7,34 @@
 
 @import url("Iris/blockTextContent.css");
 @import url("Iris/editor.css");
+
+.swiper {
+    overflow: hidden;
+}
+
+.swiper-wrapper {
+    display: flex;
+}
+
+.swiper-slide {
+    flex-shrink: 0;
+    width: 100%;
+}
+
+/* Banner box geometry from per-view CSS variables (set inline by WowsbarBannerIris);
+   lives here so the reservation exists at first paint, before the banner chunk loads. */
+.banner-box {
+    width: var(--bb-w-m, 100%);
+    max-width: var(--bb-mw-m, none);
+    height: var(--bb-h-m, auto);
+    aspect-ratio: var(--bb-ar-m, auto);
+}
+
+@media (min-width: 640px) {
+    .banner-box {
+        width: var(--bb-w-d, 100%);
+        max-width: var(--bb-mw-d, none);
+        height: var(--bb-h-d, auto);
+        aspect-ratio: var(--bb-ar-d, auto);
+    }
+}

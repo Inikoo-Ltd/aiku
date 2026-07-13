@@ -210,7 +210,9 @@ const contentClass = computed(() =>
         <div class="flex shrink-0 items-start justify-center gap-[6px]">
           <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
-            <Image :src="images[0].original" :imageCover="true" :alt="images[0]?.alt || 'family image'"
+            <Image :src="images[0].original" :srcset="images[0].srcset"
+              sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
+              :imageCover="true" :alt="images[0]?.alt || 'family image'"
               class="
                 h-[280px]
                 w-[220px]
@@ -241,7 +243,9 @@ const contentClass = computed(() =>
           <div ref="imageRef"  class="flex flex-col gap-[6px]">
             <!-- IMAGE 2 -->
             <template v-if="hasImage(1)">
-              <Image :src="images[1].original" :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
+              <Image :src="images[1].original" :srcset="images[1].srcset"
+                  sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+                  :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
                   h-[137px]
                   w-[105px]
                   object-cover
@@ -270,7 +274,9 @@ const contentClass = computed(() =>
 
             <!-- IMAGE 3 -->
             <template v-if="hasImage(2)">
-              <Image :src="images[2].original" :imageCover="true" :alt="images[2]?.alt || 'family image'" class="
+              <Image :src="images[2].original" :srcset="images[2].srcset"
+                  sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+                  :imageCover="true" :alt="images[2]?.alt || 'family image'" class="
                   h-[137px]
                   w-[105px]
                   object-cover
@@ -349,9 +355,7 @@ const contentClass = computed(() =>
     2xl:space-y-2
     2xl:text-[19px]
     overflow-hidden
-  " ref="descriptionRef" :style="!expanded && showReadMore
-    ? { maxHeight: `${maxDescriptionHeight}px` }
-    : {}">
+  " ref="descriptionRef" :class="!expanded ? 'max-h-[265px] lg:max-h-[195px] 2xl:max-h-[255px]' : ''">
             <div v-html="cleanedDescription"></div>
 
             <!-- Fade overlay -->

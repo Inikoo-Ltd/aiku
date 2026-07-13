@@ -23,8 +23,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_locations_status_operational
  * @property int $number_locations_status_broken
  * @property int $number_empty_locations
- * @property int $number_locations_stock_slots_all_empty
- * @property int $number_locations_stock_slots_partial_empty
  * @property int $number_locations_no_stock_slots
  * @property int $number_locations_allow_stocks
  * @property int $number_locations_allow_fulfilment
@@ -223,6 +221,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_return_delivery_notes_state_returned
  * @property int $number_return_delivery_notes_state_done
  * @property int $number_return_delivery_notes_state_cancelled
+ * @property int $number_locations_stock_slots_all_empty
+ * @property int $number_locations_stock_slots_partial_empty
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * Author Louis Perez
+ * Created on 10-07-2026-17h-09m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
+
 namespace App\Actions\Inventory\Location;
 
 use App\Actions\Inventory\LocationOrgStock\DeleteLocationOrgStock;
@@ -44,7 +51,7 @@ class MassMoveLocationOrgStocks extends OrgAction
                     $targetLocationOrgStock = StoreLocationOrgStock::make()->action($locationOrgStock->orgStock, $targetLocation, $movedData);
                 }
 
-                if($locationOrgStock->quantity>0) {
+                if ($locationOrgStock->quantity > 0) {
                     MoveOrgStockToOtherLocation::make()->action($locationOrgStock, $targetLocationOrgStock, [
                         'quantity' => $locationOrgStock->quantity
                     ]);

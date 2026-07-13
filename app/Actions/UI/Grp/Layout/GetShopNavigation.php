@@ -565,7 +565,7 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ]
-                        : [],
+                        : null,
                     ],
                 ],
             ];

@@ -206,6 +206,11 @@ const goToBundle = () => {
                 class="text-center flex items-center"
                 v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
             />
+            <!-- Reserve the greeting row while the first-hit data is still on the wire,
+                 so the bar doesn't grow when "Hello, name" arrives -->
+            <div v-else-if="layout.iris?.is_logged_in" class="invisible text-center md:text-left" aria-hidden="true">
+                <span>{{ trans("Hello") }}!</span>
+            </div>
         </div>
 
         <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">

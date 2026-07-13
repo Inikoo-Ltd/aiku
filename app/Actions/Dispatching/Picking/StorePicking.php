@@ -47,6 +47,10 @@ class StorePicking extends OrgAction
         $picking = $deliveryNoteItem->pickings()->create($modelData);
         $picking->refresh();
 
+        if (app()->environment('production')) {
+            SavePickingInAurora::dispatch($picking);
+        }
+
 
         StoreOrgStockMovement::dispatch(
             $locationOrgStock->orgStock,

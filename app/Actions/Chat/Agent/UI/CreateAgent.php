@@ -13,7 +13,6 @@ use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
 use App\Actions\Helpers\Shop\UI\GetShopOptions;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
-use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,19 +35,6 @@ class CreateAgent extends OrgAction
                 'organisation' => $organisation->slug,
             ]
         ];
-
-        $employees = Employee::query()
-            ->whereNotNull('user_id')
-            ->orderBy('contact_name')
-            ->get()
-            ->map(fn ($employee) => [
-                'label' => "{$employee->organisation->code} | {$employee->contact_name}"
-                    ?? $employee->alias
-                    ?? 'Unnamed',
-                'value' => $employee->user_id,
-            ])
-            ->values()
-            ->toArray();
 
         return Inertia::render(
             'CreateModel',
@@ -82,11 +68,21 @@ class CreateAgent extends OrgAction
 
                             'fields' => [
                                 'user_id' => [
-                                    'type'        => 'select',
+                                    'type'        => 'select_infinite',
+                                    'information' => __('Only active employees are listed'),
                                     'label'       => __('Agent'),
                                     'placeholder' => __('Select user'),
                                     'required'    => true,
-                                    'options'     => $employees,
+                                    'mode'        => 'single',
+                                    'searchable'  => true,
+                                    'labelProp'   => 'label',
+                                    'valueProp'   => 'value',
+                                    'fetchRoute'  => [
+                                        'name'       => 'grp.json.chat.agent_users.index',
+                                        'parameters' => [
+                                            'organisation' => $organisation->slug,
+                                        ],
+                                    ],
                                 ],
 
                                 'organisation_id' => [
@@ -123,6 +119,9 @@ class CreateAgent extends OrgAction
                                 'max_concurrent_chats' => [
                                     'type'     => 'input_number',
                                     'label'    => __('Max Concurrent Chats'),
+                                    'bind'      => [
+                                        'min'       => 0,
+                                    ],
                                     'required' => true,
                                 ],
 

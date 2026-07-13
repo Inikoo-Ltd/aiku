@@ -8,6 +8,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue';
 import { ctrans } from "@/Composables/useTrans";
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import MobileShowMoreButton from '@/Iris/Components/MobileShowMoreButton.vue'
 import { useDepartmentStructuredData } from "@/Iris/Composables/useDepartmentStructuredData"
 
 interface FilterOptions {
@@ -138,6 +139,15 @@ const perRow = computed(() => ({
   desktop: props.fieldValue?.settings?.per_row?.desktop ?? 5,
 }))
 
+const familyImageSizes = computed(() =>
+  `(max-width: 639px) ${Math.round(100 / perRow.value.mobile)}vw, (max-width: 1023px) ${Math.round(100 / perRow.value.tablet)}vw, ${Math.round(100 / perRow.value.desktop)}vw`
+)
+
+const MOBILE_INITIAL_FAMILIES = 12
+const showAllFamiliesOnMobile = ref(false)
+const mobileHiddenFamiliesCount = computed(() => families.value.length - MOBILE_INITIAL_FAMILIES)
+const isMobileCollapsed = computed(() => !showAllFamiliesOnMobile.value && mobileHiddenFamiliesCount.value > 4)
+
 const updateQueryParams = () => {
     const url = new URL(window.location.href)
 
@@ -200,7 +210,6 @@ onBeforeUnmount(() => {
   removeStructuredDataScript(departmentStructuredDataScript.value)
 })
 
-console.log('sdsd',props)
 </script>
 
 <template>
@@ -224,7 +233,7 @@ console.log('sdsd',props)
           {{ ctrans('Families Found') }}
         </div>
 
-        <select v-model.number="selectedOption"
+        <select v-model.number="selectedOption" :aria-label="ctrans('Filter By Category')"
           class="h-[58px] w-[170px] rounded-[18px] border border-[#B8B8B8] bg-white px-4 text-center text-xl text-slate-800 shadow-[0_4px_0_0_rgba(0,0,0,0.15)]">
           <option :value="null">
             {{ ctrans('All') }}
@@ -249,7 +258,7 @@ console.log('sdsd',props)
               {{ ctrans('Filter By Category') }} :
             </span>
 
-            <select v-model.number="selectedOption"
+            <select v-model.number="selectedOption" :aria-label="ctrans('Filter By Category')"
               class="h-11 min-w-[180px] rounded-md border border-slate-400 bg-white px-4">
               <option :value="null">
                 {{ ctrans('All') }}
@@ -287,20 +296,20 @@ console.log('sdsd',props)
     </div>
 
     <!-- Family Grid -->
-    <div v-else class="grid gap-5" :style="{
-      gridTemplateColumns: `repeat(${screenType === 'mobile'
-        ? perRow.mobile
-        : screenType === 'tablet'
-          ? perRow.tablet
-          : perRow.desktop
-        }, minmax(0, 1fr))`,
+    <div v-else class="grid gap-5 families-grid" :style="{
+      '--cols-mobile': perRow.mobile,
+      '--cols-tablet': perRow.tablet,
+      '--cols-desktop': perRow.desktop,
     }">
-      <LinkIris v-for="family in families" :key="family.id" :href="family.url" class="group block" type="internal">
+      <LinkIris v-for="(family, familyIndex) in families" :key="family.id" :href="family.url" type="internal"
+        class="group block" :class="{ 'max-lg:hidden': isMobileCollapsed && familyIndex >= MOBILE_INITIAL_FAMILIES }">
         <div class="aspect-square overflow-hidden bg-gray-100 relative xflex items-center justify-center">
           <div v-if="!family.image" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <FontAwesomeIcon icon="fal fa-image" class="text-5xl opacity-30" fixed-width aria-hidden="true" />
           </div>
           <Image :src="family.image" :alt="family.name"
+            :srcset="family.srcset"
+            :sizes="familyImageSizes"
             class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             :class="!family.image ? 'opacity-0' : ''" />
         </div>
@@ -311,8 +320,13 @@ console.log('sdsd',props)
       </LinkIris>
     </div>
 
+    <!-- Show more (mobile only): reveal CSS-hidden families without fetching -->
+    <div v-if="isMobileCollapsed" class="lg:hidden mt-4 mb-7 px-2">
+      <MobileShowMoreButton :count="mobileHiddenFamiliesCount" @show="showAllFamiliesOnMobile = true" />
+    </div>
+
     <!-- Load More -->
-    <div v-if="!loading && meta.current_page < meta.last_page" class="mt-8 flex justify-center">
+    <div v-if="!loading && meta.current_page < meta.last_page" class="mt-8 flex justify-center" :class="{ 'max-lg:hidden': isMobileCollapsed }">
       <Button @click="loadFamilies(meta.current_page + 1, true)" type="tertiary" :disabled="loadingMore"
         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
         <template v-if="loadingMore">
@@ -323,3 +337,21 @@ console.log('sdsd',props)
     </div>
   </section>
 </template>
+
+<style scoped>
+.families-grid {
+  grid-template-columns: repeat(var(--cols-mobile), minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .families-grid {
+    grid-template-columns: repeat(var(--cols-tablet), minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .families-grid {
+    grid-template-columns: repeat(var(--cols-desktop), minmax(0, 1fr));
+  }
+}
+</style>

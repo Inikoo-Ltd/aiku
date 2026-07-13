@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import Multiselect from '@vueform/multiselect'
+import "@vueform/multiselect/themes/default.css"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const props = defineProps<{

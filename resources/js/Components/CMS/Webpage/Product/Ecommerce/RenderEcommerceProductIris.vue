@@ -11,12 +11,18 @@ import { ulid } from "ulid"
 import { usePage } from '@inertiajs/vue3'
 
 import { Image as ImageTS } from "@/types/Image"
-import { getProductRenderB2bComponent } from "@/Iris/Composables/getIrisComponents"
+import ProductIris1Ecom from "@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue"
+import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import { ProductViewCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { useProductStructuredData } from "@/Iris/Composables/useProductStructuredData"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
+
+const productPageComponents: Record<string, any> = {
+    "product-1": ProductIris1Ecom,
+    "product-2": ProductIris2Ecom,
+}
 
 
 interface ProductResource {
@@ -384,7 +390,7 @@ watch(
 <template>
     <component
         :key="selected_product.code"
-        :is="getProductRenderB2bComponent(code)"
+        :is="productPageComponents[code]"
         :fieldValue
         :webpageData
         :blockData

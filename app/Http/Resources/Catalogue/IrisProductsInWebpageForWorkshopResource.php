@@ -13,6 +13,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -80,7 +81,10 @@ class IrisProductsInWebpageForWorkshopResource extends JsonResource
             'unit'            => $this->unit,
             'url'             => $url,
             'top_seller'      => $this->top_seller,
-            'web_images'      => $this->web_images,
+            'web_images'      => [
+                'main'      => Arr::get($this->web_images, 'main'),
+                'secondary' => Arr::get($this->web_images, 'secondary'),
+            ],
             'is_variant'      => $this->is_variant,
         ];
     }
