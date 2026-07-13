@@ -123,7 +123,12 @@ const deleteTransaction = async (transaction: UpcomingTransaction) => {
     }
 }
 
-const formatQuantity = (quantity: number | string) => Number(quantity).toLocaleString()
+const quantityFraction = (transaction: UpcomingTransaction): [number, [number, number]] => {
+    const perPack = Number(transaction.product_units) > 0 ? Number(transaction.product_units) : 1
+    const units = Math.round((Number(transaction.quantity) || 0) * perPack)
+
+    return [Math.floor(units / perPack), [units % perPack, perPack]]
+}
 </script>
 
 <template>
@@ -213,11 +218,7 @@ const formatQuantity = (quantity: number | string) => Number(quantity).toLocaleS
                             <div class="flex flex-wrap items-center gap-1.5">
                                 <span class="text-sm font-semibold text-gray-800">{{ transaction.product_code }}</span>
                                 <span class="flex-shrink-0 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600 tabular-nums">
-                                    ×<FractionDisplay
-                                        v-if="transaction.quantity_fractional"
-                                        :fractionData="transaction.quantity_fractional"
-                                    />
-                                    <template v-else>{{ formatQuantity(transaction.quantity) }}</template>
+                                    ×<FractionDisplay :fractionData="quantityFraction(transaction)" />
                                 </span>
                                 <span
                                     class="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-xs font-medium ring-1"
