@@ -68,6 +68,7 @@ use App\Actions\Dispatching\PickingSession\Json\FetchPickingSessionItemRow;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
+use App\Actions\Chat\Agent\Json\GetChatAgentUsers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodeComputers;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
@@ -188,6 +189,7 @@ Route::get('shop/{shop:id}/catalogue/{scope:id}/collections/in-collection', [Get
 Route::get('organisation/{organisation}/employees/packers', GetPackers::class)->name('employees.packers');
 Route::get('organisation/{organisation}/employees/pickers', GetPickers::class)->name('employees.pickers');
 Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers::class)->name('employees.picker_users');
+Route::get('organisation/{organisation}/chat/agent-users', GetChatAgentUsers::class)->name('chat.agent_users.index');
 
 Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
