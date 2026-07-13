@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Multiselect from "@vueform/multiselect"
+import "@vueform/multiselect/themes/default.css"
 import { ref, onMounted, onUnmounted, inject, computed } from "vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"

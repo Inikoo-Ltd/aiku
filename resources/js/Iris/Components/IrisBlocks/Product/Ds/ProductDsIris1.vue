@@ -89,11 +89,11 @@ const openBundlePanel = (product:any) => {
 </script>
 
 <template>
-    <div v-if="screenType != 'mobile'" :id="fieldValue?.id ? fieldValue?.id  : 'product-ds-1'+indexBlock"  component="product-ds-1" :style="{
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'product-ds-1'+indexBlock"  component="product-ds-1" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         marginLeft: 'auto',
         marginRight: 'auto'
-    }" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 block">
+    }" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">
@@ -260,7 +260,7 @@ const openBundlePanel = (product:any) => {
     </div>
 
     <!-- Mobile Layout -->
-    <div v-else class="block px-4 py-6 text-gray-800">
+    <div class="block sm:hidden px-4 py-6 text-gray-800">
         <h1 class="text-xl font-bold mb-2">{{ product.name }}</h1>
         <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
 

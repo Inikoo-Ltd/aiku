@@ -6,6 +6,8 @@
         <title inertia>{{ config('app.name', 'Aiku') }}</title>
         <link rel="icon" type="image/png" href="{{ url('favicon.png') }}">
         <link rel="icon" href="{{ url('favicon.svg') }}" type="image/svg+xml">
+        <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+        <link rel="stylesheet" href="https://fonts.bunny.net/css?family=fira-sans:200,400,500,700,900|inter:400,500,700&display=swap">
         
         @if (config('app.env', 'production') === 'staging')
         <!-- == -->

@@ -36,11 +36,11 @@ use App\Actions\Accounting\PaymentServiceProvider\UpdatePaymentServiceProvider;
 use App\Actions\Accounting\TopUp\SetTopUpStatusToSuccess;
 use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\Accounting\TopUp\UpdateTopUp;
-use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
@@ -1520,4 +1520,686 @@ test('export omega invoice (many)', function () {
     ], $invoice->shop);
 
     expect($result)->toBeInstanceOf(StreamedResponse::class);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Enums: exercise every case through every public method
+|--------------------------------------------------------------------------
+*/
+
+test('accounting enums: cases and instance/static methods', function () {
+    $enums = [
+        \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::class,
+        \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::class,
+        \App\Enums\Accounting\Intrastat\IntrastatDeliveryTermsEnum::class,
+        \App\Enums\Accounting\Intrastat\IntrastatNatureOfTransactionEnum::class,
+        \App\Enums\Accounting\Intrastat\IntrastatTransportModeEnum::class,
+        \App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum::class,
+        \App\Enums\Accounting\Invoice\InvoicePayStatusEnum::class,
+        \App\Enums\Accounting\Invoice\InvoiceTypeEnum::class,
+        \App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum::class,
+        \App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum::class,
+        \App\Enums\Accounting\MitSavedCard\MitSavedCardStateEnum::class,
+        \App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum::class,
+        \App\Enums\Accounting\Payment\PaymentClassEnum::class,
+        \App\Enums\Accounting\Payment\PaymentStateEnum::class,
+        \App\Enums\Accounting\Payment\PaymentStatusEnum::class,
+        \App\Enums\Accounting\Payment\PaymentSubsequentStatusEnum::class,
+        \App\Enums\Accounting\Payment\PaymentTypeEnum::class,
+        \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::class,
+        \App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum::class,
+        \App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStateEnum::class,
+        \App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStatusEnum::class,
+        \App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderEnum::class,
+        \App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderStateEnum::class,
+        \App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum::class,
+        \App\Enums\Accounting\TopUp\TopUpStatusEnum::class,
+        \App\Enums\Accounting\TopUpPaymentApiPoint\TopUpPaymentApiPointStateEnum::class,
+    ];
+
+    $noArgInstanceMethods = ['label', 'stateIcon', 'typeIcon', 'snake'];
+    $noArgStaticMethods   = ['labels', 'capitalizedLabels', 'typeIcon', 'stateIcon', 'getOptions',
+        'getDecreaseReasons', 'getIncreaseReasons', 'shortLabels', 'values'];
+
+    foreach ($enums as $enum) {
+        expect($enum::cases())->not->toBeEmpty();
+
+        foreach ($enum::cases() as $case) {
+            expect($case->value)->toBeString();
+            foreach ($noArgInstanceMethods as $m) {
+                if (method_exists($case, $m) && !(new ReflectionMethod($case, $m))->isStatic()) {
+                    expect($case->$m())->not->toBeNull();
+                }
+            }
+        }
+
+        foreach ($noArgStaticMethods as $m) {
+            if (method_exists($enum, $m) && (new ReflectionMethod($enum, $m))->isStatic()) {
+                expect($enum::$m())->toBeArray();
+            }
+        }
+    }
+
+    expect(\App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::getStaticLabel(
+        \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::OTHER->value
+    ))->toBeString();
+
+    expect(\App\Enums\Accounting\Payment\PaymentStateEnum::count($this->group))
+        ->toHaveKeys(['in_process', 'approving', 'completed', 'cancelled', 'error', 'declined'])
+        ->and(\App\Enums\Accounting\Payment\PaymentStateEnum::count($this->organisation))->toBeArray();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Models: relations execute, info methods return expected shapes
+|--------------------------------------------------------------------------
+*/
+
+test('accounting models: relations resolve on real graph', function () {
+    $shop     = $this->shop;
+    $customer = createCustomer($shop);
+    [, $product] = createProduct($shop);
+
+    $invoice     = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $transaction = StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 2,
+        'gross_amount'    => 200,
+        'net_amount'      => 200,
+    ]);
+
+    $orgPsp         = $this->organisation->orgPaymentServiceProviders()->first();
+    $paymentAccount = StorePaymentAccount::make()->action(
+        $orgPsp,
+        array_merge(PaymentAccount::factory()->definition(), ['type' => PaymentAccountTypeEnum::BANK->value])
+    );
+    $paymentAccountShop = StorePaymentAccountShop::make()->action($paymentAccount, $shop, [
+        'currency_id' => $shop->currency_id,
+        'state'       => PaymentAccountShopStateEnum::ACTIVE,
+    ]);
+
+    $exerciseRelations = function (object $model) {
+        $relationBases = ['BelongsTo', 'HasMany', 'HasOne', 'MorphTo', 'MorphMany', 'MorphOne', 'BelongsToMany', 'MorphToMany'];
+        $ref           = new ReflectionClass($model);
+        $called        = 0;
+        foreach ($ref->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->isStatic() || $method->getNumberOfRequiredParameters() > 0) {
+                continue;
+            }
+            if ($method->getDeclaringClass()->getName() !== $ref->getName()) {
+                continue;
+            }
+            $rt = $method->getReturnType();
+            if (!$rt instanceof ReflectionNamedType || !in_array(class_basename($rt->getName()), $relationBases)) {
+                continue;
+            }
+            expect($model->{$method->getName()}())->toBeInstanceOf(
+                \Illuminate\Database\Eloquent\Relations\Relation::class
+            );
+            $called++;
+        }
+
+        return $called;
+    };
+
+    foreach ([$invoice, $transaction, $paymentAccount, $paymentAccountShop, $orgPsp, $customer->creditTransactions()->getRelated()] as $model) {
+        expect($exerciseRelations($model))->toBeGreaterThan(0);
+    }
+
+    foreach ([
+        new \App\Models\Accounting\Payment(),
+        new \App\Models\Accounting\TopUp(),
+        new \App\Models\Accounting\MitSavedCard(),
+        new \App\Models\Accounting\OrderPaymentApiPoint(),
+        new \App\Models\Accounting\TopUpPaymentApiPoint(),
+        new \App\Models\Accounting\PaymentGatewayLog(),
+        new \App\Models\Accounting\PaymentServiceProvider(),
+        new \App\Models\Accounting\OrgPaymentServiceProviderShop(),
+        new \App\Models\Accounting\InvoiceCategory(),
+        new \App\Models\Accounting\InvoiceCategoryTimeSeries(),
+        new \App\Models\Accounting\InvoiceCategoryTimeSeriesRecord(),
+        new \App\Models\Accounting\IntrastatExportTimeSeries(),
+        new \App\Models\Accounting\IntrastatExportTimeSeriesRecord(),
+        new \App\Models\Accounting\IntrastatImportTimeSeries(),
+        new \App\Models\Accounting\IntrastatImportTimeSeriesRecord(),
+        new \App\Models\Accounting\InvoiceTransactionHasOrgStock(),
+        new \App\Models\Accounting\InvoiceTransactionHasStock(),
+        new \App\Models\Accounting\InvoiceTransactionHasTradeUnit(),
+        new \App\Models\Accounting\InvoiceStats(),
+        new \App\Models\Accounting\OrgPaymentServiceProviderStats(),
+        new \App\Models\Accounting\PaymentAccountStats(),
+        new \App\Models\Accounting\PaymentAccountShopStats(),
+        new \App\Models\Accounting\PaymentServiceProviderStats(),
+    ] as $model) {
+        $exerciseRelations($model);
+    }
+});
+
+test('accounting models: info and searchable methods', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $shop     = $this->shop;
+    $customer = createCustomer($shop);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+    expect($invoice->generateTags())->toBe(['accounting'])
+        ->and($invoice->getRouteKeyName())->toBe('slug')
+        ->and($invoice->searchIndexShouldBeUpdated())->toBeBool()
+        ->and($invoice->toSearchableArray())->toHaveKeys(['id', 'reference', 'type', 'date'])
+        ->and($invoice->getSlugOptions())->toBeInstanceOf(\Spatie\Sluggable\SlugOptions::class);
+
+    $orgPsp        = $this->organisation->orgPaymentServiceProviders()->first();
+    $paymentAccount = $orgPsp->paymentAccounts()->firstOr(
+        fn () => StorePaymentAccount::make()->action(
+            $orgPsp,
+            array_merge(PaymentAccount::factory()->definition(), ['type' => PaymentAccountTypeEnum::BANK->value])
+        )
+    );
+    $modelData = array_merge(Payment::factory()->definition(), [
+        'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS->value,
+        'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED->value,
+        'type'   => \App\Enums\Accounting\Payment\PaymentTypeEnum::PAYMENT->value,
+    ]);
+    $payment   = StorePayment::make()->action(
+        customer: $customer,
+        paymentAccount: $paymentAccount,
+        modelData: $modelData
+    );
+
+    expect($payment->generateTags())->toBe(['accounting'])
+        ->and($payment->searchIndexShouldBeUpdated())->toBeBool()
+        ->and($payment->toSearchableArray())->toHaveKey('id');
+
+    $paymentAccountShop = $paymentAccount->paymentAccountShops()->where('shop_id', $shop->id)->first()
+        ?? StorePaymentAccountShop::make()->action($paymentAccount, $shop, [
+            'currency_id' => $shop->currency_id,
+            'state'       => PaymentAccountShopStateEnum::ACTIVE,
+        ]);
+
+    expect($paymentAccountShop->generateTags())->toBeArray()
+        ->and($paymentAccountShop->getCredentials())->toBeArray()
+        ->and($paymentAccountShop->getCheckoutComCredentials())->toBeArray();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Actions: invoice lifecycle (totals, categorise, updates, transaction)
+|--------------------------------------------------------------------------
+*/
+
+test('invoice lifecycle: totals, categorise, updates', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $shop     = $this->shop;
+    $customer = createCustomer($shop);
+    [, $product] = createProduct($shop);
+
+    $invoice     = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $transaction = StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 3,
+        'gross_amount'    => 300,
+        'net_amount'      => 300,
+    ]);
+
+    $invoice = \App\Actions\Accounting\Invoice\CalculateInvoiceTotals::make()->action($invoice);
+    expect((float) $invoice->net_amount)->toBe(300.0);
+
+    \App\Actions\Accounting\Invoice\CalculateInvoiceTotalsTaxOnly::make()->action($invoice);
+
+    $categorised = \App\Actions\Accounting\Invoice\CategoriseInvoice::run($invoice);
+    expect($categorised)->toBeInstanceOf(Invoice::class);
+
+    $invoice = \App\Actions\Accounting\Invoice\UpdateInvoice::make()->action($invoice, [
+        'footer'      => 'thank you',
+        'fiscal_name' => 'Fiscal Co',
+    ]);
+    expect($invoice->fiscal_name)->toBe('Fiscal Co');
+
+    $newDate = now()->subDays(2);
+    $invoice = \App\Actions\Accounting\Invoice\UpdateInvoiceDate::make()->handle($invoice, [
+        'date' => $newDate,
+    ]);
+    expect($invoice->date->toDateString())->toBe($newDate->toDateString());
+
+    $transaction = \App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction::make()->action($transaction, [
+        'quantity'   => 5,
+        'net_amount' => 500,
+    ]);
+    expect((float) $transaction->net_amount)->toBe(500.0);
+
+    $deleted = \App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction::make()->action($transaction);
+    expect($deleted->exists)->toBeTrue()
+        ->and($invoice->fresh()->invoiceTransactions()->count())->toBe(0);
+});
+
+test('invoice non-strict update overrides amounts', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+    $invoice = \App\Actions\Accounting\Invoice\UpdateInvoice::make()->action($invoice, [
+        'net_amount'   => 111,
+        'total_amount' => 111,
+        'gross_amount' => 111,
+        'tax_amount'   => 0,
+    ], strict: false);
+
+    expect((float) $invoice->net_amount)->toBe(111.0);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Actions: credit transactions increase / decrease
+|--------------------------------------------------------------------------
+*/
+
+test('increase and decrease customer credit', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $increase = \App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount' => 500,
+        'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value,
+        'type'   => CreditTransactionTypeEnum::COMPENSATION->value,
+    ]);
+    expect($increase)->toBeInstanceOf(CreditTransaction::class)
+        ->and($increase->type)->toBe(CreditTransactionTypeEnum::COMPENSATION);
+
+    $decrease = \App\Actions\Accounting\CreditTransaction\DecreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount' => -100,
+        'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::MONEY_BACK->value,
+        'type'   => CreditTransactionTypeEnum::MONEY_BACK->value,
+    ]);
+    expect($decrease)->toBeInstanceOf(CreditTransaction::class)
+        ->and($decrease->type)->toBe(CreditTransactionTypeEnum::MONEY_BACK);
+
+    $customer->refresh();
+    expect($customer->balance)->toBe('400.00');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Actions: MIT saved card store + update
+|--------------------------------------------------------------------------
+*/
+
+test('update mit saved card', function () {
+    // ponytail: StoreMitSavedCard validation targets a non-existent table
+    // ('payment_account_shops' vs real 'payment_account_shop'), so create the
+    // card directly to exercise UpdateMitSavedCard. See bug report.
+    $shop     = $this->shop;
+    $customer = createCustomer($shop);
+
+    $orgPsp         = $this->organisation->orgPaymentServiceProviders()->first();
+    $paymentAccount = $orgPsp->paymentAccounts()->firstOr(
+        fn () => StorePaymentAccount::make()->action(
+            $orgPsp,
+            array_merge(PaymentAccount::factory()->definition(), ['type' => PaymentAccountTypeEnum::BANK->value])
+        )
+    );
+    $paymentAccountShop = $paymentAccount->paymentAccountShops()->where('shop_id', $shop->id)->first()
+        ?? StorePaymentAccountShop::make()->action($paymentAccount, $shop, [
+            'currency_id' => $shop->currency_id,
+            'state'       => PaymentAccountShopStateEnum::ACTIVE,
+        ]);
+
+    $card = $customer->mitSavedCard()->create([
+        'group_id'                => $customer->group_id,
+        'organisation_id'         => $customer->organisation_id,
+        'shop_id'                 => $customer->shop_id,
+        'payment_account_shop_id' => $paymentAccountShop->id,
+        'ulid'                    => Str::ulid(),
+        'state'                   => \App\Enums\Accounting\MitSavedCard\MitSavedCardStateEnum::SUCCESS->value,
+        'token'                   => 'tok_123',
+        'priority'                => 1,
+    ]);
+
+    $card = \App\Actions\Accounting\MitSavedCard\UpdateMitSavedCard::make()->asAction($card, [
+        'last_four_digits' => '4242',
+        'card_type'        => 'visa',
+        'state'            => \App\Enums\Accounting\MitSavedCard\MitSavedCardStateEnum::EXPIRED->value,
+    ]);
+    expect($card->last_four_digits)->toBe('4242')
+        ->and($card->card_type)->toBe('visa');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Actions: payment account type-specific updates
+|--------------------------------------------------------------------------
+*/
+
+test('update payment account by type', function () {
+    $shop   = $this->shop;
+    $orgPsp = $this->organisation->orgPaymentServiceProviders()->first();
+    $account = $orgPsp->paymentAccounts()->firstOr(
+        fn () => StorePaymentAccount::make()->action(
+            $orgPsp,
+            array_merge(PaymentAccount::factory()->definition(), ['type' => PaymentAccountTypeEnum::BANK->value])
+        )
+    );
+
+    $account = \App\Actions\Accounting\PaymentAccount\Types\UpdateBankPaymentAccount::make()->action($account, [
+        'bank_name'         => 'Big Bank',
+        'bank_account_name' => 'Ops',
+    ]);
+    expect(\Illuminate\Support\Arr::get($account->data, 'bank_name'))->toBe('Big Bank');
+
+    $account = \App\Actions\Accounting\PaymentAccount\Types\UpdateCashPaymentAccount::make()->action($account, [
+        'name' => 'Petty Cash',
+    ]);
+    expect($account->name)->toBe('Petty Cash');
+
+    $account = \App\Actions\Accounting\PaymentAccount\Types\UpdateBraintreePaymentAccount::make()->action($account, [
+        'braintree_client_id'     => 'bt_id',
+        'braintree_client_secret' => 'bt_secret',
+    ]);
+    expect(\Illuminate\Support\Arr::get($account->data, 'braintree_client_id'))->toBe('bt_id');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Actions: invoice category delete
+|--------------------------------------------------------------------------
+*/
+
+test('store then delete invoice category', function () {
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Temp Category',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::IN_ORGANISATION,
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 99,
+    ]);
+    expect($invoiceCategory)->toBeInstanceOf(InvoiceCategory::class);
+
+    $deleted = \App\Actions\Accounting\InvoiceCategory\DeleteInvoiceCategory::make()->handle($invoiceCategory);
+    expect(InvoiceCategory::find($invoiceCategory->id))->toBeNull()
+        ->and($deleted)->toBeInstanceOf(InvoiceCategory::class);
+});
+
+/*
+|--------------------------------------------------------------------------
+| UI: organisation-level index & report pages (render, no external calls)
+|--------------------------------------------------------------------------
+*/
+
+test('UI accounting org-level index and report pages render', function () {
+    $org = $this->organisation->slug;
+
+    $routes = [
+        'grp.org.accounting.credit_transactions.index',
+        'grp.org.accounting.invoices-shop',
+        'grp.org.accounting.payments.methods.index',
+        'grp.org.accounting.refunds.index',
+        'grp.org.overview.invoices.index',
+        'grp.org.overview.refunds.index',
+        'grp.org.reports.customer-credit',
+        'grp.org.reports.intrastat.exports',
+        'grp.org.reports.intrastat.imports',
+        'grp.org.reports.montana-invoices',
+        'grp.org.reports.sage-invoices',
+    ];
+
+    foreach ($routes as $routeName) {
+        get(route($routeName, [$org]))->assertOk();
+    }
+});
+
+/*
+|--------------------------------------------------------------------------
+| UI: invoice edit + refund show/index
+|--------------------------------------------------------------------------
+*/
+
+test('UI invoice edit and refund pages render', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $shop     = $this->shop;
+    $customer = createCustomer($shop);
+    [, $product] = createProduct($shop);
+
+    $invoice     = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $transaction = StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 2,
+        'gross_amount'    => 200,
+        'net_amount'      => 200,
+    ]);
+
+    get(route('grp.org.accounting.invoices.edit', [$this->organisation->slug, $invoice->slug]))->assertOk();
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($refund, $transaction, [
+        'net_amount' => $transaction->net_amount,
+    ]);
+
+    get(route('grp.org.accounting.refunds.show', [$this->organisation->slug, $refund->slug]))->assertOk();
+    get(route('grp.org.accounting.invoices.show.refunds.index', [$this->organisation->slug, $invoice->slug]))->assertOk();
+});
+
+/*
+|--------------------------------------------------------------------------
+| UI: payment account customers/shops sub-pages
+|--------------------------------------------------------------------------
+*/
+
+test('UI payment account sub-pages render', function () {
+    $shop   = $this->shop;
+    $orgPsp = $this->organisation->orgPaymentServiceProviders()->first();
+    $account = StorePaymentAccount::make()->action(
+        $orgPsp,
+        array_merge(PaymentAccount::factory()->definition(), ['type' => PaymentAccountTypeEnum::BANK->value])
+    );
+    $paymentAccountShop = StorePaymentAccountShop::make()->action($account, $shop, [
+        'currency_id' => $shop->currency_id,
+        'state'       => PaymentAccountShopStateEnum::ACTIVE,
+    ]);
+
+    $org = $this->organisation->slug;
+
+    get(route('grp.org.accounting.payment-accounts.show.customers.index', [$org, $account->slug]))->assertOk();
+    get(route('grp.org.accounting.payment-accounts.show.shops.index', [$org, $account->slug]))->assertOk();
+    get(route('grp.org.accounting.payment-accounts.show.shops.show', [$org, $account->slug, $paymentAccountShop]))->assertOk();
+    get(route('grp.org.accounting.payment-accounts.show.shops.edit', [$org, $account->slug, $paymentAccountShop]))->assertOk();
+});
+
+/*
+|--------------------------------------------------------------------------
+| UI: top-ups and credit transactions in shop dashboard
+|--------------------------------------------------------------------------
+*/
+
+test('UI shop top-up and credit transaction pages render', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $shop   = $this->shop;
+    $orgPsp = $this->organisation->orgPaymentServiceProviders()->first();
+    $account = $orgPsp->paymentAccounts()->firstOr(
+        fn () => StorePaymentAccount::make()->action(
+            $orgPsp,
+            array_merge(PaymentAccount::factory()->definition(), ['type' => PaymentAccountTypeEnum::BANK->value])
+        )
+    );
+    $customer = createCustomer($shop);
+    $payment  = StorePayment::make()->action(
+        customer: $customer,
+        paymentAccount: $account,
+        modelData: Payment::factory()->definition()
+    );
+    $topUp = StoreTopUp::make()->action($payment, ['amount' => 100, 'reference' => 'UITOP01']);
+
+    $org = $this->organisation->slug;
+
+    get(route('grp.org.shops.show.dashboard.payments.accounting.top_ups.index', [$org, $shop->slug]))->assertOk();
+    get(route('grp.org.shops.show.dashboard.payments.accounting.top_ups.show', [$org, $shop->slug, $topUp]))->assertOk();
+    get(route('grp.org.shops.show.dashboard.payments.accounting.credit_transactions.index', [$org, $shop->slug]))->assertOk();
+    get(route('grp.org.shops.show.dashboard.payments.accounting.dashboard', [$org, $shop->slug]))->assertOk();
+});
+
+/*
+|--------------------------------------------------------------------------
+| UI: group overview + product invoices pages
+|--------------------------------------------------------------------------
+*/
+
+test('UI group overview and product invoice pages render', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $shop     = $this->shop;
+    $customer = createCustomer($shop);
+    [, $product] = createProduct($shop);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 1,
+        'gross_amount'    => 100,
+        'net_amount'      => 100,
+    ]);
+
+    get(route('grp.overview.accounting.invoices.index'))->assertOk();
+    get(route('grp.overview.accounting.refunds.index'))->assertOk();
+    get(route('grp.overview.ordering.transactions.index'))->assertOk();
+
+    get(route('grp.org.shops.show.catalogue.products.current_products.invoices', [
+        $this->organisation->slug, $shop->slug, $product->slug,
+    ]))->assertOk();
+});
+
+/*
+|--------------------------------------------------------------------------
+| UI: fulfilment accounting, statements and standalone invoice pages
+|--------------------------------------------------------------------------
+*/
+
+test('UI fulfilment accounting and invoice pages render', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $fulfilment = createFulfilment($this->organisation);
+    $org        = $fulfilment->organisation->slug;
+
+    $fulfilmentCustomer = \App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer::make()->action(
+        $fulfilment,
+        [
+            'contact_name'    => 'Contact FC',
+            'company_name'    => 'Company FC',
+            'interest'        => ['pallets_storage', 'items_storage'],
+            'contact_address' => \App\Models\Helpers\Address::factory()->definition(),
+        ]
+    );
+
+    $service = \App\Actions\Billables\Service\StoreService::make()->action(
+        $fulfilment->shop,
+        [
+            'price' => 100,
+            'unit'  => 'job',
+            'code'  => 'ACC-SER-01',
+            'name'  => 'Acc Service',
+            'state' => \App\Enums\Billables\Service\ServiceStateEnum::ACTIVE,
+        ]
+    );
+
+    $inProcess = \App\Actions\Accounting\StandaloneFulfilmentInvoice\StoreStandaloneFulfilmentInvoice::make()->action($fulfilmentCustomer, []);
+    \App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\StoreStandaloneFulfilmentInvoiceTransaction::make()
+        ->action($inProcess, $service->historicAsset, ['quantity' => 5]);
+
+    $completed = \App\Actions\Accounting\StandaloneFulfilmentInvoice\StoreStandaloneFulfilmentInvoice::make()->action($fulfilmentCustomer, []);
+    \App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\StoreStandaloneFulfilmentInvoiceTransaction::make()
+        ->action($completed, $service->historicAsset, ['quantity' => 3]);
+    $completed = \App\Actions\Accounting\StandaloneFulfilmentInvoice\CompleteStandaloneFulfilmentInvoice::make()->action($completed);
+
+    $f = $fulfilment->slug;
+
+    // operations / accounting dashboard
+    get(route('grp.org.fulfilments.show.operations.accounting.dashboard', [$org, $f]))->assertOk();
+    get(route('grp.org.fulfilments.show.operations.accounting.customer_balances.index', [$org, $f]))->assertOk();
+    get(route('grp.org.fulfilments.show.operations.accounting.payments.index', [$org, $f]))->assertOk();
+    get(route('grp.org.fulfilments.show.operations.accounting.accounts.index', [$org, $f]))->assertOk();
+
+    // statements
+    get(route('grp.org.fulfilments.show.operations.invoices.all.index', [$org, $f]))->assertOk();
+    get(route('grp.org.fulfilments.show.operations.invoices.deleted_invoices.index', [$org, $f]))->assertOk();
+    get(route('grp.org.fulfilments.show.operations.invoices.paid_invoices.index', [$org, $f]))->assertOk();
+    get(route('grp.org.fulfilments.show.operations.invoices.unpaid_invoices.index', [$org, $f]))->assertOk();
+    get(route('grp.org.fulfilments.show.operations.invoices.refunds.index', [$org, $f]))->assertOk();
+    get(route('grp.org.fulfilments.show.operations.invoices.show', [$org, $f, $completed]))->assertOk();
+
+    // crm customer invoices + standalone in-process
+    get(route('grp.org.fulfilments.show.crm.customers.show.invoices.index', [$org, $f, $fulfilmentCustomer]))->assertOk();
+    get(route('grp.org.fulfilments.show.crm.customers.show.invoices.show', [$org, $f, $fulfilmentCustomer, $completed]))->assertOk();
+    get(route('grp.org.fulfilments.show.crm.customers.show.invoices.in-process.show', [$org, $f, $fulfilmentCustomer, $inProcess]))->assertOk();
+});
+
+/*
+|--------------------------------------------------------------------------
+| UI: refund action endpoints (create / tax / finalise / delete)
+|--------------------------------------------------------------------------
+*/
+
+test('UI refund action endpoints create tax finalise and delete', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $org      = $this->organisation->slug;
+    $shop     = $this->shop;
+    $customer = createCustomer($shop);
+    [, $product] = createProduct($shop);
+
+    $makeInvoiceWithTransaction = function () use ($customer, $product) {
+        $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+            'date'            => now(),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 2,
+            'gross_amount'    => 200,
+            'net_amount'      => 200,
+        ]);
+
+        return $invoice->refresh();
+    };
+
+    // CreateRefund (POST) -> redirects to the referral route's refunds.show
+    $invoiceA = $makeInvoiceWithTransaction();
+    \Pest\Laravel\post(route('grp.models.refund.create', [$invoiceA]), [
+        'referral_route' => [
+            'name'       => 'grp.org.accounting.invoices.show',
+            'parameters' => [$org, $invoiceA->slug],
+        ],
+    ])->assertRedirect();
+    expect($invoiceA->refunds()->count())->toBe(1);
+
+    // CreateTaxRefund (POST)
+    $invoiceB = $makeInvoiceWithTransaction();
+    \Pest\Laravel\post(route('grp.models.refund.create_tax_refund', [$invoiceB]), [
+        'referral_route' => [
+            'name'       => 'grp.org.accounting.invoices.show',
+            'parameters' => [$org, $invoiceB->slug],
+        ],
+    ])->assertRedirect();
+    $taxRefund = $invoiceB->refunds()->first();
+    expect($taxRefund->is_tax_only)->toBeTrue();
+
+    // FinaliseRefund (::action) on the in-process refund of invoice A
+    $refundA      = $invoiceA->refunds()->first();
+    $transactionA = $invoiceA->invoiceTransactions()->first();
+    StoreRefundInvoiceTransaction::make()->action($refundA, $transactionA, [
+        'net_amount' => $transactionA->net_amount,
+    ]);
+    $finalised = \App\Actions\Accounting\Invoice\UI\FinaliseRefund::make()->action($refundA, []);
+    expect($finalised->in_process)->toBeFalse();
+
+    // DeleteRefund (PATCH) on the tax refund of invoice B
+    \Pest\Laravel\patch(route('grp.models.refund.delete', [$taxRefund]), [
+        'deleted_note' => 'test delete',
+    ])->assertRedirect();
+    expect($taxRefund->refresh()->trashed())->toBeTrue();
 });

@@ -12,6 +12,7 @@ import AccordionPanel from 'primevue/accordionpanel';
 import AccordionHeader from 'primevue/accordionheader';
 import AccordionContent from 'primevue/accordioncontent';
 import Multiselect from "@vueform/multiselect"
+import "@vueform/multiselect/themes/default.css"
 import { trans } from 'laravel-vue-i18n';
 import Tag from '@/Components/Tag.vue';
 import PureInput from '@/Components/Pure/PureInput.vue';

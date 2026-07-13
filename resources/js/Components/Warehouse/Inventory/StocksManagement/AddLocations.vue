@@ -132,7 +132,6 @@ defineExpose({
                 </div>
 
                 <Button
-                    v-if="layout.app.environment === 'local'"
                     @click="() => onAddNewLocation()"
                     :disabled="!newLocation"
                     :loading="isLoadingAddNewLocation"
@@ -140,7 +139,6 @@ defineExpose({
                     icon="fal fa-plus"
                     size="lg"
                 />
-                <FontAwesomeIcon v-else :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
             </div>
         </div>
         <!-- Section: buttons -->

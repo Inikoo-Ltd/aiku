@@ -32,19 +32,21 @@ defineProps<{
 }>()
 
 
+const routeParams = route().routeParams
+const routeCurrent = route().current()
 
 function deliveryNoteRoute(deliveryNote: DeliveryNote) {
-	console.log(route().current())
-	switch (route().current()) {
+	console.log(routeCurrent)
+	switch (routeCurrent) {
 		case "shops.show.orders.show":
 			return route("shops.show.orders.show.delivery-notes.show", [
-				route().params["shop"],
-				route().params["order"],
+				routeParams["shop"],
+				routeParams["order"],
 				deliveryNote.slug,
 			])
 		case "orders.show":
 			return route("orders.show,delivery-notes.show", [
-				route().params["order"],
+				routeParams["order"],
 				deliveryNote.slug,
 			])
 		case "shops.show.delivery-notes.index":
@@ -54,41 +56,41 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 			])
 		case "grp.org.warehouses.show.dispatching.delivery-notes":
 			return route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
-				route().params["organisation"],
-				route().params["warehouse"],
+				routeParams["organisation"],
+				routeParams["warehouse"],
 				deliveryNote.slug,
 			])
 		case "grp.org.shops.show.ordering.delivery-notes.index":
 			return route("grp.org.shops.show.ordering.delivery-notes.show", [
-				route().params["organisation"],
-				route().params["shop"],
+				routeParams["organisation"],
+				routeParams["shop"],
 				deliveryNote.slug,
 			])
 		case "grp.org.shops.show.ordering.orders.index":
 			return route("grp.org.shops.show.ordering.show.delivery-note.show", [
-				route().params["organisation"],
-				route().params["shop"],
+				routeParams["organisation"],
+				routeParams["shop"],
 				deliveryNote.slug,
 			])
 		case "grp.org.shops.show.crm.customers.show.delivery_notes.index":
 			return route("grp.org.shops.show.crm.customers.show.delivery_notes.show", [
-				route().params["organisation"],
-				route().params["shop"],
-				route().params["customer"],
+				routeParams["organisation"],
+				routeParams["shop"],
+				routeParams["customer"],
 				deliveryNote.slug,
 			])
 		case "grp.org.shops.show.crm.customers.show.replacements.index":
 			return route("grp.org.shops.show.crm.customers.show.replacements.show", [
-				route().params["organisation"],
-				route().params["shop"],
-				route().params["customer"],
+				routeParams["organisation"],
+				routeParams["shop"],
+				routeParams["customer"],
 				deliveryNote.slug,
 			])
 		case "grp.org.shops.show.crm.customers.show.orders.show":
 			return route("grp.org.shops.show.crm.customers.show.delivery_notes.show", [
-				route().params["organisation"],
-				route().params["shop"],
-				route().params["customer"],
+				routeParams["organisation"],
+				routeParams["shop"],
+				routeParams["customer"],
 				deliveryNote.slug,
 			])
 		case "grp.overview.ordering.delivery_notes.index":
@@ -104,26 +106,26 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 }
 
 function returnNoteRoute(returnDeliveryNote) {
-	switch(route().current()) {
+	switch(routeCurrent) {
 		case "grp.org.warehouses.show.incoming.return_delivery_notes.index":
 			return route('grp.org.warehouses.show.incoming.return_delivery_notes.show', [
-				route().params["organisation"],
-				route().params["warehouse"],
+				routeParams["organisation"],
+				routeParams["warehouse"],
 				returnDeliveryNote.slug,
 			])
 		case "grp.org.shops.show.ordering.backlog":
 		case "grp.org.shops.show.ordering.return_delivery_notes.index":
 			return route("grp.org.shops.show.ordering.return_delivery_notes.show", [
-				route().params["organisation"],
-				route().params["shop"],
+				routeParams["organisation"],
+				routeParams["shop"],
 				returnDeliveryNote.slug,
 
 			])
 		case "grp.org.shops.show.crm.customers.show.return_delivery_notes.index":
 			return route("grp.org.shops.show.crm.customers.show.return_delivery_notes.show", [
-				route().params["organisation"],
-				route().params["shop"],
-				route().params["customer"],
+				routeParams["organisation"],
+				routeParams["shop"],
+				routeParams["customer"],
 				returnDeliveryNote.slug,
 
 			])
@@ -138,7 +140,7 @@ function customerRoute(deliveryNote: DeliveryNote) {
 		return "#"
 	}
 
-	switch (route().current()) {
+	switch (routeCurrent) {
 		case "grp.overview.ordering.delivery_notes.index":
 			return route("grp.org.shops.show.crm.customers.show", [
 				deliveryNote.organisation_slug,
@@ -147,13 +149,13 @@ function customerRoute(deliveryNote: DeliveryNote) {
 			])
 		case "grp.org.warehouses.show.dispatching.delivery-notes":
 			return route("grp.org.shops.show.crm.customers.show", [
-				route().params["organisation"],
+				routeParams["organisation"],
 				deliveryNote.shop_slug,
 				deliveryNote.customer_slug,
 			])
 		default:
 			return route("grp.org.shops.show.crm.customers.show", [
-				route().params["organisation"],
+				routeParams["organisation"],
 				deliveryNote.shop_slug,
 				deliveryNote.customer_slug,
 			])

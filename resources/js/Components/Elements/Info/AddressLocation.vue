@@ -7,10 +7,12 @@
 <script setup lang="ts">
 import { capitalize } from "@/Composables/capitalize"
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     data: string[]
     use_flag?: boolean
-}>()
+}>(), {
+    use_flag: true
+})
 
 const countryCode = props.data?.[0]
 const countryName = props.data?.[1]

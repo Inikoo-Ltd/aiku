@@ -56,7 +56,7 @@ const spaceBetween = computed(() => {
   return 24
 })
 
-const showNavigation = computed(() => allItems.value.length > Math.ceil(perRow.value))
+const showNavigation = computed(() => allItems.value.length > Math.ceil(props.fieldValue?.settings?.per_row?.tablet ?? 4))
 
 const wrapperSpacingClass = computed(() => {
   if (props.screenType === 'mobile') return 'px-4'

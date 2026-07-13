@@ -25,17 +25,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $order_id
  * @property int $customer_id
  * @property \Illuminate\Support\Carbon $checkout_visited_at
- * @property string $total_amount
- * @property string $state
+ * @property numeric $total_amount
+ * @property CheckoutAbandonmentStateEnum $state
  * @property \Illuminate\Support\Carbon|null $recovered_at
  * @property \Illuminate\Support\Carbon|null $email_sent_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Customer|null $customer
  * @property-read Group|null $group
+ * @property-read \App\Models\Ordering\Order|null $order
  * @property-read Organisation $organisation
  * @property-read Shop|null $shop
- * @property-read Customer|null $customer
- * @property-read Order $order
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CheckoutAbandonment newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CheckoutAbandonment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CheckoutAbandonment query()

@@ -470,6 +470,13 @@ const convertRemToPx = (remString) => {
     return isNaN(remValue) ? '' : Math.round(remValue * 16).toString()
 }
 
+const dropdownDirection = ref<Record<string, 'up' | 'down'>>({})
+const updateDropdownDirection = (event: MouseEvent, name: string, dropdownHeight: number) => {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const spaceBelow = window.innerHeight - rect.bottom
+    dropdownDirection.value[name] = spaceBelow < dropdownHeight && rect.top > spaceBelow ? 'up' : 'down'
+}
+
 const showBubble = ref(true)
 const userCloseBubble = ref(false)
 const lastSelection = ref<{ from: number; to: number } | null>(null)
@@ -544,7 +551,7 @@ onMounted(async () => {
                 ref="_bubbleMenu"  
                 :editor="editorInstance"
                 v-if="editorInstance && !showDialog"
-                class="w-full max-w-[56vw] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]"
+                class="w-max max-w-[92vw]"
             >
 
                 <div class="bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate">
@@ -558,7 +565,7 @@ onMounted(async () => {
 
                     <!-- 1st row -->
                     <section id="tiptap-toolbar"
-                        class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-0 overflow-x-auto sm:overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
+                        class="flex flex-wrap items-center gap-2 sm:gap-0 overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
                         <TiptapToolbarGroup>
                             <TiptapToolbarButton v-if="toogle.includes('undo')" label="Undo"
                                 @click="editorInstance?.chain().focus().undo().run()"
@@ -602,7 +609,7 @@ onMounted(async () => {
                                 'inline-flex h-8 shrink-0 flex-row items-center justify-center rounded-md disabled:bg-transparent disabled:text-gray-300',
                                 'text-gray-600 hover:bg-blue-50',
                             ]" type="button" v-tooltip="'font size'" :aria-label="'font size'">
-                                <div class="group relative">
+                                <div class="group relative" @mouseenter="updateDropdownDirection($event, 'fontSize', 192)">
                                     <!-- Trigger Button -->
                                     <div
                                         class="text-sm py-1 px-2 cursor-pointer hover:border-gray-400 flex items-center justify-between transition h-8">
@@ -626,7 +633,8 @@ onMounted(async () => {
 
                                     <!-- Dropdown -->
                                     <div
-                                        class="w-min h-48 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
+                                        :class="dropdownDirection['fontSize'] === 'up' ? 'bottom-full' : 'top-full'"
+                                        class="w-min h-48 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-50">
                                         <div v-for="fontsize in ['8', '9', '12', '14', '16', '18', '20', '24', '28', '36', '44', '52', '64']"
                                             :key="fontsize"
                                             class="px-4 py-2 text-left text-sm cursor-pointer hover:bg-gray-100 flex justify-between items-center"
@@ -785,7 +793,7 @@ onMounted(async () => {
 
                     <!-- 2nd row -->
                     <section  id="tiptap-toolbar"
-                        class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-0 overflow-x-auto sm:overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
+                        class="flex flex-wrap items-center gap-2 sm:gap-0 overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
                         <Select v-if="toogle.includes('query')" @change="(e) => setVariabel(e.value.value)"
                             :options="irisVariable" optionLabel="label" size="small"
                             :placeholder="trans('Select a variable to put')" class="w-full md:w-56 max-w-56 mr-2" />
@@ -795,7 +803,7 @@ onMounted(async () => {
                                 'inline-flex h-8 shrink-0 flex-row items-center justify-center rounded-md disabled:bg-transparent disabled:text-gray-300',
                                 'text-gray-600 hover:bg-blue-50',
                             ]" type="button" v-tooltip="'font Family'" :aria-label="'font family'">
-                                <div class="group relative">
+                                <div class="group relative" @mouseenter="updateDropdownDirection($event, 'fontFamily', 224)">
                                     <div
                                         class="text-sm py-1 px-2 cursor-pointer hover:border-gray-400 flex items-center justify-between transition h-8 bg-white border rounded">
                                         <div v-if="!editorInstance?.getAttributes('textStyle').fontFamily"
@@ -811,7 +819,8 @@ onMounted(async () => {
                                             aria-hidden="true" />
                                     </div>
                                     <div
-                                        class="w-min h-56 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-[1]">
+                                        :class="dropdownDirection['fontFamily'] === 'up' ? 'bottom-full' : 'top-full'"
+                                        class="w-min h-56 overflow-y-auto text-black cursor-pointer overflow-hidden hidden group-hover:block absolute left-0 right-0 border border-gray-500 rounded bg-white z-50">
                                         <div v-for="font in useFontFamilyList" :key="font.value"
                                             class="px-4 py-2 text-left text-sm cursor-pointer hover:bg-gray-100"
                                             @click="editorInstance?.chain().focus().setFontFamily(font.value).run()">
@@ -1055,7 +1064,7 @@ onMounted(async () => {
 
 :deep(.tippy-box) {
     min-width: 10px !important;
-    max-width: max-content !important;
+    max-width: 92vw !important;
     background-color: transparent
 }
 

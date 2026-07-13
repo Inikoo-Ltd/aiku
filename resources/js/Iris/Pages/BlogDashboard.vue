@@ -45,7 +45,7 @@ defineProps<{
                         </span>
 
                         <div class="mt-auto">
-                            <a :href="post.url ? post.url : '#' " class="inline-flex items-center text-sm font-medium text-blue-600">
+                            <a :href="post.url ? post.url : '#' " :aria-label="trans('Read more') + ': ' + post.title" class="inline-flex items-center text-sm font-medium text-blue-600">
                                 {{ trans("Read more") }} →
                             </a>
                         </div>

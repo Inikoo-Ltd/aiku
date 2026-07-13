@@ -11,7 +11,11 @@ import { faStarHalfAlt } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
-import { getProductsRenderDropshippingComponent } from "@/Iris/Composables/getIrisComponents"
+import ProductCardDs1 from "@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue"
+
+const productCardComponents: Record<string, any> = {
+    "products-1": ProductCardDs1,
+}
 import axios from "axios"
 
 library.add(faStarHalfAlt, faQuestionCircle)
@@ -192,7 +196,7 @@ const onUnselectBackInStock = async (product: ProductResource) => {
 
 <template>
     <component 
-        :is="getProductsRenderDropshippingComponent(code)" 
+        :is="productCardComponents[code] ?? ProductCardDs1" 
         :product="product"
         :buttonStyle="buttonStyle"
         :buttonStyleLogin="buttonStyleLogin"

@@ -9,7 +9,6 @@ import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
 import { set } from "lodash-es"
 import { router } from "@inertiajs/vue3"
-import * as Sentry from "@sentry/vue"
 
 const props = defineProps<{
   data: {
@@ -83,17 +82,19 @@ onErrorCaptured((error, _instance, info) => {
         error
     );
 
-    Sentry.captureException(error, {
-        tags: {
-            area: "iris-header",
-            header_block: blockCode,
-        },
-        contexts: {
-            vue: {
-                lifecycleHook: info,
-                headerBlock: blockCode,
+    import("@sentry/vue").then((Sentry) => {
+        Sentry.captureException(error, {
+            tags: {
+                area: "iris-header",
+                header_block: blockCode,
             },
-        },
+            contexts: {
+                vue: {
+                    lifecycleHook: info,
+                    headerBlock: blockCode,
+                },
+            },
+        });
     });
 
     return false;

@@ -8,9 +8,9 @@
 
 namespace App\Actions\SysAdmin\Group\Seeders;
 
-use App\Actions\Analytics\AikuScopedSection\StoreAikuScopedSection;
-use App\Actions\Analytics\AikuScopedSection\UpdateAikuScopedSection;
 use App\Actions\GrpAction;
+use App\Actions\SysAdmin\AikuScopedSection\StoreAikuScopedSection;
+use App\Actions\SysAdmin\AikuScopedSection\UpdateAikuScopedSection;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -68,10 +68,10 @@ class SeedAikuScopedSections extends GrpAction
     {
         foreach (AikuSectionEnum::cases() as $case) {
             $scope = class_basename($model);
-            if ($scope == 'Organisation' and $model->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
+            if ($scope == 'Organisation' && $model->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
                 $scope = 'DigitalAgency';
             }
-            if ($scope == 'CustomerClient') { // limit scope for dropshipping
+            if ($scope == 'CustomerClient') { // limit scope for drop-shipping
                 $scope = 'Dropshipping';
                 data_set($model, 'slug', $model->shop->slug);
             }

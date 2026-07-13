@@ -75,7 +75,7 @@ const layout: any = inject("layout", {})
 						<!-- <video class="w-full h-auto" controls :src="fieldValue?.video?.video_setup?.source"
 							v-bind="fieldValue.video.video_setup.attributes"
 							:style="getStyles(fieldValue.video.video_setup?.properties, screenType)"></video> -->
-								<iframe class="w-full aspect-video" :src="fieldValue?.video?.video_setup?.source" frameborder="0" allowfullscreen />
+								<iframe class="w-full aspect-video" :title="fieldValue?.video?.video_setup?.title || ctrans('Video')" :src="fieldValue?.video?.video_setup?.source" frameborder="0" allowfullscreen />
 					</template>
 
 					<template

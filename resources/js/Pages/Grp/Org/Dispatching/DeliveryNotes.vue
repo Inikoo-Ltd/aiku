@@ -87,7 +87,7 @@ const isHidden = computed(() => {
   <PageHeading :data="pageHead">
     <template #other>
         <Button
-        v-if="!isHidden"
+        v-if="!isHidden && todo"
         type="create"
         :label="trans('Picking session') + ' ('+ selectedDeliveryNotes.length + ')'"
         :loading="loading"

@@ -81,7 +81,7 @@ class ShowLocation extends OrgAction
         return Inertia::render(
             'Org/Warehouse/Location',
             [
-                'title'       => __('Location'),
+                'title'       => __('Location') . ' ' . $location->code,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -95,7 +95,7 @@ class ShowLocation extends OrgAction
                         'title' => __('Locations'),
                         'icon'  => 'fal fa-inventory'
                     ],
-                    'model'   => __('location'),
+                    'model'   => __('Location'),
                     'title'   => $location->slug,
                     'actions' => [
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
@@ -106,6 +106,7 @@ class ShowLocation extends OrgAction
                     'navigation' => LocationTabsEnum::navigation()
 
                 ],
+                'location_id' => $location->id,
 
                 LocationTabsEnum::SHOWCASE->value => $this->tab == LocationTabsEnum::SHOWCASE->value ?
                     fn () => GetLocationShowcase::run($location)

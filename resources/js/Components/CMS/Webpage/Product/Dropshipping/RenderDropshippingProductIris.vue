@@ -7,7 +7,11 @@ import { ref, inject, onMounted, onBeforeUnmount, computed, watch } from "vue"
 import axios from "axios"
 
 import { Image as ImageTS } from "@/types/Image"
-import { getProductRenderDropshippingComponent } from "@/Iris/Composables/getIrisComponents"
+import ProductDsIris1 from "@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue"
+
+const productPageComponents: Record<string, any> = {
+    "product-1": ProductDsIris1,
+}
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import { useProductStructuredData } from "@/Iris/Composables/useProductStructuredData"
 import { set } from "lodash-es"
@@ -336,7 +340,7 @@ onBeforeUnmount(() => {
 <template>
   <component
     :key="product.code"
-    :is="getProductRenderDropshippingComponent(code)"
+    :is="productPageComponents[code]"
     :fieldValue="fieldValue"
     :webpageData="webpageData"
     :blockData="blockData"

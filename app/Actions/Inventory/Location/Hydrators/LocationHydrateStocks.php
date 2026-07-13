@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\Location\Hydrators;
 
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Models\Inventory\Location;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -33,10 +34,13 @@ class LocationHydrateStocks implements ShouldBeUnique
 
 
         $stats = [
-            'number_org_stock_slots' => $location->locationOrgStocks()->count()
+            'number_org_stock_slots'   => $location->locationOrgStocks()->count(),
+            'number_empty_stock_slots' => $location->locationOrgStocks()->where('quantity', 0)->count()
         ];
 
         $location->stats()->update($stats);
+
+        WarehouseHydrateLocations::dispatch($location->warehouse);
     }
 
 }

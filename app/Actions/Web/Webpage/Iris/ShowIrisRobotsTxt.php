@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Web\Website\SaveWebsiteRobotsTxt;
 use App\Models\Web\Website;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
@@ -22,10 +23,11 @@ class ShowIrisRobotsTxt
     public function getRobotText(Website $website): string
     {
         $filePath = "robots/robots_$website->id.txt";
-        if (Storage::disk('local')->exists($filePath)) {
-            return Storage::disk('local')->get($filePath);
+        if (!Storage::disk('local')->exists($filePath)) {
+            SaveWebsiteRobotsTxt::run($website);
         }
-        return '';
+
+        return Storage::disk('local')->get($filePath);
     }
 
     public function asController(ActionRequest $request): Response
@@ -33,21 +35,8 @@ class ShowIrisRobotsTxt
         /** @var Website $website */
         $website = $request->input('website');
 
-        $filePath = "robots/robots_$website->id.txt";
-
-        if (!Storage::disk('local')->exists($filePath)) {
-            return response(
-                'User-agent: *',
-                200,
-                [
-                    'Content-Type'  => 'text/plain; charset=UTF-8',
-                    'Cache-Control' => 'public, max-age=3600',
-                ]
-            );
-        }
-
         return response(
-            Storage::disk('local')->get($filePath),
+            $this->getRobotText($website),
             200,
             [
                 'Content-Type'  => 'text/plain; charset=UTF-8',

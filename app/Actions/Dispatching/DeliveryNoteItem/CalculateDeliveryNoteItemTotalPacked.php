@@ -27,7 +27,9 @@ class CalculateDeliveryNoteItemTotalPacked extends OrgAction
         $totalPacked = $deliveryNoteItem->packings()->sum('quantity');
         $state = $deliveryNoteItem->state;
 
-        if ($totalPacked == $deliveryNoteItem->quantity_picked) {
+        // packings.quantity is 3 decimals, quantity_picked is 6 decimals
+        // so a strict == never matches truncated fractional picks (e.g. 1/3), resulting the item state never updated.
+        if (round($totalPacked, 3) >= round($deliveryNoteItem->quantity_picked, 3)) {
             $state = DeliveryNoteItemStateEnum::PACKED;
         }
 

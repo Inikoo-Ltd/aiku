@@ -28,9 +28,7 @@ use App\Actions\Iris\Reviews\ShowIrisProductReview;
 use App\Actions\Iris\Reviews\ShowIrisReviews;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
-// Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
-Route::get('hello_robot', ShowIrisRobotsTxt::class)->name('iris_robots_a');
-Route::get('hello_robot.txt', ShowIrisRobotsTxt::class)->name('iris_robots_b');
+Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
 
 Route::get('{path}', function () {
     return redirect('/image_not_found.png');

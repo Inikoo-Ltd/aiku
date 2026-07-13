@@ -50,6 +50,7 @@ use Illuminate\Foundation\Testing\TestCase;
 uses(TestCase::class)->in('Feature');
 uses(TestCase::class)->in('Unit');
 uses(TestCase::class)->group('integration')->in('Integration');
+uses(TestCase::class)->group('browser')->in('Browser');
 
 function loadDB(): void
 {

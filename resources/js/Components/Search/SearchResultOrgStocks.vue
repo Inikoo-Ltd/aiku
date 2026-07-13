@@ -91,16 +91,16 @@ const loadingId = ref<number | null>(null)
                         @start="() => { model = false; loadingId = orgStock.id }"
                         @finish="() => loadingId = null"
                     >
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm font-semibold">{{ orgStock.name }}</p>
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-semibold truncate min-w-0">{{ orgStock.name }}</p>
                             <span
-                                class="text-[10px] px-2 py-0.5 rounded-full capitalize"
+                                class="shrink-0 text-[10px] px-2 py-0.5 rounded-full capitalize"
                                 :class="orgStock.state === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'"
                             >
                                 {{ orgStock.state }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-400 mt-2">{{ ctrans("Code") }}: {{ orgStock.code }}</p>
+                        <p class="text-xs text-gray-400 mt-2 truncate">{{ ctrans("Code") }}: {{ orgStock.code }}</p>
                     </Link>
                 </div>
                 <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">
@@ -115,16 +115,16 @@ const loadingId = ref<number | null>(null)
                         :key="family.id"
                         class="block p-4 rounded-md border border-transparent bg-slate-50 mb-3"
                     >
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm font-semibold">{{ family.name }}</p>
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-semibold truncate min-w-0">{{ family.name }}</p>
                             <span
-                                class="text-[10px] px-2 py-0.5 rounded-full capitalize"
+                                class="shrink-0 text-[10px] px-2 py-0.5 rounded-full capitalize"
                                 :class="family.state === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'"
                             >
                                 {{ family.state }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-400 mt-2">{{ ctrans("Code") }}: {{ family.code }}</p>
+                        <p class="text-xs text-gray-400 mt-2 truncate">{{ ctrans("Code") }}: {{ family.code }}</p>
                     </div>
                 </div>
                 <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">
