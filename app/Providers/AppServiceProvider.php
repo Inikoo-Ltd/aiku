@@ -150,7 +150,6 @@ class AppServiceProvider extends ServiceProvider
                 'Service'                          => 'App\Models\Billables\Service',
 
                 // CRM
-                'Appointment'                      => 'App\Models\CRM\Appointment',
                 'Customer'                         => 'App\Models\CRM\Customer',
                 'CustomerNote'                     => 'App\Models\CRM\CustomerNote',
                 'Favourite'                        => 'App\Models\CRM\Favourite',

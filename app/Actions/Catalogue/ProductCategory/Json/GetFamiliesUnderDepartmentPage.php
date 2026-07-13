@@ -13,7 +13,7 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Http\Resources\Web\WebBlockFamilyResourceForDepartmentWebpage;
+use App\Http\Resources\Web\FamiliesInDepartmentWebpageResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -108,6 +108,6 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
 
     public function jsonResponse(LengthAwarePaginator $familyList): AnonymousResourceCollection
     {
-        return WebBlockFamilyResourceForDepartmentWebpage::collection($familyList);
+        return FamiliesInDepartmentWebpageResource::collection($familyList);
     }
 }

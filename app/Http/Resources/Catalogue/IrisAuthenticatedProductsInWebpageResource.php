@@ -11,6 +11,7 @@ namespace App\Http\Resources\Catalogue;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Traits\HasCardWebImages;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use Illuminate\Support\Arr;
 
@@ -52,6 +53,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
     use HasPriceMetrics;
+    use HasCardWebImages;
 
 
     public function toArray($request): array
@@ -114,7 +116,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'unit'                       => $this->unit,
             'url'                        => $this->canonical_url,
             'top_seller'                 => $this->top_seller,
-            'web_images'                 => $this->web_images,
+            'web_images'                 => $this->getCardWebImages($this->web_images),
             'transaction_id'             => $this->transaction_id ?? null,
             'quantity_ordered'           => (int)$this->quantity_ordered ?? 0,
             'quantity_ordered_new'       => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend

@@ -21,15 +21,10 @@ use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use App\Actions\Audits\DispatchSimpleAudit;
 
 class StorePicking extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
-
     protected DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
 
@@ -51,6 +46,10 @@ class StorePicking extends OrgAction
         /** @var Picking $picking */
         $picking = $deliveryNoteItem->pickings()->create($modelData);
         $picking->refresh();
+
+        if (app()->environment('production')) {
+            SavePickingInAurora::dispatch($picking);
+        }
 
 
         StoreOrgStockMovement::dispatch(

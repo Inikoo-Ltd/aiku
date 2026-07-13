@@ -7,7 +7,6 @@ import Image from "@common/Components/Image.vue"
 import { inject, ref, onMounted } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
-import OverlayBadge from 'primevue/overlaybadge';
 import { faBaby, faShoppingCart as falShoppingCart, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
 import {
     faBackpack,
@@ -140,7 +139,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
 
                 <!-- Logged In -->
                 <template v-else>
-                    <OverlayBadge v-if="layout.retina?.type == 'b2b'"  :value="layout?.iris_variables?.cart_count" size="small">
+                    <div v-if="layout.retina?.type == 'b2b'" class="relative inline-flex">
                         <LinkIris href="/app/basket" class="px-1">
                             <FontAwesomeIcon
                                 icon="fal fa-shopping-cart"
@@ -150,7 +149,11 @@ const getStylesRemoveFontSize = (properties, screenType) => {
                                 class="text-3xl"
                             />
                         </LinkIris>
-                    </OverlayBadge>
+                        <span
+                            v-if="layout?.iris_variables?.cart_count"
+                            class="absolute -top-1 -right-0.5 min-w-[1rem] h-4 px-1 rounded-full bg-gray-700 text-white text-[10px] leading-none flex items-center justify-center"
+                        >{{ layout?.iris_variables?.cart_count }}</span>
+                    </div>
 
                     <LinkIris href="/app/dashboard" class="px-1">
                         <FontAwesomeIcon

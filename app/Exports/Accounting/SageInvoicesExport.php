@@ -15,8 +15,8 @@ class SageInvoicesExport implements FromQuery, WithMapping, WithHeadings, Should
 {
     public function __construct(
         protected Organisation $parent,
-        protected string $startDate,
-        protected string $endDate,
+        protected ?string $startDate = null,
+        protected ?string $endDate = null,
     ) {
     }
 
@@ -26,6 +26,7 @@ class SageInvoicesExport implements FromQuery, WithMapping, WithHeadings, Should
             ->with([
                 'customer',
                 'taxCategory',
+                'order',
             ])
             ->where('in_process', false)
             ->where('organisation_id', $this->parent->id);

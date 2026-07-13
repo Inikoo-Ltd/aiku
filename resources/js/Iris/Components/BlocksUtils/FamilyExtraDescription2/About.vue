@@ -195,7 +195,7 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.contai
                 h-full
             ">
                     <template v-if="hasImage(displayImages[0])">
-                        <Image :src="displayImages[0]?.original" :image-cover="true" class="w-full h-full object-cover"
+                        <Image :src="displayImages[0]?.original" :srcset="displayImages[0]?.srcset" sizes="(min-width: 1024px) 40vw, 90vw" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 
@@ -219,7 +219,7 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.contai
                     <!-- TOP RIGHT -->
                     <div class="overflow-hidden rounded-[8px] h-full">
                         <template v-if="hasImage(displayImages[1])">
-                            <Image :src="displayImages[1]?.original" :image-cover="true"
+                            <Image :src="displayImages[1]?.original" :srcset="displayImages[1]?.srcset" sizes="(min-width: 1024px) 20vw, 45vw" :image-cover="true"
                                 class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
                         </template>
 
@@ -231,7 +231,7 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.contai
                     <!-- BOTTOM RIGHT -->
                     <div class="overflow-hidden rounded-[8px] h-full">
                         <template v-if="hasImage(displayImages[2])">
-                            <Image :src="displayImages[2]?.original" :image-cover="true"
+                            <Image :src="displayImages[2]?.original" :srcset="displayImages[2]?.srcset" sizes="(min-width: 1024px) 20vw, 45vw" :image-cover="true"
                                 class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
                         </template>
 
@@ -257,7 +257,7 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.contai
                 2xl:h-[260px]
             ">
                     <template v-if="hasImage(displayImages[3])">
-                        <Image :src="displayImages[3]?.original" :image-cover="true" class="w-full h-full object-cover"
+                        <Image :src="displayImages[3]?.original" :srcset="displayImages[3]?.srcset" sizes="(min-width: 1024px) 20vw, 45vw" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 

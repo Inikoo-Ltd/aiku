@@ -191,7 +191,7 @@ onMounted(() => {
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-iris-2-ecom'+indexBlock"  component="product-iris-2-ecom"
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'product-iris-2-ecom'+indexBlock"  component="product-iris-2-ecom"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -506,7 +506,7 @@ onMounted(() => {
 
 
     <!-- ================= MOBILE ================= -->
-    <div v-if="screenType === 'mobile'" class="bg-white">
+    <div class="sm:hidden bg-white">
 
         <!-- IMAGES -->
         <Product2Image :images="validImages" :video="videoSetup?.url" />

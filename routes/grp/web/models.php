@@ -69,6 +69,7 @@ use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
@@ -107,6 +108,9 @@ use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
+use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
@@ -501,6 +505,15 @@ Route::patch('credit-transaction/{customer:id}/increase', IncreaseCreditTransact
 Route::patch('credit-transaction/{customer:id}/decrease', DecreaseCreditTransactionCustomer::class)->name('credit_transaction.decrease')->withoutScopedBindings();
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
+
+Route::prefix('customer/{customer:id}/upcoming-transactions')->name('customer.upcoming_transactions.')->group(function () {
+    Route::post('', StoreUpcomingTransaction::class)->name('store')->withoutScopedBindings();
+});
+
+Route::prefix('upcoming-transaction/{upcomingTransaction:id}')->name('upcoming_transaction.')->group(function () {
+    Route::patch('', UpdateUpcomingTransaction::class)->name('update');
+    Route::delete('', DeleteUpcomingTransaction::class)->name('delete');
+});
 
 Route::patch('master-product-category/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product_category.update')->withoutScopedBindings();
 Route::post('master-product-category/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_category_image.upload')->withoutScopedBindings();
@@ -1301,6 +1314,7 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
+Route::patch('variant/{variant:id}', UpdateVariant::class)->name('variant.update');
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
 Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');

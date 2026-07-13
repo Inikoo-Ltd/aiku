@@ -5,6 +5,9 @@
 * Copyright: 2026
 -->
 
+<!-- Similar to PickingLocationModal.vue -->
+
+
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -12,11 +15,13 @@ import { faInventory } from "@fal"
 import { RadioButton } from "primevue"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { RouteParams } from "@/types/route-params"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faInventory)
 
 defineProps<{
     item: {
+        id: number
         org_stock_code: string
         locations: {
             location_code: string
@@ -44,11 +49,6 @@ const generateLocationRoute = (location: any): string => {
 
 <template>
     <div>
-        <div class="text-center font-semibold mb-4 text-2xl">
-            {{ ctrans('Location list for') }} {{ item?.org_stock_code }}
-        </div>
-
-        
         <div class="rounded p-1 grid grid-cols-2 lg:grid-cols-3 gap-3">
             <div
                 v-for="location in item?.locations"

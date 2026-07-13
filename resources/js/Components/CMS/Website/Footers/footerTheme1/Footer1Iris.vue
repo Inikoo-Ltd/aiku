@@ -350,12 +350,10 @@ const getValueColumn4Transleted = (value: string) => {
 
                     <div class="flex flex-col items-center gap-y-6 mt-4">
                         <div v-for="(payment,index) of modelValue.paymentData.data" :key="payment.key">
-                            <img 
-                                :src="payment?.image" 
+                            <img
+                                :src="payment?.image"
                                 :alt="payment?.alt || 'payment' + index"
                                 class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain"
-                                :srcset="`${payment.image} 1x, ${payment.image} 2x`"
-                                sizes="(max-width: 768px) 50px, 100px"
                                 loading="lazy"
                             />
                         </div>

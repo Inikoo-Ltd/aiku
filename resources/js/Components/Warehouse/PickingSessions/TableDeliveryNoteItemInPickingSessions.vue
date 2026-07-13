@@ -11,10 +11,10 @@ import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import Icon from "@/Components/Icon.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
-import { get, set } from "lodash-es"
+import { get, intersection, set } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
-import { ref, onMounted, reactive, inject } from "vue"
+import { ref, onMounted, reactive, inject, onUnmounted } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes } from "@fal"
 import { faSkull, faStickyNote, faPeopleArrows} from "@fas"
@@ -23,10 +23,10 @@ import axios from "axios"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Modal from "@/Components/Utils/Modal.vue"
-import { RadioButton } from "primevue"
+import { RadioButton, Tab, Dialog } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
-import { faPencil } from "@far"
+import { faAnalytics, faPencil } from "@far"
 import MiniDeliveryNote from "@/Components/MiniDeliveryNote.vue"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { DeliveryNoteItem } from "@/types/delivery-note-item"
@@ -34,6 +34,7 @@ import { RouteParams } from "@/types/route-params"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import SelectPickingLocation from "../DeliveryNotes/SelectPickingLocation.vue"
 import LabelPickingLocation from "../DeliveryNotes/LabelPickingLocation.vue"
+import HelpArticles from "@/Components/Utils/HelpArticles.vue"
 
 library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows)
 
@@ -199,6 +200,95 @@ const showReturnStoredItemsRoute = (item: any) => {
 
     return returnStoredItemsRouteCache.get(cacheKey)!
 }
+
+let socketChannel: any = null
+
+const initSocketListener = () => {
+    const socketEvent = `grp.${route().params['organisation']}.stock_movement`;
+
+    if (props.pickingSession.state == 'packing_finished') return; // No need initiate listener if packing finished
+
+    socketChannel = window.Echo.private(socketEvent).listen(".stock_update", async (eventData: any) => {
+        
+        if (!['handling', 'handling_blocked'].includes(props.pickingSession.state)) return
+
+        const affectedData  = eventData.affected_data;
+        let itemToSet       = null;
+        let shouldRefetch   = false;
+
+        if (props.tab == 'itemized') {
+            itemToSet = props.data.data.find(
+                item => item.org_stock_id === affectedData.org_stock_id
+            );
+    
+            if (!itemToSet) {
+                return;
+            }
+    
+            let locationOrgStock = itemToSet.locations.find(
+                item => item.location_id === affectedData.location_id
+            )
+    
+            const remainingItem =
+                parseFloat(itemToSet.quantity_required) -
+                (parseFloat(itemToSet.quantity_not_picked ?? 0) +
+                parseFloat(itemToSet.quantity_picked ?? 0));
+    
+            shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
+        } else if (props.tab == 'grouped') {
+            itemToSet = props.data.data.find(deliveryNote =>
+                deliveryNote.items?.some(child => child.org_stock_id === affectedData.org_stock_id)
+            );
+    
+            if (!itemToSet) {
+                return;
+            }
+    
+            let targetOrgStock = itemToSet.items.find(
+                item => item.org_stock_id === affectedData.org_stock_id
+            )
+
+            let targetLocationStock = targetOrgStock.locations.find(
+                item => item.location_id === affectedData.location_id
+            )
+    
+            const remainingItem =
+                parseFloat(targetOrgStock.quantity_required) -
+                (parseFloat(targetOrgStock.quantity_not_picked ?? 0) +
+                parseFloat(targetOrgStock.quantity_picked ?? 0));
+    
+            shouldRefetch = (remainingItem > 0) && (targetLocationStock.quantity != affectedData.new_quantity)
+        }
+        
+        if (shouldRefetch && itemToSet) {
+            const response = await axios.get(
+                route('grp.json.picking_session_item_row', {
+                    pickingSession: props.pickingSession.id,
+                    tab: props.tab,
+                    row_id: itemToSet.id,
+                })
+            );
+            Object.assign(itemToSet, response.data.data);
+        }
+    })
+
+}
+
+const stopSocketListener = () => {
+    if (socketChannel) {
+        socketChannel.stopListening(".stock_update");
+        window.Echo.leave(`private-grp.${route().params['organisation']}.stock_movement`);
+        socketChannel = null;
+    }
+}
+
+onMounted(() => {
+    initSocketListener();
+});
+
+onUnmounted(() => {
+    stopSocketListener();
+})
 
 </script>
 
@@ -679,16 +769,24 @@ const showReturnStoredItemsRoute = (item: any) => {
         </template>
     </Table>
 
-    <!-- Modal: Location list -->
-    <Modal :isOpen="isModalLocation" @onClose="() => onCloseModal()" width="w-full max-w-2xl" :dialogStyle="{
-        background: '#ffffffcc'
-    }">
+    <!-- Modal: Location list (PrimeVue Dialog so the nested Stock Management dialog doesn't fight a Headless UI focus trap) -->
+    <Dialog
+        v-model:visible="isModalLocation"
+        modal
+        :draggable="false"
+        dismissableMask
+        :style="{ width: '42rem' }"
+        :breakpoints="{ '1280px': '65vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
+        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+        @hide="onCloseModal"
+        :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
+    >
         <SelectPickingLocation
             :item="selectedItemValue"
             :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
             @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
         />
-    </Modal>
+    </Dialog>
 
     <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-1/2">
         <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal"

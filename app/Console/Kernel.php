@@ -18,6 +18,7 @@ use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
+use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
@@ -264,23 +265,23 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            $this->logSchedule(
-                $schedule->command('fetch:stock_locations sk')->dailyAt('02:45')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockLocationsSK',
-                ),
-                name: 'FetchAuroraStockLocationsSK',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('fetch:stock_locations es')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockLocationsES',
-                ),
-                name: 'FetchAuroraStockLocationsES',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
+            //            $this->logSchedule(
+            //                $schedule->command('fetch:stock_locations sk')->dailyAt('02:45')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+            //                    monitorSlug: 'FetchAuroraStockLocationsSK',
+            //                ),
+            //                name: 'FetchAuroraStockLocationsSK',
+            //                type: 'command',
+            //                scheduledAt: now()->format('H:i')
+            //            );
+            //
+            //            $this->logSchedule(
+            //                $schedule->command('fetch:stock_locations es')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+            //                    monitorSlug: 'FetchAuroraStockLocationsES',
+            //                ),
+            //                name: 'FetchAuroraStockLocationsES',
+            //                type: 'command',
+            //                scheduledAt: now()->format('H:i')
+            //            );
 
             $this->logSchedule(
                 $schedule->command('fetch:stock_locations aroma')->dailyAt('3:15')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
@@ -500,6 +501,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunBasketLowStockEmailBulkRuns',
                 ),
                 name: 'RunBasketLowStockEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunCheckoutAbandonmentScan::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunCheckoutAbandonmentScan',
+                ),
+                name: 'RunCheckoutAbandonmentScan',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

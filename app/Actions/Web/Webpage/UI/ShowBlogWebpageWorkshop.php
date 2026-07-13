@@ -34,19 +34,36 @@ class ShowBlogWebpageWorkshop extends OrgAction
 
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
-        $url = $webpage->website->domain.'/'.$webpage->url;
-        if ($webpage->website->is_migrating) {
+        $website    = $webpage->website;
+        $url = $website->domain.'/'.$webpage->url;
+        if ($website->is_migrating) {
             $url = 'https://v2.'.$url;
         } else {
             $url = 'https://'.$url;
         }
-        $webBlockTypes = $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get();
+        $webBlockTypes = $this
+            ->organisation
+            ->group
+            ->webBlockTypes()
+            ->where('fixed', false)
+            ->where('scope', 'webpage')
+            ->whereJsonContains('website_type', $website->shop->type)
+            ->where(function ($q) use ($website) {
+                $q->whereJsonContains('shop_availability', $website->shop->slug)
+                    ->orWhere('shop_availability', '[]');
+            })
+            ->get();
         if (!in_array($webpage->sub_type, [WebpageSubTypeEnum::PRODUCT, WebpageSubTypeEnum::FAMILY])) {
             $webBlockTypes = $this->organisation->group
             ->webBlockTypes()
             ->where('fixed', false)
             ->where('scope', 'webpage')
             ->where('name', 'not like', '%see-also%')
+            ->whereJsonContains('website_type', $website->shop->type)
+            ->where(function ($q) use ($website) {
+                $q->whereJsonContains('shop_availability', $website->shop->slug)
+                    ->orWhere('shop_availability', '[]');
+            })
             ->get();
         }
         // dd($webBlockTypes);

@@ -48,7 +48,7 @@ class AuthServiceProvider extends ServiceProvider
                 return ShopifyUser::find($id);
             }
 
-            return false;
+            return null;
         });
     }
 }

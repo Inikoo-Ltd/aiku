@@ -37,7 +37,6 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
 use App\Models\Comms\TestEmailRecipient;
-use App\Models\CRM\Appointment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\CRM\Prospect;
@@ -68,6 +67,7 @@ use App\Models\Helpers\Timezone;
 use App\Models\Helpers\Upload;
 use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\ShippingCountry;
@@ -173,13 +173,13 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Address> $addresses
  * @property-read LaravelCollection<int, Adjustment> $adjustments
  * @property-read LaravelCollection<int, AikuSection> $aikuScopedSections
- * @property-read LaravelCollection<int, Appointment> $appointments
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Asset> $assets
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read LaravelCollection<int, Brand> $brands
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, ChatEmailRecipient> $chatEmailRecipients
+ * @property-read LaravelCollection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read Address|null $collectionAddress
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -544,9 +544,10 @@ class Shop extends Model implements HasMedia, Auditable
 
     public function getPaymentAccountTypeAccount(): ?PaymentAccount
     {
+        /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $this->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
 
-        return $paymentAccountShop ? $paymentAccountShop->paymentAccount : null;
+        return $paymentAccountShop?->paymentAccount;
     }
 
     public function salesChannels(): BelongsToMany
@@ -622,11 +623,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function fulfilment(): HasOne
     {
         return $this->hasOne(Fulfilment::class);
-    }
-
-    public function appointments(): HasMany
-    {
-        return $this->hasMany(Appointment::class);
     }
 
     public function senderEmail(): BelongsTo
@@ -728,6 +724,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function purges(): HasMany
     {
         return $this->hasMany(Purge::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
     }
 
     public function polls(): HasMany

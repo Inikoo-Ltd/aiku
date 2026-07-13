@@ -11,6 +11,7 @@ namespace App\Actions\UI\Profile;
 use App\Actions\OrgAction;
 use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -65,6 +66,7 @@ class UpdateProfile extends OrgAction
             $language = Language::find($user->language_id);
             $locale   = $language->code;
             app()->setLocale($locale);
+            BreakUserUiProps::run($user);
             Cookie::queue('aiku_language', $locale, 60 * 8);
             Session::put('aiku_language', $locale);
             Session::put('reloadLayout', '1');

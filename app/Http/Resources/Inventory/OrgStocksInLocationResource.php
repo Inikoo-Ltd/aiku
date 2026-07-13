@@ -42,7 +42,7 @@ class OrgStocksInLocationResource extends JsonResource
             'picking_priority'  => $this->picking_priority,
             'value'             => $this->value,
             'dropshipping_pipe' => $this->dropshipping_pipe,
-            'quantity'          => $this->quantity,
+            'quantity'          => trimDecimalZeros($this->quantity),
             'notes'             => $this->notes,
         ];
     }

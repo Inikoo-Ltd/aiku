@@ -10,6 +10,7 @@ namespace App\Http\Resources\Web;
 
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $web_images
@@ -41,7 +42,7 @@ class WebBlockFamiliesResource extends JsonResource
             'name'        => $this->name,
             'title'       => $this->title,
             'url'         => $this->canonical_url,
-            'web_images'  => $webImages,
+            'web_images'  => ['main' => Arr::get($webImages, 'main')],
             'offers_data' => $this->offers_data
         ];
     }

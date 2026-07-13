@@ -246,7 +246,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 								<div class="flex flex-wrap items-center gap-2">
 									<span class="text-sm font-semibold text-gray-900">
 										<!-- {{ item.review.reply.contact_name }} -->
-										{{ review_settings.show_staff_who_reply ?  item.review.reply.contact_name :  layout.iris.shop.name }}
+										{{ review_settings.show_staff_who_reply ?  item.review.reply.contact_name :  layout?.iris?.shop?.name }}
 									</span>
 
 									<span class="ml-auto text-[11px] text-gray-400">

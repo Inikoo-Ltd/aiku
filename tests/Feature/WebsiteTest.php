@@ -8,23 +8,14 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\Catalogue\ProductCategory;
+use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
 use App\Actions\Web\Announcement\StoreAnnouncement;
 use App\Actions\Web\Announcement\UpdateAnnouncement;
-use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
-use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
-use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
-use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
-use App\Actions\Web\Website\SaveWebsiteSitemap;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Models\Web\Announcement;
 use App\Actions\Web\Banner\DeleteBanner;
 use App\Actions\Web\Banner\StoreBanner;
 use App\Actions\Web\Banner\UpdateBanner;
@@ -36,21 +27,29 @@ use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
-use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\HydrateWebpage;
+use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
+use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
-use App\Actions\Web\Website\PublishWebsiteMarginal;
-use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
+use App\Actions\Web\Website\PublishWebsiteMarginal;
+use App\Actions\Web\Website\SaveWebsiteSitemap;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Enums\Web\Banner\BannerTypeEnum;
@@ -61,9 +60,11 @@ use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Snapshot;
 use App\Models\Helpers\SnapshotStats;
+use App\Models\Web\Announcement;
 use App\Models\Web\Banner;
 use App\Models\Web\ExternalLink;
 use App\Models\Web\Redirect;
@@ -77,8 +78,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
+use Lorisleiva\Actions\ActionRequest;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
@@ -1123,7 +1125,7 @@ test('UI smoke iris storefront routes', function (Website $website, array $cat) 
         '/catalogue/sub-department/'.$cat['subDepartment']->slug,
         '/catalogue/products/'.$cat['product']->slug,
         '/blog',
-        '/hello_robot',
+        '/robots.txt',
         '/llms.txt',
         '/search',
         '/warming_base.txt',
@@ -1199,6 +1201,19 @@ test('save website sitemap', function (Website $website) {
     $count = SaveWebsiteSitemap::run($website);
 
     expect($count)->toBeInt()->toBeGreaterThanOrEqual(0);
+})->depends('launch website');
+
+test('robots txt is generated on demand with absolute sitemap urls', function (Website $website) {
+    Storage::disk('local')->delete("robots/robots_$website->id.txt");
+
+    $robotsTxt = ShowIrisRobotsTxt::make()->getRobotText($website);
+
+    expect($robotsTxt)
+        ->toContain('User-agent: *')
+        ->toContain('Disallow: /app/interest/favourites')
+        ->toContain("://www.$website->domain/sitemap.xml")
+        ->toContain("://www.$website->domain/sitemaps/products.xml")
+        ->not->toContain('Sitemap: /');
 })->depends('launch website');
 
 test('update webpage canonical url', function (Webpage $webpage) {

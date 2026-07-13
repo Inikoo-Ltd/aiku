@@ -95,13 +95,21 @@ const debounceUpdateQuantity = debounce(
             <template #cell(asset_name)="{ item }">
                 <div>
                     <div>{{ item.asset_name }}</div>
+                    
                     <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
                         <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
                     </div>
                     <div v-else class="text-gray-500 italic text-xs">
                         {{ trans('Stock :xquantityx available', {
                             xquantityx: locale.number(item.available_quantity ||
-                        0) }) }}
+                            0) }) }}
+                        <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
+                            <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-2" aria-hidden="true" />
+                        </span>
+                        <span v-if="item.is_gift" v-tooltip="ctrans('Free gift')">
+                            <FontAwesomeIcon icon="fal fa-gift" class="text-green-500 not-italic mx-2" aria-hidden="true" />
+                        </span>
+                        <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>                        
                     </div>
 
                     <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />

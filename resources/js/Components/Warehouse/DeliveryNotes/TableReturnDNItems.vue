@@ -15,15 +15,14 @@ import { cloneDeep, debounce, get, set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
-import { ref, onMounted, reactive, inject, computed, watch, proxyRefs } from "vue"
+import { ref, onMounted, reactive, inject, computed, watch, proxyRefs, onUnmounted } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faCheckCircle, faMinus, faPlus } from "@fal"
 import { faFragile, faGhost, faSkull, faWandMagic } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import Modal from "@/Components/Utils/Modal.vue"
-import { InputNumber, RadioButton } from "primevue"
+import { InputNumber, RadioButton, Dialog } from "primevue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -77,8 +76,65 @@ function orgStockRoute(deliveryNoteItem: any) {
 
 
 const isMounted = ref(false)
+let socketChannel: any = null
+
+console.log(props.data.data);
+
+const initSocketListener = () => {
+    const socketEvent = `grp.${route().params['organisation']}.stock_movement`;
+
+    if (['returned', 'done', 'cancelled'].includes(props.state)) return;
+
+    socketChannel = window.Echo.private(socketEvent).listen(".stock_update", async (eventData: any) => {
+        const affectedData = eventData.affected_data;
+
+        let itemToSet = props.data.data.find(
+            item => item.org_stock_id === affectedData.org_stock_id
+        );
+
+        if (!itemToSet) {
+            return;
+        }
+
+        let locationOrgStock = itemToSet.locations.find(
+            item => item.location_id === affectedData.location_id
+        )
+
+        const remainingItem =
+            parseFloat(itemToSet.quantity_required) -
+            (parseFloat(itemToSet.quantity_not_picked ?? 0) +
+            parseFloat(itemToSet.quantity_picked ?? 0));
+
+        const shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
+
+        if (shouldRefetch) {
+            const response = await axios.get(
+                route('grp.json.delivery_note_item_row', {
+                    deliveryNoteItem: itemToSet.id,
+                })
+            );
+            Object.assign(itemToSet, response.data.data);
+        }
+    })
+
+    // console.log('Subscribed to channel for Stock Movement. Channel:', socketEvent, socketChannel);
+}
+
+const stopSocketListener = () => {
+    if (socketChannel) {
+        socketChannel.stopListening(".stock_update");
+        window.Echo.leave(`private-grp.${route().params['organisation']}.stock_movement`);
+        socketChannel = null;
+    }
+}
+
 onMounted(() => {
-    isMounted.value = true
+    isMounted.value = true;
+    initSocketListener();
+});
+
+onUnmounted(() => {
+    stopSocketListener();
 })
 
 const generateLocationRoute = (location: any, rdnItem?: any ) => {
@@ -607,12 +663,22 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         </template>
     </Table>
 
-    <Modal :isOpen="isModalLocation" @onClose="isModalLocation = false" width="w-full max-w-3xl" xdialogStyle="{ background: '#ffffff' }">
+    <!-- Modal: Location picker (PrimeVue Dialog so the nested Stock Management dialog doesn't fight a Headless UI focus trap) -->
+    <Dialog
+        v-model:visible="isModalLocation"
+        modal
+        :draggable="false"
+        dismissableMask
+        :style="{ width: '48rem' }"
+        :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
+        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+        :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
+    >
         <SelectPickingLocation
             :item="selectedItemValue"
             :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
             @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
             :ignoreNoQty="true"
         />
-    </Modal>
+    </Dialog>
 </template>

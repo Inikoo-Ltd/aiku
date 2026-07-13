@@ -5,18 +5,23 @@
   -  Version 4.0
   -->
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, computed, onMounted } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight } from '@far'
-import { faBars,faBallot } from '@fal'
-import { faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight } from '@fas'
+import { faBars,faBallot, faBookmark, faTrashAlt } from '@fal'
+import { faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faBookmark as fasBookmark } from '@fas'
 import { routeType } from '@/types/route'
+import { Bookmark } from '@/types/Bookmark'
+import { trans } from 'laravel-vue-i18n'
+import { notify } from '@kyvg/vue3-notification'
+import axios from 'axios'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import Popover from '@/Components/Popover.vue'
 
-library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot)
+library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot, faBookmark, faTrashAlt, fasBookmark)
 
 const props = defineProps<{
     breadcrumbs: {
@@ -67,7 +72,9 @@ const props = defineProps<{
 
 // Get parameter for Prev & Next button to stay on same tab
 const urlParameter = ref('showcase')
-router.on('navigate', (event) => {
+const currentPath = ref('')
+
+const getFilteredQueryString = () => {
     const params = new URLSearchParams(location.search.substring(1))
     const filteredParams: {[key:string]: string} = {}
     const patternToDelete = /\[global\]$/  // to filter su_filter[global], etc
@@ -76,10 +83,89 @@ router.on('navigate', (event) => {
             filteredParams[key] = value
         }
     }
-    urlParameter.value = `?${new URLSearchParams(filteredParams).toString()}`
+    return new URLSearchParams(filteredParams).toString()
+}
+
+router.on('navigate', () => {
+    urlParameter.value = `?${getFilteredQueryString()}`
+    currentPath.value = location.pathname
 })
 
 const isLoading = ref<string | boolean>(false)
+
+// Section: Bookmarks, persisted on the user model and hydrated from layout props on first load
+const isBookmarkAvailable = computed(() => Array.isArray(props.layout?.bookmarks))
+const bookmarks = computed<Bookmark[]>(() => props.layout?.bookmarks ?? [])
+const isSavingBookmarks = ref(false)
+
+onMounted(() => {
+    currentPath.value = location.pathname
+})
+
+const persistBookmarks = async (nextBookmarks: Bookmark[]) => {
+    const previousBookmarks = [...bookmarks.value]
+    props.layout.bookmarks = nextBookmarks
+    isSavingBookmarks.value = true
+
+    try {
+        await axios.patch(route('grp.profile.bookmarks.update'), { bookmarks: nextBookmarks })
+    } catch (error) {
+        props.layout.bookmarks = previousBookmarks
+        notify({
+            title: trans('Something went wrong'),
+            text: trans('Failed to save bookmarks'),
+            type: 'error'
+        })
+    } finally {
+        isSavingBookmarks.value = false
+    }
+}
+
+const isCurrentPageBookmarked = computed(() => {
+    return bookmarks.value.some(bookmark => bookmark.url.split('?')[0] === currentPath.value)
+})
+
+const getCurrentPageLabel = () => {
+    const lastBreadcrumb = props.breadcrumbs?.[props.breadcrumbs.length - 1]
+    return lastBreadcrumb?.simple?.label
+        || lastBreadcrumb?.modelWithIndex?.model?.label
+        || lastBreadcrumb?.creatingModel?.label
+        || document.title
+}
+
+const toggleBookmarkCurrentPage = () => {
+    if (isSavingBookmarks.value) {
+        return
+    }
+
+    if (isCurrentPageBookmarked.value) {
+        persistBookmarks(bookmarks.value.filter(bookmark => bookmark.url.split('?')[0] !== currentPath.value))
+        return
+    }
+
+    const queryString = getFilteredQueryString()
+    persistBookmarks([
+        ...bookmarks.value,
+        {
+            label: getCurrentPageLabel(),
+            url: currentPath.value + (queryString ? `?${queryString}` : ''),
+            shop: props.layout?.currentParams?.shop,
+            organisation: props.layout?.currentParams?.organisation
+        }
+    ])
+}
+
+const getBookmarkSubtitle = (bookmark: Bookmark) => {
+    return [bookmark.organisation, bookmark.shop].filter(Boolean).join(' / ')
+}
+
+const removeBookmark = (bookmarkToRemove: Bookmark) => {
+    if (isSavingBookmarks.value) {
+        return
+    }
+
+    persistBookmarks(bookmarks.value.filter(bookmark => bookmark.url !== bookmarkToRemove.url))
+}
 </script>
 
 <template>
@@ -212,7 +298,54 @@ const isLoading = ref<string | boolean>(false)
             </transition>
         </Menu>
 
-        <div v-if="props.navigation?.previous || props.navigation?.next" class="h-full flex justify-end items-center pr-2 space-x-2 text-xs md:text-sm text-gray-700 font-semibold">
+        <div class="h-full flex justify-end items-center pr-2 space-x-2 text-xs md:text-sm text-gray-700 font-semibold">
+            <!-- Button: Bookmark -->
+            <div v-if="isBookmarkAvailable" class="relative flex justify-center items-center w-12 xl:w-8 h-full">
+                <Popover class="w-full h-full" position="right-0" width="w-64">
+                    <template #button>
+                        <div class="rounded w-full h-full flex items-center justify-center cursor-pointer hover:text-yellow-500"
+                            :class="isCurrentPageBookmarked ? 'text-yellow-500' : 'opacity-70 hover:opacity-100'"
+                            v-tooltip="isCurrentPageBookmarked ? trans('Remove bookmark') : trans('Bookmark this page')"
+                        >
+                            <LoadingIcon v-if="isSavingBookmarks" />
+                            <FontAwesomeIcon v-else :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" aria-hidden="true" />
+                        </div>
+                    </template>
+
+                    <template #content="{ close }">
+                        <div class="w-full text-left font-normal">
+                            <button
+                                @click="toggleBookmarkCurrentPage"
+                                class="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer"
+                            >
+                                <FontAwesomeIcon :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" class="flex-shrink-0 h-3.5 w-3.5" :class="isCurrentPageBookmarked ? 'text-yellow-500' : ''" aria-hidden="true" />
+                                <span>{{ isCurrentPageBookmarked ? trans('Remove bookmark') : trans('Bookmark this page') }}</span>
+                            </button>
+
+                            <div class="border-t border-gray-200 my-2" />
+
+                            <div v-if="!bookmarks.length" class="px-2 py-1.5 text-gray-400 italic">
+                                {{ trans('No bookmarks yet') }}
+                            </div>
+
+                            <div v-else class="max-h-64 overflow-y-auto space-y-0.5">
+                                <div v-for="bookmark in bookmarks" :key="bookmark.url" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100">
+                                    <Link :href="bookmark.url" @click="close" class="flex-1 min-w-0 py-0.5" v-tooltip="bookmark.label">
+                                        <div class="truncate hover:text-yellow-600">{{ bookmark.label }}</div>
+                                        <div v-if="getBookmarkSubtitle(bookmark)" class="truncate text-[10px] leading-3 text-gray-400">
+                                            {{ getBookmarkSubtitle(bookmark) }}
+                                        </div>
+                                    </Link>
+                                    <button @click="removeBookmark(bookmark)" class="flex-shrink-0 p-1 text-red-500 opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('Remove bookmark')">
+                                        <FontAwesomeIcon icon="fal fa-trash-alt" class="h-3 w-3" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </Popover>
+            </div>
+
             <!-- Button: Previous -->
             <div class="flex justify-center items-center w-12 xl:w-8 h-full">
                 <Link v-if="props.navigation.previous"
@@ -221,6 +354,7 @@ const isLoading = ref<string | boolean>(false)
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
                     class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.previous?.label"
+                    :aria-label="ctrans('Previous')"
                 >
                     <LoadingIcon v-if="isLoading === 'bcBack'" />
                     <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="" aria-hidden="true" />
@@ -235,6 +369,7 @@ const isLoading = ref<string | boolean>(false)
                     @finish="() => isLoading = false"
                     class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.next?.label"
+                    :aria-label="ctrans('Next')"
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
                 >
                     <LoadingIcon v-if="isLoading === 'bcNext'" />

@@ -96,6 +96,7 @@ use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
+use App\Actions\Inventory\OrgStock\Json\FetchOrgStockStocksManagement;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
@@ -206,6 +207,7 @@ Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModificati
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
 Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes', GetBatchCodes::class)->name('org_stock.batch_codes.index');
+Route::get('warehouse/{warehouse}/org-stock/{orgStock:id}/stocks-management', FetchOrgStockStocksManagement::class)->name('warehouse.org_stock.stocks_management')->withoutScopedBindings();
 
 Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('brands', GetBrands::class)->name('brands.index');

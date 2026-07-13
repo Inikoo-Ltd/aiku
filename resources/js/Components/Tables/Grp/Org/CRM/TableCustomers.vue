@@ -117,5 +117,21 @@ function tagColorClass(scope?: string) {
                 No tags
             </div>
         </template>
+        <template #cell(upcoming_products)="{ item: customer }">
+            <div v-if="customer.upcoming_products && customer.upcoming_products.length" class="flex flex-wrap gap-1">
+                <span
+                    v-for="product in customer.upcoming_products"
+                    :key="product.code"
+                    v-tooltip="product.out_of_stock ? `${product.name} (${product.status_label})` : product.name"
+                    class="text-xs px-1.5 py-0.5 rounded"
+                    :class="product.out_of_stock ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'"
+                >
+                    {{ product.code }}
+                </span>
+            </div>
+            <div v-else class="text-gray-400 text-xs italic">
+                -
+            </div>
+        </template>
     </Table>
 </template>

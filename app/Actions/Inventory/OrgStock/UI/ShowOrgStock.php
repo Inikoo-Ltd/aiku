@@ -59,7 +59,7 @@ class ShowOrgStock extends OrgAction
         return Inertia::render(
             'Org/Inventory/OrgStock',
             [
-                'title'       => __('SKU'),
+                'title'       => __('SKU') . ' (' . $orgStock->code . ')',
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $orgStock,
                     $request->route()->getName(),

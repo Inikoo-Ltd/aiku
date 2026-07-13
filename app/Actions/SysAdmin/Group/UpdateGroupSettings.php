@@ -81,6 +81,21 @@ class UpdateGroupSettings extends GrpAction
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'print_by_printnode');
         }
+        if (Arr::has($modelData, 'jira_base_url')) {
+            data_set($groupSettings, 'jira.base_url', Arr::get($modelData, 'jira_base_url'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'jira_base_url');
+        }
+        if (Arr::has($modelData, 'jira_email')) {
+            data_set($groupSettings, 'jira.email', Arr::get($modelData, 'jira_email'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'jira_email');
+        }
+        if (Arr::has($modelData, 'jira_api_token')) {
+            data_set($groupSettings, 'jira.api_token', Arr::get($modelData, 'jira_api_token'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'jira_api_token');
+        }
 
         return $this->update($group, $modelData);
     }
@@ -112,6 +127,9 @@ class UpdateGroupSettings extends GrpAction
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
+            'jira_base_url'      => ['sometimes', 'nullable', 'url'],
+            'jira_email'         => ['sometimes', 'nullable', 'email'],
+            'jira_api_token'     => ['sometimes', 'nullable', 'string'],
         ];
     }
 

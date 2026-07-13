@@ -136,19 +136,19 @@ class ShowRetinaPallet extends RetinaAction
                     'navigation' => $navigation,
                 ],
                 PalletTabsEnum::SHOWCASE->value => $this->tab == PalletTabsEnum::SHOWCASE->value ?
-                    fn() => $this->jsonResponse($pallet) : Inertia::optional(fn() => $this->jsonResponse($pallet)),
+                    fn () => $this->jsonResponse($pallet) : Inertia::optional(fn () => $this->jsonResponse($pallet)),
 
                 PalletTabsEnum::STORED_ITEMS->value => $this->tab == PalletTabsEnum::STORED_ITEMS->value ?
-                    fn() => StoredItemResource::collection(IndexRetinaStoredItems::run($pallet, PalletTabsEnum::STORED_ITEMS->value))
-                    : Inertia::optional(fn() => StoredItemResource::collection(IndexRetinaStoredItems::run($pallet, PalletTabsEnum::STORED_ITEMS->value))),
+                    fn () => StoredItemResource::collection(IndexRetinaStoredItems::run($pallet, PalletTabsEnum::STORED_ITEMS->value))
+                    : Inertia::optional(fn () => StoredItemResource::collection(IndexRetinaStoredItems::run($pallet, PalletTabsEnum::STORED_ITEMS->value))),
 
                 PalletTabsEnum::MOVEMENTS->value => $this->tab == PalletTabsEnum::MOVEMENTS->value ?
-                    fn() => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))
-                    : Inertia::optional(fn() => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))),
+                    fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))
+                    : Inertia::optional(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))),
 
                 PalletTabsEnum::HISTORY->value => $this->tab == PalletTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($this->pallet))
-                    : Inertia::optional(fn() => HistoryResource::collection(IndexHistory::run($this->pallet)))
+                    fn () => HistoryResource::collection(IndexHistory::run($this->pallet))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($this->pallet)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: PalletTabsEnum::HISTORY->value))

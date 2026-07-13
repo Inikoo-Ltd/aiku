@@ -42,6 +42,7 @@ class SaveWebsiteRobotsTxt extends OrgAction
             'Disallow: /app/login',
             'Disallow: /app/register',
             'Disallow: /app/favourites',
+            'Disallow: /app/interest/favourites',
             'Disallow: /app/dashboard',
             'Disallow: /app/basket',
             'Disallow: /app/back-in-stocks',

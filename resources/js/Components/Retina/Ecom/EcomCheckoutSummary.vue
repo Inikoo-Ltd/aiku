@@ -18,6 +18,7 @@ import { router } from "@inertiajs/vue3"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import payments from "@/Pages/Grp/Overview/Accounting/Payments.vue"
 import MissedOfferFOB from "@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue"
+import EcomUpcomingTransactions from "@/Components/Retina/Ecom/EcomUpcomingTransactions.vue"
 
 const props = defineProps<{
     summary: {
@@ -62,6 +63,17 @@ const props = defineProps<{
     missed_offers: {}
     isInBasket?: boolean
     isInCheckout?: boolean
+    upcoming_transactions?: {
+        data: {
+            id: number
+            product_code: string | null
+            product_name: string | null
+            quantity: number | string
+            public_notes: string | null
+            type: 'gift' | 'follow_on'
+            state: string
+        }[]
+    }
 }>()
 
 const locale = inject('locale', {})
@@ -165,7 +177,6 @@ const updateCollection = (value: boolean) => {
                     <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
                     {{ trans("This order is for collection only") }}.
                 </div>
-                    
                 <!-- Section: Delivery Address -->
                 <div v-if="!get(props.order, ['is_collection'], false)" class="">
                     <div class="font-semibold">
@@ -188,6 +199,7 @@ const updateCollection = (value: boolean) => {
                     </div>
                 </div>
             </div>
+
 
             <!-- Section: Offer meters (free gift, etc)-->
             <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
@@ -254,7 +266,7 @@ const updateCollection = (value: boolean) => {
                         {{ ctrans('You missed ( :numberMissedOffer ) offers', { numberMissedOffer: Object.values(missed_offers || {}).length }) }}
                     </div>
                     <div class="flex flex-col gap-y-2">
-                        <TransitionGroup name="list" tag="ul" class="!m-0">
+                        <TransitionGroup name="list" tag="ul" class="!m-0 space-y-2">
                             <li v-for="(missed_offer, misOfferKey) in missed_offers" :key="misOfferKey" class="list-none">
                                 <MissedOfferFOB v-if="misOfferKey === 'fob'" :data="missed_offer" />
                                 <div v-else class="bg-[#2a919e] text-white px-2 py-2 rounded-md text-sm flex items-center gap-x-2">
@@ -362,7 +374,10 @@ const updateCollection = (value: boolean) => {
                 </OrderSummary>
             </div>
         </div>
-
+        <!-- Section: Upcoming transactions (gift, follow on) -->
+        <div class="col-span-3">
+            <EcomUpcomingTransactions v-if="upcoming_transactions" :upcomingTransactions="upcoming_transactions" />
+        </div>
         <!-- Section: Edit Delivery address -->
         <Modal v-if="address_management"
             :isOpen="isModalShippingAddress"

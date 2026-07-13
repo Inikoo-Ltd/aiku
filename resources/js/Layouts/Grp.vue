@@ -82,7 +82,7 @@ import {
     faTombstone as faTombstoneLight,
     faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
     faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield, faCircle, faExchange,
-    faTrophy, faClipboardCheck,
+    faTrophy, faClipboardCheck, faSpinner, faHistory, faUserClock, faEdit, faStickyNote,
 } from "@fal"
 import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
 import { faViruses, faSave as fadSave } from "@fad"
@@ -189,7 +189,7 @@ library.add(
     faTombstoneLight,
     faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
     faBarcode,
-    faTrophy, faClipboardCheck,
+    faTrophy, faClipboardCheck, faSpinner, faHistory, faUserClock, faEdit, faStickyNote,
 )
 
 provide("layout", useLayoutStore())

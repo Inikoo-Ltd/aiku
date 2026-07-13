@@ -41,53 +41,58 @@ const props = withDefaults(defineProps<{
 const locale = inject("locale", aikuLocaleStructure)
 const isLoadingDetach = ref<string[]>([])
 const selectedFamily = ref([])
-const _table = ref(null)
 const visibleDialog = ref(false);
 const selectedParentId = ref(null)
 const loadingChangeParent = ref(false)
 const tableKey = ref(1)
 
+const routeCurrent = route().current()
+const routeParams = route().routeParams
+
 function familyRoute(masterFamily: MasterFamily) {
-    console.log(route().current());
-    if (route().current() == "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index") {
+    console.log(routeCurrent);
+    if (routeCurrent == "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index") {
         return route(
             "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show",
-            { ...route().params, masterFamily: masterFamily.slug });
+            { ...routeParams, masterFamily: masterFamily.slug });
 
-    } else if (route().current() == "grp.masters.master_shops.show.master_departments.show.master_families.index") {
+    } else if (routeCurrent == "grp.masters.master_shops.show.master_departments.show.master_families.index") {
         return route(
             "grp.masters.master_shops.show.master_departments.show.master_families.show",
             {
-                masterShop: (route().params as RouteParams).masterShop,
-                masterDepartment: (route().params as RouteParams).masterDepartment,
+                masterShop: (routeParams as RouteParams).masterShop,
+                masterDepartment: (routeParams as RouteParams).masterDepartment,
                 masterFamily: masterFamily.slug
             });
     } else if (
-        route().current() == "grp.masters.master_shops.show.master_gr.index" ||
-        route().current() == "grp.masters.master_shops.show.master_families.vol_gr_reward.index" ||
-        route().current() == 'grp.masters.master_shops.show.master_collections.show'
+        routeCurrent == "grp.masters.master_shops.show.master_gr.index" ||
+        routeCurrent == "grp.masters.master_shops.show.master_families.vol_gr_reward.index" ||
+        routeCurrent == 'grp.masters.master_shops.show.master_collections.show'
     ) {
         return route(
             "grp.masters.master_shops.show.master_families.show",
             {
-                masterShop: (route().params as RouteParams).masterShop,
+                masterShop: (routeParams as RouteParams).masterShop,
                 masterFamily: masterFamily.slug,
                 _query: {
                     'elements[status]': 'active'
                 }
             });
-    } else if (route().current() == "grp.masters.master_shops.show.master_families.index") {
+    } else if (routeCurrent == "grp.masters.master_shops.show.master_families.index") {
         return route(
             "grp.masters.master_shops.show.master_families.show",
-            { ...route().params, masterFamily: masterFamily.slug });
-    } else if (route().current() == "grp.masters.master_shops.show.master_family.mismatch_detected.index") {
+            {
+                masterShop: (routeParams as RouteParams).masterShop,
+                masterFamily: masterFamily.slug
+            });
+    } else if (routeCurrent == "grp.masters.master_shops.show.master_family.mismatch_detected.index") {
         return route(
             "grp.masters.master_shops.show.master_family.mismatch_detected.show",
-            { ...route().params, masterFamily: masterFamily.slug });
-    } else if (route().current() == "grp.masters.master_shops.show.master_sub_departments.master_families.index") {
+            { ...routeParams, masterFamily: masterFamily.slug });
+    } else if (routeCurrent == "grp.masters.master_shops.show.master_sub_departments.master_families.index") {
         return route(
             "grp.masters.master_shops.show.master_sub_departments.master_families.show",
-            { ...route().params, masterFamily: masterFamily.slug });
+            { ...routeParams, masterFamily: masterFamily.slug });
     } else {
         return route(
             "grp.masters.master_families.show",
@@ -96,7 +101,7 @@ function familyRoute(masterFamily: MasterFamily) {
 }
 
 function masterDepartmentRoute(masterFamily: MasterFamily) {
-    if (route().current() == "grp.masters.master_families.index") {
+    if (routeCurrent == "grp.masters.master_families.index") {
         return route(
             "grp.masters.master_departments.show",
             { masterDepartment: masterFamily.master_department_slug });
@@ -104,7 +109,7 @@ function masterDepartmentRoute(masterFamily: MasterFamily) {
         return route(
             "grp.masters.master_shops.show.master_departments.show",
             {
-                masterShop: (route().params as RouteParams).masterShop,
+                masterShop: (routeParams as RouteParams).masterShop,
                 masterDepartment: masterFamily.master_department_slug
             });
     }
@@ -115,7 +120,7 @@ function masterSubDepartmentRoute(masterFamily: MasterFamily) {
     return route(
         "grp.masters.master_shops.show.master_sub_departments.show",
         {
-            masterShop: (route().params as RouteParams).masterShop,
+            masterShop: (routeParams as RouteParams).masterShop,
             masterSubDepartment: masterFamily.master_sub_department_slug
         }
     );
@@ -132,18 +137,18 @@ function masterShopRoute(masterFamily: MasterFamily) {
 }
 
 function ProductRoute(masterFamily: MasterDepartment) {
-    if (route().current() == 'grp.masters.master_shops.show.master_families.index') {
+    if (routeCurrent == 'grp.masters.master_shops.show.master_families.index') {
         return route('grp.masters.master_shops.show.master_families.master_products.index',
             {
                 masterFamily: masterFamily.slug,
-                masterShop: (route().params as RouteParams).masterShop
+                masterShop: (routeParams as RouteParams).masterShop
             }
         )
     }
 
     return route('grp.masters.master_shops.show.master_families.master_products.index',
         {
-            masterShop: (route().params as RouteParams).masterShop,
+            masterShop: (routeParams as RouteParams).masterShop,
             masterFamily: masterFamily.slug
         }
     )
@@ -254,7 +259,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </div>
         </template>
         <template #cell(master_shop_code)="{ item: department }">
-            <Link v-tooltip="department.master_shop_name" :href="masterShopRoute(department) as string"
+            <Link v-tooltip="department.master_shop_name" :href="(masterShopRoute(department) as string)"
                 class="secondaryLink">
                 {{ department["master_shop_code"] }}
             </Link>
@@ -262,14 +267,14 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <template #cell(master_department_code)="{ item: department }">
             <Link v-if="department.master_department_slug" v-tooltip="department.master_department_name"
-                :href="masterDepartmentRoute(department) as string" class="secondaryLink">
+                :href="(masterDepartmentRoute(department) as string)" class="secondaryLink">
                 {{ department["master_department_code"] }}
             </Link>
         </template>
 
         <template #cell(master_sub_department_code)="{ item: subdepartment }">
             <Link v-if="subdepartment.master_sub_department_slug" v-tooltip="subdepartment.master_sub_department_name"
-                :href="masterSubDepartmentRoute(subdepartment) as string" class="secondaryLink">
+                :href="(masterSubDepartmentRoute(subdepartment) as string)" class="secondaryLink">
                 {{ subdepartment["master_sub_department_code"] }}
             </Link>
         </template>
@@ -362,7 +367,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <PureMultiselectInfiniteScroll :fetchRoute="{
                 name: 'grp.json.master_shop.master_departments_and_sub_departments',
                 parameters: {
-                    masterShop: (route().params as RouteParams).masterShop
+                    masterShop: (routeParams as RouteParams).masterShop
                 }
             }" :required="true" valueProp="id" type_label="department-and-sub-department" labelProp="code"
                 v-model="selectedParentId" />
