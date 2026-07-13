@@ -12,6 +12,7 @@ use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\Picking;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -105,7 +106,9 @@ class SavePickingInAurora implements ShouldBeUnique
             $count     = 0;
 
             // Get pickings that are not of type NOT_PICK
-            $totalPickings = Picking::where('type', '!=', PickingTypeEnum::NOT_PICK)->count();
+            $totalPickings = Picking::where('type', '!=', PickingTypeEnum::NOT_PICK)
+                ->whereDate('created_at', '>=', Carbon::now()->subWeek())
+                ->count();
 
             if ($totalPickings === 0) {
                 $command->info('No pickings to process');
@@ -120,6 +123,7 @@ class SavePickingInAurora implements ShouldBeUnique
 
             // Process pickings in chunks to avoid memory issues
             Picking::where('type', '!=', PickingTypeEnum::NOT_PICK)
+                ->whereDate('created_at', '>=', Carbon::now()->subWeek())
                 ->chunk($chunkSize, function ($pickings) use (&$count, $bar, $command) {
                     foreach ($pickings as $picking) {
                         try {
