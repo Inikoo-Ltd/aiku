@@ -18,4 +18,36 @@ enum OrgStockMovementClassEnum: string
     case INFO = 'info';
     case HELPER = 'helper';
     case GARBAGE = 'garbage';
+
+    
+    public function icon(): array
+    {
+        return match ($this) {
+            self::MOVEMENT  => [
+                'tooltip' => __('Movement'),
+                'icon'    => 'fal fa-person-carry',
+                'class'   => 'text-purple-500',
+            ],
+            self::INFO      => [
+                'tooltip' => __('Info'),
+                'icon'    => 'fal fa-info-circle',
+                'class'   => 'text-blue-500',
+            ],
+            self::HELPER    => [
+                'tooltip' => __('Helper'),
+                'icon'    => 'fal fa-hands-helping',
+                'class'   => 'text-yellow-500',
+            ],
+            self::GARBAGE   => [
+                'tooltip' => __('Garbage'),
+                'icon'    => 'fal fa-dumpster',
+                'class'   => 'text-grey-700',
+            ],
+            default         => [
+                'tooltip' => __('Unknown'),
+                'icon'    => 'fal fa-question-circle',
+                'class'   => 'text-orange-500',
+            ],
+        };
+    }
 }

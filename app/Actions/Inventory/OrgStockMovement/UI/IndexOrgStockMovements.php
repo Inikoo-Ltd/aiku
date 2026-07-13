@@ -188,13 +188,12 @@ class IndexOrgStockMovements extends OrgAction
             }
 
             $table
-                ->column(key: 'flow', label: ['fal', 'fa-chart-line'], tooltip:__('Movement Flow'), type: 'icon', sortable: true)
+                // ->column(key: 'flow', label: ['fal', 'fa-chart-line'], tooltip:__('Movement Flow'), type: 'icon', sortable: true)
                 ->column(key: 'type', label: __('Type'), sortable: true)
-                ->column(key: 'class', label: __('Class'), sortable: true)
+                ->column(key: 'class', label: ['fal', 'fa-tilde'], tooltip:__('Movement Class'), type: 'icon', sortable: true)
                 ->column(key: 'location_code', label: __('Location'))
                 ->column(key: 'quantity', label: __('Quantity'), sortable: true, align: 'right')
-                ->column(key: 'running_quantity', label: __('Running Quantity'), sortable: true, align: 'right')
-                ->column(key: 'running_quantity_org_stock', label: __('Running Quantity (All)'), sortable: true, align: 'right')
+                ->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), sortable: true, align: 'right')
                 ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
         };
     }

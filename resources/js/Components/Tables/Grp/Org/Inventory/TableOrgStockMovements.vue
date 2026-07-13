@@ -8,10 +8,21 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
-import { faClipboardCheck, faInboxIn, faInboxOut } from "@fal";
+import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faInboxIn, faInboxOut, faInfoCircle, faPersonCarry, faQuestionCircle, faTilde } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import Icon from "@/Components/Icon.vue";
+
+library.add(
+  faTilde,
+  faDumpster,
+  faInfoCircle,
+  faHandsHelping,
+  faPersonCarry,
+  faQuestionCircle
+)
 
 defineProps<{
   data: object
@@ -82,9 +93,23 @@ const locationRoute = (orgStockMovement) => {
     </template>
 
     <template #cell(location_code)="{item: orgStockMovement}">
-      <Link class="primaryLink" :href="locationRoute(orgStockMovement)">
-        {{ orgStockMovement.location_code }}
-      </Link>
+      <div class="flex">
+        <Link class="primaryLink" :href="locationRoute(orgStockMovement)">
+          {{ orgStockMovement.location_code }}
+        </Link>
+        <span class="my-auto ml-auto px-2 border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
+          <FontAwesomeIcon 
+            :icon="faBoxFull"
+          />
+          {{ orgStockMovement.running_quantity }}
+        </span>
+      </div>
+    </template>
+
+    <template #cell(class)="{item}">
+      <Icon
+        :data="item.class_icon"
+      />
     </template>
 
     <template #cell(flow)="{item: orgStockMovement}">
