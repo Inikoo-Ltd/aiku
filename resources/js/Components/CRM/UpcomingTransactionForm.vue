@@ -35,12 +35,9 @@ const layout = inject("layout", {})
 const isEditing = computed(() => !!props.transaction)
 
 const initialQuantity = Number(props.transaction?.quantity ?? 1)
-const initialProductUnits = Number(props.transaction?.product_units) > 0 ? Number(props.transaction?.product_units) : 1
-const startInCutView = !!props.transaction && initialQuantity % 1 !== 0
 
 const quantity = ref<number | null>(initialQuantity)
-const isCutView = ref(startInCutView)
-const quantityUnits = ref<number | null>(Math.max(1, Math.round(initialQuantity * initialProductUnits)))
+const isCutView = ref(initialQuantity % 1 !== 0)
 const productId = ref<number | null>(props.transaction?.product_id ?? null)
 const type = ref<UpcomingTransactionType>(props.transaction?.type ?? "gift")
 const privateNotes = ref(props.transaction?.private_notes ?? "")
@@ -76,10 +73,16 @@ const productName = computed(() =>
 const productImage = computed(() => selectedProduct.value?.web_images?.main?.original ?? null)
 
 const productUnits = computed(() => {
-    const raw = selectedProduct.value ? selectedProduct.value.units : props.transaction?.product_units
-    const parsed = Number(raw)
+    const parsed = Number(selectedProduct.value?.units ?? props.transaction?.product_units)
 
     return parsed > 0 ? parsed : 1
+})
+
+const quantityUnits = computed({
+    get: () => Math.round((Number(quantity.value) || 0) * productUnits.value),
+    set: (units: number | null) => {
+        quantity.value = Number((Math.max(0, Number(units) || 0) / productUnits.value).toFixed(6))
+    },
 })
 
 const onSelectProduct = (product: any) => {
@@ -88,35 +91,22 @@ const onSelectProduct = (product: any) => {
 
 const toggleCutView = () => {
     if (isCutView.value) {
-        quantity.value = Math.max(1, Math.ceil(Number(submittedQuantity.value) || 1))
-    } else {
-        quantityUnits.value = Math.max(1, Math.round((Number(quantity.value) || 1) * productUnits.value))
+        quantity.value = Math.max(1, Math.ceil(Number(quantity.value) || 1))
     }
 
     isCutView.value = !isCutView.value
 }
 
-const submittedQuantity = computed(() => {
-    if (!isCutView.value) {
-        return Number(quantity.value) || 0
-    }
+const unitsFraction = computed((): [number, [number, number]] => [
+    Math.floor(quantityUnits.value / productUnits.value),
+    [quantityUnits.value % productUnits.value, productUnits.value],
+])
 
-    return Number((Math.max(0, quantityUnits.value ?? 0) / productUnits.value).toFixed(6))
-})
-
-const unitsFraction = computed((): [number, [number, number]] => {
-    const units = Math.max(0, Math.round(quantityUnits.value ?? 0))
-
-    return [Math.floor(units / productUnits.value), [units % productUnits.value, productUnits.value]]
-})
-
-const isFormInvalid = computed(() => {
-    if (!productId.value || submittedQuantity.value <= 0) {
-        return true
-    }
-
-    return isCutView.value && productUnits.value <= 1
-})
+const isFormInvalid = computed(
+    () => !productId.value
+        || Number(quantity.value) <= 0
+        || (isCutView.value && productUnits.value <= 1)
+)
 
 const submit = () => {
     if (isFormInvalid.value) {
@@ -125,7 +115,7 @@ const submit = () => {
 
     const payload = {
         product_id: productId.value,
-        quantity: submittedQuantity.value,
+        quantity: Number(quantity.value),
         type: type.value,
         public_notes: publicNotes.value.trim() || null,
         private_notes: privateNotes.value.trim() || null,
