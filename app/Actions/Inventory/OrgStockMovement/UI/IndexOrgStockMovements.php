@@ -17,6 +17,7 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
@@ -33,7 +34,7 @@ class IndexOrgStockMovements extends OrgAction
     use WithInventoryAuthorisation;
 
     private string $bucket;
-    private Organisation|OrgStock $parent;
+    private Organisation|OrgStock|Location $parent;
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
@@ -68,7 +69,7 @@ class IndexOrgStockMovements extends OrgAction
         ];
     }
 
-    public function handle(Organisation|OrgStock $parent, $prefix = null, $bucket = null, OrgStockMovementTypeEnum|null $type = null): LengthAwarePaginator
+    public function handle(Organisation|OrgStock|Location $parent, $prefix = null, $bucket = null, OrgStockMovementTypeEnum|null $type = null): LengthAwarePaginator
     {
         $this->parent = $parent;
 
@@ -76,7 +77,7 @@ class IndexOrgStockMovements extends OrgAction
             $this->bucket = $bucket;
         }
 
-        if ($parent instanceof OrgStock) {
+        if ($parent instanceof OrgStock || $parent instanceof Location) {
             $organisation = $parent->organisation;
         } else {
             $organisation = $parent;
@@ -113,6 +114,8 @@ class IndexOrgStockMovements extends OrgAction
                     $q->whereNot('org_stock_movements.class', OrgStockMovementClassEnum::GARBAGE);
                 }
             );
+        } elseif ($parent instanceof Location) {
+            $queryBuilder->where('location_id', $parent->id);
         } else {
             $queryBuilder->where('org_stock_movements.organisation_id', $organisation->id);
         }
@@ -155,9 +158,9 @@ class IndexOrgStockMovements extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|OrgStock $parent, $prefix = null): Closure
+    public function tableStructure(Organisation|OrgStock|Location $parent, $prefix = null): Closure
     {
-        if ($parent instanceof OrgStock) {
+        if ($parent instanceof OrgStock || $parent instanceof Location) {
             $organisation = $parent->organisation;
         } else {
             $organisation = $parent;
