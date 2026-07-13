@@ -129,7 +129,6 @@ const handleUnlink = (loc: { id: any }) => {
                         </ModalConfirmationDelete>
                          <div
                             v-else
-                            v-if="layout.app.environment === 'local'"
                             @click="handleUnlink(loc)"
                             class="cursor-pointer text-red-500 opacity-50 hover:opacity-100"
                             v-tooltip="trans('Unlink Location (no stock)')"
