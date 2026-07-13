@@ -24,6 +24,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faBoxOpen,
     faCheck,
+    faDownload,
     faEllipsisV,
     faFileAlt,
     faFileImage,
@@ -35,7 +36,7 @@ import {
     faUpload,
 } from "@fal"
 
-library.add(faBoxOpen, faCheck, faEllipsisV, faFileAlt, faFileImage, faFilePdf, faGift, faInfoCircle, faPencil, faTrashAlt, faUpload)
+library.add(faBoxOpen, faCheck, faDownload, faEllipsisV, faFileAlt, faFileImage, faFilePdf, faGift, faInfoCircle, faPencil, faTrashAlt, faUpload)
 
 interface PackagingOption {
     family_code: string
@@ -83,6 +84,7 @@ const props = defineProps<{
     uploadRoute?: { name: string }
     leafletUpdateRoute?: { name: string }
     leafletDeleteRoute?: { name: string }
+    leafletDownloadRoute?: { name: string }
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -254,6 +256,9 @@ const submitEdit = () => {
 
 const leafletFileIcon = (leaflet: CustomerLeaflet) =>
     leaflet.mime_type?.startsWith("image/") ? "file-image" : "file-pdf"
+
+const leafletDownloadUrl = (leaflet: CustomerLeaflet) =>
+    props.leafletDownloadRoute?.name ? route(props.leafletDownloadRoute.name, [leaflet.id]) : "#"
 
 const deletingLeafletId = ref<number | null>(null)
 
@@ -560,6 +565,15 @@ const saveSettings = () => {
                                         </span>
                                     </td>
                                     <td class="py-3 text-right whitespace-nowrap">
+                                        <a
+                                            :href="leafletDownloadUrl(leaflet)"
+                                            target="_blank"
+                                            class="p-1 text-gray-400 hover:text-gray-600"
+                                            :aria-label="trans('Download')"
+                                            v-tooltip="trans('Download')"
+                                        >
+                                            <FontAwesomeIcon :icon="['fal', 'download']" fixed-width aria-hidden="true" />
+                                        </a>
                                         <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="trans('Edit')" @click="openEdit(leaflet)">
                                             <FontAwesomeIcon :icon="['fal', 'pencil']" fixed-width aria-hidden="true" />
                                         </button>

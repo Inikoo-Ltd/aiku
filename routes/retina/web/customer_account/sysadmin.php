@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Retina\SysAdmin\DeleteRetinaLeaflet;
+use App\Actions\Retina\SysAdmin\DownloadRetinaLeaflet;
 use App\Actions\Retina\SysAdmin\UpdateRetinaLeaflet;
 use App\Actions\Retina\SysAdmin\UpdateRetinaPackagingPreferences;
 use App\Actions\Retina\SysAdmin\UploadRetinaLeaflet;
@@ -33,6 +34,7 @@ Route::post('/packaging-preferences', UpdateRetinaPackagingPreferences::class)->
 Route::post('/packaging-preferences/leaflet-upload', UploadRetinaLeaflet::class)->name('packaging-preferences.leaflet.upload');
 Route::post('/packaging-preferences/leaflet-update', UpdateRetinaLeaflet::class)->name('packaging-preferences.leaflet.update');
 Route::post('/packaging-preferences/leaflet-delete', DeleteRetinaLeaflet::class)->name('packaging-preferences.leaflet.delete');
+Route::get('/packaging-preferences/leaflet-download/{customerLeaflet:id}', DownloadRetinaLeaflet::class)->name('packaging-preferences.leaflet.download');
 Route::get('/users', IndexRetinaWebUsers::class)->name('web-users.index');
 Route::get('/users/create', CreateRetinaWebUser::class)->name('web-users.create');
 Route::get('/users/{webUser}', ShowRetinaWebUser::class)->name('web-users.show');

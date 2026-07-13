@@ -71,6 +71,9 @@ class ShowRetinaPackagingPreferences extends RetinaAction
                 'leafletDeleteRoute'  => [
                     'name' => 'retina.sysadmin.packaging-preferences.leaflet.delete',
                 ],
+                'leafletDownloadRoute' => [
+                    'name' => 'retina.sysadmin.packaging-preferences.leaflet.download',
+                ],
             ]
         );
     }
