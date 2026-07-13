@@ -280,6 +280,30 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
             throw new \RuntimeException('SSR failed to restart: '.$status);
         }
     }
+
+    /*
+     * Always verify the SSR server answers, even when no restart was needed:
+     * supervisor can report RUNNING while the port is dead, and a daemon that
+     * died between deploys would otherwise stay dead through every
+     * no-frontend-change deploy (helio served CSR silently until 2026-07-13).
+     */
+    $health = run(
+        "bash -c 'for i in \$(seq 1 15); do "
+        ."curl -fsS -m 2 http://127.0.0.1:13714/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
+        ."sleep 2; done; echo DEAD; exit 0'"
+    );
+    if (!str_contains($health, 'OK')) {
+        run("bash -c 'sudo /usr/bin/supervisorctl restart inertia-ssr-production || true'");
+        $health = run(
+            "bash -c 'for i in \$(seq 1 15); do "
+            ."curl -fsS -m 2 http://127.0.0.1:13714/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
+            ."sleep 2; done; echo DEAD; exit 0'"
+        );
+    }
+    writeln('SSR health on '.currentHost()->getAlias().': '.$health);
+    if (!str_contains($health, 'OK')) {
+        throw new \RuntimeException('Inertia SSR server is not answering on 127.0.0.1:13714 on host '.currentHost()->getAlias());
+    }
 })->select('env=prod');
 
 set('keep_releases', 25);
