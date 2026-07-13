@@ -20,6 +20,7 @@ class GerUsersFromSearchResource extends JsonResource
         /** @var User $user */
         $user = $this;
         return [
+            'id'                    => $user->id,
             'username'           => $user->username,
             'email'              => $user->email,
             'contact_name'       => $user->contact_name,

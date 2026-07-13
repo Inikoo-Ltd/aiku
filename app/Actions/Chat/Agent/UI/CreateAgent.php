@@ -75,13 +75,10 @@ class CreateAgent extends OrgAction
                                     'required'    => true,
                                     'mode'        => 'single',
                                     'searchable'  => true,
-                                    'labelProp'   => 'label',
-                                    'valueProp'   => 'value',
+                                    'labelProp'   => 'contact_name',
+                                    'valueProp'   => 'id',
                                     'fetchRoute'  => [
-                                        'name'       => 'grp.json.chat.agent_users.index',
-                                        'parameters' => [
-                                            'organisation' => $organisation->slug,
-                                        ],
+                                        'name'       => 'grp.search.get_users',
                                     ],
                                 ],
 
