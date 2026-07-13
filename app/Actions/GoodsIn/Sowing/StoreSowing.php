@@ -30,7 +30,7 @@ class StoreSowing extends OrgAction
     use WithAttributes;
 
     protected DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem $parent;
-    protected ?User $user;
+    private User|null $user = null;
 
     public function handle(DeliveryNoteItem|StockDeliveryItem|ReturnDeliveryNoteItem $parent, array $modelData): Sowing
     {
@@ -75,7 +75,8 @@ class StoreSowing extends OrgAction
                 $locationOrgStock->location,
                 [
                     'quantity' => $sowing->quantity,
-                    'type'     => $orgStockMovement
+                    'type'     => $orgStockMovement,
+                    'user_id'          => $this->user?->id,
                 ]
             );
 

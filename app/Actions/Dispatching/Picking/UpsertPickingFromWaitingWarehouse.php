@@ -66,7 +66,7 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
                 ];
                 UpdatePicking::run($picking, $modelData);
             } else {
-                StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+                StorePicking::make()->action($deliveryNoteItem, request()->user(), $modelData);
             }
 
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
