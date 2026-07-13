@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link, useForm } from "@inertiajs/vue3"
+import { Link, router, useForm } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
@@ -131,6 +131,7 @@ function onSavePartialMoveSku() {
                         text: ctrans("SKU moved successfully"),
                         type: "success",
                     })
+                    router.reload()
                 },
                 onError: () => {
                     notify({
