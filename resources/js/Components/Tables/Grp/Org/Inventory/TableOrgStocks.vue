@@ -559,6 +559,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                             v-model="data.quantity_to_move"
                             :minValue="0"
                             :maxValue="data.available"
+                            :disabled="data.remove_after_move"
                         />
                     </template>
                 </Column>
