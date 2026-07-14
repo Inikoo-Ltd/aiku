@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n'
+import { pushGtmEvent } from "@/Composables/useGtm"
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
@@ -321,18 +322,20 @@ const onAddProducts = async (product: Product) => {
                 // Luigi: event add to cart
                 if (!product?.transaction_id) {
                     if (!product?.transaction_id) {
+                        const addToCartEcommerce = {
+                            currency: layout?.iris?.currency?.code,
+                            value: product.price,
+                            items: [
+                                {
+                                    item_id: product?.luigi_identity,
+                                }
+                            ]
+                        }
                         window?.dataLayer?.push({
                             event: "add_to_cart",
-                            ecommerce: {
-                                currency: layout?.iris?.currency?.code,
-                                value: product.price,
-                                items: [
-                                    {
-                                        item_id: product?.luigi_identity,
-                                    }
-                                ]
-                            }
+                            ecommerce: addToCartEcommerce,
                         })
+                        pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
                     }
                 }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
@@ -402,18 +405,20 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     type: "success"
                 })
                 
+                const addToCartEcommerce = {
+                    currency: layout?.iris?.currency?.code,
+                    value: productLuigi?.attributes?.price || 0,
+                    items: [
+                        {
+                            item_id: productLuigi?.url,
+                        }
+                    ]
+                }
                 window?.dataLayer?.push({
                     event: "add_to_cart",
-                    ecommerce: {
-                        currency: layout?.iris?.currency?.code,
-                        value: productLuigi?.attributes?.price || 0,
-                        items: [
-                            {
-                                item_id: productLuigi?.url,
-                            }
-                        ]
-                    }
+                    ecommerce: addToCartEcommerce,
                 })
+                pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
                 layout?.reload_handle?.()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'

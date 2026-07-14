@@ -15,6 +15,7 @@ import { Checkbox } from "primevue"
 import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
 import { provide } from "vue"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
+import { pushGtmEvent } from "@/Composables/useGtm"
 
 library.add(faEnvelope, faAsterisk, faUser, faPhone, faBuilding, faGlobe)
 
@@ -88,10 +89,7 @@ const submit = () => {
 
 		},
 		onSuccess: async () => {
-			window.dataLayer = window.dataLayer || [];
-			window.dataLayer.push({
-				event: 'registrationSuccess'
-			})
+			pushGtmEvent('registrationSuccess')
 			// window.location.href = route('retina.dashboard.show')
 			window.location.href = await getRefRedirect()
 		}
