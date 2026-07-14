@@ -64,6 +64,7 @@ const isSavingBlock = ref(false);
 const isLoadingPublish = ref(false);
 const isBeefreeReady = ref(false);
 const _beefree = ref(null);
+const isPublishingBeefree = ref(false);
 
 // Beefree auto save
 const persistBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
@@ -114,10 +115,13 @@ const onBeefreeAutoSave = (jsonFile: any) => {
 };
 
 const onBeefreeSave = (payload: any) => {
-  if (props.webpage_sub_type === 'mailshot') {
-    persistBeefreeLayout(JSON.parse(payload.jsonFile));
+  if (isPublishingBeefree.value) {
+    isPublishingBeefree.value = false;
+    persistPublishBeefreeLayout(JSON.parse(payload.jsonFile), payload.htmlFile);
     return;
   }
+
+  persistBeefreeLayout(JSON.parse(payload.jsonFile), payload.htmlFile);
 };
 
 
@@ -200,6 +204,7 @@ const onPublish = async (action: routeType, popover) => {
 
 const beforePublish = (route, popover) => {
   if (props.webpage_sub_type === 'mailshot') {
+    isPublishingBeefree.value = true;
     _beefree.value?.beeInstance?.save();
     popover.close();
     return;
@@ -217,8 +222,9 @@ console.log('props',props)
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
-      <Publish :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
+      <Publish v-if="props.webpage_sub_type != 'mailshot'" :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
         @onPublish="(popover) => beforePublish(action.route, popover)" />
+        <div v-else></div>
     </template>
     <template #afterTitle v-if="isSavingBlock">
       <LoadingIcon v-tooltip="trans('Saving..')" />
