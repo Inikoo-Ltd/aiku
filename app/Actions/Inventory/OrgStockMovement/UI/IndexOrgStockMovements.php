@@ -134,6 +134,7 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.type',
                 'org_stock_movements.class',
                 'org_stock_movements.quantity',
+                'org_stock_movements.audited_quantity',
                 'org_stock_movements.org_amount',
                 'org_stock_movements.grp_amount',
                 'org_stock_movements.operation_type',

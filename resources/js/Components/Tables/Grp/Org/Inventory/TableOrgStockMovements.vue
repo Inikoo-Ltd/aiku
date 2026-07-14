@@ -8,7 +8,7 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
-import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faInboxIn, faInboxOut, faInfoCircle, faPersonCarry, faQuestionCircle, faTilde, faTruckLoading } from "@fal";
+import { faAnchor, faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faInboxIn, faInboxOut, faInfoCircle, faPersonCarry, faQuestionCircle, faTilde, faTruckLoading } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
@@ -97,19 +97,25 @@ function deliveryNoteRoute(orgStockMovement) {
       </span>
     </template>
 
-    <template #cell(type)="{ item }">
-      <span v-if="item.delivery_note_reference && item.delivery_note_id">
-        <Link class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold" :href="deliveryNoteRoute(item)">
+    <template #cell(type)="{ item: orgStockMovement }">
+      <span v-if="orgStockMovement.delivery_note_reference && orgStockMovement.delivery_note_id">
+        <Link class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold" :href="deliveryNoteRoute(orgStockMovement)">
           <FontAwesomeIcon 
             :icon="faTruckLoading"
             class="pr-1"
           />
-          {{ item.delivery_note_reference }}
+          {{ orgStockMovement.delivery_note_reference }}
         </Link>
       </span>
-      
+      <span v-else-if="orgStockMovement.is_migration_point" v-tooltip="ctrans('Anchor point. From where data is migrated from Aurora')">
+        {{ ctrans('Migration Point') }}
+        <FontAwesomeIcon
+          :icon="faAnchor"
+          class="text-blue-500 ml-1"
+        />
+      </span>
       <span v-else>
-        {{ item.type_label }}
+        {{ orgStockMovement.type_label }}
       </span>
     </template>
 
@@ -143,7 +149,10 @@ function deliveryNoteRoute(orgStockMovement) {
     </template>
 
     <template #cell(quantity)="{ item: orgStockMovement }">
-      <span :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3  border rounded-md w-fit min-w-14 text-center grid justify-self-end">
+      <span v-if="orgStockMovement.flow == 'audit'" class="border-blue-300 text-blue-500 bg-blue-100 px-3 border rounded-md w-fit min-w-14 text-center grid justify-self-end">
+        {{ Number(orgStockMovement.audited_quantity) }}
+      </span>
+      <span v-else :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3 border rounded-md w-fit min-w-14 text-center grid justify-self-end">
         {{ Number(orgStockMovement.quantity) }}
       </span>
     </template>
