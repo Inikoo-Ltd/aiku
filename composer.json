@@ -120,6 +120,7 @@
     "fakerphp/faker": "^1.9.1",
     "fruitcake/laravel-debugbar": "^4.3",
     "laradumps/laradumps": "^4.0",
+    "larastan/larastan": "^3.0",
     "laravel/boost": "^2.4",
     "laravel/pint": "^1.0",
     "league/flysystem-sftp-v3": "^3.26",
@@ -158,7 +159,8 @@
     ],
     "post-create-project-cmd": [
       "@php artisan key:generate --ansi"
-    ]
+    ],
+    "analyse": "phpstan analyse --memory-limit=4G"
   },
   "extra": {
     "laravel": {

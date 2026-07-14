@@ -8,11 +8,15 @@
 
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\MassMoveLocationOrgStocks;
+use App\Actions\Inventory\Location\PartialMoveLocationOrgStocks;
 use App\Actions\Inventory\Location\UpdateLocation;
+use App\Actions\Inventory\LocationOrgStock\DeleteOrgStockFromLocation;
 use Illuminate\Support\Facades\Route;
 
 Route::name('location.')->prefix('location/{location:id}')->group(function () {
     Route::patch('', UpdateLocation::class)->name('update');
     Route::delete('delete', DeleteLocation::class)->name('delete');
     Route::post('mass-move-stock', MassMoveLocationOrgStocks::class)->name('mass_move_stock');
+    Route::post('partial-move-stock', PartialMoveLocationOrgStocks::class)->name('partial_move_stock');
+    Route::delete('org-stock/{orgStock:id}', DeleteOrgStockFromLocation::class)->name('org_stock.delete')->withoutScopedBindings();
 });

@@ -105,6 +105,7 @@ const props = defineProps<{
 		addPortfolioRoute: routeType
 		bulk_upload: routeType
 		bulk_unlink: routeType
+		bulk_unlink_only: routeType
 		batch_all_dimensions_update: routeType
 		itemRoute: routeType
 		updatePortfolioRoute: routeType
@@ -1322,6 +1323,27 @@ const layout = inject("layout", layoutStructure)
 						submitPortfolioAction({
 							label: 'bulk-unlink',
 							name: props.routes.bulk_unlink.name,
+							parameters: { customerSalesChannel: customer_sales_channel.id },
+							method: 'post',
+						})
+				"
+				size="xs" />
+
+			<Button
+				v-if="selectedProducts.length > 0"
+				v-tooltip="
+					trans('Unlink Product :platform', {
+						platform: props.platform_data?.name,
+					})
+				"
+				:type="'tertiary'"
+				:label="trans('Unlink (:_count)', { _count: selectedProducts?.length })"
+				:loading="loadingAction.includes('bulk-unlink-only')"
+				@click="
+					() =>
+						submitPortfolioAction({
+							label: 'bulk-unlink-only',
+							name: props.routes.bulk_unlink_only.name,
 							parameters: { customerSalesChannel: customer_sales_channel.id },
 							method: 'post',
 						})

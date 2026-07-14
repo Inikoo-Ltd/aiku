@@ -24,7 +24,7 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
 
     public function getJobUniqueId(?int $orgStockMovementId): string
     {
-        return (string)($orgStockMovementId ?? 'empty');
+        return $orgStockMovementId ?? 'int';
     }
 
     public function handle(?int $orgStockMovementId): void
@@ -32,12 +32,17 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
         if (!$orgStockMovementId) {
             return;
         }
+
         $orgStockMovement = OrgStockMovement::find($orgStockMovementId);
+
         if (!$orgStockMovement) {
             return;
         }
         $orgStock = $orgStockMovement->orgStock;
         // If you want to loop
+        if (!$orgStockMovement->location) {
+            return;
+        }
         $runningQuantity    = $this->getStockQuantity($orgStock, $orgStockMovement->location, $orgStockMovement->date);
         $runningQuantityOrg = 0;
 

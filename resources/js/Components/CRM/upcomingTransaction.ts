@@ -9,6 +9,8 @@ export interface UpcomingTransaction {
     product_code: string
     product_name: string
     quantity: number
+    quantity_fractional?: [number, [number, number]]
+    product_units?: number | string | null
     public_notes: string | null
     private_notes: string | null
     type: UpcomingTransactionType

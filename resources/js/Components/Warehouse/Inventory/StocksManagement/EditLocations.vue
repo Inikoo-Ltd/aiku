@@ -119,18 +119,16 @@ const handleUnlink = (loc: { id: any }) => {
                         >
                         <!-- x  -->
                             <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
-                                <div v-if="layout.app.environment === 'local'" @click="() => {
+                                <div @click="() => {
                                     changeModel()
                                 }" xclick="handleUnlink(loc)" class="cursor-pointer text-red-500 opacity-50 hover:opacity-100" v-tooltip="trans('Unlink Location')">
                                     <LoadingIcon v-if="isLoadingdelete" />
                                     <FontAwesomeIcon v-else icon="fal fa-unlink" class="" fixed-width aria-hidden="true" />
                                 </div>
-                                <FontAwesomeIcon v-else :icon="faBan" class="text-red-500" v-tooltip="'Work in Progress. Remember to disable this on Production when done'"/>
                             </template>
                         </ModalConfirmationDelete>
                          <div
                             v-else
-                            v-if="layout.app.environment === 'local'"
                             @click="handleUnlink(loc)"
                             class="cursor-pointer text-red-500 opacity-50 hover:opacity-100"
                             v-tooltip="trans('Unlink Location (no stock)')"

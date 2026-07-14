@@ -11,7 +11,9 @@ namespace App\Actions\Chat\Agent;
 use App\Actions\OrgAction;
 use App\Models\Chat\ChatAgent;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -24,9 +26,11 @@ class StoreAgent extends OrgAction
     }
 
 
-    public function htmlResponse(): void
+    public function htmlResponse(ChatAgent $chatAgent): RedirectResponse
     {
-        request()->session()->flash('notification', [
+        return Redirect::route('grp.org.chat.agents.show', [
+            'organisation' => $this->organisation->slug,
+        ])->with('notification', [
             'status'      => 'success',
             'title'       => __('Success!'),
             'description' => __('Agent successfully created.'),
