@@ -3,7 +3,6 @@ import { getStyles } from "@/Composables/styles";
 import { ref, onMounted, inject, watch, computed, defineAsyncComponent } from "vue";
 import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
 const SliderSquare = defineAsyncComponent(() => import("@/Components/Banners/Slider/SliderSquare.vue"));
 const SliderLandscape = defineAsyncComponent(() => import("@/Components/Banners/Slider/SliderLandscape.vue"));
@@ -30,13 +29,6 @@ const layout = inject("layout");
 const data = ref<any>(null);
 const isLoading = ref(false);
 
-/*
- * Measure the real viewport directly instead of waiting for the screenType prop
- * to settle. The prop starts as 'desktop' for SSR hydration and only flips to
- * the real device after the parent's onMounted, which made mobile devices pick
- * (and fetch) the desktop banner first before correcting. Reading window here in
- * setup means the very first client fetch already targets the right device.
- */
 const detectScreenType = (): "mobile" | "tablet" | "desktop" => {
   if (typeof window === "undefined") return props.screenType ?? "desktop";
   if (window.innerWidth < 640) return "mobile";
@@ -86,32 +78,57 @@ const bannerRatio = computed(() => {
   return data.value?.ratio ?? '4/1'
 })
 
-const bannerType = computed(() => {
-  return data.value?.compiled_layout?.type
+/*
+ * Resolve the embedded banner data for a given view directly from fieldValue,
+ * independent of the active banner. On the server activeId settles on desktop
+ * (no window), so deriving the mobile box from the active banner recomputes it
+ * on the client and shifts the layout. Reading each view's own banner keeps the
+ * reserved geometry stable from first paint on every device.
+ */
+const resolveBannerId = (view: 'mobile' | 'desktop'): number | string | null => {
+  const responsive = props.fieldValue?.banner_responsive
+
+  if (!responsive) {
+    return props.fieldValue?.banner_id ?? null
+  }
+
+  return responsive?.[view]?.id ?? responsive?.desktop?.id ?? props.fieldValue?.banner_id ?? null
+}
+
+const bannerDataForView = (view: 'mobile' | 'desktop') => embeddedBannerData(resolveBannerId(view))
+
+const imageRatioForView = (view: 'mobile' | 'desktop'): number | null => {
+  const image = bannerDataForView(view)?.compiled_layout?.components?.[0]?.image
+  const variant = image?.[view] ?? image?.desktop
+
+  if (variant?.width > 0 && variant?.height > 0) {
+    return variant.width / variant.height
+  }
+
+  return null
+}
+
+
+const bannerStyleForView = (view: 'mobile' | 'desktop'): Record<string, string> => {
+  const banner = bannerDataForView(view)
+  const bannerType = banner?.compiled_layout?.type
     ?? props.fieldValue?.compiled_layout?.type
     ?? 'landscape'
-})
 
-/*
- * The box geometry for both views is emitted as CSS variables consumed by the
- * .banner-box media queries, so the reserved size is correct from first paint
- * on every device regardless of when the screenType prop settles.
- */
-const bannerStyleForView = (view: 'mobile' | 'desktop'): Record<string, string> => {
   let style: Record<string, string>
 
-  if (bannerType.value === 'square') {
+  if (bannerType === 'square') {
     style = view === 'mobile'
       ? { width: '100%', aspectRatio: '1 / 1' }
       : { width: '100%', height: SQUARE_BANNER_HEIGHT }
   } else if (view === 'mobile') {
-    const ratio = mobileImageRatio.value
+    const ratio = imageRatioForView('mobile')
 
     style = ratio && ratio < LANDSCAPE_RATIO_THRESHOLD
       ? { width: MOBILE_BANNER_WIDTH, maxWidth: '100%', aspectRatio: `${ratio}` }
       : { width: '100%', height: MOBILE_BANNER_HEIGHT }
   } else {
-    const [w, h] = (bannerRatio.value || '4/1').split('/').map(Number)
+    const [w, h] = (banner?.ratio ?? '4/1').split('/').map(Number)
 
     style = {
       width: '100%',
@@ -149,17 +166,6 @@ const bannerBoxVars = computed<Record<string, string>>(() => {
   return vars
 })
 
-
-const mobileImageRatio = computed<number | null>(() => {
-  const image = data.value?.compiled_layout?.components?.[0]?.image
-  const variant = image?.mobile ?? image?.desktop
-
-  if (variant?.width > 0 && variant?.height > 0) {
-    return variant.width / variant.height
-  }
-
-  return null
-})
 
 const getDataBanner = async (): Promise<void> => {
   if (typeof window === "undefined") return;
@@ -223,8 +229,8 @@ onMounted(() => {
 
 <template>  
   <div :id="fieldValue?.id ? fieldValue?.id : 'banner'+indexBlock" component="banner">
-    <div v-if="activeId && !data" class="banner-box flex justify-center items-center mx-auto" :style="bannerBoxVars">
-      <LoadingIcon v-if="isLoading" class="text-4xl" />
+    <div v-if="activeId && !data" class="banner-box mx-auto" :style="bannerBoxVars">
+      <div class="skeleton w-full h-full"></div>
     </div>
 
     <section v-else-if="data" class="banner-box relative mx-auto" :style="bannerBoxVars">
