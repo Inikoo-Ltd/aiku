@@ -27,7 +27,7 @@ class RepairAuditDeltaOrgStockMovement implements ShouldBeUnique
     }
 
 
-    public function handle(?int $orgStockId, Command $command): void
+    public function handle(?int $orgStockId, ?Command $command = null): void
     {
         if (!$orgStockId) {
             return;
@@ -51,7 +51,7 @@ class RepairAuditDeltaOrgStockMovement implements ShouldBeUnique
             $movement->update([
                 'quantity'  => $movement->audited_quantity - $runningQuantity
             ]);
-            $command->info("$movement->date $orgStock->slug {$movement->location->code} $movement->audited_quantity $movement->running_quantity_org_stock $movement->quantity  ");
+            $command?->info("$movement->date $orgStock->slug {$movement->location->code} $movement->audited_quantity $movement->running_quantity_org_stock $movement->quantity  ");
 
         }
 
