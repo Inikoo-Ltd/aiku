@@ -22,6 +22,7 @@ class OrgStockFamiliesSearchResultResource extends JsonResource
 
         return [
             'name'  => $orgStockFamily->name,
+            'slug'  => $orgStockFamily->slug,
             'code'  => $orgStockFamily->code,
             'state' => $orgStockFamily->state,
             'id'    => $orgStockFamily->id,
