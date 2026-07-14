@@ -2,6 +2,9 @@ import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
+import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
+import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
+import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"
 
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
@@ -64,18 +67,18 @@ const SubDepartment2Iris = async(() => import("@/Iris/Components/IrisBlocks/SubD
 const SubDepartment3Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris3.vue"))
 
 const CtaImageBackroundIris = async(() => import("@/Iris/Components/IrisBlocks/CtaImageBackroundIris.vue"))
-const WowsbarBannerIris = async(() => import("@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"))
+/* const WowsbarBannerIris = async(() => import("@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue")) */
+/* const ImageIris = async(() => import("@/Iris/Components/IrisBlocks/ImageIris.vue")) */
+/* const TextContentIris = async(() => import("@/Iris/Components/IrisBlocks/TextContentIris.vue")) */
 const BentoGridIris = async(() => import("@/Iris/Components/IrisBlocks/BentoGridIris.vue"))
 const GalleryIris = async(() => import("@/Iris/Components/IrisBlocks/GalleryIris.vue"))
 const Cta1Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta1Iris.vue"))
 const Cta2Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta2Iris.vue"))
 const Cta3Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta3Iris.vue"))
 const IframeIris = async(() => import("@/Iris/Components/IrisBlocks/IframeIris.vue"))
-const ImageIris = async(() => import("@/Iris/Components/IrisBlocks/ImageIris.vue"))
 const OverviewIris = async(() => import("@/Iris/Components/IrisBlocks/OverviewIris.vue"))
 const Overview2Iris = async(() => import("@/Iris/Components/IrisBlocks/Overview2Iris.vue"))
 const ScriptIris = async(() => import("@/Iris/Components/IrisBlocks/ScriptIris.vue"))
-const TextContentIris = async(() => import("@/Iris/Components/IrisBlocks/TextContentIris.vue"))
 const CtaAurora1Iris = async(() => import("@/Iris/Components/IrisBlocks/CtaAurora1Iris.vue"))
 const TextColumnIris = async(() => import("@/Iris/Components/IrisBlocks/TextColumnIris.vue"))
 const PricingIris = async(() => import("@/Iris/Components/IrisBlocks/PricingIris.vue"))
