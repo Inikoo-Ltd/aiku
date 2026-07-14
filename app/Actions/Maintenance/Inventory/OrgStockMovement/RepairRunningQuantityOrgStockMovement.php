@@ -1,4 +1,5 @@
 <?php
+
 /** @noinspection PhpUnused */
 
 /*
@@ -10,6 +11,8 @@
 
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
+use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
+use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStockMovement\CalculateRunningQuantityOrgStockMovement;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
@@ -24,24 +27,57 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
 
     public string $jobQueue = 'sales_slave_historic';
 
-    public function getJobUniqueId(OrgStock $orgStock): string
+    public function getJobUniqueId(?int $orgStockId): string
     {
-        return $orgStock->id;
+        return $orgStockId ?? 'empty';
     }
 
 
-    public function handle(OrgStock $orgStock, Command $command): void
+    public function handle(?int $orgStockId, Command $command): void
     {
+        if (!$orgStockId) {
+            return;
+        }
+        $orgStock = OrgStock::find($orgStockId);
+
+        if (!$orgStock) {
+            return;
+        }
+
         /** @var OrgStockMovement $movement */
         foreach (
             $orgStock->orgStockMovements()->orderBy('date')->get() as $movement
         ) {
-            $command->info("Repairing: $orgStock->slug $movement->date");
-            CalculateRunningQuantityOrgStockMovement::run($movement);
+            $movement = CalculateRunningQuantityOrgStockMovement::run($movement->id);
+            $command->info("$movement->date $orgStock->slug {$movement->location->code} $movement->running_quantity $movement->running_quantity_org_stock  ");
+
         }
+
+        foreach (
+            $orgStock->locations as $location
+        ) {
+
+            $locationOrgStock = $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
+            $stockQuantity = GetLocationOrgStockQuantity::run($orgStock, $location);
+            UpdateLocationOrgStock::run(
+                $locationOrgStock,
+                [
+                    'quantity' => $stockQuantity
+                ]
+            );
+            $command->info("$location->code $stockQuantity");
+        }
+
+        $orgStock->refresh();
+        $command->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations);
+
+
+
+
+
     }
 
-    public string $commandSignature = 'repair:running_quantity_org_stock_movement {--org_stock_slug=} {--organisation=} {--async}';
+    public string $commandSignature = 'repair:running_quantity_org_stock_movement {--s|org_stock_slug=} {--o|organisation=} {--a|async}';
 
     public function asCommand(Command $command): int
     {
@@ -69,9 +105,9 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
             ->chunkById(250, function ($orgStockChunk) use ($command, $async) {
                 foreach ($orgStockChunk as $orgStock) {
                     if ($async) {
-                        $this->dispatch($orgStock, $command);
+                        RepairRunningQuantityOrgStockMovement::dispatch($orgStock->id);
                     } else {
-                        $this->handle($orgStock, $command);
+                        $this->handle($orgStock->id, $command);
                     }
                 }
             });

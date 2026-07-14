@@ -8,7 +8,7 @@
 
 namespace App\Actions\Inventory\LocationOrgStock;
 
-use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
@@ -82,7 +82,7 @@ class StoreLocationOrgStock extends OrgAction
         RepairOrgStockMissingLocationIds::dispatch($orgStock->id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($orgStock->id)->delay(2);
 
-        LocationHydrateStocks::dispatch($location)->delay($this->hydratorsDelay);
+        LocationHydrateOrgStocks::dispatch($location)->delay($this->hydratorsDelay);
         LocationHydrateStockValue::dispatch($location)->delay($this->hydratorsDelay);
         OrgStockHydrateLocations::dispatch($orgStock)->delay($this->hydratorsDelay);
         CalculateOrgStockCurrentStockHistories::dispatch($orgStock->id);

@@ -115,10 +115,14 @@ class IndexOrgStockMovements extends OrgAction
                 }
             );
         } elseif ($parent instanceof Location) {
-            $queryBuilder->where('location_id', $parent->id);
+            $queryBuilder->where('org_stock_movements.location_id', $parent->id);
         } else {
             $queryBuilder->where('org_stock_movements.organisation_id', $organisation->id);
         }
+
+        $queryBuilder
+            ->leftJoin('pickings', 'pickings.org_stock_movement_id', 'org_stock_movements.id')
+            ->leftJoin('delivery_notes', 'pickings.delivery_note_id', 'delivery_notes.id');
 
 
         return $queryBuilder
@@ -144,7 +148,9 @@ class IndexOrgStockMovements extends OrgAction
                 'locations.code as location_code',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.name as org_stock_name',
-                'org_stock_movements.user_id'
+                'org_stock_movements.user_id',
+                'delivery_notes.id as delivery_note_id',
+                'delivery_notes.reference as delivery_note_reference',
             ])
             ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')
@@ -197,7 +203,7 @@ class IndexOrgStockMovements extends OrgAction
                 ->column(key: 'location_code', label: __('Location'))
                 ->column(key: 'quantity', label: __('Delta'), sortable: true, align: 'right')
                 ->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), sortable: true, align: 'right');
-                // ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
+            // ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
         };
     }
 

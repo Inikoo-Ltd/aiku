@@ -67,6 +67,7 @@ const onAddNewLocation = () => {
 const isConfirmOpen = ref(false)
 
 const newLocation = ref<stockLocation | null>(null)
+const unlinkingLocationId = ref<any>(null)
 const handleUnlink = (loc: { id: any }) => {
     router.delete(
         route(props.routes.disassociate_location_route.name, {
@@ -74,12 +75,18 @@ const handleUnlink = (loc: { id: any }) => {
         }),
         {
             preserveScroll: true,
+            onStart: () => {
+                unlinkingLocationId.value = loc.id
+            },
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
                     text: trans("Location unlinked successfully"),
                     type: "success"
                 })
+            },
+            onFinish: () => {
+                unlinkingLocationId.value = null
             }
         }
     )
@@ -91,14 +98,26 @@ const handleUnlink = (loc: { id: any }) => {
         <!-- V-FOR 1: Existing locations -->
         <div class="flex flex-col gap-y-6">
             <template v-if="props.locations.length > 0">
+                <div class="grid grid-cols-7 gap-x-4 border-b pb-2 items-center gap-1">
+                    <div class="col-span-2 md:col-span-4 flex items-center gap-x-2 font-medium">
+                        {{ ctrans("Code") }}
+                    </div>
+                    <div class="col-span-3 md:col-span-2 font-medium text-right">
+                        {{ ctrans("Current stock") }}
+                    </div>
+                    <div class="col-span-2 md:col-span-1 flex justify-end items-center gap-x-2 font-medium">
+                        {{ ctrans("Actions") }}
+                    </div>
+                </div>
+
                 <div v-for="(loc, idx) in props.locations" :key="'existing-' + loc.id"
-                    class="grid grid-cols-7 border-b pb-2 items-center gap-1">
-                    <div class="col-span-2 md:col-span-5 flex items-center gap-x-2">
+                    class="grid grid-cols-7 gap-x-4 border-b border-dashed pb-2 items-center gap-1">
+                    <div class="col-span-2 md:col-span-4 flex items-center gap-x-2">
                         {{ loc.code }}
                     </div>
-                    <div class="col-span-3 md:col-span-1">
-                        <span class="text-sm italic text-gray-400">
-                            {{ trans("Current Stock") }} {{ Number(loc.quantity) }}
+                    <div class="col-span-3 md:col-span-2 text-right">
+                        <span class="text-sm italic text-gray-400 text-right tabular-nums">
+                            {{ Number(loc.quantity) }}
                         </span>
                     </div>
                     <div class="col-span-2 md:col-span-1 flex justify-end items-center gap-x-2">
@@ -127,14 +146,15 @@ const handleUnlink = (loc: { id: any }) => {
                                 </div>
                             </template>
                         </ModalConfirmationDelete>
-                         <div
+                        <div
                             v-else
-                            v-if="layout.app.environment === 'local'"
-                            @click="handleUnlink(loc)"
+                            @click="unlinkingLocationId === loc.id ? null : handleUnlink(loc)"
                             class="cursor-pointer text-red-500 opacity-50 hover:opacity-100"
+                            :class="{ 'pointer-events-none': unlinkingLocationId === loc.id }"
                             v-tooltip="trans('Unlink Location (no stock)')"
                         >
-                            <FontAwesomeIcon icon="fal fa-unlink" fixed-width />
+                            <LoadingIcon v-if="unlinkingLocationId === loc.id" />
+                            <FontAwesomeIcon v-else icon="fal fa-unlink" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -154,7 +174,7 @@ const handleUnlink = (loc: { id: any }) => {
         </div>
         <!-- Section: buttons -->
         <div class="relative flex gap-x-2 isolate z-30 mt-4 justify-self-end">
-            <Button :label="trans('Cancel')" type="cancel" @click="() => emits('close')" />
+            <Button :label="trans('Cancel')" type="tertiary" icon="far fa-arrow-left" @click="() => emits('close')" />
         </div>
 
     </div>

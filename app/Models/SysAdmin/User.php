@@ -92,6 +92,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Warehouse> $authorisedWarehouses
  * @property-read ChatAgent|null $chatAgent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DispatchedEmail> $dispatchedEmails
+ * @property-read \App\Models\SysAdmin\Organisation|null $employedInOrganisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $employees
  * @property-read \App\Models\Notifications\FcmToken|null $fcmToken
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Notifications\FcmToken> $fcmTokens
@@ -245,6 +246,11 @@ class User extends Authenticatable implements HasMedia, Auditable
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
+    }
+
+    public function employedInOrganisation(): BelongsTo
+    {
+        return $this->belongsTo(Organisation::class, 'employed_in_organisation_id');
     }
 
 
