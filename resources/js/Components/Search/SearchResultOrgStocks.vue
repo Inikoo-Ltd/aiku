@@ -29,15 +29,10 @@ type Tab = 'org_stocks' | 'org_stock_families'
 
 const activeTab = ref<Tab>('org_stocks')
 const loadingId = ref<number | null>(null)
-
-const routeParams = route().routeParams
 </script>
 
 <template>
     <div class="col-span-3 border-r p-4 bg-gray-50">
-        <p class="text-xs text-gray-400 mb-1">{{ ctrans("Query") }}</p>
-        <p class="font-semibold text-sm mb-4">{{ query }}</p>
-        <p class="text-xs text-gray-400 mb-2">{{ ctrans("Summary") }}</p>
         <div v-if="isLoading" class="space-y-2">
             <Skeleton height="2.5rem" borderRadius="0.375rem" />
             <Skeleton height="2.5rem" borderRadius="0.375rem" />
@@ -90,7 +85,7 @@ const routeParams = route().routeParams
                     <Link
                         v-for="orgStock in results.org_stocks"
                         :key="orgStock.id"
-                        :href="route('grp.helpers.redirect_org_stock', [orgStock.id])"
+                        :href="route('grp.majordomo.redirect_org_stock', [orgStock.id])"
                         class="block group p-4 rounded-md border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer mb-3"
                         @start="() => { model = false; loadingId = orgStock.id }"
                         @finish="() => loadingId = null"
@@ -117,12 +112,7 @@ const routeParams = route().routeParams
                     <Link
                         v-for="family in results.org_stock_families"
                         :key="family.id"
-                        :href="route('grp.org.warehouses.show.inventory.org_stock_families.show', {
-                            organisation: routeParams.organisation,
-                            warehouse: routeParams.warehouse,
-                            orgStockFamily: family.slug,
-
-                        })"
+                        :href="route('grp.majordomo.redirect_org_stock_family', [family.id])"
                         class="block p-4 rounded-md border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer mb-3"
                         @start="() => { model = false; loadingId = family.id }"
                         @finish="() => loadingId = null"

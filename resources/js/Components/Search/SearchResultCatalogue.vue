@@ -58,7 +58,7 @@ const props = defineProps<{
                         <Link
                             v-for="category in results.product_categories"
                             :key="category.id"
-                            :href="route('grp.helpers.redirect_product_category', { productCategory: category.id })"
+                            :href="route('grp.majordomo.redirect_product_category', { productCategory: category.id })"
                             class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
                             @success="() => model = false"
                         >
@@ -79,7 +79,7 @@ const props = defineProps<{
                         <Link
                             v-for="collection in results.collections"
                             :key="collection.id"
-                            :href="route('grp.helpers.redirect_collection', { collection: collection.id })"
+                            :href="route('grp.majordomo.redirect_collection', { collection: collection.id })"
                             class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
                             @success="() => model = false"
                         >
@@ -125,7 +125,7 @@ const props = defineProps<{
                         <Link
                             v-for="product in results.products.slice(0, 9)"
                             :key="product.id"
-                            :href="route('grp.helpers.redirect_product', { product: product.id })"
+                            :href="route('grp.majordomo.redirect_product', { product: product.id })"
                             class="group flex flex-col rounded-lg overflow-hidden border border-transparent hover:border-slate-200 hover:shadow-sm transition cursor-pointer"
                             @success="() => model = false"
                         >
