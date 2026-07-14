@@ -73,11 +73,12 @@ function stockRoute(stock: Stock) {
   }
 }
 
-const locationRoute = (orgStockMovement) => {
+const locationRoute = (orgStockMovement, extraData = {}) => {
   return route('grp.org.warehouses.show.infrastructure.locations.show', {
     organisation: orgStockMovement.organisation_slug,
     warehouse: orgStockMovement.warehouse_slug,
     location: orgStockMovement.location_slug,
+    ...extraData
   })
 }
 
@@ -97,21 +98,19 @@ function deliveryNoteRoute(orgStockMovement) {
     </template>
 
     <template #cell(type)="{ item }">
+      <span v-if="item.delivery_note_reference && item.delivery_note_id">
+        <Link class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold" :href="deliveryNoteRoute(item)">
+          <FontAwesomeIcon 
+            :icon="faTruckLoading"
+            class="pr-1"
+          />
+          {{ item.delivery_note_reference }}
+        </Link>
+      </span>
       
-      <div class="flex">
-        <span>
-          {{ item.type }}
-        </span>
-        <span v-if="item.delivery_note_reference && item.delivery_note_id" class="ml-auto">
-            <Link class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold" :href="deliveryNoteRoute(item)">
-              <FontAwesomeIcon 
-                :icon="faTruckLoading"
-                class="pr-1"
-              />
-              {{ item.delivery_note_reference }}
-            </Link>
-          </span>
-      </div>
+      <span v-else>
+        {{ item.type_label }}
+      </span>
     </template>
 
     <template #cell(location_code)="{ item: orgStockMovement }">
@@ -119,12 +118,15 @@ function deliveryNoteRoute(orgStockMovement) {
         <Link class="primaryLink" :href="locationRoute(orgStockMovement)">
           {{ orgStockMovement.location_code }}
         </Link>
-        <span class="my-auto ml-auto px-2 border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
-          <FontAwesomeIcon 
-            :icon="faBoxFull"
-          />
-          {{ orgStockMovement.running_quantity ?? 0 }}
-        </span>
+        
+        <Link class="ml-auto" :href="locationRoute(orgStockMovement, {tab: 'stock_movements'})">
+          <span class="my-auto px-2 py-[0.125rem] border rounded-md border-gray-400 hover:animate-pulse" v-tooltip="ctrans('Running quantity under this location')">
+            <FontAwesomeIcon 
+              :icon="faBoxFull"
+            />
+            {{ orgStockMovement.running_quantity ?? 0 }}
+          </span>
+        </Link>
       </div>
     </template>
 
@@ -143,6 +145,21 @@ function deliveryNoteRoute(orgStockMovement) {
     <template #cell(quantity)="{ item: orgStockMovement }">
       <span :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3  border rounded-md w-fit min-w-14 text-center grid justify-self-end">
         {{ Number(orgStockMovement.quantity) }}
+      </span>
+    </template>
+
+    <template #cell(running_quantity_location)="{ item: orgStockMovement }">
+      <span class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
+        <FontAwesomeIcon 
+          :icon="faBoxFull"
+        />
+        {{ orgStockMovement.running_quantity ?? 0 }}
+      </span>
+    </template>
+
+    <template #cell(running_quantity_org_stock)="{ item: orgStockMovement }">
+      <span v-if="orgStockMovement.running_quantity_org_stock">
+        {{ (orgStockMovement.type == 'location-transfer' && orgStockMovement.quantity < 0) ? (Number(orgStockMovement.running_quantity_org_stock) + -(Number(orgStockMovement.quantity)))  : Number(orgStockMovement.running_quantity_org_stock) }}
       </span>
     </template>
   </Table>
