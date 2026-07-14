@@ -8,7 +8,7 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
-import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faInboxIn, faInboxOut, faInfoCircle, faPersonCarry, faQuestionCircle, faTilde } from "@fal";
+import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faInboxIn, faInboxOut, faInfoCircle, faPersonCarry, faQuestionCircle, faTilde, faTruckLoading } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
@@ -81,18 +81,40 @@ const locationRoute = (orgStockMovement) => {
   })
 }
 
+function deliveryNoteRoute(orgStockMovement) {
+    return route("grp.helpers.redirect_delivery_notes", [orgStockMovement.delivery_note_id])
+}
+
 </script>
 
 <template>
 
   <Table :resource="data" :name="tab" class="mt-5">
-    <template #cell(user)="{item: orgStockMovement}">
+    <template #cell(user)="{ item: orgStockMovement }">
       <span :class="orgStockMovement.user?.contact_name ? 'font-semibold' : ''">
         {{ orgStockMovement.user ? `${orgStockMovement.user?.contact_name} [${orgStockMovement.user?.username}]` : 'System' }}
       </span>
     </template>
 
-    <template #cell(location_code)="{item: orgStockMovement}">
+    <template #cell(type)="{ item }">
+      
+      <div class="flex">
+        <span>
+          {{ item.type }}
+        </span>
+        <span v-if="item.delivery_note_reference && item.delivery_note_id" class="ml-auto">
+            <Link class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold" :href="deliveryNoteRoute(item)">
+              <FontAwesomeIcon 
+                :icon="faTruckLoading"
+                class="pr-1"
+              />
+              {{ item.delivery_note_reference }}
+            </Link>
+          </span>
+      </div>
+    </template>
+
+    <template #cell(location_code)="{ item: orgStockMovement }">
       <div class="flex">
         <Link class="primaryLink" :href="locationRoute(orgStockMovement)">
           {{ orgStockMovement.location_code }}
@@ -112,13 +134,13 @@ const locationRoute = (orgStockMovement) => {
       />
     </template>
 
-    <template #cell(flow)="{item: orgStockMovement}">
+    <template #cell(flow)="{ item: orgStockMovement }">
       <FontAwesomeIcon v-if="orgStockMovement.flow == 'in'" v-tooltip="trans('Stock Coming In')" :icon="faInboxIn" class="text-green-500"/>
       <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'out'" v-tooltip="trans('Stock Coming Out')" :icon="faInboxOut" class="text-red-500"/>
       <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'audit'" v-tooltip="trans('Stock Audited')" :icon="faClipboardCheck" class="text-gray-500"/>
     </template>
 
-    <template #cell(quantity)="{item: orgStockMovement}">
+    <template #cell(quantity)="{ item: orgStockMovement }">
       <span :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3  border rounded-md w-fit min-w-14 text-center grid justify-self-end">
         {{ Number(orgStockMovement.quantity) }}
       </span>
