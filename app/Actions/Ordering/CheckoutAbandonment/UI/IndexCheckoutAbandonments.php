@@ -164,9 +164,9 @@ class IndexCheckoutAbandonments extends OrgAction
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('transactions', function ($join) {
             $join->on('orders.id', '=', 'transactions.order_id')
+                ->where('transactions.model_type', 'Product')
                 ->whereNull('transactions.deleted_at');
         });
-        $query->selectRaw('count(transactions.id) as number_items');
         $query->groupBy([
             'checkout_abandonments.id',
             'orders.reference',
@@ -213,6 +213,7 @@ class IndexCheckoutAbandonments extends OrgAction
                 'organisations.slug as organisation_slug',
                 'currencies.code as currency_code',
             ])
+            ->selectRaw('count(transactions.id) as number_items')
             ->allowedSorts(['checkout_visited_at', 'total_amount', 'customer_name', 'shop_code', 'organisation_code', 'email_sent_at'])
             ->withBetweenDates(['checkout_visited_at'])
             ->allowedFilters([$globalSearch])
