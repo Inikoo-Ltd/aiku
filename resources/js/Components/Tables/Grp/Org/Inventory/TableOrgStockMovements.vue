@@ -128,19 +128,19 @@ function deliveryNoteRoute(orgStockMovement) {
         <Link class="ml-auto" :href="locationRoute(orgStockMovement, {tab: 'stock_movements'})">
           <span v-if="orgStockMovement.type == 'disassociate'">
           </span>
-          <span v-else-if="orgStockMovement.flow == 'audit' && orgStockMovement.audited_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
-            <FontAwesomeIcon 
-              :icon="faBoxFull"
-            />
-            {{ orgStockMovement.audited_quantity ?? 0 }}
+          <span v-else-if="orgStockMovement.flow == 'audit'">
+            <span v-if="orgStockMovement.audited_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
+              <FontAwesomeIcon 
+                :icon="faBoxFull"
+              />
+              {{ orgStockMovement.audited_quantity ?? 0 }}
+            </span>
           </span>
-          <span v-else-if="orgStockMovement.running_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
+          <span v-else class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
             <FontAwesomeIcon 
               :icon="faBoxFull"
             />
             {{ orgStockMovement.running_quantity ?? 0 }}
-          </span>
-          <span v-else>
           </span>
         </Link>
       </div>
@@ -169,25 +169,24 @@ function deliveryNoteRoute(orgStockMovement) {
     <template #cell(running_quantity_location)="{ item: orgStockMovement }">
       <span v-if="orgStockMovement.type == 'disassociate'">
       </span>
-      <span v-else-if="orgStockMovement.flow == 'audit' && orgStockMovement.audited_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
-        <FontAwesomeIcon 
-          :icon="faBoxFull"
-        />
-        {{ orgStockMovement.audited_quantity ?? 0 }}
+      <span v-else-if="orgStockMovement.flow == 'audit'">
+        <span v-if="orgStockMovement.audited_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
+          <FontAwesomeIcon 
+            :icon="faBoxFull"
+          />
+          {{ orgStockMovement.audited_quantity ?? 0 }}
+        </span>
       </span>
-      <span v-else-if="orgStockMovement.running_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
+      <span v-else class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
         <FontAwesomeIcon 
           :icon="faBoxFull"
         />
         {{ orgStockMovement.running_quantity ?? 0 }}
       </span>
-      <span v-else>
-      </span>
     </template>
 
     <template #cell(running_quantity_org_stock)="{ item: orgStockMovement }">
-      <span 
-        v-if="orgStockMovement.running_quantity_org_stock" 
+      <span
         class="border rounded-md px-2 py-[0.125rem]" 
         :class="[
             orgStockMovement.flow == 'audit' 
