@@ -111,7 +111,7 @@ const selectTarget = (location: any) => {
     }
 
     moveStock.value.to = location
-    moveStock.value.quantity = 0
+    // moveStock.value.quantity = 0
     syncForm()
 }
 
@@ -276,9 +276,18 @@ onMounted(() => {
             </button>
 
             <div class="flex items-center justify-center gap-3 flex-wrap text-sm sm:text-base">
-                <div class="text-center">
-                    <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Source') }}</div>
-                    <div class="font-medium" :class="moveStock.from ? 'text-green-600' : 'text-gray-400 italic'">
+                <div
+                    class="group text-center border rounded-lg px-4 py-2 transition"
+                    :class="moveStock.from ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'"
+                >
+                    <div
+                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition"
+                        :class="moveStock.from ? 'text-green-600' : 'text-green-500'"
+                    >
+                        <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
+                        {{ trans('Source') }}
+                    </div>
+                    <div class="font-medium" :class="moveStock.from ? 'text-green-700' : 'text-gray-400 italic'">
                         {{ moveStock.from?.name || '—' }}
                     </div>
                 </div>
@@ -294,9 +303,18 @@ onMounted(() => {
 
                 <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
 
-                <div class="text-center">
-                    <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Destination') }}</div>
-                    <div class="font-medium" :class="moveStock.to ? 'text-blue-600' : 'text-gray-400 italic'">
+                <div
+                    class="group text-center border rounded-lg px-4 py-2 transition"
+                    :class="moveStock.to ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'"
+                >
+                    <div
+                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition"
+                        :class="moveStock.to ? 'text-blue-600' : 'text-blue-500'"
+                    >
+                        <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
+                        {{ trans('Destination') }}
+                    </div>
+                    <div class="font-medium" :class="moveStock.to ? 'text-blue-700' : 'text-gray-400 italic'">
                         {{ moveStock.to?.name || '—' }}
                     </div>
                 </div>
@@ -313,7 +331,7 @@ onMounted(() => {
                 </span>
                 <span v-else-if="!moveStock.quantity">
                     <FontAwesomeIcon :icon="faInfoCircle" />
-                    {{ trans('Enter the quantity to move into the destination') }}
+                    {{ trans('Enter the quantity to move from the source') }}
                 </span>
             </div>
         </div>
@@ -341,7 +359,7 @@ onMounted(() => {
                             ? 'text-gray-400 opacity-90 cursor-not-allowed' :
                         moveStock.from
                             ? 'cursor-pointer text-gray-400 opacity-30 hover:opacity-80' :
-                        'cursor-pointer text-gray-400 hover:text-green-600'
+                        'cursor-pointer opacity-50 hover:opacity-100 text-green-600'
                     ]"
                     fixed-width
                     aria-hidden="true"
@@ -354,12 +372,25 @@ onMounted(() => {
 
                     <!-- Preview: original + change -> result -->
                     <span
-                        v-if="getStockChangeIndicator(form) !== null"
+                        v-if="isSource(form) || getStockChangeIndicator(form) !== null"
                         v-tooltip="trans('Stock preview after move')"
                         class="tabular-nums text-xs flex items-center gap-x-1"
                     >
-                        <span class="text-gray-500">{{ form.stock }}</span>
-                        <span :class="getStockChangeIndicator(form) > 0 ? 'text-green-600' : 'text-red-500'">
+                        <span @click="updateMoveQuantity(Number(form.stock))" class="text-gray-500 cursor-pointer">{{ form.stock }}</span>
+                        <span v-if="isSource(form)" class="text-red-500 font-semibold">−</span>
+                        <div v-if="isSource(form)" class="w-24 shrink-0">
+                            <InputNumber
+                                :modelValue="moveStock.quantity"
+                                @input="(event: { value: any }) => updateMoveQuantity(event.value)"
+                                :min="0"
+                                :max="getMaxQuantity()"
+                                :step="1"
+                                size="small"
+                                fluid
+                                inputClass="!py-0 !text-red-600"
+                            />
+                        </div>
+                        <span v-else :class="getStockChangeIndicator(form) > 0 ? 'text-green-600' : 'text-red-500'">
                             {{ getStockChangeIndicator(form) > 0 ? '+' : '−' }}{{ Math.abs(getStockChangeIndicator(form)) }}
                         </span>
                         <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
@@ -400,21 +431,6 @@ onMounted(() => {
                     ({{ replenishment_data[form.id]?.replenishment_stock ?? '0' }})
                 </span>
 
-                <!-- Target: quantity input (only on target row) -->
-                <div class="w-24 shrink-0">
-                    <InputNumber
-                        v-if="isTarget(form)"
-                        :modelValue="moveStock.quantity"
-                        @input="(event: { value: any }) => updateMoveQuantity(event.value)"
-                        :min="0"
-                        :max="getMaxQuantity()"
-                        :step="1"
-                        size="small"
-                        fluid
-                        inputClass="!py-0 !text-blue-600"
-                    />
-                </div>
-
                 <!-- Right: Target forklift -->
                 <FontAwesomeIcon
                     icon="fas fa-forklift"
@@ -427,7 +443,7 @@ onMounted(() => {
                             ? 'text-gray-300 opacity-20 cursor-not-allowed' :
                         moveStock.to
                             ? 'cursor-pointer text-gray-400 opacity-30 hover:opacity-80' :
-                        'cursor-pointer text-gray-400 hover:text-blue-600'
+                        'cursor-pointer opacity-50 hover:opacity-100 text-blue-600'
                     ]"
                     fixed-width
                     aria-hidden="true"
