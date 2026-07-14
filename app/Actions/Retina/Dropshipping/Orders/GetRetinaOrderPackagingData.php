@@ -10,13 +10,13 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
-use App\Enums\Catalogue\Packaging\PackagingTypeEnum;
 use App\Models\Billables\Leaflet;
 use App\Models\Billables\ModelHasLeaflet;
 use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerHasPackaging;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -34,7 +34,7 @@ class GetRetinaOrderPackagingData
      *     customerLeaflets: array<int, array{id: int, leaflet_id: int, family_code: string|null, name: string, mime_type: string|null, meta: string|null, state: string, state_label: string}>,
      * }
      */
-    public function handle(Shop $shop, Customer $customer): array
+    public function handle(Shop $shop, Customer $customer, Order $order): array
     {
         $packagings = Packaging::where('shop_id', $shop->id)
             ->where('state', PackagingStateEnum::ACTIVE)
@@ -52,34 +52,42 @@ class GetRetinaOrderPackagingData
             ->values()
             ->all();
 
+        // The order's own selection (override) takes precedence over the customer default.
+        $orderPackagingId = $order->packaging_id;
+        $orderLeafletIds  = $order->insert_types ?? [];
+
+        $selectedPackaging       = $orderPackagingId ?: $this->getSelectedPackagingId($shop, $customer);
+        $defaultLeafletsByFamily = $this->getDefaultLeafletsByFamily($shop, $customer);
+
+        if ($orderPackagingId) {
+            $orderFamily = $packagings->firstWhere('id', $orderPackagingId)?->family_code;
+            if ($orderFamily) {
+                $defaultLeafletsByFamily[$orderFamily] = array_map('intval', $orderLeafletIds);
+            }
+        }
+
         return [
             'packagingOptions'        => $packagingOptions,
-            'selectedPackaging'       => $this->getSelectedPackagingId($shop, $customer, $packagings),
+            'selectedPackaging'       => $selectedPackaging ? (int) $selectedPackaging : null,
             'leafletOptions'          => $this->getLeafletOptions($shop),
-            'defaultLeafletsByFamily' => $this->getDefaultLeafletsByFamily($shop, $customer),
+            'defaultLeafletsByFamily' => $defaultLeafletsByFamily,
             'personalisedMessage'     => $this->getPersonalisedMessage($shop, $customer),
             'customerLeaflets'        => $this->getCustomerLeaflets($shop, $customer),
         ];
     }
 
-    private function getSelectedPackagingId(Shop $shop, Customer $customer, Collection $packagings): ?int
+    private function getSelectedPackagingId(Shop $shop, Customer $customer): ?int
     {
-        $cheapestPreferred = CustomerHasPackaging::where('customer_id', $customer->id)
-            ->whereHas('packaging', fn ($query) => $query->where('shop_id', $shop->id))
+        // Only the customer's own preference — no standard fallback. When the customer
+        // has not set a preference, the panel shows the "Select packaging" placeholder.
+        return CustomerHasPackaging::where('customer_id', $customer->id)
+            ->whereHas('packaging', fn ($query) => $query->where('shop_id', $shop->id)->where('state', PackagingStateEnum::ACTIVE))
             ->with('packaging')
             ->get()
             ->sortBy(fn (CustomerHasPackaging $row) => (float) $row->packaging?->price)
             ->first()
             ?->packaging
             ?->id;
-
-        if ($cheapestPreferred) {
-            return $cheapestPreferred;
-        }
-
-        $standard = $packagings->first(fn (Packaging $packaging) => $packaging->type === PackagingTypeEnum::STANDARD);
-
-        return ($standard ?? $packagings->first())?->id;
     }
 
     /** @return array<int, array{id: int, label: string, price: float, family_codes: array<int, string>}> */

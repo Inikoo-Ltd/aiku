@@ -205,7 +205,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'is_forbidden_billing'  => data_get($orderBanStatus, 'billing', false),
 
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
-                'packaging_panel' => GetRetinaOrderPackagingData::run($this->shop, $order->customer),
+                'packaging_panel' => GetRetinaOrderPackagingData::run($this->shop, $order->customer, $order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => RetinaDropshippingBasketResource::make($order),
                 'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
@@ -241,6 +241,36 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
 
         $taxCategory = $order->taxCategory;
+
+        $chargesGroup = [
+            [
+                'label'       => __('Charges'),
+                'information' => '',
+                'price_total' => $order->charges_amount,
+            ],
+        ];
+
+        if ((float) $order->packaging_amount > 0) {
+            $chargesGroup[] = [
+                'label'       => __('Packaging'),
+                'information' => '',
+                'price_total' => $order->packaging_amount,
+            ];
+        }
+
+        if ((float) $order->leaflet_amount > 0) {
+            $chargesGroup[] = [
+                'label'       => __('Add-ons'),
+                'information' => '',
+                'price_total' => $order->leaflet_amount,
+            ];
+        }
+
+        $chargesGroup[] = [
+            'label'       => __('Shipping'),
+            'information' => '',
+            'price_total' => $order->shipping_amount,
+        ];
 
         return [
             'customer'         => array_merge(
@@ -291,18 +321,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'price_total' => $order->goods_amount
                     ],
                 ],
-                [
-                    [
-                        'label'       => __('Charges'),
-                        'information' => '',
-                        'price_total' => $order->charges_amount
-                    ],
-                    [
-                        'label'       => __('Shipping'),
-                        'information' => '',
-                        'price_total' => $order->shipping_amount
-                    ]
-                ],
+                $chargesGroup,
                 [
                     [
                         'label'       => __('Net'),

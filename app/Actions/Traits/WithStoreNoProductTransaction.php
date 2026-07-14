@@ -9,11 +9,33 @@
 namespace App\Actions\Traits;
 
 use App\Models\Billables\Charge;
+use App\Models\Billables\Leaflet;
+use App\Models\Billables\Packaging;
 use App\Models\Billables\ShippingZone;
 use App\Models\Ordering\Adjustment;
 
 trait WithStoreNoProductTransaction
 {
+    private function preparePackagingTransaction(?Packaging $packaging, $modelData): array
+    {
+        data_set($modelData, 'model_type', 'Packaging');
+        if ($packaging) {
+            data_set($modelData, 'model_id', $packaging->id);
+        }
+
+        return $modelData;
+    }
+
+    private function prepareLeafletTransaction(?Leaflet $leaflet, $modelData): array
+    {
+        data_set($modelData, 'model_type', 'Leaflet');
+        if ($leaflet) {
+            data_set($modelData, 'model_id', $leaflet->id);
+        }
+
+        return $modelData;
+    }
+
     private function prepareChargeTransaction(?Charge $charge, $modelData): array
     {
         data_set($modelData, 'model_type', 'Charge');

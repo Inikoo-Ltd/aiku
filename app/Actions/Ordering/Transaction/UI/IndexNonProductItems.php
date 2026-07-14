@@ -45,6 +45,16 @@ class IndexNonProductItems extends OrgAction
                 ->where('transactions.model_type', '=', 'ShippingZone');
         });
 
+        $query->leftJoin('packagings', function ($join) {
+            $join->on('transactions.model_id', '=', 'packagings.id')
+                ->where('transactions.model_type', '=', 'Packaging');
+        });
+
+        $query->leftJoin('leaflets', function ($join) {
+            $join->on('transactions.model_id', '=', 'leaflets.id')
+                ->where('transactions.model_type', '=', 'Leaflet');
+        });
+
         $query->defaultSort('transactions.id')
             ->select([
                 'transactions.id',
@@ -62,10 +72,12 @@ class IndexNonProductItems extends OrgAction
                 'currencies.code as currency_code',
                 'orders.id as order_id',
                 DB::raw(
-                    "CASE 
+                    "CASE
                 WHEN transactions.model_type = 'Charge' THEN charges.name
                 WHEN transactions.model_type = 'Adjustment' THEN adjustments.type
                 WHEN transactions.model_type = 'ShippingZone' THEN shipping_zones.name
+                WHEN transactions.model_type = 'Packaging' THEN packagings.name
+                WHEN transactions.model_type = 'Leaflet' THEN leaflets.name
                 ELSE null
             END as asset_name"
                 )

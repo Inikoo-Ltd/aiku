@@ -89,6 +89,7 @@ use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTran
 use App\Actions\Retina\Dropshipping\Orders\UpdateOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPackaging;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
@@ -289,6 +290,7 @@ Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(f
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
+    Route::patch('update-packaging', UpdateRetinaOrderPackaging::class)->name('update_packaging');
     Route::post('store-voucher', StoreRetinaOrderVoucher::class)->name('store_voucher');
     Route::post('remove-voucher', RemoveRetinaOrderVoucher::class)->name('remove_voucher');
     Route::delete('delete-basket', DeleteRetinaBasket::class)->name('delete_basket');

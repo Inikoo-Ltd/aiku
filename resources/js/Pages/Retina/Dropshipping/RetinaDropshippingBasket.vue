@@ -544,6 +544,7 @@ const onChangeInsurance = async (val: boolean) => {
           :personalisedMessage="packaging_panel.personalisedMessage"
           :customerLeaflets="packaging_panel.customerLeaflets"
           :packagingPreferencesHref="route('retina.sysadmin.packaging-preferences.show')"
+          :updateRoute="{ name: 'retina.models.order.update_packaging', parameters: { order: data.data.id } }"
         />
       </div>
     </div>

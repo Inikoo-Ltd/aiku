@@ -6,6 +6,8 @@
 
 <script setup lang="ts">
 import { computed, inject, ref, watch } from "vue"
+import { router } from "@inertiajs/vue3"
+import { debounce } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Select from "primevue/select"
@@ -63,6 +65,7 @@ const props = withDefaults(defineProps<{
     maxMessageLength?: number
     customerLeaflets?: CustomerLeaflet[]
     packagingPreferencesHref?: string | null
+    updateRoute?: { name: string, parameters?: Record<string, unknown> } | null
 }>(), {
     accentColor: "#f97316",
     currencyCode: "GBP",
@@ -74,6 +77,7 @@ const props = withDefaults(defineProps<{
     maxMessageLength: 200,
     customerLeaflets: () => [],
     packagingPreferencesHref: null,
+    updateRoute: null,
 })
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -152,6 +156,27 @@ const packagingTotal = computed(() => packagingPrice.value + addOnsPrice.value)
 
 const leafletFileIcon = (leaflet: CustomerLeaflet) =>
     leaflet.mime_type?.startsWith("image/") ? "file-image" : "file-pdf"
+
+// Persist the order's packaging/leaflet selection (override) when it changes.
+const persistSelection = debounce(() => {
+    if (!props.updateRoute?.name) {
+        return
+    }
+
+    router.patch(
+        route(props.updateRoute.name, props.updateRoute.parameters),
+        {
+            packaging_id: selected.value,
+            leaflet_ids: inserts.value
+                .filter(insert => enabledInserts.value[insert.id])
+                .map(insert => insert.id),
+            personalised_message: message.value?.trim() || null,
+        },
+        { preserveScroll: true, preserveState: true }
+    )
+}, 600)
+
+watch([selected, enabledInserts, message], persistSelection, { deep: true })
 </script>
 
 <template>
@@ -296,10 +321,10 @@ const leafletFileIcon = (leaflet: CustomerLeaflet) =>
                     />
                     <span class="flex-1 min-w-0">
                         <span class="block truncate text-sm font-medium">{{ insert.label }}</span>
-                        <span v-if="insert.file" class="block text-xs text-gray-400">
-                            {{ insert.file.name }}<template v-if="insert.file.meta"> · {{ insert.file.meta }}</template>
+                        <span v-if="insert.file" class="block text-xs text-gray-400 font-light">
+                            <template v-if="insert.file.meta">{{ insert.file.meta }}</template>
                         </span>
-                        <span v-else class="flex items-center gap-1 text-xs text-amber-600">
+                        <span v-else class="flex items-center gap-1 text-xs text-amber-600 font-light">
                             <FontAwesomeIcon :icon="['fal', 'exclamation-circle']" fixed-width aria-hidden="true" />
                             {{ trans("Leaflet file not uploaded yet") }}
                         </span>
@@ -334,33 +359,6 @@ const leafletFileIcon = (leaflet: CustomerLeaflet) =>
                     aria-hidden="true"
                 />
             </a>
-        </section>
-
-        <!-- Packaging summary -->
-        <section
-            class="rounded-lg border border-gray-200 px-4 py-3"
-            :style="{ backgroundColor: accentStyle.softBg }"
-        >
-            <dl class="space-y-1.5 text-sm">
-                <div class="flex items-center justify-between">
-                    <dt class="text-gray-600">
-                        {{ trans("Packaging") }}
-                        <span v-if="selectedPackagingOption" class="text-gray-400">({{ selectedPackagingOption.label }})</span>
-                    </dt>
-                    <dd class="font-medium text-gray-700">{{ formatPrice(packagingPrice) }}</dd>
-                </div>
-                <div class="flex items-center justify-between">
-                    <dt class="text-gray-600">
-                        {{ trans("Add-ons") }}
-                        <span class="text-gray-400">({{ addOnsCount }})</span>
-                    </dt>
-                    <dd class="font-medium text-gray-700">{{ formatPrice(addOnsPrice) }}</dd>
-                </div>
-            </dl>
-            <div class="mt-2 flex items-center justify-between border-t border-gray-200 pt-2">
-                <span class="text-sm font-semibold text-gray-700">{{ trans("Packaging total") }}</span>
-                <span class="text-base font-semibold text-gray-700">{{ formatPrice(packagingTotal) }}</span>
-            </div>
         </section>
     </div>
 </template>
