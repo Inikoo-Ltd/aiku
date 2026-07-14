@@ -90,7 +90,7 @@ class GetMigrationOrgStockMovementAuditFromAurora
                     ) {
                         //   $command->info(" >>> Stock {$locationOrgStock->orgStock->slug} {$locationOrgStock->location->code}  : movement:   {$movement->{'Inventory Transaction Key'}}  {$movement->{'Date'}}  {$movement->{'Inventory Transaction Record Type'}}  ".$movement->{'Inventory Transaction Type'});
 
-                        if ($movement->{'Inventory Transaction Type'} == 'Restock' || $movement->{'Inventory Transaction Type'} == 'AikuPick' || $movement->{'Inventory Transaction Type'} == 'Sale') {
+                        if ($movement->{'Inventory Transaction Type'} == 'Production' || $movement->{'Inventory Transaction Type'} == 'Restock' || $movement->{'Inventory Transaction Type'} == 'AikuPick' || $movement->{'Inventory Transaction Type'} == 'Sale') {
                             $delta -= $movement->{'Inventory Transaction Quantity'};
                         } elseif ($movement->{'Inventory Transaction Type'} == 'In') {
                             $delta -= $movement->{'Inventory Transaction Quantity'};
@@ -165,7 +165,7 @@ class GetMigrationOrgStockMovementAuditFromAurora
         }
 
 
-        $orgStocks
+        $orgStocks->orderBy('code')
             ->chunkById(250, function ($orgStockChunk) use ($command) {
                 foreach ($orgStockChunk as $orgStock) {
                     foreach ($orgStock->locations as $location) {
