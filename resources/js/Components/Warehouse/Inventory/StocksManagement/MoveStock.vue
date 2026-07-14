@@ -352,7 +352,7 @@ onMounted(() => {
                 <div class="flex-1 min-w-0 flex items-center gap-x-2 flex-wrap">
                     <span class="font-medium truncate">{{ form.name }}</span>
 
-                    <!-- Preview: original + change --> result -->
+                    <!-- Preview: original + change -> result -->
                     <span
                         v-if="getStockChangeIndicator(form) !== null"
                         v-tooltip="trans('Stock preview after move')"
