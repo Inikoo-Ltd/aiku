@@ -373,10 +373,16 @@ onMounted(() => {
                     <!-- Preview: original + change -> result -->
                     <span
                         v-if="isSource(form) || getStockChangeIndicator(form) !== null"
-                        v-tooltip="trans('Stock preview after move')"
                         class="tabular-nums text-xs flex items-center gap-x-1"
                     >
-                        <span @click="updateMoveQuantity(Number(form.stock))" class="text-gray-500 cursor-pointer">{{ form.stock }}</span>
+                        <span
+                            v-tooltip="isSource(form) ? trans('Click to move all stock (empties this location)') : trans('Current stock in this location')"
+                            :class="[
+                                'border rounded px-1.5 py-0.5 border-gray-300 text-gray-600',
+                                isSource(form) ? 'cursor-pointer hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition' : ''
+                            ]"
+                            @click="isSource(form) && updateMoveQuantity(Number(form.stock))"
+                        >{{ form.stock }}</span>
                         <span v-if="isSource(form)" class="text-red-500 font-semibold">−</span>
                         <div v-if="isSource(form)" class="w-24 shrink-0">
                             <InputNumber
@@ -395,8 +401,9 @@ onMounted(() => {
                         </span>
                         <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                         <span
-                            class="border rounded px-1.5 py-0.5 font-semibold"
-                            :class="isSource(form) ? 'border-green-300 text-green-700 bg-green-50' : 'border-blue-300 text-blue-700 bg-blue-50'"
+                            v-tooltip="trans('Stock preview after move')"
+                            class="font-semibold"
+                            :class="isSource(form) ? 'text-green-700' : 'text-blue-700'"
                         >
                             {{ getCalculatedStock(form) }}
                         </span>
