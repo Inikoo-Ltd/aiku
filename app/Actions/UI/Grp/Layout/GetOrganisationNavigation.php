@@ -255,6 +255,20 @@ class GetOrganisationNavigation
             'topMenu' => [],
         ];
 
-        return $this->getSettingsNavs($user, $organisation, $navigation);
+        $navigation = $this->getSettingsNavs($user, $organisation, $navigation);
+
+        if(isset($navigation['setting'])) {
+            $navigation['setting']['topMenu']['subSections'][] = [
+                'label'   => __('Changelog'),
+                'icon'    => ['fal', 'fa-history'],
+                'root'    => 'grp.org.settings.changelogs',
+                'route'   => [
+                    'name'       => 'grp.org.settings.changelogs',
+                    'parameters' => [$organisation->slug],
+                ],
+            ];
+        }
+
+        return $navigation;
     }
 }

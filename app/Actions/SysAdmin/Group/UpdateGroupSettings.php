@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\Group;
 
+use App\Actions\Audits\DispatchSimpleAudit;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Traits\WithActionUpdate;
@@ -90,8 +91,20 @@ class UpdateGroupSettings extends GrpAction
         }
 
         if (Arr::has($modelData, 'access_id')) {
-            data_set($groupSettings, 'email.provider.access_id', Arr::get($modelData, 'access_id'));
+            $oldAccessId = Arr::get($groupSettings, 'email.provider.access_id');
+            $newAccessId = Arr::get($modelData, 'access_id');
+            
+            data_set($groupSettings, 'email.provider.access_id', $newAccessId);
             $group->update(['settings' => $groupSettings]);
+
+            DispatchSimpleAudit::run(
+                auditableModel: $group,
+                logKey: 'email.provider.failover.access_id',
+                oldValue: $oldAccessId,
+                newValue: $newAccessId,
+                eventName: 'updated',
+            );
+
             data_forget($modelData, 'access_id');
         }
         if (Arr::has($modelData, 'access_key')) {

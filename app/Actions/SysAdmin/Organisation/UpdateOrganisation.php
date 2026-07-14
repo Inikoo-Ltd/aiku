@@ -23,6 +23,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
+use App\Actions\Audits\DispatchSimpleAudit;
 
 class UpdateOrganisation extends OrgAction
 {
@@ -44,6 +45,35 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.google.drive.folder", Arr::pull($modelData, 'google_drive_folder_key'));
         }
 
+        $settingAudits = [];
+
+        foreach ([
+            'access_id'                         => ['email.provider.failover.access_id', true],
+            'access_key'                        => ['email.provider.failover.access_key', true],
+            'region'                            => ['email.provider.failover.region', true],
+            'customer_notification_access_id'   => ['email.provider.customer_notification.access_id', true],
+            'customer_notification_access_key'  => ['email.provider.customer_notification.access_key', true],
+            'customer_notification_region'      => ['email.provider.customer_notification.region', true],
+        ] as $field => [$path, $shouldAudit]) {
+            if (!Arr::has($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($organisation->settings, $path);
+            $newValue = Arr::pull($modelData, $field);
+
+            data_set($modelData, "settings.$path", $newValue);
+
+            if (!$shouldAudit || $oldValue === $newValue) {
+                continue;
+            }
+            
+            $settingAudits[] = [
+                'key' => str_replace('.', '_', $path),
+                'old' => $oldValue,
+                'new' => $newValue,
+            ];
+        };
         if (Arr::has($modelData, 'access_id')) {
             data_set($modelData, "settings.email.provider.failover.access_id", Arr::pull($modelData, 'access_id'));
         }
@@ -140,6 +170,16 @@ class UpdateOrganisation extends OrgAction
 
 
         $organisation = $this->update($organisation, $modelData, ['data', 'settings']);
+
+        foreach ($settingAudits as $audit) {
+            DispatchSimpleAudit::run(
+                auditableModel: $organisation,
+                logKey: $audit['key'],
+                oldValue: $audit['old'],
+                newValue: $audit['new'],
+                eventName: 'updated',
+            );
+        }
 
         $organisation->refresh();
 

@@ -195,7 +195,7 @@ class EditOrganisationSettings extends OrgAction
                                     "label"       => __("Access ID"),
                                     "value"       => Arr::get($organisation->settings, 'email.provider.customer_notification.access_id', ''),
                                 ],
-                                "cutomer_notification_access_key" => [
+                                "customer_notification_access_key" => [
                                     "type"        => "input",
                                     "label"       => __("Access Key"),
                                     "value"       => Arr::get($organisation->settings, 'email.provider.customer_notification.access_key', ''),
