@@ -84,7 +84,7 @@ const locationRoute = (orgStockMovement, extraData = {}) => {
 }
 
 function deliveryNoteRoute(orgStockMovement) {
-    return route("grp.helpers.redirect_delivery_notes", [orgStockMovement.delivery_note_id])
+    return route("grp.majordomo.redirect_delivery_notes", [orgStockMovement.delivery_note_id])
 }
 
 </script>

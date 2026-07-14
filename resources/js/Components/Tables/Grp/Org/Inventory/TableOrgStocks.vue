@@ -207,7 +207,7 @@ function orgStockRoute(orgStock: OrgStock) {
         )
     } else if (current === "grp.overview.inventory.org-stocks.index" || current === "grp.org.shops.show.catalogue.products.all_products.show") {
         return route(
-            "grp.helpers.redirect_org_stock",
+            "grp.majordomo.redirect_org_stock",
             [orgStock.id])
     } else if (current === "grp.org.warehouses.show.inventory.org_stocks.index") {
         return route(
@@ -229,7 +229,7 @@ function orgStockRoute(orgStock: OrgStock) {
         )
     }else{
       return route(
-            "grp.helpers.redirect_org_stock",
+            "grp.majordomo.redirect_org_stock",
             [
                 orgStock.id
             ]
@@ -287,7 +287,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         )
     } else if (current === "grp.overview.inventory.org-stocks.index" || current === "grp.org.shops.show.catalogue.products.all_products.show") {
         return route(
-            "grp.helpers.redirect_org_stock",
+            "grp.majordomo.redirect_org_stock",
             [orgStock.id])
     } else if (current === "grp.org.warehouses.show.inventory.org_stocks.index") {
         return route(
@@ -311,7 +311,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         )
     }else{
       return route(
-            "grp.helpers.redirect_org_stock.to_products_index",
+            "grp.majordomo.redirect_org_stock.to_products_index",
             [
                 orgStock.id
             ]

@@ -77,7 +77,7 @@ function orgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
     if (!orgStockRouteCache.has(deliveryNoteItem.org_stock_id)) {
         orgStockRouteCache.set(
             deliveryNoteItem.org_stock_id,
-            route("grp.helpers.redirect_org_stock", [deliveryNoteItem.org_stock_id])
+            route("grp.majordomo.redirect_org_stock", [deliveryNoteItem.org_stock_id])
         )
     }
 

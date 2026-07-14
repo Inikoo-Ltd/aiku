@@ -18,7 +18,7 @@ defineProps<{
 const locale = inject("locale", aikuLocaleStructure)
 
 function orgStockRoute(stockId: number): string {
-    return route("grp.helpers.redirect_org_stock", [stockId])
+    return route("grp.majordomo.redirect_org_stock", [stockId])
 }
 </script>
 

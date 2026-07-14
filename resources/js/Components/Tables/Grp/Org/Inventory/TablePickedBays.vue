@@ -73,7 +73,7 @@ const resetModalPickBay = () => {
 }
 
 const routeDeliveryNote = (deliveryNote: any) => {
-	return route("grp.helpers.redirect_delivery_notes", [deliveryNote.id])
+	return route("grp.majordomo.redirect_delivery_notes", [deliveryNote.id])
 }
 
 const deletePickBay = (pickedBay: any) => {

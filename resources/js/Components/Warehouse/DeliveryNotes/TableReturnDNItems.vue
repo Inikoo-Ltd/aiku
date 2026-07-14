@@ -69,7 +69,7 @@ function orgStockRoute(deliveryNoteItem: any) {
     }
 
     return route(
-        "grp.helpers.redirect_org_stock",
+        "grp.majordomo.redirect_org_stock",
         [deliveryNoteItem.org_stock_id])
 
 }
