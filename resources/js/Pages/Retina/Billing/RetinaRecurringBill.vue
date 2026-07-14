@@ -23,7 +23,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     status_rb: string
-    transactions: {}
+    transactions?: {}
     timeline_rb: {
         start_date: string
         end_date: string

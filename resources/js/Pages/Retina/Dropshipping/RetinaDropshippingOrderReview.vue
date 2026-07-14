@@ -105,9 +105,9 @@ const props = defineProps<{
     attachments?: {}
     review_settings : object
     order:any
-    overall_review : any
-    family_reviews : any
-    product_reviews : any
+    overall_review? : any
+    family_reviews? : any
+    product_reviews? : any
     review_summary:any
 }>()
 

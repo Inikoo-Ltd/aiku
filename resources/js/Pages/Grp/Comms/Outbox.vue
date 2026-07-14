@@ -26,10 +26,10 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     history: {}
-    mailshots: {}
+    mailshots?: {}
     email_bulk_runs?: {}
     dispatched_emails?: {}
-    showcase: any
+    showcase?: any
     email_runs?: {}
 }>()
 

@@ -77,7 +77,7 @@ const props = defineProps<{
     images?: object
     sales?: object
     salesData?: object
-    related_product_category : object
+    related_product_category? : object
     mini_breadcrumbs: any
 }>()
 

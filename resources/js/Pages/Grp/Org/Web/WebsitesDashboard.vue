@@ -27,7 +27,7 @@ const props = defineProps<{
         navigation: object
     }
     showcase: {}
-    crawls: {}
+    crawls?: {}
 }>()
 
 let currentTab = ref(props.tabs.current)

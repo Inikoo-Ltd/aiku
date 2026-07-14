@@ -142,12 +142,12 @@ const props = defineProps<{
 
     address_management: AddressManagement
 
-    transactions: {}
+    transactions?: {}
     invoices?: {}
     delivery_notes: {
         data: Array<any>
     }
-    reviews : any
+    reviews? : any
     attachments?: {}
     review_settings : any
 

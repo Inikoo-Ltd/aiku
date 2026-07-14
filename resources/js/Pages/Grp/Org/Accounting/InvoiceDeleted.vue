@@ -98,7 +98,7 @@ const props = defineProps<{
     invoice: InvoiceResource
     invoice_transactions?: {}
     items: {}
-    payments: {}
+    payments?: {}
     details: {}
     history: {}
 

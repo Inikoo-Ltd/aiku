@@ -81,7 +81,7 @@ const props = defineProps<{
     sales?: object
     salesData?: object
     mini_breadcrumbs?: any[]
-    related_product_category : object
+    related_product_category? : object
     delete_route?: routeType;
     delete_condition?: {
         can_delete: boolean;
