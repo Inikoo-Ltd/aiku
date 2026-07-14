@@ -12,6 +12,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Link } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
 library.add(faTimes, faCheck)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
 	form: any

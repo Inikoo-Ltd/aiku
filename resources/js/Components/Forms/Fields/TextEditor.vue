@@ -3,6 +3,7 @@ import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
 import { trans } from 'laravel-vue-i18n'
 import { get } from 'lodash-es'
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

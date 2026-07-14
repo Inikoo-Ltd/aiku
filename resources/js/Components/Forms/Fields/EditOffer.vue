@@ -15,6 +15,7 @@ import { ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { InputNumber } from "primevue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: {
