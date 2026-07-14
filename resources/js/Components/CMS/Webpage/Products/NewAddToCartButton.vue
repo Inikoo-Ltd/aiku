@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, computed, watch } from 'vue'
+import { pushGtmEvent } from '@/Composables/useGtm'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -198,18 +199,20 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
         setStatus('success')
 
         // Luigi: event add to cart
+        const addToCartEcommerce = {
+            currency: layout?.iris?.currency?.code,
+            value: product.price,
+            items: [
+                {
+                    item_id: product?.luigi_identity,
+                }
+            ]
+        }
         window?.dataLayer?.push({
             event: "add_to_cart",
-            ecommerce: {
-                currency: layout?.iris?.currency?.code,
-                value: product.price,
-                items: [
-                    {
-                        item_id: product?.luigi_identity,
-                    }
-                ]
-            }
+            ecommerce: addToCartEcommerce,
         })
+        pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
 
     } catch (error: any) {
         setStatus('error')

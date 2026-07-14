@@ -36,6 +36,7 @@ import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
+import { pushServerGtmEvent } from "@/Composables/useGtm"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
 
@@ -115,11 +116,7 @@ watch(() => usePage().props?.flash?.gtm, (newValue) => {
     console.log('gtm ret', newValue)
     if (!newValue) return
 
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-        event: newValue.event,
-        ...newValue.data_to_submit,
-    });
+    pushServerGtmEvent(newValue.event, newValue.data_to_submit)
 }, {
     deep: true,
     immediate: true
