@@ -194,9 +194,11 @@ const onClickLogout = () => {
 				<!-- Logged In -->
 				<template v-if="isLoggedIn">
 					<div class="flex items-center gap-3">
-						<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100">
-							<FontAwesomeIcon :icon="faUser" class="text-lg text-gray-500" />
-						</div>
+						<a href="/app/dashboard">
+							<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100">
+								<FontAwesomeIcon :icon="faUser" class="text-lg text-gray-500" />
+							</div>
+						</a>
 
 						<div class="leading-tight">
 							<div class="flex items-center gap-2 text-sm font-medium">

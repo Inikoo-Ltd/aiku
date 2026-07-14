@@ -257,8 +257,7 @@ const submit = () => {
                     :placeholder="trans('Enter quantity')"
                     key="packs"
                 />                
-                <span
-                    v-if="layout?.app?.environment == 'local'"
+                <span                    
                     @click="toggleCutView"
                     v-tooltip="trans('Cut view')"
                     class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"

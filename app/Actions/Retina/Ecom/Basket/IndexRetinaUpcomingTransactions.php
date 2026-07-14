@@ -57,6 +57,7 @@ class IndexRetinaUpcomingTransactions extends RetinaAction
                 'upcoming_transactions.updated_at',
                 'products.code as product_code',
                 'products.name as product_name',
+                'products.units as product_units',
             ])
             ->allowedSorts(['id', 'product_code', 'product_name', 'quantity', 'type', 'state'])
             ->allowedFilters([$globalSearch])

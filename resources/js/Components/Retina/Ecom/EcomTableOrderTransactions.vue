@@ -119,8 +119,8 @@ const debounceUpdateQuantity = debounce(
             <!-- Column: Quantity -->
             <template #cell(quantity_ordered)="{ item }">
                 <div class="flex items-center justify-end">
-                    <div v-if="item.is_gift">
-                        {{ locale.number(item.quantity_bonus) }}
+                    <div v-if="item.is_gift" class="flex items-center gap-x-1">
+                        <FractionDisplay :fractionData="item.quantity_bonus_fractional" />
                         <span v-tooltip="ctrans('Quantity of free gift')">
                             <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
                         </span>
