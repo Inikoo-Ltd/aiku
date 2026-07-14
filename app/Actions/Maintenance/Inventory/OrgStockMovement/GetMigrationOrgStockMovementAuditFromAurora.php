@@ -166,7 +166,7 @@ class GetMigrationOrgStockMovementAuditFromAurora
 
 
         $orgStocks->orderBy('code')
-            ->chunkById(250, function ($orgStockChunk) use ($command) {
+            ->chunk(250, function ($orgStockChunk) use ($command) {
                 foreach ($orgStockChunk as $orgStock) {
                     foreach ($orgStock->locations as $location) {
                         $locationOrgStock = LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->first();
