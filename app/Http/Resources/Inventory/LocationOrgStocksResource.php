@@ -36,6 +36,12 @@ class LocationOrgStocksResource extends JsonResource
 
         $location = $locationOrgStock->location;
 
+        $packedIn = 1;
+
+        if ($locationOrgStock->relationLoaded('orgStock')) {
+            $packedIn = $locationOrgStock->orgStock?->packed_in ?? 1;
+        }
+
         $locationData = [
             'id'                        => $location->id,
             'slug'                      => $location->slug,
@@ -54,23 +60,25 @@ class LocationOrgStocksResource extends JsonResource
             'max_weight'                => $location->max_weight ?? 0,
             'max_volume'                => $location->max_volume ?? 0,
             'quantity'                  => $locationOrgStock->quantity,
+            'quantity_fractional'       => riseDivisor(divideWithRemainder(findSmallestFactors($locationOrgStock->quantity ?? 0)), $packedIn),
         ];
 
         return [
-            'id'                            => $locationOrgStock->id,
-            'code'                          => $locationOrgStock->location->code,
-            'quantity'                      => $locationOrgStock->quantity,
-            'value'                         => $locationOrgStock->value,
-            'audited_at'                    => $locationOrgStock->audited_at,
-            'commercial_value'              => $locationOrgStock->commercial_value,
-            'type'                          => $locationOrgStock->type,
-            'picking_priority'              => $locationOrgStock->picking_priority,
-            'notes'                         => $locationOrgStock->notes,
-            'data'                          => $locationOrgStock->data,
-            'settings'                      => $locationOrgStock->settings,
-            'created_at'                    => $locationOrgStock->created_at,
-            'updated_at'                    => $locationOrgStock->updated_at,
-            'location'                      => $locationData,
+            'id'                                    => $locationOrgStock->id,
+            'code'                                  => $locationOrgStock->location->code,
+            'quantity'                              => $locationOrgStock->quantity,
+            'quantity_fractional'                   => riseDivisor(divideWithRemainder(findSmallestFactors($locationOrgStock->quantity ?? 0)), $packedIn),
+            'value'                                 => $locationOrgStock->value,
+            'audited_at'                            => $locationOrgStock->audited_at,
+            'commercial_value'                      => $locationOrgStock->commercial_value,
+            'type'                                  => $locationOrgStock->type,
+            'picking_priority'                      => $locationOrgStock->picking_priority,
+            'notes'                                 => $locationOrgStock->notes,
+            'data'                                  => $locationOrgStock->data,
+            'settings'                              => $locationOrgStock->settings,
+            'created_at'                            => $locationOrgStock->created_at,
+            'updated_at'                            => $locationOrgStock->updated_at,
+            'location'                              => $locationData,
             'default_wholesale_picking_location'    => $locationOrgStock->default_wholesale_picking_location,
             'enabled_on_dropshipping'               => (bool) $locationOrgStock->location?->allow_dropshipping,
             'default_dropshipping_picking_location' => $locationOrgStock->default_dropshipping_picking_location,

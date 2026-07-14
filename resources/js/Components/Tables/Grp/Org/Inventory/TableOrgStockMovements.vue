@@ -14,6 +14,7 @@ import { trans } from "laravel-vue-i18n";
 import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue";
 
 library.add(
   faTilde,
@@ -132,13 +133,19 @@ function deliveryNoteRoute(orgStockMovement) {
             <FontAwesomeIcon 
               :icon="faBoxFull"
             />
-            {{ orgStockMovement.audited_quantity ?? 0 }}
+            <FractionDisplay v-if="orgStockMovement.audited_quantity_fractional" :fractionData="orgStockMovement.audited_quantity_fractional" class="ml-1"/>
+            <span v-else>
+              {{ orgStockMovement.audited_quantity ?? 0 }}
+            </span>
           </span>
           <span v-else class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
             <FontAwesomeIcon 
               :icon="faBoxFull"
             />
-            {{ orgStockMovement.running_quantity ?? 0 }}
+            <FractionDisplay v-if="orgStockMovement.running_quantity_fractional" :fractionData="orgStockMovement.running_quantity_fractional" class="ml-1"/>
+            <span v-else>
+              {{ orgStockMovement.running_quantity ?? 0 }}
+            </span>
           </span>
         </Link>
       </div>
@@ -157,8 +164,11 @@ function deliveryNoteRoute(orgStockMovement) {
     </template>
 
     <template #cell(quantity)="{ item: orgStockMovement }">
-      <span v-if="Number(orgStockMovement.quantity) != 0" :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3 border rounded-md w-fit min-w-14 text-center grid justify-self-end">
-        {{ Number(orgStockMovement.quantity) > 0 ? `+${Number(orgStockMovement.quantity)}` : Number(orgStockMovement.quantity) }}
+      <span v-if="Number(orgStockMovement.quantity) != 0" :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3 py-[0.125rem] border rounded-md w-fit min-w-14 text-center justify-self-end">
+        <FractionDisplay v-if="orgStockMovement.quantity_fractional" :fractionData="orgStockMovement.quantity_fractional" :showPlus="Number(orgStockMovement.quantity) > 0"/>
+        <span v-else>
+          {{ orgStockMovement.quantity ?? 0 }}
+        </span>
       </span>
       <span v-else>
       </span>
@@ -171,13 +181,19 @@ function deliveryNoteRoute(orgStockMovement) {
         <FontAwesomeIcon 
           :icon="faBoxFull"
         />
-        {{ orgStockMovement.audited_quantity ?? 0 }}
+        <FractionDisplay v-if="orgStockMovement.audited_quantity_fractional" :fractionData="orgStockMovement.audited_quantity_fractional" class="ml-1"/>
+        <span v-else>
+          {{ orgStockMovement.audited_quantity ?? 0 }}
+        </span>
       </span>
       <span v-else class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
         <FontAwesomeIcon 
           :icon="faBoxFull"
         />
-        {{ orgStockMovement.running_quantity ?? 0 }}
+        <FractionDisplay v-if="orgStockMovement.running_quantity_fractional" :fractionData="orgStockMovement.running_quantity_fractional" class="ml-1"/>
+        <span v-else>
+          {{ orgStockMovement.running_quantity ?? 0 }}
+        </span>
       </span>
     </template>
 
@@ -188,7 +204,10 @@ function deliveryNoteRoute(orgStockMovement) {
             ? 'text-blue-500' 
             : ''
         ]">
-        {{ (orgStockMovement.type == 'location-transfer' && orgStockMovement.quantity < 0) ? (Number(orgStockMovement.running_quantity_org_stock) + -(Number(orgStockMovement.quantity)))  : Number(orgStockMovement.running_quantity_org_stock) }}
+        <FractionDisplay v-if="orgStockMovement.running_quantity_org_stock_fractional" :fractionData="orgStockMovement.running_quantity_org_stock_fractional"/>
+        <span v-else>
+          {{ orgStockMovement.running_quantity_org_stock ?? 0 }}
+        </span>
       </span>
     </template>
   </Table>
