@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_delivered
  * @property bool $is_received
  * @property bool $is_migration_point
+ * @property string|null $migration_source_id
  * @property int|null $stock_family_id
  * @property int|null $org_stock_family_id
  * @property int|null $stock_id

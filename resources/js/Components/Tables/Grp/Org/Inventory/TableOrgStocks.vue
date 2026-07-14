@@ -480,8 +480,10 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <div v-if="layout.app.environment === 'local'" class="flex justify-end">
                 <ModalConfirmationDelete
                     :routeDelete="{
-                        name: 'grp.models.location.org_stock.delete',
-                        parameters: { location: location_id, orgStock: stock.id },
+                        name: 'grp.models.location_org_stock.delete',
+                        parameters: { 
+                            locationOrgStock: stock.location_org_stock_id
+                        },
                     }"
                     :title="ctrans('Are you sure you want to unlink this SKU from the location?')"
                     :description="ctrans(':qty stock will be removed and marked as lost!', { qty: locale.number(Number(stock.quantity)) })"

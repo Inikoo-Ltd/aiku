@@ -2,9 +2,9 @@ import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
-import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
+/* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
-import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"
+import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
 
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
@@ -66,9 +66,9 @@ const SubDepartment1Iris = async(() => import("@/Iris/Components/IrisBlocks/SubD
 const SubDepartment2Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris2.vue"))
 const SubDepartment3Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris3.vue"))
 
-/* const WowsbarBannerIris = async(() => import("@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue")) */
-/* const ImageIris = async(() => import("@/Iris/Components/IrisBlocks/ImageIris.vue")) */
-/* const TextContentIris = async(() => import("@/Iris/Components/IrisBlocks/TextContentIris.vue")) */
+const WowsbarBannerIris = async(() => import("@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"))
+const ImageIris = async(() => import("@/Iris/Components/IrisBlocks/ImageIris.vue"))
+const TextContentIris = async(() => import("@/Iris/Components/IrisBlocks/TextContentIris.vue"))
 const CtaImageBackroundIris = async(() => import("@/Iris/Components/IrisBlocks/CtaImageBackroundIris.vue"))
 const BentoGridIris = async(() => import("@/Iris/Components/IrisBlocks/BentoGridIris.vue"))
 const GalleryIris = async(() => import("@/Iris/Components/IrisBlocks/GalleryIris.vue"))
