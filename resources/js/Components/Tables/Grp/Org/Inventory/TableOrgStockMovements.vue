@@ -185,7 +185,7 @@ function deliveryNoteRoute(orgStockMovement) {
       <span
         :class="[
             orgStockMovement.flow == 'audit' 
-            ? 'border rounded-md px-2 py-[0.125rem] border-blue-300 bg-blue-100 text-blue-500' 
+            ? 'text-blue-500' 
             : ''
         ]">
         {{ (orgStockMovement.type == 'location-transfer' && orgStockMovement.quantity < 0) ? (Number(orgStockMovement.running_quantity_org_stock) + -(Number(orgStockMovement.quantity)))  : Number(orgStockMovement.running_quantity_org_stock) }}
