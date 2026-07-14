@@ -151,6 +151,7 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.user_id',
                 'delivery_notes.id as delivery_note_id',
                 'delivery_notes.reference as delivery_note_reference',
+                'org_stock_movements.is_migration_point',
             ])
             ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')
@@ -202,12 +203,12 @@ class IndexOrgStockMovements extends OrgAction
                 $table->column(key: 'location_code', label: __('Location'));
             }
 
-            $table->column(key: 'quantity', label: __('Delta'), sortable: true, align: 'right');
+            $table->column(key: 'quantity', label: __('Delta'), align: 'right');
 
             if (!($parent instanceof Location)) {
-                $table->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), sortable: true, align: 'right');
+                $table->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), align: 'right');
             } else {
-                $table->column(key: 'running_quantity_location', label: __('Running Quantity'), sortable: true, align: 'right');
+                $table->column(key: 'running_quantity_location', label: __('Running Quantity'), align: 'right');
             }
         };
     }
