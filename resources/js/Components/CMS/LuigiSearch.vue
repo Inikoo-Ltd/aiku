@@ -306,7 +306,7 @@ const visitSearchPage = () => {
 }
 
 .luigi-ac-queries {
-    line-height: 0px !important;
+    // line-height: 0px !important;
 }
 
 /* .luigi-ac-query .luigi-ac-other-content {

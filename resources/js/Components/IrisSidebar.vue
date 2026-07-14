@@ -463,18 +463,12 @@ const fetchSidebarOnce = async () => {
 		>
 			<template #header>
 				<div>
-					<div class="md:max-w-[270px] overflow-hidden">
-						<!-- <Image
-                            v-if="sidebarLogo"
-                            :src="sidebarLogo"
-                            class="h-fit w-full object-contain aspect-auto"
-                            :alt="trans('Sidebar logo')"
-                        /> -->
+					<div class="md:max-w-[270px] w-full h-20 overflow-hidden">
 						<img
 							xv-else
 							:src="sidebarLogo?.original || header?.logo?.image?.source?.original"
-							:alt="header?.logo?.alt"
-							zclass="w-full h-auto max-h-20 object-contain"
+							:alt="header?.logo?.alt ?? ctrans('Logo on sidebar')"
+							class="w-full h-full object-contain"
 							:style="getStyles(props.sidebar?.data?.fieldValue?.logo_dimension)" />
 					</div>
 
