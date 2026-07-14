@@ -8,7 +8,7 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
-import { faAnchor, faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faInboxIn, faInboxOut, faInfoCircle, faPersonCarry, faQuestionCircle, faTilde, faTruckLoading } from "@fal";
+import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faInboxIn, faInboxOut, faInfoCircle, faMapSigns, faPersonCarry, faQuestionCircle, faTilde, faTruckLoading } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
@@ -96,7 +96,7 @@ function deliveryNoteRoute(orgStockMovement) {
         {{ orgStockMovement.user ? `${orgStockMovement.user?.username}` : 'System' }}
       </span>
     </template>
-
+    
     <template #cell(type)="{ item: orgStockMovement }">
       <span v-if="orgStockMovement.delivery_note_reference && orgStockMovement.delivery_note_id">
         <Link class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold" :href="deliveryNoteRoute(orgStockMovement)">
@@ -110,7 +110,7 @@ function deliveryNoteRoute(orgStockMovement) {
       <span v-else-if="orgStockMovement.is_migration_point" v-tooltip="ctrans('Anchor point. From where data is migrated from Aurora')">
         {{ ctrans('Migration Point') }}
         <FontAwesomeIcon
-          :icon="faAnchor"
+          :icon="faMapSigns"
           class="text-blue-500 ml-1"
         />
       </span>
@@ -126,11 +126,21 @@ function deliveryNoteRoute(orgStockMovement) {
         </Link>
         
         <Link class="ml-auto" :href="locationRoute(orgStockMovement, {tab: 'stock_movements'})">
-          <span class="my-auto px-2 py-[0.125rem] border rounded-md border-gray-400 hover:animate-pulse" v-tooltip="ctrans('Running quantity under this location')">
+          <span v-if="orgStockMovement.type == 'disassociate'">
+          </span>
+          <span v-else-if="orgStockMovement.flow == 'audit' && orgStockMovement.audited_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
+            <FontAwesomeIcon 
+              :icon="faBoxFull"
+            />
+            {{ orgStockMovement.audited_quantity ?? 0 }}
+          </span>
+          <span v-else-if="orgStockMovement.running_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
             <FontAwesomeIcon 
               :icon="faBoxFull"
             />
             {{ orgStockMovement.running_quantity ?? 0 }}
+          </span>
+          <span v-else>
           </span>
         </Link>
       </div>
@@ -149,25 +159,41 @@ function deliveryNoteRoute(orgStockMovement) {
     </template>
 
     <template #cell(quantity)="{ item: orgStockMovement }">
-      <span v-if="orgStockMovement.flow == 'audit'" class="border-blue-300 text-blue-500 bg-blue-100 px-3 border rounded-md w-fit min-w-14 text-center grid justify-self-end">
-        {{ Number(orgStockMovement.audited_quantity) }}
+      <span v-if="Number(orgStockMovement.quantity) != 0" :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3 border rounded-md w-fit min-w-14 text-center grid justify-self-end">
+        {{ Number(orgStockMovement.quantity) > 0 ? `+${Number(orgStockMovement.quantity)}` : Number(orgStockMovement.quantity) }}
       </span>
-      <span v-else :class="Number(orgStockMovement.quantity) == 0 ? 'border-gray-300' : (orgStockMovement.is_negative ? 'text-red-500 bg-red-100 border-red-300' : 'text-green-500 bg-green-100 border-green-300')" class="px-3 border rounded-md w-fit min-w-14 text-center grid justify-self-end">
-        {{ Number(orgStockMovement.quantity) }}
+      <span v-else>
       </span>
     </template>
 
     <template #cell(running_quantity_location)="{ item: orgStockMovement }">
-      <span class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
+      <span v-if="orgStockMovement.type == 'disassociate'">
+      </span>
+      <span v-else-if="orgStockMovement.flow == 'audit' && orgStockMovement.audited_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
+        <FontAwesomeIcon 
+          :icon="faBoxFull"
+        />
+        {{ orgStockMovement.audited_quantity ?? 0 }}
+      </span>
+      <span v-else-if="orgStockMovement.running_quantity > 0" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
         <FontAwesomeIcon 
           :icon="faBoxFull"
         />
         {{ orgStockMovement.running_quantity ?? 0 }}
       </span>
+      <span v-else>
+      </span>
     </template>
 
     <template #cell(running_quantity_org_stock)="{ item: orgStockMovement }">
-      <span v-if="orgStockMovement.running_quantity_org_stock">
+      <span 
+        v-if="orgStockMovement.running_quantity_org_stock" 
+        class="border rounded-md px-2 py-[0.125rem]" 
+        :class="[
+            orgStockMovement.flow == 'audit' 
+            ? 'border-blue-300 bg-blue-100 text-blue-500' 
+            : 'border-gray-400'
+        ]">
         {{ (orgStockMovement.type == 'location-transfer' && orgStockMovement.quantity < 0) ? (Number(orgStockMovement.running_quantity_org_stock) + -(Number(orgStockMovement.quantity)))  : Number(orgStockMovement.running_quantity_org_stock) }}
       </span>
     </template>
