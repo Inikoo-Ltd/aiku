@@ -467,7 +467,7 @@ onMounted(() => {
         <div class="relative flex gap-x-2 z-40 mt-4">
             <Button
                 label="Cancel"
-                type="cancel"
+                type="tertiary" icon="far fa-arrow-left"
                 @click="() => emits('close')"
             />
 
