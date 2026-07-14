@@ -63,6 +63,7 @@ const comment = ref("");
 const isSavingBlock = ref(false);
 const isLoadingPublish = ref(false);
 const isBeefreeReady = ref(false);
+const _beefree = ref(null);
 
 // Beefree auto save
 const persistBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
@@ -113,7 +114,53 @@ const onBeefreeAutoSave = (jsonFile: any) => {
 };
 
 const onBeefreeSave = (payload: any) => {
-  persistBeefreeLayout(JSON.parse(payload.jsonFile), payload.htmlFile);
+  if (props.webpage_sub_type === 'mailshot') {
+    persistBeefreeLayout(JSON.parse(payload.jsonFile));
+    return;
+  }
+};
+
+
+const persistPublishBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
+  if (!props.webpage.publishRoute?.name) {
+    notify({
+      title: trans("Something went wrong"),
+      text: trans("No publish route is configured for this page"),
+      type: "error"
+    });
+    return;
+  }
+
+  isSavingBlock.value = true;
+
+  try {
+    await axios[props.webpage.publishRoute.method ?? "post"](
+      route(props.webpage.publishRoute.name, props.webpage.publishRoute.parameters),
+      {
+        layout: {
+          data: {
+            fieldValue: {
+              builderType: "beefree",
+              beefree: {
+                json: {
+                  layout: Jsonlayout
+                },
+                html: compiledLayout ?? ""
+              }
+            }
+          }
+        }
+      }
+    );
+  } catch (error) {
+    notify({
+      title: trans("Failed to save"),
+      text: error?.response?.data?.message || error.message || "Unknown error occurred",
+      type: "error"
+    });
+  } finally {
+    isSavingBlock.value = false;
+  }
 };
 
 // Publish Actions
@@ -152,6 +199,12 @@ const onPublish = async (action: routeType, popover) => {
 };
 
 const beforePublish = (route, popover) => {
+  if (props.webpage_sub_type === 'mailshot') {
+    _beefree.value?.beeInstance?.save();
+    popover.close();
+    return;
+  }
+
   onPublish(route, popover);
 };
 
