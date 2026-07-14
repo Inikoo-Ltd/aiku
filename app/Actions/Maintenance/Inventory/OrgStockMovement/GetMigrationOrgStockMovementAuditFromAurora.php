@@ -94,7 +94,7 @@ class GetMigrationOrgStockMovementAuditFromAurora
                             $delta -= $movement->{'Inventory Transaction Quantity'};
                         } elseif ($movement->{'Inventory Transaction Type'} == 'In') {
                             $delta -= $movement->{'Inventory Transaction Quantity'};
-                        } elseif ($movement->{'Inventory Transaction Type'} == 'FailSale' ||  $movement->{'Inventory Transaction Type'} == 'Order In Process' || $movement->{'Inventory Transaction Type'} == 'Audit') {
+                        } elseif ($movement->{'Inventory Transaction Type'} == 'No Dispatched' || $movement->{'Inventory Transaction Type'} == 'FailSale' ||  $movement->{'Inventory Transaction Type'} == 'Order In Process' || $movement->{'Inventory Transaction Type'} == 'Audit') {
                             //
                         } else {
                             dd($movement);
