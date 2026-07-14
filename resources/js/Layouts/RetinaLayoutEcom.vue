@@ -114,7 +114,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 							<!-- Section: mobile navigation -->
 							<div
 								v-if="layout.user && screenType === 'mobile'"
-								class="sticky top-0 z-40 flex items-center gap-x-1 px-3 py-2 bg-white/95 backdrop-blur border-b border-slate-200 rounded-t-lg overflow-x-auto">
+								class="sticky top-0 z-40 flex justify-center items-center gap-x-1 px-3 py-2 bg-white/95 backdrop-blur border-b border-slate-200 rounded-t-lg overflow-x-auto">
 								<template v-for="(grpNav, itemKey) in layout.navigation">
 									<RetinaMobileNavigationSimple
 										:nav="grpNav"
