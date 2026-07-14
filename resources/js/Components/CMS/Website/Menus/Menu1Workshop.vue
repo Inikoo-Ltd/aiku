@@ -249,7 +249,7 @@ const imageCol = computed(() => {
                 <Transition>
                     <div v-if="isAbleScrollToLeft" class="absolute -right-24 z-10 top-0 h-full w-24 pointer-events-none"
                         :style="{
-                            background: `linear-gradient(to right, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 45%, transparent 100%)`
+                            background: `linear-gradient(to right, ${layout?.app?.webpage_layout?.container?.properties?.background?.color ?? '#fff'} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color ?? '#fff'} 45%, transparent 100%)`
                         }" />
                 </Transition>
 
@@ -265,7 +265,7 @@ const imageCol = computed(() => {
             <Transition>
                 <div v-if="isAbleScrollToRight" class="absolute right-4 z-10 top-0 h-full w-24 pointer-events-none"
                     :style="{
-                        background: `linear-gradient(to left, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 35%, transparent 100%)`
+                        background: `linear-gradient(to left, ${layout?.app?.webpage_layout?.container?.properties?.background?.color ?? '#fff'} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color ?? '#fff'} 35%, transparent 100%)`
                     }" />
             </Transition>
             <Transition>
