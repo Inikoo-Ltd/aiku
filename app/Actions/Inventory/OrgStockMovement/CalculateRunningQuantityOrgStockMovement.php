@@ -22,13 +22,19 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
 
     public string $jobQueue = 'stock-history-urgent';
 
-    public function getJobUniqueId(OrgStockMovement $orgStockMovement): string
+    public function getJobUniqueId(?int $orgStockMovementId): string
     {
-        return $orgStockMovement->id;
+        return $orgStockMovementId ?? 'int';
     }
 
-    public function handle(OrgStockMovement $orgStockMovement): void
+    public function handle(?int $orgStockMovementId): void
     {
+        if (!$orgStockMovementId) {
+            return;
+        }
+
+        $orgStockMovement = OrgStockMovement::find($orgStockMovementId);
+
         if (!$orgStockMovement) {
             return;
         }

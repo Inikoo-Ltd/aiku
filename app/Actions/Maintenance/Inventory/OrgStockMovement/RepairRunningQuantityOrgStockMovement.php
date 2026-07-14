@@ -24,24 +24,33 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
 
     public string $jobQueue = 'sales_slave_historic';
 
-    public function getJobUniqueId(OrgStock $orgStock): string
+    public function getJobUniqueId(?int $orgStockId): string
     {
-        return $orgStock->id;
+        return $orgStockId ?? 'empty';
     }
 
 
-    public function handle(OrgStock $orgStock, Command $command): void
+    public function handle(?int $orgStockId, Command $command): void
     {
+        if (!$orgStockId) {
+            return;
+        }
+        $orgStock = OrgStock::find($orgStockId);
+
+        if (!$orgStock) {
+            return;
+        }
+
         /** @var OrgStockMovement $movement */
         foreach (
             $orgStock->orgStockMovements()->orderBy('date')->get() as $movement
         ) {
             $command->info("Repairing: $orgStock->slug $movement->date");
-            CalculateRunningQuantityOrgStockMovement::run($movement);
+            CalculateRunningQuantityOrgStockMovement::run($movement->id);
         }
     }
 
-    public string $commandSignature = 'repair:running_quantity_org_stock_movement {--org_stock_slug=} {--organisation=} {--async}';
+    public string $commandSignature = 'repair:running_quantity_org_stock_movement {--s|org_stock_slug=} {--o|organisation=} {--a|async}';
 
     public function asCommand(Command $command): int
     {
@@ -69,9 +78,9 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
             ->chunkById(250, function ($orgStockChunk) use ($command, $async) {
                 foreach ($orgStockChunk as $orgStock) {
                     if ($async) {
-                        $this->dispatch($orgStock, $command);
+                        RepairRunningQuantityOrgStockMovement::dispatch($orgStock->id);
                     } else {
-                        $this->handle($orgStock, $command);
+                        $this->handle($orgStock->id, $command);
                     }
                 }
             });

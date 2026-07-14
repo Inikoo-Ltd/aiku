@@ -24,7 +24,7 @@ class GetUsersFromSearch
             $users = $users->where('status', true);
         }
 
-        $users->load('employees.organisation');
+        $users->load('employedInOrganisation');
 
         return GerUsersFromSearchResource::collection($users);
     }
