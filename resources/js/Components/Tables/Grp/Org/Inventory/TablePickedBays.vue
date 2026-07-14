@@ -30,12 +30,15 @@ const isOpenPickedBayModal = ref(false);
 const selectedDeliveryNotes = ref([])
 const isLoadingDelete = ref(null);
 
+const routeCurrent = route().current()
+const routeParams = route().params
+
 function bayRoute(bay: bay) {
-	switch (route().current()) {
+	switch (routeCurrent) {
 		case 'grp.org.warehouses.show.dispatching.picked_bays.index':
 			return route(
 				'grp.org.warehouses.show.dispatching.picked_bays.show',
-				[route().params['organisation'], route().params['warehouse'], bay.slug])
+				[routeParams['organisation'], routeParams['warehouse'], bay.slug])
 		default:
 			return route(
 				'grp.org.warehouses.show.dispatching.picked_bays.index',
@@ -44,14 +47,14 @@ function bayRoute(bay: bay) {
 }
 
 const deliveryNoteRoute = (bay: {}) => {
-    switch (route().current()) {
+    switch (routeCurrent) {
         case 'grp.org.warehouses.show.dispatching.picked_bays.show':
         case 'grp.org.warehouses.show.dispatching.picked_bays.index':
             return route(
                 'grp.org.warehouses.show.dispatching.delivery_notes.show',
                 {
-                    organisation: route().params['organisation'],
-                    warehouse: route().params['warehouse'],
+                    organisation: routeParams['organisation'],
+                    warehouse: routeParams['warehouse'],
                     deliveryNote: bay.current_delivery_note.slug
                 })
         default:
