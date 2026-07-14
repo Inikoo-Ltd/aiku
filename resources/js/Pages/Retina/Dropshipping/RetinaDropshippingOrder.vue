@@ -144,7 +144,7 @@ const props = defineProps<{
 
     transactions?: {}
     invoices?: {}
-    delivery_notes: {
+    delivery_notes?: {
         data: Array<any>
     }
     reviews? : any

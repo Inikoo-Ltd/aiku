@@ -25,7 +25,7 @@ const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
-    history: {}
+    history?: {}
     mailshots?: {}
     email_bulk_runs?: {}
     dispatched_emails?: {}

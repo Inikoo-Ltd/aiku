@@ -26,7 +26,7 @@ const props = defineProps<{
     showcase?: object
     outboxes?: object
     mailshots?: object
-    dispatched_emails: object
+    dispatched_emails?: object
 }>()
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)

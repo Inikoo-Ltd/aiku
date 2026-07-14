@@ -29,7 +29,7 @@ const props = defineProps<{
         end_date: string
     }
     box_stats: BoxStats
-    history: {},
+    history?: {},
     currency:{}
 
 }>()

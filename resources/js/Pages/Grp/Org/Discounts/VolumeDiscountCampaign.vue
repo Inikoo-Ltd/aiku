@@ -32,7 +32,7 @@ const props = defineProps<{
         navigation: {}
     }
     offers?: {}
-    gr_gift: {}
+    gr_gift?: {}
     gr_amnesty?: {}
     overview?: {
         offerCampaign: {}

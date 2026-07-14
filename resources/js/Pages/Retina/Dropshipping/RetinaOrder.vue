@@ -108,9 +108,9 @@ const props = defineProps<{
         update_route: routeType
         submit_route: routeType
     }
-    transactions: {}
+    transactions?: {}
     currency: Currency
-    delivery_notes: {
+    delivery_notes?: {
         data: Array<any>
     },
     attachments?: {}

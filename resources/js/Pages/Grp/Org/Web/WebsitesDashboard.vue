@@ -26,7 +26,7 @@ const props = defineProps<{
         current: string
         navigation: object
     }
-    showcase: {}
+    showcase?: {}
     crawls?: {}
 }>()
 

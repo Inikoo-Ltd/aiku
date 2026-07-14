@@ -71,7 +71,7 @@ const props = defineProps<{
     }
   }
   agreed_prices?: {}
-  note: {},
+  note?: {},
   history?: {},
   email?: {},
   balance?: {},

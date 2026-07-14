@@ -79,8 +79,8 @@ const props = defineProps<{
     }
     mini_breadcrumbs?: any[]
     customers?: {}
-    mailshots: {}
-    products: {}
+    mailshots?: {}
+    products?: {}
     history?: {}
     images?: object
     sales?: object

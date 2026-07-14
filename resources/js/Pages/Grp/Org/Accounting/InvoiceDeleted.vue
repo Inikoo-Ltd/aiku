@@ -97,10 +97,10 @@ const props = defineProps<{
     recurring_bill_route: routeType
     invoice: InvoiceResource
     invoice_transactions?: {}
-    items: {}
+    items?: {}
     payments?: {}
-    details: {}
-    history: {}
+    details?: {}
+    history?: {}
 
     outbox: {
         state: string
