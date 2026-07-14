@@ -92,8 +92,7 @@ const screenType = inject("screenType", "desktop")
 </script>
 
 <template>
-  ssdfsdf
-  <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800"   :style="{fontFamily: 'Raleway, sans-serif'}">
+  <div v-if="fieldValue?.builderType != 'beefree'" class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800"   :style="{fontFamily: 'Raleway, sans-serif'}">
     <!-- Sidebar -->
     <aside class="lg:sticky lg:top-10 max-h-[80vh] overflow-y-auto hidden lg:block border-r border-gray-100 pr-6">
       <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
@@ -198,6 +197,8 @@ const screenType = inject("screenType", "desktop")
       </div>
     </article>
   </div>
+
+  <div v-if="fieldValue?.builderType == 'beefree'" v-html="fieldValue?.beefree?.html"></div>
 </template>
 
 <style scoped>
