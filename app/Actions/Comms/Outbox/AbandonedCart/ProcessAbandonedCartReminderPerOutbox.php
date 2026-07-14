@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessAbandonedCartPerOutbox
+class ProcessAbandonedCartReminderPerOutbox
 {
     use WithGenerateEmailBulkRuns;
     use AsAction;
@@ -82,7 +82,7 @@ class ProcessAbandonedCartPerOutbox
                 ->values()
                 ->all();
 
-            ProcessAbandonedCartRecipients::dispatch(
+            ProcessAbandonedCartReminderRecipients::dispatch(
                 $emailBulkRun->id,
                 $customerData
             );

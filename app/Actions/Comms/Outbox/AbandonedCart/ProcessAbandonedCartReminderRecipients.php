@@ -21,7 +21,7 @@ use App\Models\CRM\Customer;
 use App\Models\Ordering\CheckoutAbandonment;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessAbandonedCartRecipients
+class ProcessAbandonedCartReminderRecipients
 {
     use AsAction;
     use WithAbandonedCartRecoveryContent;

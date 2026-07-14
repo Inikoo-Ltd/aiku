@@ -26,7 +26,9 @@ enum OutboxCodeEnum: string
     case NEW_ORDER = 'new_order';
     case NEW_OFFER = 'new_offer';
     case FINISH_OFFER = 'finish_offer';
-    case ABANDONED_CART = 'abandoned_cart';
+    case ABANDONED_CART = 'abandoned_cart'; // old abandoned cart,deleted at later
+    case ABANDONED_CART_REMINDER = 'abandoned_cart_reminder';
+
     case DELIVERY_CONFIRMATION = 'delivery_confirmation';
     case SEND_INVOICE_TO_CUSTOMER = 'send_invoice_to_customer';
     case REORDER_REMINDER = 'reorder_reminder';
@@ -100,6 +102,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER
             => OutboxTypeEnum::MARKETING_NOTIFICATION,
             OutboxCodeEnum::TEST => OutboxTypeEnum::TEST,
 
@@ -138,6 +141,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_OFFER => 'New offer',
             OutboxCodeEnum::FINISH_OFFER => 'Finish offer',
             OutboxCodeEnum::ABANDONED_CART => 'Abandoned cart',
+            OutboxCodeEnum::ABANDONED_CART_REMINDER => 'Abandoned cart reminder',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery confirmation',
             OutboxCodeEnum::REORDER_REMINDER => '1st Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd Reorder reminder',
@@ -189,6 +193,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_OFFER => 'New offer',
             OutboxCodeEnum::FINISH_OFFER => 'Finish offer',
             OutboxCodeEnum::ABANDONED_CART => 'Abandoned cart',
+            OutboxCodeEnum::ABANDONED_CART_REMINDER => 'Abandoned cart reminder',
             OutboxCodeEnum::DELIVERY_CONFIRMATION => 'Delivery conformation',
             OutboxCodeEnum::REORDER_REMINDER => 'Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd Reorder reminder',
@@ -234,6 +239,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::ABANDONED_CART,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
@@ -301,6 +307,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION, OutboxCodeEnum::NEW_REVIEW => ['b2b', 'dropshipping'],
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::ABANDONED_CART,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
@@ -397,11 +404,12 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::REVIEW_REMINDER,
             OutboxCodeEnum::INVOICE_PAID,
-            OutboxCodeEnum::ABANDONED_CART
+            OutboxCodeEnum::ABANDONED_CART_REMINDER
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
-            OutboxCodeEnum::INVITE
+            OutboxCodeEnum::INVITE,
+            OutboxCodeEnum::ABANDONED_CART
             => 'Mailshot',
 
             default => null
@@ -449,7 +457,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::REVIEW_REMINDER,
-            OutboxCodeEnum::ABANDONED_CART
+            OutboxCodeEnum::ABANDONED_CART_REMINDER
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
@@ -509,6 +517,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::ABANDONED_CART,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
@@ -529,6 +538,7 @@ enum OutboxCodeEnum: string
             self::REORDER_REMINDER_3RD,
             self::BASKET_LOW_STOCK,
             self::ABANDONED_CART,
+            self::ABANDONED_CART_REMINDER,
             self::PRICE_CHANGE_NOTIFICATION => true,
             default => false,
         };

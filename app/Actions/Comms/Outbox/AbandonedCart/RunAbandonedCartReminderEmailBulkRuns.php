@@ -14,17 +14,17 @@ use App\Models\Comms\Outbox;
 use App\Services\QueryBuilder;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RunAbandonedCartEmailBulkRuns
+class RunAbandonedCartReminderEmailBulkRuns
 {
     use AsAction;
 
-    public string $commandSignature = 'run:abandoned-cart-notification';
+    public string $commandSignature = 'run:abandoned-cart-reminder-notification';
     public string $jobQueue = 'ses';
 
     public function handle(): void
     {
         $queryOutbox = QueryBuilder::for(Outbox::class);
-        $queryOutbox->whereIn('code', [OutboxCodeEnum::ABANDONED_CART]);
+        $queryOutbox->whereIn('code', [OutboxCodeEnum::ABANDONED_CART_REMINDER]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->where('is_applicable', true);
         $queryOutbox->whereNotNull('shop_id');
@@ -36,7 +36,7 @@ class RunAbandonedCartEmailBulkRuns
 
         /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
-            ProcessAbandonedCartPerOutbox::dispatch($outbox);
+            ProcessAbandonedCartReminderPerOutbox::dispatch($outbox);
         }
     }
 

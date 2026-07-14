@@ -507,7 +507,8 @@
       "web_user_registration",
       "oos_in_order_notification", 
       "review_reminder",
-      "invoice_paid"
+      "invoice_paid", 
+      "abandoned_cart_reminder"
     ],
     "name": "Beefree blank email template",
     "content": "beefree_blank_email_template.json",
