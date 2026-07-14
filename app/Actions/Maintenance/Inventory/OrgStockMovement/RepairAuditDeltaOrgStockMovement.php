@@ -86,7 +86,7 @@ class RepairAuditDeltaOrgStockMovement implements ShouldBeUnique
             ->chunkById(250, function ($orgStockChunk) use ($command, $async) {
                 foreach ($orgStockChunk as $orgStock) {
                     if ($async) {
-                        RepairRunningQuantityOrgStockMovement::dispatch($orgStock->id);
+                        RepairAuditDeltaOrgStockMovement::dispatch($orgStock->id);
                     } else {
                         $this->handle($orgStock->id, $command);
                     }
