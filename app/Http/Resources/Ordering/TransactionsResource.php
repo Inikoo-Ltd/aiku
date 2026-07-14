@@ -88,6 +88,14 @@ class TransactionsResource extends JsonResource
             ),
             $this->product_units
         );
+        $quantityBonusFractional      = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors(
+                    $this->quantity_bonus ?? 0
+                )
+            ),
+            $this->product_units
+        );
 
         $media = null;
         if ($this->product_image_id) {
@@ -110,6 +118,7 @@ class TransactionsResource extends JsonResource
             'quantity_ordered'               => trimDecimalZeros($quantityOrdered),
             'quantity_ordered_fractional'    => $quantityOrderedFractional,
             'quantity_bonus'                 => trimDecimalZeros($this->quantity_bonus),
+            'quantity_bonus_fractional'      => $quantityBonusFractional,
             'quantity_picked'                => trimDecimalZeros($this->quantity_picked),
             'quantity_picked_fractional'     => $quantityPickedFractional,
             'quantity_dispatched'            => trimDecimalZeros($this->quantity_dispatched),

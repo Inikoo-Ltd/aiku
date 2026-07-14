@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property OrgStockMovementFlowEnum $flow
  * @property bool $is_delivered
  * @property bool $is_received
+ * @property bool $is_migration_point
  * @property int|null $stock_family_id
  * @property int|null $org_stock_family_id
  * @property int|null $stock_id
@@ -71,23 +72,28 @@ class OrgStockMovement extends Model
 
     protected $dateFormat = 'Y-m-d H:i:s.uP';
 
-    protected $casts = [
-        'data'       => 'array',
-        'type'       => OrgStockMovementTypeEnum::class,
-        'flow'       => OrgStockMovementFlowEnum::class,
-        'class'      => OrgStockMovementClassEnum::class,
-        'date'       => 'datetime',
-        'quantity'         => 'decimal:3',
-        'audited_quantity' => 'decimal:6',
-        'amount'           => 'decimal:3',
-        'grp_amount' => 'decimal:3',
-        'org_amount' => 'decimal:3',
-        'cost_per_sku' => 'decimal:6',
-        'fixed_internal_helper' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'data'                  => 'array',
+            'type'                  => OrgStockMovementTypeEnum::class,
+            'flow'                  => OrgStockMovementFlowEnum::class,
+            'class'                 => OrgStockMovementClassEnum::class,
+            'date'                  => 'datetime',
+            'quantity'              => 'decimal:3',
+            'audited_quantity'      => 'decimal:6',
+            'amount'                => 'decimal:3',
+            'grp_amount'            => 'decimal:3',
+            'org_amount'            => 'decimal:3',
+            'cost_per_sku'          => 'decimal:6',
+            'fixed_internal_helper' => 'boolean',
+            'is_migration_point'    => 'boolean',
+        ];
+    }
 
     protected $attributes = [
-        'data' => '{}',
+        'data'               => '{}',
+        'is_migration_point' => false,
     ];
 
     protected $guarded = [];

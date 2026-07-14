@@ -12,6 +12,7 @@ use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\Picking;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -26,22 +27,20 @@ class SavePickingInAurora implements ShouldBeUnique
     }
 
 
-
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(Picking $picking): void
+    public function handle(Picking $picking, ?Command $command = null): void
     {
-
-        if (!$picking->organisation->is_aiku_stock_control) {
-            return;
-        }
+        //        if (!$picking->organisation->is_aiku_stock_control) {
+        //            return;
+        //        }
 
         if ($picking->type == PickingTypeEnum::NOT_PICK) {
             return;
         }
 
-        $apiUrl = $this->getApiUrl($picking->organisation);
+        $apiUrl         = $this->getApiUrl($picking->organisation);
         $auroraApiToken = $this->getApiToken($picking->organisation);
         if (!$auroraApiToken || !app()->environment('production')) {
             return;
@@ -61,21 +60,27 @@ class SavePickingInAurora implements ShouldBeUnique
             $picking->deliveryNote->reference
         );
 
+        if ($picking->location && $picking->orgStock) {
+            $response = Http::withHeaders([
+                'secret' => $auroraApiToken,
+            ])->timeout(45)->withQueryParameters(
+                [
+                    'picker_name'  => $picking->picker->contact_name,
+                    'action'       => 'aiku_picking',
+                    'location_key' => $this->getAuroraObjectKey($picking->location),
+                    'part_sku'     => $this->getAuroraObjectKey($picking->orgStock),
+                    'qty'          => $picking->quantity,
+                    'note'         => $note,
+                    'date'         => $picking->created_at->format('Y-m-d H:i:s'),
+                    'picking_key'  => $picking->id
+                ]
+            )->get($apiUrl);
 
-        Http::withHeaders([
-            'secret' => $auroraApiToken,
-        ])->timeout(45)->withQueryParameters(
-            [
-                'picker_name' => $picking->picker->contact_name,
-                'action' => 'aiku_picking',
-                'location_key' => $this->getAuroraObjectKey($picking->location),
-                'part_sku' => $this->getAuroraObjectKey($picking->orgStock),
-                'qty' => $picking->quantity,
-                'note' => $note,
-                'date' => $picking->created_at->format('Y-m-d H:i:s'),
-                'picking_key' => $picking->id
-            ]
-        )->get($apiUrl);
+            if ($command) {
+                $command->line("Response Status: ".$response->status());
+                $command->line("Response Body: ".$response->body());
+            }
+        }
     }
 
 
@@ -105,7 +110,9 @@ class SavePickingInAurora implements ShouldBeUnique
             $count     = 0;
 
             // Get pickings that are not of type NOT_PICK
-            $totalPickings = Picking::where('type', '!=', PickingTypeEnum::NOT_PICK)->count();
+            $totalPickings = Picking::where('type', '!=', PickingTypeEnum::NOT_PICK)
+                ->whereDate('created_at', '>=', Carbon::now()->subWeek())
+                ->count();
 
             if ($totalPickings === 0) {
                 $command->info('No pickings to process');
@@ -120,10 +127,11 @@ class SavePickingInAurora implements ShouldBeUnique
 
             // Process pickings in chunks to avoid memory issues
             Picking::where('type', '!=', PickingTypeEnum::NOT_PICK)
+                ->whereDate('created_at', '>=', Carbon::now()->subWeek())
                 ->chunk($chunkSize, function ($pickings) use (&$count, $bar, $command) {
                     foreach ($pickings as $picking) {
                         try {
-                            $this->handle($picking);
+                            $this->handle($picking, $command);
                             $count++;
                         } catch (\Exception $e) {
                             $command->error("Error processing picking ID: $picking->id - {$e->getMessage()}");

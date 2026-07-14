@@ -35,6 +35,7 @@ use App\Actions\SysAdmin\Organisation\HydrateOrganisations;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Actions\SysAdmin\User\HydrateUser;
+use App\Actions\SysAdmin\User\SetUserEmployedInOrganisation;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions;
 use App\Actions\SysAdmin\User\UpdateUserGroupPseudoJobPositions;
@@ -315,6 +316,32 @@ test('SetUserAuthorisedModels command', function (Guest $guest) {
 
     return $user;
 })->depends('create guest');
+
+test('set user employed in organisation', function (User $user) {
+    /** @var Employee $employee */
+    $employee = Employee::factory()->create([
+        'user_id'         => $user->id,
+        'organisation_id' => $user->authorisedOrganisations()->first()->id,
+        'group_id'        => $user->group_id,
+        'state'           => 'working',
+    ]);
+
+    SetUserEmployedInOrganisation::run($user);
+
+    $user->refresh();
+    expect($user->employed_in_organisation_id)->toBe($employee->organisation_id);
+
+    return $user;
+})->depends('SetUserAuthorisedModels command');
+
+test('set user employed in organisation command', function (User $user) {
+    $this->artisan('user:set-employed-organisation', [
+        'user' => $user->slug,
+    ])->assertSuccessful();
+
+    $user->refresh();
+    expect($user->employed_in_organisation_id)->not->toBeNull();
+})->depends('set user employed in organisation');
 
 
 test('UI index users (active)', function (User $user) {

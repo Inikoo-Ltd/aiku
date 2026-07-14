@@ -8,10 +8,24 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://media.aiku.io">
 @php
-    $irisSiteFontCss = Arr::get(request()->input('website')?->published_layout ?? [], 'theme.container.properties.text.fontFamily');
+    $irisPublishedLayout = request()->input('website')?->published_layout ?? [];
+    $irisSiteFontCss = Arr::get($irisPublishedLayout, 'theme.container.properties.text.fontFamily');
     preg_match("/'([^']+)'/", (string) $irisSiteFontCss, $irisFontMatch);
     $irisSiteFont = $irisFontMatch[1] ?? null;
+
+    /*
+     * Website furniture (topbar, announcements, header, menu) can set per-block fonts in
+     * inline styles independent of the theme font (awgifts.pl: theme unset, announcement
+     * uses Raleway); those render above the fold on every page so they are critical too.
+     */
+    preg_match_all(
+        "/(?:font-family:|fontFamily[\"']?\s*[:=])\s*\\\\?[\"']*\\\\?[\"']?([A-Za-z][A-Za-z ]+)/",
+        json_encode($irisPublishedLayout),
+        $irisFurnitureFontMatches
+    );
+    $irisFurnitureFonts = array_unique(array_map('trim', $irisFurnitureFontMatches[1] ?? []));
     $irisFontPreloads = [
         'Inter'     => [
             'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiJ-Ck-8.woff2',
@@ -26,13 +40,38 @@
             'https://fonts.gstatic.com/s/quicksand/v37/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o58i-wjw3UD2uFw.woff2',
         ],
     ];
-    $irisPreloadFontUrls = collect(['Inter', $irisSiteFont])->filter()->unique()->flatMap(fn ($f) => $irisFontPreloads[$f] ?? [])->all();
+    $irisCriticalFamilies = collect(['Inter', $irisSiteFont])->merge($irisFurnitureFonts)->filter()->unique();
+    $irisPreloadFontUrls = $irisCriticalFamilies->flatMap(fn ($f) => $irisFontPreloads[$f] ?? [])->unique()->all();
+
+    /*
+     * Only Inter + the website's own font may block rendering; the other editor-pickable
+     * families (decorative, used by some CMS text blocks) load after first paint so they
+     * never sit on the LCP critical request chain.
+     */
+    $irisCss2Specs = [
+        'Comfortaa'        => 'Comfortaa',
+        'Inter'            => 'Inter',
+        'Laila'            => 'Laila',
+        'Lobster'          => 'Lobster',
+        'Playfair'         => 'Playfair',
+        'Playfair Display' => 'Playfair',
+        'Port Lligat Slab' => 'Port+Lligat+Slab',
+        'Quicksand'        => 'Quicksand',
+        'Yatra One'        => 'Yatra+One',
+        'Raleway'          => 'Raleway:wght@200;400;500;700;900',
+    ];
+    $irisCriticalFontSpecs = $irisCriticalFamilies->map(fn ($f) => $irisCss2Specs[$f] ?? null)->filter()->unique()->values();
+    $irisDeferredFontSpecs = collect($irisCss2Specs)->values()->unique()->diff($irisCriticalFontSpecs)->values();
+    $irisCss2Url = fn ($specs) => 'https://fonts.googleapis.com/css2?family='.$specs->implode('&family=').'&display=swap';
 @endphp
     @foreach($irisPreloadFontUrls as $irisFontUrl)
         <link rel="preload" as="font" type="font/woff2" href="{{ $irisFontUrl }}" crossorigin>
     @endforeach
-    <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Inter&family=Laila&family=Lobster&family=Playfair&family=Port+Lligat+Slab&family=Quicksand&family=Yatra+One&family=Raleway:wght@200;400;500;700;900&display=swap">
+    <link rel="stylesheet" href="{{ $irisCss2Url($irisCriticalFontSpecs) }}">
+    <link rel="stylesheet" href="{{ $irisCss2Url($irisDeferredFontSpecs) }}" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="{{ $irisCss2Url($irisDeferredFontSpecs) }}">
+    </noscript>
 
 
     @if(request()->input('favicons'))

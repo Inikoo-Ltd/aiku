@@ -75,7 +75,7 @@ class CreateAgent extends OrgAction
                                     'required'    => true,
                                     'mode'        => 'single',
                                     'searchable'  => true,
-                                    'labelProp'   => 'contact_name',
+                                    'labelProp'   => 'contact_and_org_code',
                                     'valueProp'   => 'id',
                                     'fetchRoute'  => [
                                         'name'       => 'grp.search.get_users',

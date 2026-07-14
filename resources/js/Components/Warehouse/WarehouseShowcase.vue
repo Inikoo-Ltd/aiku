@@ -45,7 +45,10 @@ const props = defineProps<{
                     </div>
                 </template>
 
-                <div v-html="data?.address?.formatted_address" class="text-gray-500"></div>
+                <div v-if="data?.address?.formatted_address" v-html="data?.address?.formatted_address" class="text-gray-500"></div>
+                <div v-else class="italic opacity-60">
+                    Address not set yet
+                </div>
             </Fieldset>
         </div>
 

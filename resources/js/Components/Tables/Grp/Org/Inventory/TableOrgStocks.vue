@@ -22,13 +22,16 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { OrgStock } from "@/types/org-stock"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
-import { faForklift, faCheck, faHandPaper } from "@fal"
+import { faForklift, faCheck, faHandPaper, faUnlink } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus)
+library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus, faUnlink)
 
 const props = defineProps<{
     data: object
@@ -37,6 +40,7 @@ const props = defineProps<{
     location_id: number,
 }>()
 
+const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
 const isOpenMoveAllSku = ref(false)
 const form = useForm({
@@ -470,6 +474,33 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 
         <template #cell(non_moving_1y)="{ item }">
             <span class="tabular-nums">{{ locale.number(item.non_moving_1y) }}</span>
+        </template>
+
+        <template #cell(actions)="{ item: stock }">
+            <div v-if="layout.app.environment === 'local'" class="flex justify-end">
+                <ModalConfirmationDelete
+                    :routeDelete="{
+                        name: 'grp.models.location.org_stock.delete',
+                        parameters: { location: location_id, orgStock: stock.id },
+                    }"
+                    :title="ctrans('Are you sure you want to unlink this SKU from the location?')"
+                    :description="ctrans(':qty stock will be removed and marked as lost!', { qty: locale.number(Number(stock.quantity)) })"
+                    isFullLoading
+                    :noLabel="ctrans('Yes, unlink SKU :code', { code: stock.code })"
+                    noIcon="fal fa-unlink"
+                >
+                    <template #default="{ changeModel, isLoadingdelete }">
+                        <div
+                            @click="changeModel"
+                            class="cursor-pointer text-red-500 opacity-50 hover:opacity-100"
+                            v-tooltip="ctrans('Unlink from location')"
+                        >
+                            <LoadingIcon v-if="isLoadingdelete" />
+                            <FontAwesomeIcon v-else :icon="faUnlink" fixed-width aria-hidden="true" />
+                        </div>
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
         </template>
 
 
