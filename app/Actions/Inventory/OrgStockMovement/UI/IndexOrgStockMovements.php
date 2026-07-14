@@ -203,7 +203,7 @@ class IndexOrgStockMovements extends OrgAction
                 ->column(key: 'location_code', label: __('Location'))
                 ->column(key: 'quantity', label: __('Delta'), sortable: true, align: 'right')
                 ->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), sortable: true, align: 'right');
-                // ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
+            // ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
         };
     }
 

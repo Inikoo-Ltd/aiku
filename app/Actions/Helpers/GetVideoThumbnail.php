@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 11 Jul 2026 23:21:18 Malaysia Time, Kuala Lumpur, Malaysia
@@ -60,13 +61,14 @@ class GetVideoThumbnail
         }
 
         $thumbnail = rescue(
-        /**
-         * @throws \Illuminate\Http\Client\ConnectionException
-         */ function () use ($url) {
-            $response = Http::timeout(5)->get('https://vimeo.com/api/oembed.json', ['url' => $url]);
+            /**
+             * @throws \Illuminate\Http\Client\ConnectionException
+             */
+            function () use ($url) {
+                $response = Http::timeout(5)->get('https://vimeo.com/api/oembed.json', ['url' => $url]);
 
-            return $response->successful() ? $response->json('thumbnail_url') : null;
-        },
+                return $response->successful() ? $response->json('thumbnail_url') : null;
+            },
             null,
             false
         );

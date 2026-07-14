@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 13 Jul 2026 10:42:14 Malaysia Time, Kuala Lumpur, Malaysia
@@ -17,7 +18,7 @@ class GetUsersFromSearch
 {
     use asAction;
 
-    public function handle(string $search, bool $onlyActive=true): AnonymousResourceCollection
+    public function handle(string $search, bool $onlyActive = true): AnonymousResourceCollection
     {
         $users = User::search($search)->get();
         if ($onlyActive) {

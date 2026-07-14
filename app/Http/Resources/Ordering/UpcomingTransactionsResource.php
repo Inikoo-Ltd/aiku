@@ -37,7 +37,7 @@ class UpcomingTransactionsResource extends JsonResource
             'product_id'     => $this->product_id,
             'product_code'   => $this->product_code,
             'product_name'   => $this->product_name,
-            'product_units'  => $this->product_units,
+            'product_units'  => $this->product_units ?? null,
             'order_id'       => $this->order_id,
             'transaction_id' => $this->transaction_id,
             'quantity'       => $this->quantity,
