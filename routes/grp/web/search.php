@@ -12,4 +12,3 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', Search::class)->name('index');
 Route::get('/get-users', GetUsersFromSearch::class)->name('get_users');
-

@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 13 Jul 2026 19:57:25 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Tue, 14 Jul 2026 11:26:44 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -13,17 +13,16 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('locations', function (Blueprint $table) {
-            $table->boolean('is_partially_empty')->default(false)->index();
+        Schema::table('org_stock_movements', function (Blueprint $table) {
+            $table->string('migration_source_id', 24)->nullable()->index();
         });
     }
 
 
     public function down(): void
     {
-        Schema::table('locations', function (Blueprint $table) {
-            $table->dropIndex(['is_partially_empty']);
-            $table->dropColumn('is_partially_empty');
+        Schema::table('org_stock_movements', function (Blueprint $table) {
+            $table->dropColumn('migration_source_id');
         });
     }
 };
