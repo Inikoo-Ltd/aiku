@@ -33,8 +33,10 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
     }
 
 
-    public function handle(?int $orgStockId, Command $command): void
+    public function handle(?int $orgStockId, ?Command $command=null): void
     {
+        return;
+
         if (!$orgStockId) {
             return;
         }
@@ -49,7 +51,7 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
             $orgStock->orgStockMovements()->orderBy('date')->get() as $movement
         ) {
             $movement = CalculateRunningQuantityOrgStockMovement::run($movement->id);
-            $command->info("$movement->date $orgStock->slug {$movement->location?->code} $movement->running_quantity $movement->running_quantity_org_stock  ");
+            $command?->info("$movement->date $orgStock->slug {$movement->location?->code} $movement->running_quantity $movement->running_quantity_org_stock  ");
 
         }
 
@@ -65,11 +67,11 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
                     'quantity' => $stockQuantity
                 ]
             );
-            $command->info("$location->code $stockQuantity");
+            $command?->info("$location->code $stockQuantity");
         }
 
         $orgStock->refresh();
-        $command->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations);
+        $command?->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations);
 
 
 
