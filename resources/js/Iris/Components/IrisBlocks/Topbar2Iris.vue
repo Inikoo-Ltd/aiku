@@ -105,7 +105,7 @@ const informationItems = computed(() => {
                     ? 'border-r border-white/30'
                     : ''
             ]">
-                {{ item }}
+               <div v-html="item"></div>
             </span>
         </div>
     </div>
