@@ -39,6 +39,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $org_stocks_batch_code_count
  * @property mixed $org_stocks_batch_code
  * @property mixed $un_numbers
+ * @property mixed $packings_quantity
  */
 class DeliveryNoteItemsResource extends JsonResource
 {
@@ -93,6 +94,14 @@ class DeliveryNoteItemsResource extends JsonResource
         }
 
 
+        $packedQuantity=$this->quantity_packed;
+
+        if($this->packings_quantity){
+            $packedQuantity=$this->packings_quantity;
+        }
+
+
+
         return [
             'id'                             => $this->id,
             'state'                          => $this->state,
@@ -103,8 +112,8 @@ class DeliveryNoteItemsResource extends JsonResource
             'quantity_dispatched_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($quantityDispatched)), $packedIn),
             'quantity_picked'                => $this->quantity_picked,
             'quantity_picked_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked ?? 0)), $packedIn),
-            'quantity_packed'                => $this->quantity_packed,
-            'quantity_packed_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_packed ?? 0)), $packedIn),
+            'quantity_packed'                => $packedQuantity,
+            'quantity_packed_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($packedQuantity ?? 0)), $packedIn),
             'quantity_not_picked'            => $this->quantity_not_picked,
             'org_stock_code'                 => $this->org_stock_code,
             'org_stock_name'                 => $this->org_stock_name,

@@ -126,7 +126,7 @@ function deliveryNoteRoute(orgStockMovement) {
         </Link>
         
         <Link class="ml-auto" :href="locationRoute(orgStockMovement, {tab: 'stock_movements'})">
-          <span v-if="orgStockMovement.type == 'disassociate'">
+          <span v-if="orgStockMovement.type == 'disassociate' || orgStockMovement.type == 'associate'">
           </span>
           <span v-else-if="orgStockMovement.flow == 'audit'" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
             <FontAwesomeIcon 
@@ -165,7 +165,7 @@ function deliveryNoteRoute(orgStockMovement) {
     </template>
 
     <template #cell(running_quantity_location)="{ item: orgStockMovement }">
-      <span v-if="orgStockMovement.type == 'disassociate'">
+      <span v-if="orgStockMovement.type == 'disassociate' || orgStockMovement.type == 'associate'">
       </span>
       <span v-else-if="orgStockMovement.flow == 'audit'" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
         <FontAwesomeIcon 
