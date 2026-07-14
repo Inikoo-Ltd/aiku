@@ -1,4 +1,5 @@
 <?php
+
 /** @noinspection PhpUnused */
 
 /*
@@ -47,7 +48,7 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
         foreach (
             $orgStock->orgStockMovements()->orderBy('date')->get() as $movement
         ) {
-            $movement=CalculateRunningQuantityOrgStockMovement::run($movement->id);
+            $movement = CalculateRunningQuantityOrgStockMovement::run($movement->id);
             $command->info("$movement->date $orgStock->slug {$movement->location->code} $movement->running_quantity $movement->running_quantity_org_stock  ");
 
         }
@@ -56,7 +57,7 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
             $orgStock->locations as $location
         ) {
 
-            $locationOrgStock= $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
+            $locationOrgStock = $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
             $stockQuantity = GetLocationOrgStockQuantity::run($orgStock, $location);
             UpdateLocationOrgStock::run(
                 $locationOrgStock,
@@ -68,7 +69,7 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
         }
 
         $orgStock->refresh();
-        $command->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations );
+        $command->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations);
 
 
 

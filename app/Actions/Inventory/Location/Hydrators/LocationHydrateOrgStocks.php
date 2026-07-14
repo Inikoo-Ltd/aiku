@@ -24,7 +24,7 @@ class LocationHydrateOrgStocks implements ShouldBeUnique
         return $location->id;
     }
 
-    public function handle(Location $location, $delay=2): void
+    public function handle(Location $location, $delay = 2): void
     {
         $slots             = $location->locationOrgStocks()->where('dropshipping_pipe', false)->count();
         $dropShippingSlots = $location->locationOrgStocks()->where('dropshipping_pipe', true)->count();

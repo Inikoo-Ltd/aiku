@@ -19,7 +19,7 @@ enum OrgStockMovementClassEnum: string
     case HELPER = 'helper';
     case GARBAGE = 'garbage';
 
-    
+
     public function icon(): array
     {
         return match ($this) {

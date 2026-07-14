@@ -18,8 +18,6 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
     use AsAction;
     use CalculatesOrgStockHistories;
 
-    private OrgStockMovement $orgStockMovement;
-
     public string $jobQueue = 'stock-history-urgent';
 
     public function getJobUniqueId(?int $orgStockMovementId): string
@@ -42,13 +40,13 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
 
 
         $runningQuantityOrg = 0;
-        $runningQuantity=0;
+        $runningQuantity    = 0;
 
 
         foreach ($orgStock->locations as $location) {
-            $stockInLocation=$this->getStockQuantity($orgStock, $location, $orgStockMovement->date);
-            if($location->id==$orgStockMovement->location_id){
-                $runningQuantity=$stockInLocation;
+            $stockInLocation = $this->getStockQuantity($orgStock, $location, $orgStockMovement->date);
+            if ($location->id == $orgStockMovement->location_id) {
+                $runningQuantity = $stockInLocation;
             }
             $runningQuantityOrg += $stockInLocation;
         }
