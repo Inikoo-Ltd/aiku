@@ -27,32 +27,37 @@ class CalculateRunningQuantityOrgStockMovement implements ShouldBeUniqueUntilPro
         return $orgStockMovementId ?? 'int';
     }
 
-    public function handle(?int $orgStockMovementId): void
+    public function handle(?int $orgStockMovementId): ?OrgStockMovement
     {
         if (!$orgStockMovementId) {
-            return;
+            return null;
         }
 
         $orgStockMovement = OrgStockMovement::find($orgStockMovementId);
 
         if (!$orgStockMovement) {
-            return;
+            return null;
         }
         $orgStock = $orgStockMovement->orgStock;
-        // If you want to loop
-        if (!$orgStockMovement->location) {
-            return;
-        }
-        $runningQuantity    = $this->getStockQuantity($orgStock, $orgStockMovement->location, $orgStockMovement->date);
+
+
         $runningQuantityOrg = 0;
+        $runningQuantity=0;
+
 
         foreach ($orgStock->locations as $location) {
-            $runningQuantityOrg += $this->getStockQuantity($orgStock, $location, $orgStockMovement->date);
+            $stockInLocation=$this->getStockQuantity($orgStock, $location, $orgStockMovement->date);
+            if($location->id==$orgStockMovement->location_id){
+                $runningQuantity=$stockInLocation;
+            }
+            $runningQuantityOrg += $stockInLocation;
         }
 
         $orgStockMovement->update([
             'running_quantity'           => $runningQuantity,
             'running_quantity_org_stock' => $runningQuantityOrg,
         ]);
+
+        return $orgStockMovement;
     }
 }
