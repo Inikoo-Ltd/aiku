@@ -222,9 +222,8 @@ console.log('props',props)
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
-      <Publish v-if="props.webpage_sub_type != 'mailshot'" :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
+      <Publish :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
         @onPublish="(popover) => beforePublish(action.route, popover)" />
-        <div v-else></div>
     </template>
     <template #afterTitle v-if="isSavingBlock">
       <LoadingIcon v-tooltip="trans('Saving..')" />
