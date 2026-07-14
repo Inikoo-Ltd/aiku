@@ -23,7 +23,7 @@ class RepairLocationOrgStockQuantity implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $jobQueue = 'sales_slave_historic';
+    public string $jobQueue = 'sales_slave';
 
     public function getJobUniqueId(?int $orgStockId): string
     {
