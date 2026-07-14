@@ -191,7 +191,7 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hm')
+                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hms')
                 ->column(key: 'user', label: __('User'), sortable: true);
 
             if (!($parent instanceof OrgStock)) {

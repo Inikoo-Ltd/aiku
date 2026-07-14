@@ -22,9 +22,11 @@ import {
     faChartLine
 } from "@fal"
 import {
-faCloudRainbow
+faCloudRainbow,
+faShoppingCart,
+faShoppingBasket
 } from "@fas"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, defineAsyncComponent, inject, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue"
@@ -45,6 +47,9 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import { Message } from "primevue"
 import StockIssues from "@/Components/Warehouse/Inventory/StockIssues.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 library.add(
     faInventory,
@@ -60,7 +65,9 @@ library.add(
     faDollarSign,
     faCloudRainbow,
     faMoneyCheckEditAlt,
-    faChartLine
+    faChartLine,
+    faShoppingCart,
+    faShoppingBasket
 )
 
 
@@ -85,6 +92,10 @@ const props = defineProps<{
 
 let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+
+const locale = inject("locale", aikuLocaleStructure)
+const stocksManagement = computed(() => (props.showcase as any)?.stocks_management)
+const showHeaderStats = computed(() => !!stocksManagement.value && currentTab.value !== "showcase")
 
 const component = computed(() => {
 
@@ -124,11 +135,43 @@ const component = computed(() => {
                 />
             </Link>
         </template>
+
+        <template #otherBefore v-if="showHeaderStats">
+            <Popover class="relative" v-slot="{ open }">
+                <PopoverButton
+                    class="flex items-center justify-between gap-x-3 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50 focus:outline-none"
+                    :class="open ? 'ring-1 ring-indigo-400' : ''"
+                >
+                    <span v-tooltip="trans('Stock in Location')" class="flex items-center gap-x-1">
+                        <FontAwesomeIcon :icon="faBox" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <span class="font-semibold tabular-nums text-green-700">
+                            {{ locale.number(stocksManagement.qty_in_location ?? 0) }}
+                        </span>
+                    </span>
+                    <template v-for="(item, key) in stocksManagement.summary" :key="key">
+                        <span v-tooltip="item.icon_state.tooltip" class="flex items-center gap-x-1 text-gray-500 tabular-nums">
+                            <FontAwesomeIcon :icon="item.icon_state.icon" fixed-width aria-hidden="true" />
+                            {{ locale.number(item.value ?? 0) }}
+                        </span>
+                    </template>
+                </PopoverButton>
+
+                <Transition name="headlessui">
+                    <PopoverPanel class="absolute right-0 top-[120%] z-50 w-[32rem] max-w-[90vw] max-h-[70vh] overflow-auto rounded-md border border-gray-300 bg-white shadow-lg">
+                        <StocksManagement
+                            :stocks_management="stocksManagement"
+                            :trade_units="showcase.trade_units"
+                            :data="{ is_quantity_excess: showcase.is_quantity_excess, currency_code: showcase.currency_code }"
+                        />
+                    </PopoverPanel>
+                </Transition>
+            </Popover>
+        </template>
     </PageHeading>
     <!-- <div>
         <Message :severity="'warn'">
-            <FontAwesomeIcon 
-                :icon="faExclamationCircle" 
+            <FontAwesomeIcon
+                :icon="faExclamationCircle"
                 class="text-yellow-500 mr-1"
             />
             {{ trans("Stock location changes for this Org SKU may be overwritten during Aurora imports.") }}
