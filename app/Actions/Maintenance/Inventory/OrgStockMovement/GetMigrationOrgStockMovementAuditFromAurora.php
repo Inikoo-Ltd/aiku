@@ -90,11 +90,11 @@ class GetMigrationOrgStockMovementAuditFromAurora
                     ) {
                         //   $command->info(" >>> Stock {$locationOrgStock->orgStock->slug} {$locationOrgStock->location->code}  : movement:   {$movement->{'Inventory Transaction Key'}}  {$movement->{'Date'}}  {$movement->{'Inventory Transaction Record Type'}}  ".$movement->{'Inventory Transaction Type'});
 
-                        if ($movement->{'Inventory Transaction Type'} == 'AikuPick') {
+                        if ($movement->{'Inventory Transaction Type'} == 'Restock' || $movement->{'Inventory Transaction Type'} == 'AikuPick' || $movement->{'Inventory Transaction Type'} == 'Sale') {
                             $delta -= $movement->{'Inventory Transaction Quantity'};
                         } elseif ($movement->{'Inventory Transaction Type'} == 'In') {
                             $delta -= $movement->{'Inventory Transaction Quantity'};
-                        } elseif ($movement->{'Inventory Transaction Type'} == 'Associate' || $movement->{'Inventory Transaction Type'} == 'Audit') {
+                        } elseif ($movement->{'Inventory Transaction Type'} == 'FailSale' ||  $movement->{'Inventory Transaction Type'} == 'Order In Process' || $movement->{'Inventory Transaction Type'} == 'Audit') {
                             //
                         } else {
                             dd($movement);
