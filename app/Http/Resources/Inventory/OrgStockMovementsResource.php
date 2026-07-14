@@ -64,6 +64,8 @@ class OrgStockMovementsResource extends JsonResource
             'user'                          => $orgStockMovement->user,
             'running_quantity'              => trimDecimalZeros($orgStockMovement->running_quantity),
             'running_quantity_org_stock'    => trimDecimalZeros($orgStockMovement->running_quantity_org_stock),
+            'delivery_note_id'              => $orgStockMovement->delivery_note_id,
+            'delivery_note_reference'       => $orgStockMovement->delivery_note_reference,
         ];
     }
 }
