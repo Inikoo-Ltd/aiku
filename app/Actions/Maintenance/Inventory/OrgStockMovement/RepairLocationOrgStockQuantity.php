@@ -31,7 +31,7 @@ class RepairLocationOrgStockQuantity implements ShouldBeUnique
     }
 
 
-    public function handle(?int $orgStockId, Command $command): void
+    public function handle(?int $orgStockId, ?Command $command=null): void
     {
         if (!$orgStockId) {
             return;
@@ -53,7 +53,7 @@ class RepairLocationOrgStockQuantity implements ShouldBeUnique
                     'quantity' => $stockQuantity
                 ]
             );
-            $command->info("$location->code $stockQuantity");
+            $command?->info("$location->code $stockQuantity");
         }
 
         $orgStock->refresh();
@@ -62,7 +62,7 @@ class RepairLocationOrgStockQuantity implements ShouldBeUnique
         $orgStock->refresh();
 
 
-        $command->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations);
+        $command?->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations);
     }
 
     public string $commandSignature = 'repair:location_org_stock_quantity {--s|org_stock_slug=} {--o|organisation=} {--a|async}';
