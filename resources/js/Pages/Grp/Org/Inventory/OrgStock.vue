@@ -50,6 +50,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(
     faInventory,
@@ -145,7 +146,10 @@ const component = computed(() => {
                     <span v-tooltip="trans('Stock in Location')" class="flex items-center gap-x-1">
                         <FontAwesomeIcon :icon="faBox" class="text-gray-400" fixed-width aria-hidden="true" />
                         <span class="font-semibold tabular-nums text-green-700">
-                            {{ locale.number(stocksManagement.qty_in_location ?? 0) }}
+                            <FractionDisplay v-if="stocksManagement.qty_in_location_fractional" :fractionData="stocksManagement.qty_in_location_fractional"/>
+                            <span v-else>
+                                {{ locale.number(stocksManagement.qty_in_location ?? 0) }}
+                            </span>
                         </span>
                     </span>
                     <template v-for="(item, key) in stocksManagement.summary" :key="key">
@@ -157,7 +161,7 @@ const component = computed(() => {
                 </PopoverButton>
 
                 <Transition name="headlessui">
-                    <PopoverPanel class="absolute right-0 top-[120%] z-50 w-[32rem] max-w-[90vw] max-h-[70vh] overflow-auto rounded-md border border-gray-300 bg-white shadow-lg">
+                    <PopoverPanel class="absolute right-0 top-[120%] z-50 min-w-[50rem] max-w-[90vw] max-h-[70vh] overflow-auto rounded-md border border-gray-300 bg-white shadow-lg">
                         <StocksManagement
                             :stocks_management="stocksManagement"
                             :trade_units="showcase.trade_units"
