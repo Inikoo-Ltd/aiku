@@ -33,10 +33,8 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
     }
 
 
-    public function handle(?int $orgStockId, ?Command $command=null): void
+    public function handle(?int $orgStockId, ?Command $command = null): void
     {
-        return;
-
         if (!$orgStockId) {
             return;
         }
@@ -52,15 +50,13 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
         ) {
             $movement = CalculateRunningQuantityOrgStockMovement::run($movement->id);
             $command?->info("$movement->date $orgStock->slug {$movement->location?->code} $movement->running_quantity $movement->running_quantity_org_stock  ");
-
         }
 
         foreach (
             $orgStock->locations as $location
         ) {
-
             $locationOrgStock = $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
-            $stockQuantity = GetLocationOrgStockQuantity::run($orgStock, $location);
+            $stockQuantity    = GetLocationOrgStockQuantity::run($orgStock, $location);
             UpdateLocationOrgStock::run(
                 $locationOrgStock,
                 [
@@ -72,20 +68,15 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
 
         $orgStock->refresh();
         $command?->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations);
-
-
-
-
-
     }
 
     public string $commandSignature = 'repair:running_quantity_org_stock_movement {--s|org_stock_slug=} {--o|organisation=} {--a|async}';
 
     public function asCommand(Command $command): int
     {
-        $orgStockSlug     = $command->option('org_stock_slug');
+        $orgStockSlug = $command->option('org_stock_slug');
         $organisationSlug = $command->option('organisation');
-        $organisation     = null;
+        $organisation = null;
 
         if ($organisationSlug) {
             $organisation = Organisation::where('slug', $organisationSlug)->first();
