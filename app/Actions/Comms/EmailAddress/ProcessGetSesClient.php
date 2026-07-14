@@ -48,7 +48,6 @@ class ProcessGetSesClient
             return [$default];
         }
 
-        // Mailshot: shop → shop failover → organisation failover → group
         if ($outbox->model_type === class_basename(Mailshot::class)) {
             $candidates = [
                 'shop.customer'         => [$outbox->shop?->settings, 'email.provider.customer_notification'],
@@ -61,16 +60,15 @@ class ProcessGetSesClient
              ];
         } elseif ($outbox->type === OutboxTypeEnum::USER_NOTIFICATION) {
             $candidates = [
-                // email.provider.user_notification.access_id
-                'group.'                 => [$outbox->group?->settings, 'email.provider'],
-                'group.failover'         => [$outbox->group?->settings, 'email.provider.failover'],
+                'group.user_notification'   => [$outbox->group?->settings, 'email.provider.user_notification'],
+                'group.failover'            => [$outbox->group?->settings, 'email.provider.failover'],
             ];
         } else {
-            // Add the internal group new setting if is internal comms
-
-            // Everything else: group only
             $candidates = [
-                'group' => [$outbox->group?->settings, 'email.provider'],
+                'organisation.customer' => [$outbox->organisation?->settings, 'email.provider.customer_notification'],
+                'organisation.failover' => [$outbox->organisation?->settings, 'email.provider.failover'],
+                'group.customer'        => [$outbox->group?->settings, 'email.provider.customer_notification'],
+                'group.failover'        => [$outbox->group?->settings, 'email.provider.failover'],
             ];
         }
 
