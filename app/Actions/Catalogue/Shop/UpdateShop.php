@@ -155,6 +155,63 @@ class UpdateShop extends OrgAction
             }
         }
 
+        $sesFailoverAuditOld = [];
+        $sesFailoverAuditNew = [];
+
+        foreach ([
+                    'access_id' => 'aws_ses_failover_access_id', 
+                    'access_key' => 'aws_ses_failover_access_key', 
+                    'region' => 'aws_ses_failover_region'
+                ] as $field => $auditKey) {
+            if(!Arr::exists($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($shop->settings ?? [], "email.provider.failover.$field");
+            $newValue = Arr::get($modelData, $field);
+
+            if($oldValue === $newValue) {
+                continue;
+            }
+
+            if($field === 'region') {
+                $sesFailoverAuditOld[$auditKey] = $oldValue;
+                $sesFailoverAuditNew[$auditKey] = $newValue;
+
+                continue;
+            }
+
+            $sesFailoverAuditOld[$auditKey] = $oldValue;
+            $sesFailoverAuditNew[$auditKey] = $newValue;
+        }
+
+        foreach ([
+                    'customer_notification_access_id' => 'aws_ses_customer_notification_access_id', 
+                    'customer_notification_access_key' => 'aws_ses_customer_notification_access_key', 
+                    'customer_notification_region' => 'aws_ses_customer_notification_region'
+                ] as $field => $auditKey) {
+            if(!Arr::exists($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($shop->settings ?? [], "email.provider.customer_notification.$field");
+            $newValue = Arr::get($modelData, $field);
+
+            if($oldValue === $newValue) {
+                continue;
+            }
+
+            if($field === 'region') {
+                $sesFailoverAuditOld[$auditKey] = $oldValue;
+                $sesFailoverAuditNew[$auditKey] = $newValue;
+
+                continue;
+            }
+
+            $sesFailoverAuditOld[$auditKey] = $oldValue;
+            $sesFailoverAuditNew[$auditKey] = $newValue;
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -521,6 +578,15 @@ class UpdateShop extends OrgAction
             $shop->auditCustomNew = $newFlattened;
             $shop->auditEvent = 'update';
             $shop->isCustomEvent = true;
+            Event::dispatch(new AuditCustom($shop));
+        }
+
+        if ($sesFailoverAuditNew !== []) {
+            $shop->auditEvent = 'update';
+            $shop->isCustomEvent = true;
+            $shop->auditCustomOld = $sesFailoverAuditOld;
+            $shop->auditCustomNew = $sesFailoverAuditNew;
+
             Event::dispatch(new AuditCustom($shop));
         }
 
