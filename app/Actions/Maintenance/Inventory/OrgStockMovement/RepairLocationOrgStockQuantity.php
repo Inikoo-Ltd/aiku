@@ -1,27 +1,25 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 14 Jul 2026 14:55:19 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 /** @noinspection PhpUnused */
 
-/*
- * Author Louis Perez
- * Created on 13-07-2026-13h-40m
- * GitHub: https://github.com/louis-perez
- * Copyright 2026
-*/
 
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
 use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
-use App\Actions\Inventory\OrgStockMovement\CalculateRunningQuantityOrgStockMovement;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Models\Inventory\OrgStock;
-use App\Models\Inventory\OrgStockMovement;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
+class RepairLocationOrgStockQuantity implements ShouldBeUnique
 {
     use AsAction;
 
@@ -44,21 +42,11 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
             return;
         }
 
-        /** @var OrgStockMovement $movement */
-        foreach (
-            $orgStock->orgStockMovements()->orderBy('date')->get() as $movement
-        ) {
-            $movement = CalculateRunningQuantityOrgStockMovement::run($movement->id);
-            $command->info("$movement->date $orgStock->slug {$movement->location?->code} $movement->running_quantity $movement->running_quantity_org_stock  ");
-
-        }
-
         foreach (
             $orgStock->locations as $location
         ) {
-
             $locationOrgStock = $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
-            $stockQuantity = GetLocationOrgStockQuantity::run($orgStock, $location);
+            $stockQuantity    = GetLocationOrgStockQuantity::run($orgStock, $location);
             UpdateLocationOrgStock::run(
                 $locationOrgStock,
                 [
@@ -69,21 +57,21 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
         }
 
         $orgStock->refresh();
+
+        OrgStockHydrateQuantityInLocations::run($orgStock->id);
+        $orgStock->refresh();
+
+
         $command->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations);
-
-
-
-
-
     }
 
-    public string $commandSignature = 'repair:running_quantity_org_stock_movement {--s|org_stock_slug=} {--o|organisation=} {--a|async}';
+    public string $commandSignature = 'repair:location_org_stock_quantity {--s|org_stock_slug=} {--o|organisation=} {--a|async}';
 
     public function asCommand(Command $command): int
     {
-        $orgStockSlug     = $command->option('org_stock_slug');
+        $orgStockSlug = $command->option('org_stock_slug');
         $organisationSlug = $command->option('organisation');
-        $organisation     = null;
+        $organisation = null;
 
         if ($organisationSlug) {
             $organisation = Organisation::where('slug', $organisationSlug)->first();
@@ -105,7 +93,7 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
             ->chunkById(250, function ($orgStockChunk) use ($command, $async) {
                 foreach ($orgStockChunk as $orgStock) {
                     if ($async) {
-                        RepairRunningQuantityOrgStockMovement::dispatch($orgStock->id);
+                        RepairLocationOrgStockQuantity::dispatch($orgStock->id);
                     } else {
                         $this->handle($orgStock->id, $command);
                     }

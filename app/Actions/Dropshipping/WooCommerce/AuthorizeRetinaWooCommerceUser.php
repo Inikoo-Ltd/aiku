@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\Dropshipping\WooCommerce\Traits\WithWooCommerceAuthorizationToken;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
@@ -24,25 +25,27 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithWooCommerceAuthorizationToken;
 
     public $commandSignature = 'retina:ds:authorize-woo {customer} {name} {url}';
 
     public function handle(Customer $customer, $modelData): string
     {
-        data_set($modelData, 'url', Arr::pull($modelData, 'url'));
+        StoreTemporaryWooUser::run($customer, $modelData);
 
-        $endpoint = '/wc-auth/v1/authorize';
+        $token = $this->storeWooAuthorizationToken([
+            'customer_id' => $customer->id
+        ]);
+
         $params = [
             'app_name' => 'AW Connect',
             'scope' => 'read_write',
-            'user_id' => $customer->id,
+            'user_id' => $token,
             'return_url' => route('retina.dropshipping.platform.woo_callback.success'),
             'callback_url' => route('webhooks.woo.callback')
         ];
 
-        StoreTemporaryWooUser::run($customer, $modelData);
-
-        return Arr::get($modelData, 'url') . $endpoint . '?' . http_build_query($params);
+        return Arr::get($modelData, 'url') . '/wc-auth/v1/authorize?' . http_build_query($params);
     }
 
     public function jsonResponse(string $url): string
@@ -59,6 +62,13 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
         return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if ($request->filled('url')) {
+            $this->set('url', rtrim(trim($request->input('url')), '/'));
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -68,11 +78,13 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
                 'url',
                 'regex:/^https:\/\//',
                 function ($attribute, $value, $fail) {
-                    $testUrl = rtrim($value, '/') . '/wp-json/wc/v3';
                     try {
-                        $response = Http::timeout(10)->head($testUrl);
-                        if ($response->status() !== 200) {
-                            $fail(__('Your WooCommerce API endpoint is not accessible.'));
+                        $response = Http::timeout(10)->connectTimeout(10)->get(rtrim($value, '/') . '/wp-json/wc/v3');
+
+                        if ($response->status() === 404) {
+                            $fail(__('We could not find the WooCommerce API on this store, make sure WooCommerce is installed and its REST API is enabled.'));
+                        } elseif ($response->serverError()) {
+                            $fail(__('Your WooCommerce store returned an error, please try again later.'));
                         }
                     } catch (\Exception $e) {
                         $fail(__('Unable to connect to the WooCommerce store, please check your store url.'));
@@ -80,11 +92,6 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
                 }
             ]
         ];
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        $this->set('name', $request->input('name'));
     }
 
     public function asController(ActionRequest $request): string
@@ -99,11 +106,11 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     {
         $modelData = [
             'name' => $command->argument('name'),
-            'url' => $command->argument('url'),
+            'url' => rtrim(trim($command->argument('url')), '/'),
         ];
 
-        $customer = Customer::find($command->argument('customer'))->first();
+        $customer = Customer::findOrFail($command->argument('customer'));
 
-        $this->handle($customer, $modelData);
+        $command->info($this->handle($customer, $modelData));
     }
 }

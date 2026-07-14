@@ -12,6 +12,7 @@ namespace App\Http\Resources\Inventory;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Inventory\OrgStockMovement;
+use Carbon\Carbon;
 
 /**
  * @property mixed $id
