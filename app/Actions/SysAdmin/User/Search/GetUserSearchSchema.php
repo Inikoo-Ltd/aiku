@@ -24,6 +24,11 @@ class GetUserSearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name'     => 'employed_in_organisation_id',
+                        'type'     => 'int32',
+                        'optional' => true,
+                    ],
+                    [
                         'name' => 'username',
                         'type' => 'string',
                     ],

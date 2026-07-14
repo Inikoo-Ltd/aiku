@@ -2,12 +2,14 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faGift, faBoxOpen } from "@fal"
 import { trans } from "laravel-vue-i18n"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 interface UpcomingTransaction {
     id: number
     product_code: string | null
     product_name: string | null
     quantity: number | string
+    product_units?: number | string | null
     public_notes: string | null
     type: 'gift' | 'follow_on'
     state: string
@@ -36,7 +38,12 @@ const typeAppearances = {
 
 const appearanceOf = (type: UpcomingTransaction['type']) => typeAppearances[type] ?? typeAppearances.follow_on
 
-const formatQuantity = (quantity: UpcomingTransaction['quantity']) => Number(quantity)
+const quantityFraction = (upcomingTransaction: UpcomingTransaction): [number, [number, number]] => {
+    const perPack = Number(upcomingTransaction.product_units) > 0 ? Number(upcomingTransaction.product_units) : 1
+    const units = Math.round((Number(upcomingTransaction.quantity) || 0) * perPack)
+
+    return [Math.floor(units / perPack), [units % perPack, perPack]]
+}
 </script>
 
 <template>
@@ -79,9 +86,9 @@ const formatQuantity = (quantity: UpcomingTransaction['quantity']) => Number(qua
                     </div>
                 </div>
 
-                <div class="flex-none text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded px-2 py-0.5">
-                    ×{{ formatQuantity(upcomingTransaction.quantity) }}
-                </div>
+                <div class="flex-none inline-flex items-center text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded px-2 py-0.5">
+                    ×<FractionDisplay :fractionData="quantityFraction(upcomingTransaction)" />
+                </div>                
             </div>
         </div>
     </div>

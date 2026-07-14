@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link, useForm } from "@inertiajs/vue3"
+import { Link, router, useForm } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
@@ -22,13 +22,16 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { OrgStock } from "@/types/org-stock"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
-import { faForklift, faCheck, faHandPaper } from "@fal"
+import { faForklift, faCheck, faHandPaper, faUnlink } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus)
+library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus, faUnlink)
 
 const props = defineProps<{
     data: object
@@ -37,6 +40,7 @@ const props = defineProps<{
     location_id: number,
 }>()
 
+const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
 const isOpenMoveAllSku = ref(false)
 const form = useForm({
@@ -49,21 +53,12 @@ interface PartialMoveRow {
     code: string
     name: string
     available: number
-    quantity: number
+    quantity_to_move: number
     remove_after_move: boolean
 }
 
 function onCancelPartialMoveSku() {
     isOpenPartialMove.value = false
-}
-
-interface PartialMoveRow {
-    org_stock_id: number
-    code: string
-    name: string
-    available: number
-    quantity: number
-    remove_after_move: boolean
 }
 
 const isOpenPartialMove = ref(false)
@@ -90,7 +85,7 @@ const isPartialMoveValid = computed(() => {
         return false
     }
 
-    return partialForm.org_stocks.every((row) => Number(row.quantity) > 0 && Number(row.quantity) <= row.available)
+    return partialForm.org_stocks.every((row) => Number(row.quantity_to_move) > 0 && Number(row.quantity_to_move) <= row.available)
 })
 
 function openPartialMoveSku() {
@@ -107,6 +102,12 @@ function openPartialMoveSku() {
     isOpenPartialMove.value = true
 }
 
+function onToggleRemoveAfterMove(row: PartialMoveRow) {
+    if (row.remove_after_move) {
+        row.quantity_to_move = row.available
+    }
+}
+
 function onSavePartialMoveSku() {
     const params = route().params as RouteParams
     console.log(partialForm)
@@ -115,7 +116,7 @@ function onSavePartialMoveSku() {
             location_id: data.location_id,
             org_stocks: data.org_stocks.map((row) => ({
                 org_stock_id: row.org_stock_id,
-                quantity: row.quantity,
+                quantity: row.quantity_to_move,
                 remove_after_move: row.remove_after_move,
             })),
         }))
@@ -134,6 +135,7 @@ function onSavePartialMoveSku() {
                         text: ctrans("SKU moved successfully"),
                         type: "success",
                     })
+                    router.reload()
                 },
                 onError: () => {
                     notify({
@@ -474,6 +476,35 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <span class="tabular-nums">{{ locale.number(item.non_moving_1y) }}</span>
         </template>
 
+        <template #cell(actions)="{ item: stock }">
+            <div v-if="layout.app.environment === 'local'" class="flex justify-end">
+                <ModalConfirmationDelete
+                    :routeDelete="{
+                        name: 'grp.models.location_org_stock.delete',
+                        parameters: { 
+                            locationOrgStock: stock.location_org_stock_id
+                        },
+                    }"
+                    :title="ctrans('Are you sure you want to unlink this SKU from the location?')"
+                    :description="ctrans(':qty stock will be removed and marked as lost!', { qty: locale.number(Number(stock.quantity)) })"
+                    isFullLoading
+                    :noLabel="ctrans('Yes, unlink SKU :code', { code: stock.code })"
+                    noIcon="fal fa-unlink"
+                >
+                    <template #default="{ changeModel, isLoadingdelete }">
+                        <div
+                            @click="changeModel"
+                            class="cursor-pointer text-red-500 opacity-50 hover:opacity-100"
+                            v-tooltip="ctrans('Unlink from location')"
+                        >
+                            <LoadingIcon v-if="isLoadingdelete" />
+                            <FontAwesomeIcon v-else :icon="faUnlink" fixed-width aria-hidden="true" />
+                        </div>
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
+        </template>
+
 
 
     </Table>
@@ -558,16 +589,17 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 <Column :header="ctrans('Quantity to move')">
                     <template #body="{ data }">
                         <PureInputNumber
-                            v-model="data.quantity"
+                            v-model="data.quantity_to_move"
                             :minValue="0"
                             :maxValue="data.available"
+                            :disabled="data.remove_after_move"
                         />
                     </template>
                 </Column>
                 <Column :header="ctrans('Remove after move')">
                     <template #body="{ data }">
                         <div class="flex justify-center">
-                            <PureCheckbox v-model="data.remove_after_move" />
+                            <PureCheckbox v-model="data.remove_after_move" @update:modelValue="onToggleRemoveAfterMove(data)" />
                         </div>
                     </template>
                 </Column>

@@ -23,6 +23,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $state
  * @property mixed $product_code
  * @property mixed $product_name
+ * @property mixed $product_units
  * @property mixed $created_at
  * @property mixed $updated_at
  */
@@ -36,6 +37,7 @@ class UpcomingTransactionsResource extends JsonResource
             'product_id'     => $this->product_id,
             'product_code'   => $this->product_code,
             'product_name'   => $this->product_name,
+            'product_units'  => $this->product_units ?? null,
             'order_id'       => $this->order_id,
             'transaction_id' => $this->transaction_id,
             'quantity'       => $this->quantity,

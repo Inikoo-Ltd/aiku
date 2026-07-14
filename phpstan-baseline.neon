@@ -229,6 +229,12 @@ parameters:
 			path: app/Actions/Api/Retina/Dropshipping/Resource/PortfoliosApiResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Actions\\Api\\Retina\\Dropshipping\\Resource\\ProductsApiResource\:\:\$description_extra\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Api/Retina/Dropshipping/Resource/ProductsApiResource.php
+
+		-
 			message: '#^Method App\\Actions\\Api\\Retina\\Fulfilment\\Portfolio\\StoreApiPortfolio\:\:handle\(\) invoked with 3 parameters, 2 required\.$#'
 			identifier: arguments.count
 			count: 1
@@ -709,12 +715,6 @@ parameters:
 			path: app/Actions/Catalogue/Collection/UI/IndexCollectionsInCollection.php
 
 		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Catalogue/Product/GetProductImages.php
-
-		-
 			message: '#^Call to an undefined method App\\Actions\\Catalogue\\Product\\Json\\GetProductsInCollection\:\:getElementGroups\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -725,30 +725,6 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: app/Actions/Catalogue/Product/UI/GetPhysicalGoodShowcase.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Catalogue/Product/UI/GetProductContent.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Catalogue/Product/UI/GetProductImagesShowcase.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Catalogue/Product/UI/GetProductShowcase.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Catalogue/Product/UI/GetProductShowcaseInPortfolio.php
 
 		-
 			message: '#^Anonymous function has an unused use \$shop\.$#'
@@ -779,12 +755,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Actions/Catalogue/ProductCategory/UI/CreateDepartment.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Catalogue/ProductCategory/UI/GetProductCategoryImages.php
 
 		-
 			message: '#^Anonymous function has an unused use \$canEdit\.$#'
@@ -1867,18 +1837,6 @@ parameters:
 			path: app/Actions/Goods/Stock/UI/IndexStocksInTradeUnit.php
 
 		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Goods/TradeUnit/UI/GetTradeUnitImages.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Goods/TradeUnit/UI/GetTradeUnitShowcase.php
-
-		-
 			message: '#^Anonymous function has an unused use \$parent\.$#'
 			identifier: closure.unusedUse
 			count: 1
@@ -2093,12 +2051,6 @@ parameters:
 			identifier: nullCoalesce.variable
 			count: 1
 			path: app/Actions/Inventory/OrgStock/Hydrators/OrgStockHydrateStockValue.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Inventory/OrgStock/UI/GetOrgStockShowcase.php
 
 		-
 			message: '#^Anonymous function has an unused use \$location\.$#'
@@ -2659,24 +2611,6 @@ parameters:
 			path: app/Actions/Masters/MasterAsset/CloneMasterAssetToOtherShop.php
 
 		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Masters/MasterAsset/GetMasterProductImages.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Masters/MasterAsset/Json/GetTradeUnitDataForMasterProductCreation.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Masters/MasterAsset/UI/GetMasterProductShowcase.php
-
-		-
 			message: '#^Anonymous function has an unused use \$masterCollection\.$#'
 			identifier: closure.unusedUse
 			count: 1
@@ -2707,12 +2641,6 @@ parameters:
 			path: app/Actions/Masters/MasterAsset/UpdateMultipleMasterProductsFamily.php
 
 		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Masters/MasterCollection/GetMasterCollectionsImages.php
-
-		-
 			message: '#^Anonymous function has an unused use \$masterCollection\.$#'
 			identifier: closure.unusedUse
 			count: 1
@@ -2741,12 +2669,6 @@ parameters:
 			identifier: property.notFound
 			count: 3
 			path: app/Actions/Masters/MasterProductCategory/StoreMasterFamily.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Actions/Masters/MasterProductCategory/UI/GetMasterProductCategoryImages.php
 
 		-
 			message: '#^Anonymous function has an unused use \$action\.$#'
@@ -6701,12 +6623,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/Catalogue/ProductResourceForVariant.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Http/Resources/Catalogue/ProductVariantResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\ProductsResource\:\:\$is_bundle\.$#'
@@ -10903,12 +10819,6 @@ parameters:
 			path: app/Http/Resources/Masters/MasterAssetTimeSeriesResource.php
 
 		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Http/Resources/Masters/MasterBulkEditProductsResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Masters\\MasterCollectionResource\:\:\$description_extra\.$#'
 			identifier: property.notFound
 			count: 1
@@ -11195,18 +11105,6 @@ parameters:
 			identifier: property.notFound
 			count: 4
 			path: app/Http/Resources/Masters/MasterProductProductsResource.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Http/Resources/Masters/MasterProductResource.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Http/Resources/Masters/MasterProductVariantResource.php
 
 		-
 			message: '#^Access to an undefined property \$this\(App\\Http\\Resources\\Masters\\MasterProductsResource\)\:\:\$products\.$#'
@@ -12355,12 +12253,6 @@ parameters:
 			path: app/Http/Resources/Web/ExternalLinksResource.php
 
 		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Http/Resources/Web/ProductOfVariantResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Web\\RedirectsResource\:\:\$full_path\.$#'
 			identifier: property.notFound
 			count: 1
@@ -12521,24 +12413,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/Web/WebBlockProductCategoryDescriptionResource.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Http/Resources/Web/WebBlockProductForWorkshopResource.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Http/Resources/Web/WebBlockProductResource.php
-
-		-
-			message: '#^Undefined variable\: \$maxWidth$#'
-			identifier: variable.undefined
-			count: 4
-			path: app/Http/Resources/Web/WebpageProductWorkshopResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Web\\WebpagesResource\:\:\$canonical_url\.$#'

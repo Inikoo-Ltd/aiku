@@ -9,7 +9,7 @@
 namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
-use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
@@ -78,7 +78,7 @@ class DeleteLocationOrgStock extends OrgAction
         RepairOrgStockMissingLocationIds::dispatch($orgStock->id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($orgStock->id)->delay(2);
 
-        LocationHydrateStocks::dispatch($location);
+        LocationHydrateOrgStocks::dispatch($location);
         LocationHydrateStockValue::dispatch($location);
         OrgStockHydrateLocations::dispatch($orgStock);
         CalculateOrgStockCurrentStockHistories::dispatch($orgStock->id);

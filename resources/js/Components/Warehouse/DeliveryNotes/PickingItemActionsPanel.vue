@@ -201,7 +201,7 @@ const errors = ref<string[]>([])
         @select="(code) => { selectedLocationCode = code; isModalLocation = false; }"
     />
 
-    <!-- Modal: Pass to CS -->
+    <!-- Modal: Pass to CS (this modal in the outside of table so it wouldn't be looped) -->
     <Modal :isOpen="isOpenModalPassToCs" width="w-full max-w-lg" @onClose="isOpenModalPassToCs = false">
         <PassWaitingItemsToCs
             v-model="isOpenModalPassToCs"

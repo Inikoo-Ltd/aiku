@@ -13,7 +13,9 @@ use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
+use App\Actions\SysAdmin\User\SetUserEmployedInOrganisation;
 use App\Actions\SysAdmin\User\UpdateUser;
+use App\Models\SysAdmin\User;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithPreparePositionsForValidation;
@@ -110,7 +112,25 @@ class UpdateEmployee extends OrgAction
         data_forget($modelData, 'auth_type');
         data_forget($modelData, 'user_model_status');
 
-        $employee = $this->update($employee, $modelData, ['data', 'salary']);
+        $oldUserId = $employee->user_id;
+        $oldState  = $employee->state;
+        $employee  = $this->update($employee, $modelData, ['data', 'salary']);
+
+        $userIdChanged = $employee->user_id != $oldUserId;
+        $stateChanged  = $employee->state !== $oldState;
+
+        if ($userIdChanged || $stateChanged) {
+            if ($oldUserId) {
+                if ($oldUser = User::find($oldUserId)) {
+                    SetUserEmployedInOrganisation::run($oldUser);
+                }
+            }
+            if ($employee->user_id && $employee->user_id != $oldUserId) {
+                if ($newUser = User::find($employee->user_id)) {
+                    SetUserEmployedInOrganisation::run($newUser);
+                }
+            }
+        }
 
         if ($hasIdentityDocuments) {
             $data                         = $employee->fresh()->data ?? [];
@@ -118,7 +138,7 @@ class UpdateEmployee extends OrgAction
             $employee->updateQuietly(['data' => $data]);
         }
 
-        if (Arr::hasAny($employee->getChanges(), ['state'])) {
+        if ($stateChanged) {
             GroupHydrateEmployees::dispatch($employee->group)->delay($this->hydratorsDelay);
             OrganisationHydrateEmployees::dispatch($employee->organisation)->delay($this->hydratorsDelay);
         }
@@ -159,6 +179,7 @@ class UpdateEmployee extends OrgAction
 
             ],
             'state'                                     => ['sometimes', 'required', new Enum(EmployeeStateEnum::class)],
+            'user_id'                                   => ['sometimes', 'nullable', 'exists:users,id'],
             'employment_start_at'                       => ['sometimes', 'nullable', 'date'],
             'employment_end_at'                         => ['sometimes', 'nullable', 'date'],
             'work_email'                                => [

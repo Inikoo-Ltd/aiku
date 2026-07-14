@@ -28,7 +28,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'image_id',
                 'id'           => $model->image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth),
+                'images'       => $model->imageSources(),
                 'dimensions'   => [
                     'width'  => $model->image->width ?? 0,
                     'height' => $model->image->height ?? 0
@@ -241,7 +241,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'image_id',
                 'id'           => $model->image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth),
+                'images'       => $model->imageSources(),
                 'dimensions'   => [
                     'width'  => $model->image->width ?? 0,
                     'height' => $model->image->height ?? 0
@@ -258,7 +258,7 @@ trait HasBucketImages
                 'type'         => 'image',
                 'column_in_db' => 'showcase_image_id',
                 'id'           => $model->showcase_image_id,
-                'images'       => $model->imageSources($maxWidth, $maxWidth, 'showcaseImage'),
+                'images'       => $model->imageSources(0, 0, 'showcaseImage'),
                 'dimensions'   => [
                     'width'  => $model->showcaseImage->width ?? 0,
                     'height' => $model->showcaseImage->height ?? 0

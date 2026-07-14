@@ -30,6 +30,29 @@ const layout = inject("layout");
 const data = ref<any>(null);
 const isLoading = ref(false);
 
+/*
+ * Measure the real viewport directly instead of waiting for the screenType prop
+ * to settle. The prop starts as 'desktop' for SSR hydration and only flips to
+ * the real device after the parent's onMounted, which made mobile devices pick
+ * (and fetch) the desktop banner first before correcting. Reading window here in
+ * setup means the very first client fetch already targets the right device.
+ */
+const detectScreenType = (): "mobile" | "tablet" | "desktop" => {
+  if (typeof window === "undefined") return props.screenType ?? "desktop";
+  if (window.innerWidth < 640) return "mobile";
+  if (window.innerWidth < 1024) return "tablet";
+  return "desktop";
+};
+
+const effectiveScreenType = ref<"mobile" | "tablet" | "desktop">(detectScreenType());
+
+watch(
+  () => props.screenType,
+  () => {
+    effectiveScreenType.value = detectScreenType();
+  }
+);
+
 const activeId = computed(() => {
   const responsive = props.fieldValue?.banner_responsive;
 
@@ -37,9 +60,9 @@ const activeId = computed(() => {
     return props.fieldValue?.banner_id ?? null;
   }
 
-  const current = responsive?.[props.screenType]?.id;
+  const current = responsive?.[effectiveScreenType.value]?.id;
 
-  if (!current && props.screenType !== "desktop") {
+  if (!current && effectiveScreenType.value !== "desktop") {
     return responsive?.desktop?.id ?? null;
   }
 
@@ -58,8 +81,6 @@ const MOBILE_BANNER_HEIGHT = '300px'
 const MOBILE_BANNER_WIDTH = '375px'
 const SQUARE_BANNER_HEIGHT = '400px'
 const LANDSCAPE_RATIO_THRESHOLD = 1.5
-
-const mobileImageRatio = ref<number | null>(null)
 
 const bannerRatio = computed(() => {
   return data.value?.ratio ?? '4/1'
@@ -128,23 +149,8 @@ const bannerBoxVars = computed<Record<string, string>>(() => {
   return vars
 })
 
-const firstBannerImageSource = computed<string | null>(() => {
-  const image = data.value?.compiled_layout?.components?.[0]?.image
-  if (!image) {
-    return null
-  }
 
-  const pickSource = (variant: any): string | null =>
-    variant?.thumbnail?.webp
-    ?? variant?.thumbnail?.original
-    ?? variant?.source?.webp
-    ?? variant?.source?.original
-    ?? null
-
-  return pickSource(image[props.screenType]) ?? pickSource(image.desktop)
-})
-
-const firstBannerImageEmbeddedRatio = computed<number | null>(() => {
+const mobileImageRatio = computed<number | null>(() => {
   const image = data.value?.compiled_layout?.components?.[0]?.image
   const variant = image?.mobile ?? image?.desktop
 
@@ -154,25 +160,6 @@ const firstBannerImageEmbeddedRatio = computed<number | null>(() => {
 
   return null
 })
-
-// measure the original ratio of the image (fallback for banners without embedded dimensions)
-const measureImageRatio = (source: string | null): void => {
-  mobileImageRatio.value = firstBannerImageEmbeddedRatio.value
-
-  if (mobileImageRatio.value !== null || typeof window === "undefined" || !source) {
-    return
-  }
-
-  const image = new window.Image()
-  image.onload = () => {
-    if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-      mobileImageRatio.value = image.naturalWidth / image.naturalHeight
-    }
-  }
-  image.src = source
-}
-
-watch(firstBannerImageSource, (source) => measureImageRatio(source), { immediate: true })
 
 const getDataBanner = async (): Promise<void> => {
   if (typeof window === "undefined") return;
@@ -242,17 +229,17 @@ onMounted(() => {
 
     <section v-else-if="data" class="banner-box relative mx-auto" :style="bannerBoxVars">
       <div class="w-full h-full" :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(fieldValue.container?.properties, screenType),
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, effectiveScreenType),
+        ...getStyles(fieldValue.container?.properties, effectiveScreenType),
       }">
 
         <div v-if="data?.compiled_layout?.type === 'landscape'" class="mx-auto w-full h-full"
           :class="bannerRatio !== '4/1' && 'max-w-full sm:max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-[1600px]'">
-          <SliderLandscape :data="data.compiled_layout" :production="true" :view="screenType" :ratio="bannerRatio" />
+          <SliderLandscape :data="data.compiled_layout" :production="true" :view="effectiveScreenType" :ratio="bannerRatio" />
         </div>
 
         <SliderSquare v-else-if="data?.compiled_layout?.type === 'square'" :data="data.compiled_layout"
-          :production="true" :view="screenType" :ratio="bannerRatio" />
+          :production="true" :view="effectiveScreenType" :ratio="bannerRatio" />
       </div>
 
     </section>
