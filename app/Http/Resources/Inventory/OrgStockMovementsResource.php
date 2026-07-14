@@ -48,6 +48,7 @@ class OrgStockMovementsResource extends JsonResource
             'type'                          => $orgStockMovement->type,
             'type_label'                    => $orgStockMovement->type->label(),
             'flow'                          => $orgStockMovement->flow,
+            'audited_quantity'              => trimDecimalZeros($orgStockMovement->audited_quantity),
             'quantity'                      => trimDecimalZeros($orgStockMovement->quantity),
             'is_negative'                   => ($orgStockMovement->quantity ?? 0) < 0,
             'org_stock_name'                => $orgStockMovement->org_stock_name,
@@ -67,6 +68,7 @@ class OrgStockMovementsResource extends JsonResource
             'running_quantity_org_stock'    => trimDecimalZeros($orgStockMovement->running_quantity_org_stock),
             'delivery_note_id'              => $orgStockMovement->delivery_note_id,
             'delivery_note_reference'       => $orgStockMovement->delivery_note_reference,
+            'is_migration_point'            => $orgStockMovement->is_migration_point,
         ];
     }
 }
