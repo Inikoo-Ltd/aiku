@@ -35,8 +35,62 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import SelectPickingLocation from "../DeliveryNotes/SelectPickingLocation.vue"
 import LabelPickingLocation from "../DeliveryNotes/LabelPickingLocation.vue"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
+import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/ChangePackagingSelect.vue"
+import { notify } from "@kyvg/vue3-notification"
+import { faPrint, faFileAlt, faBoxOpen, faExclamationCircle } from "@fal"
 
-library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows)
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faPrint, faFileAlt, faBoxOpen, faExclamationCircle)
+
+// Section: Packaging & leaflet inserts (warehouse)
+const changingPackagingId = ref<number | null>(null)
+const onChangePackaging = (deliveryNoteId: number, packagingId: number) => {
+    router.patch(
+        route("grp.models.delivery_note.update_packaging", { deliveryNote: deliveryNoteId }),
+        { packaging_id: packagingId },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => changingPackagingId.value = deliveryNoteId,
+            onSuccess: () => router.reload({ only: [props.tab] }),
+            onFinish: () => changingPackagingId.value = null,
+        }
+    )
+}
+
+const printingLeafletId = ref<number | null>(null)
+const onPrintLeaflet = async (leaflet: { id: number, state: string }) => {
+    try {
+        printingLeafletId.value = leaflet.id
+        const response = await axios.post(
+            route("grp.models.delivery_note_leaflet.print", { deliveryNoteLeaflet: leaflet.id })
+        )
+        if (response.data?.state === "error") {
+            notify({ title: trans("Something went wrong"), text: trans("Failed to print insert"), type: "error" })
+        } else {
+            leaflet.state = "printed"
+            notify({ title: trans("Sent to printer"), text: trans("Insert sent to your printer"), type: "success" })
+        }
+    } catch (error: any) {
+        notify({ title: trans("Something went wrong"), text: error?.response?.data?.message ?? trans("Failed to print insert"), type: "error" })
+    } finally {
+        printingLeafletId.value = null
+    }
+}
+
+const printingAllId = ref<number | null>(null)
+const onPrintAllLeaflets = (deliveryNoteId: number) => {
+    router.post(
+        route("grp.models.delivery_note.leaflets.print", { deliveryNote: deliveryNoteId }),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => printingAllId.value = deliveryNoteId,
+            onSuccess: () => router.reload({ only: [props.tab] }),
+            onFinish: () => printingAllId.value = null,
+        }
+    )
+}
 
 
 const props = defineProps<{
@@ -766,6 +820,81 @@ onUnmounted(() => {
             <div>
                 <!-- Empty div to avoid print unexpected from BE -->
             </div>
+        </template>
+
+        <!-- Column: Packaging -->
+        <template #cell(packaging)="{ item }">
+            <div v-if="item.packaging || item.packaging_options?.length" class="min-w-[190px]">
+                <div class="flex items-center gap-2 text-sm">
+                    <FontAwesomeIcon :icon="['fal', 'box-open']" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <span v-if="item.packaging" class="font-medium">{{ item.packaging.name }}</span>
+                    <span v-else class="text-gray-400 italic">{{ trans('No packaging') }}</span>
+                </div>
+                <div v-if="item.packaging?.dimensions" class="text-xs text-gray-400 pl-6">{{ item.packaging.dimensions }}</div>
+                <ChangePackagingSelect
+                    v-if="item.packaging_options?.length"
+                    class="mt-1"
+                    :options="item.packaging_options"
+                    :selectedId="item.packaging?.id ?? null"
+                    :loading="changingPackagingId === item.delivery_note_id"
+                    @change="(packagingId) => onChangePackaging(item.delivery_note_id, packagingId)"
+                />
+            </div>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <!-- Column: Inserts to print -->
+        <template #cell(leaflets)="{ item }">
+            <div v-if="item.leaflets?.length" class="space-y-1 min-w-[210px]">
+                <div v-for="leaflet in item.leaflets" :key="leaflet.id" class="flex items-center gap-2 text-sm">
+                    <FontAwesomeIcon :icon="['fal', 'file-alt']" class="text-gray-500" fixed-width aria-hidden="true" />
+                    <span class="flex-1 truncate">{{ leaflet.name }}</span>
+                    <span class="text-xs text-gray-400">x{{ leaflet.copies }}</span>
+                    <button
+                        v-if="leaflet.has_media"
+                        type="button"
+                        class="p-1 text-orange-500 hover:text-orange-600 disabled:text-gray-300"
+                        :disabled="printingLeafletId === leaflet.id"
+                        v-tooltip="(leaflet.state === 'printed' || leaflet.state === 'included') ? trans('Reprint') : trans('Print')"
+                        @click="onPrintLeaflet(leaflet)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'print']" fixed-width aria-hidden="true" />
+                    </button>
+                    <FontAwesomeIcon
+                        v-else
+                        :icon="['fal', 'exclamation-circle']"
+                        class="text-amber-500"
+                        v-tooltip="trans('No file uploaded')"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                </div>
+            </div>
+            <span v-else class="text-gray-400 italic text-sm">{{ trans('No inserts to print') }}</span>
+        </template>
+
+        <!-- Column: Print all inserts -->
+        <template #cell(print_status)="{ item }">
+            <div v-if="item.print_status?.total > 0" class="space-y-1 min-w-[150px]">
+                <Button
+                    type="tertiary"
+                    size="xs"
+                    icon="fal fa-print"
+                    :label="trans('Print all (:n)', { n: item.print_status.total })"
+                    :loading="printingAllId === item.delivery_note_id"
+                    @click="onPrintAllLeaflets(item.delivery_note_id)"
+                />
+                <div class="text-xs">
+                    <span class="text-gray-500">{{ trans('Print status') }}: </span>
+                    <span
+                        class="inline-flex rounded-full px-2 py-0.5 font-medium"
+                        :class="item.print_status.all_printed ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
+                    >
+                        {{ item.print_status.label }}
+                    </span>
+                </div>
+            </div>
+            <span v-else class="text-gray-400">—</span>
         </template>
     </Table>
 

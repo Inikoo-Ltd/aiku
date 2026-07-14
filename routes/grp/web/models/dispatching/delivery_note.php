@@ -7,6 +7,9 @@
  */
 
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNotePackaging;
+use App\Actions\Dispatching\DeliveryNoteLeaflet\PrintDeliveryNoteLeaflet;
+use App\Actions\Dispatching\DeliveryNoteLeaflet\PrintDeliveryNoteLeaflets;
 use App\Actions\Dispatching\DeliveryNote\UI\ExportDeliveryNoteTariffCodes;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
@@ -47,6 +50,8 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
     Route::get('tariff-codes/export', ExportDeliveryNoteTariffCodes::class)->name('tariff_codes.export');
 
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
+    Route::patch('update-packaging', UpdateDeliveryNotePackaging::class)->name('update_packaging');
+    Route::post('print-leaflets', PrintDeliveryNoteLeaflets::class)->name('leaflets.print');
     Route::patch('update-address', UpdateDeliveryNoteDeliveryAddress::class)->name('update_address');
     Route::patch('update-shipping-fields-retry-store-shipping/{shipper:id}', SaveDeliveryNoteShippingFieldsAndRetryStoreShipping::class)
         ->name('update_shipping_fields_retry_store_shipping')->withoutScopedBindings();
@@ -84,3 +89,5 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('cancel', CancelDeliveryNote::class)->name('cancel');
     });
 });
+
+Route::post('delivery-note-leaflet/{deliveryNoteLeaflet:id}/print', PrintDeliveryNoteLeaflet::class)->name('delivery_note_leaflet.print');

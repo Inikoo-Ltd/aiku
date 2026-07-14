@@ -18,6 +18,7 @@ use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithOrderSummaryPackaging;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\BasketTabsEnum;
 use App\Helpers\NaturalLanguage;
@@ -42,6 +43,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
     use HasBasketDetails;
     use GetPlatformLogo;
     use WithOrderForbiddenCountryCheck;
+    use WithOrderSummaryPackaging;
 
     public function handle(Order $order): Order
     {
@@ -242,35 +244,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
         $taxCategory = $order->taxCategory;
 
-        $chargesGroup = [
-            [
-                'label'       => __('Charges'),
-                'information' => '',
-                'price_total' => $order->charges_amount,
-            ],
-        ];
 
-        if ((float) $order->packaging_amount > 0) {
-            $chargesGroup[] = [
-                'label'       => __('Packaging'),
-                'information' => '',
-                'price_total' => $order->packaging_amount,
-            ];
-        }
-
-        if ((float) $order->leaflet_amount > 0) {
-            $chargesGroup[] = [
-                'label'       => __('Add-ons'),
-                'information' => '',
-                'price_total' => $order->leaflet_amount,
-            ];
-        }
-
-        $chargesGroup[] = [
-            'label'       => __('Shipping'),
-            'information' => '',
-            'price_total' => $order->shipping_amount,
-        ];
 
         return [
             'customer'         => array_merge(
@@ -321,7 +295,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'price_total' => $order->goods_amount
                     ],
                 ],
-                $chargesGroup,
+                $this->buildChargesSummaryGroup($order),
                 [
                     [
                         'label'       => __('Net'),

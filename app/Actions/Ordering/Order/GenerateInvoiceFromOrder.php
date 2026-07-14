@@ -123,6 +123,8 @@ class GenerateInvoiceFromOrder extends OrgAction
                     );
                 } elseif ($transaction->model_type == 'ShippingZone') {
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
+                } elseif (in_array($transaction->model_type, ['Packaging', 'Leaflet'])) {
+                    StoreInvoiceTransaction::make()->action($invoice, $transaction, $data);
                 } else {
                     $invoiceTransactionData = $this->recalculateTransactionTotals($transaction, $deliveryNote);
                     StoreInvoiceTransaction::make()->action($invoice, $transaction, $invoiceTransactionData);
@@ -193,7 +195,7 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $tax = $order->taxCategory->rate;
 
-        $netAmount = $itemsNet + $order->shipping_amount + $order->charges_amount;
+        $netAmount = $itemsNet + $order->shipping_amount + $order->charges_amount + $order->packaging_amount + $order->leaflet_amount;
 
         $taxAmount   = $netAmount * $tax;
         $totalAmount = $netAmount + $taxAmount;

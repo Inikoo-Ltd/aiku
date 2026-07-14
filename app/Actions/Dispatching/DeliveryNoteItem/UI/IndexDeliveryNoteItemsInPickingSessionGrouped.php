@@ -79,6 +79,9 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             $table->column(key: 'delivery_note_state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'items', label: __('Items'), canBeHidden: false);
+            $table->column(key: 'packaging', label: __('Packaging'), canBeHidden: false);
+            $table->column(key: 'leaflets', label: __('Inserts to print'), canBeHidden: false);
+            $table->column(key: 'print_status', label: __('Print all inserts'), canBeHidden: false);
             if ($parent->state != PickingSessionStateEnum::HANDLING) {
                 $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false);
             }
