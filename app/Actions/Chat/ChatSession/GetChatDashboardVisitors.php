@@ -8,6 +8,8 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\WebsiteVisitor;
 use Carbon\Carbon;
@@ -155,6 +157,24 @@ class GetChatDashboardVisitors
             $organisation,
             $request->validated('date'),
             $request->validated('shop_ids', [])
+        );
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
+    {
+        return $this->handle(
+            $shop->organisation,
+            $request->validated('date'),
+            [$shop->id]
+        );
+    }
+
+    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): array
+    {
+        return $this->handle(
+            $fulfilment->organisation,
+            $request->validated('date'),
+            [$fulfilment->shop_id]
         );
     }
 
