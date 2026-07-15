@@ -118,7 +118,7 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
         $query = Order::where('state', OrderStateEnum::CREATING)->whereIn('shop_id', $shopsIds);
 
         if ($days = $command->option('days')) {
-            $query->where('created_at', '<=', now()->subDays((int) $days));
+            $query->where('created_at', '>=', now()->subDays((int) $days));
         }
 
         $count = (clone $query)->count();
