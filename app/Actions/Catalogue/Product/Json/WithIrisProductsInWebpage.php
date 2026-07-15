@@ -150,6 +150,7 @@ trait WithIrisProductsInWebpage
             'products.id',
             'products.family_id as family_id',
             'products.image_id',
+            'products.slug',
             'products.code',
             'products.group_id',
             'products.organisation_id',
@@ -174,6 +175,7 @@ trait WithIrisProductsInWebpage
             'webpages.website_id',
             'webpages.id as webpage_id',
             DB::raw("(SELECT brands.name FROM brands INNER JOIN model_has_brands ON brands.id = model_has_brands.brand_id WHERE model_has_brands.model_id = products.id AND model_has_brands.model_type = 'Product' LIMIT 1) as brand_name"),
+            DB::raw("(SELECT product_categories.code FROM product_categories WHERE product_categories.id = products.family_id) as family_code"),
             ...$additionalColumns
         ];
 

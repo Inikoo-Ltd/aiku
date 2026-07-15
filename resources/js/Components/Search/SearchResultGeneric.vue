@@ -1,8 +1,24 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import {
+    faShoppingCart, faFileInvoiceDollar, faCoins, faTruck, faBox, faBoxesAlt, faAtom,
+    faPersonDolly, faUserPlus, faStar, faChargingStation, faConciergeBell, faShippingFast,
+    faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
+    faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
+    faSpinnerThird, faUserHardHat,
+} from '@fal'
 import { Link } from '@inertiajs/vue3'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
+
+library.add(
+    faShoppingCart, faFileInvoiceDollar, faCoins, faTruck, faBox, faBoxesAlt, faAtom,
+    faPersonDolly, faUserPlus, faStar, faChargingStation, faConciergeBell, faShippingFast,
+    faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
+    faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
+    faSpinnerThird, faUserHardHat,
+)
 
 type ResultItem = {
     id: number
@@ -35,6 +51,21 @@ const SECTIONS: Record<string, SectionConfig> = {
     suppliers: { label: 'Suppliers', icon: 'fal fa-person-dolly', redirectRoute: 'grp.majordomo.redirect_supplier' },
     prospects: { label: 'Prospects', icon: 'fal fa-user-plus', redirectRoute: 'grp.majordomo.redirect_prospect' },
     reviews: { label: 'Reviews', icon: 'fal fa-star' },
+    charges: { label: 'Charges', icon: 'fal fa-charging-station', redirectRoute: 'grp.majordomo.redirect_charge' },
+    services: { label: 'Services', icon: 'fal fa-concierge-bell', redirectRoute: 'grp.majordomo.redirect_service' },
+    shipping_zone_schemas: { label: 'Shipping Schemas', icon: 'fal fa-shipping-fast', redirectRoute: 'grp.majordomo.redirect_shipping_zone_schema' },
+    shipping_zones: { label: 'Shipping Zones', icon: 'fal fa-map-marked-alt' },
+    offers: { label: 'Offers', icon: 'fal fa-badge-percent', redirectRoute: 'grp.majordomo.redirect_offer' },
+    offer_campaigns: { label: 'Campaigns', icon: 'fal fa-comment-dollar', redirectRoute: 'grp.majordomo.redirect_offer_campaign' },
+    mailshots: { label: 'Mailshots', icon: 'fal fa-mail-bulk', redirectRoute: 'grp.majordomo.redirect_mailshot' },
+    webpages: { label: 'Webpages', icon: 'fal fa-browser', redirectRoute: 'grp.majordomo.redirect_webpage' },
+    master_products: { label: 'Master Products', icon: 'fal fa-cube', redirectRoute: 'grp.majordomo.redirect_master_product' },
+    master_product_categories: { label: 'Master Categories', icon: 'fal fa-folder-tree', redirectRoute: 'grp.majordomo.redirect_master_product_category' },
+    master_collections: { label: 'Master Collections', icon: 'fal fa-album-collection', redirectRoute: 'grp.majordomo.redirect_master_collection' },
+    brands: { label: 'Brands', icon: 'fal fa-copyright', redirectRoute: 'grp.majordomo.redirect_brand' },
+    tags: { label: 'Tags', icon: 'fal fa-tags' },
+    barcodes: { label: 'Barcodes', icon: 'fal fa-barcode', redirectRoute: 'grp.majordomo.redirect_barcode' },
+    employees: { label: 'Employees', icon: 'fal fa-user-hard-hat', redirectRoute: 'grp.majordomo.redirect_employee' },
 }
 
 const model = defineModel('open')

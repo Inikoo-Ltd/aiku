@@ -18,7 +18,7 @@ class RedirectTradeUnitFamilyLink extends GrpAction
 {
     public function handle(TradeUnitFamily $tradeUnitFamily): RedirectResponse
     {
-        return Redirect::to(route('grp.goods.trade-unit-families.show', [$tradeUnitFamily->slug]));
+        return Redirect::to(route('grp.trade_units.families.show', [$tradeUnitFamily->slug]));
     }
 
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): RedirectResponse

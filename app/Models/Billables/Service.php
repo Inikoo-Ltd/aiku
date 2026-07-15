@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * App\Models\Catalogue\Service
@@ -75,6 +76,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Service extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use InAssetModel;
     use HasHistory;
@@ -139,6 +141,21 @@ class Service extends Model implements Auditable
     public function recurringBills(): MorphToMany
     {
         return $this->morphToMany(RecurringBill::class, 'model', 'model_has_recurring_bills')->withTimestamps();
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'          => (string)$this->id,
+            'group_id'    => $this->group_id,
+            'shop_id'     => $this->shop_id,
+            'code'        => $this->code,
+            'name'        => (string)$this->name,
+            'description' => (string)$this->description,
+            'state'       => $this->state->value,
+            'created_at'  => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }

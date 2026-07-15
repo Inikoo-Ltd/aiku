@@ -190,8 +190,13 @@ class StoreEbayProduct extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
+            $sku = $portfolio->sku;
+            if ($product->is_bundle) {
+                $sku = $product->code;
+            }
+
             $inventoryItem = [
-                'sku' => $portfolio->sku,
+                'sku' => $sku,
                 'availability' => [
                     'shipToLocationAvailability' => [
                         'availabilityDistributions' => [

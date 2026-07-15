@@ -42,6 +42,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * App\Models\Web\Webpage
@@ -138,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Webpage extends Model implements Auditable, HasMedia
 {
+    use HasSearch;
     use HasSlug;
     use HasFactory;
     use SoftDeletes;
@@ -410,6 +412,24 @@ class Webpage extends Model implements Auditable, HasMedia
         }
 
 
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'          => (string)$this->id,
+            'group_id'    => $this->group_id,
+            'shop_id'     => $this->shop_id,
+            'website_id'  => $this->website_id,
+            'code'        => $this->code,
+            'url'         => (string)$this->url,
+            'title'       => (string)$this->title,
+            'description' => (string)$this->description,
+            'type'        => $this->type->value,
+            'state'       => $this->state->value,
+            'created_at'  => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }
