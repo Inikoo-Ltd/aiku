@@ -71,6 +71,8 @@ class ShowMailshot extends OrgAction
 
         $isShowEditName = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENT]);
 
+        $hasSourceReference = filled($mailshot->source_id) || filled($mailshot->source_alt_id) || filled($mailshot->source_alt2_id);
+
         $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
             ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('customers.id') ?? 0)
             : 0;
@@ -150,7 +152,7 @@ class ShowMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
-                        $isShowEditName && !$webpage ? [
+                        $isShowEditName && !$webpage && !$hasSourceReference ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Convert to Page'),
@@ -192,7 +194,7 @@ class ShowMailshot extends OrgAction
                                 'method'     => 'post'
                             ]
                         ] : [],
-                        $webpage ? [
+                        $webpage && !$hasSourceReference ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Go to webpage'),
