@@ -158,11 +158,19 @@ class ShowInvoice extends OrgAction
                     ]
                 )
             ),
-            [
+            array_values(array_filter([
                 [
                     'label'       => __('Charges'),
                     'price_total' => $invoice->charges_amount
                 ],
+                (float) $invoice->packaging_amount > 0 ? [
+                    'label'       => __('Packaging'),
+                    'price_total' => $invoice->packaging_amount
+                ] : null,
+                (float) $invoice->leaflet_amount > 0 ? [
+                    'label'       => __('Add-ons'),
+                    'price_total' => $invoice->leaflet_amount
+                ] : null,
                 [
                     'label'       => __('Shipping'),
                     'price_total' => $invoice->shipping_amount
@@ -171,7 +179,7 @@ class ShowInvoice extends OrgAction
                     'label'       => __('Insurance'),
                     'price_total' => $invoice->insurance_amount
                 ],
-            ],
+            ])),
             [
                 [
                     'label'       => __('Net'),

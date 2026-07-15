@@ -83,6 +83,8 @@ class GenerateInvoiceFromOrder extends OrgAction
                 'charges_amount'            => $order->charges_amount,
                 'shipping_amount'           => $order->shipping_amount,
                 'insurance_amount'          => $order->insurance_amount,
+                'packaging_amount'          => $order->packaging_amount,
+                'leaflet_amount'            => $order->leaflet_amount,
                 'tax_amount'                => Arr::get($updatedData, 'tax_amount', $order->tax_amount),
                 'customer_sales_channel_id' => $order->customer_sales_channel_id,
                 'platform_id'               => $order->platform_id,

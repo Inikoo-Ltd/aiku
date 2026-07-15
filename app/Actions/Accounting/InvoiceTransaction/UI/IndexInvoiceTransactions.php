@@ -16,6 +16,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
+use Illuminate\Support\Facades\DB;
 
 class IndexInvoiceTransactions extends OrgAction
 {
@@ -31,6 +32,14 @@ class IndexInvoiceTransactions extends OrgAction
         $queryBuilder->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
         $queryBuilder->leftJoin('invoices', 'invoice_transactions.invoice_id', 'invoices.id');
         $queryBuilder->leftJoin('currencies', 'invoices.currency_id', 'currencies.id');
+        $queryBuilder->leftJoin('packagings', function ($join) {
+            $join->on('invoice_transactions.model_id', '=', 'packagings.id')
+                ->where('invoice_transactions.model_type', '=', 'Packaging');
+        });
+        $queryBuilder->leftJoin('leaflets', function ($join) {
+            $join->on('invoice_transactions.model_id', '=', 'leaflets.id')
+                ->where('invoice_transactions.model_type', '=', 'Leaflet');
+        });
         $queryBuilder
             ->defaultSort('invoice_transactions.id')
             ->select([
@@ -39,8 +48,8 @@ class IndexInvoiceTransactions extends OrgAction
                 'invoice_transactions.is_gift',
                 'invoice_transactions.in_process',
                 'invoice_transactions.data',
-                'historic_assets.code',
-                'historic_assets.name as description',
+                DB::raw('COALESCE(historic_assets.code, packagings.code) as code'),
+                DB::raw('COALESCE(historic_assets.name, packagings.name, leaflets.name) as description'),
                 'invoice_transactions.historic_asset_id',
                 'assets.id as asset_id',
                 'assets.shop_id as asset_shop_id',

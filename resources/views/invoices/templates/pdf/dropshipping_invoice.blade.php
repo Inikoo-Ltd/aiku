@@ -385,6 +385,22 @@
         <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
     </tr>
 
+    @if((float) $invoice->packaging_amount > 0)
+        <tr>
+            <td style="border:none" colspan="4"></td>
+            <td>{{ __('Packaging') }}</td>
+            <td>{{ $invoice->currency->symbol . $invoice->packaging_amount }}</td>
+        </tr>
+    @endif
+
+    @if((float) $invoice->leaflet_amount > 0)
+        <tr>
+            <td style="border:none" colspan="4"></td>
+            <td>{{ __('Add-ons') }}</td>
+            <td>{{ $invoice->currency->symbol . $invoice->leaflet_amount }}</td>
+        </tr>
+    @endif
+
     <tr>
         <td style="border:none" colspan="4"></td>
         <td>{{ __('Shipping') }}</td>

@@ -17,7 +17,6 @@ use App\Models\Dispatching\DeliveryNoteLeaflet;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-
 class StoreDeliveryNoteLeafletsFromOrder
 {
     use AsAction;
