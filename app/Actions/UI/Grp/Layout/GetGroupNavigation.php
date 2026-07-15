@@ -438,6 +438,14 @@ class GetGroupNavigation
                             'name' => 'grp.sysadmin.settings.edit',
                         ]
                     ],
+                    [
+                        'label' => __('Changelogs'),
+                        'icon'  => ['fal', 'fa-history'],
+                        'root'  => 'grp.sysadmin.changelogs.index',
+                        'route' => [
+                            'name' => 'grp.sysadmin.changelogs.index',
+                        ]
+                    ]
                 ]
             ]
         ];

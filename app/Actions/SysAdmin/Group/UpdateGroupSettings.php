@@ -26,10 +26,9 @@ class UpdateGroupSettings extends GrpAction
 {
     use WithActionUpdate;
 
-
-
     public function handle(Group $group, array $modelData): Group
     {
+        $settingAudits = $this->customAudit($group, $modelData);
 
         if (Arr::has($modelData, 'logo')) {
             /** @var UploadedFile $image */
@@ -90,48 +89,60 @@ class UpdateGroupSettings extends GrpAction
             data_forget($modelData, 'jira_api_token');
         }
 
-        if (Arr::has($modelData, 'access_id')) {
-            $oldAccessId = Arr::get($groupSettings, 'email.provider.access_id');
-            $newAccessId = Arr::get($modelData, 'access_id');
-            
-            data_set($groupSettings, 'email.provider.access_id', $newAccessId);
+        if (Arr::exists($modelData, 'access_id')) {
+            data_set($groupSettings, 'email.provider.failover.access_id', Arr::get($modelData, 'access_id'));
             $group->update(['settings' => $groupSettings]);
-
-            DispatchSimpleAudit::run(
-                auditableModel: $group,
-                logKey: 'email.provider.failover.access_id',
-                oldValue: $oldAccessId,
-                newValue: $newAccessId,
-                eventName: 'updated',
-            );
-
             data_forget($modelData, 'access_id');
         }
-        if (Arr::has($modelData, 'access_key')) {
-            data_set($groupSettings, 'email.provider.access_key', Arr::get($modelData, 'access_key'));
-
+        if (Arr::exists($modelData, 'access_key')) {
+            data_set($groupSettings, 'email.provider.failover.access_key', Arr::get($modelData, 'access_key'));
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'access_key');
         }
-        if (Arr::has($modelData, 'region')) {
-            data_set($groupSettings, 'email.provider.region', Arr::get($modelData, 'region'));
+        if (Arr::exists($modelData, 'region')) {
+            data_set($groupSettings, 'email.provider.failover.region', Arr::get($modelData, 'region'));
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'region');
         }
-        if (Arr::has($modelData, 'user_notification_access_id')) {
-            data_set($groupSettings, 'user_notification.provider.access_id', Arr::get($modelData, 'user_notification_access_id'));
+        if (Arr::exists($modelData, 'customer_notification_access_id')) {
+            data_set($groupSettings, 'email.provider.customer_notification.access_id', Arr::get($modelData, 'customer_notification_access_id'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'customer_notification_access_id');
+        }
+        if (Arr::exists($modelData, 'customer_notification_access_key')) {
+            data_set($groupSettings, 'email.provider.customer_notification.access_key', Arr::get($modelData, 'customer_notification_access_key'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'customer_notification_access_key');
+        }
+        if (Arr::exists($modelData, 'customer_notification_region')) {
+            data_set($groupSettings, 'email.provider.customer_notification.region', Arr::get($modelData, 'customer_notification_region'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'customer_notification_region');
+        }
+        if (Arr::exists($modelData, 'user_notification_access_id')) {
+            data_set($groupSettings, 'email.provider.user_notification.access_id', Arr::get($modelData, 'user_notification_access_id'));
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'user_notification_access_id');
         }
-        if (Arr::has($modelData, 'user_notification_access_key')) {
-            data_set($groupSettings, 'user_notification.provider.access_key', Arr::get($modelData, 'user_notification_access_key'));
+        if (Arr::exists($modelData, 'user_notification_access_key')) {
+            data_set($groupSettings, 'email.provider.user_notification.access_key', Arr::get($modelData, 'user_notification_access_key'));
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'user_notification_access_key');
         }
-        if (Arr::has($modelData, 'user_notification_region')) {
-            data_set($groupSettings, 'user_notification.provider.region', Arr::get($modelData, 'user_notification_region'));
+        if (Arr::exists($modelData, 'user_notification_region')) {
+            data_set($groupSettings, 'email.provider.user_notification.region', Arr::get($modelData, 'user_notification_region'));
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'user_notification_region');
+        }
+
+        foreach ($settingAudits as $settingAudit) {
+            DispatchSimpleAudit::run(
+                auditableModel: $group,
+                logKey: $settingAudit['logKey'],
+                oldValue: $settingAudit['oldValue'],
+                newValue: $settingAudit['newValue'],
+                eventName: 'updated',
+            );
         }
 
         return $this->update($group, $modelData);
@@ -168,7 +179,10 @@ class UpdateGroupSettings extends GrpAction
             'access_id'                    => ['sometimes', 'string', 'nullable'],
             'access_key'                   => ['sometimes', 'string', 'nullable'],
             'region'                       => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
-            'user_notification_access_id' => ['sometimes', 'string', 'nullable'],
+            'customer_notification_access_id'  => ['sometimes', 'string', 'nullable'],
+            'customer_notification_access_key' => ['sometimes', 'string', 'nullable'],
+            'customer_notification_region'     => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
+            'user_notification_access_id'  => ['sometimes', 'string', 'nullable'],
             'user_notification_access_key' => ['sometimes', 'string', 'nullable'],
             'user_notification_region'     => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
 
@@ -195,5 +209,41 @@ class UpdateGroupSettings extends GrpAction
     public function jsonResponse(Group $group): GroupResource
     {
         return new GroupResource($group);
+    }
+
+    private function customAudit(Group $group, array $modelData): array
+    {
+        $settingAudits = [];
+
+        foreach ([
+            'access_id'                        => 'email.provider.failover.access_id',
+            'access_key'                       => 'email.provider.failover.access_key',
+            'region'                           => 'email.provider.failover.region',
+            'customer_notification_access_id'  => 'email.provider.customer_notification.access_id',
+            'customer_notification_access_key' => 'email.provider.customer_notification.access_key',
+            'customer_notification_region'     => 'email.provider.customer_notification.region',
+            'user_notification_access_id'      => 'email.provider.user_notification.access_id',
+            'user_notification_access_key'     => 'email.provider.user_notification.access_key',
+            'user_notification_region'         => 'email.provider.user_notification.region',
+        ] as $field => $settingsPath) {
+            if (!Arr::exists($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($group->settings, $settingsPath);
+            $newValue = Arr::get($modelData, $field);
+
+            if ($oldValue === $newValue) {
+                continue;
+            }
+
+            $settingAudits[] = [
+                'logKey'   => str_replace('.', '_', $settingsPath),
+                'oldValue' => $oldValue,
+                'newValue' => $newValue,
+            ];
+        }
+
+        return $settingAudits;
     }
 }
