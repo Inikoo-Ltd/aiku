@@ -44,7 +44,7 @@ const detectScreenType = (): "mobile" | "tablet" | "desktop" => {
   return "desktop";
 };
 
-const effectiveScreenType = ref<"mobile" | "tablet" | "desktop">(detectScreenType());
+const effectiveScreenType = ref<"mobile" | "tablet" | "desktop">(props.screenType ?? "desktop");
 
 watch(
   () => props.screenType,
@@ -215,6 +215,8 @@ watch(
 );
 
 onMounted(() => {
+  effectiveScreenType.value = detectScreenType();
+
   if (activeId.value) {
     getDataBanner();
   }
