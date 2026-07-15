@@ -14,11 +14,14 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockResource;
+use App\Http\Resources\Inventory\OrgStockSupplierProductsResource;
+use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -111,12 +114,21 @@ class ShowOrgStock extends OrgAction
 
                 OrgStockTabsEnum::HISTORY->value => $this->tab == OrgStockTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgStock))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStock)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStock))),
 
+                OrgStockTabsEnum::PURCHASE_ORDERS->value => $this->tab == OrgStockTabsEnum::PURCHASE_ORDERS->value ?
+                    fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::PURCHASE_ORDERS->value))
+                    : Inertia::optional(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::PURCHASE_ORDERS->value))),
+
+                OrgStockTabsEnum::SUPPLIER_PRODUCTS->value => $this->tab == OrgStockTabsEnum::SUPPLIER_PRODUCTS->value ?
+                    fn () => OrgStockSupplierProductsResource::collection(IndexOrgStockSupplierProducts::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::SUPPLIER_PRODUCTS->value))
+                    : Inertia::optional(fn () => OrgStockSupplierProductsResource::collection(IndexOrgStockSupplierProducts::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::SUPPLIER_PRODUCTS->value)))
             ]
         )
         ->table(IndexTradeUnitsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::TRADE_UNITS->value))
-        ->table(IndexHistory::make()->tableStructure(prefix: OrgStockTabsEnum::HISTORY->value));
+        ->table(IndexHistory::make()->tableStructure(prefix: OrgStockTabsEnum::HISTORY->value))
+        ->table(IndexPurchaseOrders::make()->tableStructure(parent: $orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value))
+        ->table(IndexOrgStockSupplierProducts::make()->tableStructure(prefix: OrgStockTabsEnum::SUPPLIER_PRODUCTS->value));
     }
 
 

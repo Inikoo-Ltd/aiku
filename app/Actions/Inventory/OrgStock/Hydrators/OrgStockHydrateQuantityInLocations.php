@@ -36,8 +36,8 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             return;
         }
 
-        $oldQuantityAvailable   = $orgStock->quantity_available;
-        $oldQuantityInLocations = $orgStock->quantity_in_locations;
+        //        $oldQuantityAvailable   = $orgStock->quantity_available;
+        //        $oldQuantityInLocations = $orgStock->quantity_in_locations;
 
         $quantityInLocations = DB::table('location_org_stocks')->where('org_stock_id', $orgStock->id)->sum('quantity');
 
@@ -57,17 +57,17 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
         ]);
 
         if ($orgStock->wasChanged('quantity_available')) {
-            DB::table('debug_stock_updates')->insert([
-                'org_stock_id'              => $orgStock->id,
-                'slug'                      => $orgStock->slug,
-                'old_quantity_available'    => $oldQuantityAvailable,
-                'new_quantity_available'    => $quantityAvailable,
-                'old_quantity_in_locations' => $oldQuantityInLocations,
-                'new_quantity_in_locations' => $quantityInLocations,
-                'product_count'             => $orgStock->products()->count(),
-                'created_at'                => now(),
-                'updated_at'                => now(),
-            ]);
+            //            DB::table('debug_stock_updates')->insert([
+            //                'org_stock_id'              => $orgStock->id,
+            //                'slug'                      => $orgStock->slug,
+            //                'old_quantity_available'    => $oldQuantityAvailable,
+            //                'new_quantity_available'    => $quantityAvailable,
+            //                'old_quantity_in_locations' => $oldQuantityInLocations,
+            //                'new_quantity_in_locations' => $quantityInLocations,
+            //                'product_count'             => $orgStock->products()->count(),
+            //                'created_at'                => now(),
+            //                'updated_at'                => now(),
+            //            ]);
 
             foreach ($orgStock->products as $product) {
                 ProductHydrateAvailableQuantity::run($product);

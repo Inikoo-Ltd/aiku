@@ -34,6 +34,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
+import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
 library.add(faTag, faCheck, faExclamationTriangle)
 
 interface ChargeResource {
@@ -274,8 +275,62 @@ interface Product {
     quantity_selected?: number
     transaction_id?: string
     quantity_ordered?: number
+    slug?: string | null
+    name?: string | null
+    code?: string | null
+    price?: number | string | null
+    currency_code?: string | null
+    family_code?: string | null
+    luigi_identity?: string | null
 }
+
+const pushAddToCartLuigi = (product: Product) => {
+    if (product?.transaction_id) {
+        return
+    }
+
+    const addToCartEcommerce = {
+        currency: layout?.iris?.currency?.code,
+        value: product.price,
+        items: [
+            {
+                item_id: product?.luigi_identity,
+            }
+        ]
+    }
+
+    window?.dataLayer?.push({
+        event: "add_to_cart",
+        ecommerce: addToCartEcommerce,
+    })
+}
+
+const pushAddToCartGtm = (product: Product, quantity: number) => {
+    if (quantity <= 0) {
+        return
+    }
+
+    pushGtmEvent(
+        'add_to_cart',
+        buildGtmProductPayload(
+            {
+                slug: product?.slug,
+                name: product?.name,
+                price: product?.price,
+                currency_code: product?.currency_code ?? layout?.iris?.currency?.code ?? props.order?.currency_code ?? null,
+                family_code: product?.family_code,
+            },
+            { quantity }
+        )
+    )
+}
+
 const onAddProducts = async (product: Product) => {
+    const quantitySelected = Number(product.quantity_selected ?? 1)
+    const quantityAdded = product?.transaction_id
+        ? quantitySelected - Number(product.quantity_ordered ?? 0)
+        : quantitySelected
+
     const storeRoute = {
         route_post: route('retina.models.product.add-to-basket', { 
             product: product.id
@@ -318,23 +373,8 @@ const onAddProducts = async (product: Product) => {
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
             },
             onSuccess: () => {
-                // Luigi: event add to cart
-                if (!product?.transaction_id) {
-                    if (!product?.transaction_id) {
-                        window?.dataLayer?.push({
-                            event: "add_to_cart",
-                            ecommerce: {
-                                currency: layout?.iris?.currency?.code,
-                                value: product.price,
-                                items: [
-                                    {
-                                        item_id: product?.luigi_identity,
-                                    }
-                                ]
-                            }
-                        })
-                    }
-                }
+                pushAddToCartLuigi(product)
+                pushAddToCartGtm(product, quantityAdded)
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
                 layout?.reload_handle?.()
             },
@@ -402,17 +442,18 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     type: "success"
                 })
                 
+                const addToCartEcommerce = {
+                    currency: layout?.iris?.currency?.code,
+                    value: productLuigi?.attributes?.price || 0,
+                    items: [
+                        {
+                            item_id: productLuigi?.url,
+                        }
+                    ]
+                }
                 window?.dataLayer?.push({
                     event: "add_to_cart",
-                    ecommerce: {
-                        currency: layout?.iris?.currency?.code,
-                        value: productLuigi?.attributes?.price || 0,
-                        items: [
-                            {
-                                item_id: productLuigi?.url,
-                            }
-                        ]
-                    }
+                    ecommerce: addToCartEcommerce,
                 })
                 layout?.reload_handle?.()
 

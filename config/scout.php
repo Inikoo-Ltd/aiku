@@ -6,6 +6,36 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Billables\Charge\Search\GetChargeSearchSchema;
+use App\Actions\Billables\Service\Search\GetServiceSearchSchema;
+use App\Actions\Billables\ShippingZone\Search\GetShippingZoneSearchSchema;
+use App\Actions\Billables\ShippingZoneSchema\Search\GetShippingZoneSchemaSearchSchema;
+use App\Actions\Comms\Mailshot\Search\GetMailshotSearchSchema;
+use App\Actions\Discounts\Offer\Search\GetOfferSearchSchema;
+use App\Actions\Discounts\OfferCampaign\Search\GetOfferCampaignSearchSchema;
+use App\Actions\Helpers\Barcode\Search\GetBarcodeSearchSchema;
+use App\Actions\HumanResources\Employee\Search\GetEmployeeSearchSchema;
+use App\Actions\Helpers\Brand\Search\GetBrandSearchSchema;
+use App\Actions\Helpers\Tag\Search\GetTagSearchSchema;
+use App\Actions\Masters\MasterAsset\Search\GetMasterAssetSearchSchema;
+use App\Actions\Masters\MasterCollection\Search\GetMasterCollectionSearchSchema;
+use App\Actions\Masters\MasterProductCategory\Search\GetMasterProductCategorySearchSchema;
+use App\Actions\Web\Webpage\Search\GetWebpageSearchSchema;
+use App\Models\Billables\Charge;
+use App\Models\Billables\Service;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
+use App\Models\Comms\Mailshot;
+use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferCampaign;
+use App\Models\Helpers\Barcode;
+use App\Models\HumanResources\Employee;
+use App\Models\Helpers\Brand;
+use App\Models\Helpers\Tag;
+use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterCollection;
+use App\Models\Masters\MasterProductCategory;
+use App\Models\Web\Webpage;
 use App\Actions\Accounting\Invoice\Search\GetInvoiceSearchSchema;
 use App\Actions\Accounting\Payment\Search\GetPaymentSearchSchema;
 use App\Actions\Catalogue\Collection\Search\GetCollectionSearchSchema;
@@ -23,6 +53,7 @@ use App\Actions\Inventory\OrgStock\Search\GetOrgStockSearchSchema;
 use App\Actions\Inventory\OrgStockFamily\Search\GetOrgStockFamilySearchSchema;
 use App\Actions\Inventory\WarehouseArea\Search\GetWarehouseAreaSearchSchema;
 use App\Actions\Ordering\Order\Search\GetOrderSearchSchema;
+use App\Actions\Reviews\Search\GetReviewSearchSchema;
 use App\Actions\SupplyChain\Supplier\Search\GetSupplierSearchSchema;
 use App\Actions\SysAdmin\Guest\Search\GetGuestSearchSchema;
 use App\Actions\SysAdmin\User\Search\GetUserSearchSchema;
@@ -43,6 +74,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Ordering\Order;
+use App\Models\Reviews\Review;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
@@ -205,7 +237,23 @@ return [
             DeliveryNote::class    => GetDeliveryNoteSearchSchema::run(),
             OrgStock::class        => GetOrgStockSearchSchema::run(),
             OrgStockFamily::class  => GetOrgStockFamilySearchSchema::run(),
-            WarehouseArea::class   => GetWarehouseAreaSearchSchema::run()
+            WarehouseArea::class   => GetWarehouseAreaSearchSchema::run(),
+            Review::class          => GetReviewSearchSchema::run(),
+            Charge::class          => GetChargeSearchSchema::run(),
+            Service::class         => GetServiceSearchSchema::run(),
+            ShippingZoneSchema::class => GetShippingZoneSchemaSearchSchema::run(),
+            ShippingZone::class    => GetShippingZoneSearchSchema::run(),
+            Offer::class           => GetOfferSearchSchema::run(),
+            OfferCampaign::class   => GetOfferCampaignSearchSchema::run(),
+            Mailshot::class        => GetMailshotSearchSchema::run(),
+            Webpage::class         => GetWebpageSearchSchema::run(),
+            MasterAsset::class     => GetMasterAssetSearchSchema::run(),
+            MasterProductCategory::class => GetMasterProductCategorySearchSchema::run(),
+            MasterCollection::class => GetMasterCollectionSearchSchema::run(),
+            Brand::class           => GetBrandSearchSchema::run(),
+            Tag::class             => GetTagSearchSchema::run(),
+            Barcode::class         => GetBarcodeSearchSchema::run(),
+            Employee::class        => GetEmployeeSearchSchema::run()
 
         ],
     ],

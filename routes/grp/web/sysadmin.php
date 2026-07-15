@@ -6,6 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\Search\UI\IndexSearchLogs;
 use App\Actions\SysAdmin\Group\UI\EditGroupSettings;
 use App\Actions\SysAdmin\Guest\ExportGuests;
 use App\Actions\SysAdmin\Guest\UI\CreateGuest;
@@ -58,3 +59,4 @@ Route::prefix('guests')->as('guests.')->group(function () {
 });
 
 Route::get('/scheduled-tasks', IndexSysAdminScheduledTasks::class)->name('scheduled-tasks.index');
+Route::get('/search-logs', IndexSearchLogs::class)->name('search_logs.index');

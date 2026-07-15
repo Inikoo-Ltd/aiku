@@ -431,6 +431,14 @@ class GetGroupNavigation
                         ]
                     ],
                     [
+                        'label' => __('Search analytics'),
+                        'icon'  => ['fal', 'fa-search'],
+                        'root'  => 'grp.sysadmin.search_logs.',
+                        'route' => [
+                            'name' => 'grp.sysadmin.search_logs.index',
+                        ]
+                    ],
+                    [
                         'label' => __('System Settings'),
                         'icon'  => ['fal', 'fa-cog'],
                         'root'  => 'grp.sysadmin.settings.',

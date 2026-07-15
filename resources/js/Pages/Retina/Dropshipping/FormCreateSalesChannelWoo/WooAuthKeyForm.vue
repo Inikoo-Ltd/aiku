@@ -41,7 +41,10 @@ const onSubmitWoocommerce = async () => {
 			wooCommerceInput.data());
 
 		isLoadingStep.value = false;
-		window.open(response.data, '_blank');
+		const authWindow = window.open(response.data, '_blank');
+		if (!authWindow) {
+			window.location.assign(response.data);
+		}
 	} catch (err: any) {
 		isLoadingStep.value = false;
 		errors.value = err.response?.data?.errors;

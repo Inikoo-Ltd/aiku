@@ -31,7 +31,7 @@ class GetOrgStockShowcase
             $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
         }
 
-        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks()->with(['location', 'organisation', 'warehouse'])->get())->toArray(request());
+        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks()->with(['location', 'organisation', 'warehouse', 'orgStock'])->get())->toArray(request());
         usort($locations, function ($a, $b) {
             return $a['code'] <=> $b['code'];
         });
@@ -82,6 +82,13 @@ class GetOrgStockShowcase
                         'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
                     ],
                     'summary'         => [
+                        'quantity_in_locations' => [
+                            'icon_state' => [
+                                'icon'    => 'fas fa-inventory',
+                                'tooltip' => __("Stock in locations"),
+                            ],
+                            'value'      => $orgStock->quantity_in_locations
+                        ],
                         'quantity_in_submitted_orders' => [
                             'icon_state' => [
                                 'icon'    => 'fas fa-shopping-cart',
@@ -98,7 +105,8 @@ class GetOrgStockShowcase
                         ],
                     ],
                     'locations'       => $locations,
-                    'qty_in_location' => $orgStock->quantity_in_locations
+                    'qty_in_location'               => $orgStock->quantity_in_locations,
+                    'qty_in_location_fractional'    => riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->quantity_in_locations ?? 0)), $orgStock->packed_in ?? 1),
                 ]
             ]
         );

@@ -94,7 +94,7 @@ function familyRoute(family: Family) {
                 [family.organisation_slug, family.shop_slug, family.slug])
         default:
             return route(
-                'grp.helpers.redirect_product_category',
+                'grp.majordomo.redirect_product_category',
                 [family.id])
 
     }
@@ -204,7 +204,7 @@ function masterFamilyRoute(family: Family) {
     }
 
     return route(
-        "grp.helpers.redirect_master_product_category",
+        "grp.majordomo.redirect_master_product_category",
         [family.master_product_category_id]);
 }
 

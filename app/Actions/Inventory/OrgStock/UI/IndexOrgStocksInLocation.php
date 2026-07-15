@@ -49,6 +49,7 @@ class IndexOrgStocksInLocation extends OrgAction
                 'org_stocks.name',
                 'org_stocks.slug',
                 'org_stocks.sku_value',
+                'location_org_stocks.id as location_org_stock_id',
                 'location_org_stocks.type',
                 'location_org_stocks.picking_priority',
                 'location_org_stocks.value',

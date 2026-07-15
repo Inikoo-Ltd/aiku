@@ -19,6 +19,7 @@ use Illuminate\Support\Arr;
  * @property string $slug
  * @property mixed $image_id
  * @property string $code
+ * @property mixed $family_code
  * @property string $name
  * @property mixed $available_quantity
  * @property mixed $price
@@ -100,6 +101,8 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
         return [
             'id'                         => $this->id,
             'code'                       => $this->code,
+            'slug'                       => $this->slug,
+            'family_code'                => $this->family_code,
             'luigi_identity'             => $oldLuigiIdentity,
             'name'                       => $this->name,
             'stock'                      => $this->available_quantity,

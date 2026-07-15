@@ -5,13 +5,11 @@ import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Icon as IconTS } from '@/types/Utils/Icon'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 type Customer = {
     id: number
     slug: string
-    shop_slug: string | null
-    organisation_slug: string | null
     name: string
     contact_name: string
     company_name: string
@@ -27,43 +25,17 @@ type CustomersResults = {
 
 const model = defineModel('open')
 
-const props = defineProps<{
+defineProps<{
     results: CustomersResults | null
     isLoading: boolean
     query: string
 }>()
 
-const CUSTOMER_ROUTE = 'grp.org.shops.show.crm.customers.show'
-
 const loadingId = ref<number | null>(null)
-
-const routeParams = route().routeParams
-
-function buildHref(customer: Customer): string {
-    if (!routeParams.organisation || !routeParams.shop || !customer.slug) {
-        return '#'
-    }
-
-    return route(CUSTOMER_ROUTE, {
-        organisation: routeParams.organisation,
-        shop: routeParams.shop,
-        customer: customer.slug,
-    })
-}
-
-const customerItems = computed(() =>
-    (props.results?.customers ?? []).map((customer) => ({
-        ...customer,
-        href: buildHref(customer),
-    }))
-)
 </script>
 
 <template>
     <div class="col-span-3 border-r p-4 bg-gray-50">
-        <p class="text-xs text-gray-400 mb-1">{{ ctrans("Query") }}</p>
-        <p class="font-semibold text-sm mb-4">{{ query }}</p>
-        <p class="text-xs text-gray-400 mb-2">{{ ctrans("Summary") }}</p>
         <div v-if="isLoading" class="space-y-2">
             <Skeleton height="2.5rem" borderRadius="0.375rem" />
         </div>
@@ -91,14 +63,12 @@ const customerItems = computed(() =>
                 </div>
             </div>
 
-            <div v-else-if="customerItems.length">
-                <component
-                    :is="customer.href === '#' ? 'div' : Link"
-                    v-for="customer in customerItems"
+            <div v-else-if="results?.customers?.length">
+                <Link
+                    v-for="customer in results.customers"
                     :key="customer.id"
-                    :href="customer.href === '#' ? undefined : customer.href"
+                    :href="route('grp.majordomo.redirect_customer', [customer.id])"
                     class="block p-4 rounded-md border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm mb-3"
-                    :class="customer.href === '#' ? 'cursor-default opacity-70' : 'cursor-pointer'"
                     @start="() => { model = false; loadingId = customer.id }"
                     @finish="() => loadingId = null"
                 >
@@ -131,7 +101,7 @@ const customerItems = computed(() =>
                     <div v-if="customer.location?.length" class="mt-2 text-xs text-gray-400">
                         <AddressLocation :data="customer.location" />
                     </div>
-                </component>
+                </Link>
             </div>
 
             <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">

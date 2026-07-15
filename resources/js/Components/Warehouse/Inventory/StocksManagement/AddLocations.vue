@@ -143,7 +143,7 @@ defineExpose({
         </div>
         <!-- Section: buttons -->
         <div class="relative flex gap-x-2 isolate z-30 mt-4 justify-self-end">
-            <Button :label="trans('Cancel')" type="cancel" @click="() => emits('close')" />
+            <Button :label="trans('Cancel')" type="tertiary" icon="far fa-arrow-left" @click="() => emits('close')" />
         </div>
 
     </div>

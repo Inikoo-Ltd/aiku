@@ -10,7 +10,7 @@ import BeefreeDynamicProducts from './BeefreeDynamicProducts.vue'
 import { trans } from "laravel-vue-i18n";
 
 const props = withDefaults(defineProps<{
-    updateRoute: routeType;
+    updateRoute?: routeType;
     imagesUploadRoute?: routeType
     snapshot: any
     unpublished_layout?: any
@@ -19,7 +19,10 @@ const props = withDefaults(defineProps<{
     organisationSlug: string
     shopSlug?: string
     shopId?: number
-}>(), {});
+    builderType?: string
+}>(), {
+    builderType: 'email',
+});
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -55,7 +58,7 @@ const initializeBeefree = async () => {
             route("grp.json.beefree.authenticate", {
                 organisation: props.organisationSlug,
             }),
-            { uid: 'CmsUserName' }
+            { uid: 'CmsUserName', builder_type: props.builderType }
         )
 
         // Check if response is successful

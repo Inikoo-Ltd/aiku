@@ -58,6 +58,16 @@ class UpdateGroupSettings extends GrpAction
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'client_secret');
         }
+        if (Arr::has($modelData, 'page_builder_client_id')) {
+            data_set($groupSettings, 'beefree.page_builder.client_id', Arr::get($modelData, 'page_builder_client_id'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'page_builder_client_id');
+        }
+        if (Arr::has($modelData, 'page_builder_client_secret')) {
+            data_set($groupSettings, 'beefree.page_builder.client_secret', Arr::get($modelData, 'page_builder_client_secret'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'page_builder_client_secret');
+        }
         if (Arr::has($modelData, 'grant_type')) {
             data_set($groupSettings, 'beefree.grant_type', Arr::get($modelData, 'grant_type'));
             $group->update(['settings' => $groupSettings]);
@@ -169,6 +179,8 @@ class UpdateGroupSettings extends GrpAction
             ],
             'client_id'                         => ['sometimes', 'string', 'nullable'],
             'client_secret'                     => ['sometimes', 'string', 'nullable'],
+            'page_builder_client_id'            => ['sometimes', 'string', 'nullable'],
+            'page_builder_client_secret'        => ['sometimes', 'string', 'nullable'],
             'grant_type'                        => ['sometimes', 'string', 'nullable'],
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],

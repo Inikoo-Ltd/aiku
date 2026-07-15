@@ -21,7 +21,6 @@ library.add(faCircleNotch, faExclamationCircle, faTachometerAlt, faDownload)
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    data: {},
     dashboard?: {}
     customers: {}
     download_route: {

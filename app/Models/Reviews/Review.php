@@ -26,7 +26,9 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Traits\IsReviews;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearch;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
@@ -49,7 +51,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property int|null $rating_c
  * @property int|null $rating_d
  * @property int|null $rating_e
- * @property \Illuminate\Support\Carbon|null $auto_approve_at
+ * @property Carbon|null $auto_approve_at
  * @property bool $is_public
  * @property string|null $message
  * @property array<array-key, mixed> $web_images
@@ -58,14 +60,14 @@ use Spatie\MediaLibrary\HasMedia;
  * @property bool $approved
  * @property bool $auto_approved
  * @property int|null $approved_by
- * @property \Illuminate\Support\Carbon|null $published_at
+ * @property Carbon|null $published_at
  * @property bool $removed
  * @property int|null $removed_by
- * @property \Illuminate\Support\Carbon|null $removed_at
+ * @property Carbon|null $removed_at
  * @property string|null $removed_reason
  * @property bool $replied
  * @property string|null $reply_message
- * @property \Illuminate\Support\Carbon|null $reply_at
+ * @property Carbon|null $reply_at
  * @property int|null $reply_by
  * @property int $likes
  * @property int $dislikes
@@ -73,9 +75,9 @@ use Spatie\MediaLibrary\HasMedia;
  * @property int $replay_dislikes
  * @property string|null $external_id
  * @property array<array-key, mixed> $meta
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property array<array-key, mixed> $translations
  * @property int|null $reply_language_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
@@ -109,6 +111,7 @@ class Review extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasImage;
     use IsReviews;
+    use HasSearch;
 
     protected $guarded = [];
 
@@ -139,6 +142,21 @@ class Review extends Model implements Auditable, HasMedia
     public function getRouteKeyName(): string
     {
         return 'id';
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'shop_id'         => $this->shop_id,
+            'organisation_id' => $this->organisation_id,
+            'status'          => $this->review_status->value,
+            'rating'          => (float)$this->rating_main,
+            'customer_name'   => (string)$this->customer?->name,
+            'message'         => (string)$this->message,
+            'reply_message'   => (string)$this->reply_message,
+            'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
     }
 
     protected static function booted(): void

@@ -30,7 +30,12 @@ const props = defineProps<{
 const emits = defineEmits(['close'])
 
 // Move stock state
-const moveStock = ref({
+const moveStock = ref<{
+    from: any
+    to: any
+    quantity: number
+    isActive: boolean
+}>({
     from: null,
     to: null,
     quantity: 0,
@@ -89,7 +94,7 @@ const selectSource = (location: any) => {
     }
 
     if (isTarget(location)) {
-        moveStock.value.to = null
+        moveStock.value.to = moveStock.value.from
     }
 
     moveStock.value.from = location
@@ -107,11 +112,31 @@ const selectTarget = (location: any) => {
     }
 
     if (isSource(location)) {
+        const swappedSource = moveStock.value.to
+
+        if (!swappedSource) {
+            return
+        }
+
+        if (!swappedSource.stock || swappedSource.stock <= 0) {
+            notify({
+                title: trans('Cannot swap locations'),
+                text: trans(':location has no stock to move', { location: swappedSource.name }),
+                type: 'warning',
+            })
+            return
+        }
+
+        moveStock.value.from = swappedSource
+        moveStock.value.to = location
+        moveStock.value.isActive = true
+        moveStock.value.quantity = 0
+        syncForm()
         return
     }
 
     moveStock.value.to = location
-    moveStock.value.quantity = 0
+    // moveStock.value.quantity = 0
     syncForm()
 }
 
@@ -276,10 +301,30 @@ onMounted(() => {
             </button>
 
             <div class="flex items-center justify-center gap-3 flex-wrap text-sm sm:text-base">
-                <div class="text-center">
-                    <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Source') }}</div>
-                    <div class="font-medium" :class="moveStock.from ? 'text-green-600' : 'text-gray-400 italic'">
+                <div
+                    class="group text-center border rounded-lg px-4 py-2 transition"
+                    :class="moveStock.from ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'"
+                >
+                    <div
+                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition"
+                        :class="moveStock.from ? 'text-green-600' : 'text-green-500'"
+                    >
+                        <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
+                        {{ trans('Source') }}
+                    </div>
+                    <div class="font-medium" :class="moveStock.from ? 'text-green-700' : 'text-gray-400 italic'">
                         {{ moveStock.from?.name || '—' }}
+                    </div>
+                    <div v-if="moveStock.from" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
+                        <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
+                            {{ moveStock.from.stock }}
+                        </span>
+                        <template v-if="moveStock.quantity > 0">
+                            <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                            <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-green-700">
+                                {{ getCalculatedStock(moveStock.from) }}
+                            </span>
+                        </template>
                     </div>
                 </div>
 
@@ -287,22 +332,42 @@ onMounted(() => {
 
                 <div class="text-center">
                     <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Quantity') }}</div>
-                    <div class="font-medium tabular-nums text-gray-700">
-                        {{ moveStock.quantity || '—' }} <span class="text-gray-400">/ {{ getMaxQuantity() }}</span>
+                    <div class="font-medium tabular-nums text-gray-700" xclass="moveStock.quantity ? '' : ' border-b border-dashed border-gray-400'">
+                        {{ moveStock.quantity || '......' }}
                     </div>
                 </div>
 
                 <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
 
-                <div class="text-center">
-                    <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Destination') }}</div>
-                    <div class="font-medium" :class="moveStock.to ? 'text-blue-600' : 'text-gray-400 italic'">
+                <div
+                    class="group text-center border rounded-lg px-4 py-2 transition"
+                    :class="moveStock.to ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'"
+                >
+                    <div
+                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition"
+                        :class="moveStock.to ? 'text-blue-600' : 'text-blue-500'"
+                    >
+                        <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
+                        {{ trans('Destination') }}
+                    </div>
+                    <div class="font-medium" :class="moveStock.to ? 'text-blue-700' : 'text-gray-400 italic'">
                         {{ moveStock.to?.name || '—' }}
+                    </div>
+                    <div v-if="moveStock.to" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
+                        <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
+                            {{ moveStock.to.stock }}
+                        </span>
+                        <template v-if="moveStock.quantity > 0">
+                            <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                            <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-blue-700">
+                                {{ getCalculatedStock(moveStock.to) }}
+                            </span>
+                        </template>
                     </div>
                 </div>
             </div>
 
-            <div class="text-yellow-600 text-xs text-center mt-2 h-[16px]">
+            <!-- <div class="text-yellow-600 text-xs text-center mt-2 h-[16px]">
                 <span v-if="!moveStock.from">
                     <FontAwesomeIcon :icon="faInfoCircle" />
                     {{ trans('Select the source location by clicking the forklift icon on the left') }}
@@ -313,9 +378,9 @@ onMounted(() => {
                 </span>
                 <span v-else-if="!moveStock.quantity">
                     <FontAwesomeIcon :icon="faInfoCircle" />
-                    {{ trans('Enter the quantity to move into the destination') }}
+                    {{ trans('Enter the quantity to move from the source') }}
                 </span>
-            </div>
+            </div> -->
         </div>
 
         <template v-if="form.stockCheck.length > 0">
@@ -341,7 +406,7 @@ onMounted(() => {
                             ? 'text-gray-400 opacity-90 cursor-not-allowed' :
                         moveStock.from
                             ? 'cursor-pointer text-gray-400 opacity-30 hover:opacity-80' :
-                        'cursor-pointer text-gray-400 hover:text-green-600'
+                        'cursor-pointer opacity-50 hover:opacity-100 text-green-600'
                     ]"
                     fixed-width
                     aria-hidden="true"
@@ -352,20 +417,40 @@ onMounted(() => {
                 <div class="flex-1 min-w-0 flex items-center gap-x-2 flex-wrap">
                     <span class="font-medium truncate">{{ form.name }}</span>
 
-                    <!-- Preview: original + change --> result -->
+                    <!-- Preview: original + change -> result -->
                     <span
-                        v-if="getStockChangeIndicator(form) !== null"
-                        v-tooltip="trans('Stock preview after move')"
+                        v-if="isSource(form) || getStockChangeIndicator(form) !== null"
                         class="tabular-nums text-xs flex items-center gap-x-1"
                     >
-                        <span class="text-gray-500">{{ form.stock }}</span>
-                        <span :class="getStockChangeIndicator(form) > 0 ? 'text-green-600' : 'text-red-500'">
+                        <span
+                            v-tooltip="isSource(form) ? trans('Click to move all stock (empties this location)') : trans('Current stock in this location')"
+                            :class="[
+                                'border rounded px-1.5 py-0.5 border-gray-300 text-gray-600',
+                                isSource(form) ? 'cursor-pointer hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition' : ''
+                            ]"
+                            @click="isSource(form) && updateMoveQuantity(Number(form.stock))"
+                        >{{ form.stock }}</span>
+                        <span v-if="isSource(form)" class="text-red-500 font-semibold">−</span>
+                        <div v-if="isSource(form)" class="w-24 shrink-0">
+                            <InputNumber
+                                :modelValue="moveStock.quantity"
+                                @input="(event: { value: any }) => updateMoveQuantity(event.value)"
+                                :min="0"
+                                :max="getMaxQuantity()"
+                                :step="1"
+                                size="small"
+                                fluid
+                                inputClass="!py-0 !text-red-600"
+                            />
+                        </div>
+                        <span v-else :class="getStockChangeIndicator(form) > 0 ? 'text-green-600' : 'text-red-500'">
                             {{ getStockChangeIndicator(form) > 0 ? '+' : '−' }}{{ Math.abs(getStockChangeIndicator(form)) }}
                         </span>
                         <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                         <span
-                            class="border rounded px-1.5 py-0.5 font-semibold"
-                            :class="isSource(form) ? 'border-green-300 text-green-700 bg-green-50' : 'border-blue-300 text-blue-700 bg-blue-50'"
+                            v-tooltip="trans('Stock preview after move')"
+                            class="font-semibold"
+                            :class="isSource(form) ? 'text-green-700' : 'text-blue-700'"
                         >
                             {{ getCalculatedStock(form) }}
                         </span>
@@ -400,21 +485,6 @@ onMounted(() => {
                     ({{ replenishment_data[form.id]?.replenishment_stock ?? '0' }})
                 </span>
 
-                <!-- Target: quantity input (only on target row) -->
-                <div class="w-24 shrink-0">
-                    <InputNumber
-                        v-if="isTarget(form)"
-                        :modelValue="moveStock.quantity"
-                        @input="(event: { value: any }) => updateMoveQuantity(event.value)"
-                        :min="0"
-                        :max="getMaxQuantity()"
-                        :step="1"
-                        size="small"
-                        fluid
-                        inputClass="!py-0 !text-blue-600"
-                    />
-                </div>
-
                 <!-- Right: Target forklift -->
                 <FontAwesomeIcon
                     icon="fas fa-forklift"
@@ -427,7 +497,7 @@ onMounted(() => {
                             ? 'text-gray-300 opacity-20 cursor-not-allowed' :
                         moveStock.to
                             ? 'cursor-pointer text-gray-400 opacity-30 hover:opacity-80' :
-                        'cursor-pointer text-gray-400 hover:text-blue-600'
+                        'cursor-pointer opacity-50 hover:opacity-100 text-blue-600'
                     ]"
                     fixed-width
                     aria-hidden="true"
@@ -451,7 +521,7 @@ onMounted(() => {
         <div class="relative flex gap-x-2 z-40 mt-4">
             <Button
                 label="Cancel"
-                type="cancel"
+                type="tertiary" icon="far fa-arrow-left"
                 @click="() => emits('close')"
             />
 

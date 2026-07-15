@@ -46,8 +46,8 @@ const props = defineProps<{
 		current: string
 		navigation: object
 	}
-	showcase: object
-	products: object
+	showcase?: object
+	products?: object
 	data: object
 }>()
 

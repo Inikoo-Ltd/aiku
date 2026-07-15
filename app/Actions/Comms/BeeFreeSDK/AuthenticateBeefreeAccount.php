@@ -24,7 +24,8 @@ class AuthenticateBeefreeAccount extends OrgAction
     public function handle(Organisation $organisation, array $modelData): array
     {
 
-        $beefreeSettings = Arr::get($this->group->settings, 'beefree', []);
+        $builderType = Arr::get($modelData, 'builder_type', 'email');
+        $beefreeSettings = $builderType === 'email' ? Arr::get($this->group->settings, 'beefree', []) : Arr::get($this->group->settings, 'beefree.page_builder', []);
         $clientId = Arr::get($beefreeSettings, 'client_id');
         $clientSecret = Arr::get($beefreeSettings, 'client_secret');
 
@@ -67,6 +68,7 @@ class AuthenticateBeefreeAccount extends OrgAction
     {
         $rules = [
             'uid' => ['sometimes', 'required', 'string'],
+            'builder_type' => ['sometimes', 'required', 'string', 'in:page,email'],
         ];
 
         return $rules;

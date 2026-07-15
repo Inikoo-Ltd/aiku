@@ -11,10 +11,12 @@ use App\Actions\Inventory\LocationOrgStock\DeleteLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
+use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\SetOrgStockPreferredSupplierProduct;
 use Illuminate\Support\Facades\Route;
 
 Route::name('org_stock.')->prefix('org-stock/{orgStock:id}')->group(function () {
     Route::post('location/{location:id}', StoreLocationOrgStock::class)->name('location.store')->withoutScopedBindings();
+    Route::patch('supplier-product/{orgSupplierProduct:id}/set-preferred', SetOrgStockPreferredSupplierProduct::class)->name('supplier_product.set_preferred')->withoutScopedBindings();
 });
 
 Route::name('location_org_stock.')->prefix('location-org-stock/{locationOrgStock:id}')->group(function () {

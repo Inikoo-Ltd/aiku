@@ -446,7 +446,7 @@ class IndexWebpages extends OrgAction
                 ),
                 'title'       => __('Webpages'),
                 'pageHead'    => [
-                    'model'         => strtoupper($this->parent->code) . ' ' . __('Webpages'),
+                    'model'         => __('Webpages'),
                     'title'         => ucfirst($this->bucket),
                     'color'         => $this->bucket === 'content' ? '#b45309' : null,
                     'icon'          => [

@@ -96,9 +96,9 @@ const props = defineProps<{
 		}
 	}
 	bulk_import_product: UploadSection
-	products: TableTS
-	bundles: TableTS
-	logs: {}
+	products?: TableTS
+	bundles?: TableTS
+	logs?: {}
 	routes: {
 		batch_all: routeType
 		syncAllRoute: routeType

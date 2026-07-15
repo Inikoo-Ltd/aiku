@@ -46,6 +46,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -337,6 +338,7 @@ class Product extends Model implements Auditable, HasMedia
             'state'             => $this->state->value,
             'is_for_sale'       => $this->is_for_sale,
             'is_on_demand'      => $this->is_on_demand,
+            'image'             => json_encode(Arr::get($this->web_images, 'main.gallery')),
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }

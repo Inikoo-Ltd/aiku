@@ -141,7 +141,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 
 function pickingSessionRoute(id) {
     return route(
-        "grp.helpers.redirect_picking_session",
+        "grp.majordomo.redirect_picking_session",
         [id])
 }
 

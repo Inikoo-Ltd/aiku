@@ -542,7 +542,7 @@ const replacementRoute = (replacement) => {
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Delivery Note") }} 
-                    <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.helpers.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
+                    <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.majordomo.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
                         <FontAwesomeIcon :icon="faTruck"/>
                         {{ boxStats.parentDeliveryNote?.reference }}
                     </Link>

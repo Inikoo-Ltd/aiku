@@ -65,10 +65,10 @@ const props = defineProps<{
         navigation: object
     }
     storeProductRoute : routeType
-    customers: object
-    mailshots: object
-    showcase: object
-    details: object
+    customers?: object
+    mailshots?: object
+    showcase?: object
+    details?: object
     history?: object;
     families?: object
     is_orphan?: boolean
@@ -84,8 +84,8 @@ const props = defineProps<{
     isPerfectFamily: boolean
     price_rrp_warning_ratio : number
     mismatch_detected?: boolean
-    related_products : object
-    related_product_category : object
+    related_products? : object
+    related_product_category? : object
     vol_gr_reward?: {
         show_gr_vol: boolean
         gr_vol_discount_quantity?: number

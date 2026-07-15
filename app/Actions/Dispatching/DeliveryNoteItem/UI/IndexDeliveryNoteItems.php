@@ -61,6 +61,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 array_merge(
                     $this->getDeliveryNoteItemBaseSelect(),
                     [
+                        'packings.quantity as packings_quantity',
                         'org_stocks.main_batch_code_id as org_stocks_batch_code_id',
                         'org_stocks.current_batch_codes as org_stocks_batch_code_count',
                         'batch_codes.code as org_stocks_batch_code',

@@ -134,6 +134,7 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.type',
                 'org_stock_movements.class',
                 'org_stock_movements.quantity',
+                'org_stock_movements.audited_quantity',
                 'org_stock_movements.org_amount',
                 'org_stock_movements.grp_amount',
                 'org_stock_movements.operation_type',
@@ -148,9 +149,11 @@ class IndexOrgStockMovements extends OrgAction
                 'locations.code as location_code',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.packed_in',
                 'org_stock_movements.user_id',
                 'delivery_notes.id as delivery_note_id',
                 'delivery_notes.reference as delivery_note_reference',
+                'org_stock_movements.is_migration_point',
             ])
             ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')
@@ -189,7 +192,7 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hm')
+                ->column(key: 'date', label: __('Date'), sortable: true, type: 'date_hms')
                 ->column(key: 'user', label: __('User'), sortable: true);
 
             if (!($parent instanceof OrgStock)) {
@@ -197,13 +200,18 @@ class IndexOrgStockMovements extends OrgAction
             }
 
             $table
-                // ->column(key: 'flow', label: ['fal', 'fa-chart-line'], tooltip:__('Movement Flow'), type: 'icon', sortable: true)
-                ->column(key: 'type', label: __('Type'), sortable: true)
-                ->column(key: 'class', label: ['fal', 'fa-tilde'], tooltip:__('Movement Class'), type: 'icon', sortable: true)
-                ->column(key: 'location_code', label: __('Location'))
-                ->column(key: 'quantity', label: __('Delta'), sortable: true, align: 'right')
-                ->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), sortable: true, align: 'right');
-            // ->column(key: 'org_amount', label: __('Amount'), sortable: true, type: 'currency');
+                ->column(key: 'type', label: __('Type'), sortable: true);
+            if (!($parent instanceof Location)) {
+                $table->column(key: 'location_code', label: __('Location'));
+            }
+
+            $table->column(key: 'quantity', label: __('Delta'), align: 'right');
+
+            if (!($parent instanceof Location)) {
+                $table->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), align: 'right');
+            } else {
+                $table->column(key: 'running_quantity_location', label: __('Running Quantity'), align: 'right');
+            }
         };
     }
 

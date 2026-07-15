@@ -12,6 +12,20 @@ namespace App\Actions\Helpers;
 
 use App\Actions\Accounting\Invoice\Search\ReindexInvoicesSearch;
 use App\Actions\Accounting\Payment\Search\ReindexPaymentsSearch;
+use App\Actions\Billables\Charge\Search\ReindexChargesSearch;
+use App\Actions\Billables\Service\Search\ReindexServicesSearch;
+use App\Actions\Billables\ShippingZone\Search\ReindexShippingZonesSearch;
+use App\Actions\Billables\ShippingZoneSchema\Search\ReindexShippingZoneSchemasSearch;
+use App\Actions\Comms\Mailshot\Search\ReindexMailshotsSearch;
+use App\Actions\Discounts\Offer\Search\ReindexOffersSearch;
+use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignsSearch;
+use App\Actions\Helpers\Barcode\Search\ReindexBarcodesSearch;
+use App\Actions\Helpers\Brand\Search\ReindexBrandsSearch;
+use App\Actions\Helpers\Tag\Search\ReindexTagsSearch;
+use App\Actions\Masters\MasterAsset\Search\ReindexMasterAssetsSearch;
+use App\Actions\Masters\MasterCollection\Search\ReindexMasterCollectionsSearch;
+use App\Actions\Masters\MasterProductCategory\Search\ReindexMasterProductCategoriesSearch;
+use App\Actions\Web\Webpage\Search\ReindexWebpagesSearch;
 use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
 use App\Actions\Catalogue\ProductCategory\Search\ReindexProductCategorySearch;
@@ -22,12 +36,14 @@ use App\Actions\Goods\Stock\Search\ReindexStockSearch;
 use App\Actions\Goods\StockFamily\Search\ReindexStockFamilySearch;
 use App\Actions\Goods\TradeUnit\Search\ReindexTradeUnitsSearch;
 use App\Actions\Goods\TradeUnitFamily\Search\ReindexTradeUnitFamiliesSearch;
+use App\Actions\HumanResources\Employee\Search\ReindexEmployeesSearch;
 use App\Actions\HydrateModel;
 use App\Actions\Inventory\Location\Search\ReindexLocationsSearch;
 use App\Actions\Inventory\OrgStock\Search\ReindexOrgStockSearch;
 use App\Actions\Inventory\OrgStockFamily\Search\ReindexOrgStockFamilySearch;
 use App\Actions\Inventory\WarehouseArea\Search\ReindexWarehouseAreaSearch;
 use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
+use App\Actions\Reviews\Search\ReindexReviewsSearch;
 use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SysAdmin\Guest\Search\ReindexGuestSearch;
 use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
@@ -64,6 +80,22 @@ class ReindexSearch extends HydrateModel
 
         if ($this->checkIfCanReindex(['catalogue', 'cat'], $command)) {
             $this->reindexCatalogue($command);
+        }
+
+        if ($this->checkIfCanReindex(['reviews', 'rev'], $command)) {
+            $this->reindexReviews($command);
+        }
+
+        if ($this->checkIfCanReindex(['billables', 'bil'], $command)) {
+            $this->reindexBillables($command);
+        }
+
+        if ($this->checkIfCanReindex(['masters', 'mas'], $command)) {
+            $this->reindexMasters($command);
+        }
+
+        if ($this->checkIfCanReindex(['trade_units', 'tu'], $command)) {
+            $this->reindexTradeUnits($command);
         }
 
         if ($this->checkIfCanReindex(['discount'], $command)) {
@@ -136,27 +168,76 @@ class ReindexSearch extends HydrateModel
         ReindexProductSearch::run(reset: $command->option('reset'));
     }
 
+    protected function reindexReviews(Command $command): void
+    {
+        $command->info('Reviews section ⭐️');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexReviewsSearch::run(reset: $command->option('reset'));
+    }
+
+    protected function reindexBillables(Command $command): void
+    {
+        $command->info('Billables section 🧾');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexChargesSearch::run(reset: $command->option('reset'));
+        ReindexServicesSearch::run(reset: $command->option('reset'));
+        ReindexShippingZoneSchemasSearch::run(reset: $command->option('reset'));
+        ReindexShippingZonesSearch::run(reset: $command->option('reset'));
+    }
+
+    protected function reindexMasters(Command $command): void
+    {
+        $command->info('Masters section 🏛️');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexMasterAssetsSearch::run(reset: $command->option('reset'));
+        ReindexMasterProductCategoriesSearch::run(reset: $command->option('reset'));
+        ReindexMasterCollectionsSearch::run(reset: $command->option('reset'));
+    }
+
+    protected function reindexTradeUnits(Command $command): void
+    {
+        $command->info('Trade units section 📦');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexBrandsSearch::run(reset: $command->option('reset'));
+        ReindexTagsSearch::run(reset: $command->option('reset'));
+        ReindexBarcodesSearch::run(reset: $command->option('reset'));
+    }
+
 
     protected function reindexDiscount(Command $command): void
     {
         $command->info('Discount section💲');
-        //        $command->call('search:offers');
-        //        $command->call('search:offer_campaigns');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexOffersSearch::run(reset: $command->option('reset'));
+        ReindexOfferCampaignsSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexWebsite(Command $command): void
     {
         $command->info('Website section 🌐');
-        //        $command->call('search:websites');
-        //        $command->call('search:webpages');
-        //        $command->call('search:banners');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexWebpagesSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexComms(Command $command): void
     {
         $command->info('Comms section 📧');
-        // todo $command->call('search:newsletters');
-        // todo $command->call('search:mailshots');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexMailshotsSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexSysadmin(Command $command): void
@@ -183,7 +264,10 @@ class ReindexSearch extends HydrateModel
     protected function reindexHr(Command $command): void
     {
         $command->info('HR section 👩🏻‍💼');
-        //        $command->call('search:employees');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexEmployeesSearch::run(reset: $command->option('reset'));
 
     }
 

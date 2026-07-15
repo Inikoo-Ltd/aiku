@@ -21,12 +21,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $org_currency_code
  * @property mixed $parent_slug
  * @property mixed $org_total_cost
+ * @property string|null $created_by
  */
 class PurchaseOrdersResource extends JsonResource
 {
     public function toArray($request): array
     {
-
         return [
             'reference'         => $this->reference,
             'state'             => $this->state,
@@ -41,6 +41,7 @@ class PurchaseOrdersResource extends JsonResource
             'date'              => $this->date,
             'org_currency_code'     => $this->org_currency_code,
             'org_total_cost'    => $this->org_total_cost,
+            'created_by'        => $this->created_by ?? __('System'),
 
         ];
     }

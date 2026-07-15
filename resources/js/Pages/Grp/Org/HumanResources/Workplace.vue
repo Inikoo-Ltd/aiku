@@ -58,7 +58,7 @@ const props = defineProps<{
     clocking_machines?: object;
     clockings?: object;
     history?: object;
-    showcase: {}
+    showcase?: {}
 
 }>();
 

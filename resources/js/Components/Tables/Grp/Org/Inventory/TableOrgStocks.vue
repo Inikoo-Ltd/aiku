@@ -180,17 +180,19 @@ function onCancelMoveAllSku() {
     isOpenMoveAllSku.value = false
 }
 
+const routeCurrent = route().current()
+const routeParams = route().params as RouteParams
+
 function orgStockRoute(orgStock: OrgStock) {
-    const current = route().current()
-    console.log(current)
+    const current = routeCurrent
 
     if (current === "grp.org.warehouses.show.inventory.org_stock_families.show") {
         return route(
             "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show",
             [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).warehouse,
-                (route().params as RouteParams).orgStockFamily,
+                routeParams.organisation,
+                routeParams.warehouse,
+                routeParams.orgStockFamily,
                 orgStock.slug
             ]
         )
@@ -198,21 +200,21 @@ function orgStockRoute(orgStock: OrgStock) {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show",
             [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).warehouse,
+                routeParams.organisation,
+                routeParams.warehouse,
                 orgStock.slug
             ]
         )
     } else if (current === "grp.overview.inventory.org-stocks.index" || current === "grp.org.shops.show.catalogue.products.all_products.show") {
         return route(
-            "grp.helpers.redirect_org_stock",
+            "grp.majordomo.redirect_org_stock",
             [orgStock.id])
     } else if (current === "grp.org.warehouses.show.inventory.org_stocks.index") {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.show",
             [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).warehouse,
+                routeParams.organisation,
+                routeParams.warehouse,
                 orgStock.slug
             ]
         )
@@ -220,14 +222,14 @@ function orgStockRoute(orgStock: OrgStock) {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
             [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).warehouse,
+                routeParams.organisation,
+                routeParams.warehouse,
                 orgStock.slug
             ]
         )
     }else{
       return route(
-            "grp.helpers.redirect_org_stock",
+            "grp.majordomo.redirect_org_stock",
             [
                 orgStock.id
             ]
@@ -251,8 +253,8 @@ function stockFamilyRoute(stock: Stock) {
     return route(
         "grp.org.warehouses.show.inventory.org_stock_families.show",
         [
-            (route().params as RouteParams).organisation,
-            (route().params as RouteParams).warehouse,
+            routeParams.organisation,
+            routeParams.warehouse,
             stock.family_slug
         ]
     )
@@ -260,15 +262,15 @@ function stockFamilyRoute(stock: Stock) {
 
 
 const orgStockRouteProductIndex = (orgStock: OrgStock) => {
-    const current = route().current()
+    const current = routeCurrent
 
     if (current === "grp.org.warehouses.show.inventory.org_stock_families.show") {
         return route(
             "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.products",
             {
-                organisation: (route().params as RouteParams).organisation,
-                warehouse: (route().params as RouteParams).warehouse,
-                orgStockFamily: (route().params as RouteParams).orgStockFamily,
+                organisation: routeParams.organisation,
+                warehouse: routeParams.warehouse,
+                orgStockFamily: routeParams.orgStockFamily,
                 orgStock: orgStock.slug,
                 tab: 'products'
             }
@@ -277,22 +279,22 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show.products",
             {
-                organisation: (route().params as RouteParams).organisation,
-                warehouse: (route().params as RouteParams).warehouse,
+                organisation: routeParams.organisation,
+                warehouse: routeParams.warehouse,
                 orgStock: orgStock.slug,
                 tab: 'products'
             }
         )
     } else if (current === "grp.overview.inventory.org-stocks.index" || current === "grp.org.shops.show.catalogue.products.all_products.show") {
         return route(
-            "grp.helpers.redirect_org_stock",
+            "grp.majordomo.redirect_org_stock",
             [orgStock.id])
     } else if (current === "grp.org.warehouses.show.inventory.org_stocks.index") {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.show.products",
             {
-                organisation: (route().params as RouteParams).organisation,
-                warehouse: (route().params as RouteParams).warehouse,
+                organisation: routeParams.organisation,
+                warehouse: routeParams.warehouse,
                 orgStock: orgStock.slug,
                 tab: 'products'
             }
@@ -301,15 +303,15 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.products",
             {
-                organisation: (route().params as RouteParams).organisation,
-                warehouse: (route().params as RouteParams).warehouse,
+                organisation: routeParams.organisation,
+                warehouse: routeParams.warehouse,
                 orgStock: orgStock.slug,
                 tab: 'products'
             }
         )
     }else{
       return route(
-            "grp.helpers.redirect_org_stock.to_products_index",
+            "grp.majordomo.redirect_org_stock.to_products_index",
             [
                 orgStock.id
             ]
@@ -480,8 +482,10 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <div v-if="layout.app.environment === 'local'" class="flex justify-end">
                 <ModalConfirmationDelete
                     :routeDelete="{
-                        name: 'grp.models.location.org_stock.delete',
-                        parameters: { location: location_id, orgStock: stock.id },
+                        name: 'grp.models.location_org_stock.delete',
+                        parameters: { 
+                            locationOrgStock: stock.location_org_stock_id
+                        },
                     }"
                     :title="ctrans('Are you sure you want to unlink this SKU from the location?')"
                     :description="ctrans(':qty stock will be removed and marked as lost!', { qty: locale.number(Number(stock.quantity)) })"
@@ -521,8 +525,8 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 :fetchRoute="{
                     name: 'grp.org.warehouses.show.infrastructure.locations.index',
                     parameters: {
-                        organisation: (route().params as RouteParams).organisation,
-                        warehouse: (route().params as RouteParams).warehouse,
+                        organisation: routeParams.organisation,
+                        warehouse: routeParams.warehouse,
                     },
                 }"
                 valueProp="id"
@@ -560,8 +564,8 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                     :fetchRoute="{
                         name: 'grp.org.warehouses.show.infrastructure.locations.index',
                         parameters: {
-                            organisation: (route().params as RouteParams).organisation,
-                            warehouse: (route().params as RouteParams).warehouse,
+                            organisation: routeParams.organisation,
+                            warehouse: routeParams.warehouse,
                         },
                     }"
                     valueProp="id"

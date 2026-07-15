@@ -31,7 +31,7 @@ class UpdateLocationOrgStock extends OrgAction
     public function handle(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
     {
 
-        $dropshippingPriority = Arr::pull($modelData, 'set_as_priority_dropshipping', null);
+        $dropshippingPriority = Arr::pull($modelData, 'set_as_priority_dropshipping');
         if ($dropshippingPriority) {
             data_set($modelData, 'default_dropshipping_picking_location', $dropshippingPriority);
 
