@@ -488,7 +488,7 @@ onMounted(() => {
 }
 
 .lb-search-text-color-primary {
-    color: var(--luigiColor3) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .lb-result__title {
@@ -549,7 +549,7 @@ onMounted(() => {
     display: flex !important;
     place-content: center !important;
     text-align: center !important;
-    color: var(--luigiColor3) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .lb-result__action-buttons {
@@ -563,18 +563,18 @@ onMounted(() => {
 }
 
 .lb-search-text-color-primary-clickable {
-    color: var(--luigiColor1) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .lb-search-bg-color-primary-clickable {
     background: transparent !important;
-    color: var(--luigiColor1) !important;
-    border: 1px solid var(--luigiColor1) !important;
+    color: var(--theme-color-0) !important;
+    border: 1px solid var(--theme-color-0) !important;
     border-radius: 4px !important;
 }
 
 .lb-search-bg-color-primary-clickable:hover {
-    background: color-mix(in srgb, var(--luigiColor1) 20%, transparent) !important;
+    background: color-mix(in srgb, var(--theme-color-0) 20%, transparent) !important;
     
 }
 

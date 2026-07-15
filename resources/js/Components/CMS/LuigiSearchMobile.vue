@@ -271,9 +271,9 @@ const visitSearchPage = () => {
     color: var(--theme-color-0) !important;
 }
 
-.luigi-ac-queries {
-    // line-height: 0px !important;
-}
+// .luigi-ac-queries {
+//     line-height: 0px !important;
+// }
 
 // .luigi-ac-query .luigi-ac-other-content {
 //     color: #fff !important;
