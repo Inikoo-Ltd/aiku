@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { inject, ref, computed, watch } from 'vue'
-import { pushGtmEvent } from '@/Composables/useGtm'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -36,7 +35,6 @@ import {
   faPercent,
   faPoundSign,
   faClock,
-  faMedal,
 } from "@far";
 import { faLambda } from "@fad";
 
@@ -212,7 +210,6 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
             event: "add_to_cart",
             ecommerce: addToCartEcommerce,
         })
-        pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
 
     } catch (error: any) {
         setStatus('error')

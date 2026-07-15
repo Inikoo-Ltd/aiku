@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { pushGtmEvent } from '@/Composables/useGtm'
-import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { inject, ref, toRaw, watch, computed } from 'vue'
@@ -85,7 +83,6 @@ const onAddToAllPortfolios = async (product: ProductResource) => {
         event: "add_to_cart",
         ecommerce: addToCartEcommerce,
     })
-    pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
 
     try {
         const response = await axios.post(
@@ -147,7 +144,6 @@ const onAddPortfoliosSpecificChannel = async (product: ProductResource, channel:
         event: "add_to_cart",
         ecommerce: addToCartEcommerce,
     })
-    pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
 
     try {
         const response = await axios.post(

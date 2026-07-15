@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n'
-import { pushGtmEvent } from "@/Composables/useGtm"
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
@@ -276,6 +275,7 @@ interface Product {
     transaction_id?: string
     quantity_ordered?: number
 }
+
 const onAddProducts = async (product: Product) => {
     const storeRoute = {
         route_post: route('retina.models.product.add-to-basket', { 
@@ -335,7 +335,6 @@ const onAddProducts = async (product: Product) => {
                             event: "add_to_cart",
                             ecommerce: addToCartEcommerce,
                         })
-                        pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
                     }
                 }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
@@ -418,7 +417,6 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     event: "add_to_cart",
                     ecommerce: addToCartEcommerce,
                 })
-                pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
                 layout?.reload_handle?.()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'

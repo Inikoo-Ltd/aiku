@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { pushGtmEvent } from '@/Composables/useGtm'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { InputNumber } from 'primevue'
@@ -75,7 +74,6 @@ const onAddToBasket = async (product: ProductResource) => {
             event: "add_to_cart",
             ecommerce: addToCartEcommerce,
         })
-        pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
 
     } catch (error: any) {
         setStatus('error')

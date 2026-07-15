@@ -115,7 +115,7 @@ watch(() => usePage().props?.flash?.confetti, (newVal) => {
 watch(() => usePage().props?.flash?.gtm, (newValue) => {
     console.log('gtm ret', newValue)
     if (!newValue) return
-
+    
     pushServerGtmEvent(newValue.event, newValue.data_to_submit)
 }, {
     deep: true,

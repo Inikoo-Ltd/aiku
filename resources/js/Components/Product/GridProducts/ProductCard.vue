@@ -11,7 +11,6 @@
  */
 
 import {ref, inject, computed} from 'vue'
-import { pushGtmEvent } from '@/Composables/useGtm'
 import {trans} from 'laravel-vue-i18n'
 import {aikuLocaleStructure} from '@/Composables/useLocaleStructure'
 import type {Product} from './types'
@@ -150,7 +149,6 @@ const onAddProducts = async (product: Product) => {
                         event: "add_to_cart",
                         ecommerce: addToCartEcommerce,
                     })
-                    pushGtmEvent("add_to_cart", { ecommerce: addToCartEcommerce })
                     
                     notify({
                         title: trans("Success!"),

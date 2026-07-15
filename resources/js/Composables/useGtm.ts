@@ -1,18 +1,9 @@
-/**
- * Dedicated Google Tag Manager data layer.
- *
- * GTM is configured (via the `&l=gtmDataLayer` parameter in its loader snippet)
- * to read ONLY `window.gtmDataLayer`, never the shared `window.dataLayer` used
- * by Luigisbox. This keeps Luigisbox analytics events out of GTM. Push GTM
- * events exclusively through the helpers below so nothing unintended leaks in.
- */
-
 export const GTM_DATA_LAYER_NAME = "gtmDataLayer"
 
-// Client-side events GTM is allowed to receive. Anything not listed is ignored.
 const ALLOWED_GTM_EVENTS = [
     "add_to_cart",
     "registrationSuccess",
+    "view_item",
 ]
 
 const getGtmDataLayer = (): Record<string, any>[] => {
@@ -22,10 +13,17 @@ const getGtmDataLayer = (): Record<string, any>[] => {
     return w[GTM_DATA_LAYER_NAME]
 }
 
-/**
- * Push a whitelisted client event to GTM's dedicated data layer.
- * Events outside ALLOWED_GTM_EVENTS are dropped.
- */
+const pushEventWithEcommerceReset = (event: string, payload: Record<string, any>): void => {
+    const gtmDataLayer = getGtmDataLayer()
+
+    if ("ecommerce" in payload) {
+        return
+    }
+
+    gtmDataLayer.push({ event, ...payload })
+}
+
+
 export const pushGtmEvent = (event: string, payload: Record<string, any> = {}): void => {
     if (typeof window === "undefined") {
         return
@@ -35,17 +33,41 @@ export const pushGtmEvent = (event: string, payload: Record<string, any> = {}): 
         return
     }
 
-    getGtmDataLayer().push({ event, ...payload })
+    pushEventWithEcommerceReset(event, payload)
 }
 
-/**
- * Push a server-defined (trusted) GTM event to GTM's dedicated data layer.
- * Used for events emitted through Inertia flash props.
- */
+
 export const pushServerGtmEvent = (event: string, data: Record<string, any> = {}): void => {
     if (typeof window === "undefined" || !event) {
         return
     }
 
-    getGtmDataLayer().push({ event, ...data })
+    pushEventWithEcommerceReset(event, data)
+}
+
+interface RegistrationContact {
+    contact_name?: string
+    email?: string
+    phone?: string
+    contact_address?: Record<string, any>
+}
+
+
+
+const withoutEmptyValues = (data: Record<string, any>): Record<string, any> => {
+    return Object.fromEntries(
+        Object.entries(data).filter(([, value]) => value !== undefined && value !== null && value !== ""),
+    )
+}
+
+
+
+export const buildRegistrationUserData = (
+    contact: RegistrationContact,
+): Record<string, any> => {
+    const contactAddress = contact.contact_address ?? {}
+
+    return withoutEmptyValues({
+        email_address: contact.email?.trim().toLowerCase(),
+    })
 }
