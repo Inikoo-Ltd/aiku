@@ -215,7 +215,7 @@ class IndexFamilyWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
+                'title'       => __('Webpage') . ' ' . __('Families'),
                 'pageHead'    => [
                     'model'         => __('Webpage'),
                     'title'         => __('Families'),
