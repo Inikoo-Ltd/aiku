@@ -302,7 +302,7 @@ const visitSearchPage = () => {
 }
 
 .luigi-ac-no-result {
-    color: var(--luigiColor3) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .luigi-ac-queries {
