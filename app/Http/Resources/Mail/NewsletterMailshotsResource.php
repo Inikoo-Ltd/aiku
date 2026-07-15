@@ -53,6 +53,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $number_try_send_success
  * @property mixed $number_delivered_open_success
  * @property mixed $unsubscribed
+ * @property mixed $source_id
+ * @property mixed $source_alt_id
+ * @property mixed $source_alt2_id
  */
 class NewsletterMailshotsResource extends JsonResource
 {
@@ -86,6 +89,7 @@ class NewsletterMailshotsResource extends JsonResource
             'shop_id'                   => $this->shop_id,
             'webpage_slug'              => $this->webpage_slug,
             'webpage_website_slug'      => $this->webpage_website_slug,
+            'has_source_reference'      => filled($mailshot->source_id) || filled($mailshot->source_alt_id) || filled($mailshot->source_alt2_id),
         ];
     }
 }

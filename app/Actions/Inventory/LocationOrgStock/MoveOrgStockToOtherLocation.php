@@ -31,6 +31,9 @@ class MoveOrgStockToOtherLocation extends OrgAction
 
     private User|null $user = null;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocation, array $modelData): LocationOrgStock
     {
         DB::transaction(function () use ($currentLocationStock, $targetLocation, $modelData) {
@@ -43,6 +46,10 @@ class MoveOrgStockToOtherLocation extends OrgAction
             $this->processStockMovement($targetLocation, [
                 'quantity'  => $targetLocation->quantity + $quantity,
             ]);
+
+            RepairOrgStockMissingLocationIds::dispatch($currentLocationStock->org_stock_id)->delay(2);
+            OrgStockHydrateQuantityInLocations::run($currentLocationStock->org_stock_id);
+
         });
 
         $currentLocationStock->refresh();
@@ -51,7 +58,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
         return $currentLocationStock;
     }
 
-    public function processStockMovement(LocationOrgStock $locationOrgStock, array $modelData)
+    public function processStockMovement(LocationOrgStock $locationOrgStock, array $modelData): void
     {
         $currentStock = $locationOrgStock->quantity;
         $newQuantity  = Arr::pull($modelData, 'quantity');
@@ -76,8 +83,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
             ]
         );
 
-        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->org_stock_id)->delay(2);
-        OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->org_stock_id)->delay(2);
+
     }
 
     public function rules(): array
@@ -87,6 +93,9 @@ class MoveOrgStockToOtherLocation extends OrgAction
         ];
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(LocationOrgStock $currentLocationStock, LocationOrgStock $targetLocationOrgStock, array $modelData): LocationOrgStock
     {
         $this->asAction = true;
@@ -94,6 +103,9 @@ class MoveOrgStockToOtherLocation extends OrgAction
         return $this->handle($currentLocationStock, $targetLocationOrgStock, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(LocationOrgStock $locationOrgStock, LocationOrgStock $targetLocationOrgStock, ActionRequest $request): void
     {
         $this->user = request()->user();
