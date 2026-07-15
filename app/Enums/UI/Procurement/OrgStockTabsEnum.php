@@ -17,13 +17,12 @@ enum OrgStockTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
-
     case TRADE_UNITS = 'trade_units';
     case HISTORY = 'history';
     case IMAGES = 'images';
     case ATTACHMENTS = 'attachments';
     case FEEDBACKS = 'feedbacks';
-
+    case PURCHASE_ORDERS = 'purchase_orders';
 
     public function blueprint(): array
     {
@@ -34,10 +33,12 @@ enum OrgStockTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
             ],
+
             OrgStockTabsEnum::FEEDBACKS => [
                 'title' => __('Issues'),
                 'icon'  => 'fal fa-poop',
             ],
+
             OrgStockTabsEnum::TRADE_UNITS => [
                 'title' => __('Trade units'),
                 'icon'  => 'fal fa-atom',
@@ -48,8 +49,8 @@ enum OrgStockTabsEnum: string
                 'type'  => 'icon',
                 'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
-
             ],
+
             OrgStockTabsEnum::IMAGES => [
                 'align' => 'right',
                 'type'  => 'icon',
@@ -60,6 +61,11 @@ enum OrgStockTabsEnum: string
             OrgStockTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+
+            OrgStockTabsEnum::PURCHASE_ORDERS => [
+                'title' => __('Purchase orders'),
+                'icon'  => 'fal fa-clipboard',
             ],
         };
     }
