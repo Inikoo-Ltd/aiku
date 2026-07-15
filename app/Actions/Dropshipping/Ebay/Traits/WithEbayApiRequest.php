@@ -938,7 +938,7 @@ trait WithEbayApiRequest
         try {
             $endpoint = "/sell/inventory/v1/bulk_update_price_quantity";
 
-            return $this->makeEbayRequest('put', $endpoint, $productData);
+            return $this->makeEbayRequest('post', $endpoint, $productData);
         } catch (Exception $e) {
             Log::error('Update eBay Product Price and Quantity Error: '.$e->getMessage());
 

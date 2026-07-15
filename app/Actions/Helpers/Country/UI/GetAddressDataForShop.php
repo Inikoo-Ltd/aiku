@@ -85,6 +85,7 @@ class GetAddressDataForShop
                 [
                     'label'               => $country->name.' ('.$country->code.')',
                     'code'                => $country->code,
+                    'phone_code'          => $country->phone_code,
                     'fields'              => $fields,
                     'administrativeAreas' => Arr::get($country->data, 'administrative_areas'),
                 ];
