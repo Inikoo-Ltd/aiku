@@ -23,6 +23,7 @@ enum OrgStockTabsEnum: string
     case ATTACHMENTS = 'attachments';
     case FEEDBACKS = 'feedbacks';
     case PURCHASE_ORDERS = 'purchase_orders';
+    case SUPPLIER_PRODUCTS = 'supplier_products';
 
     public function blueprint(): array
     {
@@ -66,6 +67,11 @@ enum OrgStockTabsEnum: string
             OrgStockTabsEnum::PURCHASE_ORDERS => [
                 'title' => __('Purchase orders'),
                 'icon'  => 'fal fa-clipboard',
+            ],
+
+            OrgStockTabsEnum::SUPPLIER_PRODUCTS => [
+                'title' => __("Supplier's products"),
+                'icon'  => 'fal fa-hand-receiving',
             ],
         };
     }
