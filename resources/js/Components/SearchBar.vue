@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, computed, defineAsyncComponent } from 'vue'
+import { inject, ref, computed, defineAsyncComponent, watch } from 'vue'
 import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
@@ -44,6 +44,37 @@ const scope = ref<string | null>(null)
 const resultsSearch = ref<Record<string, any> | null>(null)
 let abortController: AbortController | null = null
 
+const sessionId = ref('')
+const searchLogUlid = ref<string | null>(null)
+const suggestions = ref<string[]>([])
+
+watch(isOpen, async (open) => {
+    if (!open) return
+    sessionId.value = crypto.randomUUID()
+    if (!suggestions.value.length) {
+        try {
+            const response = await fetch(`${urlSearch()}/suggestions`)
+            suggestions.value = (await response.json()).suggestions ?? []
+        } catch {
+            suggestions.value = []
+        }
+    }
+})
+
+const searchSuggestion = (suggestion: string) => {
+    searchValue.value = suggestion
+    onTypeSearch()
+}
+
+const onResultsClick = (event: Event) => {
+    const anchor = (event.target as HTMLElement).closest('a')
+    if (!anchor?.href || !searchLogUlid.value) return
+    window.axios.post(`${urlSearch()}/click`, {
+        ulid: searchLogUlid.value,
+        url: anchor.href,
+    }).catch(() => {})
+}
+
 const activeComponent = computed(() => {
     return scope.value ? scopeComponents[scope.value] ?? null : null
 })
@@ -71,7 +102,7 @@ const CACHE_MAX_ENTRIES = 50
 const responseCache = new Map<string, { data: Record<string, any>, expiresAt: number }>()
 
 const buildSearchUrl = (query: string) => {
-    return `${urlSearch()}?q=${encodeURIComponent(query)}&route_src=${route().current()}${paramsToString()}`
+    return `${urlSearch()}?q=${encodeURIComponent(query)}&session=${sessionId.value}&route_src=${route().current()}${paramsToString()}`
 }
 
 const cacheResponse = (url: string, data: Record<string, any>) => {
@@ -94,6 +125,7 @@ const getCachedResponse = (url: string): Record<string, any> | null => {
 const applyResponse = (data: Record<string, any>) => {
     scope.value = data.scope ?? null
     resultsSearch.value = data.results ?? null
+    searchLogUlid.value = data.search_log_ulid ?? null
 }
 
 const fetchApi = debounce(async (query: string) => {
@@ -193,6 +225,20 @@ const closeModal = () => {
                             <div class="space-y-2">
                                 <p class="text-base font-medium text-gray-500">{{ ctrans('Type to search...') }}</p>
                                 <p class="text-sm">{{ ctrans('Search across orders, customers, prospects and more') }}</p>
+                                <div v-if="suggestions.length" class="pt-4">
+                                    <p class="text-xs text-gray-400 mb-2">{{ ctrans('Popular searches') }}</p>
+                                    <div class="flex flex-wrap justify-center gap-2">
+                                        <button
+                                            v-for="suggestion in suggestions"
+                                            :key="suggestion"
+                                            type="button"
+                                            class="px-3 py-1 rounded-full text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+                                            @click="searchSuggestion(suggestion)"
+                                        >
+                                            {{ suggestion }}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -217,6 +263,7 @@ const closeModal = () => {
                             v-else
                             class="grid grid-cols-12 flex-1 min-h-0 overflow-hidden transition-opacity duration-200 [&>*]:min-w-0"
                             :class="isRefreshing ? 'opacity-60' : 'opacity-100'"
+                            @click.capture="onResultsClick"
                         >
                             <component
                                 v-model:open="isOpen"

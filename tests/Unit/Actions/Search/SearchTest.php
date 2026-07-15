@@ -8,8 +8,15 @@
 
 namespace Tests\Unit\Actions\Search;
 
+use App\Actions\Search\GetSearchAnalytics;
+use App\Actions\Search\RecordSearchClick;
 use App\Actions\Search\Search;
 use App\Actions\Search\SearchSysAdmin;
+use App\Actions\Search\StoreSearchLog;
+use App\Models\Helpers\SearchLog;
+use App\Models\SysAdmin\Group;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 it('returns null route scope for unknown route prefix', function () {
     $action = app(Search::class);
@@ -52,6 +59,41 @@ it('caches results for queries of two characters or fewer', function () {
 
     expect($action->handle('sysadmin', 'ab'))->toBe($expected)
         ->and($action->handle('sysadmin', 'ab'))->toBe($expected);
+});
+
+it('logs searches, records clicks and aggregates analytics', function () {
+    Http::fake(['*/analytics/events' => Http::response(['ok' => true])]);
+    SearchLog::query()->delete();
+    $group = Group::first();
+
+    $clickedUlid = (string)Str::ulid();
+    StoreSearchLog::run([
+        'ulid'          => $clickedUlid,
+        'group_id'      => $group->id,
+        'scope'         => 'catalogue',
+        'query'         => 'bath bomb',
+        'results_count' => 12,
+    ]);
+    StoreSearchLog::run([
+        'ulid'          => (string)Str::ulid(),
+        'group_id'      => $group->id,
+        'scope'         => 'catalogue',
+        'query'         => 'nonexistent thing',
+        'results_count' => 0,
+    ]);
+
+    RecordSearchClick::run($clickedUlid, 'https://app.aiku.test/majordomo/redirect-product/1');
+
+    expect(SearchLog::where('ulid', $clickedUlid)->value('clicked_at'))->not->toBeNull();
+
+    $analytics = GetSearchAnalytics::run($group);
+
+    expect($analytics['total_searches'])->toBe(2)
+        ->and($analytics['click_through'])->toEqual(50)
+        ->and($analytics['zero_results_rate'])->toEqual(50)
+        ->and($analytics['top_queries'][0]['query'])->toBe('bath bomb')
+        ->and((int)$analytics['top_queries'][0]['clicks'])->toBe(1)
+        ->and($analytics['top_zero_queries'][0]['query'])->toBe('nonexistent thing');
 });
 
 it('does not cache results for queries longer than two characters', function () {
