@@ -19,10 +19,10 @@ class GetSearchAnalytics
 
     public function handle(Group $group, ?int $organisationId = null, int $days = 30): array
     {
-        $base = SearchLog::where('group_id', $group->id)
-            ->where('created_at', '>=', now()->subDays($days));
+        $base = SearchLog::where('search_logs.group_id', $group->id)
+            ->where('search_logs.created_at', '>=', now()->subDays($days));
         if ($organisationId) {
-            $base->where('organisation_id', $organisationId);
+            $base->where('search_logs.organisation_id', $organisationId);
         }
 
         $totalSearches = (clone $base)->count();
@@ -42,6 +42,15 @@ class GetSearchAnalytics
             ->limit(10)
             ->get();
 
+        $topSearchers = (clone $base)
+            ->join('users', 'users.id', '=', 'search_logs.user_id')
+            ->selectRaw('users.username, count(*) as searches, count(search_logs.clicked_at) as clicks')
+            ->groupBy('users.username')
+            ->orderByDesc('searches')
+            ->orderBy('users.username')
+            ->limit(10)
+            ->get();
+
         return [
             'days'              => $days,
             'total_searches'    => $totalSearches,
@@ -49,6 +58,7 @@ class GetSearchAnalytics
             'zero_results_rate' => $totalSearches ? round($zeroResults / $totalSearches * 100, 1) : 0,
             'top_queries'       => $topQueries,
             'top_zero_queries'  => $topZeroQueries,
+            'top_searchers'     => $topSearchers,
         ];
     }
 

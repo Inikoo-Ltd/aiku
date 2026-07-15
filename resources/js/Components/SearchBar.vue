@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, computed, defineAsyncComponent, watch, onMounted, onUnmounted } from 'vue'
+import { inject, provide, ref, computed, defineAsyncComponent, watch, onMounted, onUnmounted } from 'vue'
 import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link, router } from '@inertiajs/vue3'
@@ -16,8 +16,12 @@ import { faTimes, faSearch, faSpinnerThird, faHistory } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Skeleton from 'primevue/skeleton'
 import LoadingIcon from './Utils/LoadingIcon.vue'
+import { faBookmark as fasBookmark } from '@fas'
+import { Bookmark } from '@/types/Bookmark.js'
+import { notify } from '@kyvg/vue3-notification'
+import { SearchBookmarkKey } from '@/types/SearchBookmark'
 
-library.add(faTimes, faSearch, faSpinnerThird, faHistory)
+library.add(faTimes, faSearch, faSpinnerThird, faHistory, fasBookmark)
 
 const SearchResultGeneric = defineAsyncComponent(() => import('@/Components/Search/SearchResultGeneric.vue'))
 
@@ -55,6 +59,71 @@ let abortController: AbortController | null = null
 const sessionId = ref('')
 const searchLogUlid = ref<string | null>(null)
 const suggestions = ref<string[]>([])
+
+const isBookmarkAvailable = computed(() => Array.isArray(layout.bookmarks))
+const bookmarks = computed<Bookmark[]>(() => layout.bookmarks ?? [])
+const isSavingBookmarks = ref(false)
+
+const getBookmarkSubtitle = (bookmark: Bookmark) => {
+    return [bookmark.organisation, bookmark.shop].filter(Boolean).join(' / ')
+}
+
+const normalizeBookmarkUrl = (url: string) => url.replace(/^https?:\/\/[^/]+/i, '')
+
+const persistBookmarks = async (nextBookmarks: Bookmark[]) => {
+    const previousBookmarks = [...bookmarks.value]
+
+    layout.bookmarks = nextBookmarks
+    isSavingBookmarks.value = true
+
+    try {
+        await window.axios.patch(route('grp.profile.bookmarks.update'), { bookmarks: nextBookmarks })
+    } catch (error) {
+        layout.bookmarks = previousBookmarks
+        notify({
+            title: trans('Something went wrong'),
+            text: trans('Failed to save bookmarks'),
+            type: 'error',
+        })
+    } finally {
+        isSavingBookmarks.value = false
+    }
+}
+
+const isBookmarked = (url: string) => {
+    const normalizedUrl = normalizeBookmarkUrl(url)
+    return bookmarks.value.some((bookmark) => bookmark.url === normalizedUrl)
+}
+
+const toggleBookmark = (item: { label: string, url: string }) => {
+    if (isSavingBookmarks.value) {
+        return
+    }
+
+    const normalizedUrl = normalizeBookmarkUrl(item.url)
+
+    if (isBookmarked(normalizedUrl)) {
+        persistBookmarks(bookmarks.value.filter((bookmark) => bookmark.url !== normalizedUrl))
+        return
+    }
+
+    persistBookmarks([...bookmarks.value, { label: item.label, url: normalizedUrl }])
+}
+
+const removeBookmark = (bookmarkToRemove: Bookmark) => {
+    if (isSavingBookmarks.value) {
+        return
+    }
+
+    persistBookmarks(bookmarks.value.filter((bookmark) => bookmark.url !== bookmarkToRemove.url))
+}
+
+provide(SearchBookmarkKey, {
+    isAvailable: isBookmarkAvailable,
+    isSaving: isSavingBookmarks,
+    isBookmarked,
+    toggleBookmark,
+})
 
 type VisitedPage = { url: string, title: string, at: number }
 const NAV_HISTORY_KEY = 'aiku-nav-history'
@@ -273,6 +342,38 @@ const closeModal = () => {
                             </button>
                         </div>
 
+                        <div v-if="isBookmarkAvailable && bookmarks.length" class="border-b px-5 py-2.5 flex items-center gap-3">
+                            <span class="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                                <FontAwesomeIcon icon="fas fa-bookmark" class="text-indigo-400" aria-hidden="true" />
+                                {{ ctrans('Bookmarks') }}
+                            </span>
+                            <div class="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto py-0.5">
+                                <div
+                                    v-for="bookmark in bookmarks"
+                                    :key="bookmark.url"
+                                    class="group shrink-0 inline-flex items-center rounded-full bg-indigo-50 ring-1 ring-indigo-100 transition hover:bg-indigo-100/70 hover:ring-indigo-300"
+                                >
+                                    <Link
+                                        :href="bookmark.url"
+                                        @start="() => isOpen = false"
+                                        class="inline-flex items-center gap-1.5 min-w-0 max-w-[12rem] pl-2.5 pr-1 py-1"
+                                        v-tooltip="getBookmarkSubtitle(bookmark) ? `${bookmark.label} — ${getBookmarkSubtitle(bookmark)}` : bookmark.label"
+                                    >
+                                        <FontAwesomeIcon icon="fas fa-bookmark" class="shrink-0 text-[11px] text-indigo-500" aria-hidden="true" />
+                                        <span class="truncate text-xs font-medium text-indigo-900">{{ bookmark.label }}</span>
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        :disabled="isSavingBookmarks"
+                                        class="shrink-0 mr-1 grid h-4 w-4 place-items-center rounded-full text-indigo-400 transition group-hover:opacity-100 hover:bg-white/60 hover:text-red-500 disabled:opacity-40"
+                                        v-tooltip="ctrans('Remove bookmark')"
+                                        @click="removeBookmark(bookmark)"
+                                    >
+                                        <FontAwesomeIcon icon="fal fa-times" class="text-[10px]" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="flex flex-1 min-h-0">
                         <div class="flex-1 min-w-0 min-h-0 flex flex-col">
                         <div v-if="!searchValue && !hasResults" class="flex flex-1 items-center justify-center text-center text-gray-400 p-6">
