@@ -1430,6 +1430,31 @@ test('UI sysadmin guests index/all/inactive/create/export', function (User $user
     get(route('grp.sysadmin.guests.create'))->assertOk();
 })->depends('SetUserAuthorisedModels command');
 
+test('UI sysadmin search analytics index', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    \App\Actions\Search\StoreSearchLog::run([
+        'ulid'          => (string) \Illuminate\Support\Str::ulid(),
+        'group_id'      => group()->id,
+        'user_id'       => $user->id,
+        'scope'         => 'catalogue',
+        'query'         => 'bath bomb',
+        'results_count' => 3,
+    ]);
+
+    $response = get(route('grp.sysadmin.search_logs.index'));
+    $response->assertInertia(function (AssertableInertia $page) use ($user) {
+        $page
+            ->component('SysAdmin/SearchLogs')
+            ->has('insights')
+            ->has('data.data', 1)
+            ->has('users.data', 1)
+            ->where('users.data.0.username', $user->username)
+            ->where('users.data.0.searches', 1);
+    });
+})->depends('SetUserAuthorisedModels command');
+
 test('UI sysadmin guest show and edit', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);
