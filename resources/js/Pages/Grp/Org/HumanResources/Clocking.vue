@@ -52,7 +52,7 @@ const props = defineProps<{
         current: string;
         navigation: object;
     },
-    history: object
+    history?: object
 
 }>()
 

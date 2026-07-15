@@ -62,10 +62,10 @@ const props = defineProps<{
     }
     storeProductRoute: routeType
     mini_breadcrumbs?: any[]
-    customers: object
-    mailshots: object
-    showcase: object
-    details: object
+    customers?: object
+    mailshots?: object
+    showcase?: object
+    details?: object
     history?: object;
     is_orphan?: boolean
     currency?: Object
@@ -73,7 +73,7 @@ const props = defineProps<{
     shopsData?: any
     masterProductCategoryId?: number
     images?: object
-    sales: any
+    sales?: any
     content?: {}
     salesData?: object
     variants?: {}
@@ -88,8 +88,8 @@ const props = defineProps<{
         }
     }
     product_category_id: number
-    related_products : object
-    related_product_category: object,
+    related_products? : object
+    related_product_category?: object,
 
 }>()
 

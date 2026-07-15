@@ -52,6 +52,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(
     faInventory,
@@ -91,7 +92,7 @@ const props = defineProps<{
     purchase_history?: {}
     master: {}
     masterRoute: routeType | null
-    history: {}
+    history?: {}
 }>()
 
 let currentTab = ref(props.tabs.current)

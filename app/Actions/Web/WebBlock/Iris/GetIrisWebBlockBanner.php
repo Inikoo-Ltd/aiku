@@ -77,6 +77,8 @@ class GetIrisWebBlockBanner
         'desktop' => 1440,
     ];
 
+    private const SRCSET_WIDTHS = [480, 768, 1024, 1440];
+
     private function addImageDimensions(array $component): array
     {
         foreach (['mobile', 'tablet', 'desktop'] as $view) {
@@ -91,6 +93,7 @@ class GetIrisWebBlockBanner
             }
 
             data_set($component, "image.$view.source", $this->resizedSources($media, self::VIEW_MAX_WIDTHS[$view]));
+            data_set($component, "image.$view.srcset", $this->getWidthSrcSets($media, self::SRCSET_WIDTHS));
 
             $cacheKey = "media_image_dimensions:$media->id";
             $dimensions = Cache::get($cacheKey);

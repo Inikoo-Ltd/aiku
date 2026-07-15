@@ -28,6 +28,7 @@ use App\Actions\Inventory\OrgStock\Search\ReindexOrgStockSearch;
 use App\Actions\Inventory\OrgStockFamily\Search\ReindexOrgStockFamilySearch;
 use App\Actions\Inventory\WarehouseArea\Search\ReindexWarehouseAreaSearch;
 use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
+use App\Actions\Reviews\Search\ReindexReviewsSearch;
 use App\Actions\SupplyChain\Supplier\Search\ReindexSupplierSearch;
 use App\Actions\SysAdmin\Guest\Search\ReindexGuestSearch;
 use App\Actions\SysAdmin\User\Search\ReindexUserSearch;
@@ -64,6 +65,10 @@ class ReindexSearch extends HydrateModel
 
         if ($this->checkIfCanReindex(['catalogue', 'cat'], $command)) {
             $this->reindexCatalogue($command);
+        }
+
+        if ($this->checkIfCanReindex(['reviews', 'rev'], $command)) {
+            $this->reindexReviews($command);
         }
 
         if ($this->checkIfCanReindex(['discount'], $command)) {
@@ -134,6 +139,15 @@ class ReindexSearch extends HydrateModel
         ReindexCollectionSearch::run(reset: $command->option('reset'));
         ReindexProductCategorySearch::run(reset: $command->option('reset'));
         ReindexProductSearch::run(reset: $command->option('reset'));
+    }
+
+    protected function reindexReviews(Command $command): void
+    {
+        $command->info('Reviews section ⭐️');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexReviewsSearch::run(reset: $command->option('reset'));
     }
 
 

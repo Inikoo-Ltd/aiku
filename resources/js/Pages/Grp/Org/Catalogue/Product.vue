@@ -95,8 +95,8 @@ const props = defineProps<{
     content?: {}
     offers?: {}
     reviews?: {}
-    service: {}
-    rental: {}
+    service?: {}
+    rental?: {}
     trade_units?: {}
     history?: {}
     stocks?: {}

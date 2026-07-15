@@ -87,18 +87,26 @@ const compColorNav = computed(() => {
     return get(props.data, ['navigation', 'colorNav'], 'blue')
 })
 
-const renderImage = (component) => {
+const activeView = (): string => {
     if (props.production) {
-        let view = "desktop"
         if (typeof window !== "undefined") {
             if (window?.matchMedia("(max-width: 767px)").matches) {
-                view = "mobile";
+                return "mobile"
             } else if (window?.matchMedia("(min-width: 768px) and (max-width: 1023px)").matches) {
-                view = "tablet";
+                return "tablet"
             }
         }
-        return get(component, ['image', view, 'source'], get(component, ['image', 'desktop', 'source'], null))
-    } else return get(component, ['image', props.view, 'source'], get(component, ['image', 'desktop', 'source'], null))
+        return "desktop"
+    }
+    return props.view || "desktop"
+}
+
+const renderImage = (component) => {
+    return get(component, ['image', activeView(), 'source'], get(component, ['image', 'desktop', 'source'], null))
+}
+
+const renderImageSrcset = (component) => {
+    return get(component, ['image', activeView(), 'srcset'], get(component, ['image', 'desktop', 'srcset'], undefined))
 }
 
 const renderBackground = (component) => {
@@ -263,7 +271,7 @@ onBeforeUnmount(() => {
                         <!-- Slide: Image -->
                         <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"
                             class="relative w-full h-full">
-                            <Image :src="renderImage(component)" alt="Wowsbar" :imgAttributes="slideImgAttributes(index)" />
+                            <Image :src="renderImage(component)" :srcset="renderImageSrcset(component)" sizes="100vw" alt="Wowsbar" :imgAttributes="slideImgAttributes(index)" />
                         </div>
                         <div v-else-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'video'"
                             class="relative w-full h-full overflow-hidden">

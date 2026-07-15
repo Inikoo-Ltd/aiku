@@ -26,7 +26,9 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Models\Ordering\Order;
 use App\Models\Reviews\Traits\IsReviews;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearch;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
@@ -109,6 +111,7 @@ class Review extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasImage;
     use IsReviews;
+    use HasSearch;
 
     protected $guarded = [];
 
@@ -139,6 +142,21 @@ class Review extends Model implements Auditable, HasMedia
     public function getRouteKeyName(): string
     {
         return 'id';
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'shop_id'         => $this->shop_id,
+            'organisation_id' => $this->organisation_id,
+            'status'          => $this->review_status->value,
+            'rating'          => (float)$this->rating_main,
+            'customer_name'   => (string)$this->customer?->name,
+            'message'         => (string)$this->message,
+            'reply_message'   => (string)$this->reply_message,
+            'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
     }
 
     protected static function booted(): void

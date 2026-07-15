@@ -19,6 +19,7 @@ import { faTrashAlt } from '@fal'
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 
 library.add(faPlus, faTrashAlt)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

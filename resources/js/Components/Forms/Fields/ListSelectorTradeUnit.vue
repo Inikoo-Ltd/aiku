@@ -25,6 +25,7 @@ import { routeType } from "@/types/route"
 library.add(fadSave, falSave, faInfoCircle)
 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

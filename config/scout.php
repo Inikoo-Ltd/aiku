@@ -23,6 +23,7 @@ use App\Actions\Inventory\OrgStock\Search\GetOrgStockSearchSchema;
 use App\Actions\Inventory\OrgStockFamily\Search\GetOrgStockFamilySearchSchema;
 use App\Actions\Inventory\WarehouseArea\Search\GetWarehouseAreaSearchSchema;
 use App\Actions\Ordering\Order\Search\GetOrderSearchSchema;
+use App\Actions\Reviews\Search\GetReviewSearchSchema;
 use App\Actions\SupplyChain\Supplier\Search\GetSupplierSearchSchema;
 use App\Actions\SysAdmin\Guest\Search\GetGuestSearchSchema;
 use App\Actions\SysAdmin\User\Search\GetUserSearchSchema;
@@ -43,6 +44,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Ordering\Order;
+use App\Models\Reviews\Review;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
@@ -205,7 +207,8 @@ return [
             DeliveryNote::class    => GetDeliveryNoteSearchSchema::run(),
             OrgStock::class        => GetOrgStockSearchSchema::run(),
             OrgStockFamily::class  => GetOrgStockFamilySearchSchema::run(),
-            WarehouseArea::class   => GetWarehouseAreaSearchSchema::run()
+            WarehouseArea::class   => GetWarehouseAreaSearchSchema::run(),
+            Review::class          => GetReviewSearchSchema::run()
 
         ],
     ],

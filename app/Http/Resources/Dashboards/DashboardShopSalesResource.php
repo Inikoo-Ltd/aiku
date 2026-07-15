@@ -38,7 +38,7 @@ class DashboardShopSalesResource extends JsonResource
             ],
             'shops' => [
                 'route_target' => isset($data['id']) ? [
-                    'name' => 'grp.helpers.redirect_shops_from_dashboard',
+                    'name' => 'grp.majordomo.redirect_shops_from_dashboard',
                     'parameters' => [
                         'shop' => $data['id'],
                     ],

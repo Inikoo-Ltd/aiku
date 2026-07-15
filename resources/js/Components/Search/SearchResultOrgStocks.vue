@@ -7,6 +7,7 @@ import { ref } from 'vue'
 type OrgStock = {
     id: number
     name: string
+    slug: string
     code: string
     state: string
 }
@@ -32,9 +33,6 @@ const loadingId = ref<number | null>(null)
 
 <template>
     <div class="col-span-3 border-r p-4 bg-gray-50">
-        <p class="text-xs text-gray-400 mb-1">{{ ctrans("Query") }}</p>
-        <p class="font-semibold text-sm mb-4">{{ query }}</p>
-        <p class="text-xs text-gray-400 mb-2">{{ ctrans("Summary") }}</p>
         <div v-if="isLoading" class="space-y-2">
             <Skeleton height="2.5rem" borderRadius="0.375rem" />
             <Skeleton height="2.5rem" borderRadius="0.375rem" />
@@ -48,7 +46,7 @@ const loadingId = ref<number | null>(null)
                     : 'bg-white/60 text-slate-600 hover:bg-slate-100'"
                 @click="activeTab = 'org_stocks'"
             >
-            <span class="font-medium">
+                <span class="font-medium">
                     <FontAwesomeIcon icon='fal fa-box' class='' fixed-width aria-hidden='true' />
                     {{ ctrans("Org Stocks") }}</span>
                 <span class="text-xs text-gray-400">{{ results?.org_stocks?.length ?? 0 }}</span>
@@ -61,9 +59,10 @@ const loadingId = ref<number | null>(null)
                     : 'bg-white/60 text-slate-600 hover:bg-slate-100'"
                 @click="activeTab = 'org_stock_families'"
             >
-            <span class="font-medium">
+                <span class="font-medium inline text-left">
                     <FontAwesomeIcon icon='fal fa-boxes-alt' class='' fixed-width aria-hidden='true' />
-                    {{ ctrans("Org Stock Families") }}</span>
+                    <span class="inline ml-2">{{ ctrans("Org Stock Families") }}</span>
+                </span>
                 <span class="text-xs text-gray-400">{{ results?.org_stock_families?.length ?? 0 }}</span>
             </button>
         </div>
@@ -86,13 +85,13 @@ const loadingId = ref<number | null>(null)
                     <Link
                         v-for="orgStock in results.org_stocks"
                         :key="orgStock.id"
-                        :href="route('grp.helpers.redirect_org_stock', [orgStock.id])"
+                        :href="route('grp.majordomo.redirect_org_stock', [orgStock.id])"
                         class="block group p-4 rounded-md border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer mb-3"
                         @start="() => { model = false; loadingId = orgStock.id }"
                         @finish="() => loadingId = null"
                     >
                         <div class="flex items-center justify-between gap-2">
-                            <p class="text-sm font-semibold truncate min-w-0">{{ orgStock.name }}</p>
+                            <p class="text-sm font-semibold truncate min-w-0">{{ orgStock.code }}</p>
                             <span
                                 class="shrink-0 text-[10px] px-2 py-0.5 rounded-full capitalize"
                                 :class="orgStock.state === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'"
@@ -100,7 +99,7 @@ const loadingId = ref<number | null>(null)
                                 {{ orgStock.state }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-400 mt-2 truncate">{{ ctrans("Code") }}: {{ orgStock.code }}</p>
+                        <p class="text-xs text-gray-400 mt-2 truncate">{{ orgStock.name }}</p>
                     </Link>
                 </div>
                 <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">
@@ -110,13 +109,16 @@ const loadingId = ref<number | null>(null)
 
             <template v-else>
                 <div v-if="results?.org_stock_families?.length">
-                    <div
+                    <Link
                         v-for="family in results.org_stock_families"
                         :key="family.id"
-                        class="block p-4 rounded-md border border-transparent bg-slate-50 mb-3"
+                        :href="route('grp.majordomo.redirect_org_stock_family', [family.id])"
+                        class="block p-4 rounded-md border border-transparent bg-slate-50 hover:border-slate-200 hover:bg-slate-150 hover:shadow-sm cursor-pointer mb-3"
+                        @start="() => { model = false; loadingId = family.id }"
+                        @finish="() => loadingId = null"
                     >
                         <div class="flex items-center justify-between gap-2">
-                            <p class="text-sm font-semibold truncate min-w-0">{{ family.name }}</p>
+                            <p class="text-sm font-semibold truncate min-w-0">{{ family.code }}</p>
                             <span
                                 class="shrink-0 text-[10px] px-2 py-0.5 rounded-full capitalize"
                                 :class="family.state === 'active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'"
@@ -124,8 +126,8 @@ const loadingId = ref<number | null>(null)
                                 {{ family.state }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-400 mt-2 truncate">{{ ctrans("Code") }}: {{ family.code }}</p>
-                    </div>
+                        <p class="text-xs text-gray-400 mt-2 truncate">{{ family.name }}</p>
+                    </Link>
                 </div>
                 <div v-else class="flex h-full items-center justify-center text-gray-400 text-sm">
                     {{ ctrans("No org stock families") }}

@@ -31,10 +31,10 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    offers: {}
-    gr_gift: {}
-    gr_amnesty: {}
-    overview: {
+    offers?: {}
+    gr_gift?: {}
+    gr_amnesty?: {}
+    overview?: {
         offerCampaign: {}
         stats: {}
     }

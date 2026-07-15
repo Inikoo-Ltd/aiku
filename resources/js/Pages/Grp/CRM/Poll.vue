@@ -41,7 +41,7 @@ const props = defineProps<{
         poll_replies?: { answer?: string, idx?: number }[]
     }
     showcase: {}
-    poll_options: {}
+    poll_options?: {}
 
 
 }>();

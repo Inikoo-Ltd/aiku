@@ -32,6 +32,7 @@ import { fromPairs } from 'lodash-es';
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue';
 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy, faThumbsDown, faChair, faLaugh, faCopy, faUser)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

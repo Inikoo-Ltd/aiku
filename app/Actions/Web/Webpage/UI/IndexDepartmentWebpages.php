@@ -198,10 +198,10 @@ class IndexDepartmentWebpages extends OrgAction
 
         $routeCreate = '';
 
-        $pageTitle = __('Department Webpages');
+        $pageTitle = __('Department');
 
         if ($this->scope === 'families-overview') {
-            $pageTitle = __('Families Overview Webpages');
+            $pageTitle = __('Families Overview');
         }
 
         return Inertia::render(
@@ -211,8 +211,9 @@ class IndexDepartmentWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
+                'title'       => __('Webpages') . ' ' . $pageTitle,
                 'pageHead'    => [
+                    'model'         => __('Webpages'),
                     'title'         => $pageTitle,
                     'color'         => '#b45309',
                     'icon'          => [

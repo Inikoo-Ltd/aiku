@@ -27,7 +27,7 @@
             return ""
         }
 
-        return route("grp.helpers.redirect_asset", [asset_id])
+        return route("grp.majordomo.redirect_asset", [asset_id])
     }
 </script>
 

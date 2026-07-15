@@ -135,7 +135,7 @@ class ShowCollection extends OrgAction
         $urlMaster = null;
         if ($collection->master_collection_id) {
             $urlMaster = [
-                'name'       => 'grp.helpers.redirect_master_collection',
+                'name'       => 'grp.majordomo.redirect_master_collection',
                 'parameters' => [
                     $collection->master_collection_id
                 ]

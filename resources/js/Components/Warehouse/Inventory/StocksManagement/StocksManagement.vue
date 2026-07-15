@@ -27,6 +27,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import AddLocations from './AddLocations.vue'
 import EditLocationsModal from './EditLocationsModal.vue'
 import { WINDOW } from '@sentry/vue'
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
 
 const props = defineProps<{
@@ -665,7 +666,10 @@ const onAddLocationShow = () => {
                                     class="cursor-pointer hover:text-blue-500 transition tabular-nums"
                                     @dblclick="openModal(MODALS.STOCK_CHECK, loc.id)"
                                 >
-                                    {{ Number(loc.quantity) }}
+                                    <FractionDisplay v-if="loc.quantity_fractional" :fractionData="loc.quantity_fractional"/>
+                                    <span v-else>
+                                        {{ Number(loc.quantity) }}
+                                    </span>
                                 </span>
                             </div>
                     </div>

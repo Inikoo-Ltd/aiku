@@ -99,7 +99,7 @@ const props = defineProps<{
     physical_goods?: Table
     physical_good_list_route: routeType
 
-    attachments: {}
+    attachments?: {}
     option_attach_file?: {
 		name: string
 		code: string

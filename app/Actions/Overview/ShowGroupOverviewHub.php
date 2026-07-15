@@ -9,6 +9,7 @@
 namespace App\Actions\Overview;
 
 use App\Actions\GrpAction;
+use App\Actions\Search\GetSearchAnalytics;
 use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use Inertia\Inertia;
@@ -56,13 +57,13 @@ class ShowGroupOverviewHub extends GrpAction
                                 ],
                                 [
                                     'col_span' => 1,
-                                    'type' => 'operation_display',
-
+                                    'type' => 'search_analytics',
+                                    'data' => GetSearchAnalytics::run($this->group)
                                 ],
                                 [
                                     'col_span' => 1,
-                                    'type' => 'operation_display',
-
+                                    'type' => 'typesense_display',
+                                    'data' => GetTypesenseMetrics::run()
                                 ]
                             ],
                     ]
