@@ -16,6 +16,7 @@ use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
 use App\Models\Web\Webpage;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -67,6 +68,23 @@ class ConvertMailshotToBlog extends OrgAction
             'shop'         => $this->shop->slug,
             'website'      => $webpage->website->slug,
             'webpage'      => $webpage->slug,
+        ]);
+    }
+
+    public function jsonResponse(Webpage $webpage): JsonResponse
+    {
+        return response()->json([
+            'route' => [
+                'name'       => 'grp.org.shops.show.web.blogs.show',
+                'parameters' => [
+                    'organisation' => $this->organisation->slug,
+                    'shop'         => $this->shop->slug,
+                    'website'      => $webpage->website->slug,
+                    'webpage'      => $webpage->slug,
+                ],
+            ],
+            'webpage_slug'         => $webpage->slug,
+            'webpage_website_slug' => $webpage->website->slug,
         ]);
     }
 }

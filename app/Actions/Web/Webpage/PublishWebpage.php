@@ -121,7 +121,6 @@ class PublishWebpage extends OrgAction
         $rules = [
             'comment' => ['sometimes', 'required', 'string', 'max:1024'],
             'layout'  => ['sometimes', 'required', 'array'],
-            'compiled_layout' => ['sometimes', 'required', 'string'],
         ];
 
         if (!$this->strict) {

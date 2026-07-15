@@ -62,6 +62,9 @@ class MarketingMailshotsResource extends JsonResource
             'organisation_slug'         => $this->organisation_slug,
             'shop_name'                 => $this->shop_name,
             'shop_slug'                 => $this->shop_slug,
+            'shop_id'                   => $mailshot->shop_id,
+            'webpage_slug'              => $this->webpage_slug,
+            'webpage_website_slug'      => $this->webpage_website_slug,
         ];
     }
 }
