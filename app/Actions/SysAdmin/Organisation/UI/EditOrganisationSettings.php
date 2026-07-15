@@ -82,11 +82,12 @@ class EditOrganisationSettings extends OrgAction
         }
 
         $allowWaiting = Arr::get($organisation->settings, 'orders.allow_waiting', false);
+        $routeParameters = request()->route()->originalParameters();
 
         return Inertia::render(
             'EditModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->getBreadcrumbs($routeParameters),
                 'title' => $title,
                 'pageHead' => [
                     'title' => $title,
@@ -356,8 +357,10 @@ class EditOrganisationSettings extends OrgAction
     }
 
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(array $routeParameters): array
     {
+        $organisationRouteParameters = Arr::only($routeParameters, 'organisation');
+
         return
             array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
@@ -367,7 +370,7 @@ class EditOrganisationSettings extends OrgAction
                         'simple' => [
                             'route' => [
                                 'name' => 'grp.org.settings.edit',
-                                'parameters' => [$this->organisation->slug]
+                                'parameters' => $organisationRouteParameters
                             ],
                             'label' => __('Organisation settings'),
                         ]

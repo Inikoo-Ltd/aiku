@@ -259,7 +259,7 @@ class GetOrganisationNavigation
 
         if(isset($navigation['setting'])) {
             $navigation['setting']['topMenu']['subSections'][] = [
-                'label'   => __('Changelog'),
+                'label'   => __('Changelogs'),
                 'icon'    => ['fal', 'fa-history'],
                 'root'    => 'grp.org.settings.changelogs',
                 'route'   => [

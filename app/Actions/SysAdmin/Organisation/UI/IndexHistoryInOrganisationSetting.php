@@ -128,9 +128,9 @@ class IndexHistoryInOrganisationSetting extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.overview.changelog.index' =>
+            'grp.org.settings.changelogs' =>
             array_merge(
-                ShowOrganisationOverviewHub::make()->getBreadcrumbs($routeParameters),
+                EditOrganisationSettings::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name' => $routeName,
