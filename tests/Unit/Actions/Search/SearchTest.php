@@ -76,10 +76,13 @@ it('logs searches, records clicks and aggregates analytics', function () {
     SearchLog::query()->delete();
     $group = Group::first();
 
+    $user = \App\Models\SysAdmin\User::first();
+
     $clickedUlid = (string)Str::ulid();
     StoreSearchLog::run([
         'ulid'          => $clickedUlid,
         'group_id'      => $group->id,
+        'user_id'       => $user?->id,
         'scope'         => 'catalogue',
         'query'         => 'bath bomb',
         'results_count' => 12,
@@ -104,6 +107,43 @@ it('logs searches, records clicks and aggregates analytics', function () {
         ->and($analytics['top_queries'][0]['query'])->toBe('bath bomb')
         ->and((int)$analytics['top_queries'][0]['clicks'])->toBe(1)
         ->and($analytics['top_zero_queries'][0]['query'])->toBe('nonexistent thing');
+
+    if ($user) {
+        expect($analytics['top_searchers'][0]['username'])->toBe($user->username)
+            ->and((int)$analytics['top_searchers'][0]['searches'])->toBe(1)
+            ->and((int)$analytics['top_searchers'][0]['clicks'])->toBe(1);
+    }
+});
+
+it('collapses type-ahead query refinements into a single search log', function () {
+    SearchLog::query()->delete();
+    $group = Group::first();
+
+    $base = [
+        'group_id'   => $group->id,
+        'scope'      => 'catalogue',
+        'session_id' => 'refine-session',
+    ];
+
+    StoreSearchLog::run([...$base, 'ulid' => (string)Str::ulid(), 'query' => 'e', 'results_count' => 100]);
+    StoreSearchLog::run([...$base, 'ulid' => (string)Str::ulid(), 'query' => 'eo', 'results_count' => 20]);
+    $finalUlid = (string)Str::ulid();
+    StoreSearchLog::run([...$base, 'ulid' => $finalUlid, 'query' => 'eo-01', 'results_count' => 3]);
+
+    expect(SearchLog::count())->toBe(1)
+        ->and(SearchLog::first()->query)->toBe('eo-01')
+        ->and(SearchLog::first()->ulid)->toBe($finalUlid)
+        ->and(SearchLog::first()->results_count)->toBe(3);
+
+    StoreSearchLog::run([...$base, 'ulid' => (string)Str::ulid(), 'query' => 'bath bomb', 'results_count' => 5]);
+
+    expect(SearchLog::count())->toBe(2);
+
+    StoreSearchLog::run(['group_id' => $group->id, 'scope' => 'catalogue', 'session_id' => 'other-session', 'ulid' => (string)Str::ulid(), 'query' => 'bath bombs', 'results_count' => 5]);
+
+    expect(SearchLog::count())->toBe(3);
+
+    SearchLog::query()->delete();
 });
 
 it('does not cache results for queries longer than two characters', function () {
