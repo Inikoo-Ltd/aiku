@@ -14,7 +14,6 @@ use App\Actions\Ordering\Transaction\Traits\WithCalculateTransactionDiscount;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
-use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -51,8 +50,6 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
 
 
             data_set($modelData, 'picker_user_id', $user->id);
-            $locationOrgStock = LocationOrgStock::find(Arr::pull($modelData, 'location_org_stock_id'));
-
 
             $pickingID = Arr::pull($modelData, 'picking_id');
             $picking   = null;
@@ -66,12 +63,12 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
                 ];
                 UpdatePicking::run($picking, $modelData);
             } else {
-                StorePicking::make()->action($deliveryNoteItem, request()->user(), $modelData);
+                StorePicking::make()->action($deliveryNoteItem, $user, $modelData);
             }
 
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
 
-            // To fix concurrent issue discount not applied after picking up from Waiting (reported by Erika)
+            // To fix concurrent issue, discounts aren't applied after picking up from Waiting (reported by Erika)
             $this->calculateTransactionDiscountTotal($deliveryNoteItem->transaction);
         });
 
