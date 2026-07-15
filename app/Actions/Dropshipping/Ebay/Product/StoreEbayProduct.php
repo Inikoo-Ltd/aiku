@@ -186,6 +186,10 @@ class StoreEbayProduct extends RetinaAction
 
             $availableQuantity = $product->available_quantity;
 
+            if($availableQuantity < 1) {
+                $availableQuantity = 1;
+            }
+
             if ($customerSalesChannel->max_quantity_advertise > 0) {
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
@@ -258,7 +262,7 @@ class StoreEbayProduct extends RetinaAction
                     [
                         'sku' => Arr::get($inventoryItem, 'sku'),
                         'description' => Arr::get($inventoryItem, 'product.description'),
-                        'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
+                        'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity', 1),
                         'price' => $customerPrice,
                         'currency' => $portfolio->shop->currency->code,
                         'category_id' => $categoryId
@@ -268,7 +272,7 @@ class StoreEbayProduct extends RetinaAction
                 $offer = $ebayUser->storeOffer([
                     'sku' => Arr::get($inventoryItem, 'sku'),
                     'description' => Arr::get($inventoryItem, 'product.description'),
-                    'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
+                    'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity', 1),
                     'price' => $customerPrice,
                     'currency' => $portfolio->shop->currency->code,
                     'category_id' => $categoryId

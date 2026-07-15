@@ -2,6 +2,14 @@
 import Skeleton from 'primevue/skeleton'
 import Image from '../../Common/Components/Image.vue'
 import { Link } from '@inertiajs/vue3'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faBookmark } from '@fal'
+import { faBookmark as fasBookmark } from '@fas'
+import { inject } from 'vue'
+import { SearchBookmarkKey } from '@/types/SearchBookmark'
+
+library.add(faBookmark, fasBookmark)
 
 const model = defineModel<boolean>('open')
 
@@ -33,6 +41,12 @@ const props = defineProps<{
     isLoading: boolean
     query: string
 }>()
+
+const searchBookmark = inject(SearchBookmarkKey, null)
+
+const productHref = (product: { id: number }) => route('grp.majordomo.redirect_product', { product: product.id })
+const categoryHref = (category: { id: number }) => route('grp.majordomo.redirect_product_category', { productCategory: category.id })
+const collectionHref = (collection: { id: number }) => route('grp.majordomo.redirect_collection', { collection: collection.id })
 </script>
 
 <template>
@@ -55,43 +69,77 @@ const props = defineProps<{
                 <template v-else>
                     <template v-if="results?.product_categories?.length">
                         <p class="text-[10px] uppercase tracking-widest text-gray-400 px-2 pt-1 pb-0.5">Departments & Families</p>
-                        <Link
+                        <div
                             v-for="category in results.product_categories"
                             :key="category.id"
-                            :href="route('grp.majordomo.redirect_product_category', { productCategory: category.id })"
-                            class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
-                            @success="() => model = false"
+                            class="group relative flex items-center rounded-lg hover:bg-slate-100 transition"
                         >
-                            <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
-                                <Image v-if="category.image" :src="category.image" class="w-full h-full object-cover" />
-                                <span v-else class="text-[10px] text-gray-400 font-bold uppercase">{{ category.code?.slice(0, 2) }}</span>
-                            </div>
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-slate-800 truncate group-hover:text-slate-900">{{ category.name }}</p>
-                                <p class="text-xs text-gray-400 truncate">{{ category.type ?? category.code }}</p>
-                            </div>
-                        </Link>
+                            <Link
+                                :href="categoryHref(category)"
+                                class="flex items-center gap-3 px-2 py-1.5 min-w-0 flex-1 cursor-pointer"
+                                @success="() => model = false"
+                            >
+                                <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
+                                    <Image v-if="category.image" :src="category.image" class="w-full h-full object-cover" />
+                                    <span v-else class="text-[10px] text-gray-400 font-bold uppercase">{{ category.code?.slice(0, 2) }}</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-slate-800 truncate group-hover:text-slate-900">{{ category.name }}</p>
+                                    <p class="text-xs text-gray-400 truncate">{{ category.type ?? category.code }}</p>
+                                </div>
+                            </Link>
+                            <button
+                                v-if="searchBookmark?.isAvailable.value"
+                                type="button"
+                                :disabled="searchBookmark?.isSaving.value"
+                                class="shrink-0 mr-2 grid h-7 w-7 place-items-center rounded-md transition disabled:opacity-40"
+                                :class="searchBookmark?.isBookmarked(categoryHref(category))
+                                    ? 'text-indigo-500 opacity-40'
+                                    : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-indigo-500'"
+                                v-tooltip="searchBookmark?.isBookmarked(categoryHref(category)) ? ctrans('Remove bookmark') : ctrans('Add bookmark')"
+                                @click="searchBookmark?.toggleBookmark({ label: category.name, url: categoryHref(category) })"
+                            >
+                                <FontAwesomeIcon :icon="searchBookmark?.isBookmarked(categoryHref(category)) ? 'fas fa-bookmark' : 'fal fa-bookmark'" aria-hidden="true" />
+                            </button>
+                        </div>
                     </template>
 
                     <!-- Section: Collections -->
                     <template v-if="results?.collections?.length">
                         <p class="text-[10px] uppercase tracking-widest text-gray-400 px-2 pt-3 pb-0.5">Collections</p>
-                        <Link
+                        <div
                             v-for="collection in results.collections"
                             :key="collection.id"
-                            :href="route('grp.majordomo.redirect_collection', { collection: collection.id })"
-                            class="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer group"
-                            @success="() => model = false"
+                            class="group relative flex items-center rounded-lg hover:bg-slate-100 transition"
                         >
-                            <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
-                                <Image v-if="collection.image" :src="collection.image" class="w-full h-full object-cover" />
-                                <span v-else class="text-[10px] text-gray-400 font-bold uppercase">{{ collection.code?.slice(0, 2) }}</span>
-                            </div>
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-slate-800 truncate group-hover:text-slate-900">{{ collection.name }}</p>
-                                <p class="text-xs text-gray-400 truncate">{{ collection.code }}</p>
-                            </div>
-                        </Link>
+                            <Link
+                                :href="collectionHref(collection)"
+                                class="flex items-center gap-3 px-2 py-1.5 min-w-0 flex-1 cursor-pointer"
+                                @success="() => model = false"
+                            >
+                                <div class="w-8 h-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
+                                    <Image v-if="collection.image" :src="collection.image" class="w-full h-full object-cover" />
+                                    <span v-else class="text-[10px] text-gray-400 font-bold uppercase">{{ collection.code?.slice(0, 2) }}</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-slate-800 truncate group-hover:text-slate-900">{{ collection.name }}</p>
+                                    <p class="text-xs text-gray-400 truncate">{{ collection.code }}</p>
+                                </div>
+                            </Link>
+                            <button
+                                v-if="searchBookmark?.isAvailable.value"
+                                type="button"
+                                :disabled="searchBookmark?.isSaving.value"
+                                class="shrink-0 mr-2 grid h-7 w-7 place-items-center rounded-md transition disabled:opacity-40"
+                                :class="searchBookmark?.isBookmarked(collectionHref(collection))
+                                    ? 'text-indigo-500 opacity-40'
+                                    : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-indigo-500'"
+                                v-tooltip="searchBookmark?.isBookmarked(collectionHref(collection)) ? ctrans('Remove bookmark') : ctrans('Add bookmark')"
+                                @click="searchBookmark?.toggleBookmark({ label: collection.name, url: collectionHref(collection) })"
+                            >
+                                <FontAwesomeIcon :icon="searchBookmark?.isBookmarked(collectionHref(collection)) ? 'fas fa-bookmark' : 'fal fa-bookmark'" aria-hidden="true" />
+                            </button>
+                        </div>
                     </template>
 
                     <div
@@ -122,22 +170,39 @@ const props = defineProps<{
 
                 <template v-if="results?.products?.length">
                     <div class="grid grid-cols-4 gap-2">
-                        <Link
+                        <div
                             v-for="product in results.products.slice(0, 9)"
                             :key="product.id"
-                            :href="route('grp.majordomo.redirect_product', { product: product.id })"
-                            class="group flex flex-col rounded-lg overflow-hidden border border-transparent hover:border-slate-200 hover:shadow-sm transition cursor-pointer"
-                            @success="() => model = false"
+                            class="group relative flex flex-col rounded-lg overflow-hidden border border-transparent hover:border-slate-200 hover:shadow-sm transition"
                         >
-                            <div class="w-full aspect-square bg-gray-100 overflow-hidden flex items-center justify-center">
-                                <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
-                                <span v-else class="text-xs text-gray-300 font-bold uppercase">{{ product.code?.slice(0, 3) }}</span>
-                            </div>
-                            <div class="p-1.5">
-                                <p class="text-xs font-medium text-slate-800 truncate leading-tight">{{ product.name }}</p>
-                                <p class="text-[10px] text-gray-400 truncate">{{ product.code }}</p>
-                            </div>
-                        </Link>
+                            <Link
+                                :href="productHref(product)"
+                                class="flex flex-col cursor-pointer"
+                                @success="() => model = false"
+                            >
+                                <div class="w-full aspect-square bg-gray-100 overflow-hidden flex items-center justify-center">
+                                    <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                                    <span v-else class="text-xs text-gray-300 font-bold uppercase">{{ product.code?.slice(0, 3) }}</span>
+                                </div>
+                                <div class="p-1.5">
+                                    <p class="text-xs font-medium text-slate-800 truncate leading-tight">{{ product.name }}</p>
+                                    <p class="text-[10px] text-gray-400 truncate">{{ product.code }}</p>
+                                </div>
+                            </Link>
+                            <button
+                                v-if="searchBookmark?.isAvailable.value"
+                                type="button"
+                                :disabled="searchBookmark?.isSaving.value"
+                                class="absolute top-1 right-1 z-10 grid h-7 w-7 place-items-center rounded-full shadow-sm backdrop-blur transition disabled:opacity-40"
+                                :class="searchBookmark?.isBookmarked(productHref(product))
+                                    ? 'text-indigo-500 opacity-40'
+                                    : 'text-indigo-400 opacity-0 group-hover:opacity-100 hover:text-indigo-600'"
+                                v-tooltip="searchBookmark?.isBookmarked(productHref(product)) ? ctrans('Remove bookmark') : ctrans('Add bookmark')"
+                                @click="searchBookmark?.toggleBookmark({ label: product.name, url: productHref(product) })"
+                            >
+                                <FontAwesomeIcon :icon="searchBookmark?.isBookmarked(productHref(product)) ? 'fas fa-bookmark' : 'fal fa-bookmark'" aria-hidden="true" />
+                            </button>
+                        </div>
                     </div>
                 </template>
                 
