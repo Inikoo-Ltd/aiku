@@ -12,6 +12,8 @@ use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class Search extends OrgAction
@@ -55,8 +57,9 @@ class Search extends OrgAction
     public function rules(): array
     {
         return [
-            'q'    => ['required', 'string'],
-            'shop' => ['sometimes', 'string'],
+            'q'       => ['required', 'string'],
+            'shop'    => ['sometimes', 'string'],
+            'session' => ['sometimes', 'string', 'max:64'],
         ];
     }
 
@@ -64,41 +67,49 @@ class Search extends OrgAction
     {
         $route = $request->string('route_src')->toString();
         $scope = $this->getRouteScope($route);
+
+        $options = [];
         if (in_array($scope, self::GROUP_SCOPES, true)) {
             $this->initialisationFromGroup(app('group'), $request);
-
-            return $this->handle($scope, $this->validatedData['q']);
-        }
-
-        if (in_array($scope, self::ORGANISATION_SCOPES, true)) {
+        } elseif (in_array($scope, self::ORGANISATION_SCOPES, true)) {
             $organisation = Organisation::where('slug', $request->query('organisation'))->firstOrFail();
             $this->initialisation($organisation, $request);
-
-            return $this->handle($scope, $this->validatedData['q'], [
-                'organisation_id' => $organisation->id,
-            ]);
-        }
-
-        if (in_array($scope, self::WAREHOUSE_SCOPES, true)) {
+            $options = ['organisation_id' => $organisation->id];
+        } elseif (in_array($scope, self::WAREHOUSE_SCOPES, true)) {
             $warehouse = Warehouse::where('slug', $request->query('warehouse'))->firstOrFail();
             $this->initialisationFromWarehouse($warehouse, $request);
-
-            return $this->handle($scope, $this->validatedData['q'], [
+            $options = [
                 'warehouse_id'    => $warehouse->id,
                 'organisation_id' => $warehouse->organisation_id,
-            ]);
-        }
-
-        if (in_array($scope, self::SHOP_SCOPES, true)) {
+            ];
+        } elseif (in_array($scope, self::SHOP_SCOPES, true)) {
             $shop = Shop::where('slug', $request->query('shop'))->firstOrFail();
             $this->initialisationFromShop($shop, $request);
-
-            return $this->handle($scope, $this->validatedData['q'], [
-                'shop_id' => $shop->id,
-            ]);
+            $options = ['shop_id' => $shop->id];
+        } else {
+            return [];
         }
 
-        return [];
+        $query   = $this->validatedData['q'];
+        $results = $this->handle($scope, $query, $options);
+
+        $ulid = (string)Str::ulid();
+        StoreSearchLog::dispatchAfterResponse([
+            'ulid'            => $ulid,
+            'group_id'        => $this->group->id,
+            'user_id'         => $request->user()?->id,
+            'organisation_id' => Arr::get($options, 'organisation_id'),
+            'shop_id'         => Arr::get($options, 'shop_id'),
+            'warehouse_id'    => Arr::get($options, 'warehouse_id'),
+            'scope'           => $scope,
+            'query'           => mb_substr($query, 0, 255),
+            'session_id'      => Arr::get($this->validatedData, 'session'),
+            'results_count'   => collect(Arr::get($results, 'results', []))->sum(fn ($items) => count($items)),
+        ]);
+
+        $results['search_log_ulid'] = $ulid;
+
+        return $results;
     }
 
     public function getRouteScope(string $route): ?string

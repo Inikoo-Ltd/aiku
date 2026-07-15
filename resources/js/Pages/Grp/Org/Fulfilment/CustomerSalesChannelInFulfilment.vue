@@ -17,7 +17,7 @@ const props = defineProps<{
     current: string
     navigation: {}
   }
-  showcase: {
+  showcase?: {
     stats: {
       name: string
       number_orders: number

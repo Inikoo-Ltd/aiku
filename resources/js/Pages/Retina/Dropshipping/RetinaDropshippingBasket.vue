@@ -121,7 +121,7 @@ const props = defineProps<{
         pay_with_balance: routeType
     }
 
-    transactions: {}
+    transactions?: {}
     currency: Currency
 
 

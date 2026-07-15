@@ -68,7 +68,7 @@ const props = defineProps<{
         current: string
         navigation: object
     }
-    redirects: {}
+    redirects?: {}
     download_route: routeType
     route_redirects: {
         submit: {

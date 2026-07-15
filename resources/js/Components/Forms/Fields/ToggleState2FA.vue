@@ -14,6 +14,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { useForm } from '@inertiajs/vue3'
 library.add(faTimes, faCheck)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

@@ -9,15 +9,19 @@
 namespace App\Actions\Traits;
 
 use Illuminate\Support\Facades\Artisan;
+use Throwable;
 
 trait WithScoutReindex
 {
     protected function runScoutReindex(string $modelClass, bool $reindex = true, bool $reset = false): void
     {
         if ($reset) {
-            Artisan::call('scout:flush', [
-                'model' => $modelClass,
-            ]);
+            try {
+                Artisan::call('scout:delete-index', [
+                    'name' => $modelClass,
+                ]);
+            } catch (Throwable) {
+            }
         }
 
         if ($reindex) {

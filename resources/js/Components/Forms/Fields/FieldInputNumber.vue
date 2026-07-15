@@ -16,6 +16,7 @@ import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faPlus, faMinus, faSpinnerThird, faCopy)
 // import { ref, watch } from "vue"
 import { InputNumber } from "primevue"
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

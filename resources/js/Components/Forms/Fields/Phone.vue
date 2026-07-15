@@ -14,6 +14,7 @@ import 'vue-tel-input/vue-tel-input.css'
 import { ref, watch, onBeforeMount  } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 library.add(faExclamationCircle, faCheckCircle)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps(['form', 'fieldName', 'options', 'fieldData'])
 

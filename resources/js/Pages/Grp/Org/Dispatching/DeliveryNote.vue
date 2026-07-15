@@ -144,7 +144,7 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
-	history: {}
+	history?: {}
 	shop: {
 		type: string   // 'b2b', 'dropshipping'
 	}

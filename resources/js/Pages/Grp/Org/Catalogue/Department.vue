@@ -87,7 +87,7 @@ const props = defineProps<{
         }
     }
     offers?: {}
-    related_product_category: object,
+    related_product_category?: object,
 }>();
 
 let currentTab = ref(props.tabs.current);

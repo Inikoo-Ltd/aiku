@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
+use App\Actions\Comms\Mailshot\GetProspectMailshotMergeTags;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Models\Catalogue\Shop;
@@ -130,7 +131,11 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     'method'     => 'post'
                 ],
 
-                'mergeTags'        => GetMailshotMergeTags::run(),
+                'mergeTags'        => array_values(array_column(
+                    array_merge(GetMailshotMergeTags::run(), GetProspectMailshotMergeTags::run()),
+                    null,
+                    'value'
+                )),
                 'organisationSlug' => $this->organisation->slug,
             ]
         );

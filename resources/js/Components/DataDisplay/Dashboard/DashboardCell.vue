@@ -18,7 +18,7 @@ interface RouteTarget {
 }
 
 const props = defineProps<{
-    cell: {
+    cell?: {
         route_target?: RouteTarget
         tooltip?: string
         formatted_value?: string

@@ -23,13 +23,13 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     status_rb: string
-    transactions: {}
+    transactions?: {}
     timeline_rb: {
         start_date: string
         end_date: string
     }
     box_stats: BoxStats
-    history: {},
+    history?: {},
     currency:{}
 
 }>()

@@ -88,7 +88,7 @@ const props = defineProps<{
     purchase_history?: {}
     master: {}
     masterRoute: routeType | null
-    history: {}
+    history?: {}
 }>()
 
 let currentTab = ref(props.tabs.current)

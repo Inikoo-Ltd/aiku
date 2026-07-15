@@ -28,7 +28,7 @@ library.add(faInventory, faWarehouse, faMapSigns, faChartLine)
 const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
-    showcase: {}
+    showcase?: {}
     tagsList: {
         data: {}[]
     }

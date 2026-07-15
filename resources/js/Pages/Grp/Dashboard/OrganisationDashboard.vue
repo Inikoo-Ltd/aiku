@@ -23,12 +23,6 @@ import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay, faSitemap)
 
 const props = defineProps<{
-	interval_options: {
-		label: string
-		labelShort: string
-		value: string
-	}[]
-	dashboard_stats:{}
 	dashboard: DashboardTS
 }>()
 
