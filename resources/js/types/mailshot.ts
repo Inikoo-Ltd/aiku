@@ -16,6 +16,7 @@ export interface Mailshot {
     shop_id?: number,
     webpage_slug?: string,
     webpage_website_slug?: string,
+    has_source_reference?: boolean,
 
 
 }
