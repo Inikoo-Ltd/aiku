@@ -17,6 +17,7 @@ use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
@@ -103,6 +104,15 @@ class IndexPurchaseOrders extends OrgAction
             $query->where('purchase_orders.organisation_id', $parent->id);
         }
 
+        foreach ($this->getElementGroups() as $key => $elementGroup) {
+            $query->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix,
+            );
+        }
+
         return $query->defaultSort('-purchase_orders.date')
             ->select([
                 'purchase_orders.*',
@@ -120,8 +130,25 @@ class IndexPurchaseOrders extends OrgAction
             ])
             ->allowedSorts(['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost', 'created_by'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    protected function getElementGroups(): array
+    {
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => array_map(
+                    fn ($label) => [$label, null],
+                    PurchaseOrderStateEnum::labels()
+                ),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('purchase_orders.state', $elements);
+                },
+            ],
+        ];
     }
 
     public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
@@ -133,9 +160,20 @@ class IndexPurchaseOrders extends OrgAction
                     ->pageName($prefix.'Page');
             }
             $table
+                ->betweenDates(['date'])
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Purchase Order'), __('Purchase Orders')])
-                ->withModelOperations($modelOperations)
+                ->withModelOperations($modelOperations);
+
+            foreach ($this->getElementGroups() as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                );
+            }
+
+            $table
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'parent_name', label: __('Supplier/Agents'), canBeHidden: false, sortable: true, searchable: true)
