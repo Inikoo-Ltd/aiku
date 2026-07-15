@@ -21,8 +21,11 @@ use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteLocationOrgStock extends OrgAction
@@ -87,11 +90,26 @@ class DeleteLocationOrgStock extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(LocationOrgStock $locationOrgStock, ActionRequest $request): void
+    public function asController(LocationOrgStock $locationOrgStock, ActionRequest $request): RedirectResponse
     {
         $this->user = request()->user();
         $this->initialisation($locationOrgStock->organisation, $request);
-        $this->handle($locationOrgStock);
+
+        try {
+            $this->handle($locationOrgStock);
+
+            return Redirect::back()->with('notification', [
+                'status'      => 'success',
+                'title'       => __('Success!'),
+                'description' => __('Location stock deleted.'),
+            ]);
+        } catch (Exception $e) {
+            return Redirect::back()->with('notification', [
+                'status'      => 'error',
+                'title'       => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

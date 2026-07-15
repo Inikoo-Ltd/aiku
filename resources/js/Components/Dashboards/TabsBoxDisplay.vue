@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import { inject, ref, computed } from "vue"
+import { inject, ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type Ref } from "vue"
 import { trans } from "laravel-vue-i18n"
 import Icon from "../Icon.vue"
 import { faSpinnerThird } from '@fad'
 import { router, Link } from '@inertiajs/vue3'
 import { faInfoCircle, faPallet, faCircle, faTimesCircle } from '@fas'
+import { faChevronLeft, faChevronRight, faChevronDown } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faAppleCrate, faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge, faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen, faChevronDown, faInventory, faSkullCow, faBan } from '@fal'
+import { faAppleCrate, faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge, faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faBoxOpen, faInventory, faSkullCow, faBan } from '@fal'
 
 library.add(
     faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle, faTimesCircle,
     faNetworkWired, faSpinnerThird, faEye, faThLarge, faTachometerAltFast,
     faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream, faAppleCrate,
-    faBoxOpen, faChevronDown, faInventory, faSkullCow, faBan
+    faBoxOpen, faChevronDown, faInventory, faSkullCow, faBan, faChevronLeft, faChevronRight
 )
 
 const layoutStore = inject('layout', layoutStructure)
@@ -80,6 +81,53 @@ const isAllExpanded = ref(false)
 const toggleExpanded = () => {
     isAllExpanded.value = !isAllExpanded.value
 }
+
+const boxesElement = ref<HTMLElement | null>(null)
+const hasOverflowLeft = ref(false)
+const hasOverflowRight = ref(false)
+
+const mobileBoxesElement = ref<HTMLElement | null>(null)
+const hasMobileOverflowLeft = ref(false)
+const hasMobileOverflowRight = ref(false)
+
+const updateOverflowState = (element: HTMLElement | null, left: Ref<boolean>, right: Ref<boolean>) => {
+    if (!element) return
+
+    left.value = element.scrollLeft > 0
+    right.value = Math.ceil(element.scrollLeft) < (element.scrollWidth - element.clientWidth)
+}
+
+const checkOverflow = () => {
+    updateOverflowState(boxesElement.value, hasOverflowLeft, hasOverflowRight)
+    updateOverflowState(mobileBoxesElement.value, hasMobileOverflowLeft, hasMobileOverflowRight)
+}
+
+const scrollBoxesLeft = () => {
+    boxesElement.value?.scrollBy({ left: -200, behavior: 'smooth' })
+}
+
+const scrollBoxesRight = () => {
+    boxesElement.value?.scrollBy({ left: 200, behavior: 'smooth' })
+}
+
+const scrollMobileBoxesLeft = () => {
+    mobileBoxesElement.value?.scrollBy({ left: -200, behavior: 'smooth' })
+}
+
+const scrollMobileBoxesRight = () => {
+    mobileBoxesElement.value?.scrollBy({ left: 200, behavior: 'smooth' })
+}
+
+watch(() => props.tabs_box, () => nextTick(checkOverflow), { deep: true })
+
+onMounted(() => {
+    nextTick(checkOverflow)
+    window.addEventListener('resize', checkOverflow)
+})
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', checkOverflow)
+})
 
 const hasChildren = computed(() =>
     props.tabs_box.some(box => (box.children ?? []).length > 0)
@@ -213,23 +261,51 @@ const clickVisitRoute = (visitRoute: {
 <template>
     <div>
         <!-- TabsBoxDisplay Desktop -->
-        <div class="hidden px-6 md:flex md:flex-nowrap gap-x-6 mt-4 mb-1 items-stretch md:overflow-x-auto md:pb-1">
+        <div class="hidden md:block mt-4 mb-4">
+        <div class="relative px-3 sm:px-6">
+            <!-- Left overflow indicator -->
+            <transition name="fade">
+                <div v-if="hasOverflowLeft"
+                     @click="scrollBoxesLeft"
+                     class="absolute left-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-r from-white via-white to-transparent pl-1 pr-3 sm:pr-6">
+                    <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors flex items-center px-2">
+                        <FontAwesomeIcon icon="far fa-chevron-left" class="text-[10px] sm:text-xs" />
+                    </div>
+                </div>
+            </transition>
+
+            <!-- Right overflow indicator -->
+            <transition name="fade">
+                <div v-if="hasOverflowRight"
+                     @click="scrollBoxesRight"
+                     class="absolute right-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-l from-white via-white to-transparent pr-1 pl-3 sm:pl-6">
+                    <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors flex items-center px-2">
+                        <FontAwesomeIcon icon="far fa-chevron-right" class="text-[10px] sm:text-xs" />
+                    </div>
+                </div>
+            </transition>
+
+            <div
+                ref="boxesElement"
+                @scroll="checkOverflow"
+                class="flex flex-nowrap gap-x-2 2xl:gap-x-6 items-stretch overflow-x-scroll scrollbar-hide"
+            >
             <div
                 v-for="(box, idx) in tabs_box"
                 :key="box.label"
-                class="rounded-md px-3 relative border w-full md:w-auto md:min-w-[15rem] md:flex-none xl:flex-auto xl:basis-auto xl:min-w-fit flex flex-col py-2 select-none transition-all duration-200"
+                class="rounded-md px-3 2xl:px-4 relative border w-full md:w-auto md:min-w-fit md:flex-none xl:flex-auto xl:basis-auto xl:min-w-fit flex flex-col py-2 select-none transition-all duration-200"
                 :style="{
                   backgroundColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] + '22' : 'transparent',
                   color: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit',
                   borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit'
                 }"
             >
-                <div class="text-center mb-2 text-xs font-semibold">
+                <div class="text-center mb-2 text-[10px] 2xl:text-xs font-semibold whitespace-nowrap">
                     <FontAwesomeIcon v-if="box.icon" :icon="box.icon" class="" fixed-width aria-hidden="true" />
                     {{ box.label }}<template v-if="box.show_total"> ({{ locale.number(boxTotal(box)) }}<template v-if="boxAmountTotal(box) > 0"> - {{ renderLabelBasedOnType(boxAmountTotal(box), 'currency', { currency_code: box.currency_code }) }}</template>)</template>
                 </div>
 
-                <div class="flex gap-x-4 justify-center">
+                <div class="flex gap-x-3 2xl:gap-x-4 justify-center">
                     <div
                         v-for="tab in box.tabs"
                         :key="tab.tab_slug"
@@ -238,21 +314,21 @@ const clickVisitRoute = (visitRoute: {
                         @click="['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? router.get(getRoute(tab.tab_slug)) : clickVisitRoute(tab.visitRoute)"
                         v-tooltip="tab.tooltip"
                     >
-                        <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1">
+                        <div class="group flex flex-col 2xl:flex-row items-center gap-1 tabular-nums relative text-sm lg:text-base 2xl:text-xl px-0.5 2xl:px-2 mb-1">
                             <div class="mx-auto text-center">
                                 <template v-if="tab.icon || tab.icon_data">
                                     <Icon
                                         v-if="tab.icon_data"
                                         :data="tab.icon_data"
-                                        class="text-xl"
+                                        class="text-sm lg:text-base 2xl:text-xl"
                                     />
-                                    <FontAwesomeIcon v-else :icon="tab.icon" class="text-xl" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon v-else :icon="tab.icon" class="text-sm lg:text-base 2xl:text-xl" fixed-width aria-hidden="true" />
                                 </template>
                             </div>
 
                             <div class="flex items-center gap-1">
                                 <span
-                                    class="inline opacity-80 group-hover:opacity-100 transition-all"
+                                    class="inline opacity-80 group-hover:opacity-100 transition-all whitespace-nowrap"
                                     :class="!(['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) || tab.visitRoute) ? '' : 'group-hover:underline'"
                                 >
                                   {{ renderLabelBasedOnType(tab.value, tab.type, { currency_code: box.currency_code }) }}
@@ -261,7 +337,7 @@ const clickVisitRoute = (visitRoute: {
                                 <!-- Section: Warning -->
                                 <Link v-if="tab.warning"
                                     :href="tab.warning?.route_target?.name ? route(tab.warning.route_target.name, tab.warning.route_target.parameters ?? {}) : '#'"
-                                    class="relative aspect-square w-5 flex items-center justify-center bg-purple-300 text-purple-700 rounded text-[10px] leading-none opacity-70 hover:opacity-100 no-underline"
+                                    class="relative aspect-square w-4 2xl:w-5 flex items-center justify-center bg-purple-300 text-purple-700 rounded text-[9px] 2xl:text-[10px] leading-none opacity-70 hover:opacity-100 no-underline"
                                     v-tooltip="tab.warning?.tooltip"
                                     @click.stop
                                 >
@@ -277,7 +353,7 @@ const clickVisitRoute = (visitRoute: {
                             </template>
                         </div>
 
-                        <div v-if="tab.information" class="text-gray-400 font-normal text-xs opacity-70">
+                        <div v-if="tab.information" class="text-gray-400 font-normal text-[10px] 2xl:text-xs opacity-70 whitespace-nowrap">
                             {{ renderLabelBasedOnType(tab.information?.label, tab.information?.type, { currency_code: box.currency_code }) }}
                         </div>
                     </div>
@@ -285,16 +361,17 @@ const clickVisitRoute = (visitRoute: {
 
                 <div class="flex-1"></div>
             </div>
+            </div>
         </div>
 
         <!-- Global Expand Button (Desktop) -->
-        <div v-if="hasChildren" class="hidden md:flex justify-center">
+        <div v-if="hasChildren" class="flex justify-center mt-1">
             <button
                 class="flex items-center gap-x-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-3 py-1 rounded hover:bg-gray-100"
                 @click="toggleExpanded()"
             >
                 <FontAwesomeIcon
-                    icon="fal fa-chevron-down"
+                    icon="far fa-chevron-down"
                     class="text-[10px] transition-transform duration-200"
                     :class="isAllExpanded ? 'rotate-180' : ''"
                     fixed-width
@@ -304,7 +381,7 @@ const clickVisitRoute = (visitRoute: {
         </div>
 
         <!-- Children Table (Desktop, below expand button) -->
-        <div v-if="isAllExpanded && hasChildren" class="hidden md:block px-6 mt-1 mb-4">
+        <div v-if="isAllExpanded && hasChildren" class="px-3 sm:px-6 mt-1">
             <div class="bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
@@ -344,9 +421,38 @@ const clickVisitRoute = (visitRoute: {
                 </table>
             </div>
         </div>
+        </div>
 
         <!-- Mobile -->
-        <div class="mt-2 px-3 md:hidden flex gap-3 overflow-x-auto pb-1">
+        <div class="md:hidden mt-2 mb-4">
+        <div class="relative px-3 sm:px-6">
+            <!-- Left overflow indicator -->
+            <transition name="fade">
+                <div v-if="hasMobileOverflowLeft"
+                     @click="scrollMobileBoxesLeft"
+                     class="absolute left-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-r from-white via-white to-transparent pl-1 pr-3">
+                    <div class="bg-indigo-500 text-white rounded-full p-1 shadow-lg hover:bg-indigo-600 transition-colors flex items-center px-2">
+                        <FontAwesomeIcon icon="far fa-chevron-left" class="text-[10px]" />
+                    </div>
+                </div>
+            </transition>
+
+            <!-- Right overflow indicator -->
+            <transition name="fade">
+                <div v-if="hasMobileOverflowRight"
+                     @click="scrollMobileBoxesRight"
+                     class="absolute right-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-l from-white via-white to-transparent pr-1 pl-3">
+                    <div class="bg-indigo-500 text-white rounded-full p-1 shadow-lg hover:bg-indigo-600 transition-colors flex items-center px-2">
+                        <FontAwesomeIcon icon="far fa-chevron-right" class="text-[10px]" />
+                    </div>
+                </div>
+            </transition>
+
+            <div
+                ref="mobileBoxesElement"
+                @scroll="checkOverflow"
+                class="flex gap-3 overflow-x-auto scrollbar-hide"
+            >
             <div
                 v-for="box in tabs_box"
                 :key="'mobile-' + box.label"
@@ -366,15 +472,14 @@ const clickVisitRoute = (visitRoute: {
 
                 <!-- Tabs -->
                 <div class="p-3">
-                    <div class="flex flex-nowrap gap-3 overflow-x-auto pb-1">
+                    <div class="overflow-x-auto scrollbar-hide">
+                    <div class="flex flex-nowrap gap-3 w-max mx-auto">
                         <div
                             v-for="tab in box.tabs"
                             :key="tab.tab_slug"
-                            class="rounded-md p-3 transition-all duration-200 flex-none min-w-[11rem]"
+                            class="rounded-md px-3 py-2 transition-all duration-200 flex-none min-w-[5.5rem]"
                             :class="[
-                                tab.tab_slug === props.current
-                                    ? 'ring-2 shadow-sm'
-                                    : 'bg-gray-50 hover:bg-gray-100',
+                                tab.tab_slug === props.current ? 'ring-2' : '',
                                 ['grp.org.shops.show.dashboard.show', 'grp.org.dashboard.show', 'grp.dashboard.show'].includes(layoutStore.currentRoute) ? 'cursor-pointer active:scale-95' : 'cursor-default'
                             ]"
                             :style="tab.tab_slug === props.current ? {
@@ -433,19 +538,21 @@ const clickVisitRoute = (visitRoute: {
                             </div>
                         </div>
                     </div>
+                    </div>
                 </div>
 
+            </div>
             </div>
         </div>
 
         <!-- Global Expand Button (Mobile) -->
-        <div v-if="hasChildren" class="md:hidden flex justify-center mt-2 mb-1 px-3">
+        <div v-if="hasChildren" class="flex justify-center mt-1">
             <button
-                class="w-full flex items-center justify-center gap-x-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors py-1.5 rounded border border-gray-200 hover:bg-gray-50"
+                class="flex items-center gap-x-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-3 py-1 rounded hover:bg-gray-100"
                 @click="toggleExpanded()"
             >
                 <FontAwesomeIcon
-                    icon="fal fa-chevron-down"
+                    icon="far fa-chevron-down"
                     class="text-[10px] transition-transform duration-200"
                     :class="isAllExpanded ? 'rotate-180' : ''"
                     fixed-width
@@ -455,7 +562,7 @@ const clickVisitRoute = (visitRoute: {
         </div>
 
         <!-- Children Table (Mobile, below expand button) -->
-        <div v-if="isAllExpanded && hasChildren" class="md:hidden px-3 mb-2">
+        <div v-if="isAllExpanded && hasChildren" class="px-3 sm:px-6 mt-1">
             <div class="bg-white rounded-lg shadow ring-1 ring-gray-200 overflow-hidden overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
@@ -495,5 +602,29 @@ const clickVisitRoute = (visitRoute: {
                 </table>
             </div>
         </div>
+        </div>
     </div>
 </template>
+
+<style scoped>
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Fade transition for overflow indicators */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+</style>
