@@ -10,7 +10,9 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -195,5 +197,21 @@ class ExportChatConversations
         }
 
         return $this->handle($organisation, $filters);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, Request $request): StreamedResponse
+    {
+        $filters            = $request->all();
+        $filters['shop_id'] = $shop->id;
+
+        return $this->handle($organisation, $filters);
+    }
+
+    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Request $request): StreamedResponse
+    {
+        $filters            = $request->all();
+        $filters['shop_id'] = $fulfilment->shop_id;
+
+        return $this->handle($fulfilment->organisation, $filters);
     }
 }

@@ -8,22 +8,20 @@
 
 namespace App\Actions\Chat\ChatSession\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Chat\Agent\UI\IndexAgent;
 use App\Actions\Chat\ChatSession\GetShopChatDashboardData;
+use App\Actions\Chat\WithChatScopeNavigation;
 use App\Actions\OrgAction;
-use App\Actions\UI\WithInertia;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowShopChatDashboard extends OrgAction
 {
-    use AsAction;
-    use WithInertia;
+    use WithCRMAuthorisation;
+    use WithChatScopeNavigation;
 
     public function handle(Shop $shop): Shop
     {
@@ -41,8 +39,8 @@ class ShowShopChatDashboard extends OrgAction
     {
         $title         = __('Chat');
         $dashboardData = GetShopChatDashboardData::run($shop);
-        $agents        = IndexAgent::make()->handle($shop, 'agents');
         $routeParams   = $request->route()->originalParameters();
+        $visitorsRoute = $this->chatRoute('dashboard-visitors');
 
         return Inertia::render(
             'Org/Shop/Chat/Dashboard',
@@ -56,42 +54,22 @@ class ShowShopChatDashboard extends OrgAction
                         'title' => $title,
                     ],
                 ],
-                'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => [
-                        'dashboard' => [
-                            'name'  => 'dashboard',
-                            'icon'  => 'fal fa-tachometer-alt',
-                            'label' => __('Dashboard'),
-                        ],
-                        'agents' => [
-                            'name'  => 'agents',
-                            'icon'  => 'fal fa-headset',
-                            'label' => __('Agents'),
-                        ],
-                    ],
-                ],
-                'stats'  => $dashboardData,
-                'agents' => $agents,
+                'dashboardVisitorsRoute' => route($visitorsRoute['name'], $visitorsRoute['parameters']),
+                'stats'                  => $dashboardData,
             ]
-        )->table(
-            IndexAgent::make()->tableStructure(prefix: 'agents')
         );
     }
 
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
-            ShowShop::make()->getBreadcrumbs($routeParameters),
+            $this->chatParentBreadcrumbs($routeParameters),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
                         'icon'  => 'fal fa-comment-alt',
-                        'route' => [
-                            'name'       => 'grp.org.shops.show.crm.chat.dashboard',
-                            'parameters' => $routeParameters,
-                        ],
+                        'route' => $this->chatRoute('dashboard'),
                         'label' => __('Chat'),
                     ],
                 ],

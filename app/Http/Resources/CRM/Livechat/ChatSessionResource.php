@@ -53,12 +53,43 @@ class ChatSessionResource extends JsonResource
                     'chatSession'  => $chatSession->id,
                 ],
             ],
-            'conversation_route' => [
-                'name'       => 'grp.org.chat.conversations.detail',
+            'conversation_route' => $this->conversationRoute($chatSession->id),
+        ];
+    }
+
+    protected function conversationRoute(int $chatSessionId): array
+    {
+        $routeParameters = request()->route()?->originalParameters() ?? [];
+        $routeName       = request()->route()?->getName() ?? '';
+        $organisation    = $routeParameters['organisation'] ?? null;
+
+        if (str_starts_with($routeName, 'grp.org.shops.show.chat.')) {
+            return [
+                'name'       => 'grp.org.shops.show.chat.conversations.detail',
                 'parameters' => [
-                    'organisation' => request()->route()?->originalParameters()['organisation'] ?? null,
-                    'chatSession'  => $chatSession->id,
+                    'organisation' => $organisation,
+                    'shop'         => $routeParameters['shop'] ?? null,
+                    'chatSession'  => $chatSessionId,
                 ],
+            ];
+        }
+
+        if (str_starts_with($routeName, 'grp.org.fulfilments.show.chat.')) {
+            return [
+                'name'       => 'grp.org.fulfilments.show.chat.conversations.detail',
+                'parameters' => [
+                    'organisation' => $organisation,
+                    'fulfilment'   => $routeParameters['fulfilment'] ?? null,
+                    'chatSession'  => $chatSessionId,
+                ],
+            ];
+        }
+
+        return [
+            'name'       => 'grp.org.chat.conversations.detail',
+            'parameters' => [
+                'organisation' => $organisation,
+                'chatSession'  => $chatSessionId,
             ],
         ];
     }
