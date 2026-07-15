@@ -225,7 +225,6 @@ const buildViewItemPayload = () => {
     return {
         ecommerce: {
             currency: prod.currency_code ?? layoutData?.iris?.currency?.code,
-            value: prod.price,
             items: [item],
         },
     }
