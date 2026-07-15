@@ -113,3 +113,4 @@ Route::get('redirect-mailshot-workshop/{mailshot:id}', RedirectMailshotWorkshopL
 Route::get('redirect-pallet-delivery/{palletDelivery:id}', RedirectPalletDelivery::class)->name('redirect_pallet_delivery');
 Route::get('redirect-stored-item-audit/{storedItemAudit:id}', RedirectStoredItemAudit::class)->name('redirect_stored_item_audit');
 Route::get('redirect-pallet-return/{palletReturn:id}', RedirectPalletReturn::class)->name('redirect_pallet_return');
+//Route::get('redirect-customer/{customer:id}', RedirectCustomerLink::class)->name('redirect_customer');
