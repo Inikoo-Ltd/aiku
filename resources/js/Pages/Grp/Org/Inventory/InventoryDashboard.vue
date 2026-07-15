@@ -130,7 +130,7 @@ const options = {
                     {{ trans('Stock Value') }}
                 </dt>
                 <dd class="mt-1 text-3xl font-semibold tabular-nums text-gray-800">
-                    {{ locale.currencyFormat(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_value)) }}
+                    {{ locale.CurrencyShort(stockHistoryToday.currency_code, Number(stockHistoryToday.org_stock_value)) }}
                 </dd>
             </div>
             <div
@@ -187,7 +187,7 @@ const options = {
                 </dt>
                 <dd class="mt-1 flex items-baseline gap-x-2">
                     <span class="text-2xl font-semibold tabular-nums text-red-500">
-                        {{ locale.currencyFormat(stockHistoryToday.currency_code, Number(stockHistoryToday.value_dormant_stock_1y)) }}
+                        {{ locale.CurrencyShort(stockHistoryToday.currency_code, Number(stockHistoryToday.value_dormant_stock_1y)) }}
                     </span>
                     <span
                         class="text-sm font-medium tabular-nums text-red-500"
