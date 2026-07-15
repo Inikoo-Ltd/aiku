@@ -15,6 +15,7 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -25,6 +26,7 @@ use App\Models\Catalogue\Product;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use OwenIt\Auditing\Resolvers\UserResolver;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 
 class PublishWebpage extends OrgAction
 {
@@ -34,6 +36,13 @@ class PublishWebpage extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
+        if ($webpage->sub_type == WebpageSubTypeEnum::MAILSHOT) {
+            // update unpublish layout
+            foreach ($webpage->modelHasWebBlocks as $modelHasWebBlock) {
+                UpdateModelHasWebBlocks::make()->action($modelHasWebBlock, ['layout' => Arr::get($modelData, 'layout')]);
+            }
+        }
+
         /** @var User $user */
         $user = UserResolver::resolve();
 
@@ -111,6 +120,7 @@ class PublishWebpage extends OrgAction
     {
         $rules = [
             'comment' => ['sometimes', 'required', 'string', 'max:1024'],
+            'layout'  => ['sometimes', 'required', 'array'],
         ];
 
         if (!$this->strict) {

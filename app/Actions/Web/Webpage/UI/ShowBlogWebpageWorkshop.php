@@ -12,7 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockTypesResource;
-use App\Http\Resources\Web\WebpageWorkshopResource;
+use App\Http\Resources\Web\BlogWebpageWorkshopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
@@ -101,6 +101,7 @@ class ShowBlogWebpageWorkshop extends OrgAction
                             'type'  => 'button',
                             'style' => 'save',
                             'label' => __('publish'),
+                            'key'   => 'publish',
                             'route' => [
                                 'name'       => 'grp.models.webpage.publish',
                                 'parameters' => $webpage->id,
@@ -110,8 +111,9 @@ class ShowBlogWebpageWorkshop extends OrgAction
                     ],
                 ],
                 'url'           => $url,
-                'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
-                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes)
+                'webpage'       => BlogWebpageWorkshopResource::make($webpage)->getArray(),
+                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes),
+                'webpage_sub_type' => $webpage->sub_type,
 
             ]
         );

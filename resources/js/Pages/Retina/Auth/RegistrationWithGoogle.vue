@@ -15,14 +15,14 @@ import { Checkbox } from "primevue"
 import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
 import { provide } from "vue"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
-import { pushGtmEvent, buildRegistrationUserData } from "@/Composables/useGtm"
+import { pushGtmEventAndWaitForTags, buildRegistrationUserData } from "@/Composables/useGtm"
 
 library.add(faEnvelope, faAsterisk, faUser, faPhone, faBuilding, faGlobe)
 
 // Set default layout
 // defineOptions({ layout: RetinaShowIris })
 const props = defineProps<{
-	countriesAddressData: [],
+	countriesAddressData: {},
     requiresPhoneNumber: boolean,
 	polls: [],
 	registerRoute: {
@@ -89,11 +89,14 @@ const submit = () => {
 
 		},
 		onSuccess: async () => {
-			pushGtmEvent('registrationSuccess', {
+			const gtmTagsFired = pushGtmEventAndWaitForTags('registrationSuccess', {
 				user_data: buildRegistrationUserData(form, props.countriesAddressData),
 			})
-			// window.location.href = route('retina.dashboard.show')
-			window.location.href = await getRefRedirect()
+
+			const redirectUrl = await getRefRedirect()
+			await gtmTagsFired
+
+			window.location.href = redirectUrl
 		}
 	})
 }
