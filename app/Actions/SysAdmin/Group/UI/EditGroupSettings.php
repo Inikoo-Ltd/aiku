@@ -131,69 +131,57 @@ class EditGroupSettings extends GrpAction
 
                     ],
                     [
-                        'label'  => 'AWS SES '.__('Failover credentials'),
+                        'label'  => __('AWS-SES configuration'),
                         'icon'   => 'fa-light fa-key',
                         'fields' => [
                             "access_id" => [
                                 "type"        => "input",
-                                "label"       => __("Access ID"),
+                                "label"       => __("Failover Access ID"),
                                 "value"       => Arr::get($group->settings, 'email.provider.failover.access_id', ''),
                             ],
                             "access_key" => [
                                 "type"        => "input",
-                                "label"       => __("Access Key"),
-                                "value"       =>  Arr::get($group->settings, 'email.provider.failover.access_key', ''),
+                                "label"       => __("Failover Access Key"),
+                                "value"       => Arr::get($group->settings, 'email.provider.failover.access_key', ''),
                             ],
                             "region" => [
                                 "type"        => "select",
-                                "label"       => __("Region"),
+                                "label"       => __("Failover Region"),
                                 "options"     => SesRegionEnum::options(),
-                                "value"       =>  Arr::get($group->settings, 'email.provider.failover.region', ''),
-                            ]
-                        ]
-                    ],
-                    [
-                        'label'  => 'AWS SES '.__('Customer notification credentials'),
-                        'icon'   => 'fa-light fa-key',
-                        'fields' => [
+                                "value"       => Arr::get($group->settings, 'email.provider.failover.region', ''),
+                            ],
                             "customer_notification_access_id" => [
                                 "type"        => "input",
-                                "label"       => __("Access ID"),
+                                "label"       => __("Customer notification Access ID"),
                                 "value"       => Arr::get($group->settings, 'email.provider.customer_notification.access_id', ''),
                             ],
-                            "cutomer_notification_access_key" => [
+                            "customer_notification_access_key" => [
                                 "type"        => "input",
-                                "label"       => __("Access Key"),
+                                "label"       => __("Customer notification Access Key"),
                                 "value"       => Arr::get($group->settings, 'email.provider.customer_notification.access_key', ''),
                             ],
                             "customer_notification_region" => [
                                 "type"        => "select",
-                                "label"       => __("Region"),
+                                "label"       => __("Customer notification Region"),
                                 "options"     => SesRegionEnum::options(),
                                 "value"       => Arr::get($group->settings, 'email.provider.customer_notification.region', ''),
-                            ]
-                        ]
-                    ],
-                    [
-                        'label'  => 'AWS SES '.__('User notification credentials'),
-                        'icon'   => 'fa-light fa-key',
-                        'fields' => [
+                            ],
                             "user_notification_access_id" => [
                                 "type"        => "input",
-                                "label"       => __("Access ID"),
+                                "label"       => __("User notification Access ID"),
                                 "value"       => Arr::get($group->settings, 'email.provider.user_notification.access_id', ''),
                             ],
                             "user_notification_access_key" => [
                                 "type"        => "input",
-                                "label"       => __("Access Key"),
+                                "label"       => __("User notification Access Key"),
                                 "value"       => Arr::get($group->settings, 'email.provider.user_notification.access_key', ''),
                             ],
                             "user_notification_region" => [
                                 "type"        => "select",
-                                "label"       => __("Region"),
+                                "label"       => __("User notification Region"),
                                 "options"     => SesRegionEnum::options(),
                                 "value"       => Arr::get($group->settings, 'email.provider.user_notification.region', ''),
-                            ]
+                            ],
                         ]
                     ],
                     [
