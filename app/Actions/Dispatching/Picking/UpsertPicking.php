@@ -51,7 +51,9 @@ class UpsertPicking extends OrgAction
                 ];
                 UpdatePicking::run($picking, $modelData);
             } else {
-                StorePicking::make()->action($deliveryNoteItem, request()->user(), $modelData);
+                $user = request()->user() ?? auth()->user();
+                data_set($modelData, 'picker_user_id', $user->id, false);
+                StorePicking::make()->action($deliveryNoteItem, $user, $modelData);
             }
 
             $deliveryNoteItem->update(['locked_at' => null]);

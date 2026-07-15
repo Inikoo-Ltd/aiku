@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -87,6 +88,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Offer extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use HasSlug;
     use HasFactory;
@@ -186,6 +188,20 @@ class Offer extends Model implements Auditable
     public function trigger(): MorphTo
     {
         return $this->morphTo();
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'shop_id'    => $this->shop_id,
+            'code'       => $this->code,
+            'name'       => (string)$this->name,
+            'state'      => $this->state->value,
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }

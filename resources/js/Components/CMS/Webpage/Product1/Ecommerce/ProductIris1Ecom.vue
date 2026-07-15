@@ -18,7 +18,7 @@ import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 import { trans } from "laravel-vue-i18n"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
-import { pushGtmEvent } from "@/Composables/useGtm"
+import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
@@ -190,9 +190,6 @@ const showIntervalOffer = computed(() => {
 })
 
 
-
-
-
 watch([variantPrevEl, variantNextEl], () => {
   if (variantPrevEl.value && variantNextEl.value) {
     varinatNavigation.value = {
@@ -202,46 +199,16 @@ watch([variantPrevEl, variantNextEl], () => {
   }
 })
 
-
 // Section: GTM / dataLayer - view_item
-const buildViewItemPayload = () => {
-    const prod = (product.value ?? {}) as any
-    const layoutData = layout as any
-
-    const item: Record<string, any> = {
-        item_id: prod.slug,
-        item_name: prod.name,
-        price: prod.price,
-    }
-
-    if (prod.family_code) {
-        item.item_category = prod.family_code
-    }
-
-    if (prod.variant_label) {
-        item.item_variant = prod.variant_label
-    }
-
-    return {
-        ecommerce: {
-            currency: prod.currency_code ?? layoutData?.iris?.currency?.code,
-            items: [item],
-        },
-    }
-}
-
 const pushViewItem = () => {
     if (!product.value?.code) {
         return
     }
-    pushGtmEvent("view_item", buildViewItemPayload())
-}
 
-watch(() => product.value?.code, (code, previousCode) => {
-    if (code && code !== previousCode) {
-        pushViewItem()
-    }
-})
+    pushGtmEvent("view_item", buildGtmProductPayload(product.value as any, {
+        currencyCode: (layout as any)?.iris?.currency?.code,
+    }))
+}
 
 onMounted(async () => {
   await nextTick()

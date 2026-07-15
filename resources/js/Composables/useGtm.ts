@@ -3,6 +3,8 @@ export const GTM_DATA_LAYER_NAME = "gtmDataLayer"
 const ALLOWED_GTM_EVENTS = [
     "registrationSuccess",
     "view_item",
+    "add_to_cart",
+    "remove_from_cart",
     "purchase",
 ]
 
@@ -64,6 +66,47 @@ const withoutEmptyValues = (data: Record<string, any>): Record<string, any> => {
     )
 }
 
+
+
+interface GtmProduct {
+    slug?: string | null
+    name?: string | null
+    price?: number | string | null
+    currency_code?: string | null
+    family_code?: string | null
+    variant_label?: string | null
+}
+
+const toGtmAmount = (value: number | string | undefined | null): number | undefined => {
+    const amount = typeof value === "number" ? value : parseFloat(value ?? "")
+
+    return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : undefined
+}
+
+export const buildGtmProductPayload = (
+    product: GtmProduct,
+    options: { currencyCode?: string, quantity?: number } = {},
+): Record<string, any> => {
+    const quantity = options.quantity ?? 1
+    const price = toGtmAmount(product.price)
+
+    const item = withoutEmptyValues({
+        item_id: product.slug,
+        item_name: product.name,
+        item_category: product.family_code,
+        item_variant: product.variant_label,
+        price,
+        quantity,
+    })
+
+    return {
+        ecommerce: withoutEmptyValues({
+            currency: product.currency_code ?? options.currencyCode,
+            value: price === undefined ? undefined : toGtmAmount(price * quantity),
+            items: [item],
+        }),
+    }
+}
 
 
 export const buildRegistrationUserData = (

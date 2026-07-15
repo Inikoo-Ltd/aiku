@@ -99,6 +99,8 @@ onBeforeUnmount(() => {
     removeStructuredDataScript(structuredDataScript.value)
     window.removeEventListener("resize", checkScreenType)
 })
+
+console.log('props',props)
 </script>
 
 <template>

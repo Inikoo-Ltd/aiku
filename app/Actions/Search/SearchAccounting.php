@@ -21,14 +21,15 @@ class SearchAccounting
     public function handle(string $query, array $options): array
     {
         $organisationId = Arr::get($options, 'organisation_id');
+        $shopId         = Arr::get($options, 'shop_id');
 
         $invoicesQuery = Invoice::search($query);
-        if ($organisationId) {
-            $invoicesQuery->where('organisation_id', $organisationId);
-        }
-
         $paymentsQuery = Payment::search($query);
-        if ($organisationId) {
+        if ($shopId) {
+            $invoicesQuery->where('shop_id', $shopId);
+            $paymentsQuery->where('shop_id', $shopId);
+        } elseif ($organisationId) {
+            $invoicesQuery->where('organisation_id', $organisationId);
             $paymentsQuery->where('organisation_id', $organisationId);
         }
 

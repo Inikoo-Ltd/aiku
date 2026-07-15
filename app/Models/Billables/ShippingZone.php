@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * App\Models\Billables\ShippingZone
@@ -73,6 +74,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class ShippingZone extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use InShop;
     use InAssetModel;
@@ -139,5 +141,19 @@ class ShippingZone extends Model implements Auditable
         return $this->hasMany(Invoice::class);
     }
 
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'shop_id'    => $this->shop_id,
+            'code'       => $this->code,
+            'name'       => (string)$this->name,
+            'state'      => $this->status ? 'active' : 'inactive',
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
+    }
 
 }
