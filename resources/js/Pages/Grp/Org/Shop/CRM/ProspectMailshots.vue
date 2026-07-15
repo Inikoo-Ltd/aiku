@@ -30,7 +30,7 @@ const props = defineProps<{
     navigation: {}
   }
   history: {}
-  mailshots: {}
+  mailshots?: {}
 }>()
 
 console.log(props)

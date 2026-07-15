@@ -86,7 +86,7 @@ const props = defineProps<{
 		state: string
 		updated_at: string
 	}
-	items: {}
+	items?: {}
 	pending_items?: {}
 	done_items?: {}
 }>()

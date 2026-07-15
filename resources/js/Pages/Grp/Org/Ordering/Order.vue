@@ -233,7 +233,7 @@ const props = defineProps<{
         rollback_dispatch: routeType
     }
     // nonProductItems: {}
-    transactions: {}
+    transactions?: {}
     currency: Currency
     delivery_notes?: {
         data: Array<any>
@@ -250,8 +250,8 @@ const props = defineProps<{
             order: string
         }
     },
-    returns: {}
-    payments: {}
+    returns?: {}
+    payments?: {}
     readonly?: boolean
     is_shop_external?: boolean
     external_shop?: {
@@ -276,7 +276,7 @@ const props = defineProps<{
     payments_accounts: Array<{ id: number, name: string }>
     payments_data: Array<{ id: number, name: string }>
     state: string
-    history: {}
+    history?: {}
     salesChannel?: {
         name: string
         icon: string

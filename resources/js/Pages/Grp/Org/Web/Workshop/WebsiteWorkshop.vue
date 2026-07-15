@@ -50,20 +50,20 @@ const props = defineProps<{
   currency: Record<string, any>
   category?: Record<string, any>
   product?: Record<string, any>
-  website_layout: Record<string, any>
+  website_layout?: Record<string, any>
   families?: Record<string, any>
   families_overview?: Record<string, any>
   products?: Record<string, any>
   settings: Record<string, any>
   department: Record<string, any>
-  department_description: Record<string, any>
-  sub_department: Record<string, any>
-  families_description: Record<string, any>
+  department_description?: Record<string, any>
+  sub_department?: Record<string, any>
+  families_description?: Record<string, any>
   collection: Record<string, any>
   publishRoute: Record<string, routeType>
   website_slug: string
   layout_theme: Array<any>
-  history: {}
+  history?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)

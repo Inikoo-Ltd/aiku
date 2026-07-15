@@ -275,6 +275,7 @@ interface Product {
     transaction_id?: string
     quantity_ordered?: number
 }
+
 const onAddProducts = async (product: Product) => {
     const storeRoute = {
         route_post: route('retina.models.product.add-to-basket', { 
@@ -321,17 +322,18 @@ const onAddProducts = async (product: Product) => {
                 // Luigi: event add to cart
                 if (!product?.transaction_id) {
                     if (!product?.transaction_id) {
+                        const addToCartEcommerce = {
+                            currency: layout?.iris?.currency?.code,
+                            value: product.price,
+                            items: [
+                                {
+                                    item_id: product?.luigi_identity,
+                                }
+                            ]
+                        }
                         window?.dataLayer?.push({
                             event: "add_to_cart",
-                            ecommerce: {
-                                currency: layout?.iris?.currency?.code,
-                                value: product.price,
-                                items: [
-                                    {
-                                        item_id: product?.luigi_identity,
-                                    }
-                                ]
-                            }
+                            ecommerce: addToCartEcommerce,
                         })
                     }
                 }
@@ -402,17 +404,18 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     type: "success"
                 })
                 
+                const addToCartEcommerce = {
+                    currency: layout?.iris?.currency?.code,
+                    value: productLuigi?.attributes?.price || 0,
+                    items: [
+                        {
+                            item_id: productLuigi?.url,
+                        }
+                    ]
+                }
                 window?.dataLayer?.push({
                     event: "add_to_cart",
-                    ecommerce: {
-                        currency: layout?.iris?.currency?.code,
-                        value: productLuigi?.attributes?.price || 0,
-                        items: [
-                            {
-                                item_id: productLuigi?.url,
-                            }
-                        ]
-                    }
+                    ecommerce: addToCartEcommerce,
                 })
                 layout?.reload_handle?.()
 

@@ -17,6 +17,7 @@ library.add(faExclamationCircle, faCheckCircle)
 
 
 // const props = defineProps(['form', 'fieldName','options', 'fieldData']);
+defineOptions({ inheritAttrs: false })
 const props = defineProps<{
     form: any
     fieldName: string

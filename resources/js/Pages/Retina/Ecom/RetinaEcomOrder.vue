@@ -48,7 +48,7 @@ const props = defineProps<{
     title: string
     tabs: TSTabs
     pageHead: PageHeadingTypes
-    reviews : any
+    reviews? : any
     routes: {
         update_route: routeType
         submit_route: routeType
@@ -91,7 +91,7 @@ const props = defineProps<{
             shipping_notes?: string
         }
     }
-    transactions: {} // TransactionsResource
+    transactions?: {} // TransactionsResource
     invoices?: {}
     delivery_notes: {
         data: Array<any>

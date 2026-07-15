@@ -136,17 +136,18 @@ const onAddProducts = async (product: Product) => {
                 },
                 onSuccess: () => {
                     // Luigi: event add to cart (only for new products)
+                    const addToCartEcommerce = {
+                        currency: layout?.retina?.currency?.code,
+                        value: product.price,
+                        items: [
+                            {
+                                item_id: product.id,
+                            }
+                        ]
+                    }
                     window?.dataLayer?.push({
                         event: "add_to_cart",
-                        ecommerce: {
-                            currency: layout?.retina?.currency?.code,
-                            value: product.price,
-                            items: [
-                                {
-                                    item_id: product.id,
-                                }
-                            ]
-                        }
+                        ecommerce: addToCartEcommerce,
                     })
                     
                     notify({

@@ -48,9 +48,9 @@ const props = defineProps<{
         navigation: object;
     }
 	bulk_edit_upload: UploadSection
-    stored_items : {}
-    pallet_stored_items : {}
-    stored_item_audits : {}
+    stored_items? : {}
+    pallet_stored_items? : {}
+    stored_item_audits? : {}
 }>()
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);

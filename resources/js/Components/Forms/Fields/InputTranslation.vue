@@ -15,6 +15,7 @@ interface Language {
   code: string
   [key: string]: any
 }
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
   form: Record<string, any>

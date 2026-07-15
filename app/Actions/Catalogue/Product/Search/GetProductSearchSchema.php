@@ -61,6 +61,11 @@ class GetProductSearchSchema
                         'optional' => true,
                     ],
                     [
+                        'name'     => 'popularity',
+                        'type'     => 'int32',
+                        'optional' => true,
+                    ],
+                    [
                         'name'     => '__soft_deleted',
                         'type'     => 'int32',
                         'optional' => true,
@@ -69,7 +74,8 @@ class GetProductSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'code,name,description,description_extra'
+                'query_by' => 'code,name,description,description_extra',
+                'sort_by'  => '_text_match:desc,popularity:desc,created_at:desc'
             ],
         ];
     }

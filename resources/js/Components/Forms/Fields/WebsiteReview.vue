@@ -10,6 +10,7 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import InputSwitch from 'primevue/inputswitch'
 
 library.add(faTimes, faCheck, faInfoCircle)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any
