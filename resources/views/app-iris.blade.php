@@ -113,7 +113,7 @@
                     j.async = true;
                     j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
                     f.parentNode.insertBefore(j, f);
-                })(window, document, "script", "dataLayer", '{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');
+                })(window, document, "script", "gtmDataLayer", '{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');
                 @endif
 
                 @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', ''))
