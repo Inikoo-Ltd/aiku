@@ -4,6 +4,7 @@ const ALLOWED_GTM_EVENTS = [
     "registrationSuccess",
     "view_item",
     "add_to_cart",
+    "remove_from_cart",
     "purchase",
 ]
 
@@ -68,15 +69,15 @@ const withoutEmptyValues = (data: Record<string, any>): Record<string, any> => {
 
 
 interface GtmProduct {
-    slug?: string
-    name?: string
-    price?: number | string
-    currency_code?: string
-    family_code?: string
-    variant_label?: string
+    slug?: string | null
+    name?: string | null
+    price?: number | string | null
+    currency_code?: string | null
+    family_code?: string | null
+    variant_label?: string | null
 }
 
-const toGtmAmount = (value: number | string | undefined): number | undefined => {
+const toGtmAmount = (value: number | string | undefined | null): number | undefined => {
     const amount = typeof value === "number" ? value : parseFloat(value ?? "")
 
     return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : undefined

@@ -94,10 +94,10 @@ class DeliveryNoteItemsResource extends JsonResource
         }
 
 
-        $packedQuantity=$this->quantity_packed;
+        $packedQuantity = $this->quantity_packed;
 
-        if($this->packings_quantity){
-            $packedQuantity=$this->packings_quantity;
+        if ($this->packings_quantity) {
+            $packedQuantity = $this->packings_quantity;
         }
 
 

@@ -12,6 +12,7 @@ use App\Actions\Helpers\Redirects\RedirectCollectionsInProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectCustomersInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectDeletedInvoicesInShopLink;
 use App\Actions\Helpers\Redirects\RedirectDeliveryNotesLink;
+use App\Actions\Helpers\Redirects\RedirectEmployeeLink;
 use App\Actions\Helpers\Redirects\RedirectInvoiceInAccounting;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopFromDashboard;
@@ -80,6 +81,7 @@ Route::get('redirect-mailshot-page/{mailshot:id}', RedirectMailshotLink::class)-
 Route::get('redirect-webpage/{webpage:id}', RedirectWebpageLink::class)->name('redirect_webpage');
 Route::get('redirect-brand/{brand:id}', RedirectBrandLink::class)->name('redirect_brand');
 Route::get('redirect-barcode/{barcode:id}', RedirectBarcodeLink::class)->name('redirect_barcode');
+Route::get('redirect-employee/{employee:id}', RedirectEmployeeLink::class)->name('redirect_employee');
 Route::get('redirect-org-stock/{orgStock:id}/to-products-index', [RedirectOrgStockLink::class, 'toProductsIndex'])->name('redirect_org_stock.to_products_index');
 
 

@@ -142,9 +142,6 @@ const handleTabFocus = () => {
     }
 }
 
-// The CMS container padding is per-device but SSR always renders desktop values and
-// Varnish shares one cache across devices; emitting the horizontal padding as CSS
-// variables keeps the markup device-independent and lets media queries pick the value.
 const resolvePaddingProp = (padding: any, screen: string, side?: string) => {
     const read = (obj: any) => {
         if (!obj || typeof obj !== 'object') return undefined
