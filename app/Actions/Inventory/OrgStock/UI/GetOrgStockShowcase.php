@@ -82,6 +82,13 @@ class GetOrgStockShowcase
                         'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
                     ],
                     'summary'         => [
+                        'quantity_in_locations' => [
+                            'icon_state' => [
+                                'icon'    => 'fas fa-inventory',
+                                'tooltip' => __("Stock in locations"),
+                            ],
+                            'value'      => $orgStock->quantity_in_locations
+                        ],
                         'quantity_in_submitted_orders' => [
                             'icon_state' => [
                                 'icon'    => 'fas fa-shopping-cart',

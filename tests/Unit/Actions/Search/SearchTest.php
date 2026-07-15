@@ -43,6 +43,16 @@ it('maps known route prefixes to expected scopes', function (string $route, stri
     ['grp.goods.stocks.index', 'goods'],
     ['grp.goods.trade-units.index', 'goods'],
     ['grp.supply-chain.suppliers.index', 'supply_chain'],
+    ['grp.trade_units.units.index', 'trade_units'],
+    ['grp.trade_units.brands.index', 'trade_units'],
+    ['grp.masters.master_shops.show', 'master_shop'],
+    ['grp.masters.master_shops.show.master_products.index', 'master_shop'],
+    ['grp.org.shops.show.billables.charges.index', 'billables'],
+    ['grp.org.shops.show.discounts.offers.index', 'offers'],
+    ['grp.org.shops.show.marketing.mailshots.index', 'marketing'],
+    ['grp.org.shops.show.web.webpages.index', 'website'],
+    ['grp.org.shops.show.dashboard.show', 'shop_accounting'],
+    ['grp.org.hr.employees.index', 'hr'],
 ]);
 
 it('returns empty array for unknown search scope', function () {

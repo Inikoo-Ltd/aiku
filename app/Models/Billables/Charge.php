@@ -21,6 +21,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Helpers\Currency;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -66,6 +67,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Charge extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use InAssetModel;
     use HasHistory;
@@ -129,6 +131,21 @@ class Charge extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(ChargeStats::class);
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'          => (string)$this->id,
+            'group_id'    => $this->group_id,
+            'shop_id'     => $this->shop_id,
+            'code'        => $this->code,
+            'name'        => (string)$this->name,
+            'description' => (string)$this->description,
+            'state'       => $this->state->value,
+            'created_at'  => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }

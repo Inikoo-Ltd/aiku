@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * App\Models\Helpers\Barcode
@@ -61,6 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Barcode extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use HasSlug;
     use InGroup;
@@ -133,4 +135,16 @@ class Barcode extends Model implements Auditable
     {
         return $this->hasMany(ModelHasBarcode::class, 'barcode_id', 'id');
     }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'number'     => (string)$this->number,
+            'state'      => $this->status->value,
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
 }

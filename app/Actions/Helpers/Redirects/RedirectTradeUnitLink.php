@@ -18,7 +18,7 @@ class RedirectTradeUnitLink extends GrpAction
 {
     public function handle(TradeUnit $tradeUnit): RedirectResponse
     {
-        return Redirect::to(route('grp.goods.trade-units.show', [$tradeUnit->slug]));
+        return Redirect::to(route('grp.trade_units.units.show', [$tradeUnit->slug]));
     }
 
     public function asController(TradeUnit $tradeUnit, ActionRequest $request): RedirectResponse

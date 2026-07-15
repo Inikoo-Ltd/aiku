@@ -11,6 +11,7 @@ namespace App\Actions\Search;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\Inventory\Warehouse;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -18,9 +19,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class Search extends OrgAction
 {
-    protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain'];
-    protected const array ORGANISATION_SCOPES = ['accounting'];
-    protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews'];
+    protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop'];
+    protected const array ORGANISATION_SCOPES = ['accounting', 'hr'];
+    protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews', 'billables', 'offers', 'marketing', 'website', 'shop_accounting'];
     protected const array WAREHOUSE_SCOPES = ['inventory', 'dispatching', 'locations'];
 
 
@@ -30,7 +31,15 @@ class Search extends OrgAction
             'sysadmin'     => static fn () => SearchSysAdmin::run($query),
             'goods'        => static fn () => SearchGoods::run($query),
             'supply_chain' => static fn () => SearchSupplyChain::run($query),
-            'accounting'   => static fn () => SearchAccounting::run($query, $options),
+            'trade_units'  => static fn () => SearchTradeUnits::run($query),
+            'master_shop'  => static fn () => SearchMasterShop::run($query, $options),
+            'billables'    => static fn () => SearchBillables::run($query, $options),
+            'offers'       => static fn () => SearchOffers::run($query, $options),
+            'marketing'    => static fn () => SearchMarketing::run($query, $options),
+            'website'      => static fn () => SearchWebsite::run($query, $options),
+            'accounting'      => static fn () => SearchAccounting::run($query, $options),
+            'shop_accounting' => static fn () => SearchAccounting::run($query, $options),
+            'hr'              => static fn () => SearchHr::run($query, $options),
             'catalogue'    => static fn () => SearchCatalogue::run($query, $options),
             'prospects'    => static fn () => SearchProspects::run($query, $options),
             'customers'    => static fn () => SearchCustomers::run($query, $options),
@@ -71,6 +80,9 @@ class Search extends OrgAction
         $options = [];
         if (in_array($scope, self::GROUP_SCOPES, true)) {
             $this->initialisationFromGroup(app('group'), $request);
+            if ($scope === 'master_shop' && $request->query('masterShop')) {
+                $options = ['master_shop_id' => MasterShop::where('slug', $request->query('masterShop'))->first()?->id];
+            }
         } elseif (in_array($scope, self::ORGANISATION_SCOPES, true)) {
             $organisation = Organisation::where('slug', $request->query('organisation'))->firstOrFail();
             $this->initialisation($organisation, $request);
@@ -118,12 +130,20 @@ class Search extends OrgAction
             'grp.sysadmin'                            => 'sysadmin',
             'grp.goods.'                              => 'goods',
             'grp.supply-chain.'                       => 'supply_chain',
+            'grp.trade_units.'                        => 'trade_units',
+            'grp.masters.'                            => 'master_shop',
             'grp.org.accounting.'                     => 'accounting',
+            'grp.org.hr.'                             => 'hr',
+            'grp.org.shops.show.dashboard'            => 'shop_accounting',
             'grp.org.shops.show.catalogue'            => 'catalogue',
             'grp.org.shops.show.crm.prospects'        => 'prospects',
             'grp.org.shops.show.crm'                  => 'customers',
             'grp.org.shops.show.ordering'             => 'orders',
             'grp.org.shops.show.reviews'              => 'reviews',
+            'grp.org.shops.show.billables'            => 'billables',
+            'grp.org.shops.show.discounts'            => 'offers',
+            'grp.org.shops.show.marketing'            => 'marketing',
+            'grp.org.shops.show.web'                  => 'website',
             'grp.org.warehouses.show.inventory.'      => 'inventory',
             'grp.org.warehouses.show.dispatching.'    => 'dispatching',
             'grp.org.warehouses.show.infrastructure.' => 'locations',
