@@ -72,12 +72,12 @@ class ShowBlogWebpage extends OrgAction
                     'iconRight'     => $webpage->state->stateIcon()[$webpage->state->value],
                     'actions'       => $actions,
                 ],
-
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => BlogWebpageTabsEnum::navigation()
                 ],
                 'root_active' => $subNavigationRoot,
+                'webpage_sub_type' => $webpage->sub_type,
 
                 BlogWebpageTabsEnum::SHOWCASE->value => $this->tab == BlogWebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()

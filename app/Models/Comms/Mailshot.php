@@ -31,6 +31,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Traits\HasSearch;
+use App\Models\Web\Webpage;
 
 /**
  * App\Models\Comms\Mailshot
@@ -241,4 +242,9 @@ class Mailshot extends Model implements Auditable
         ];
     }
 
+
+    public function webpages(): MorphMany
+    {
+        return $this->morphMany(Webpage::class, 'model');
+    }
 }
