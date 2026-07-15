@@ -26,7 +26,7 @@ const locale = useLocaleStore()
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(item_code)="{ item: log }">
-            <Link :href="route('grp.helpers.redirect_portfolio_item', [log.portfolio_id])" class="primaryLink" v-if="log.portfolio_id">
+            <Link :href="route('grp.majordomo.redirect_portfolio_item', [log.portfolio_id])" class="primaryLink" v-if="log.portfolio_id">
                 {{ log.item_code }}
             </Link>
             <span v-else>{{ log.item_code }}</span>

@@ -18,12 +18,21 @@ import LoadingIcon from './Utils/LoadingIcon.vue'
 
 library.add(faTimes, faSearch, faSpinnerThird)
 
+const SearchResultGeneric = defineAsyncComponent(() => import('@/Components/Search/SearchResultGeneric.vue'))
+
 const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
     sysadmin: defineAsyncComponent(() => import('@/Components/Search/SearchResultSysAdmin.vue')),
     catalogue: defineAsyncComponent(() => import('@/Components/Search/SearchResultCatalogue.vue')),
     customers: defineAsyncComponent(() => import('@/Components/Search/SearchResultCustomers.vue')),
     inventory: defineAsyncComponent(() => import('@/Components/Search/SearchResultOrgStocks.vue')),
     locations: defineAsyncComponent(() => import('@/Components/Search/SearchResultLocations.vue')),
+    prospects: SearchResultGeneric,
+    orders: SearchResultGeneric,
+    reviews: SearchResultGeneric,
+    accounting: SearchResultGeneric,
+    dispatching: SearchResultGeneric,
+    goods: SearchResultGeneric,
+    supply_chain: SearchResultGeneric,
 }
 
 const isOpen = defineModel<boolean>()
@@ -45,7 +54,7 @@ const isRefreshing = computed(() => isLoadingSearch.value && hasResults.value)
 
 const paramsToString = () => {
     return route().routeParams
-        ? '&' + Object.entries(route().routeParams).map(([key, value]) => `${key}=${value}`).join('&')
+        ? '&' + Object.entries(route().routeParams).map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`).join('&')
         : ''
 }
 
@@ -55,8 +64,40 @@ const urlSearch = () => {
         : `${location.origin}/search`
 }
 
+let requestId = 0
+
+const CACHE_TTL_MS = 30_000
+const CACHE_MAX_ENTRIES = 50
+const responseCache = new Map<string, { data: Record<string, any>, expiresAt: number }>()
+
+const buildSearchUrl = (query: string) => {
+    return `${urlSearch()}?q=${encodeURIComponent(query)}&route_src=${route().current()}${paramsToString()}`
+}
+
+const cacheResponse = (url: string, data: Record<string, any>) => {
+    if (responseCache.size >= CACHE_MAX_ENTRIES) {
+        responseCache.delete(responseCache.keys().next().value as string)
+    }
+    responseCache.set(url, { data, expiresAt: Date.now() + CACHE_TTL_MS })
+}
+
+const getCachedResponse = (url: string): Record<string, any> | null => {
+    const entry = responseCache.get(url)
+    if (!entry) return null
+    if (entry.expiresAt < Date.now()) {
+        responseCache.delete(url)
+        return null
+    }
+    return entry.data
+}
+
+const applyResponse = (data: Record<string, any>) => {
+    scope.value = data.scope ?? null
+    resultsSearch.value = data.results ?? null
+}
+
 const fetchApi = debounce(async (query: string) => {
-    if (!query) return
+    const currentRequestId = ++requestId
 
     abortController?.abort()
     abortController = new AbortController()
@@ -64,29 +105,56 @@ const fetchApi = debounce(async (query: string) => {
     isLoadingSearch.value = true
 
     try {
-        const url = `${urlSearch()}?q=${query}&route_src=${route().current()}${paramsToString()}`
+        const url = buildSearchUrl(query)
         const response = await fetch(url, { signal: abortController.signal })
         const data = await response.json()
-        scope.value = data.scope ?? null
-        resultsSearch.value = data.results ?? null
+        if (currentRequestId !== requestId) return
+        cacheResponse(url, data)
+        applyResponse(data)
     } catch (e) {
-        if ((e as DOMException).name === 'AbortError') return
+        if ((e as DOMException).name === 'AbortError' || currentRequestId !== requestId) return
         resultsSearch.value = null
         scope.value = null
     } finally {
-        isLoadingSearch.value = false
+        if (currentRequestId === requestId) {
+            isLoadingSearch.value = false
+        }
     }
-}, 400)
+}, 250)
+
+const resetSearchState = () => {
+    requestId++
+    fetchApi.cancel()
+    abortController?.abort()
+    resultsSearch.value = null
+    scope.value = null
+    isLoadingSearch.value = false
+}
 
 const onTypeSearch = () => {
+    if (!searchValue.value.trim()) {
+        resetSearchState()
+        return
+    }
+
+    const cached = getCachedResponse(buildSearchUrl(searchValue.value))
+    if (cached) {
+        requestId++
+        fetchApi.cancel()
+        abortController?.abort()
+        isLoadingSearch.value = false
+        applyResponse(cached)
+        return
+    }
+
+    isLoadingSearch.value = true
     fetchApi(searchValue.value)
 }
 
 const closeModal = () => {
     isOpen.value = false
     searchValue.value = ''
-    resultsSearch.value = null
-    scope.value = null
+    resetSearchState()
 }
 </script>
 

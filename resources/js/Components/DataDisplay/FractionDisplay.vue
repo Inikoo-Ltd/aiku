@@ -8,6 +8,9 @@
   <div class="fraction-display" :class="{ 'fraction-display--strikethrough': strikethrough }">
     <!-- If there's a quotient and a fraction -->
 
+    <span v-if="showPlus">
+      + 
+    </span>
     <template v-if="quotient !== 0 && remainingDividend !== 0">
       <span class="quotient">{{ quotient }}</span>
       <span class="fraction">
@@ -65,6 +68,10 @@ export default {
           typeof value[1][1] === 'number'
         );
       }
+    },
+    showPlus: {
+      type: Boolean,
+      required: false
     },
 
     /**

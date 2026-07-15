@@ -31,7 +31,7 @@ import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import axios from "axios"
-import Image from "@/Components/Image.vue"
+import Image from "@/Common/Components/Image.vue"
 import LabelItemsWaitingForWarehouse from "./LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
 import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
@@ -69,7 +69,7 @@ function orgStockRoute(deliveryNoteItem: any) {
     }
 
     return route(
-        "grp.helpers.redirect_org_stock",
+        "grp.majordomo.redirect_org_stock",
         [deliveryNoteItem.org_stock_id])
 
 }

@@ -27,6 +27,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import AddLocations from './AddLocations.vue'
 import EditLocationsModal from './EditLocationsModal.vue'
 import { WINDOW } from '@sentry/vue'
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
 
 const props = defineProps<{
@@ -448,7 +449,10 @@ const onAddLocationShow = () => {
 
             <div class="grid align-item-middle border-l">
                 <span class="my-auto text-lg text-center font-semibold mx-1 py-2 border border-green-200 bg-green-100 rounded tabular-nums" v-tooltip="trans('Stock in Location')">
-                    {{ locale.number(stocks_management.qty_in_location ?? 0) }}
+                    <FractionDisplay v-if="stocks_management.qty_in_location_fractional" :fractionData="stocks_management.qty_in_location_fractional"/>
+                    <span v-else>
+                        {{ locale.number(stocks_management.qty_in_location ?? 0) }}
+                    </span>
                 </span>
             </div>
         </div>
@@ -665,7 +669,10 @@ const onAddLocationShow = () => {
                                     class="cursor-pointer hover:text-blue-500 transition tabular-nums"
                                     @dblclick="openModal(MODALS.STOCK_CHECK, loc.id)"
                                 >
-                                    {{ Number(loc.quantity) }}
+                                    <FractionDisplay v-if="loc.quantity_fractional" :fractionData="loc.quantity_fractional"/>
+                                    <span v-else>
+                                        {{ Number(loc.quantity) }}
+                                    </span>
                                 </span>
                             </div>
                     </div>

@@ -300,9 +300,11 @@ class Customer extends Model implements HasMedia, Auditable
         return [
             'id'                       => (string)$this->id,
             'shop_id'                  => $this->shop_id,
+            'slug'                     => (string)$this->slug,
             'status'                   => $this->status->value,
             'state'                    => $this->state->value,
             'reference'                => $this->reference,
+            'location'                 => json_encode($this->location),
             'name'                     => (string)$this->name,
             'contact_name'             => (string)$this->contact_name,
             'company_name'             => (string)$this->company_name,

@@ -56,13 +56,8 @@ class ShowGroupOverviewHub extends GrpAction
                                 ],
                                 [
                                     'col_span' => 1,
-                                    'type' => 'operation_display',
-
-                                ],
-                                [
-                                    'col_span' => 1,
-                                    'type' => 'operation_display',
-
+                                    'type' => 'typesense_display',
+                                    'data' => GetTypesenseMetrics::run()
                                 ]
                             ],
                     ]

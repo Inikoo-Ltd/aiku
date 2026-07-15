@@ -48,6 +48,11 @@ class GetCollectionSearchSchema
                         'type' => 'int64',
                     ],
                     [
+                        'name'     => 'image',
+                        'type'     => 'string',
+                        'optional' => true,
+                    ],
+                    [
                         'name'     => '__soft_deleted',
                         'type'     => 'int32',
                         'optional' => true,

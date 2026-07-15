@@ -85,7 +85,7 @@ class ShowOrgStockFamily extends OrgAction
         return Inertia::render(
             'Org/Inventory/OrgStockFamily',
             [
-                'title'       => __('stock family'),
+                'title'       => __('stock family') . ' ' . $orgStockFamily->code,
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($orgStockFamily, $request),

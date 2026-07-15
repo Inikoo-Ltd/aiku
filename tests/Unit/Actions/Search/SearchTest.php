@@ -9,6 +9,7 @@
 namespace Tests\Unit\Actions\Search;
 
 use App\Actions\Search\Search;
+use App\Actions\Search\SearchSysAdmin;
 
 it('returns null route scope for unknown route prefix', function () {
     $action = app(Search::class);
@@ -25,10 +26,40 @@ it('maps known route prefixes to expected scopes', function (string $route, stri
     ['grp.org.shops.show.catalogue.products.index', 'catalogue'],
     ['grp.org.shops.show.crm.prospects.index', 'prospects'],
     ['grp.org.shops.show.crm.customers.index', 'customers'],
+    ['grp.org.shops.show.ordering.orders.index', 'orders'],
+    ['grp.org.shops.show.reviews.dashboard', 'reviews'],
+    ['grp.org.accounting.invoices.index', 'accounting'],
+    ['grp.org.accounting.payments.index', 'accounting'],
+    ['grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.index', 'inventory'],
+    ['grp.org.warehouses.show.dispatching.delivery_notes.index', 'dispatching'],
+    ['grp.org.warehouses.show.infrastructure.locations.index', 'locations'],
+    ['grp.goods.stocks.index', 'goods'],
+    ['grp.goods.trade-units.index', 'goods'],
+    ['grp.supply-chain.suppliers.index', 'supply_chain'],
 ]);
 
 it('returns empty array for unknown search scope', function () {
     $action = app(Search::class);
 
     expect($action->handle('unknown-scope', 'john'))->toBe([]);
+});
+
+it('caches results for queries of two characters or fewer', function () {
+    $expected = ['scope' => 'sysadmin', 'results' => ['users' => [], 'guests' => []]];
+    SearchSysAdmin::mock()->shouldReceive('handle')->once()->andReturn($expected);
+
+    $action = app(Search::class);
+
+    expect($action->handle('sysadmin', 'ab'))->toBe($expected)
+        ->and($action->handle('sysadmin', 'ab'))->toBe($expected);
+});
+
+it('does not cache results for queries longer than two characters', function () {
+    $expected = ['scope' => 'sysadmin', 'results' => ['users' => [], 'guests' => []]];
+    SearchSysAdmin::mock()->shouldReceive('handle')->twice()->andReturn($expected);
+
+    $action = app(Search::class);
+
+    $action->handle('sysadmin', 'abc');
+    $action->handle('sysadmin', 'abc');
 });

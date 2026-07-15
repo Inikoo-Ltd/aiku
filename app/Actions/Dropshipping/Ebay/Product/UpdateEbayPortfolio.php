@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
@@ -47,7 +48,6 @@ class UpdateEbayPortfolio implements ShouldBeUnique
     {
         $portfolio = Portfolio::find($portfolioID);
 
-
         if (!$portfolio || $portfolio->platform_product_id == null || !$portfolio->customerSalesChannel || !$portfolio->platform_status) {
             return;
         }
@@ -58,26 +58,26 @@ class UpdateEbayPortfolio implements ShouldBeUnique
             return;
         }
 
-
         if ($customerSalesChannel->ban_stock_update_util && $customerSalesChannel->ban_stock_update_util->gt(now())) {
             return;
         }
-
 
         $ebayUser = $customerSalesChannel->user;
         if (!$ebayUser instanceof EbayUser) {
             return;
         }
 
-
-        $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
-        /** @var Product $product */
         $product = $portfolio->item;
 
+        if (!$product instanceof Product) {
+            return;
+        }
+
+        $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
 
         $availableQuantity = $product->available_quantity ?? 0;
 
-        if (! $product->is_for_sale) {
+        if (!$product->is_for_sale) {
             $availableQuantity = 0;
         }
 
@@ -87,53 +87,58 @@ class UpdateEbayPortfolio implements ShouldBeUnique
 
         $ebayUser->setTimeout(45);
         try {
-            $ebayUser->updateQuantityOffer(
-                $portfolio->platform_product_id,
-                [
-                    "availableQuantity" => $availableQuantity,
-                ]
-            );
+            $offer = $ebayUser->getOffer($portfolio->platform_product_id);
 
-            $response = $ebayUser->getOffer($portfolio->platform_product_id);
-
-            if (Arr::get($response, 'availableQuantity') == $availableQuantity) {
+            if (!Arr::get($offer, 'offerId')) {
                 UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
-                    'status'           => PlatformPortfolioLogsStatusEnum::OK,
-                    'last_stock_value' => $availableQuantity
-                ]);
-                $customerSalesChannel->update([
-                    'ban_stock_update_util' => null
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => 'E1: '.json_encode(Arr::get($offer, 'errors', $offer))
                 ]);
 
                 $portfolio->update([
-                    'last_stock_value'      => $availableQuantity,
-                    'stock_last_updated_at' => now()
-                ]);
-            } else {
-                $ban = true;
-
-                $rawMessage  = Arr::get($response, '0', 'Unknown error');
-                $messageData = json_decode($rawMessage, true);
-                if ($messageData) {
-                    $message = Arr::get($messageData, 'message');
-                    if (Arr::get($messageData, 'code') == 'rest_invalid_param' || Arr::get($messageData, 'code') == 'woocommerce_rest_product_invalid_id' || Arr::get($messageData, 'data.status') == 404 || Arr::get($messageData, 'data.status') == 400) {
-                        $ban = false;
-                    }
-                } else {
-                    $message = $rawMessage;
-                }
-
-
-                UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
-                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => 'E1: '.$message
+                    'stock_last_fail_updated_at' => now()
                 ]);
 
-                if ($ban) {
+                if (!Arr::has($offer, 'errors')) {
                     $customerSalesChannel->update([
                         'ban_stock_update_util' => now()->addSeconds(10)
                     ]);
                 }
+
+                return;
+            }
+
+            if ((int) Arr::get($offer, 'availableQuantity') === $availableQuantity) {
+                $this->markUpdated($portfolio, $customerSalesChannel, $platformPortfolioLog, $availableQuantity);
+
+                return;
+            }
+
+            $response = $ebayUser->updateProductPriceAndQuantity([
+                'requests' => [
+                    [
+                        'sku'    => Arr::get($offer, 'sku'),
+                        'offers' => [
+                            [
+                                'offerId'           => $portfolio->platform_product_id,
+                                'availableQuantity' => $availableQuantity
+                            ]
+                        ]
+                    ]
+                ]
+            ]);
+
+            $statusCode = (int) Arr::get($response, 'responses.0.statusCode');
+
+            if (in_array($statusCode, [200, 204])) {
+                $this->markUpdated($portfolio, $customerSalesChannel, $platformPortfolioLog, $availableQuantity);
+            } else {
+                $errors = Arr::get($response, 'responses.0.errors', Arr::get($response, 'errors', $response));
+
+                UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => 'E1: '.json_encode($errors)
+                ]);
 
                 $portfolio->update([
                     'stock_last_fail_updated_at' => now()
@@ -153,5 +158,22 @@ class UpdateEbayPortfolio implements ShouldBeUnique
         }
     }
 
+    public function markUpdated(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel, $platformPortfolioLog, int $availableQuantity): void
+    {
+        UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [
+            'status'           => PlatformPortfolioLogsStatusEnum::OK,
+            'last_stock_value' => $availableQuantity
+        ]);
 
+        if ($customerSalesChannel->ban_stock_update_util !== null) {
+            $customerSalesChannel->update([
+                'ban_stock_update_util' => null
+            ]);
+        }
+
+        $portfolio->update([
+            'last_stock_value'      => $availableQuantity,
+            'stock_last_updated_at' => now()
+        ]);
+    }
 }

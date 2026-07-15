@@ -8,8 +8,6 @@
 
 namespace App\Actions\Search;
 
-use App\Http\Resources\Inventory\OrgStockFamiliesSearchResultResource;
-use App\Http\Resources\Inventory\OrgStocksSearchResultResource;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
 use Illuminate\Support\Arr;
@@ -18,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SearchInventory
 {
     use AsAction;
+    use WithRawSearchResults;
 
     public function handle(string $query, array $options): array
     {
@@ -32,13 +31,18 @@ class SearchInventory
             $orgStockFamiliesQuery->where('organisation_id', $organisationId);
         }
 
+        $mapCodeNameState = static fn (array $document) => [
+            'id'    => (int)$document['id'],
+            'code'  => $document['code'] ?? null,
+            'name'  => $document['name'] ?? null,
+            'state' => $document['state'] ?? null,
+        ];
 
         return [
             'scope'   => 'inventory',
             'results' => [
-                'org_stocks'         => OrgStocksSearchResultResource::collection($orgStocksQuery->get()),
-                'org_stock_families' => OrgStockFamiliesSearchResultResource::collection($orgStockFamiliesQuery->get()),
-
+                'org_stocks'         => array_map($mapCodeNameState, $this->rawDocuments($orgStocksQuery)),
+                'org_stock_families' => array_map($mapCodeNameState, $this->rawDocuments($orgStockFamiliesQuery)),
             ],
         ];
     }

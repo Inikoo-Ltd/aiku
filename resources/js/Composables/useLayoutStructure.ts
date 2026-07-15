@@ -65,9 +65,6 @@ export const layoutStructure = {
     notifications: [] as Notification[],
     avatar_thumbnail: null as Image | null,
 
-    isShopPage: false as boolean,
-    isFulfilmentPage: false as boolean,
-    // isShopPage: false as boolean,
     dispatching_waiting_count: 0 as number,
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,

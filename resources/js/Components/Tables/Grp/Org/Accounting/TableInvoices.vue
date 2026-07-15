@@ -77,7 +77,7 @@ function organisationRoute(invoice: Invoice) {
 
 function shopRoute(invoice: Invoice) {
   return route(
-    "grp.helpers.redirect_invoices_in_shop",
+    "grp.majordomo.redirect_invoices_in_shop",
     [invoice.id]);
 }
 
@@ -94,7 +94,7 @@ function customerRoute(invoice: Invoice) {
       ]);
 
     default:
-      return route("grp.helpers.redirect_invoices_in_customer", [
+      return route("grp.majordomo.redirect_invoices_in_customer", [
         invoice.id,
       ]);
   }

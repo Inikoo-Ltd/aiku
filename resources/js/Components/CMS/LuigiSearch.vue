@@ -201,14 +201,14 @@ const visitSearchPage = () => {
 
 .luigi-ac-ribbon {
     /* Border top of the Autocomplete */
-    background: var(--luigiColor1) !important;
+    background: var(--theme-color-0) !important;
 }
 
 
 /* Styling for Layout: Hero */
 .luigi-ac-hero-color {
-    background: var(--luigiColor1) !important;
-    color: var(--luigiColor2) !important;
+    background: var(--theme-color-0) !important;
+    color: var(--theme-color-1) !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
@@ -227,14 +227,14 @@ const visitSearchPage = () => {
     overflow-y: auto !important;
 }
 .luigi-ac-header {
-    color: var(--luigiColor1) !important;
+    color: var(--theme-color-0) !important;
     font-size: 1.2rem !important;
     font-weight: bold !important;
 }
 .luigi-ac-highlight {
-    background: color-mix(in srgb, var(--luigiColor1) 90%, transparent) !important;
+    background: color-mix(in srgb, var(--theme-color-0) 90%, transparent) !important;
     border-radius: 2px !important;
-    color: var(--luigiColor2) !important;
+    color: var(--theme-color-1) !important;
     font-weight: normal !important;
     padding-left: 2px !important;
     padding-right: 2px !important;
@@ -249,19 +249,25 @@ const visitSearchPage = () => {
     background: #F3F7FA !important;
 }
 
-.luigi-ac-item:hover, .luigi-ac-other:hover {
-    background: color-mix(in srgb, var(--luigiColor1) 10%, transparent) !important;
+// Main slots
+.luigi-ac-item:hover {
+    background: color-mix(in srgb, var(--theme-color-0) 20%, var(--theme-color-1)) !important;
+}
+
+// Side slot (queries, etc)
+.luigi-ac-other:hover {
+    background: color-mix(in srgb, var(--theme-color-0) 80%, var(--theme-color-1)) !important;
 }
 /* End of styling for Layout: Hero */
 
 
 .luigi-ac-button-buy {
-    background: var(--luigiColor1) !important;
+    background: var(--theme-color-0) !important;
     border-radius: 5px;
 }
 
 .luigi-ac-button-buy:hover {
-    background: color-mix(in srgb, var(--luigiColor1) 75%, black) !important;
+    background: color-mix(in srgb, var(--theme-color-0) 75%, var(--theme-color-1)) !important;
 }
 
 
@@ -269,12 +275,12 @@ const visitSearchPage = () => {
     background: transparent !important;
     transition: background 0.05s !important;
     border-radius: 5px !important;
-    border: 1px solid var(--luigiColor1) !important;
-    color: var(--luigiColor1) !important;
+    border: 1px solid var(--theme-color-0) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .luigi-ac-button:hover {
-    background: color-mix(in srgb, var(--luigiColor1) 10%, transparent) !important;
+    background: color-mix(in srgb, var(--theme-color-0) 10%, transparent) !important;
 }
 
 .luigi-ac-heromobile .luigi-ac-first-main .luigi-ac-text {
@@ -296,16 +302,17 @@ const visitSearchPage = () => {
 }
 
 .luigi-ac-no-result {
-    color: var(--luigiColor3) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .luigi-ac-queries {
-    line-height: 0px !important;
+    // line-height: 0px !important;
 }
 
-.luigi-ac-query .luigi-ac-other-content {
+/* .luigi-ac-query .luigi-ac-other-content {
     color: #fff !important;
 }
+*/
 
 
 /* Top Product styling (luigi-ac-first-main) */
@@ -313,7 +320,7 @@ const visitSearchPage = () => {
     margin-top: 5px;
     font-size: 1.05rem !important;
     display: block !important;
-    color: var(--luigiColor1) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .luigi-ac-first-main .luigi-ac-attr--description {
@@ -357,7 +364,7 @@ const visitSearchPage = () => {
 
 .luigi-ac-rest-main .luigi-ac-attr--formatted_price {
     display: block !important;
-    color: var(--luigiColor1) !important;
+    color: var(--theme-color-0) !important;
 }
 
 .luigi-ac-heromobile-action-for-mobile  {
