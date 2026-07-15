@@ -23,12 +23,12 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
 {
     use AsAction;
 
-    public function getJobUniqueId(int|null $orderID): string
+    public function getJobUniqueId(?int $orderID): string
     {
         return $orderID ?? 'empty';
     }
 
-    public function handle(int|null $orderID, Command|null $command = null): void
+    public function handle(?int $orderID, ?Command $command = null): void
     {
         if (!$orderID) {
             return;
@@ -104,7 +104,7 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
     }
 
 
-    public string $commandSignature = 'orders:recalculate_totals_orders_in_basket {shop?}';
+    public string $commandSignature = 'orders:recalculate_totals_orders_in_basket {shop?} {--a|async} {--D|days=}';
 
     public function asCommand(Command $command): void
     {
@@ -115,19 +115,30 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
             $shopsIds = Shop::where('is_aiku', true)->pluck('id')->toArray();
         }
 
+        $query = Order::where('state', OrderStateEnum::CREATING)->whereIn('shop_id', $shopsIds);
 
-        $count = Order::where('state', OrderStateEnum::CREATING)->whereIn('shop_id', $shopsIds)->count();
+        if ($days = $command->option('days')) {
+            $query->where('created_at', '<=', now()->subDays((int) $days));
+        }
+
+        $count = (clone $query)->count();
 
 
         $bar = $command->getOutput()->createProgressBar($count);
         $bar->setFormat('debug');
         $bar->start();
 
-        Order::where('state', OrderStateEnum::CREATING)->whereIn('shop_id', $shopsIds)->orderBy('date', 'desc')
-            ->chunk(1000, function (Collection $models) use ($bar, $command) {
+        $async = (bool)$command->option('async');
+
+        $query->orderBy('date', 'desc')
+            ->chunk(1000, function (Collection $models) use ($bar, $command, $async) {
                 foreach ($models as $model) {
-                    $this->handle($model->id, $command);
-                    $bar->advance();
+                    if ($async) {
+                        RecalculateTotalsOrdersInBasket::dispatch($model->id)->onQueue('sales_slave');
+                    } else {
+                        $this->handle($model->id, $command);
+                        $bar->advance();
+                    }
                 }
             });
     }
