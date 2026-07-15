@@ -220,9 +220,10 @@ class IndexProductWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
+                'title'       => __('Webpages') . ' ' . __('Products'),
                 'pageHead'    => [
-                    'title'         => __('Product webpages'),
+                    'model'         => __('Webpages'),
+                    'title'         => __('Products'),
                     'color'         => '#6366f1',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],

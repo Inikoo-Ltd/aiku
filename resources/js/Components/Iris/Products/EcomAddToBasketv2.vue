@@ -11,6 +11,7 @@ import axios from 'axios'
 import { ProductResource } from '@/types/Iris/Products'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLongArrowRight } from '@fal'
@@ -47,6 +48,17 @@ let statusTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isLoadingSubmitQuantityProduct = ref(false)
 
+
+const pushAddToCart = (quantity: number) => {
+    if (quantity <= 0) {
+        return
+    }
+
+    pushGtmEvent('add_to_cart', buildGtmProductPayload(product.value as any, {
+        currencyCode: layout?.iris?.currency?.code,
+        quantity,
+    }))
+}
 
 const setStatus = (newStatus: typeof status.value) => {
     status.value = newStatus
@@ -113,6 +125,8 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
             quantity_ordered: payload.quantity_ordered
         })
 
+        pushAddToCart(payload.quantity_ordered ?? quantity)
+
         const products = layout.rightbasket?.products
         if (products) {
             const manipProduct = {
@@ -159,6 +173,7 @@ const onUpdateQuantity = async () => {
     const qty = customer.value.quantity_ordered_new ?? 0
     const transactionId = customer.value.transaction_id
     const willRemove = qty === 0
+    const previousQty = customer.value.quantity_ordered ?? 0
 
     try {
         setStatus('loading')
@@ -199,7 +214,7 @@ const onUpdateQuantity = async () => {
             }
         }
         set(layout, ['family_page', 'productInBasket', 'list'], updatedList)
-
+        pushAddToCart(payload.quantity_ordered - previousQty)
         fetchCustomerOrderingProduct()
         layout.reload_handle()
 

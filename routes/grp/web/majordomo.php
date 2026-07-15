@@ -9,6 +9,7 @@
 use App\Actions\Helpers\Redirects\RedirectAssetLink;
 use App\Actions\Helpers\Redirects\RedirectCollectionLink;
 use App\Actions\Helpers\Redirects\RedirectCollectionsInProductCategoryLink;
+use App\Actions\Helpers\Redirects\RedirectCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectCustomersInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectDeletedInvoicesInShopLink;
 use App\Actions\Helpers\Redirects\RedirectDeliveryNotesLink;
@@ -63,6 +64,7 @@ Route::get('redirect-trade-unit/{tradeUnit:id}', RedirectTradeUnitLink::class)->
 Route::get('redirect-trade-unit-family/{tradeUnitFamily:id}', RedirectTradeUnitFamilyLink::class)->name('redirect_trade_unit_family');
 Route::get('redirect-supplier/{supplier:id}', RedirectSupplierLink::class)->name('redirect_supplier');
 Route::get('redirect-prospect/{prospect:id}', RedirectProspectLink::class)->name('redirect_prospect');
+Route::get('redirect-customer/{customer:id}', RedirectCustomerLink::class)->name('redirect_customer');
 Route::get('redirect-org-stock/{orgStock:id}/to-products-index', [RedirectOrgStockLink::class, 'toProductsIndex'])->name('redirect_org_stock.to_products_index');
 
 
