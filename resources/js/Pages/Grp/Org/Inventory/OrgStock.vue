@@ -115,7 +115,7 @@ const component = computed(() => {
         purchase_history: TableOrgStockMovements,
         details: ModelDetails,
         history: TableHistories,
-        purchase_orders: TablePurchaseOrders
+        purchase_orders: TablePurchaseOrders,
     }
     return components[currentTab.value]
 
