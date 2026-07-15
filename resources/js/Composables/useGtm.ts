@@ -69,7 +69,6 @@ const withoutEmptyValues = (data: Record<string, any>): Record<string, any> => {
 export const buildRegistrationUserData = (
     contact: RegistrationContact,
 ): Record<string, any> => {
-    const contactAddress = contact.contact_address ?? {}
 
     return withoutEmptyValues({
         email_address: contact.email?.trim().toLowerCase(),
