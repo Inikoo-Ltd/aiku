@@ -16,6 +16,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
 import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
+import { pushGtmEvent, buildRegistrationUserData } from "@/Composables/useGtm"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { get } from "lodash-es"
@@ -113,9 +114,8 @@ const submit = () => {
 
 			},
 			onSuccess: async () => {
-				window.dataLayer = window.dataLayer || [];
-				window.dataLayer.push({
-					event: 'registrationSuccess'
+				pushGtmEvent('registrationSuccess', {
+					user_data: buildRegistrationUserData(form),
 				})
 				window.location.href = await getRefRedirect()
 			}
