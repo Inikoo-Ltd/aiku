@@ -32,20 +32,44 @@
         {{Vite::useHotFile('retina.hot')->useBuildDirectory('retina')->withEntryPoints(['resources/js/app-retina.js'])}}
         @inertiaHead
 
-        @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
-            <!-- Google Tag Manager -->
-            <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');</script>
-            <!-- End Google Tag Manager -->
-        @endif
+        <!-- Third parties (GTM, Luigi search) deferred to first interaction or shortly after load -->
+        <script>
+            (function () {
+                var fired = false;
+                var events = ["pointerdown", "keydown", "touchstart", "scroll"];
+                var loadThirdParties = function () {
+                    if (fired) return;
+                    fired = true;
+                    events.forEach(function (e) { window.removeEventListener(e, loadThirdParties, { passive: true }); });
 
-        <!-- Section: Luigi analytics -->
-        @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', ''))
-            <script async src="https://scripts.luigisbox.tech/{{ Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script> 
-        @endif
+                    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
+                    (function (w, d, s, l, i) {
+                        w[l] = w[l] || [];
+                        w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+                        var f = d.getElementsByTagName(s)[0],
+                            j = d.createElement(s), dl = l != "dataLayer" ? "&l=" + l : "";
+                        j.async = true;
+                        j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+                        f.parentNode.insertBefore(j, f);
+                    })(window, document, "script", "gtmDataLayer", '{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');
+                    @endif
+
+                    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', ''))
+                    var lbx = document.createElement("script");
+                    lbx.async = true;
+                    lbx.src = "https://scripts.luigisbox.tech/{{ Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') }}.js";
+                    document.head.appendChild(lbx);
+                    @endif
+                };
+
+                events.forEach(function (e) { window.addEventListener(e, loadThirdParties, { once: true, passive: true }); });
+                if (document.readyState === "complete") {
+                    setTimeout(loadThirdParties, 3500);
+                } else {
+                    window.addEventListener("load", function () { setTimeout(loadThirdParties, 3500); }, { once: true });
+                }
+            })();
+        </script>
 
 
         <!-- Jira -->

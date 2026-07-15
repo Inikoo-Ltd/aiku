@@ -302,12 +302,12 @@ const visitSearchPage = () => {
 }
 
 .luigi-ac-no-result {
-    color: var(--luigiColor3) !important;
+    color: var(--theme-color-0) !important;
 }
 
-.luigi-ac-queries {
-    // line-height: 0px !important;
-}
+// .luigi-ac-queries {
+//     line-height: 0px !important;
+// }
 
 /* .luigi-ac-query .luigi-ac-other-content {
     color: #fff !important;

@@ -131,11 +131,11 @@ const props = defineProps<{
     }
     total_need_to_pay: number
   }
-  items_in_process: {}
-  items: {}
-  payments: {}
-  details: {}
-  history: {},
+  items_in_process?: {}
+  items?: {}
+  payments?: {}
+  details?: {}
+  history?: {},
   invoiceExportOptions?: {}
   layout: {
     group: {}

@@ -45,7 +45,7 @@ const props = defineProps<{
     redirects?: {},
     external_links?: {}
     labeled_snapshots?: {}
-    analytics:any
+    analytics?:any
     webpage_canonical_url?: string
     redirected_to?: {}
 }>()

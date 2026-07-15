@@ -6,6 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import TabSelector from '@/Components/Elements/TabSelector.vue'
 import { get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+defineOptions({ inheritAttrs: false })
 
 defineProps<{
     form: any

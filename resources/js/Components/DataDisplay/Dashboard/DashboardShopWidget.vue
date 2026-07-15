@@ -80,7 +80,7 @@ const registrationsRatio = computed(() => {
 
 <template>
     <div>
-        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-4 p-4">
             <ShopSales :interval="interval" :data="data.interval_data" />
             <ShopInvoices :interval="interval" :data="data.interval_data" />
 

@@ -54,7 +54,7 @@ const props = defineProps<{
         current: string;
         navigation: object;
     }
-    stocks: object
+    stocks?: object
     createStockRoute: {
         name: string;
         parameters?: {

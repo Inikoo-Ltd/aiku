@@ -11,6 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faExclamationCircle, faCheckCircle, faEye, faEyeSlash } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faExclamationCircle, faCheckCircle, faEye, faEyeSlash)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps(['form', 'fieldName', 'options', 'fieldData'])
 

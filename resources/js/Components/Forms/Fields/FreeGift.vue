@@ -19,6 +19,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Tag from '@/Components/Tag.vue'
 
 library.add(faCircle, faCheckCircle, faTimes, faBoxUp)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

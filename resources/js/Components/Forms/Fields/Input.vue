@@ -16,6 +16,8 @@ library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps<{
     form: any
     fieldName: string
