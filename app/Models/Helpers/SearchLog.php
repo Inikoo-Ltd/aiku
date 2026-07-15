@@ -24,6 +24,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $results_count
  * @property string|null $clicked_url
  * @property \Illuminate\Support\Carbon|null $clicked_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SearchLog newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SearchLog newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SearchLog query()
+ * @mixin \Eloquent
  */
 class SearchLog extends Model
 {
