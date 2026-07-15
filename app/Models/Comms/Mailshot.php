@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * App\Models\Comms\Mailshot
@@ -96,6 +97,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Mailshot extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use HasFactory;
     use InShop;
@@ -225,4 +227,18 @@ class Mailshot extends Model implements Auditable
     {
         return $this->belongsTo(Mailshot::class, 'parent_mailshot_id');
     }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'shop_id'    => $this->shop_id,
+            'subject'    => (string)$this->subject,
+            'type'       => $this->type->value,
+            'state'      => $this->state->value,
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
 }

@@ -37,11 +37,18 @@ use App\Actions\Helpers\Redirects\RedirectShopInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectStockFamilyLink;
 use App\Actions\Helpers\Redirects\RedirectStockLink;
 use App\Actions\Helpers\Redirects\RedirectStoredItemAudit;
+use App\Actions\Helpers\Redirects\RedirectBarcodeLink;
+use App\Actions\Helpers\Redirects\RedirectBrandLink;
+use App\Actions\Helpers\Redirects\RedirectChargeLink;
+use App\Actions\Helpers\Redirects\RedirectMailshotLink;
+use App\Actions\Helpers\Redirects\RedirectOfferCampaignLink;
+use App\Actions\Helpers\Redirects\RedirectOfferLink;
+use App\Actions\Helpers\Redirects\RedirectServiceLink;
+use App\Actions\Helpers\Redirects\RedirectShippingZoneSchemaLink;
 use App\Actions\Helpers\Redirects\RedirectSupplierLink;
 use App\Actions\Helpers\Redirects\RedirectTradeUnitFamilyLink;
 use App\Actions\Helpers\Redirects\RedirectTradeUnitLink;
-use App\Actions\Helpers\Upload\DownloadUploads;
-use App\Actions\Helpers\Upload\UI\ShowUpload;
+use App\Actions\Helpers\Redirects\RedirectWebpageLink;
 use Illuminate\Support\Facades\Route;
 
 Route::get('redirect-asset/{asset:id}', RedirectAssetLink::class)->name('redirect_asset');
@@ -63,6 +70,15 @@ Route::get('redirect-trade-unit/{tradeUnit:id}', RedirectTradeUnitLink::class)->
 Route::get('redirect-trade-unit-family/{tradeUnitFamily:id}', RedirectTradeUnitFamilyLink::class)->name('redirect_trade_unit_family');
 Route::get('redirect-supplier/{supplier:id}', RedirectSupplierLink::class)->name('redirect_supplier');
 Route::get('redirect-prospect/{prospect:id}', RedirectProspectLink::class)->name('redirect_prospect');
+Route::get('redirect-charge/{charge:id}', RedirectChargeLink::class)->name('redirect_charge');
+Route::get('redirect-service/{service:id}', RedirectServiceLink::class)->name('redirect_service');
+Route::get('redirect-shipping-zone-schema/{shippingZoneSchema:id}', RedirectShippingZoneSchemaLink::class)->name('redirect_shipping_zone_schema');
+Route::get('redirect-offer/{offer:id}', RedirectOfferLink::class)->name('redirect_offer');
+Route::get('redirect-offer-campaign/{offerCampaign:id}', RedirectOfferCampaignLink::class)->name('redirect_offer_campaign');
+Route::get('redirect-mailshot-page/{mailshot:id}', RedirectMailshotLink::class)->name('redirect_mailshot');
+Route::get('redirect-webpage/{webpage:id}', RedirectWebpageLink::class)->name('redirect_webpage');
+Route::get('redirect-brand/{brand:id}', RedirectBrandLink::class)->name('redirect_brand');
+Route::get('redirect-barcode/{barcode:id}', RedirectBarcodeLink::class)->name('redirect_barcode');
 Route::get('redirect-org-stock/{orgStock:id}/to-products-index', [RedirectOrgStockLink::class, 'toProductsIndex'])->name('redirect_org_stock.to_products_index');
 
 
