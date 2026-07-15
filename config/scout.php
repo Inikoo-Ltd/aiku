@@ -14,6 +14,7 @@ use App\Actions\Comms\Mailshot\Search\GetMailshotSearchSchema;
 use App\Actions\Discounts\Offer\Search\GetOfferSearchSchema;
 use App\Actions\Discounts\OfferCampaign\Search\GetOfferCampaignSearchSchema;
 use App\Actions\Helpers\Barcode\Search\GetBarcodeSearchSchema;
+use App\Actions\HumanResources\Employee\Search\GetEmployeeSearchSchema;
 use App\Actions\Helpers\Brand\Search\GetBrandSearchSchema;
 use App\Actions\Helpers\Tag\Search\GetTagSearchSchema;
 use App\Actions\Masters\MasterAsset\Search\GetMasterAssetSearchSchema;
@@ -28,6 +29,7 @@ use App\Models\Comms\Mailshot;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Helpers\Barcode;
+use App\Models\HumanResources\Employee;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Tag;
 use App\Models\Masters\MasterAsset;
@@ -250,7 +252,8 @@ return [
             MasterCollection::class => GetMasterCollectionSearchSchema::run(),
             Brand::class           => GetBrandSearchSchema::run(),
             Tag::class             => GetTagSearchSchema::run(),
-            Barcode::class         => GetBarcodeSearchSchema::run()
+            Barcode::class         => GetBarcodeSearchSchema::run(),
+            Employee::class        => GetEmployeeSearchSchema::run()
 
         ],
     ],

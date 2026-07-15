@@ -20,8 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 class Search extends OrgAction
 {
     protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop'];
-    protected const array ORGANISATION_SCOPES = ['accounting'];
-    protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews', 'billables', 'offers', 'marketing', 'website'];
+    protected const array ORGANISATION_SCOPES = ['accounting', 'hr'];
+    protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews', 'billables', 'offers', 'marketing', 'website', 'shop_accounting'];
     protected const array WAREHOUSE_SCOPES = ['inventory', 'dispatching', 'locations'];
 
 
@@ -37,7 +37,9 @@ class Search extends OrgAction
             'offers'       => static fn () => SearchOffers::run($query, $options),
             'marketing'    => static fn () => SearchMarketing::run($query, $options),
             'website'      => static fn () => SearchWebsite::run($query, $options),
-            'accounting'   => static fn () => SearchAccounting::run($query, $options),
+            'accounting'      => static fn () => SearchAccounting::run($query, $options),
+            'shop_accounting' => static fn () => SearchAccounting::run($query, $options),
+            'hr'              => static fn () => SearchHr::run($query, $options),
             'catalogue'    => static fn () => SearchCatalogue::run($query, $options),
             'prospects'    => static fn () => SearchProspects::run($query, $options),
             'customers'    => static fn () => SearchCustomers::run($query, $options),
@@ -131,6 +133,8 @@ class Search extends OrgAction
             'grp.trade_units.'                        => 'trade_units',
             'grp.masters.'                            => 'master_shop',
             'grp.org.accounting.'                     => 'accounting',
+            'grp.org.hr.'                             => 'hr',
+            'grp.org.shops.show.dashboard'            => 'shop_accounting',
             'grp.org.shops.show.catalogue'            => 'catalogue',
             'grp.org.shops.show.crm.prospects'        => 'prospects',
             'grp.org.shops.show.crm'                  => 'customers',

@@ -36,6 +36,7 @@ use App\Actions\Goods\Stock\Search\ReindexStockSearch;
 use App\Actions\Goods\StockFamily\Search\ReindexStockFamilySearch;
 use App\Actions\Goods\TradeUnit\Search\ReindexTradeUnitsSearch;
 use App\Actions\Goods\TradeUnitFamily\Search\ReindexTradeUnitFamiliesSearch;
+use App\Actions\HumanResources\Employee\Search\ReindexEmployeesSearch;
 use App\Actions\HydrateModel;
 use App\Actions\Inventory\Location\Search\ReindexLocationsSearch;
 use App\Actions\Inventory\OrgStock\Search\ReindexOrgStockSearch;
@@ -263,7 +264,10 @@ class ReindexSearch extends HydrateModel
     protected function reindexHr(Command $command): void
     {
         $command->info('HR section 👩🏻‍💼');
-        //        $command->call('search:employees');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexEmployeesSearch::run(reset: $command->option('reset'));
 
     }
 

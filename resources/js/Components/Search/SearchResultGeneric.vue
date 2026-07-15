@@ -6,7 +6,7 @@ import {
     faPersonDolly, faUserPlus, faStar, faChargingStation, faConciergeBell, faShippingFast,
     faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
     faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
-    faSpinnerThird,
+    faSpinnerThird, faUserHardHat,
 } from '@fal'
 import { Link } from '@inertiajs/vue3'
 import Skeleton from 'primevue/skeleton'
@@ -17,7 +17,7 @@ library.add(
     faPersonDolly, faUserPlus, faStar, faChargingStation, faConciergeBell, faShippingFast,
     faMapMarkedAlt, faBadgePercent, faCommentDollar, faMailBulk, faBrowser, faCube,
     faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
-    faSpinnerThird,
+    faSpinnerThird, faUserHardHat,
 )
 
 type ResultItem = {
@@ -65,6 +65,7 @@ const SECTIONS: Record<string, SectionConfig> = {
     brands: { label: 'Brands', icon: 'fal fa-copyright', redirectRoute: 'grp.majordomo.redirect_brand' },
     tags: { label: 'Tags', icon: 'fal fa-tags' },
     barcodes: { label: 'Barcodes', icon: 'fal fa-barcode', redirectRoute: 'grp.majordomo.redirect_barcode' },
+    employees: { label: 'Employees', icon: 'fal fa-user-hard-hat', redirectRoute: 'grp.majordomo.redirect_employee' },
 }
 
 const model = defineModel('open')
