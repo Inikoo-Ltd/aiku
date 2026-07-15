@@ -16,6 +16,7 @@ use App\Actions\Billables\Charge\Search\ReindexChargesSearch;
 use App\Actions\Billables\Service\Search\ReindexServicesSearch;
 use App\Actions\Billables\ShippingZone\Search\ReindexShippingZonesSearch;
 use App\Actions\Billables\ShippingZoneSchema\Search\ReindexShippingZoneSchemasSearch;
+use App\Actions\Chat\ChatMessage\Search\ReindexChatMessagesSearch;
 use App\Actions\Comms\Mailshot\Search\ReindexMailshotsSearch;
 use App\Actions\Discounts\Offer\Search\ReindexOffersSearch;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignsSearch;
@@ -96,6 +97,10 @@ class ReindexSearch extends HydrateModel
 
         if ($this->checkIfCanReindex(['trade_units', 'tu'], $command)) {
             $this->reindexTradeUnits($command);
+        }
+
+        if ($this->checkIfCanReindex(['chat'], $command)) {
+            $this->reindexChat($command);
         }
 
         if ($this->checkIfCanReindex(['discount'], $command)) {
@@ -198,6 +203,15 @@ class ReindexSearch extends HydrateModel
         ReindexMasterAssetsSearch::run(reset: $command->option('reset'));
         ReindexMasterProductCategoriesSearch::run(reset: $command->option('reset'));
         ReindexMasterCollectionsSearch::run(reset: $command->option('reset'));
+    }
+
+    protected function reindexChat(Command $command): void
+    {
+        $command->info('Chat section 💬');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexChatMessagesSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexTradeUnits(Command $command): void
