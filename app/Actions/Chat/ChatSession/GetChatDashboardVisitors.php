@@ -162,6 +162,8 @@ class GetChatDashboardVisitors
 
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
     {
+        $request->validate();
+
         return $this->handle(
             $shop->organisation,
             $request->validated('date'),
@@ -171,6 +173,8 @@ class GetChatDashboardVisitors
 
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): array
     {
+        $request->validate();
+
         return $this->handle(
             $fulfilment->organisation,
             $request->validated('date'),
