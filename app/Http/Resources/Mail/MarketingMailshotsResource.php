@@ -65,6 +65,7 @@ class MarketingMailshotsResource extends JsonResource
             'shop_id'                   => $mailshot->shop_id,
             'webpage_slug'              => $this->webpage_slug,
             'webpage_website_slug'      => $this->webpage_website_slug,
+            'has_source_reference'      => filled($mailshot->source_id) || filled($mailshot->source_alt_id) || filled($mailshot->source_alt2_id),
         ];
     }
 }
