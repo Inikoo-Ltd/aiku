@@ -44,6 +44,11 @@ class GetWarehouseAreaSearchSchema
                         'type' => 'int64',
                     ],
                     [
+                        'name'     => 'slug',
+                        'type'     => 'string',
+                        'optional' => true,
+                    ],
+                    [
                         'name'     => '__soft_deleted',
                         'type'     => 'int32',
                         'optional' => true,

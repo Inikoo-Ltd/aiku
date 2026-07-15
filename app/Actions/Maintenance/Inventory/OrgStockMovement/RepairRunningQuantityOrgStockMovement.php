@@ -1,4 +1,5 @@
 <?php
+
 /** @noinspection PhpUnused */
 
 /*
@@ -30,7 +31,7 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
     }
 
 
-    public function handle(?int $orgStockId, Command $command): void
+    public function handle(?int $orgStockId, ?Command $command = null): void
     {
         if (!$orgStockId) {
             return;
@@ -45,18 +46,20 @@ class RepairRunningQuantityOrgStockMovement implements ShouldBeUnique
         foreach (
             $orgStock->orgStockMovements()->orderBy('date')->get() as $movement
         ) {
-            $command->info("Repairing: $orgStock->slug $movement->date");
-            CalculateRunningQuantityOrgStockMovement::run($movement->id);
+            $movement = CalculateRunningQuantityOrgStockMovement::run($movement->id);
+            $command?->info("$movement->date $orgStock->slug {$movement->location?->code} $movement->running_quantity $movement->running_quantity_org_stock  ");
         }
+
+        $command?->line('Org Stock '.$orgStock->slug.' '.$orgStock->quantity_in_locations);
     }
 
     public string $commandSignature = 'repair:running_quantity_org_stock_movement {--s|org_stock_slug=} {--o|organisation=} {--a|async}';
 
     public function asCommand(Command $command): int
     {
-        $orgStockSlug     = $command->option('org_stock_slug');
+        $orgStockSlug = $command->option('org_stock_slug');
         $organisationSlug = $command->option('organisation');
-        $organisation     = null;
+        $organisation = null;
 
         if ($organisationSlug) {
             $organisation = Organisation::where('slug', $organisationSlug)->first();

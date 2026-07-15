@@ -31,7 +31,7 @@ class GetOrgStockShowcase
             $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
         }
 
-        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks()->with(['location', 'organisation', 'warehouse'])->get())->toArray(request());
+        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks()->with(['location', 'organisation', 'warehouse', 'orgStock'])->get())->toArray(request());
         usort($locations, function ($a, $b) {
             return $a['code'] <=> $b['code'];
         });
@@ -98,7 +98,8 @@ class GetOrgStockShowcase
                         ],
                     ],
                     'locations'       => $locations,
-                    'qty_in_location' => $orgStock->quantity_in_locations
+                    'qty_in_location'               => $orgStock->quantity_in_locations,
+                    'qty_in_location_fractional'    => riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->quantity_in_locations ?? 0)), $orgStock->packed_in ?? 1),
                 ]
             ]
         );

@@ -58,7 +58,7 @@ function organisationRoute(invoice: Invoice) {
 
 function shopRoute(invoice: Invoice) {
   return route(
-    "grp.helpers.redirect_deleted_invoices_in_shop",
+    "grp.majordomo.redirect_deleted_invoices_in_shop",
     [invoice.shop_id]);
 }
 

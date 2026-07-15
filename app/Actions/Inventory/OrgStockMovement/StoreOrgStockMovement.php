@@ -45,7 +45,7 @@ class StoreOrgStockMovement extends OrgAction
         data_set($modelData, 'date', now(), overwrite: false);
 
 
-        if (!Arr::has($modelData, 'org_amount')) {
+        if (!Arr::has($modelData, 'org_amount') && Arr::has($modelData, 'quantity')) {
             $orgAmount = $modelData['quantity'] * $orgStock->value_in_locations;
             data_set($modelData, 'org_amount', $orgAmount);
         }
@@ -93,6 +93,7 @@ class StoreOrgStockMovement extends OrgAction
                         'quantity' => $locationOrgStock->quantity + $orgStockMovement->quantity,
                     ]
                 );
+                BroadcastStockMovement::dispatch($locationOrgStock);
             } else {
                 $stock = GetLocationOrgStockQuantity::run($orgStock, $location);
                 UpdateLocationOrgStock::run(
@@ -103,8 +104,6 @@ class StoreOrgStockMovement extends OrgAction
                 );
             }
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
-            BroadcastStockMovement::dispatch($locationOrgStock);
-
         }
 
         $this->hydrateOrgStockMovement($orgStockMovement);
@@ -134,9 +133,10 @@ class StoreOrgStockMovement extends OrgAction
             'user_id'          => ['sometimes', 'nullable', 'numeric']
         ];
         if (!$this->strict) {
-            $rules['note']       = ['sometimes', 'nullable', 'string', 'max:1024'];
-            $rules['fetched_at'] = ['sometimes', 'date'];
-            $rules['source_id']  = ['sometimes', 'string'];
+            $rules['note']               = ['sometimes', 'nullable', 'string', 'max:1024'];
+            $rules['fetched_at']         = ['sometimes', 'date'];
+            $rules['source_id']          = ['sometimes', 'string'];
+            $rules['is_migration_point'] = ['sometimes', 'boolean'];
         }
 
         return $rules;

@@ -77,7 +77,7 @@ const isLoadingVisit = ref(false)
             <template #button-empty-state>
                 <Link
                     :href="
-						route('grp.helpers.redirect_outbox_workshop', {
+						route('grp.majordomo.redirect_outbox_workshop', {
 							outbox: data.outbox?.id,
 						})
 					"

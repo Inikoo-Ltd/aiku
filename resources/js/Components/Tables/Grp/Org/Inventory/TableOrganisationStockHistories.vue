@@ -18,12 +18,14 @@ defineProps<{
 
 const locale = inject("locale", aikuLocaleStructure)
 
+const routeParams = route().params as RouteParams
+
 function showRoute(organisationStockHistory, tab?: string) {
     return route(
         "grp.org.warehouses.show.inventory.org_stock_histories.show",
         {
-            organisation: (route().params as RouteParams).organisation,
-            warehouse: (route().params as RouteParams).warehouse,
+            organisation: routeParams.organisation,
+            warehouse: routeParams.warehouse,
             organisationStockHistory: organisationStockHistory.id,
             ...(tab ? { tab } : {}),
         }

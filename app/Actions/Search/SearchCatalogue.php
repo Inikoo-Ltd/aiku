@@ -8,9 +8,6 @@
 
 namespace App\Actions\Search;
 
-use App\Http\Resources\Catalogue\Collection\CollectionSearchResultResource;
-use App\Http\Resources\Catalogue\Product\ProductSearchResultResource;
-use App\Http\Resources\Catalogue\ProductCategory\ProductCategorySearchResultResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -20,6 +17,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SearchCatalogue
 {
     use AsAction;
+    use WithRawSearchResults;
 
     public function handle(string $query, array $options): array
     {
@@ -32,13 +30,19 @@ class SearchCatalogue
             $collectionsQuery->where('shop_id', $shopId);
         }
 
+        $mapCatalogueItem = static fn (array $document) => [
+            'id'    => (int)$document['id'],
+            'code'  => $document['code'] ?? null,
+            'name'  => $document['name'] ?? null,
+            'image' => json_decode($document['image'] ?? 'null', true),
+        ];
 
         return [
             'scope'   => 'catalogue',
             'results' => [
-                'products'           => ProductSearchResultResource::collection($productsQuery->get()),
-                'product_categories' => ProductCategorySearchResultResource::collection($productCategoriesQuery->get()),
-                'collections'        => CollectionSearchResultResource::collection($collectionsQuery->get()),
+                'products'           => array_map($mapCatalogueItem, $this->rawDocuments($productsQuery)),
+                'product_categories' => array_map($mapCatalogueItem, $this->rawDocuments($productCategoriesQuery)),
+                'collections'        => array_map($mapCatalogueItem, $this->rawDocuments($collectionsQuery)),
             ],
         ];
     }

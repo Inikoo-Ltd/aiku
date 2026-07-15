@@ -12,7 +12,7 @@ import { defineAsyncComponent } from 'vue'
 
 const BasicDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/BasicDisplay.vue'))
 const OverviewDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/OverviewDisplay.vue'))
-const OperationDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/OperationDisplay.vue'))
+const TypesenseDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/TypesenseDisplay.vue'))
 const ChartDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/ChartDisplay.vue'))
 const CircleDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/CircleDisplay.vue'))
 const MultipleDisplay = defineAsyncComponent(() => import('@/Components/DataDisplay/Dashboard/Widget/MultipleChartDisplay.vue'))
@@ -23,7 +23,7 @@ export const widgetList: {[key: string]: Component} = {
     'basic': BasicDisplay,
     'flat_tree_map': FlatTreeMap,
     'overview_display': OverviewDisplay,
-    'operation_display': OperationDisplay,
+    'typesense_display': TypesenseDisplay,
     'chart_display' : ChartDisplay,
     'circle_display': CircleDisplay,
     'multiple_chart_display': MultipleDisplay,

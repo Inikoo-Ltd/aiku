@@ -105,13 +105,7 @@ onMounted(() => {
 
 const isOpenMenuMobile = inject("isOpenMenuMobile", ref(true));
 
-// Unified icon resolver
-const getNavigationIcon = (navigation: any) => {
-    if (loadingItem.value === (navigation.id || navigation.label)) return "fad fa-spinner-third";
-    if (navigation.type === "multiple") return "fas fa-chevron-down";
-    return navigation.icon || null;
-};
-
+const hasNavigationIcon = (navigation: any) => navigation.type === "multiple" || !!navigation.icon;
 
 // Section: Sidebar menu
 const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout
@@ -249,7 +243,7 @@ const imageCol = computed(() => {
                 <Transition>
                     <div v-if="isAbleScrollToLeft" class="absolute -right-24 z-10 top-0 h-full w-24 pointer-events-none"
                         :style="{
-                            background: `linear-gradient(to right, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 45%, transparent 100%)`
+                            background: `linear-gradient(to right, ${layout?.app?.webpage_layout?.container?.properties?.background?.color ?? '#fff'} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color ?? '#fff'} 45%, transparent 100%)`
                         }" />
                 </Transition>
 
@@ -265,7 +259,7 @@ const imageCol = computed(() => {
             <Transition>
                 <div v-if="isAbleScrollToRight" class="absolute right-4 z-10 top-0 h-full w-24 pointer-events-none"
                     :style="{
-                        background: `linear-gradient(to left, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 35%, transparent 100%)`
+                        background: `linear-gradient(to left, ${layout?.app?.webpage_layout?.container?.properties?.background?.color ?? '#fff'} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color ?? '#fff'} 35%, transparent 100%)`
                     }" />
             </Transition>
             <Transition>
@@ -286,16 +280,22 @@ const imageCol = computed(() => {
                         :id="navigation?.link?.id"
                         :style="compIndexStyling1?.includes(idxNavigation + 1) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType) : getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href" :canonical_url="navigation?.link?.canonical_url"
-                        class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
+                        class="group relative w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'navigation'
                             : navigation?.link?.href
                                 ? 'cursor-pointer navigation'
                                 : ''">
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
-                        <div>
-                            <FontAwesomeIcon v-if="getNavigationIcon(navigation)" :icon="getNavigationIcon(navigation)"
-                                :spin="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
+                        <div v-if="hasNavigationIcon(navigation)">
+                            <LoadingIcon v-if="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
+                            <FontAwesomeIcon v-else-if="navigation.type === 'multiple'" icon="fas fa-chevron-down"
+                                class="ml-2 text-[8px]" />
+                            <FontAwesomeIcon v-else :icon="navigation.icon" class="ml-2 text-[8px]" />
                         </div>
+                        <span v-else-if="loadingItem === (navigation.id || navigation.label)"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px]">
+                            <LoadingIcon />
+                        </span>
                     </component>
                 </template>
 
@@ -307,17 +307,23 @@ const imageCol = computed(() => {
                         :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType) : getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href" :id="navigation?.link?.id"
                         :canonical_url="navigation?.link?.canonical_url"
-                        class="group w-full py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
+                        class="group relative w-full py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'navigation underline'
                             : navigation?.link?.href
                                 ? 'cursor-pointer navigation'
                                 : ''">
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
-                        <div class="ml-2">
-                            <FontAwesomeIcon v-if="getNavigationIcon(navigation)" :icon="getNavigationIcon(navigation)"
-                                :spin="loadingItem === (navigation.id || navigation.label)"
+                        <div v-if="hasNavigationIcon(navigation)" class="ml-2">
+                            <LoadingIcon v-if="loadingItem === (navigation.id || navigation.label)" class="text-[8px] align-middle" />
+                            <FontAwesomeIcon v-else-if="navigation.type === 'multiple'" icon="fas fa-chevron-down"
+                                class="text-[8px] align-middle" />
+                            <FontAwesomeIcon v-else :icon="navigation.icon"
                                 class="text-[8px] align-middle" />
                         </div>
+                        <span v-else-if="loadingItem === (navigation.id || navigation.label)"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] align-middle">
+                            <LoadingIcon />
+                        </span>
                     </component>
                 </template>
 
@@ -330,16 +336,21 @@ const imageCol = computed(() => {
                         xstyle="getStyles(fieldValue?.custom_navigation_styling?.custom_bottom?.properties, screenType)"
                         :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0) + (selectedMenu?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType) : getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href" :canonical_url="navigation?.link?.canonical_url"
-                        class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
+                        class="group relative w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'navigation'
                             : navigation?.link?.href
                                 ? 'cursor-pointer navigation'
                                 : ''">
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
-                        <div>
-                            <FontAwesomeIcon v-if="getNavigationIcon(navigation)" :icon="getNavigationIcon(navigation)"
-                                :spin="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
+                        <div v-if="hasNavigationIcon(navigation)">
+                            <LoadingIcon v-if="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
+                            <FontAwesomeIcon v-else-if="navigation.type === 'multiple'" icon="fas fa-chevron-down"
+                                class="ml-2 text-[8px]" />
+                            <FontAwesomeIcon v-else :icon="navigation.icon" class="ml-2 text-[8px]" />
                         </div>
+                        <span v-else-if="loadingItem === (navigation.id || navigation.label)" class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px]">
+                            <LoadingIcon />
+                        </span>
                     </component>
                 </template>
             </nav>

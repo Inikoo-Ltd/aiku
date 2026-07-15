@@ -204,7 +204,7 @@ function webpageRoute(collection: Collection) {
 function parentRoute(slug: string) {
 
     return route(
-        "grp.helpers.redirect_collections_in_product_category",
+        "grp.majordomo.redirect_collections_in_product_category",
         [
             slug
         ]
