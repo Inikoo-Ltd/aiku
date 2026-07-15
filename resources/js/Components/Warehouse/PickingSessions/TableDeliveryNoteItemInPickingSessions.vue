@@ -263,7 +263,7 @@ const initSocketListener = () => {
     if (props.pickingSession.state == 'packing_finished') return; // No need initiate listener if packing finished
 
     socketChannel = window.Echo.private(socketEvent).listen(".stock_update", async (eventData: any) => {
-        
+
         if (!['handling', 'handling_blocked'].includes(props.pickingSession.state)) return
 
         const affectedData  = eventData.affected_data;
@@ -274,30 +274,30 @@ const initSocketListener = () => {
             itemToSet = props.data.data.find(
                 item => item.org_stock_id === affectedData.org_stock_id
             );
-    
+
             if (!itemToSet) {
                 return;
             }
-    
+
             let locationOrgStock = itemToSet.locations.find(
                 item => item.location_id === affectedData.location_id
             )
-    
+
             const remainingItem =
                 parseFloat(itemToSet.quantity_required) -
                 (parseFloat(itemToSet.quantity_not_picked ?? 0) +
                 parseFloat(itemToSet.quantity_picked ?? 0));
-    
+
             shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
         } else if (props.tab == 'grouped') {
             itemToSet = props.data.data.find(deliveryNote =>
                 deliveryNote.items?.some(child => child.org_stock_id === affectedData.org_stock_id)
             );
-    
+
             if (!itemToSet) {
                 return;
             }
-    
+
             let targetOrgStock = itemToSet.items.find(
                 item => item.org_stock_id === affectedData.org_stock_id
             )
@@ -305,15 +305,15 @@ const initSocketListener = () => {
             let targetLocationStock = targetOrgStock.locations.find(
                 item => item.location_id === affectedData.location_id
             )
-    
+
             const remainingItem =
                 parseFloat(targetOrgStock.quantity_required) -
                 (parseFloat(targetOrgStock.quantity_not_picked ?? 0) +
                 parseFloat(targetOrgStock.quantity_picked ?? 0));
-    
+
             shouldRefetch = (remainingItem > 0) && (targetLocationStock.quantity != affectedData.new_quantity)
         }
-        
+
         if (shouldRefetch && itemToSet) {
             const response = await axios.get(
                 route('grp.json.picking_session_item_row', {
@@ -832,7 +832,7 @@ onUnmounted(() => {
                 </div>
                 <div v-if="item.packaging?.dimensions" class="text-xs text-gray-400 pl-6">{{ item.packaging.dimensions }}</div>
                 <ChangePackagingSelect
-                    v-if="item.packaging_options?.length"
+                    v-if="item.packaging_options?.length && item.delivery_note_state === 'handling'"
                     class="mt-1"
                     :options="item.packaging_options"
                     :selectedId="item.packaging?.id ?? null"

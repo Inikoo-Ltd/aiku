@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Billables\Packaging;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\RedirectResponse;
@@ -45,6 +46,15 @@ class UpdateDeliveryNotePackaging extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
+        if ($this->deliveryNote->state !== DeliveryNoteStateEnum::HANDLING) {
+            $validator->errors()->add(
+                'packaging_id',
+                __('Packaging can only be changed while the delivery note is being picked.')
+            );
+
+            return;
+        }
+
         $packagingId = $this->get('packaging_id');
         if (!$packagingId) {
             return;
