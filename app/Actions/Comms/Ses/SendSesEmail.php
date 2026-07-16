@@ -31,11 +31,19 @@ class SendSesEmail
 
     public mixed $message;
 
+    // reference: AWS SES error codes
+    // https://docs.aws.amazon.com/ses/latest/APIReference/CommonErrors.html
+    // https://docs.aws.amazon.com/ses/latest/dg/troubleshoot-error-messages.html
+    // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-troubleshooting.html
     private const array CREDENTIAL_ERROR_CODES = [
+        'IncompleteSignature',
         'InvalidClientTokenId',
+        'MessageRejected',
         'SignatureDoesNotMatch',
-        'UnrecognizedClientException',
-        'AccessDenied',
+        'ExpiredTokenException',
+        'AccessDeniedException',
+        'NotAuthorized',
+        'UnrecognizedClientException'
     ];
 
     /**
