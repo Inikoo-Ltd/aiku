@@ -152,7 +152,6 @@ const props = defineProps<{
 	is_faire_order : boolean
 	showChangePickerPacker: boolean
 	is_editable: boolean  // To distinguish DN in Shops and DN in Wwarehouse
-	order_slug: string
 }>();
 
 
@@ -691,7 +690,6 @@ watch(
 			:shop_type="shop_type"
 			:allowWaiting="allow_waiting"
 			:allowPickerSetNotPicked="allow_picker_set_not_picked"
-			:order_slug="order_slug"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError" />
 	</div>
