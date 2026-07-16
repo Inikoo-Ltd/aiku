@@ -5,7 +5,8 @@
   -->
 
 <script setup lang="ts">
-import {Link} from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
+import Icon from '@/Components/Icon.vue';
 import Table from '@/Components/Table/Table.vue';
 import { useFormatTime } from '@/Composables/useFormatTime';
 
@@ -30,6 +31,10 @@ function stockDeliveryRoute(stockDelivery: { } ) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(state)="{ item: stockDelivery }">
+			<Icon :data="stockDelivery.state_icon" />
+		</template>
+
         <template #cell(reference)="{ item: stockDelivery }">
             <Link :href="stockDeliveryRoute(stockDelivery)" class="primaryLink">
                 {{ stockDelivery['reference'] }}
