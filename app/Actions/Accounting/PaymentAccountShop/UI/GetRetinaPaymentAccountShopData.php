@@ -103,6 +103,25 @@ class GetRetinaPaymentAccountShopData
                     ]
 
                 ];
+        } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::BRAINTREE_PAYPAL) {
+            $braintreePaymentMethods = Arr::get($paymentAccountShop->paymentAccount->data, 'payment_methods', ['paypal']);
+
+            if (empty($braintreePaymentMethods)) {
+                return [];
+            }
+
+            return
+                [
+                    'label'                   => __('PayPal'),
+                    'key'                     => 'paypal',
+                    'icon'                    => 'fab fa-paypal',
+                    'environment'             => app()->environment('production') ? 'production' : 'sandbox',
+                    'order_payment_api_point' => $orderPaymentApiPoint->ulid,
+                    'data'                    => [
+                        'client_token' => null,
+                        'currency'     => $order->currency->code,
+                    ]
+                ];
         }
 
         return null;

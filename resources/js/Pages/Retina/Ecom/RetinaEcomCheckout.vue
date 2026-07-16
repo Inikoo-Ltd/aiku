@@ -20,8 +20,10 @@ import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaym
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Select } from "primevue"
 import CheckoutPaymentPastpay from "@/Components/Retina/Ecom/CheckoutPaymentPastpay.vue"
+import CheckoutPaymentPaypal from "@/Components/Retina/Ecom/CheckoutPaymentPaypal.vue"
+import { faPaypal } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
+library.add(faCreditCardFront, faUniversity, faExclamationTriangle, faPaypal)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -60,7 +62,8 @@ const component = computed(() => {
         credit_card: CheckoutPaymentCard,
         bank_transfer: CheckoutPaymentBankTransfer,
         cash_on_delivery: CheckoutPaymentCashOnDelivery,
-        pastpay: CheckoutPaymentPastpay
+        pastpay: CheckoutPaymentPastpay,
+        paypal: CheckoutPaymentPaypal
 
     }
 
