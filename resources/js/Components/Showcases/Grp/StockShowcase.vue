@@ -17,6 +17,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
 import Image from "@common/Components/Image.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import SalesAnalyticsCompact from "@/Components/Product/SalesAnalyticsCompact.vue"
 import { ctrans } from "@/Composables/useTrans"
 library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
@@ -104,17 +105,21 @@ console.log(props)
                         class="w-full h-52 flex items-center justify-center" />
                 </div>
 
-                <!-- Card: Stock Summary -->
-                <div class="sm:col-span-2 flex flex-wrap gap-3 self-start">
-                    <div v-for="stat in stockCostStats" :key="stat.title"
-                        class="flex-1 min-w-max rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
-                        <div class="text-xs font-medium uppercase tracking-wide text-gray-400 whitespace-nowrap">
-                            {{ stat.title }}
-                        </div>
-                        <div class="mt-1.5 text-2xl font-bold text-gray-800 whitespace-nowrap">
-                            {{ locale.currencyFormat(data.currency_code, stat.value) }}
+                <!-- Card: Stock Summary + Sales Analytics -->
+                <div class="sm:col-span-2 flex flex-col gap-4 self-start">
+                    <div class="flex flex-wrap gap-3">
+                        <div v-for="stat in stockCostStats" :key="stat.title"
+                            class="flex-1 min-w-max rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-400 whitespace-nowrap">
+                                {{ stat.title }}
+                            </div>
+                            <div class="mt-1.5 text-2xl font-bold text-gray-800 whitespace-nowrap">
+                                {{ locale.currencyFormat(data.currency_code, stat.value) }}
+                            </div>
                         </div>
                     </div>
+
+                    <SalesAnalyticsCompact v-if="data.sales_data" :salesData="data.sales_data" />
                 </div>
             </div>
         </div>

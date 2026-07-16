@@ -40,6 +40,7 @@ class GetOrgStockShowcase
             [
                 'trade_units'        => $dataTradeUnits,
                 'currency_code'      => $orgStock->organisation->currency->code,
+                'sales_data'         => GetOrgStockTimeSeriesData::run($orgStock),
                 'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
                 'stocks_management'  => [
                     'routes'          => [
