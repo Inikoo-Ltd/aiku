@@ -44,7 +44,6 @@ import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
 import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/ChangePackagingSelect.vue"
-import { notify } from "@kyvg/vue3-notification"
 import { faPrint, faFileAlt, faBoxOpen, faExclamationCircle } from "@fal"
 
 library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faFileAlt, faBoxOpen, faExclamationCircle)
