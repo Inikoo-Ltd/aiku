@@ -16,6 +16,7 @@ use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Http\Resources\Procurement\StockDeliveriesResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\InertiaTable\InertiaTable;
@@ -42,6 +43,27 @@ class IndexStockDeliveries extends OrgAction
 
     private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier $parent;
 
+    protected function getElementGroups(): array
+    {
+        $elements = [];
+        foreach (StockDeliveryStateEnum::cases() as $case) {
+            $elements[$case->value] = [
+                __(ucfirst(str_replace('_', ' ', $case->value))),
+                null,
+            ];
+        }
+
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => $elements,
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('stock_deliveries.state', $elements);
+                },
+            ],
+        ];
+    }
+
     public function handle($prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -62,20 +84,36 @@ class IndexStockDeliveries extends OrgAction
             $query->where('stock_deliveries.organisation_id', $this->parent->partner->id);
         } elseif ($this->parent instanceof OrgSupplier) {
             $query->where('stock_deliveries.parent_type', 'OrgSupplier')->where('stock_deliveries.parent_id', $this->parent->id);
+        } elseif ($this->parent instanceof Warehouse) {
+            $query->where('stock_deliveries.organisation_id', $this->parent->organisation_id);
+        } elseif ($this->parent instanceof Organisation) {
+            $query->where('stock_deliveries.organisation_id', $this->parent->id);
+        }
+
+        foreach ($this->getElementGroups() as $key => $elementGroup) {
+            $query->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix,
+            );
         }
 
         return $query
-            ->defaultSort('stock_deliveries.reference')
+            ->defaultSort('-stock_deliveries.date')
             ->select(
                 [
                     'id',
                     'slug',
                     'reference',
-                    'parent_name'
+                    'parent_name',
+                    'state',
+                    'date',
                 ]
             )
-            ->allowedSorts(['reference'])
+            ->allowedSorts(['reference', 'parent_name', 'date'])
             ->allowedFilters([$globalSearch])
+            ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -88,23 +126,36 @@ class IndexStockDeliveries extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+
+            $table->betweenDates(['date']);
+
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->withLabelRecord([__('Stock Delivery'), __('Stock Deliveries')])
+                ->withLabelRecord([__('Stock Delivery'), __('Stock Deliveries')]);
+
+            foreach ($this->getElementGroups() as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                );
+            }
+
+            $table
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true)
-                ->defaultSort('reference');
+                ->defaultSort('-date');
         };
     }
-
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
 
-        return $this->handle($organisation);
+        return $this->handle();
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -140,20 +191,19 @@ class IndexStockDeliveries extends OrgAction
         return $this->handle();
     }
 
-
     public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
+        $this->parent = $organisation;
         $this->maya = true;
         $this->initialisation($organisation, $request);
 
-        return $this->handle($organisation);
+        return $this->handle();
     }
 
     public function jsonResponse(LengthAwarePaginator $suppliers): AnonymousResourceCollection
     {
         return StockDeliveriesResource::collection($suppliers);
     }
-
 
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
@@ -170,7 +220,6 @@ class IndexStockDeliveries extends OrgAction
         if ($this->parent instanceof OrgAgent) {
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
             $title         = $this->parent->agent->organisation->name;
-
             $icon       = [
                 'icon'  => ['fal', 'fa-people-arrows'],
                 'title' => __('Stock Deliveries')
@@ -185,7 +234,6 @@ class IndexStockDeliveries extends OrgAction
         } elseif ($this->parent instanceof OrgPartner) {
             $subNavigation = $this->getOrgPartnerNavigation($this->parent);
             $title         = $this->parent->partner->name;
-
             $icon       = [
                 'icon'  => ['fal', 'fa-users-class'],
                 'title' => __('Stock Deliveries')
@@ -200,7 +248,6 @@ class IndexStockDeliveries extends OrgAction
         } elseif ($this->parent instanceof OrgSupplier) {
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
             $title         = $this->parent->supplier->name;
-
             $icon       = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => __('Stock Deliveries')
@@ -237,8 +284,6 @@ class IndexStockDeliveries extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => StockDeliveryResource::collection($suppliers),
-
-
             ]
         )->table($this->tableStructure());
     }

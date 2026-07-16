@@ -7,12 +7,12 @@
 <script setup lang="ts">
 import {Link} from '@inertiajs/vue3';
 import Table from '@/Components/Table/Table.vue';
+import { useFormatTime } from '@/Composables/useFormatTime';
 
 const props = defineProps<{
     data: object,
     tab?: string
 }>()
-
 
 function stockDeliveryRoute(stockDelivery: { } ) {
     switch (route().current()) {
@@ -26,7 +26,6 @@ function stockDeliveryRoute(stockDelivery: { } ) {
                 [route().params['organisation'], stockDelivery.slug]);
     }
 }
-
 </script>
 
 <template>
@@ -36,7 +35,9 @@ function stockDeliveryRoute(stockDelivery: { } ) {
                 {{ stockDelivery['reference'] }}
             </Link>
         </template>
+
+        <template #cell(date)="{ item }">
+			{{ useFormatTime(item.date, { formatTime: "EEE, do MMM yy, HH:mm" }) }}
+		</template>
     </Table>
 </template>
-
-
