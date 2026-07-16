@@ -545,21 +545,51 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        app()->environment('local') ?
-                            [
-                                "label"   => __("Chat"),
-                                "icon"    => ["fal", "fa-comment-alt"],
-                                "root"    => "grp.org.shops.show.crm.chat.",
-                                "route"   => [
-                                    "name"       => "grp.org.shops.show.crm.chat.dashboard",
-                                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                                ],
-                            ]
-                        : null,
                     ],
                 ],
             ];
         }
+
+        $navigation["chat"] = [
+            "root"  => "grp.org.shops.show.chat.",
+            "label" => __("Chat"),
+            "icon"  => ["fal", "comment-alt"],
+            "route" => [
+                "name"       => "grp.org.shops.show.chat.dashboard",
+                "parameters" => [$shop->organisation->slug, $shop->slug],
+            ],
+            "topMenu" => [
+                "subSections" => [
+                    [
+                        "label" => __("Dashboard"),
+                        "icon"  => ["fal", "comment-alt"],
+                        "root"  => "grp.org.shops.show.chat.dashboard",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.dashboard",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Agents"),
+                        "icon"  => ["fal", "fa-headset"],
+                        "root"  => "grp.org.shops.show.chat.agents.show",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.agents.show",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Conversations"),
+                        "icon"  => ["fal", "fa-comments"],
+                        "root"  => "grp.org.shops.show.chat.conversations.show",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.conversations.show",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
 
         if ($user->hasAnyPermission(["orders.$shop->id.view", "accounting.$shop->organisation_id.view"])) {
             $navigation["ordering"] = [

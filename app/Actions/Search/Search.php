@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class Search extends OrgAction
 {
-    protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop'];
+    protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop', 'chat'];
     protected const array ORGANISATION_SCOPES = ['accounting', 'hr'];
     protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews', 'billables', 'offers', 'marketing', 'website', 'shop_accounting'];
     protected const array WAREHOUSE_SCOPES = ['inventory', 'dispatching', 'locations'];
@@ -33,6 +33,7 @@ class Search extends OrgAction
             'supply_chain' => static fn () => SearchSupplyChain::run($query),
             'trade_units'  => static fn () => SearchTradeUnits::run($query),
             'master_shop'  => static fn () => SearchMasterShop::run($query, $options),
+            'chat'         => static fn () => SearchChat::run($query, $options),
             'billables'    => static fn () => SearchBillables::run($query, $options),
             'offers'       => static fn () => SearchOffers::run($query, $options),
             'marketing'    => static fn () => SearchMarketing::run($query, $options),
@@ -83,6 +84,9 @@ class Search extends OrgAction
             if ($scope === 'master_shop' && $request->query('masterShop')) {
                 $options = ['master_shop_id' => MasterShop::where('slug', $request->query('masterShop'))->first()?->id];
             }
+            if ($scope === 'chat' && $request->query('organisation')) {
+                $options = ['organisation_id' => Organisation::where('slug', $request->query('organisation'))->first()?->id];
+            }
         } elseif (in_array($scope, self::ORGANISATION_SCOPES, true)) {
             $organisation = Organisation::where('slug', $request->query('organisation'))->firstOrFail();
             $this->initialisation($organisation, $request);
@@ -132,6 +136,8 @@ class Search extends OrgAction
             'grp.supply-chain.'                       => 'supply_chain',
             'grp.trade_units.'                        => 'trade_units',
             'grp.masters.'                            => 'master_shop',
+            'grp.chat.'                               => 'chat',
+            'grp.org.chat.'                           => 'chat',
             'grp.org.accounting.'                     => 'accounting',
             'grp.org.hr.'                             => 'hr',
             'grp.org.shops.show.dashboard'            => 'shop_accounting',

@@ -16,6 +16,7 @@ use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Http\Resources\Procurement\StockDeliveriesResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\GoodsIn\StockDelivery;
@@ -38,6 +39,7 @@ class IndexStockDeliveries extends OrgAction
     use WithOrgAgentSubNavigation;
     use WithOrgPartnerSubNavigation;
     use WithOrgSupplierSubNavigation;
+
     private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier $parent;
 
     public function handle($prefix = null): LengthAwarePaginator
@@ -64,7 +66,14 @@ class IndexStockDeliveries extends OrgAction
 
         return $query
             ->defaultSort('stock_deliveries.reference')
-            ->select(['slug', 'reference'])
+            ->select(
+                [
+                    'id',
+                    'slug',
+                    'reference',
+                    'parent_name'
+                ]
+            )
             ->allowedSorts(['reference'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -84,16 +93,11 @@ class IndexStockDeliveries extends OrgAction
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Stock Delivery'), __('Stock Deliveries')])
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('reference');
         };
     }
 
-    // public function authorize(ActionRequest $request): bool
-    // {
-    //     $this->canEdit = $request->user()->authTo('incoming.'.$this->warehouse->id.'.edit');
-    //     return $request->user()->authTo('incoming.'.$this->warehouse->id.'.view');
-
-    // }
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -103,6 +107,7 @@ class IndexStockDeliveries extends OrgAction
         return $this->handle($organisation);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inWarehouse(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $warehouse;
@@ -146,70 +151,71 @@ class IndexStockDeliveries extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $suppliers): AnonymousResourceCollection
     {
-        return StockDeliveryResource::collection($suppliers);
+        return StockDeliveriesResource::collection($suppliers);
     }
 
 
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('Stock Deliveries');
-        $model = '';
-        $icon  = [
+        $title         = __('Stock Deliveries');
+        $model         = '';
+        $icon          = [
             'icon'  => ['fal', 'fa-truck-container'],
             'title' => __('Stock Deliveries')
         ];
-        $afterTitle = null;
-        $iconRight = null;
+        $afterTitle    = null;
+        $iconRight     = null;
 
         if ($this->parent instanceof OrgAgent) {
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $title = $this->parent->agent->organisation->name;
-            $model = '';
-            $icon  = [
+            $title         = $this->parent->agent->organisation->name;
+
+            $icon       = [
                 'icon'  => ['fal', 'fa-people-arrows'],
                 'title' => __('Stock Deliveries')
             ];
-            $iconRight    = [
+            $iconRight  = [
                 'icon' => 'fal fa-truck-container',
             ];
             $afterTitle = [
 
-                'label'     => __('Stock Deliveries')
+                'label' => __('Stock Deliveries')
             ];
         } elseif ($this->parent instanceof OrgPartner) {
             $subNavigation = $this->getOrgPartnerNavigation($this->parent);
-            $title = $this->parent->partner->name;
-            $model = '';
-            $icon  = [
+            $title         = $this->parent->partner->name;
+
+            $icon       = [
                 'icon'  => ['fal', 'fa-users-class'],
                 'title' => __('Stock Deliveries')
             ];
-            $iconRight    = [
+            $iconRight  = [
                 'icon' => 'fal fa-truck-container',
             ];
             $afterTitle = [
 
-                'label'     => __('Stock Deliveries')
+                'label' => __('Stock Deliveries')
             ];
         } elseif ($this->parent instanceof OrgSupplier) {
             $subNavigation = $this->getOrgSupplierNavigation($this->parent);
-            $title = $this->parent->supplier->name;
-            $model = '';
-            $icon  = [
+            $title         = $this->parent->supplier->name;
+
+            $icon       = [
                 'icon'  => ['fal', 'fa-person-dolly'],
                 'title' => __('Stock Deliveries')
             ];
-            $iconRight    = [
+            $iconRight  = [
                 'icon' => 'fal fa-truck-container',
             ];
             $afterTitle = [
 
-                'label'     => __('Stock Deliveries')
+                'label' => __('Stock Deliveries')
             ];
         } elseif ($this->parent instanceof Warehouse) {
             $model = __('Goods in');
         }
+
         return Inertia::render(
             'Procurement/StockDeliveries',
             [
@@ -221,7 +227,7 @@ class IndexStockDeliveries extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'create' => $this->canEdit && $request->route()->getName() == 'grp.org.procurement.stock_deliveries.index' ? [
+                    'create'        => $this->canEdit && $request->route()->getName() == 'grp.org.procurement.stock_deliveries.index' ? [
                         'route' => [
                             'name'       => 'grp.org.procurement.stock_deliveries.create',
                             'parameters' => array_values($request->route()->originalParameters())
@@ -247,7 +253,7 @@ class IndexStockDeliveries extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.org.procurement.stock_deliveries.index',
+                                'name'       => 'grp.org.procurement.stock_deliveries.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Stock deliveries'),
@@ -263,7 +269,7 @@ class IndexStockDeliveries extends OrgAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
+                                'name'       => 'grp.org.warehouses.show.incoming.stock_deliveries.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Stock deliveries'),

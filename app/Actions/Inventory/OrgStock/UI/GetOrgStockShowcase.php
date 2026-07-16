@@ -40,6 +40,8 @@ class GetOrgStockShowcase
             [
                 'trade_units'        => $dataTradeUnits,
                 'currency_code'      => $orgStock->organisation->currency->code,
+                'sales_data'         => GetOrgStockTimeSeriesData::run($orgStock),
+                'barcodes'           => GetOrgStockBarcodes::run($orgStock),
                 'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
                 'stocks_management'  => [
                     'routes'          => [
@@ -123,6 +125,8 @@ class GetOrgStockShowcase
                 'id'     => $tradeUnit->id,
                 'stock'  => $tradeUnit->orgStocks->sum('quantity_in_locations'),
                 'name'   => $tradeUnit->name,
+                'unit'   => $tradeUnit->type,
+                'units'  => trimDecimalZeros($tradeUnit->pivot->quantity),
                 'images' => $this->getImagesData($tradeUnit),
             ];
         })->toArray();

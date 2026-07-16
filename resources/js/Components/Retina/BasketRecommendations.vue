@@ -91,7 +91,12 @@ const fetchRecommenders = async (nextPage = false) => {
           recommender_client_identifier: 'basket',
           size,
           user_id: layout.user?.customer_id?.toString(),
-          recommendation_context: {},
+          recommendation_context: {
+            availability: {
+              values: ["1"],
+              operator: "or"
+            }
+          },
         }
       ],
       { headers: { 'Content-Type': 'application/json;charset=utf-8' }, signal: undefined /* atau AbortController */ }

@@ -10,6 +10,7 @@
 
 namespace App\Http\Resources\Inventory;
 
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Inventory\OrgStockMovement;
 
@@ -47,7 +48,7 @@ class OrgStockMovementsResource extends JsonResource
 
         $runningQuantityOrgStock = $orgStockMovement->running_quantity_org_stock;
 
-        if ($orgStockMovement->type == 'location-transfer' && $orgStockMovement->quantity < 0) {
+        if ($orgStockMovement->type == OrgStockMovementTypeEnum::LOCATION_TRANSFER && $orgStockMovement->quantity < 0) {
             $runningQuantityOrgStock = $orgStockMovement->running_quantity_org_stock + -($orgStockMovement->quantity);
         }
 
