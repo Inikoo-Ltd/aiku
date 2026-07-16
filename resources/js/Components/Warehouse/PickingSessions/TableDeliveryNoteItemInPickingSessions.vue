@@ -918,6 +918,7 @@ onUnmounted(() => {
                 v-if="itemValue.delivery_note_state == 'packed'"
                 :icon="faPencil"
                 :label="ctrans('Edit Detail')"
+                type="tertiary"
                 size="sm"
                 @click="onOpenModalDetail(itemValue)"
             />
