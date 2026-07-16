@@ -660,7 +660,11 @@ onUnmounted(() => {
                     </div>
 
                     <Button
-                        v-if="pickingSession.state === 'picking_finished' && deliveryItem.delivery_note_state === 'handling'"
+                        v-if="
+                            pickingSession.state === 'picking_finished'
+                            && deliveryItem.delivery_note_state === 'handling'
+                            && !deliveryItem.delivery_note_has_waiting_items
+                        "
                         type="save"
                         :label="ctrans('Set as packed')"
                         size="sm"
@@ -903,6 +907,7 @@ onUnmounted(() => {
                         itemValue.delivery_note_state === 'handling'
                         || itemValue.delivery_note_state === 'packing'
                     )
+                    && !itemValue.delivery_note_has_waiting_items
                     "
                 type="save"
                 :label="ctrans('Set as packed')"
