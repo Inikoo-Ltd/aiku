@@ -32,7 +32,6 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -58,8 +57,7 @@ class IndexPurchaseOrders extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('purchase_orders.reference', $value)
-                    ->orWhereStartWith('created_by_users.contact_name', $value);
+                $query->whereStartWith('purchase_orders.reference', $value);
             });
         });
 
@@ -68,16 +66,6 @@ class IndexPurchaseOrders extends OrgAction
         }
 
         $query = QueryBuilder::for(PurchaseOrder::class);
-
-        $createdAudits = DB::table('audits')
-            ->select('auditable_id', DB::raw('min(user_id) as created_by_user_id'))
-            ->where('auditable_type', 'PurchaseOrder')
-            ->where('event', 'created')
-            ->where('user_type', 'User')
-            ->groupBy('auditable_id');
-
-        $query->leftJoinSub($createdAudits, 'created_audits', 'created_audits.auditable_id', '=', 'purchase_orders.id')
-            ->leftJoin('users as created_by_users', 'created_by_users.id', '=', 'created_audits.created_by_user_id');
 
         if (class_basename($parent) == 'OrgAgent') {
             $query->where('purchase_orders.parent_type', 'OrgAgent')->where('purchase_orders.parent_id', $parent->id);
@@ -116,7 +104,6 @@ class IndexPurchaseOrders extends OrgAction
         return $query->defaultSort('-purchase_orders.date')
             ->select([
                 'purchase_orders.*',
-                'created_by_users.contact_name as created_by',
             ])
             ->selectRaw('purchase_orders.org_exchange * purchase_orders.cost_total as org_total_cost')
             ->selectRaw('\''.$organisation->currency->code.'\' as org_currency_code')
@@ -128,7 +115,7 @@ class IndexPurchaseOrders extends OrgAction
                     ]);
                 },
             ])
-            ->allowedSorts(['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost', 'created_by'])
+            ->allowedSorts(['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -176,8 +163,7 @@ class IndexPurchaseOrders extends OrgAction
             $table
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'parent_name', label: __('Supplier/Agents'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_by', label: __('Created by'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'parent_name', label: __('Supplier/Agents'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
             }

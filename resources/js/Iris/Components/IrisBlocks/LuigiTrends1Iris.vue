@@ -78,11 +78,18 @@ const luigiTrendsDepartment = async (departmentWebpageTitle?: string) => {
                 size: 25,
                 widget_id: departmentWebpageTitle ? "product_recommendation" : "department_recommendation",
                 auth_user_id: userId,
-                recommendation_context: [{
-                    attribute: "department",
-                    values: [departmentWebpageTitle ?? usePage().props.webpage_data?.title],
-                    operator: "or"
-                }],
+                recommendation_context: [
+                    {
+                        attribute: "department",
+                        values: [departmentWebpageTitle ?? usePage().props.webpage_data?.title],
+                        operator: "or"
+                    },
+                    {
+                        attribute: "availability",
+                        values: ["1"],
+                        operator: "or"
+                    }
+                ],
                 model: "department"
             }
         ],
@@ -107,11 +114,18 @@ const luigiTrendsSubDepartment = async () => {
                 size: 25,
                 widget_id: "sub_department_recommendation",
                 auth_user_id: userId,
-                recommendation_context: [{
-                    attribute: "sub_department",
-                    values: [usePage().props.webpage_data?.title],
-                    operator: "or"
-                }],
+                recommendation_context: [
+                    {
+                        attribute: "sub_department",
+                        values: [usePage().props.webpage_data?.title],
+                        operator: "or"
+                    },
+                    {
+                        attribute: "availability",
+                        values: ["1"],
+                        operator: "or"
+                    }
+                ],
                 model: "department"  // this is correct, 'department'
             }
         ],
@@ -169,7 +183,12 @@ const luigiTrendsGlobal = async () => {
                 "category": undefined,
                 "brand": undefined,
                 "product_id": undefined,
-                "recommendation_context": {},
+                "recommendation_context": {
+                    "availability": {
+                        "values": ["1"],
+                        "operator": "or"
+                    }
+                },
                 // "hit_fields": ["url", "title"]
             }
         ],

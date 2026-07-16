@@ -27,7 +27,7 @@ enum PickingSessionStateEnum: string
         return [
             'in_process'       => __('In Process'),
             'handling'         => __('Handling'),
-            'handling_blocked' => __('Handling Blocked'),
+            'handling_blocked' => __('Waiting'),
             'picking_finished' => __('Picking Finished'),
             'packing_finished' => __('Packing Finished'),
         ];
@@ -57,8 +57,8 @@ enum PickingSessionStateEnum: string
                 ]
             ],
             'handling_blocked' => [
-                'tooltip' => __('Handling Blocked'),
-                'icon'    => 'fal fa-hand-paper',
+                'tooltip' => __('Waiting'),
+                'icon'    => 'fal fa-hourglass-half',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',
                 'app'     => [

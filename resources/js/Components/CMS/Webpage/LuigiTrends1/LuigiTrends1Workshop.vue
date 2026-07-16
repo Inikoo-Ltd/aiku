@@ -70,11 +70,18 @@ const luigiTrendsDepartment = async (departmentWebpageTitle?: string) => {
                 size: 25,
                 widget_id: departmentWebpageTitle ? "product_recommendation" : "department_recommendation",
                 auth_user_id: null,
-                recommendation_context: [{
-                    attribute: "department",
-                    values: [departmentWebpageTitle ?? props.webpageData?.title],
-                    operator: "or"
-                }],
+                recommendation_context: [
+                    {
+                        attribute: "department",
+                        values: [departmentWebpageTitle ?? props.webpageData?.title],
+                        operator: "or"
+                    },
+                    {
+                        attribute: "availability",
+                        values: ["1"],
+                        operator: "or"
+                    }
+                ],
                 model: "department"
             }
         ],
@@ -90,11 +97,18 @@ const luigiTrendsSubDepartment = async () => {
                 size: 25,
                 widget_id: "sub_department_recommendation",
                 auth_user_id: null,
-                recommendation_context: [{
-                    attribute: "sub_department",
-                    values: [props.webpageData?.title],
-                    operator: "or"
-                }],
+                recommendation_context: [
+                    {
+                        attribute: "sub_department",
+                        values: [props.webpageData?.title],
+                        operator: "or"
+                    },
+                    {
+                        attribute: "availability",
+                        values: ["1"],
+                        operator: "or"
+                    }
+                ],
                 model: "department"
             }
         ],
@@ -113,7 +127,12 @@ const luigiTrendsGlobal = async () => {
                 recommender_client_identifier: "trends",
                 size: 25,
                 user_id: null,
-                recommendation_context: {},
+                recommendation_context: {
+                    availability: {
+                        values: ["1"],
+                        operator: "or"
+                    }
+                },
             }
         ],
         { headers: { 'Content-Type': 'application/json;charset=utf-8' } }

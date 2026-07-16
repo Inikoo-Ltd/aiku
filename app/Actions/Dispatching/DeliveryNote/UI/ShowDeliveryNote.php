@@ -201,6 +201,47 @@ class ShowDeliveryNote extends OrgAction
         return $actions;
     }
 
+    /**
+     * Dropshipping skips the packing station, so it packs straight from picked the same way it does
+     * from handling. Other shop types go through the packing state first.
+     */
+    public function getPickedActions(DeliveryNote $deliveryNote): array
+    {
+        if ($deliveryNote->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return [
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Set as packed'),
+                    'label'   => __('Set as packed'),
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.packed',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ]
+            ];
+        }
+
+        return [
+            [
+                'type'  => 'button',
+                'style' => 'save',
+                'label' => __('Start packing'),
+                'key'   => 'action',
+                'route' => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.packing',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ]
+            ]
+        ];
+    }
+
     public function wrappedActions(DeliveryNote $deliveryNote): array
     {
         $isEditable = false;
@@ -437,21 +478,7 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ]
             ] : [],
-            DeliveryNoteStateEnum::PICKED => [
-                [
-                    'type'  => 'button',
-                    'style' => 'save',
-                    'label' => __('Start packing'),
-                    'key'   => 'action',
-                    'route' => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.packing',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ]
-                ]
-            ],
+            DeliveryNoteStateEnum::PICKED => $this->getPickedActions($deliveryNote),
             DeliveryNoteStateEnum::PACKED => [$this->getPackedActions($deliveryNote)],
             DeliveryNoteStateEnum::FINALISED => [
                 [
