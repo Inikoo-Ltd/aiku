@@ -23,13 +23,13 @@ use App\Models\Reviews\ReviewRatingLabel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
+use App\Support\Forms\SesConfigurationBlueprint;
 use Exception;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -637,40 +637,10 @@ class EditShop extends OrgAction
                 [
                     'label'  => __('AWS-SES configuration'),
                     'icon'   => 'fa-light fa-key',
-                    'fields' => [
-                        "access_id" => [
-                            "type" => "input",
-                            "label" => __("Failover Access ID"),
-                            "value"       => Arr::get($shop->settings, 'email.provider.failover.access_id', ''),
-                        ],
-                        "access_key" => [
-                            "type" => "input",
-                            "label" => __("Failover Access Key"),
-                            "value"       =>  Arr::get($shop->settings, 'email.provider.failover.access_key', ''),
-                        ],
-                        "region" => [
-                            "type" => "select",
-                            "label" => __("Failover Region"),
-                            "options"     => SesRegionEnum::options(),
-                            "value"       =>  Arr::get($shop->settings, 'email.provider.failover.region', ''),
-                        ],
-                        "customer_notification_access_id" => [
-                            "type"        => "input",
-                            "label"       => __("Customer notification Access ID"),
-                            "value"       => Arr::get($shop->settings, 'email.provider.customer_notification.access_id', ''),
-                        ],
-                        "customer_notification_access_key" => [
-                            "type"        => "input",
-                            "label"       => __("Customer notification Access Key"),
-                            "value"       => Arr::get($shop->settings, 'email.provider.customer_notification.access_key', ''),
-                        ],
-                        "customer_notification_region" => [
-                            "type"        => "select",
-                            "label"       => __("Customer notification Region"),
-                            "options"     => SesRegionEnum::options(),
-                            "value"       => Arr::get($shop->settings, 'email.provider.customer_notification.region', ''),
-                        ],
-                    ],
+                    'fields' => SesConfigurationBlueprint::make(
+                        $shop->settings ?? [],
+                        ['failover', 'customer_notification']
+                    ),
                 ],
                 [
                     'label'  => __('Chat'),

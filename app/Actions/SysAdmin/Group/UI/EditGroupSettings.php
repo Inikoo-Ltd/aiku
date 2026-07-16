@@ -11,8 +11,8 @@ namespace App\Actions\SysAdmin\Group\UI;
 use App\Actions\GrpAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
-use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Models\SysAdmin\Group;
+use App\Support\Forms\SesConfigurationBlueprint;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -150,56 +150,10 @@ class EditGroupSettings extends GrpAction
                     [
                         'label'  => __('AWS-SES configuration'),
                         'icon'   => 'fa-light fa-key',
-                        'fields' => [
-                            "access_id" => [
-                                "type"        => "input",
-                                "label"       => __("Failover Access ID"),
-                                "value"       => Arr::get($group->settings, 'email.provider.failover.access_id', ''),
-                            ],
-                            "access_key" => [
-                                "type"        => "input",
-                                "label"       => __("Failover Access Key"),
-                                "value"       => Arr::get($group->settings, 'email.provider.failover.access_key', ''),
-                            ],
-                            "region" => [
-                                "type"        => "select",
-                                "label"       => __("Failover Region"),
-                                "options"     => SesRegionEnum::options(),
-                                "value"       => Arr::get($group->settings, 'email.provider.failover.region', ''),
-                            ],
-                            "customer_notification_access_id" => [
-                                "type"        => "input",
-                                "label"       => __("Customer notification Access ID"),
-                                "value"       => Arr::get($group->settings, 'email.provider.customer_notification.access_id', ''),
-                            ],
-                            "customer_notification_access_key" => [
-                                "type"        => "input",
-                                "label"       => __("Customer notification Access Key"),
-                                "value"       => Arr::get($group->settings, 'email.provider.customer_notification.access_key', ''),
-                            ],
-                            "customer_notification_region" => [
-                                "type"        => "select",
-                                "label"       => __("Customer notification Region"),
-                                "options"     => SesRegionEnum::options(),
-                                "value"       => Arr::get($group->settings, 'email.provider.customer_notification.region', ''),
-                            ],
-                            "user_notification_access_id" => [
-                                "type"        => "input",
-                                "label"       => __("User notification Access ID"),
-                                "value"       => Arr::get($group->settings, 'email.provider.user_notification.access_id', ''),
-                            ],
-                            "user_notification_access_key" => [
-                                "type"        => "input",
-                                "label"       => __("User notification Access Key"),
-                                "value"       => Arr::get($group->settings, 'email.provider.user_notification.access_key', ''),
-                            ],
-                            "user_notification_region" => [
-                                "type"        => "select",
-                                "label"       => __("User notification Region"),
-                                "options"     => SesRegionEnum::options(),
-                                "value"       => Arr::get($group->settings, 'email.provider.user_notification.region', ''),
-                            ],
-                        ]
+                        'fields' => SesConfigurationBlueprint::make(
+                            $group->settings ?? [],
+                            ['failover', 'customer_notification', 'user_notification']
+                        ),
                     ],
                     [
                         'label'  => __('Printer'),

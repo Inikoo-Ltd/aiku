@@ -14,9 +14,9 @@ use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
+use App\Support\Forms\SesConfigurationBlueprint;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -168,40 +168,10 @@ class EditOrganisationSettings extends OrgAction
                         [
                             'label'  => __('AWS-SES configuration'),
                             'icon'   => 'fa-light fa-key',
-                            'fields' => [
-                                "access_id" => [
-                                    "type" => "input",
-                                    "label" => __("Failover Access ID"),
-                                    "value"       => Arr::get($organisation->settings, 'email.provider.failover.access_id', ''),
-                                ],
-                                "access_key" => [
-                                    "type" => "input",
-                                    "label" => __("Failover Access Key"),
-                                    "value"       =>  Arr::get($organisation->settings, 'email.provider.failover.access_key', ''),
-                                ],
-                                "region" => [
-                                    "type" => "select",
-                                    "label" => __("Failover Region"),
-                                    "options"     => SesRegionEnum::options(),
-                                    "value"       =>  Arr::get($organisation->settings, 'email.provider.failover.region', ''),
-                                ],
-                                "customer_notification_access_id" => [
-                                    "type"        => "input",
-                                    "label"       => __("Customer notification Access ID"),
-                                    "value"       => Arr::get($organisation->settings, 'email.provider.customer_notification.access_id', ''),
-                                ],
-                                "customer_notification_access_key" => [
-                                    "type"        => "input",
-                                    "label"       => __("Customer notification Access Key"),
-                                    "value"       => Arr::get($organisation->settings, 'email.provider.customer_notification.access_key', ''),
-                                ],
-                                "customer_notification_region" => [
-                                    "type"        => "select",
-                                    "label"       => __("Customer notification Region"),
-                                    "options"     => SesRegionEnum::options(),
-                                    "value"       => Arr::get($organisation->settings, 'email.provider.customer_notification.region', ''),
-                                ],
-                            ],
+                            'fields' => SesConfigurationBlueprint::make(
+                                $organisation->settings ?? [],
+                                ['failover', 'customer_notification']
+                            ),
                         ],
                         [
                             "label" => __("google drive"),
