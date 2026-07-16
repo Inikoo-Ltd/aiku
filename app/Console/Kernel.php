@@ -257,33 +257,6 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('fetch:stock_locations aw')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockLocationsAW',
-                ),
-                name: 'FetchAuroraStockLocationsAW',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            //            $this->logSchedule(
-            //                $schedule->command('fetch:stock_locations sk')->dailyAt('02:45')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-            //                    monitorSlug: 'FetchAuroraStockLocationsSK',
-            //                ),
-            //                name: 'FetchAuroraStockLocationsSK',
-            //                type: 'command',
-            //                scheduledAt: now()->format('H:i')
-            //            );
-            //
-            //            $this->logSchedule(
-            //                $schedule->command('fetch:stock_locations es')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-            //                    monitorSlug: 'FetchAuroraStockLocationsES',
-            //                ),
-            //                name: 'FetchAuroraStockLocationsES',
-            //                type: 'command',
-            //                scheduledAt: now()->format('H:i')
-            //            );
-
-            $this->logSchedule(
                 $schedule->command('fetch:stock_locations aroma')->dailyAt('3:15')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'FetchAuroraStockLocationsAroma',
                 ),

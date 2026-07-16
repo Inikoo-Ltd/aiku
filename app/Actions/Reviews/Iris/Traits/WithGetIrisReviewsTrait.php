@@ -134,16 +134,16 @@ trait WithGetIrisReviewsTrait
             ->leftJoin('users as reply_users', 'reviews.reply_by', '=', 'reply_users.id')
             ->select($select);
 
-        if ($parent instanceof Shop) {
-            $randomSort = AllowedSort::custom('random', new RandomSort());
-            array_push($allowedSort, $randomSort);
-            $queryBuilder
-                ->defaultSort($randomSort);
+        // if ($parent instanceof Shop) {
+        //     $randomSort = AllowedSort::custom('random', new RandomSort());
+        //     array_push($allowedSort, $randomSort);
+        //     $queryBuilder
+        //         ->defaultSort($randomSort);
 
-        } else {
+        // } else {
             $queryBuilder
                 ->defaultSort('-created_at');
-        }
+        // }
 
         return $queryBuilder
             ->allowedSorts($allowedSort)

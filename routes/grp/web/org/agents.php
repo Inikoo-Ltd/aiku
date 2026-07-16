@@ -10,6 +10,7 @@ use App\Actions\Chat\Agent\UpdateAgent;
 use App\Actions\Chat\ChatSession\AssignChatToAgent;
 use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\ForceDeleteChatAgent;
+use App\Actions\Chat\ChatSession\ReopenChatSession;
 use App\Actions\Chat\ChatSession\RestoreChatAgent;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use Illuminate\Support\Facades\Route;
@@ -31,4 +32,5 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('takeover');
     Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
     Route::patch('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
+    Route::patch('/sessions/{chatSession:ulid}/reopen', ReopenChatSession::class)->name('sessions.reopen');
 });
