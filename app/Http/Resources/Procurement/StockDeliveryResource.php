@@ -12,6 +12,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @property string $number
+ * @property string $slug
+ * @property string $reference
+ * @property mixed $parent_name
+ * @property mixed $date
  * @property string $created_at
  * @property string $updated_at
  */
@@ -22,6 +26,8 @@ class StockDeliveryResource extends JsonResource
         return [
             'slug'          => $this->slug,
             'reference'     => $this->reference,
+            'parent_name'   => $this->parent_name,
+            'date'          => $this->date,
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
         ];

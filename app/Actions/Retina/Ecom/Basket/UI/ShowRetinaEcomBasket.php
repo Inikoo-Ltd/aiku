@@ -147,7 +147,8 @@ class ShowRetinaEcomBasket extends RetinaAction
                             [
                                 [
                                     'label'       => __('Charges'),
-                                    'information' => '',
+                                    'information_icon' => __('A small administration, picking and packing charge of £5 +VAT applies to orders under £50 +VAT'),
+                                    'information_icon_button' => 'fal fa-info-circle',
                                     'price_total' => 0
                                 ],
                                 [
