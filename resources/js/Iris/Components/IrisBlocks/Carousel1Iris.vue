@@ -113,6 +113,18 @@ const breakpoints = computed(() => {
   }
 })
 
+const blockDomId = computed(() => props.fieldValue?.id ? props.fieldValue.id : 'carousel' + props.indexBlock)
+
+const preInitSlideCss = computed(() => {
+  const gap = Number(props.fieldValue?.carousel_data?.carousel_setting?.spaceBetween || 0)
+  const rule = (n: number) =>
+    `#${blockDomId.value} .swiper:not(.swiper-initialized) .swiper-slide{width:calc((100% - ${(n - 1) * gap}px)/${n});margin-right:${gap}px}`
+  const bp = breakpoints.value
+  return rule(bp[0].slidesPerView)
+    + `@media(min-width:768px){${rule(bp[768].slidesPerView)}}`
+    + `@media(min-width:1200px){${rule(bp[1200].slidesPerView)}}`
+})
+
 const onSwiper = (swiper: any) => {
   swiperInstance.value = swiper
 }
@@ -141,7 +153,8 @@ const idxSlideLoading = ref<number | null>(null)
 </script>
 
 <template>
-<div  :id="fieldValue?.id ? fieldValue?.id  : 'carousel' + indexBlock"  component="carousel" class="relative overflow-hidden">
+<div :id="blockDomId" component="carousel" class="relative overflow-hidden">
+    <component :is="'style'">{{ preInitSlideCss }}</component>
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(fieldValue?.container?.properties, props.screenType)
