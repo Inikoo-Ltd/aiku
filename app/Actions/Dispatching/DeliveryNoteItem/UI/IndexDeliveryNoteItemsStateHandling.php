@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
 {
     use WithDeliveryNoteItemUI;
+    use WithDeliveryNotePackaging;
 
     public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
     {
@@ -140,6 +142,14 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
             $this->addDeliveryNoteItemBaseTableColumns($table);
 
+            if ($deliveryNote && $this->effectivePackaging($deliveryNote)) {
+                $table->column(key: 'packaging', label: __('Packaging'), canBeHidden: false);
+            }
+
+            if ($deliveryNote && $deliveryNote->leaflets->isNotEmpty()) {
+                $table->column(key: 'leaflets', label: __('Inserts to print'), canBeHidden: false);
+                $table->column(key: 'print_status', label: __('Print all inserts'), canBeHidden: false);
+            }
 
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction, false);
             if ($allowAction) {

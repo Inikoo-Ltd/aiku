@@ -41,8 +41,10 @@ import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
+import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/ChangePackagingSelect.vue"
+import { faBoxOpen, faPrint, faFileAlt, faExclamationCircle } from "@fal"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faFileAlt, faExclamationCircle);
 
 
 const props = defineProps<{
@@ -53,12 +55,107 @@ const props = defineProps<{
     allowWaiting: boolean
     allowPickerSetNotPicked: boolean
     isEditable: boolean
+    packaging?: {
+        current: {
+            id: number
+            name: string
+            dimensions: string | null
+        } | null
+        options: {
+            id: number
+            name: string
+            dimensions: string | null
+            price: number
+            is_free: boolean
+            family_code: string | null
+            image?: any
+        }[]
+        update_route: routeType
+    }
+    inserts?: {
+        leaflets: {
+            id: number
+            name: string
+            type: string
+            copies: number
+            state: string
+            state_label: string
+            has_media: boolean
+        }[]
+        print_status: {
+            total: number
+            printed: number
+            all_printed: boolean
+            label: string
+        }
+        print_all_route: routeType
+    }
 }>();
 
 const emit = defineEmits<{
     'update:quantity-to-resend': [itemId: string | number, value: number]
     'validation-error': [itemId: string | number, hasError: boolean]
 }>();
+
+const isChangingPackaging = ref(false)
+const canChangePackaging = computed(() =>
+    props.isEditable
+    && props.state === 'handling'
+    && !!props.packaging?.options?.length
+)
+
+const onChangePackaging = (packagingId: number) => {
+    if (!props.packaging?.update_route) {
+        return
+    }
+
+    router.patch(
+        route(props.packaging.update_route.name, props.packaging.update_route.parameters),
+        { packaging_id: packagingId },
+        {
+            preserveScroll: true,
+            onStart: () => isChangingPackaging.value = true,
+            onFinish: () => isChangingPackaging.value = false,
+        }
+    )
+}
+
+const printingLeafletId = ref<number | null>(null)
+const onPrintLeaflet = async (leaflet: { id: number, state: string }) => {
+    try {
+        printingLeafletId.value = leaflet.id
+        const response = await axios.post(
+            route("grp.models.delivery_note_leaflet.print", { deliveryNoteLeaflet: leaflet.id })
+        )
+        if (response.data?.state === "error") {
+            notify({ title: trans("Something went wrong"), text: trans("Failed to print insert"), type: "error" })
+        } else {
+            leaflet.state = "printed"
+            notify({ title: trans("Sent to printer"), text: trans("Insert sent to your printer"), type: "success" })
+        }
+    } catch (error: any) {
+        notify({ title: trans("Something went wrong"), text: error?.response?.data?.message ?? trans("Failed to print insert"), type: "error" })
+    } finally {
+        printingLeafletId.value = null
+    }
+}
+
+const isPrintingAllLeaflets = ref(false)
+const onPrintAllLeaflets = () => {
+    if (!props.inserts?.print_all_route) {
+        return
+    }
+
+    router.post(
+        route(props.inserts.print_all_route.name, props.inserts.print_all_route.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => isPrintingAllLeaflets.value = true,
+            onFinish: () => isPrintingAllLeaflets.value = false,
+        }
+    )
+}
 
 const screenType = inject('screenType', ref('desktop'))
 
@@ -904,6 +1001,83 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
             {{ item.quantity_to_pick }}
         </template>
 
+
+        <!-- Column: Packaging -->
+        <template #cell(packaging)>
+            <div v-if="packaging?.current || packaging?.options?.length" class="min-w-[190px]">
+                <div class="flex items-center gap-2 text-sm">
+                    <FontAwesomeIcon :icon="['fal', 'box-open']" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <span v-if="packaging.current" class="font-medium">{{ packaging.current.name }}</span>
+                    <span v-else class="text-gray-400 italic">{{ trans('No packaging') }}</span>
+                </div>
+                <div v-if="packaging.current?.dimensions" class="text-xs text-gray-400 pl-6">
+                    {{ packaging.current.dimensions }}
+                </div>
+                <ChangePackagingSelect
+                    v-if="canChangePackaging"
+                    class="mt-1"
+                    :options="packaging.options"
+                    :selectedId="packaging.current?.id ?? null"
+                    :loading="isChangingPackaging"
+                    @change="onChangePackaging"
+                />
+            </div>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <!-- Column: Inserts to print -->
+        <template #cell(leaflets)>
+            <div v-if="inserts?.leaflets?.length" class="space-y-1 min-w-[210px]">
+                <div v-for="leaflet in inserts.leaflets" :key="leaflet.id" class="flex items-center gap-2 text-sm">
+                    <FontAwesomeIcon :icon="['fal', 'file-alt']" class="text-gray-500" fixed-width aria-hidden="true" />
+                    <span class="flex-1 truncate">{{ leaflet.name }}</span>
+                    <span class="text-xs text-gray-400">x{{ leaflet.copies }}</span>
+                    <button
+                        v-if="leaflet.has_media"
+                        type="button"
+                        class="p-1 text-orange-500 hover:text-orange-600 disabled:text-gray-300"
+                        :disabled="printingLeafletId === leaflet.id"
+                        v-tooltip="(leaflet.state === 'printed' || leaflet.state === 'included') ? trans('Reprint') : trans('Print')"
+                        @click="onPrintLeaflet(leaflet)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'print']" fixed-width aria-hidden="true" />
+                    </button>
+                    <FontAwesomeIcon
+                        v-else
+                        :icon="['fal', 'exclamation-circle']"
+                        class="text-amber-500"
+                        v-tooltip="trans('No file uploaded')"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                </div>
+            </div>
+            <span v-else class="text-gray-400 italic text-sm">{{ trans('No inserts to print') }}</span>
+        </template>
+
+        <!-- Column: Print all inserts -->
+        <template #cell(print_status)>
+            <div v-if="inserts?.print_status?.total > 0" class="space-y-1 min-w-[150px]">
+                <Button
+                    type="tertiary"
+                    size="xs"
+                    icon="fal fa-print"
+                    :label="trans('Print all (:n)', { n: inserts.print_status.total })"
+                    :loading="isPrintingAllLeaflets"
+                    @click="onPrintAllLeaflets()"
+                />
+                <div class="text-xs">
+                    <span class="text-gray-500">{{ trans('Print status') }}: </span>
+                    <span
+                        class="inline-flex rounded-full px-2 py-0.5 font-medium"
+                        :class="inserts.print_status.all_printed ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
+                    >
+                        {{ inserts.print_status.label }}
+                    </span>
+                </div>
+            </div>
+            <span v-else class="text-gray-400">—</span>
+        </template>
 
         <!-- Column: Pickings -->
         <template #cell(pickings)="{ item }">

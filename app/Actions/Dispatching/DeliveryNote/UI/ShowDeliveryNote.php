@@ -18,6 +18,8 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteLeaflets;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
@@ -63,6 +65,8 @@ class ShowDeliveryNote extends OrgAction
     use WithInertia;
     use GetPlatformLogo;
     use WithOrderForbiddenCountryCheck;
+    use WithDeliveryNotePackaging;
+    use WithDeliveryNoteLeaflets;
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
@@ -734,6 +738,38 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    /** @return array{current: array|null, options: array, update_route: array} */
+    public function getDeliveryNotePackagingProp(DeliveryNote $deliveryNote): array
+    {
+        $packaging = $this->effectivePackaging($deliveryNote);
+
+        return [
+            'current'      => $this->getPackaging($packaging),
+            'options'      => $this->getPackagingOptions($deliveryNote, $packaging?->family_code),
+            'update_route' => [
+                'name'       => 'grp.models.delivery_note.update_packaging',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ],
+        ];
+    }
+
+    /** @return array{leaflets: array, print_status: array, print_all_route: array} */
+    public function getDeliveryNoteInsertsProp(DeliveryNote $deliveryNote): array
+    {
+        return [
+            'leaflets'        => $this->getLeaflets($deliveryNote),
+            'print_status'    => $this->getPrintStatus($deliveryNote),
+            'print_all_route' => [
+                'name'       => 'grp.models.delivery_note.leaflets.print',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ],
+        ];
+    }
+
     public function getTimeline(DeliveryNote $deliveryNote): array
     {
         $timeline = [];
@@ -894,6 +930,8 @@ class ShowDeliveryNote extends OrgAction
             ],
             'warning'       => $warning,
             'is_editable'   => $isEditable,
+            'packaging'     => $this->getDeliveryNotePackagingProp($deliveryNote),
+            'inserts'       => $this->getDeliveryNoteInsertsProp($deliveryNote),
             'tabs'          => [
                 'current'    => $this->tab,
                 'navigation' => in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKING, $deliveryNote->state == DeliveryNoteStateEnum::PACKED])

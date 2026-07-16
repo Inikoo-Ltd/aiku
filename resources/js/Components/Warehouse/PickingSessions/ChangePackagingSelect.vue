@@ -48,15 +48,15 @@ const onSelect = (option: PackagingOption) => {
     <div class="relative">
         <button
             type="button"
-            class="flex w-full items-center justify-between gap-2 rounded-md border border-orange-400 px-3 py-1.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50 disabled:opacity-60"
+            class="inline-flex w-fit items-center gap-1.5 rounded border border-orange-400 px-2 py-0.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-50 disabled:opacity-60"
             :disabled="loading"
             @click="open = !open"
         >
-            <span class="flex items-center gap-2">
+            <span class="flex items-center gap-1.5">
                 <FontAwesomeIcon v-if="loading" :icon="['fad', 'spinner-third']" class="animate-spin" fixed-width aria-hidden="true" />
                 {{ trans("Change packaging") }}
             </span>
-            <FontAwesomeIcon :icon="['fal', 'chevron-down']" class="text-xs transition" :class="open ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon :icon="['fal', 'chevron-down']" class="text-[10px] transition" :class="open ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
         </button>
 
         <!-- Backdrop to close on outside click -->
@@ -64,13 +64,13 @@ const onSelect = (option: PackagingOption) => {
 
         <div
             v-if="open"
-            class="absolute left-0 z-50 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+            class="absolute left-0 z-50 mt-1 flex max-h-80 w-72 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
         >
-            <div class="px-3 py-2 text-xs font-semibold text-gray-700">
+            <div class="shrink-0 px-3 py-2 text-xs font-semibold text-gray-700">
                 {{ trans("Select most suitable packaging") }}
             </div>
 
-            <div class="max-h-72 overflow-y-auto">
+            <div class="min-h-0 flex-1 overflow-y-auto">
                 <button
                     v-for="option in options"
                     :key="option.id"
@@ -105,7 +105,7 @@ const onSelect = (option: PackagingOption) => {
                 </button>
             </div>
 
-            <div class="flex items-start gap-2 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+            <div class="flex shrink-0 items-start gap-2 bg-gray-50 px-3 py-2 text-xs text-gray-500">
                 <FontAwesomeIcon :icon="['fal', 'info-circle']" class="mt-0.5" fixed-width aria-hidden="true" />
                 {{ trans("Choose the packaging that best fits the items in this order.") }}
             </div>

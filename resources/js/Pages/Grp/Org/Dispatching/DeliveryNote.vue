@@ -94,6 +94,41 @@ const props = defineProps<{
         description?: string
     }
     delivery_note: DeliveryNote
+    packaging?: {
+        current: {
+            id: number
+            name: string
+            dimensions: string | null
+        } | null
+        options: {
+            id: number
+            name: string
+            dimensions: string | null
+            price: number
+            is_free: boolean
+            family_code: string | null
+            image?: any
+        }[]
+        update_route: routeType
+    }
+    inserts?: {
+        leaflets: {
+            id: number
+            name: string
+            type: string
+            copies: number
+            state: string
+            state_label: string
+            has_media: boolean
+        }[]
+        print_status: {
+            total: number
+            printed: number
+            all_printed: boolean
+            label: string
+        }
+        print_all_route: routeType
+    }
     is_collection: boolean
     notes?: {
         note_list: {
@@ -686,6 +721,8 @@ watch(
 			:isEditable="is_editable"
 			:tariffCodesExport="tariff_codes_export"
 			:routes
+			:packaging
+			:inserts
 			:state="delivery_note.state"
 			:shop_type="shop_type"
 			:allowWaiting="allow_waiting"
