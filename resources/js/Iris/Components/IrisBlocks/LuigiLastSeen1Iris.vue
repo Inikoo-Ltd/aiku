@@ -114,7 +114,12 @@ const fetchRecommenders = async () => {
                     "recommender_client_identifier": "last_seen",
                     "size": 25,
                     "user_id": userId ?? null,  // Customer ID or Cookie _lb
-                    "recommendation_context": {},
+                    "recommendation_context": {
+                        "availability": {
+                            "values": ["1"],
+                            "operator": "or"
+                        }
+                    },
                     // "hit_fields": ["url", "title"]
                 }
             ],
