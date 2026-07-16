@@ -15,6 +15,8 @@ use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentCompleted;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentFailure;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentSuccess;
 use App\Actions\CRM\Prospect\UI\CreateProspectFromWebBlock;
+use App\Actions\Retina\Dropshipping\Orders\CancelOrderWithPaypal;
+use App\Actions\Retina\Dropshipping\Orders\SuccessOrderWithPaypal;
 
 Route::name('webhooks.')->prefix('webhooks')->group(function () {
     Route::name('checkout_com.')->prefix('checkout-com')->group(function () {
@@ -34,5 +36,11 @@ Route::name('webhooks.')->prefix('webhooks')->group(function () {
         Route::get('mit-saved-card-failure/{mitSavedCard:ulid}', CheckoutComMitSavedCardFailure::class)->name('mit_saved_card_failure');
 
     });
+
+    Route::name('paypal.')->prefix('paypal')->group(function () {
+        Route::get('order-payment-success/{order:id}/{payment:id}', SuccessOrderWithPaypal::class)->name('order_payment_success')->withoutScopedBindings()->whereNumber(['order', 'payment']);
+        Route::get('order-payment-cancel/{order:id}/{payment:id}', CancelOrderWithPaypal::class)->name('order_payment_cancel')->withoutScopedBindings()->whereNumber(['order', 'payment']);
+    });
+
     Route::post('subscribe-newsletter', CreateProspectFromWebBlock::class)->name('subscribe_newsletter.store');
 });

@@ -2,24 +2,32 @@
 
 namespace App\Actions\Accounting\PaymentGateway\Paypal\Traits;
 
+use App\Models\Accounting\PaymentAccount;
+use Illuminate\Support\Arr;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
 
 trait WithPaypalConfiguration
 {
-    public function getPaypalConfiguration($clientId, $clientSecret): PayPalClient
+    /**
+     * @throws \Throwable
+     */
+    public function getPaypalConfiguration($clientId, $clientSecret, ?string $currencyCode = null): PayPalClient
     {
+        $mode = app()->isProduction() ? 'live' : 'sandbox';
+
         $provider = new PayPalClient();
 
         $config = [
-            'mode'    => 'sandbox',
-            'sandbox' => [
-                'client_id'         => $clientId,
-                'client_secret'     => $clientSecret
+            'mode' => $mode,
+            $mode  => [
+                'client_id'     => $clientId,
+                'client_secret' => $clientSecret,
+                'app_id'        => '',
             ],
 
             'payment_action' => 'Sale',
-            'currency'       => 'USD',
-            'notify_url'     => 'https://your-site.com/paypal/notify',
+            'currency'       => $currencyCode ?? 'USD',
+            'notify_url'     => '',
             'locale'         => 'en_US',
             'validate_ssl'   => true,
         ];
@@ -28,5 +36,17 @@ trait WithPaypalConfiguration
         $provider->getAccessToken();
 
         return $provider;
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function getPaypalProvider(PaymentAccount $paymentAccount, ?string $currencyCode = null): PayPalClient
+    {
+        return $this->getPaypalConfiguration(
+            Arr::get($paymentAccount->data, 'paypal_client_id'),
+            Arr::get($paymentAccount->data, 'paypal_client_secret'),
+            $currencyCode
+        );
     }
 }

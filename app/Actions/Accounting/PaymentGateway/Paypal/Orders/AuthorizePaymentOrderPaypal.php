@@ -3,8 +3,8 @@
 namespace App\Actions\Accounting\PaymentGateway\Paypal\Orders;
 
 use App\Actions\Accounting\PaymentGateway\Paypal\Traits\WithPaypalConfiguration;
+use App\Models\Accounting\PaymentAccount;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AuthorizePaymentOrderPaypal
@@ -12,36 +12,28 @@ class AuthorizePaymentOrderPaypal
     use AsAction;
     use WithPaypalConfiguration;
 
-    public string $commandSignature   = 'paypal:authorize {orderId}';
+    public string $commandSignature   = 'paypal:authorize {paymentAccount} {orderId}';
     public string $commandDescription = 'Authorize checkout detail using paypal';
 
-    public function handle(string $orderId, array $order)
+    /**
+     * @throws \Throwable
+     */
+    public function handle(PaymentAccount $paymentAccount, string $orderId, array $modelData = []): array
     {
-        $response = Http::withHeaders($this->headers())
-            ->post($this->url() . '/v2/checkout/orders/' . $orderId . '/authorize', [
-                'payment_source' => [
-                    'card' => [
-                        'name'          => $order['card']['name'],
-                        'number'        => $order['card']['number'],
-                        'security_code' => $order['card']['security_code'],
-                        'expiry'        => $order['card']['expiry']
-                    ]
-                ]
-            ]);
+        $provider = $this->getPaypalProvider($paymentAccount);
 
-        return $response->json();
+        return $provider->authorizePaymentOrder($orderId, $modelData);
     }
 
-    public function asCommand(Command $command)
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): int
     {
-        $order = [
-            'card' => [
-                'name'          => 'Jhon',
-                'number'        => '4915805038587737',
-                'security_code' => '888',
-                'expiry'        => '2025-03'
-            ]
-        ];
-        dd($this->handle($command->argument('orderId'), $order));
+        $paymentAccount = PaymentAccount::where('slug', $command->argument('paymentAccount'))->firstOrFail();
+
+        $command->line(json_encode($this->handle($paymentAccount, $command->argument('orderId')), JSON_PRETTY_PRINT));
+
+        return 0;
     }
 }

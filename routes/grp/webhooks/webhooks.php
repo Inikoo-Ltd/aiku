@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
+use App\Actions\Accounting\PaymentGateway\Paypal\Orders\Webhooks\WebhookOrderPaypal;
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
@@ -29,6 +30,7 @@ use Laravel\Nightwatch\Http\Middleware\Sample;
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns')->middleware(Sample::never());
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
+    Route::post('paypal/payment-success/{paymentAccount:id}', WebhookOrderPaypal::class)->name('paypal.payment_success');
 });
 
 Route::get('google-ads/callback', CallbackShopGoogleAds::class)->name('google_ads.callback');

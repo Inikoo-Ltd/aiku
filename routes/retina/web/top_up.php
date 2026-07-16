@@ -6,6 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\PaymentGateway\Paypal\Orders\CancelPaymentOrderPaypal;
 use App\Actions\Accounting\PaymentGateway\Paypal\Orders\CapturePaymentOrderPaypal;
 use App\Actions\Retina\Accounting\TopUp\PdfTopupPdf;
 use App\Actions\Retina\Accounting\TopUp\SinglePdfTopupPdf;
@@ -18,7 +19,7 @@ Route::get('', IndexRetinaTopUp::class)->name('index');
 Route::get('/dashboard', ShowRetinaTopUpDashboard::class)->name('dashboard');
 Route::get('/checkout/{topUpPaymentApiPoint:id}', ShowRetinaTopUpCheckout::class)->name('checkout');
 Route::get('paypal-payment-capture/{payment:id}', CapturePaymentOrderPaypal::class)->name('paypal.capture_payment');
-Route::get('paypal-payment-cancel/{paymentAccount:id}', CapturePaymentOrderPaypal::class)->name('paypal.cancel_payment');
+Route::get('paypal-payment-cancel/{payment:id}', CancelPaymentOrderPaypal::class)->name('paypal.cancel_payment');
 
 Route::get('top-up-pdf-export', PdfTopupPdf::class)->name('top_up_pdf.export');
 Route::get('top-up-pdf-export/{topUp}', SinglePdfTopupPdf::class)->name('single_top_up_pdf.export');

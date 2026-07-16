@@ -3,8 +3,8 @@
 namespace App\Actions\Accounting\PaymentGateway\Paypal\Orders;
 
 use App\Actions\Accounting\PaymentGateway\Paypal\Traits\WithPaypalConfiguration;
+use App\Models\Accounting\PaymentAccount;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ConfirmOrderPaypal
@@ -12,18 +12,28 @@ class ConfirmOrderPaypal
     use AsAction;
     use WithPaypalConfiguration;
 
-    public string $commandSignature   = 'paypal:confirm {orderId}';
+    public string $commandSignature   = 'paypal:confirm {paymentAccount} {orderId}';
     public string $commandDescription = 'Confirm checkout detail using paypal';
 
-    public function handle(string $orderId)
+    /**
+     * @throws \Throwable
+     */
+    public function handle(PaymentAccount $paymentAccount, string $orderId, array $modelData = []): array
     {
-        $response = Http::withHeaders($this->headers())->post($this->url() . '/v2/checkout/orders/' . $orderId . '/confirm-payment-source');
+        $provider = $this->getPaypalProvider($paymentAccount);
 
-        return $response->json();
+        return $provider->confirmOrder($orderId, $modelData);
     }
 
-    public function asCommand(Command $command)
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): int
     {
-        dd($this->handle($command->argument('orderId')));
+        $paymentAccount = PaymentAccount::where('slug', $command->argument('paymentAccount'))->firstOrFail();
+
+        $command->line(json_encode($this->handle($paymentAccount, $command->argument('orderId')), JSON_PRETTY_PRINT));
+
+        return 0;
     }
 }
