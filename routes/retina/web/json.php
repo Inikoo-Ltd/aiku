@@ -24,6 +24,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
 use App\Actions\Retina\Dropshipping\Portfolio\UploadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentServices;
+use App\Actions\Retina\GetBtreeClientTokenToPayOrder;
 use App\Actions\Retina\GetCheckoutComTokenToPayOrder;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Retina\Ecom\Basket\GetRetinaBasketTransactionProductData;
@@ -36,6 +37,8 @@ Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWhole
 Route::get('/{order}/recent-uploads', \App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads::class)->name('recent_uploads');
 
 Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order')->whereNumber('order');
+
+Route::get('/{order:id}/get-btree-client-token-to-pay-order', GetBtreeClientTokenToPayOrder::class)->name('get_btree_client_token_to_pay_order')->whereNumber('order');
 
 Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', DownloadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.portfolio_images_zip')->whereNumber('customerSalesChannel');
 Route::get('dropshipping/{customerSalesChannel:id}/upload-portfolio-zip-images', UploadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.upload_portfolio_zip_images')->whereNumber('customerSalesChannel');

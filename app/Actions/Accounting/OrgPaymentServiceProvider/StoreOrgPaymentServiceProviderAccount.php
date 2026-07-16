@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\OrgPaymentServiceProvider;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\OrgAction;
 use App\Actions\UI\Accounting\Traits\HasPaymentAccountUpdateActions;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\SysAdmin\Organisation;
@@ -29,7 +30,10 @@ class StoreOrgPaymentServiceProviderAccount extends OrgAction
         $provider                  = $paymentServiceProvider->code;
         $orgPaymentServiceProvider = StoreOrgPaymentServiceProvider::run($paymentServiceProvider, $organisation, Arr::only($modelData, ['code']));
 
-        data_set($modelData, 'type', $provider);
+        data_set($modelData, 'type', match ($provider) {
+            'btree' => PaymentAccountTypeEnum::BRAINTREE_PAYPAL->value,
+            default => $provider,
+        });
 
         $paymentAccount = StorePaymentAccount::run($orgPaymentServiceProvider, Arr::only($modelData, ['code', 'name', 'type']));
 
@@ -73,7 +77,9 @@ class StoreOrgPaymentServiceProviderAccount extends OrgAction
             'checkout_secret_key'        => ['sometimes', 'string'],
             'checkout_channel_id'        => ['sometimes', 'string'],
             'paypal_client_id'           => ['sometimes', 'string'],
-            'paypal_client_secret'       => ['sometimes', 'string']
+            'paypal_client_secret'       => ['sometimes', 'string'],
+            'braintree_client_id'        => ['sometimes', 'string'],
+            'braintree_client_secret'    => ['sometimes', 'string']
         ];
     }
 
