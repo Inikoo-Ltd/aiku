@@ -123,6 +123,8 @@ class GetOrgStockShowcase
                 'id'     => $tradeUnit->id,
                 'stock'  => $tradeUnit->orgStocks->sum('quantity_in_locations'),
                 'name'   => $tradeUnit->name,
+                'unit'   => $tradeUnit->type,
+                'units'  => trimDecimalZeros($tradeUnit->pivot->quantity),
                 'images' => $this->getImagesData($tradeUnit),
             ];
         })->toArray();
