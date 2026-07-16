@@ -6,7 +6,6 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
-use App\Actions\Inventory\OrgStockMovement\CalculateRunningQuantityOrgStockMovement;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStockMovement;
 
@@ -21,8 +20,7 @@ trait WithOrgStockMovementHydrator
             OrgStockHydrateSkuValue::dispatch($orgStock);
         }
 
-        OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes(15));
-        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes(15));
-        CalculateRunningQuantityOrgStockMovement::dispatch($orgStockMovement->id)->delay(now()->addMinutes(15));
+        OrgStockHydrateMovements::dispatch($orgStock)->delay(now()->addMinutes());
+        OrgStockHydrateProductsAvailableQuantity::dispatch($orgStock)->delay(now()->addMinutes());
     }
 }

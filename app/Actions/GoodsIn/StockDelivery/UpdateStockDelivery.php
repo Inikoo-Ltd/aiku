@@ -12,8 +12,10 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Rules\IUnique;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDelivery extends OrgAction
@@ -69,6 +71,8 @@ class UpdateStockDelivery extends OrgAction
 
 
         if (!$this->strict) {
+            $rules['state'] = ['sometimes', Rule::enum(StockDeliveryStateEnum::class)];
+
             $rules = $this->noStrictUpdateRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictStockDeliveryRules($rules);
@@ -85,7 +89,7 @@ class UpdateStockDelivery extends OrgAction
         }
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->stockDelivery       = $stockDelivery;
+        $this->stockDelivery  = $stockDelivery;
         $this->initialisation($stockDelivery->organisation, $modelData);
 
         return $this->handle($stockDelivery, $this->validatedData);

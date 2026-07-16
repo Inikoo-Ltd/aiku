@@ -119,6 +119,7 @@ interface GtmProduct {
     currency_code?: string | null
     family_code?: string | null
     variant_label?: string | null
+    discounted_price?: number
 }
 
 const toGtmAmount = (value: number | string | undefined | null): number | undefined => {
@@ -133,14 +134,15 @@ export const buildGtmProductPayload = (
 ): Record<string, any> => {
     const quantity = options.quantity ?? 1
     const price = toGtmAmount(product.price)
+    const discount = toGtmAmount(product.price - product.discounted_price)
 
     const item = withoutEmptyValues({
         item_id: product.slug,
         item_name: product.name,
         item_category: product.family_code,
-        item_variant: product.variant_label,
         price,
         quantity,
+        discount,
     })
 
     return {
