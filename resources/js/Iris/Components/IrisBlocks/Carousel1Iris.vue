@@ -160,7 +160,7 @@ const idxSlideLoading = ref<number | null>(null)
       ...getStyles(fieldValue?.container?.properties, props.screenType)
     }">
       <button v-if="swiperInstance?.allowSlidePrev && isLooping" ref="prevEl"
-        class="absolute left-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+        class="absolute left-6 top-1/2 -translate-y-1/2 z-20 flex h-[44px] w-[44px] items-center justify-center rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
         <FontAwesomeIcon :icon="faChevronLeft" />
       </button>
@@ -228,7 +228,7 @@ const idxSlideLoading = ref<number | null>(null)
 
       </div>
       <button v-if="swiperInstance?.allowSlideNext && isLooping" ref="nextEl"
-        class="absolute right-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+        class="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex h-[44px] w-[44px] items-center justify-center rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
         <FontAwesomeIcon :icon="faChevronRight" />
       </button>
