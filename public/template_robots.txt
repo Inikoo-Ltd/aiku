@@ -9,7 +9,6 @@ User-agent: *
 'Disallow: /attachment/*',
 'Disallow: /asset_label*',
 'Disallow: /page.php*',
-'Disallow: /*.sys$',
 'Disallow: /ethics',
 'Disallow: /image_root*',
 'Disallow: /app/login',
