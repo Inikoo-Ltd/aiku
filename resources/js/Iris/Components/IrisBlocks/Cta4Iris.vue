@@ -73,6 +73,7 @@ const imageBoxStyle = computed(() => {
 							:imgAttributes="fieldValue.image.attributes"
 							:height="getStyles(fieldValue?.image?.properties, 'desktop', false)?.height"
 							:width="getStyles(fieldValue?.image?.properties, 'desktop', false)?.width"
+							:preload="Number(indexBlock) <= 2"
 							/>
 
 						<div
