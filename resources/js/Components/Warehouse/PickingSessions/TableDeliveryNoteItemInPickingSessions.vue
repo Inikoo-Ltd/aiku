@@ -640,7 +640,7 @@ onUnmounted(() => {
                             :fractionData="GetWaitingWarehouseFractional(deliveryItem)"
                         />
                         <ButtonWithLink
-                            v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0 && pickingSession.state == 'handling'"
+                            v-if="Number(deliveryItem.quantity_waiting_warehouse) > 0 && (pickingSession.state == 'handling' || pickingSession.state == 'handling_blocked')"
                             v-tooltip="ctrans('Reset :qtyWaiting waiting items for warehouse', { qtyWaiting: Number(deliveryItem.quantity_waiting_warehouse).toString() })"
                             type="negative"
                             size="xxs"
