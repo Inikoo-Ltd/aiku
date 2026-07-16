@@ -5,7 +5,6 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
 import { routeType } from '@/types/route'
-import { route } from 'ziggy-js'
 import { debounce } from 'lodash-es'
 import Button from '../Elements/Buttons/Button.vue';
 import { InputText, Select, Dialog, Textarea, Checkbox, Skeleton } from "primevue"
@@ -169,6 +168,8 @@ const uploadFilesLocal = async (files: FileList) => {
             text: trans('Reload Pages'),
             type: 'error'
         })
+
+        return
     }
 
     try {

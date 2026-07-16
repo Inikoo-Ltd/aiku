@@ -9,7 +9,7 @@ import { inject, ref, computed, onMounted } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faStopCircle, faBox, faPallet, faTimes } from "@fal"
+import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faStopCircle, faFilePdf } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import { faExclamationTriangle } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
@@ -19,9 +19,9 @@ import Image from "@common/Components/Image.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import SalesAnalyticsCompact from "@/Components/Product/SalesAnalyticsCompact.vue"
 import Icon from "@/Components/Icon.vue"
-import { generateBarcode } from "@/Composables/printBarcode"
+import JsBarcode from "jsbarcode"
 import { ctrans } from "@/Composables/useTrans"
-library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faBox, faPallet, faTimes)
+library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf)
 
 const props = defineProps<{
     data: {
@@ -55,14 +55,12 @@ const props = defineProps<{
             quantity: number
             packs: number | null
         }[]
+        label_route?: {
+            name: string
+            parameters: Record<string, string>
+        }
     }
 }>()
-
-const barcodeLevelIcon: Record<string, string> = {
-    unit: "fal fa-stop-circle",
-    outer: "fal fa-box",
-    carton: "fal fa-pallet",
-}
 
 const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
@@ -93,7 +91,13 @@ const stockCostStats = computed(() => {
 
 onMounted(() => {
     props.data.barcodes?.forEach((barcode) => {
-        generateBarcode("barcode-" + barcode.level, barcode.number)
+        JsBarcode("#barcode-" + barcode.level, barcode.number, {
+            format: barcode.level === "unit" ? "EAN13" : "CODE128",
+            lineColor: "#000",
+            width: 2,
+            height: 50,
+            displayValue: true,
+        })
     })
 })
 
@@ -140,46 +144,6 @@ onMounted(() => {
                     <SalesAnalyticsCompact v-if="data.sales_data" :salesData="data.sales_data" />
                 </div>
             </div>
-
-            <!-- Barcodes -->
-            <div v-if="data.barcodes?.length" class="mt-6 border-t pt-4">
-                <div class="mb-3 text-xs font-medium uppercase tracking-wide text-gray-400">
-                    {{ ctrans("Barcodes") }}
-                </div>
-                <div class="flex flex-col gap-3">
-                    <div v-for="barcode in data.barcodes" :key="barcode.level"
-                        class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                        <div class="w-8 shrink-0 text-center text-lg text-gray-500">
-                            <Icon :data="{ icon: barcodeLevelIcon[barcode.level] }" />
-                        </div>
-
-                        <div class="w-24 shrink-0 text-sm text-gray-600">
-                            <span v-if="barcode.level === 'outer'"
-                                v-tooltip="ctrans('Units per pack')"
-                                class="inline-flex items-center gap-0.5">
-                                <Icon :data="{ icon: 'fal fa-stop-circle', class: 'text-gray-300' }" />
-                                <Icon :data="{ icon: 'fal fa-times', class: 'text-gray-300' }" />
-                                <span>{{ barcode.quantity }}</span>
-                            </span>
-                            <span v-else-if="barcode.level === 'carton'"
-                                class="inline-flex items-center gap-0.5">
-                                <span v-tooltip="ctrans('Units per carton')" class="inline-flex items-center gap-0.5">
-                                    <Icon :data="{ icon: 'fal fa-stop-circle', class: 'text-gray-300' }" />
-                                    <Icon :data="{ icon: 'fal fa-times', class: 'text-gray-300' }" />
-                                    <span>{{ barcode.quantity }}</span>
-                                </span>
-                                <span v-if="barcode.packs"
-                                    v-tooltip="ctrans('Packages (SKOs) per carton')"
-                                    class="text-gray-400">
-                                    ({{ barcode.packs }})
-                                </span>
-                            </span>
-                        </div>
-
-                        <svg :id="'barcode-' + barcode.level" class="h-14"></svg>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Section: Stocks Management -->
@@ -190,6 +154,26 @@ onMounted(() => {
                 :stocks_management="data.stocks_management"
                 :trade_units="data.trade_units"
             />
+
+            <!-- Barcodes -->
+            <div v-if="data.barcodes?.length" class="mt-6 flex flex-col gap-3">
+                <div v-for="barcode in data.barcodes" :key="barcode.level"
+                    class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                    <div class="w-8 shrink-0 text-center text-lg text-gray-500">
+                        <Icon :data="{ icon: 'fal fa-stop-circle' }" />
+                    </div>
+
+                    <svg :id="'barcode-' + barcode.level" class="h-14"></svg>
+
+                    <a v-if="data.label_route"
+                        :href="route(data.label_route.name, { ...data.label_route.parameters, level: barcode.level })"
+                        target="_blank"
+                        v-tooltip="ctrans('Open PDF label')"
+                        class="ml-auto text-3xl text-gray-400 transition hover:text-red-500">
+                        <Icon :data="{ icon: 'fal fa-file-pdf' }" />
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </template>

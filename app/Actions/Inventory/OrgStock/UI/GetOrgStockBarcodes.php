@@ -23,11 +23,7 @@ class GetOrgStockBarcodes
             return [];
         }
 
-        $stock          = $orgStock->stock;
-        $unitsPerPack   = $stock?->units_per_pack;
-        $unitsPerCarton = $stock?->units_per_carton;
-
-        $barcodes = [
+        return [
             [
                 'level'    => 'unit',
                 'number'   => $baseNumber,
@@ -35,25 +31,5 @@ class GetOrgStockBarcodes
                 'packs'    => null,
             ],
         ];
-
-        if ($unitsPerPack) {
-            $barcodes[] = [
-                'level'    => 'outer',
-                'number'   => $baseNumber.'N',
-                'quantity' => $unitsPerPack,
-                'packs'    => null,
-            ];
-        }
-
-        if ($unitsPerCarton) {
-            $barcodes[] = [
-                'level'    => 'carton',
-                'number'   => $baseNumber.'C',
-                'quantity' => $unitsPerCarton,
-                'packs'    => $unitsPerPack > 1 ? intdiv($unitsPerCarton, $unitsPerPack) : null,
-            ];
-        }
-
-        return $barcodes;
     }
 }
