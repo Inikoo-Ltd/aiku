@@ -44,6 +44,7 @@ class SesConfigurationBlueprint
             ],
             self::key($type, 'region') => [
                 'type'    => 'select',
+                'searchable' => true,
                 'label'   => __('Region'),
                 'options' => SesRegionEnum::options(),
                 'value'   => Arr::get($settings, self::settingsPath($type, 'region'), ''),
