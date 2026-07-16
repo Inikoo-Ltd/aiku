@@ -17,6 +17,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import GridProducts from "@/Components/Product/GridProducts/GridProducts.vue"
+import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 
 const props = defineProps<{
     data: any[] | TableTS
@@ -33,7 +34,41 @@ const locale = inject("locale", retinaLayoutStructure)
 // Section: Quantity
 const listState = ref({})
 const isLoading = ref<string | boolean>(false)
-const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: number) => {
+
+const buildGtmBasketPayload = (item: any, quantity: number) => {
+    return buildGtmProductPayload(
+        {
+            slug: item.product_slug,
+            name: item.asset_name,
+            price: item.price,
+            currency_code: item.currency_code,
+            family_code: item?.family_code,
+        },
+        { quantity }
+    )
+}
+
+const pushBasketQuantityChange = (item: any, quantityDelta: number) => {
+    if (!quantityDelta) {
+        return
+    }
+
+    pushGtmEvent(
+        quantityDelta > 0 ? "add_to_cart" : "remove_from_cart",
+        buildGtmBasketPayload(item, Math.abs(quantityDelta))
+    )
+}
+
+const pushRemoveFromBasket = (item: any) => {
+    pushBasketQuantityChange(item, -(Number(item.quantity_ordered) || 0))
+}
+
+const onUpdateQuantity = (item: any, value: number) => {
+    const routeUpdate: routeType = item.updateRoute
+    const idTransaction = item.id
+    const previousQuantity = Number(item.quantity_ordered) || 0
+    const nextQuantity = Number(value) || 0
+
     router.patch(
         route(routeUpdate.name, routeUpdate.parameters),
         {
@@ -53,6 +88,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
             },
             onSuccess: () => {
                 set(listState.value, [idTransaction, "quantity"], "success")
+                pushBasketQuantityChange(item, nextQuantity - previousQuantity)
                 layout.reload_handle()
             },
             onFinish: () => {
@@ -68,8 +104,8 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
 }
 
 const debounceUpdateQuantity = debounce(
-    (routeUpdate: routeType, idTransaction: number, value: number) => {
-        onUpdateQuantity(routeUpdate, idTransaction, value)
+    (item: any, value: number) => {
+        onUpdateQuantity(item, value)
     },
     500
 )
@@ -134,8 +170,7 @@ const isOffersData = (offersData: any): boolean => {
                     <NumberWithButtonSave
                         :modelValue="item.quantity_ordered"
                         @update:modelValue="(value: number) => {
-                            console.log('item.quantity_ordered', item.quantity_ordered, value)
-                            item.quantity_ordered != value ? debounceUpdateQuantity(item.updateRoute, item.id, value) : null
+                            item.quantity_ordered != value ? debounceUpdateQuantity(item, value) : null
                         }"
                         :routeSubmit="item.updateRoute"
                         key-submit="quantity_ordered"
@@ -159,7 +194,8 @@ const isOffersData = (offersData: any): boolean => {
             <div class="flex gap-2 px-2">
                 <Link :href="item.deleteRoute?.name ? route(item.deleteRoute.name, item.deleteRoute.parameters) : '#'"
                     as="button" :method="item.deleteRoute.method" @start="() => isLoading = 'unselect' + item.id"
-                    @finish="() => isLoading = false" @success="() => layout.reload_handle()"
+                    @finish="() => isLoading = false"
+                    @success="() => { pushRemoveFromBasket(item); layout.reload_handle() }"
                     v-tooltip="trans('Unselect this product')" :preserveScroll="true">
                     <Button icon="fal fa-times" type="negative" size="xs"
                         :loading="isLoading === 'unselect' + item.id" />
@@ -211,8 +247,7 @@ const isOffersData = (offersData: any): boolean => {
                                 <div>
                                     <div class="w-fit ml-auto">
                                         <NumberWithButtonSave :modelValue="item.quantity_ordered" @update:modelValue="(value: number) => {
-                                            console.log('item.quantity_ordered', item.quantity_ordered, value)
-                                            item.quantity_ordered != value ? debounceUpdateQuantity(item.updateRoute, item.id, value) : null
+                                            item.quantity_ordered != value ? debounceUpdateQuantity(item, value) : null
                                         }" :routeSubmit="item.updateRoute" key-submit="quantity_ordered"
                                             isWithRefreshModel noSaveButton noUndoButton :min="1"
                                             :max="item.available_quantity"
@@ -229,7 +264,8 @@ const isOffersData = (offersData: any): boolean => {
                                         :href="item.deleteRoute?.name ? route(item.deleteRoute.name, item.deleteRoute.parameters) : '#'"
                                         as="button" :method="item.deleteRoute.method"
                                         @start="() => isLoading = 'unselect' + item.id"
-                                        @finish="() => isLoading = false" @success="() => layout.reload_handle()"
+                                        @finish="() => isLoading = false"
+                                        @success="() => { pushRemoveFromBasket(item); layout.reload_handle() }"
                                         v-tooltip="trans('Unselect this product')" :preserveScroll="true">
                                         <Button icon="fal fa-times" type="negative" size="xs"
                                             :loading="isLoading === 'unselect' + item.id" />

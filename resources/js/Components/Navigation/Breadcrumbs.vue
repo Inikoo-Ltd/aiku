@@ -303,8 +303,8 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
             <div v-if="isBookmarkAvailable" class="relative flex justify-center items-center w-12 xl:w-8 h-full">
                 <Popover class="w-full h-full" position="right-0" width="w-64">
                     <template #button>
-                        <div class="rounded w-full h-full flex items-center justify-center cursor-pointer hover:text-yellow-500"
-                            :class="isCurrentPageBookmarked ? 'text-yellow-500' : 'opacity-70 hover:opacity-100'"
+                        <div class="rounded w-full h-full flex items-center justify-center cursor-pointer hover:text-indigo-500"
+                            :class="isCurrentPageBookmarked ? 'text-indigo-500' : 'opacity-70 hover:opacity-100'"
                             v-tooltip="isCurrentPageBookmarked ? trans('Remove bookmark') : trans('Bookmark this page')"
                         >
                             <LoadingIcon v-if="isSavingBookmarks" />
@@ -318,7 +318,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                                 @click="toggleBookmarkCurrentPage"
                                 class="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer"
                             >
-                                <FontAwesomeIcon :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" class="flex-shrink-0 h-3.5 w-3.5" :class="isCurrentPageBookmarked ? 'text-yellow-500' : ''" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" class="flex-shrink-0 h-3.5 w-3.5" :class="isCurrentPageBookmarked ? 'text-indigo-500' : ''" aria-hidden="true" />
                                 <span>{{ isCurrentPageBookmarked ? trans('Remove bookmark') : trans('Bookmark this page') }}</span>
                             </button>
 
@@ -331,7 +331,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                             <div v-else class="max-h-64 overflow-y-auto space-y-0.5">
                                 <div v-for="bookmark in bookmarks" :key="bookmark.url" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100">
                                     <Link :href="bookmark.url" @click="close" class="flex-1 min-w-0 py-0.5" v-tooltip="bookmark.label">
-                                        <div class="truncate hover:text-yellow-600">{{ bookmark.label }}</div>
+                                        <div class="truncate hover:text-indigo-600">{{ bookmark.label }}</div>
                                         <div v-if="getBookmarkSubtitle(bookmark)" class="truncate text-[10px] leading-3 text-gray-400">
                                             {{ getBookmarkSubtitle(bookmark) }}
                                         </div>

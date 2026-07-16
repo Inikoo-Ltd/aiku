@@ -12,6 +12,7 @@ use App\Actions\Helpers\Redirects\RedirectCollectionsInProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectCustomersInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectDeletedInvoicesInShopLink;
 use App\Actions\Helpers\Redirects\RedirectDeliveryNotesLink;
+use App\Actions\Helpers\Redirects\RedirectEmployeeLink;
 use App\Actions\Helpers\Redirects\RedirectInvoiceInAccounting;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopFromDashboard;
@@ -40,6 +41,7 @@ use App\Actions\Helpers\Redirects\RedirectStoredItemAudit;
 use App\Actions\Helpers\Redirects\RedirectBarcodeLink;
 use App\Actions\Helpers\Redirects\RedirectBrandLink;
 use App\Actions\Helpers\Redirects\RedirectChargeLink;
+use App\Actions\Helpers\Redirects\RedirectChatMessageLink;
 use App\Actions\Helpers\Redirects\RedirectCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectMailshotLink;
 use App\Actions\Helpers\Redirects\RedirectOfferCampaignLink;
@@ -80,6 +82,8 @@ Route::get('redirect-mailshot-page/{mailshot:id}', RedirectMailshotLink::class)-
 Route::get('redirect-webpage/{webpage:id}', RedirectWebpageLink::class)->name('redirect_webpage');
 Route::get('redirect-brand/{brand:id}', RedirectBrandLink::class)->name('redirect_brand');
 Route::get('redirect-barcode/{barcode:id}', RedirectBarcodeLink::class)->name('redirect_barcode');
+Route::get('redirect-employee/{employee:id}', RedirectEmployeeLink::class)->name('redirect_employee');
+Route::get('redirect-chat-message/{chatMessage:id}', RedirectChatMessageLink::class)->name('redirect_chat_message');
 Route::get('redirect-org-stock/{orgStock:id}/to-products-index', [RedirectOrgStockLink::class, 'toProductsIndex'])->name('redirect_org_stock.to_products_index');
 
 

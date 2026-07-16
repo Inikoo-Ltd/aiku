@@ -41,7 +41,7 @@ class UnpackDeliveryNote extends OrgAction
         data_set($modelData, 'packer_user_id', null);
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKING->value);
 
-        data_set($modelData, 'parcels', []);
+        // data_set($modelData, 'parcels', []);
 
         foreach ($deliveryNote->deliveryNoteItems as $item) {
             $item->update([

@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Billables\Charge\Search\GetChargeSearchSchema;
+use App\Actions\Chat\ChatMessage\Search\GetChatMessageSearchSchema;
 use App\Actions\Billables\Service\Search\GetServiceSearchSchema;
 use App\Actions\Billables\ShippingZone\Search\GetShippingZoneSearchSchema;
 use App\Actions\Billables\ShippingZoneSchema\Search\GetShippingZoneSchemaSearchSchema;
@@ -14,6 +15,7 @@ use App\Actions\Comms\Mailshot\Search\GetMailshotSearchSchema;
 use App\Actions\Discounts\Offer\Search\GetOfferSearchSchema;
 use App\Actions\Discounts\OfferCampaign\Search\GetOfferCampaignSearchSchema;
 use App\Actions\Helpers\Barcode\Search\GetBarcodeSearchSchema;
+use App\Actions\HumanResources\Employee\Search\GetEmployeeSearchSchema;
 use App\Actions\Helpers\Brand\Search\GetBrandSearchSchema;
 use App\Actions\Helpers\Tag\Search\GetTagSearchSchema;
 use App\Actions\Masters\MasterAsset\Search\GetMasterAssetSearchSchema;
@@ -21,6 +23,7 @@ use App\Actions\Masters\MasterCollection\Search\GetMasterCollectionSearchSchema;
 use App\Actions\Masters\MasterProductCategory\Search\GetMasterProductCategorySearchSchema;
 use App\Actions\Web\Webpage\Search\GetWebpageSearchSchema;
 use App\Models\Billables\Charge;
+use App\Models\Chat\ChatMessage;
 use App\Models\Billables\Service;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
@@ -28,6 +31,7 @@ use App\Models\Comms\Mailshot;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Helpers\Barcode;
+use App\Models\HumanResources\Employee;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Tag;
 use App\Models\Masters\MasterAsset;
@@ -250,7 +254,9 @@ return [
             MasterCollection::class => GetMasterCollectionSearchSchema::run(),
             Brand::class           => GetBrandSearchSchema::run(),
             Tag::class             => GetTagSearchSchema::run(),
-            Barcode::class         => GetBarcodeSearchSchema::run()
+            Barcode::class         => GetBarcodeSearchSchema::run(),
+            Employee::class        => GetEmployeeSearchSchema::run(),
+            ChatMessage::class     => GetChatMessageSearchSchema::run()
 
         ],
     ],

@@ -75,6 +75,7 @@ use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
+use App\Actions\Comms\Mailshot\ConvertMailshotToBlog;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
 use App\Actions\Comms\Mailshot\PublishMailShot;
@@ -943,6 +944,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('recipient-filter', UpdateMailshotRecipientFilter::class)->name('recipient-filter.update')->withoutScopedBindings();
         Route::post('stop-mailshot', StopMailshot::class)->name('stop')->withoutScopedBindings();
         Route::post('resume-mailshot', ResumeMailshot::class)->name('resume')->withoutScopedBindings();
+        Route::get('convert-to-blog', ConvertMailshotToBlog::class)->name('convert-to-blog')->withoutScopedBindings();
         Route::post('second-wave', SetMailshotSecondWaveStatus::class)->name('second-wave')->withoutScopedBindings();
         Route::patch('second-wave', UpdateMailshotSecondWave::class)->name('second-wave.update')->withoutScopedBindings();
     });

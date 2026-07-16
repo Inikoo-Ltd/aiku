@@ -291,6 +291,7 @@ class DeliveryNote extends Model implements Auditable
         'packed_at',
         'dispatched_at',
         'cancelled_at',
+        'parcels',
         'shipping_notes',
         'customer_notes',
         'internal_notes'

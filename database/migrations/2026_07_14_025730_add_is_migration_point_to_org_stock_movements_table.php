@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 14 Jul 2026 11:14:51 Malaysia Time, Kuala Lumpur, Malaysia
@@ -10,7 +11,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
-
     public function up(): void
     {
         Schema::table('org_stock_movements', function (Blueprint $table) {

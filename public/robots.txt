@@ -20,6 +20,7 @@ User-agent: *
 'Disallow: /app/basket',
 'Disallow: /app/back-in-stocks',
 'Disallow: /email-protection',
+'Disallow: /cdn-cgi/l/email-protection',
 
 Sitemap: /sitemap.xml
 Sitemap: /sitemaps/products.xml

@@ -31,7 +31,7 @@ faInventory as faInventorySolid,
 import { computed, defineAsyncComponent, inject, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
-import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue"
+import TableOrgStockSupplierProducts from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockSupplierProducts.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableLocations from "@/Components/Tables/Grp/Org/Inventory/TableLocations.vue"
@@ -108,14 +108,14 @@ const component = computed(() => {
         showcase: StockShowcase,
         feedbacks: StockIssues,
         locations: TableLocations,
-        supplier_products: TableSupplierProducts,
+        supplier_products: TableOrgStockSupplierProducts,
         products: TableProducts,
         trade_units: TableTradeUnits,
         stock_history: TableOrgStockMovements,
         purchase_history: TableOrgStockMovements,
         details: ModelDetails,
         history: TableHistories,
-        purchase_orders: TablePurchaseOrders
+        purchase_orders: TablePurchaseOrders,
     }
     return components[currentTab.value]
 

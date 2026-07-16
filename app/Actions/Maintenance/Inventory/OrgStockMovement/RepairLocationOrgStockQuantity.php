@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 14 Jul 2026 14:55:19 Malaysia Time, Kuala Lumpur, Malaysia
@@ -6,7 +7,6 @@
  */
 
 /** @noinspection PhpUnused */
-
 
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
@@ -31,7 +31,7 @@ class RepairLocationOrgStockQuantity implements ShouldBeUnique
     }
 
 
-    public function handle(?int $orgStockId, ?Command $command=null): void
+    public function handle(?int $orgStockId, ?Command $command = null): void
     {
         if (!$orgStockId) {
             return;

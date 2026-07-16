@@ -16,6 +16,7 @@ use App\Actions\Billables\Charge\Search\ReindexChargesSearch;
 use App\Actions\Billables\Service\Search\ReindexServicesSearch;
 use App\Actions\Billables\ShippingZone\Search\ReindexShippingZonesSearch;
 use App\Actions\Billables\ShippingZoneSchema\Search\ReindexShippingZoneSchemasSearch;
+use App\Actions\Chat\ChatMessage\Search\ReindexChatMessagesSearch;
 use App\Actions\Comms\Mailshot\Search\ReindexMailshotsSearch;
 use App\Actions\Discounts\Offer\Search\ReindexOffersSearch;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignsSearch;
@@ -36,6 +37,7 @@ use App\Actions\Goods\Stock\Search\ReindexStockSearch;
 use App\Actions\Goods\StockFamily\Search\ReindexStockFamilySearch;
 use App\Actions\Goods\TradeUnit\Search\ReindexTradeUnitsSearch;
 use App\Actions\Goods\TradeUnitFamily\Search\ReindexTradeUnitFamiliesSearch;
+use App\Actions\HumanResources\Employee\Search\ReindexEmployeesSearch;
 use App\Actions\HydrateModel;
 use App\Actions\Inventory\Location\Search\ReindexLocationsSearch;
 use App\Actions\Inventory\OrgStock\Search\ReindexOrgStockSearch;
@@ -95,6 +97,10 @@ class ReindexSearch extends HydrateModel
 
         if ($this->checkIfCanReindex(['trade_units', 'tu'], $command)) {
             $this->reindexTradeUnits($command);
+        }
+
+        if ($this->checkIfCanReindex(['chat'], $command)) {
+            $this->reindexChat($command);
         }
 
         if ($this->checkIfCanReindex(['discount'], $command)) {
@@ -199,6 +205,15 @@ class ReindexSearch extends HydrateModel
         ReindexMasterCollectionsSearch::run(reset: $command->option('reset'));
     }
 
+    protected function reindexChat(Command $command): void
+    {
+        $command->info('Chat section 💬');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexChatMessagesSearch::run(reset: $command->option('reset'));
+    }
+
     protected function reindexTradeUnits(Command $command): void
     {
         $command->info('Trade units section 📦');
@@ -263,7 +278,10 @@ class ReindexSearch extends HydrateModel
     protected function reindexHr(Command $command): void
     {
         $command->info('HR section 👩🏻‍💼');
-        //        $command->call('search:employees');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexEmployeesSearch::run(reset: $command->option('reset'));
 
     }
 

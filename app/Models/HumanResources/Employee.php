@@ -42,6 +42,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -131,6 +132,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Employee extends Model implements HasMedia, Auditable
 {
+    use HasSearch;
     use HasSlug;
     use HasAddress;
     use HasAddresses;
@@ -408,6 +410,24 @@ class Employee extends Model implements HasMedia, Auditable
     public function getDepartmentAttribute(): ?string
     {
         return $this->getCurrentDepartment();
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'group_id'        => $this->group_id,
+            'organisation_id' => $this->organisation_id,
+            'alias'           => (string)$this->alias,
+            'contact_name'    => (string)$this->contact_name,
+            'worker_number'   => (string)$this->worker_number,
+            'job_title'       => (string)$this->job_title,
+            'email'           => (string)$this->email,
+            'phone'           => (string)$this->phone,
+            'state'           => $this->state->value,
+            'created_at'      => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }
