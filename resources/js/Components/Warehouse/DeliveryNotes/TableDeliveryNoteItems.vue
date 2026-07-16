@@ -695,7 +695,7 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo :useTopPagination="true">
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
