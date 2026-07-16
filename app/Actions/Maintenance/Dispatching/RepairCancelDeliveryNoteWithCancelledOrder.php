@@ -30,7 +30,7 @@ class RepairCancelDeliveryNoteWithCancelledOrder
             $mode = $dryRun ? '[DRY RUN] ' : '';
             $command->info("{$mode}Delivery note $deliveryNote->slug has a cancelled order. Cancelling delivery note.");
             if (!$dryRun) {
-                CancelDeliveryNote::run($deliveryNote);
+                CancelDeliveryNote::run($deliveryNote, null, false);
             }
         }
     }
