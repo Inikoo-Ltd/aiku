@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_waiting_crm
  * @property mixed $notes
  * @property mixed $shop_slug
+ * @property mixed $shop_type
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
@@ -173,6 +174,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'packed_in_message'              => $packedInMessage,
             'notes'                          => $this->notes,
             'shop_slug'                      => $this->shop_slug,
+            'delivery_note_shop_type'        => $this->shop_type,
             'un_numbers'                     => @json_decode($this->un_numbers) ?? null,
             'upsert_picking_route'           => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',

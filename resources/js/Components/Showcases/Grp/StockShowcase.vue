@@ -5,11 +5,11 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, computed } from "vue"
+import { inject, ref, computed, onMounted } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
+import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faStopCircle, faFilePdf } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import { faExclamationTriangle } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
@@ -18,8 +18,10 @@ import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
 import Image from "@common/Components/Image.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import SalesAnalyticsCompact from "@/Components/Product/SalesAnalyticsCompact.vue"
+import Icon from "@/Components/Icon.vue"
+import JsBarcode from "jsbarcode"
 import { ctrans } from "@/Composables/useTrans"
-library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
+library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf)
 
 const props = defineProps<{
     data: {
@@ -47,6 +49,16 @@ const props = defineProps<{
         stocks_management: StocksManagementTS
         currency_code: string
         is_quantity_excess: boolean
+        barcodes?: {
+            level: string
+            number: string
+            quantity: number
+            packs: number | null
+        }[]
+        label_route?: {
+            name: string
+            parameters: Record<string, string>
+        }
     }
 }>()
 
@@ -77,7 +89,17 @@ const stockCostStats = computed(() => {
 // }, { immediate: true })
 
 
-console.log(props)
+onMounted(() => {
+    props.data.barcodes?.forEach((barcode) => {
+        JsBarcode("#barcode-" + barcode.level, barcode.number, {
+            format: barcode.level === "unit" ? "EAN13" : "CODE128",
+            lineColor: "#000",
+            width: 2,
+            height: 50,
+            displayValue: true,
+        })
+    })
+})
 
 </script>
 
@@ -132,6 +154,26 @@ console.log(props)
                 :stocks_management="data.stocks_management"
                 :trade_units="data.trade_units"
             />
+
+            <!-- Barcodes -->
+            <div v-if="data.barcodes?.length" class="mt-6 flex flex-col gap-3">
+                <div v-for="barcode in data.barcodes" :key="barcode.level"
+                    class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                    <div class="w-8 shrink-0 text-center text-lg text-gray-500">
+                        <Icon :data="{ icon: 'fal fa-stop-circle' }" />
+                    </div>
+
+                    <svg :id="'barcode-' + barcode.level" class="h-14"></svg>
+
+                    <a v-if="data.label_route"
+                        :href="route(data.label_route.name, { ...data.label_route.parameters, level: barcode.level })"
+                        target="_blank"
+                        v-tooltip="ctrans('Open PDF label')"
+                        class="ml-auto text-3xl text-gray-400 transition hover:text-red-500">
+                        <Icon :data="{ icon: 'fal fa-file-pdf' }" />
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </template>

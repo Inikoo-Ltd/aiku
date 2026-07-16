@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteLeaflets;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -44,6 +45,12 @@ class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
             'delivery_note_id'                => $this->delivery_note_id,
             'delivery_note_state'             => $deliveryNote->state,
             'delivery_note_is_for_collection' => (bool)$deliveryNote->collection_address_id,
+            'delivery_note_has_waiting_items' => $deliveryNote->deliveryNoteItems()
+                ->where(function (Builder $query) {
+                    $query->where('has_waiting_warehouse', true)
+                        ->orWhere('has_waiting_crm', true);
+                })
+                ->exists(),
 
             'delivery_note_customer_notes' => $this->delivery_note_customer_notes,
             'delivery_note_public_notes'   => $this->delivery_note_public_notes,

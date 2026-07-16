@@ -88,6 +88,8 @@ class ShowPickingSession extends OrgAction
         $actions   = null;
         $navigation = PickingSessionTabsEnum::navigation();
 
+        $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
+
 
         if (!request()->input('tab')) {
             if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
@@ -150,7 +152,10 @@ class ShowPickingSession extends OrgAction
                 'current'    => $this->tab,
                 'navigation' => $navigation,
             ],
-            'data' => PickingSessionResource::make($pickingSession)
+            'data' => PickingSessionResource::make($pickingSession),
+
+            'allow_waiting'               => $allowWaiting,
+            'allow_picker_set_not_picked' => !$allowWaiting || (bool)data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false),
         ];
 
 

@@ -70,7 +70,7 @@ class IndexOrgStockSupplierProducts extends OrgAction
             ])
             ->selectRaw('supplier_products.cost as unit_cost')
             ->selectRaw('round(supplier_products.cost * (1 + supplier_products.extra_costs), 4) as delivered_unit_cost')
-            ->selectRaw('case when supplier_products.units_per_pack > 0 then supplier_products.units_per_carton / supplier_products.units_per_pack end as packages_per_carton')
+            ->selectRaw('case when supplier_products.units_per_pack > 1 then supplier_products.units_per_carton / supplier_products.units_per_pack end as packages_per_carton')
             ->selectRaw('(org_stock_has_org_supplier_products.local_priority = max(org_stock_has_org_supplier_products.local_priority) over ()) as is_preferred')
             ->allowedSorts([
                 'code',

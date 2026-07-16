@@ -41,6 +41,7 @@ use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
+use App\Actions\Web\Website\SaveWebsiteRobotsTxt;
 use App\Actions\Web\Website\SaveWebsiteSitemap;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
@@ -1204,9 +1205,13 @@ test('save website sitemap', function (Website $website) {
 })->depends('launch website');
 
 test('robots txt is generated on demand with absolute sitemap urls', function (Website $website) {
-    Storage::disk('local')->delete("robots/robots_$website->id.txt");
+    Storage::disk('local')->put("robots/robots_$website->id.txt", "'Disallow: /stale',");
+
+    SaveWebsiteRobotsTxt::run($website);
 
     $robotsTxt = ShowIrisRobotsTxt::make()->getRobotText($website);
+
+    expect($robotsTxt)->not->toContain('stale');
 
     expect($robotsTxt)
         ->toContain('User-agent: *')

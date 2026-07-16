@@ -77,7 +77,7 @@ class UpdateEbayPortfolio implements ShouldBeUnique
 
         $availableQuantity = $product->available_quantity ?? 0;
 
-        if (!$product->is_for_sale) {
+        if (!$product->is_for_sale && !$product->is_bundle) {
             $availableQuantity = 0;
         }
 

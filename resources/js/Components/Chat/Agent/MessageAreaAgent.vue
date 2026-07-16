@@ -10,7 +10,7 @@ import {
     faEllipsisVertical,
     faTimesCircle,
     faMessage,
-    faPaperclip, faXmark, faFilePdf, faEnvelope
+    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight
 } from "@fortawesome/free-solid-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -79,6 +79,29 @@ const takeoverChat = async () => {
         notify({ title: trans("Error"), text: trans("Failed to take over chat"), type: "error" })
     } finally {
         isTakingOver.value = false
+    }
+}
+
+const isReopening = ref(false)
+const reopenChat = async () => {
+    if (!props.session?.ulid || isReopening.value) return
+    isReopening.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.patch(
+            route("grp.org.chat.agents.sessions.reopen", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.session.status = "active"
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent.user_id = layout?.user?.id
+            props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
+        }
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to reopen chat"), type: "error" })
+    } finally {
+        isReopening.value = false
     }
 }
 
@@ -722,8 +745,25 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
         </div>
 
+        <!-- Footer: Reopen banner for closed chats -->
+        <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('This chat has been closed') }}
+                </div>
+                <Button
+                    @click="reopenChat"
+                    :loading="isReopening"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Reopen')"
+                    :icon="faRotateRight"
+                />
+            </div>
+        </footer>
+
         <!-- Footer: Takeover banner for team chats -->
-        <footer v-if="!isClosed && !isMyChat" class="px-3 py-3 bg-white border-t">
+        <footer v-else-if="!isMyChat" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
                 <div class="text-xs text-indigo-600">
                     <span class="font-semibold">{{ props.session?.assigned_agent?.name }}</span>
@@ -741,7 +781,7 @@ const handleClickOutside = (e: MouseEvent) => {
         </footer>
 
         <!-- Footer: Normal message input -->
-        <footer v-else-if="!isClosed" class="px-3 py-2 bg-white">
+        <footer v-else class="px-3 py-2 bg-white">
             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
                 @change="handleImageSelect" />
             <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />

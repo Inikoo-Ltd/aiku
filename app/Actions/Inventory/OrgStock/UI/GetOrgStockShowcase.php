@@ -41,6 +41,15 @@ class GetOrgStockShowcase
                 'trade_units'        => $dataTradeUnits,
                 'currency_code'      => $orgStock->organisation->currency->code,
                 'sales_data'         => GetOrgStockTimeSeriesData::run($orgStock),
+                'barcodes'           => GetOrgStockBarcodes::run($orgStock),
+                'label_route'        => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.label',
+                    'parameters' => [
+                        'organisation' => $warehouse->organisation->slug,
+                        'warehouse'    => $warehouse->slug,
+                        'orgStock'     => $orgStock->slug,
+                    ],
+                ],
                 'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
                 'stocks_management'  => [
                     'routes'          => [

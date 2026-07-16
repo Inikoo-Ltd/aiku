@@ -85,6 +85,9 @@ const onSubmitSubscribe = async () => {
 									v-model="hiddenField"
 									type="text"
 									class="sr-only"
+									aria-hidden="true"
+									tabindex="-1"
+									autocomplete="off"
 								/>
 								
 								<input
