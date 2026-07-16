@@ -177,6 +177,8 @@ class GetMigrationOrgStockMovementAuditFromAurora
                                 $date = '2026-07-10 04:00:00';
                             } elseif ($organisation->slug == 'sk') {
                                 $date = '2026-07-10 10:50:00';
+                            } elseif ($organisation->slug == 'aw') {
+                                $date = '2026-07-16 01:00:00';
                             } else {
                                 abort('422');
                             }
