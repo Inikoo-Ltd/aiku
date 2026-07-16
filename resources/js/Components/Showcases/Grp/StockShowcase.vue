@@ -5,11 +5,11 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, computed } from "vue"
+import { inject, ref, computed, onMounted } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
+import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faStopCircle, faBox, faPallet, faTimes } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import { faExclamationTriangle } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
@@ -18,8 +18,10 @@ import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
 import Image from "@common/Components/Image.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import SalesAnalyticsCompact from "@/Components/Product/SalesAnalyticsCompact.vue"
+import Icon from "@/Components/Icon.vue"
+import { generateBarcode } from "@/Composables/printBarcode"
 import { ctrans } from "@/Composables/useTrans"
-library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
+library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faBox, faPallet, faTimes)
 
 const props = defineProps<{
     data: {
@@ -47,8 +49,20 @@ const props = defineProps<{
         stocks_management: StocksManagementTS
         currency_code: string
         is_quantity_excess: boolean
+        barcodes?: {
+            level: string
+            number: string
+            quantity: number
+            packs: number | null
+        }[]
     }
 }>()
+
+const barcodeLevelIcon: Record<string, string> = {
+    unit: "fal fa-stop-circle",
+    outer: "fal fa-box",
+    carton: "fal fa-pallet",
+}
 
 const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
@@ -77,7 +91,11 @@ const stockCostStats = computed(() => {
 // }, { immediate: true })
 
 
-console.log(props)
+onMounted(() => {
+    props.data.barcodes?.forEach((barcode) => {
+        generateBarcode("barcode-" + barcode.level, barcode.number)
+    })
+})
 
 </script>
 
@@ -120,6 +138,46 @@ console.log(props)
                     </div>
 
                     <SalesAnalyticsCompact v-if="data.sales_data" :salesData="data.sales_data" />
+                </div>
+            </div>
+
+            <!-- Barcodes -->
+            <div v-if="data.barcodes?.length" class="mt-6 border-t pt-4">
+                <div class="mb-3 text-xs font-medium uppercase tracking-wide text-gray-400">
+                    {{ ctrans("Barcodes") }}
+                </div>
+                <div class="flex flex-col gap-3">
+                    <div v-for="barcode in data.barcodes" :key="barcode.level"
+                        class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                        <div class="w-8 shrink-0 text-center text-lg text-gray-500">
+                            <Icon :data="{ icon: barcodeLevelIcon[barcode.level] }" />
+                        </div>
+
+                        <div class="w-24 shrink-0 text-sm text-gray-600">
+                            <span v-if="barcode.level === 'outer'"
+                                v-tooltip="ctrans('Units per pack')"
+                                class="inline-flex items-center gap-0.5">
+                                <Icon :data="{ icon: 'fal fa-stop-circle', class: 'text-gray-300' }" />
+                                <Icon :data="{ icon: 'fal fa-times', class: 'text-gray-300' }" />
+                                <span>{{ barcode.quantity }}</span>
+                            </span>
+                            <span v-else-if="barcode.level === 'carton'"
+                                class="inline-flex items-center gap-0.5">
+                                <span v-tooltip="ctrans('Units per carton')" class="inline-flex items-center gap-0.5">
+                                    <Icon :data="{ icon: 'fal fa-stop-circle', class: 'text-gray-300' }" />
+                                    <Icon :data="{ icon: 'fal fa-times', class: 'text-gray-300' }" />
+                                    <span>{{ barcode.quantity }}</span>
+                                </span>
+                                <span v-if="barcode.packs"
+                                    v-tooltip="ctrans('Packages (SKOs) per carton')"
+                                    class="text-gray-400">
+                                    ({{ barcode.packs }})
+                                </span>
+                            </span>
+                        </div>
+
+                        <svg :id="'barcode-' + barcode.level" class="h-14"></svg>
+                    </div>
                 </div>
             </div>
         </div>
