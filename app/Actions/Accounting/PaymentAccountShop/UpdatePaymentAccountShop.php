@@ -52,11 +52,11 @@ class UpdatePaymentAccountShop extends OrgAction
         if ($paymentAccountShop->type == PaymentAccountTypeEnum::PASTPAY) {
             $pastpayData = $paymentAccountShop->data ?? [];
             if (Arr::exists($modelData, 'pastpay_charges')) {
-                $options                = Arr::pull($modelData, 'pastpay_charges');
+                $options                = $this->normalisePastpayChargeOptions(Arr::pull($modelData, 'pastpay_charges') ?? []);
                 $pastpayData['charges'] = [
                     'options' => $options
                 ];
-                $this->upsertPastpayCharges($paymentAccountShop, $options ?? []);
+                $this->upsertPastpayCharges($paymentAccountShop, $options);
             }
 
             data_set($modelData, 'data', $pastpayData);
@@ -78,6 +78,23 @@ class UpdatePaymentAccountShop extends OrgAction
         }
 
         return $paymentAccountShop;
+    }
+
+    private function normalisePastpayChargeOptions(array $options): array
+    {
+        return array_values(array_filter(array_map(function ($option) {
+            $days   = (int) Arr::get($option, 'days');
+            $charge = (float) str_replace(',', '.', trim((string) Arr::get($option, 'charge')));
+
+            if (!$days || $charge <= 0) {
+                return null;
+            }
+
+            return [
+                'days'   => $days,
+                'charge' => (string) $charge,
+            ];
+        }, $options)));
     }
 
     private function upsertPastpayCharges(PaymentAccountShop $paymentAccountShop, array $options): void

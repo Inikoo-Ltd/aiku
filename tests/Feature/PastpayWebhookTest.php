@@ -392,6 +392,25 @@ test('pastpay is hidden at checkout unless account is active and fully configure
     expect(GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->refresh(), $orderPaymentApiPoint))->toBeNull();
 });
 
+test('european decimal comma charges are normalised when saving credit terms', function () {
+    $paymentAccountShop = createPastpayPaymentAccountShop($this->organisation, $this->shop);
+
+    UpdatePaymentAccountShop::make()->action($paymentAccountShop, [
+        'pastpay_charges' => [
+            ['days' => '30', 'charge' => '3,1'],
+            ['days' => '60', 'charge' => '5,7'],
+            ['days' => '', 'charge' => ''],
+        ],
+    ]);
+
+    $options = Arr::get($paymentAccountShop->refresh()->data, 'charges.options');
+
+    expect($options)->toBe([
+        ['days' => 30, 'charge' => '3.1'],
+        ['days' => 60, 'charge' => '5.7'],
+    ]);
+});
+
 test('order partially paid with balance is financed by pastpay only for the remainder', function () {
     createWarehouse();
     $paymentAccountShop = createPastpayPaymentAccountShop($this->organisation, $this->shop);
