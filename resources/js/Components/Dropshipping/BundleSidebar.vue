@@ -608,8 +608,6 @@ watch(isNavigationLocked, (isLocked) => {
 onBeforeUnmount(() => {
     detachNavigationGuard()
 })
-
-console.log("layout bundlesibdear", layout)
 </script>
 
 <template>
@@ -675,7 +673,7 @@ console.log("layout bundlesibdear", layout)
                     </div>
 
                     <div v-for="item in bundle.products.value" :key="item.id" class="flex gap-3 py-3 border-b border-t">
-                        <img :src="item.web_images?.main?.gallery?.png || item.image"
+                        <Image :src="item.image ?? item.web_images?.main?.gallery"
                             class="w-14 h-14 object-contain bg-gray-50 rounded" />
                         <div class="flex-1">
                             <div class="text-sm font-semibold">{{ item.name }}</div>
