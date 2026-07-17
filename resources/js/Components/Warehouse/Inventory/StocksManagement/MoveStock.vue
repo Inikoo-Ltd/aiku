@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLongArrowRight } from "@fal"
 import { faInfoCircle, faForklift, faTimes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { InputNumber } from 'primevue'
+import { InputNumber, Textarea } from 'primevue'
 import { ref, computed, onMounted } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
@@ -59,12 +59,16 @@ const form = useForm({
     moveStock: null
 })
 
+const selectedReason = ref('')
+const note = ref('')
+
 const isSource = (location: any) => moveStock.value.from?.id === location.id
 const isTarget = (location: any) => moveStock.value.to?.id === location.id
 
 const canSave = computed(() => {
     return !!moveStock.value.from
         && !!moveStock.value.to
+        && !!selectedReason.value
         && Number(moveStock.value.quantity) >= 1
         && Number(moveStock.value.quantity) <= Number(moveStock.value.from?.stock ?? 0)
 })
@@ -196,9 +200,6 @@ const getCalculatedStock = (warehouse: { stock: number; id: any }) => {
     return warehouse.stock
 }
 
-const selectedReason = ref('');
-const note = ref('')
-
 const getStockChangeIndicator = (warehouse: { id: any }) => {
     if (!moveStock.value.isActive || moveStock.value.quantity <= 0) {
         return null
@@ -220,7 +221,7 @@ const getStockChangeIndicator = (warehouse: { id: any }) => {
 const isLoadingSubmit = ref(false);
 
 const submitCheckStock = () => {
-    if (!moveStock.value.from?.id || !moveStock.value.to?.id) return;
+    if (!canSave.value) return;
 
     router.patch(route('grp.models.location_org_stock.move', {
         locationOrgStock: moveStock.value.from.id,
@@ -401,40 +402,40 @@ onMounted(() => {
             </div> -->
         </div>
 
-        <div class="flex">
-            <div class="flex ml-auto">
-                {{  ctrans('Transfer Reason:') }}
-            </div>
-            <div class="ml-2 w-96">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+            <div class="min-w-0">
+                <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {{ ctrans('Transfer reason') }}
+                    <span class="text-red-500">*</span>
+                </label>
                 <Multiselect
                     v-model="selectedReason"
                     :options="reasons?.transfer ?? []"
-                    :placeholder="'Select your reason'"
+                    :placeholder="ctrans('Select your reason')"
                     :canClear="false"
                     :mode="'single'"
                     :closeOnSelect="true"
                     :canDeselect="false"
                     :hideSelected="false"
-                    :disabled="false"
-                    :searchable="true" 
-                    :label="'Transfer Reason'"
+                    :searchable="true"
                     :filter-results="false"
-                >
-                </Multiselect>
-            </div>
-        </div>
-        <div class="flex">
-            <div class="flex ml-auto">
-                {{ ctrans('Note') }}
-            </div>
-            <div class="ml-2 w-96">
-                <textarea
-                    v-model.trim="note"
-                    :rows="2"
-                    :placeholder="ctrans('Add a note (Optional)')"
-                    class="block w-full rounded-md border-gray-300 placeholder:text-gray-400 shadow-sm focus:ring-indigo-500 sm:text-sm"
-
+                    :classes="{ container: selectedReason ? 'multiselect' : 'multiselect !border-red-300' }"
                 />
+                <div v-if="!selectedReason" class="mt-1 text-xs h-4" :class="selectedReason ? 'invisible' : 'text-red-500'">
+                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
+                    {{ ctrans('Select a reason before saving') }}
+                </div>
+            </div>
+
+            <div class="min-w-0">
+                <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {{ ctrans('Note') }}
+                    <span class="font-normal normal-case tracking-normal text-gray-400 italic">
+                        {{ ctrans('optional') }}
+                    </span>
+                </label>
+                <Textarea v-model.trim="note" rows="1" :autoResize="true"
+                :placeholder="ctrans('Add more details about this move')" class="w-full rounded-xl" />
             </div>
         </div>
 

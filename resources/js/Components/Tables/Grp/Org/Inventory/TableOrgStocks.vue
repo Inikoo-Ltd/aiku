@@ -26,6 +26,7 @@ import { faForklift, faCheck, faHandPaper, faUnlink } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
+import Multiselect from '@vueform/multiselect'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -44,9 +45,15 @@ const props = defineProps<{
 const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
 const isOpenMoveAllSku = ref(false)
-const form = useForm({
+const transferReasonOptions = computed(() => props.transfer_reason ?? {})
+const defaultReason = computed(() => Object.keys(transferReasonOptions.value)[0] ?? null)
+const key = ref(1)
+
+const form = useForm<{ location_id: number | null; remove_after_move: boolean; reason: string | null; note: string | null }>({
     location_id: null,
-    remove_after_move : false
+    remove_after_move : false,
+    reason: null,
+    note: null,
 })
 
 interface PartialMoveRow {
@@ -76,9 +83,11 @@ function onSelectRow(value: Record<string, boolean>) {
     selectedRows.value = { ...value }
 }
 
-const partialForm = useForm<{ location_id: number | null; org_stocks: PartialMoveRow[] }>({
+const partialForm = useForm<{ location_id: number | null; org_stocks: PartialMoveRow[]; reason: string | null; note: string | null }>({
     location_id: null,
     org_stocks: [],
+    reason: null,
+    note: null,
 })
 
 const isPartialMoveValid = computed(() => {
@@ -89,9 +98,16 @@ const isPartialMoveValid = computed(() => {
     return partialForm.org_stocks.every((row) => Number(row.quantity_to_move) > 0 && Number(row.quantity_to_move) <= row.available)
 })
 
+function openMoveAllSku() {
+    form.reset()
+    form.reason = defaultReason.value
+    isOpenMoveAllSku.value = true
+}
+
 function openPartialMoveSku() {
     partialForm.reset()
     partialForm.location_id = null
+    partialForm.reason = defaultReason.value
     partialForm.org_stocks = selectedStocks.value.map((stock) => ({
         org_stock_id: stock.id,
         code: stock.code,
@@ -115,6 +131,8 @@ function onSavePartialMoveSku() {
     partialForm
         .transform((data) => ({
             location_id: data.location_id,
+            reason: data.reason,
+            note: data.note,
             org_stocks: data.org_stocks.map((row) => ({
                 org_stock_id: row.org_stock_id,
                 quantity: row.quantity_to_move,
@@ -137,6 +155,7 @@ function onSavePartialMoveSku() {
                         type: "success",
                     })
                     router.reload()
+                    key.value ++
                 },
                 onError: () => {
                     notify({
@@ -322,9 +341,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canMoveAllSku" @onSelectRow="onSelectRow">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canMoveAllSku" @onSelectRow="onSelectRow" :key="key">
           <template #add-on-button v-if="canMoveAllSku">
-                <Button :label="ctrans('Move All SKU')" type="white" :icon="faForklift" size="xs" @click="isOpenMoveAllSku = true"></Button>
+                <Button :label="ctrans('Move All SKU')" type="white" :icon="faForklift" size="xs" @click="openMoveAllSku"></Button>
                 <Button v-if="hasSelection" :label="ctrans('Partialy Move SKU')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
           </template>
         <template #cell(state)="{ item: stock }">
@@ -539,6 +558,30 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 <PureCheckbox v-model="form.remove_after_move" />
                 <span>{{ ctrans('Remove after move') }}</span>
             </label>
+
+            <div class="mt-4">
+                <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Transfer Reason') }}</label>
+                <Multiselect
+                    v-model="form.reason"
+                    :options="transferReasonOptions"
+                    :placeholder="ctrans('Select your reason')"
+                    :canClear="false"
+                    mode="single"
+                    :closeOnSelect="true"
+                    :canDeselect="false"
+                    :searchable="true"
+                />
+            </div>
+
+            <div class="mt-4">
+                <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Note') }}</label>
+                <textarea
+                    v-model.trim="form.note"
+                    :rows="2"
+                    :placeholder="ctrans('Add a note (Optional)')"
+                    class="block w-full rounded-md border-gray-300 placeholder:text-gray-400 shadow-sm focus:ring-indigo-500 sm:text-sm"
+                />
+            </div>
         </div>
 
         <template #footer>
@@ -573,6 +616,31 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                     labelProp="code"
                     :placeholder="ctrans('Select a location')"
                 />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Transfer Reason') }}</label>
+                    <Multiselect
+                        v-model="partialForm.reason"
+                        :options="transferReasonOptions"
+                        :placeholder="ctrans('Select your reason')"
+                        :canClear="false"
+                        mode="single"
+                        :closeOnSelect="true"
+                        :canDeselect="false"
+                        :searchable="true"
+                    />
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Note') }}</label>
+                    <textarea
+                        v-model.trim="partialForm.note"
+                        :rows="2"
+                        :placeholder="ctrans('Add a note (Optional)')"
+                        class="block w-full rounded-md border-gray-300 placeholder:text-gray-400 shadow-sm focus:ring-indigo-500 sm:text-sm"
+                    />
+                </div>
             </div>
 
             <DataTable :value="partialForm.org_stocks" class="border border-gray-200 rounded-md" scrollable scrollHeight="360px">

@@ -75,6 +75,7 @@ class IndexOrgStockLowStockAudits extends OrgAction
                 ->whereColumn('picking_los.org_stock_id', 'org_stocks.id')
                 ->whereColumn('picking_los.location_id', 'org_stocks.picking_location_id')
                 ->whereRaw("(picking_los.settings->>'min_stock') IS NOT NULL")
+                ->whereRaw("(picking_los.settings->>'max_stock') IS NOT NULL")
                 ->whereRaw("picking_los.quantity <= (picking_los.settings->>'min_stock')::numeric");
         });
 

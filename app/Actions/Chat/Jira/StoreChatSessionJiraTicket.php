@@ -18,6 +18,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreChatSessionJiraTicket
@@ -54,6 +55,21 @@ class StoreChatSessionJiraTicket
         $labels = Arr::get($modelData, 'labels', []);
         if (is_array($labels) && $labels !== []) {
             $fields['labels'] = array_values($labels);
+        }
+
+        foreach (Arr::get($modelData, 'custom_fields', []) as $customField) {
+            $fieldId = Arr::get($customField, 'id');
+            $value = Arr::get($customField, 'value');
+
+            if (blank($fieldId) || $value === null || $value === '') {
+                continue;
+            }
+
+            $fields[$fieldId] = match (Arr::get($customField, 'kind', 'text')) {
+                'option' => ['id' => (string) $value],
+                'number' => (float) $value,
+                default  => (string) $value,
+            };
         }
 
         $response = $this->createJiraIssue($fields);
@@ -145,6 +161,14 @@ class StoreChatSessionJiraTicket
         ];
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if (is_string($request->input('custom_fields'))) {
+            $decoded = json_decode($request->input('custom_fields'), true);
+            $request->merge(['custom_fields' => is_array($decoded) ? $decoded : []]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -156,9 +180,13 @@ class StoreChatSessionJiraTicket
             'priority_name' => ['sometimes', 'nullable', 'string'],
             'labels'        => ['sometimes', 'array'],
             'labels.*'      => ['string'],
-            'reference_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
-            'attachments'   => ['sometimes', 'array', 'max:5'],
-            'attachments.*' => ['file', 'max:10240'],
+            'reference_url'  => ['sometimes', 'nullable', 'url', 'max:2048'],
+            'attachments'    => ['sometimes', 'array', 'max:5'],
+            'attachments.*'  => ['file', 'max:10240'],
+            'custom_fields'  => ['sometimes', 'array'],
+            'custom_fields.*.id'    => ['required_with:custom_fields', 'string'],
+            'custom_fields.*.kind'  => ['sometimes', 'string'],
+            'custom_fields.*.value' => ['sometimes', 'nullable'],
         ];
     }
 

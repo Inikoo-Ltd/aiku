@@ -168,6 +168,14 @@ trait WithJiraApiRequest
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    public function getJiraCreateFields(string $projectIdOrKey, string $issueTypeId): ?array
+    {
+        return $this->makeJiraRequest('GET', "issue/createmeta/$projectIdOrKey/issuetypes/$issueTypeId");
+    }
+
+    /**
      * @param  array<string, mixed>  $params
      *
      * @return array<string, mixed>|null

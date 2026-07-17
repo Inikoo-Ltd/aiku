@@ -70,6 +70,15 @@ class IndexOrgStockReplenishments extends OrgAction
         $queryBuilder->where('org_stocks.organisation_id', $organisation->id);
         $queryBuilder->where('org_stocks.state', OrgStockStateEnum::ACTIVE);
         $queryBuilder->whereNotNull('org_stocks.picking_location_id');
+        $queryBuilder->whereExists(function ($query) use ($orderedSubQuery) {
+            $query->from('location_org_stocks as picking_los')
+                ->whereColumn('picking_los.org_stock_id', 'org_stocks.id')
+                ->whereColumn('picking_los.location_id', 'org_stocks.picking_location_id')
+                ->whereRaw("(picking_los.settings->>'min_stock') IS NOT NULL")
+                ->whereRaw("(picking_los.settings->>'max_stock') IS NOT NULL")
+                ->whereRaw("picking_los.quantity <= (picking_los.settings->>'min_stock')::numeric");
+            $query->where($orderedSubQuery, '>', 0);
+        });
 
         return $queryBuilder
             ->defaultSort('org_stocks.code')

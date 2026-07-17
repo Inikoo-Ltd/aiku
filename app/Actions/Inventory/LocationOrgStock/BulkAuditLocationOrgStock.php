@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * Author Louis Perez
+ * Created on 17-07-2026-15h-09m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
+
 namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\OrgAction;

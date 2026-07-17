@@ -30,10 +30,17 @@ class StoreProductToTiktok extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
+    /**
+     * @throws \Exception
+     */
     public function handle(Portfolio $portfolio): Portfolio
     {
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $portfolio->customerSalesChannel->user;
+
+        if(! $tiktokUser) {
+            throw new \Exception('No authenticated TikTok channel found.');
+        }
 
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
