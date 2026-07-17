@@ -4,7 +4,7 @@ import { trans } from 'laravel-vue-i18n'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faSave } from "@fal"
-import { faDotCircle as fasDotCircle } from "@fas"
+import { faArrowRight, faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber } from 'primevue'
 import { inject, ref, watch, nextTick, onBeforeUnmount } from 'vue'
@@ -17,12 +17,21 @@ import { formatDistanceStrict } from 'date-fns'
 import { cloneDeep } from 'lodash'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { StockLocation } from '@/types/Inventory/StocksManagement'
+import Multiselect from '@vueform/multiselect'
+import { faFloppyDisk } from '@fortawesome/free-solid-svg-icons'
 library.add(faDotCircle, fasDotCircle, faSave)
 
 const props = defineProps<{
     locations: StockLocation[]
     selectedLocationId: Number
     auditRoute?: routeType
+    bulkAuditRoute?: routeType
+    reasons?: {
+        increase: [],
+        decrease: [],
+        transfer: [],
+    }
+    org_stock_id: number
 }>()
 
 const emits = defineEmits(['close'])
@@ -35,16 +44,12 @@ const cloneLocations = ref(
 const inputRefs = ref<Record<number, any>>({})
 const focusInterval = ref<number | null>(null)
 const listLoadingLocations = ref<number[]>([])
-const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
-
-    // Section: Submit
+const markAsChecked = (locationOrgStock: StockLocation) => {
     router[props.auditRoute?.method || 'patch'](
         route(props.auditRoute?.name, {
             locationOrgStock: locationOrgStock?.id
         }),
-        {
-            quantity: typeof value !== 'undefined' ? value : locationOrgStock.quantity
-        },
+        {},
         {
             preserveScroll: true,
             preserveState: true,
@@ -71,6 +76,43 @@ const submitCheckStock = (locationOrgStock: StockLocation, value?: number) => {
         }
     )
 }
+
+const bulkSubmitAudit = () => {
+    router[props.bulkAuditRoute?.method || 'patch'](
+        route(props.bulkAuditRoute?.name, {
+            orgStock: props.org_stock_id
+        }),
+        {
+            audited_locations: Object.values(modifiedLocationsQuantity.value)
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                listLoadingLocations.value.push(Object.keys(modifiedLocationsQuantity.value));
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully audited the stock locations"),
+                    type: "success"
+                })
+                emits('close')
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to audit the stock locations"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                listLoadingLocations.value = [];
+            },
+        }
+    )
+}
+
 
 const setInputRef = (el: any, id: number) => {
     if (el) {
@@ -121,69 +163,169 @@ watch(
     },
     { immediate: true }
 )
+
+interface ModifiedLocationOrgStock {
+    id: number,
+    code: string
+    quantity: number,
+    delta: number,
+    reason?: string
+    note?: string
+}
+
+const modifiedLocationsQuantity = ref<Record<string, ModifiedLocationOrgStock>>({});
+
+const hydrateModifiedLocationsQuantity = (location: StockLocation) => {
+    let currentQty = Number(props.locations.find(l => l.id === location.id)?.quantity);
+    let newQty = Number(location.quantity)
+
+    if (currentQty === newQty) {
+        delete modifiedLocationsQuantity.value[location.id];
+        return;
+    }
+
+    modifiedLocationsQuantity.value[location.id] = {
+        id: location.id,
+        code: location.code,
+        quantity: Number(location.quantity),
+        delta: Number(newQty - currentQty)
+    }
+}
+
+const currentPage = ref(1);
 </script>
 
 <template>
     <div class="space-y-2">
         <!-- list -->
         <template v-if="cloneLocations.length > 0">
-            <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-7 gap-2 border-b pb-2">
-                <div class="col-span-2 md:col-span-3  flex items-center gap-x-2">
-                    {{ location.code }}
+            <div v-if="currentPage == 1">
+                <div class="grid grid-cols-7 gap-2 border-b pb-2 font-semibold">
+                    <div class="col-span-2 md:col-span-3  flex items-center gap-x-2">
+                        {{ ctrans('Location') }}
+                    </div>
+                    <div class="col-span-2 md:col-span-2 text-right">
+                        {{ ctrans('Last audited at') }}
+                    </div>
+                    <div class="col-span-3 md:col-span-2 text-right flex items-center justify-end gap-x-1">
+                        {{ ctrans('New Quantity') }}
+                    </div>
                 </div>
-
-                <div v-if="location.audited_at" v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 md:col-span-2 text-right">
-                    {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
-                    <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
+                <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-7 gap-2 border-b pb-2">
+                    <div class="col-span-2 md:col-span-3  flex items-center gap-x-2">
+                        {{ location.code }}
+                    </div>
+    
+                    <div v-if="location.audited_at" v-tooltip="trans('Last audit  :date', { date: useFormatTime(new Date(location.audited_at)) })" class="col-span-2 md:col-span-2 text-right">
+                        {{ formatDistanceStrict(new Date(location.audited_at), new Date()) }}
+                        <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
+                    </div>
+    
+                    <div v-else class="col-span-2 md:col-span-2 text-right text-sm italic opacity-60 whitespace-nowrap">
+                        {{ trans("Never audited") }}
+                    </div>
+    
+                    <div class="col-span-3 md:col-span-2 text-right flex items-center justify-end gap-x-1">
+                        <div v-if="location.quantity != props.locations.find(l => l.id === location.id)?.quantity">
+                            <span v-if="location.quantity > props.locations.find(l => l.id === location.id)?.quantity" class="text-green-600">
+                                +{{ location.quantity - (props.locations.find(l => l.id === location.id)?.quantity ?? 0) }}
+                            </span>
+                            <span v-else class="text-red-500">
+                                -{{ (props.locations.find(l => l.id === location.id)?.quantity ?? 0) - location.quantity }}
+                            </span>
+                        </div>
+                        
+                        <div v-else
+                            v-tooltip="trans('Set as audited with same stock (:xstock stocks)', { xstock: Number(location.quantity)})"
+                            @click="() => markAsChecked(location)"
+                            class="cursor-pointer text-gray-400 hover:text-green-500"
+                        >
+                            <FontAwesomeIcon
+                                :icon="location.quantity != !props.locations[idx].quantity ? 'fas fa-dot-circle' : 'fal fa-dot-circle'"
+                                fixed-width
+                                aria-hidden="true"
+                            />
+                        </div>
+                        <div class="w-14">
+                            <InputNumber
+                                :ref="el => setInputRef(el, location.id)"
+                                :modelValue="location.quantity"
+                                @keydown.enter.prevent="submitCheckStock(location, Number(location.quantity))"
+                                @input="(event: { value: any }) => {
+                                    location.quantity = event.value
+                                    hydrateModifiedLocationsQuantity(location);
+                                }"
+                                :min="0"
+                                :step="1"
+                                size="small"
+                                fluid
+                                inputClass="!py-0"
+                            />
+                        </div>
+                    </div>
                 </div>
-
-                <div v-else class="col-span-2 md:col-span-2 text-right text-sm italic opacity-60 whitespace-nowrap">
-                    {{ trans("Never audited") }}
+            </div>
+            <div v-else> 
+                <div class="grid grid-cols-6 gap-3 border-b pb-2 font-semibold">
+                    <div class="col-span-1 flex items-center gap-x-2">
+                        {{ ctrans('Location Code') }}
+                    </div>
+                    <div class="col-span-1 flex items-center gap-x-2">
+                        {{ ctrans('New Quantity') }}
+                    </div>
+                    <div class="col-span-4 flex">
+                        {{ ctrans('Reasons') }}
+                    </div>
                 </div>
-
-                <div class="col-span-3 md:col-span-2 text-right flex items-center justify-end gap-x-1">
-                    <div v-if="location.quantity != props.locations.find(l => l.id === location.id)?.quantity">
-                        <span v-if="location.quantity > props.locations.find(l => l.id === location.id)?.quantity" class="text-green-600">
-                            +{{ location.quantity - (props.locations.find(l => l.id === location.id)?.quantity ?? 0) }}
+                <div v-for="(location, idx) in modifiedLocationsQuantity" :key="location.id" class="grid grid-cols-6 gap-3 border-b pb-2 pt-2">
+                    <div class="col-span-1 flex items-center gap-x-2">
+                        {{ location.code }}
+                    </div>
+                    <div class="col-span-1 my-auto gap-x-2">
+                        {{ location.quantity }} 
+                        <span
+                            v-if="location.delta > 0"
+                            class="border px-2 py-1 rounded-md text-green-500 border-green-300 bg-green-200"
+                        >
+                            +{{ location.delta }}
                         </span>
-                        <span v-else class="text-red-500">
-                            -{{ (props.locations.find(l => l.id === location.id)?.quantity ?? 0) - location.quantity }}
+                        <span
+                            v-else
+                            class="border px-2 py-1 rounded-md text-red-500 border-red-300 bg-red-200"
+                        >
+                            {{ location.delta }}
                         </span>
                     </div>
-                    
-                    <div v-else
-                        v-tooltip="trans('Set as audited with same stock (:xstock stocks)', { xstock: Number(location.quantity)})"
-                        @click="() => submitCheckStock(location, location.quantity)"
-                        class="cursor-pointer text-gray-400 hover:text-green-500"
-                    >
-                        <FontAwesomeIcon
-                            :icon="location.quantity != !props.locations[idx].quantity ? 'fas fa-dot-circle' : 'fal fa-dot-circle'"
-                            fixed-width
-                            aria-hidden="true"
-                        />
+                    <div class="col-span-4 flex">
+                        <Multiselect
+                            v-model="location.reason"
+                            :options="(location.delta > 0 ? reasons?.increase : reasons?.decrease) ?? []"
+                            :placeholder="'Select your reason (*)'"
+                            :canClear="false"
+                            :mode="'single'"
+                            :closeOnSelect="true"
+                            :canDeselect="false"
+                            :hideSelected="false"
+                            :disabled="false"
+                            :searchable="true" 
+                            :label="'Transfer Reason'"
+                            :filter-results="false"
+                        >
+                        </Multiselect>
                     </div>
+                    <div class="col-span-1 flex items-center gap-x-2"></div>
+                    <div class="col-span-1 flex items-center gap-x-2"></div>
+                    <div class="col-span-4 flex">
+                        <textarea
+                            :ref="`${location.id}_note`"
+                            v-model.trim="location.note"
+                            :id="`${location.id}_note`"
+                            :name="`${location.id}_note`"
+                            :rows="3"
+                            :placeholder="ctrans('Add a note (Optional)')"
+                            class="block w-full rounded-md border-gray-300 placeholder:text-gray-400 shadow-sm focus:ring-indigo-500 sm:text-sm"
 
-                    <div class="w-14">
-                        <InputNumber
-                            :ref="el => setInputRef(el, location.id)"
-                            :modelValue="location.quantity"
-                            @keydown.enter.prevent="submitCheckStock(location)"
-                            @input="(event: { value: any }) => location.quantity = event.value"
-                            :min="0"
-                            :step="1"
-                            size="small"
-                            fluid
-                            inputClass="!py-0"
                         />
-                    </div>
-
-                    <!-- Section: icon save -->
-                    <div class="">
-                        <LoadingIcon v-if="listLoadingLocations.includes(location.id)" class="text-2xl" />
-                        <template v-else>
-                            <FontAwesomeIcon v-if="location.quantity != props.locations[idx].quantity" @click="() => submitCheckStock(location)" icon="fad fa-save" class="text-2xl cursor-pointer" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
-                            <FontAwesomeIcon v-else icon="fal fa-save" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
-                        </template>
                     </div>
                 </div>
             </div>
@@ -202,7 +344,36 @@ watch(
         </div>
         <!-- Section: buttons -->
          <div class="flex xjustify-end gap-2 pt-3">
-            <Button label="Close" type="tertiary" icon="far fa-arrow-left" @click="emits('close')" />
+            <Button 
+                :label="currentPage == 1 ? ctrans('Close') : ctrans('Back')" 
+                type="tertiary" 
+                icon="far fa-arrow-left" 
+                @click="() => {
+                    if (currentPage == 1) {
+                        emits('close')
+                    } else {
+                        currentPage = 1
+                    }
+                }" 
+            />
+            <Button 
+                :label="currentPage == 1 ? ctrans('Next') : ctrans('Save')" 
+                :type="'primary'" 
+                :icon="currentPage == 1 ? faArrowRight : faFloppyDisk" 
+                class="ml-auto" @click="() => {
+                    if (currentPage == 1) {
+                        currentPage = 2
+                    } else {
+                        bulkSubmitAudit()
+                    }
+                }" 
+                :disabled="
+                    currentPage == 1
+                        ? Object.keys(modifiedLocationsQuantity).length === 0
+                        : Object.values(modifiedLocationsQuantity).some(item => !item.reason)
+                "
+                :loading="listLoadingLocations.length > 1"
+            />
         </div>
     </div>
 </template>

@@ -10,6 +10,7 @@ namespace App\Models\Inventory;
 
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InWarehouse;
@@ -89,6 +90,7 @@ class OrgStockMovement extends Model
             'cost_per_sku'          => 'decimal:6',
             'fixed_internal_helper' => 'boolean',
             'is_migration_point'    => 'boolean',
+            'reason'                => OrgStockMovementReasonEnum::class,
         ];
     }
 
