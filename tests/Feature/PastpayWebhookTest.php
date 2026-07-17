@@ -13,7 +13,9 @@ use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\PastpayOrderPaymentFail
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\PastpayOrderPaymentSuccess;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\PastPay\FinalizeOrderWithPastpay;
+use App\Actions\Accounting\Payment\PastPay\PayOrderWithPastpay;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop;
 use App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData;
@@ -21,6 +23,7 @@ use App\Actions\Accounting\PaymentAccountShop\UpdatePaymentAccountShop;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
@@ -387,6 +390,91 @@ test('pastpay is hidden at checkout unless account is active and fully configure
     $paymentAccountShop->update(['state' => PaymentAccountShopStateEnum::INACTIVE]);
 
     expect(GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->refresh(), $orderPaymentApiPoint))->toBeNull();
+});
+
+test('order partially paid with balance is financed by pastpay only for the remainder', function () {
+    createWarehouse();
+    $paymentAccountShop = createPastpayPaymentAccountShop($this->organisation, $this->shop);
+    $paymentAccountShop->update(['data' => ['charges' => ['options' => [['days' => 30, 'charge' => '1']]]]]);
+    PaymentAccountShop::where('shop_id', $this->shop->id)
+        ->where('type', PaymentAccountTypeEnum::PASTPAY)
+        ->where('id', '!=', $paymentAccountShop->id)
+        ->update(['state' => PaymentAccountShopStateEnum::INACTIVE]);
+
+    $accountsProvider = PaymentServiceProvider::where('code', 'accounts')->first();
+    if (!PaymentAccountShop::where('shop_id', $this->shop->id)->where('type', PaymentAccountTypeEnum::ACCOUNT)->exists()) {
+        $orgAccountsProvider = StoreOrgPaymentServiceProvider::make()->action(
+            paymentServiceProvider: $accountsProvider,
+            organisation: $this->organisation,
+            modelData: PaymentServiceProvider::factory()->definition()
+        );
+        $accountsPaymentAccountData = PaymentAccount::factory()->definition();
+        data_set($accountsPaymentAccountData, 'type', PaymentAccountTypeEnum::ACCOUNT->value);
+        $accountsPaymentAccount = StorePaymentAccount::make()->action($orgAccountsProvider, $accountsPaymentAccountData);
+        StorePaymentAccountShop::make()->action($accountsPaymentAccount, $this->shop, [
+            'currency_id' => $this->shop->currency_id,
+            'state'       => PaymentAccountShopStateEnum::ACTIVE
+        ]);
+    }
+
+    if (!$this->customer->taxNumber) {
+        $this->customer->taxNumber()->create(['number' => '10307078', 'country_code' => 'HU']);
+        $this->customer->refresh();
+    }
+
+    list($order, $orderPaymentApiPoint) = createOrderWithPastpayApiPoint($this->customer, $this->product, $paymentAccountShop);
+
+    $startingBalance = (float) $this->customer->balance;
+    StoreCreditTransaction::make()->action($this->customer, [
+        'amount' => 5,
+        'type'   => CreditTransactionTypeEnum::ADD_FUNDS_OTHER,
+    ]);
+    $this->customer->refresh();
+    $balance = (float) $this->customer->balance;
+
+    $orderTotal      = (float) $order->total_amount;
+    $expectedByOther = round($orderTotal - min($orderTotal, $balance), 2);
+    $expectedFee     = round($expectedByOther * 0.01, 2);
+    $expectedToPay   = round($expectedByOther + $expectedFee, 2);
+
+    $initiatePayload = null;
+    PayOrderWithPastpay::partialMock()
+        ->shouldReceive('pastpayInitiateOrder')
+        ->withArgs(function ($initiateOrder, $initiateApiPoint, $extra) use (&$initiatePayload) {
+            $initiatePayload = $extra;
+
+            return true;
+        })
+        ->andReturn(['data' => ['redirectUrl' => 'https://app.demo.pastpay.com/buy/test']]);
+
+    $result = PayOrderWithPastpay::make()->handle($order, $orderPaymentApiPoint, ['days' => 30]);
+
+    expect($result['status'])->toBe('ok')
+        ->and((float) $initiatePayload['totalPrice']['amount'])->toBe($expectedToPay)
+        ->and((float) Arr::get($orderPaymentApiPoint->refresh()->data, 'pastpay.to_pay'))->toBe($expectedToPay);
+
+    PastpayOrderPaymentSuccess::partialMock()
+        ->shouldReceive('pastpayGetOrder')
+        ->andReturn([
+            'data' => [
+                'orderId'    => $order->reference,
+                'totalPrice' => ['amount' => $expectedToPay, 'currency' => $order->currency->code],
+                'status'     => 'reserved',
+            ]
+        ]);
+
+    $successResult = PastpayOrderPaymentSuccess::make()->handle($orderPaymentApiPoint);
+
+    $order->refresh();
+    $this->customer->refresh();
+
+    $pastpayPayment = $order->payments()->where('reference', $order->reference)->first();
+
+    expect($successResult['status'])->toBe('success')
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+        ->and((float) $pastpayPayment->amount)->toBe($expectedToPay)
+        ->and((float) $order->payment_amount)->toBeGreaterThanOrEqual((float) $order->total_amount)
+        ->and((float) $this->customer->balance)->toBe($startingBalance);
 });
 
 test('unprocessed pastpay status marks api point as failure', function () {
