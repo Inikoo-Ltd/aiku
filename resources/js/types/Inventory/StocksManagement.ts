@@ -56,6 +56,7 @@ export interface StockManagementRoutes {
     associate_location_route: routeType
     disassociate_location_route: routeType
     audit_route: routeType
+    bulk_audit_route: routeType
     move_location_route: routeType
 }
 

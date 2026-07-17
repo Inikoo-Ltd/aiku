@@ -83,6 +83,7 @@ const isFetchingOutOfStock = ref(false)
 const isNewArrivals = ref(false)
 const isLoadingInitial = ref(false)
 const isLoadingMore = ref(false)
+const renderKey = ref(0)
 
 
 const getRoutes = () => {
@@ -219,6 +220,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         isLoadingInitial.value = false;
         isLoadingMore.value = false;
         firstLoad.value++;
+        renderKey.value++;
     }
 };
 
@@ -518,11 +520,11 @@ watch(
                     <template v-else-if="products.length">
                         <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
                         <!-- <pre>{{ get(layout, ['family_quantity_ordered'], []) }}</pre> -->
-                        <div v-for="(product, index) in products"
+                        <div v-for="(product, index) in products" :key="`${renderKey}-${index}`"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class=" relative rounded flex md:flex-1 justify-center"
                             :class="{ 'max-lg:hidden': isMobileCollapsed && index >= MOBILE_INITIAL_PRODUCTS }">
-                            <RenderProduct :code="code" :product="product" :key="index"
+                            <RenderProduct :code="code" :product="product" :key="`${renderKey}-${index}`"
                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"

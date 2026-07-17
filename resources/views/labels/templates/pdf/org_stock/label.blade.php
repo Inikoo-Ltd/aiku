@@ -17,7 +17,7 @@
 
     <tr>
         <td style="text-align: center; padding-top: 1.5mm;">
-            <barcode code="{{ $barcodeNumber }}" type="{{ $barcodeType }}" size="1" height="0.9" text="1"/>
+            <barcode code="{{ $barcodeNumber }}" type="{{ $barcodeType }}" size="0.85" height="0.85" text="1"/>
         </td>
     </tr>
 </table>

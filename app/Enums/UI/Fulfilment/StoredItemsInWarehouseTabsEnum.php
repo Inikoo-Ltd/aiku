@@ -27,18 +27,18 @@ enum StoredItemsInWarehouseTabsEnum: string
     {
         return match ($this) {
             StoredItemsInWarehouseTabsEnum::STORED_ITEMS => [
-                'title' => __("Customer's SKUs"),
+                'title' => __("Customer's SKOs"),
                 'icon'  => 'fal fa-narwhal',
             ],
 
             StoredItemsInWarehouseTabsEnum::PALLET_STORED_ITEMS => [
 
-                'title' => __("Pallet/Customer's SKUs"),
+                'title' => __("Pallet/Customer's SKOs"),
                 'icon'  => 'fal fa-pallet',
             ],
             StoredItemsInWarehouseTabsEnum::STORED_ITEM_AUDITS => [
 
-                'title' => __("Customer's SKUs Audits"),
+                'title' => __("Customer's SKOs Audits"),
                 'icon'  => 'fal fa-ballot-check',
             ],
 

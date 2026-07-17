@@ -123,9 +123,66 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                     />
                 </div> -->
 
-                <div v-if="layout.offer_data?.type === 'gr'" class="absolute top-5 right-7 text-4xl">
-                    <GoldReward />
+                
+
+               <div v-if="layout.offer_data?.type === 'gr'" class="absolute top-5 right-7 text-4xl hidden lg:block">
+                    <GoldReward>
+                        <template #default>
+                            <div class="flex items-center">
+                                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
+                                    aria-hidden="true" />
+
+                                <div
+                                    class="relative inline-block w-20 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
+                                    <div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
+                                        :class="{ xshimmer: true }" :style="{
+                                            width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%`
+                                        }" />
+
+                                    <div
+                                        class="absolute inset-0 flex items-center justify-center font-medium text-black text-xxs">
+                                        {{ Number(layout?.offer_data?.meter?.[0]).toFixed(0) }}
+                                        /
+                                        {{ Number(layout?.offer_data?.meter?.[1]).toFixed(0) }}
+                                        days
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </GoldReward>
                 </div>
+            </div>
+        </div>
+
+         <div v-if="layout.offer_data?.type === 'gr'" class="lg:hidden mb-8">
+            <div class="flex items-center justify-between gap-3 p-3 rounded-lg border border-yellow-300 bg-yellow-50/30">
+                <span class="text-sm font-medium text-yellow-700">
+                    {{ layout?.offer_data?.label }}
+                </span>
+                <GoldReward>
+                        <template #default>
+                            <div class="flex items-center">
+                                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
+                                    aria-hidden="true" />
+
+                                <div
+                                    class="relative inline-block w-20 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
+                                    <div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
+                                        :class="{ xshimmer: true }" :style="{
+                                            width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%`
+                                        }" />
+
+                                    <div
+                                        class="absolute inset-0 flex items-center justify-center font-medium text-black text-xxs">
+                                        {{ Number(layout?.offer_data?.meter?.[0]).toFixed(0) }}
+                                        /
+                                        {{ Number(layout?.offer_data?.meter?.[1]).toFixed(0) }}
+                                        days
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </GoldReward>
             </div>
         </div>
 

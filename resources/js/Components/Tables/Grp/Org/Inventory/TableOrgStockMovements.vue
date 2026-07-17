@@ -15,6 +15,12 @@ import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue";
+import { faNoteSticky } from "@fortawesome/free-solid-svg-icons";
+import { ref } from "vue";
+import { Dialog } from "primevue";
+import { useBasicColor } from "@/Composables/useColors";
+import { faTimes } from "@far";
+import { useFormatTime } from "@/Composables/useFormatTime";
 
 library.add(
   faTilde,
@@ -87,6 +93,33 @@ function deliveryNoteRoute(orgStockMovement) {
     return route("grp.majordomo.redirect_delivery_notes", [orgStockMovement.delivery_note_id])
 }
 
+const isNoteModalOpen = ref(false);
+const selectedMovement = ref<{}|null>(null)
+
+function noteBgColor(movement) {
+  let colorBg = '#ffe975'; 
+  let colorText = 'rgb(55, 65, 81)';
+
+  if (movement?.type == 'audit') {
+    colorBg = '#9bcefa'
+  }
+
+  return {
+    'background-color': colorBg,
+    'color': colorText
+  }
+}
+
+function noteColor(movement) {
+  let borderColor = '#ffd700'; 
+
+  if (movement?.type == 'audit') {
+    borderColor = '#67a5db'
+  }
+
+  return borderColor
+}
+
 </script>
 
 <template>
@@ -120,13 +153,31 @@ function deliveryNoteRoute(orgStockMovement) {
       </span>
     </template>
 
+    <template #cell(reason)="{ item: orgStockMovement }">
+      <div class="flex justify-between">
+        {{ orgStockMovement.reason_label }}
+        <FontAwesomeIcon 
+          v-if="orgStockMovement.note"
+          v-tooltip="ctrans('View Note')"
+          :icon="faNoteSticky"
+          class="my-auto hover:text-yellow-300 transition cursor-pointer text-lg"
+          :style="{
+            color: noteColor(orgStockMovement)
+          }"
+          @click="() => {
+            selectedMovement = orgStockMovement
+            isNoteModalOpen = true
+          }"
+        />
+      </div>
+    </template>
+
     <template #cell(location_code)="{ item: orgStockMovement }">
-      <div class="flex">
+      <div class="flex flex-wrap gap-2 justify-between">
         <Link class="primaryLink" :href="locationRoute(orgStockMovement)">
           {{ orgStockMovement.location_code }}
         </Link>
-        
-        <Link class="ml-auto" :href="locationRoute(orgStockMovement, {tab: 'stock_movements'})">
+        <Link class="my-auto" :href="locationRoute(orgStockMovement, {tab: 'stock_movements'})">
           <span v-if="orgStockMovement.type == 'disassociate' || orgStockMovement.type == 'associate'">
           </span>
           <span v-else-if="orgStockMovement.flow == 'audit'" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
@@ -211,6 +262,99 @@ function deliveryNoteRoute(orgStockMovement) {
       </span>
     </template>
   </Table>
+
+  <Dialog
+    v-model:visible="isNoteModalOpen" 
+    modal 
+    :style="{ 
+      width: '30vw', 
+      overflow:'hidden', 
+      'border-width': '1px',
+      'border-style': 'solid',
+      'border-color': noteColor(selectedMovement)
+    }"
+    :dismissableMask="true"
+    :closeOnEscape="true"
+    :breakpoints="{
+      '1360px': '60vw',
+      '1200px': '75vw',
+      '992px': '80vw',
+      '768px': '90vw',
+      '576px': '95vw'
+    }"
+  >
+    <template #container>
+      <div 
+        class="py-2 px-1" 
+        :style="noteBgColor(selectedMovement)"
+      >
+        <div class="top-0 left-0 w-full flex gap-x-1 lg:pr-0 justify-between h-full">
+          <div class="flex flex-row w-full text-md font-semibold truncate gap-x-2 text-center py-0.5 pl-3 pr-3" style="">
+            <FontAwesomeIcon 
+              :icon="faNoteSticky"
+              class="my-auto"
+            />
+            <span 
+              class="align-middle" 
+              style="color: rgb(55, 65, 81);"
+            >
+              {{ ctrans('Movement Note') }}
+              <span class="my-auto ml-2 px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100 text-xs">
+                {{ selectedMovement.location_code }}
+                <FontAwesomeIcon 
+                  :icon="faBoxFull"
+                />
+                <FractionDisplay v-if="selectedMovement.running_quantity_fractional" :fractionData="selectedMovement.running_quantity_fractional" class="ml-1"/>
+                <span v-else>
+                  {{ selectedMovement.running_quantity ?? 0 }}
+                </span>
+              </span>
+            </span>
+            
+          </div>
+          <div class="mr-2 text-lg my-auto">
+            <FontAwesomeIcon
+              :icon="faTimes"
+              class="cursor-pointer"
+              @click="() => isNoteModalOpen = false"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="w-full grid grid-cols-3">
+        <div class="grid text-xs py-1 px-3 border border-grey-700">
+          <div class="font-semibold">
+            {{ ctrans('Type') }}:
+          </div>
+          <span class="my-auto">
+            {{ selectedMovement.type_label }}
+          </span>
+        </div>
+        <div class="grid text-xs py-1 px-3 border border-grey-700">
+          <span class="font-semibold">
+            {{ ctrans('Reason') }}:
+          </span>
+          <span class="my-auto">
+            {{ selectedMovement.reason_label }}
+          </span>
+        </div>
+        <div class="grid text-xs py-1 px-3 border border-grey-700">
+          <span class="font-semibold">
+            {{ ctrans('User') }}:
+          </span>
+          <span class="my-auto">
+            {{ selectedMovement.user?.contact_name ?? ctrans('System') }}
+          </span>
+        </div>
+      </div>
+      <p class="h-full w-full max-h-32 mx-auto px-4 py-3 text-sm break-words">
+        {{ selectedMovement?.note }}
+      </p>
+      <div class="w-full text-right px-3 text-xs pt-3 pb-2">
+        {{ useFormatTime(selectedMovement.date, { formatTime: 'hms' }) }}
+      </div>
+    </template>
+  </Dialog>
 </template>
 
 

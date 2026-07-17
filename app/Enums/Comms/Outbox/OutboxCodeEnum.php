@@ -167,7 +167,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
-            OutboxCodeEnum::INVOICE_PAID => 'Invoice paid',
+            OutboxCodeEnum::INVOICE_PAID => 'COD Payment Confirmation', //Noted: Now only for COD, later can be used for other payment methods
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
             OutboxCodeEnum::NEW_REVIEW => 'New review',
             OutboxCodeEnum::REVIEW_REMINDER => 'Review reminder',

@@ -14,9 +14,11 @@ use App\Actions\Ordering\Transaction\Traits\WithCalculateTransactionDiscount;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpsertPickingFromWaitingWarehouse extends OrgAction
@@ -33,6 +35,27 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
     public function handle(DeliveryNoteItem $deliveryNoteItem, $user, array $modelData): ?bool
     {
         DB::transaction(function () use ($deliveryNoteItem, $user, $modelData) {
+            $locationOrgStock  = LocationOrgStock::find(Arr::get($modelData, 'location_org_stock_id'));
+            $requestedQuantity = (float) Arr::get($modelData, 'quantity', 0);
+
+            $alreadyPickedInLocation = 0.0;
+            if ($pickingID = Arr::get($modelData, 'picking_id')) {
+                $alreadyPickedInLocation = (float) (Picking::where('id', $pickingID)
+                    ->where('location_id', $locationOrgStock?->location_id)
+                    ->value('quantity') ?? 0);
+            }
+
+            $availableInLocation = (float) ($locationOrgStock?->quantity ?? 0) + $alreadyPickedInLocation;
+
+            if ($requestedQuantity > $availableInLocation) {
+                throw ValidationException::withMessages([
+                    'quantity' => __('Not enough stock in this location: :available available, :requested requested.', [
+                        'available' => $availableInLocation,
+                        'requested' => $requestedQuantity,
+                    ]),
+                ]);
+            }
+
             $waitingWarehouseQuantity = $deliveryNoteItem->quantity_required
                 - Arr::get($modelData, 'quantity', 0)
                 - $deliveryNoteItem->quantity_waiting_crm
@@ -69,7 +92,7 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
 
             // To fix concurrent issue, discounts aren't applied after picking up from Waiting (reported by Erika)
-            $this->calculateTransactionDiscountTotal($deliveryNoteItem->transaction);
+            $this->calculateTransactionDiscountTotal($deliveryNoteItem);
         });
 
         return true;
