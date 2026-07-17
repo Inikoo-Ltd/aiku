@@ -17,6 +17,7 @@ use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Events\BroadcastStockMovement;
 use App\Models\Dispatching\Picking;
@@ -138,17 +139,20 @@ class StoreOrgStockMovement extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'date'             => ['sometimes', 'date'],
-            'quantity'         => ['sometimes', 'nullable', 'numeric'],
-            'audited_quantity' => ['sometimes', 'nullable', 'numeric'],
-            'org_amount'       => ['sometimes', 'numeric'],
-            'data'             => ['sometimes', 'array'],
-            'type'             => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
-            'is_delivered'     => ['sometimes', 'boolean'],
-            'is_received'      => ['sometimes', 'boolean'],
-            'fixed'            => ['sometimes', 'boolean'],
-            'user_id'          => ['sometimes', 'nullable', 'numeric']
+            'date'              => ['sometimes', 'date'],
+            'quantity'          => ['sometimes', 'nullable', 'numeric'],
+            'audited_quantity'  => ['sometimes', 'nullable', 'numeric'],
+            'org_amount'        => ['sometimes', 'numeric'],
+            'data'              => ['sometimes', 'array'],
+            'type'              => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
+            'is_delivered'      => ['sometimes', 'boolean'],
+            'is_received'       => ['sometimes', 'boolean'],
+            'fixed'             => ['sometimes', 'boolean'],
+            'user_id'           => ['sometimes', 'nullable', 'numeric'],
+            'reason'            => ['sometimes', 'nullable', Rule::enum(OrgStockMovementReasonEnum::class)],
+            'note'              => ['sometimes', 'nullable', 'string'],
         ];
+        
         if (!$this->strict) {
             $rules['note']               = ['sometimes', 'nullable', 'string', 'max:1024'];
             $rules['fetched_at']         = ['sometimes', 'date'];

@@ -12,6 +12,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import {formatDistanceStrict} from 'date-fns/formatDistanceStrict'
 import { notify } from '@kyvg/vue3-notification'
+import Multiselect from '@vueform/multiselect'
 library.add(faLongArrowRight, faInfoCircle, faForklift, faTimes)
 
 const props = defineProps<{
@@ -25,6 +26,11 @@ const props = defineProps<{
     replenishment_data: Record<number, {
         replenishment_stock?: number
     }>
+    reasons?: {
+        increase: [],
+        decrease: [],
+        transfer: [],
+    }
 }>()
 
 const emits = defineEmits(['close'])
@@ -190,6 +196,9 @@ const getCalculatedStock = (warehouse: { stock: number; id: any }) => {
     return warehouse.stock
 }
 
+const selectedReason = ref('');
+const note = ref('')
+
 const getStockChangeIndicator = (warehouse: { id: any }) => {
     if (!moveStock.value.isActive || moveStock.value.quantity <= 0) {
         return null
@@ -217,7 +226,9 @@ const submitCheckStock = () => {
         locationOrgStock: moveStock.value.from.id,
         targetLocationOrgStock: moveStock.value.to.id
     }), {
-        quantity: moveStock.value.quantity
+        quantity: moveStock.value.quantity,
+        reason: selectedReason.value,
+        note: note.value
     }, {
         preserveScroll: true,
         onStart: () => {
@@ -262,6 +273,7 @@ const applyReplenishment = (location: any) => {
 
 onMounted(() => {
     const locations = form.stockCheck
+    selectedReason.value = Object.keys(props.reasons?.transfer ?? [])?.[0] ?? '';
 
     if (locations.length === 2) {
         const [loc1, loc2] = locations
@@ -283,9 +295,16 @@ onMounted(() => {
 
     syncForm()
 })
-
 </script>
+<!-- <style scoped lang="scss">
+    .child-text-sm {
+        font-size: 0.75rem;
 
+        > * {
+            font-size: 0.75rem;
+        }
+    }
+</style> -->
 <template>
     <div class="space-y-4">
         <!-- Section: Move summary + instructions -->
@@ -306,7 +325,7 @@ onMounted(() => {
                     :class="moveStock.from ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'"
                 >
                     <div
-                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition"
+                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition w-32"
                         :class="moveStock.from ? 'text-green-600' : 'text-green-500'"
                     >
                         <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
@@ -366,7 +385,6 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-
             <!-- <div class="text-yellow-600 text-xs text-center mt-2 h-[16px]">
                 <span v-if="!moveStock.from">
                     <FontAwesomeIcon :icon="faInfoCircle" />
@@ -381,6 +399,43 @@ onMounted(() => {
                     {{ trans('Enter the quantity to move from the source') }}
                 </span>
             </div> -->
+        </div>
+
+        <div class="flex">
+            <div class="flex ml-auto">
+                {{  ctrans('Transfer Reason:') }}
+            </div>
+            <div class="ml-2 w-96">
+                <Multiselect
+                    v-model="selectedReason"
+                    :options="reasons?.transfer ?? []"
+                    :placeholder="'Select your reason'"
+                    :canClear="false"
+                    :mode="'single'"
+                    :closeOnSelect="true"
+                    :canDeselect="false"
+                    :hideSelected="false"
+                    :disabled="false"
+                    :searchable="true" 
+                    :label="'Transfer Reason'"
+                    :filter-results="false"
+                >
+                </Multiselect>
+            </div>
+        </div>
+        <div class="flex">
+            <div class="flex ml-auto">
+                {{ ctrans('Note') }}
+            </div>
+            <div class="ml-2 w-96">
+                <textarea
+                    v-model.trim="note"
+                    :rows="2"
+                    :placeholder="ctrans('Add a note (Optional)')"
+                    class="block w-full rounded-md border-gray-300 placeholder:text-gray-400 shadow-sm focus:ring-indigo-500 sm:text-sm"
+
+                />
+            </div>
         </div>
 
         <template v-if="form.stockCheck.length > 0">

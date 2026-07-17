@@ -85,6 +85,9 @@ class OrgStockMovementsResource extends JsonResource
             'delivery_note_id'                          => $orgStockMovement->delivery_note_id,
             'delivery_note_reference'                   => $orgStockMovement->delivery_note_reference,
             'is_migration_point'                        => $orgStockMovement->is_migration_point,
+            'reason'                                    => $orgStockMovement->reason,
+            'reason_label'                              => $orgStockMovement->reason?->label(),
+            'note'                                      => $orgStockMovement->note,
         ];
     }
 }

@@ -79,6 +79,13 @@ class GetOrgStockShowcase
                                 'locationOrgStock' => null, // Fill in FE
                             ]
                         ],
+                        'bulk_audit_route' => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.org_stock.bulk_audit',
+                            'parameters' => [
+                                'orgStock' => null, // Fill in FE
+                            ]
+                        ],
                         'move_location_route'                    => [
                             'method' => 'patch',
                             'name'   => 'grp.models.location_org_stock.move',

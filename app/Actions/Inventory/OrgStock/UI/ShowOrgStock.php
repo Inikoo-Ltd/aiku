@@ -16,6 +16,7 @@ use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -104,6 +105,13 @@ class ShowOrgStock extends OrgAction
                         'stock' => $orgStock->stock->slug
                     ]
                 ] : null,
+                'reasons'     => [
+                    'increase'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::increaseReason()),
+                    'decrease'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::decreaseReason()),
+                    'transfer'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
+                ],
+                'org_stock_id'  => $orgStock->id,
+
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)
                     : Inertia::optional(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),

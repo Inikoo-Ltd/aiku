@@ -38,6 +38,7 @@ const props = defineProps<{
     tab?: string
     canMoveAllSku?:boolean,
     location_id: number,
+    transfer_reason?: {}
 }>()
 
 const layout = inject('layout', layoutStructure)

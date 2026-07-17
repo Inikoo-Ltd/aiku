@@ -60,6 +60,12 @@ const props = defineProps<{
             parameters: Record<string, string>
         }
     }
+    reasons?: {
+        increase: [],
+        decrease: [],
+        transfer: [],
+    }
+    org_stock_id: number
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -153,6 +159,8 @@ onMounted(() => {
                 :data
                 :stocks_management="data.stocks_management"
                 :trade_units="data.trade_units"
+                :reasons
+                :org_stock_id
             />
 
             <!-- Barcodes -->
