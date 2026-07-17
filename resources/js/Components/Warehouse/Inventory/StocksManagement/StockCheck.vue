@@ -267,64 +267,56 @@ const currentPage = ref(1);
             </div>
             <div v-else> 
                 <div class="grid grid-cols-6 gap-3 border-b pb-2 font-semibold">
-                    <div class="col-span-1 flex items-center gap-x-2">
+                    <div class="col-span-1">
                         {{ ctrans('Location Code') }}
                     </div>
-                    <div class="col-span-1 flex items-center gap-x-2">
+                    <div class="col-span-1">
                         {{ ctrans('New Quantity') }}
                     </div>
-                    <div class="col-span-4 flex">
-                        {{ ctrans('Reasons') }}
+                    <div class="col-span-2">
+                        {{ ctrans('Reason') }}
+                        <span class="text-red-500">*</span>
+                    </div>
+                    <div class="col-span-2">
+                        {{ ctrans('Note') }}
+                        <span class="font-normal text-gray-400 italic">
+                            {{ ctrans('optional') }}
+                        </span>
                     </div>
                 </div>
-                <div v-for="(location, idx) in modifiedLocationsQuantity" :key="location.id" class="grid grid-cols-6 gap-3 border-b pb-2 pt-2">
-                    <div class="col-span-1 flex items-center gap-x-2">
+                <div v-for="location in modifiedLocationsQuantity" :key="location.id" class="grid grid-cols-6 gap-3 border-b py-2">
+                    <div class="col-span-1 flex items-center h-10">
                         {{ location.code }}
                     </div>
-                    <div class="col-span-1 my-auto gap-x-2">
-                        {{ location.quantity }} 
+                    <div class="col-span-1 flex items-center gap-x-2 h-10 tabular-nums">
+                        {{ location.quantity }}
                         <span
-                            v-if="location.delta > 0"
-                            class="border px-2 py-1 rounded-md text-green-500 border-green-300 bg-green-200"
+                            class="border rounded px-1.5 py-0.5 text-xs font-semibold"
+                            :class="location.delta > 0 ? 'text-green-700 border-green-300 bg-green-50' : 'text-red-700 border-red-300 bg-red-50'"
                         >
-                            +{{ location.delta }}
-                        </span>
-                        <span
-                            v-else
-                            class="border px-2 py-1 rounded-md text-red-500 border-red-300 bg-red-200"
-                        >
-                            {{ location.delta }}
+                            {{ location.delta > 0 ? '+' : '' }}{{ location.delta }}
                         </span>
                     </div>
-                    <div class="col-span-4 flex">
+                    <div class="col-span-2">
                         <Multiselect
                             v-model="location.reason"
                             :options="(location.delta > 0 ? reasons?.increase : reasons?.decrease) ?? []"
-                            :placeholder="'Select your reason (*)'"
+                            :placeholder="ctrans('Select your reason')"
                             :canClear="false"
                             :mode="'single'"
                             :closeOnSelect="true"
                             :canDeselect="false"
                             :hideSelected="false"
-                            :disabled="false"
-                            :searchable="true" 
-                            :label="'Transfer Reason'"
-                            :filter-results="false"
-                        >
-                        </Multiselect>
+                            :searchable="true"
+                            :filter-results="false"                           
+                        />
                     </div>
-                    <div class="col-span-1 flex items-center gap-x-2"></div>
-                    <div class="col-span-1 flex items-center gap-x-2"></div>
-                    <div class="col-span-4 flex">
+                    <div class="col-span-2">
                         <textarea
-                            :ref="`${location.id}_note`"
                             v-model.trim="location.note"
-                            :id="`${location.id}_note`"
-                            :name="`${location.id}_note`"
-                            :rows="3"
-                            :placeholder="ctrans('Add a note (Optional)')"
-                            class="block w-full rounded-md border-gray-300 placeholder:text-gray-400 shadow-sm focus:ring-indigo-500 sm:text-sm"
-
+                            :rows="1"
+                            :placeholder="ctrans('Add more details about this audit')"
+                            class="block w-full h-10 py-2 rounded border-gray-300 placeholder:text-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm leading-5 resize-none"
                         />
                     </div>
                 </div>
