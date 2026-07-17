@@ -49,6 +49,20 @@ const findLocation = (locationsList: any[], selectedCode: string) => {
 const selectedLocationCode = ref<string>(props.item.selectedRadioLocationCode ?? "")
 const currentLocation = computed(() => findLocation(props.item.locations, selectedLocationCode.value))
 
+const waitingWarehouseFractional = computed(() => {
+    if (props.item?.delivery_note_shop_type == "dropshipping") {
+        return props.item?.quantity_waiting_warehouse_fractional_ds
+    }
+    return null
+})
+
+const pickingDenominator = computed(() => {
+    if (props.item?.delivery_note_shop_type == "dropshipping" && Number(props.item?.packed_in) > 1) {
+        return Number(props.item.packed_in)
+    }
+    return undefined
+})
+
 const isModalLocation = ref(false)
 const isOpenModalPassToCs = ref(false)
 const errors = ref<string[]>([])
@@ -104,6 +118,7 @@ const errors = ref<string[]>([])
             <NumberWithButtonSave
                 v-if="!isStillPicking && currentLocation"
                 :key="currentLocation.location_code"
+                :denominator="pickingDenominator"
                 noUndoButton
                 @onError="(error: any) => { errors = Object.values(error || {}) }"
                 :modelValue="item.pickings?.find((p: any) => p.type === 'pick' && p.location_id == currentLocation?.location_id)?.quantity_picked ?? 0"
@@ -149,7 +164,8 @@ const errors = ref<string[]>([])
                             isWithError
                         >
                             <template #label>
-                                <span>{{ locale.number(item.quantity_waiting_warehouse ?? 0) }}</span>
+                                <FractionDisplay v-if="waitingWarehouseFractional" :fractionData="waitingWarehouseFractional" />
+                                <span v-else>{{ locale.number(item.quantity_waiting_warehouse ?? 0) }}</span>
                             </template>
                         </ButtonWithLink>
                     </div>
@@ -171,7 +187,8 @@ const errors = ref<string[]>([])
                 v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(item.quantity_waiting_warehouse) || '0' })"
             >
                 <template #label>
-                    <span>{{ locale.number(item.quantity_waiting_warehouse ?? 0) }}</span>
+                    <FractionDisplay v-if="waitingWarehouseFractional" :fractionData="waitingWarehouseFractional" />
+                    <span v-else>{{ locale.number(item.quantity_waiting_warehouse ?? 0) }}</span>
                 </template>
             </ButtonWithLink>
 
@@ -179,11 +196,19 @@ const errors = ref<string[]>([])
             <Button
                 @click="isOpenModalPassToCs = true"
                 icon="fal fa-user-headset"
-                :label="trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: String(Number(item.quantity_waiting_warehouse)) })"
+                :label="waitingWarehouseFractional ? undefined : trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: String(Number(item.quantity_waiting_warehouse)) })"
                 :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
                 type="tertiary"
                 class="!bg-purple-300 hover:!bg-purple-400/80 !text-purple-700 !border-purple-400 !py-2"
-            />
+            >
+                <template v-if="waitingWarehouseFractional" #label>
+                    <span class="inline-flex items-center gap-x-1">
+                        {{ trans('Pass') }}
+                        <FractionDisplay :fractionData="waitingWarehouseFractional" />
+                        {{ trans('to CS') }}
+                    </span>
+                </template>
+            </Button>
         </div>
     </div>
 

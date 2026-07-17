@@ -106,6 +106,16 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
 
         $quantityToPickFractional = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $packedIn);
 
+        $waitingWarehouseFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_warehouse ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_warehouse ?? 0) == ($this->quantity_waiting_warehouse ?? 0) && $packedIn > 1) {
+            $waitingWarehouseFractionalDS = [0, [($this->quantity_waiting_warehouse ?? 0) * $packedIn, $packedIn]];
+        }
+
+        $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_crm ?? 0) == ($this->quantity_waiting_crm ?? 0) && $packedIn > 1) {
+            $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
+        }
+
 
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
 
@@ -156,7 +166,9 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'quantity_picked'             => $this->quantity_picked,
             'quantity_not_picked'         => $this->quantity_not_picked,
             'quantity_waiting_warehouse'  => $this->quantity_waiting_warehouse,
+            'quantity_waiting_warehouse_fractional_ds' => $waitingWarehouseFractionalDS,
             'quantity_waiting_crm'        => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds' => $waitingCrmFractionalDS,
 
             'is_handled'       => $this->is_handled,
             'picking_position' => $this->picking_position,
