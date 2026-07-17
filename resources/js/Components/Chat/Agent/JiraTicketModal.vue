@@ -15,6 +15,7 @@ import {
     faAngleDown,
     faAnglesDown,
     faTag,
+    faSpinner,
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { notify } from "@kyvg/vue3-notification"
@@ -49,6 +50,19 @@ interface JiraPriority {
     name: string
 }
 
+interface JiraFieldOption {
+    id: string
+    label: string
+}
+
+interface JiraCustomField {
+    id: string
+    name: string
+    type: string
+    required: boolean
+    options: JiraFieldOption[]
+}
+
 interface CreatedTicket {
     id: string
     key: string
@@ -79,6 +93,7 @@ const isLoadingProjects = ref(false)
 const isLoadingIssueTypes = ref(false)
 const isLoadingPriorities = ref(false)
 const isLoadingLabels = ref(false)
+const isLoadingFields = ref(false)
 const isSubmitting = ref(false)
 const jiraConfigured = ref(true)
 
@@ -86,6 +101,8 @@ const projects = ref<JiraProject[]>([])
 const issueTypes = ref<JiraIssueType[]>([])
 const priorities = ref<JiraPriority[]>([])
 const labels = ref<string[]>([])
+const customFields = ref<JiraCustomField[]>([])
+const customFieldValues = ref<Record<string, string>>({})
 
 const form = ref({
     project_key: "",
@@ -114,8 +131,20 @@ const sessionName = computed(
     () => props.session?.contact_name || props.session?.guest_identifier || trans("chat session")
 )
 
+const selectedIssueType = computed(() =>
+    issueTypes.value.find((t) => t.name === form.value.issue_type)
+)
+
+const missingRequiredCustomField = computed(() =>
+    customFields.value.some((field) => field.required && !customFieldValues.value[field.id]?.toString().trim())
+)
+
 const canSubmit = computed(
-    () => !!form.value.project_key && !!form.value.issue_type && form.value.summary.trim().length > 0
+    () =>
+        !!form.value.project_key &&
+        !!form.value.issue_type &&
+        form.value.summary.trim().length > 0 &&
+        !missingRequiredCustomField.value
 )
 
 const projectOptions = computed(() =>
@@ -136,6 +165,12 @@ const labelOptions = computed(() => labels.value.map((label) => ({ label, value:
 
 const baseRoute = (name: string, extra: any[] = []) =>
     route(`grp.org.chat.agents.sessions.jira.${name}`, [props.organisation, props.session?.ulid, ...extra])
+
+const normalizeUrl = (value: string): string => {
+    const trimmed = value.trim()
+    if (!trimmed) return ""
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+}
 
 const clearAttachments = () => {
     attachments.value.forEach((item) => {
@@ -176,6 +211,8 @@ const handleFileSelect = (e: Event) => {
 const resetForm = () => {
     createdTicket.value = null
     issueTypes.value = []
+    customFields.value = []
+    customFieldValues.value = {}
     clearAttachments()
     form.value = {
         project_key: "",
@@ -220,6 +257,25 @@ const fetchIssueTypes = async (projectKey: string) => {
         notify({ title: trans("Error"), text: trans("Failed to load issue types"), type: "error" })
     } finally {
         isLoadingIssueTypes.value = false
+    }
+}
+
+const fetchCustomFields = async (projectKey: string, issueTypeId: string) => {
+    customFields.value = []
+    customFieldValues.value = {}
+    if (!projectKey || !issueTypeId || !props.session?.ulid) return
+    isLoadingFields.value = true
+    try {
+        const { data } = await axios.get(
+            baseRoute("fields", [projectKey, issueTypeId]),
+            { withCredentials: true }
+        )
+        customFields.value = data?.data ?? []
+        customFieldValues.value = Object.fromEntries(customFields.value.map((f) => [f.id, ""]))
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to load required fields"), type: "error" })
+    } finally {
+        isLoadingFields.value = false
     }
 }
 
@@ -270,10 +326,21 @@ const submit = async () => {
             }
         }
         form.value.labels.forEach((label) => payload.append("labels[]", label))
-        if (form.value.reference_url.trim()) {
-            payload.append("reference_url", form.value.reference_url.trim())
+        const referenceUrl = normalizeUrl(form.value.reference_url)
+        if (referenceUrl) {
+            payload.append("reference_url", referenceUrl)
         }
         attachments.value.forEach((item) => payload.append("attachments[]", item.file))
+        customFields.value
+            .filter((field) => customFieldValues.value[field.id]?.toString().trim())
+            .forEach((field, index) => {
+                payload.append(`custom_fields[${index}][id]`, field.id)
+                payload.append(
+                    `custom_fields[${index}][kind]`,
+                    field.options.length ? "option" : field.type === "number" ? "number" : "text"
+                )
+                payload.append(`custom_fields[${index}][value]`, String(customFieldValues.value[field.id]))
+            })
 
         const { data } = await axios.post(baseRoute("ticket"), payload, {
             withCredentials: true,
@@ -304,6 +371,19 @@ watch(
     (projectKey, previous) => {
         if (projectKey && projectKey !== previous) {
             fetchIssueTypes(projectKey)
+        }
+    }
+)
+
+watch(
+    () => form.value.issue_type,
+    () => {
+        const issueTypeId = selectedIssueType.value?.id
+        if (form.value.project_key && issueTypeId) {
+            fetchCustomFields(form.value.project_key, issueTypeId)
+        } else {
+            customFields.value = []
+            customFieldValues.value = {}
         }
     }
 )
@@ -396,7 +476,7 @@ watch(
                     v-if="createdTicket.has_attachment"
                     class="px-2 py-0.5 text-[10px] font-medium rounded bg-gray-50 text-gray-600 border border-gray-100"
                 >
-                    {{ trans(":count file(s) attached", { count: createdTicket.attachment_count }) }}
+                    {{ trans(":count file(s) attached", { count: String(createdTicket.attachment_count) }) }}
                 </span>
             </div>
 
@@ -513,14 +593,44 @@ watch(
                 />
             </div>
 
+            <div v-if="isLoadingFields" class="text-xs text-gray-400 flex items-center gap-2">
+                <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
+                {{ trans("Loading required fields…") }}
+            </div>
+
+            <div v-for="field in customFields" :key="field.id">
+                <label class="block text-xs font-medium text-gray-500 mb-1">
+                    {{ field.name }}
+                    <span v-if="field.required" class="text-red-400">*</span>
+                </label>
+                <Select
+                    v-if="field.options.length"
+                    v-model="customFieldValues[field.id]"
+                    :options="field.options"
+                    optionLabel="label"
+                    optionValue="id"
+                    :placeholder="trans('Select an option')"
+                    class="w-full"
+                />
+                <InputText
+                    v-else
+                    v-model="customFieldValues[field.id]"
+                    :type="field.type === 'number' ? 'number' : 'text'"
+                    :placeholder="field.name"
+                    class="w-full"
+                />
+            </div>
+
             <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ trans("Reference URL") }}</label>
                 <InputText
                     v-model="form.reference_url"
-                    type="url"
-                    :placeholder="trans('https://…')"
+                    type="text"
+                    :placeholder="trans('example.com/page')"
                     class="w-full"
+                    @blur="form.reference_url = normalizeUrl(form.reference_url)"
                 />
+                <span class="text-[11px] text-gray-400">{{ trans("https:// is added automatically if omitted.") }}</span>
             </div>
 
             <div>
