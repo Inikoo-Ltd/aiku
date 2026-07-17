@@ -28,8 +28,10 @@ trait WithOrgStockNavigation
         /** @var OrgStock $orgStock */
         $orgStock = $model;
 
-        if ($request->route()->getName() == 'grp.org.warehouses.show.inventory.org_stock_families.show.stocks.show') {
-            $query->where('org_stock_family_id', $orgStock->orgStockFamily->id);
+        $query->where('organisation_id', $orgStock->organisation_id);
+
+        if ($request->route()->getName() == 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show') {
+            $query->where('org_stock_family_id', $orgStock->org_stock_family_id);
         }
     }
 
@@ -45,8 +47,13 @@ trait WithOrgStockNavigation
         $orgStock = $model;
 
         return match ($routeName) {
-            'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
             'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show',
+            'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
+            'grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.show',
+            'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.show',
+            'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.show',
+            'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.show',
+            'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.show',
             'grp.org.warehouses.show.inventory.org-stocks.show',
             'grp.org.warehouses.show.inventory.org_stock_movements.index' => [
                 'organisation' => $orgStock->organisation->slug,
