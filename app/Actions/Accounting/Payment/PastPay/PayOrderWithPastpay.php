@@ -42,8 +42,8 @@ class PayOrderWithPastpay extends RetinaAction
         $termDays         = Arr::get($modelData, 'days');
         $charges          = Arr::get($paymentAccountShop->data, 'charges.options', []);
         $chargePercentage = collect($charges)->where('days', $termDays)->first();
-        $chargeAmount     = round($paymentAmounts['total'] * ($chargePercentage['charge'] / 100), 2);
-        $toPay            = $paymentAmounts['total'] + $chargeAmount;
+        $chargeAmount     = round($paymentAmounts['by_other'] * ($chargePercentage['charge'] / 100), 2);
+        $toPay            = $paymentAmounts['by_other'] + $chargeAmount;
 
         $toPay = (int)round((float)$toPay * 100);
 
