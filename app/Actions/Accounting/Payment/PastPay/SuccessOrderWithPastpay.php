@@ -1,21 +1,20 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 02-07-2025-17h-39m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 17 Jul 2026 15:18:59 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Retina\Dropshipping\Orders;
+namespace App\Actions\Accounting\Payment\PastPay;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\UpdateOrderPaymentApiPoint;
-use App\Actions\Accounting\PaymentGateway\Pastpay\WithPastpayConfiguration;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
+use App\Actions\Retina\Dropshipping\Orders\SettleRetinaOrderWithBalance;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;

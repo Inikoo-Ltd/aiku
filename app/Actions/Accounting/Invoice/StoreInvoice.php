@@ -8,13 +8,13 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\Payment\PastPay\FinalizeOrderWithPastpay;
 use App\Actions\CRM\Customer\MatchCustomerProspects;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
-use App\Actions\Retina\Dropshipping\Orders\FinalizeOrderWithPastpay;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;

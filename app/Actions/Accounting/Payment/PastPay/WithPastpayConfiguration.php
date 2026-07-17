@@ -1,14 +1,19 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 17 Jul 2026 15:18:07 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Accounting\PaymentGateway\Pastpay;
+namespace App\Actions\Accounting\Payment\PastPay;
 
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\PaymentAccount;
+use App\Models\Ordering\Order;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Http\Client\Response;
-use App\Models\Ordering\Order;
 
 trait WithPastpayConfiguration
 {
@@ -42,6 +47,9 @@ trait WithPastpayConfiguration
         return Arr::get($this->paymentAccount->data, 'tax_number');
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     protected function pastpayPost(string $endpoint, array $payload): array
     {
 
@@ -51,6 +59,9 @@ trait WithPastpayConfiguration
         );
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     protected function pastpayGet(string $endpoint, array $query = []): array
     {
         return $this->pastpayHandleResponse(
@@ -59,6 +70,9 @@ trait WithPastpayConfiguration
         );
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     protected function pastpayPatch(string $endpoint, array $payload): array
     {
         return $this->pastpayHandleResponse(
@@ -67,6 +81,9 @@ trait WithPastpayConfiguration
         );
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     protected function pastpayDelete(string $endpoint): array
     {
         return $this->pastpayHandleResponse(
@@ -86,7 +103,7 @@ trait WithPastpayConfiguration
         $code    = $body['code']    ?? $response->status();
 
         throw new \RuntimeException(
-            "[PastPay] {$endpoint} → HTTP {$response->status()}: {$message} (code: {$code})"
+            "[PastPay] $endpoint → HTTP {$response->status()}: $message (code: $code)"
         );
     }
 
@@ -128,11 +145,17 @@ trait WithPastpayConfiguration
         ], $extra);
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     protected function pastpayInitiateOrder(Order $order, array $extra = []): array
     {
         return $this->pastpayPost('store/order', $this->pastpayBuildOrderPayload($order, $extra));
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     protected function pastpayFinalizeOrder(Invoice $invoice, array $extra = []): array
     {
         $pastpayOrderId = $this->pastpayResolveOrderId($invoice->order);
@@ -143,19 +166,28 @@ trait WithPastpayConfiguration
         );
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     protected function pastpayCancelOrder(Order $order): array
     {
         return $this->pastpayDelete('/order/' . $this->pastpayResolveOrderId($order));
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     protected function pastpayGetOrder(Order $order): array
     {
         return $this->pastpayGet('/order/' . $this->pastpayResolveOrderId($order));
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     protected function pastpayGetDebtorLimit(string $debtorTaxNumber): array
     {
-        return $this->pastpayGet("/debtor/{$debtorTaxNumber}/limit");
+        return $this->pastpayGet("/debtor/$debtorTaxNumber/limit");
     }
 
     private function pastpayResolveOrderId(Order $order): string

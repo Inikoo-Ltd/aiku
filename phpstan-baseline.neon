@@ -31,7 +31,7 @@ parameters:
 			path: app/Actions/Accounting/PaymentAccountShop/UpdatePaymentAccountShop.php
 
 		-
-			message: '#^Access to an undefined property App\\Actions\\Accounting\\PaymentGateway\\Pastpay\\StorePastpayPaymentApi\:\:\$shop\.$#'
+			message: '#^Access to an undefined property App\\Actions\\Accounting\\Payment\\PastPay\\StorePastpayPaymentApi\:\:\$shop\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Actions/Accounting/PaymentGateway/Pastpay/StorePastpayPaymentApi.php
@@ -2953,7 +2953,7 @@ parameters:
 			path: app/Actions/Retina/Dropshipping/Orders/SubmitRetinaOrder.php
 
 		-
-			message: '#^Method App\\Actions\\Retina\\Dropshipping\\Orders\\SuccessOrderWithPastpay\:\:handle\(\) invoked with 2 parameters, 1 required\.$#'
+			message: '#^Method App\\Actions\\Accounting\\Payment\\PastPay\\SuccessOrderWithPastpay\:\:handle\(\) invoked with 2 parameters, 1 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: app/Actions/Retina/Dropshipping/Orders/SuccessOrderWithPastpay.php
