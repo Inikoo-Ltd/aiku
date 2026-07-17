@@ -26,7 +26,7 @@ import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
 const layout = inject('layout', retinaLayoutStructure)
-console.log(layout)
+
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
     hasInBasket?: any
@@ -329,10 +329,10 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <div v-if="layout?.iris?.is_logged_in">
+            <section v-if="layout?.iris?.is_logged_in">
                   <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket/>
-            </div>
-            <div v-else class="text-xs leading-tight space-y-1">
+            </section>
+            <section v-else class="text-xs leading-tight space-y-1">
 
                 <!-- CODE + RRP + V2-->
                 <div class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
@@ -347,7 +347,7 @@ defineExpose({
                         class="w-full rounded-none text-xs py-2" full :injectStyle="buttonStyleLogin" />
                 </a>
 
-            </div>
+            </section>
         </div>
 
         <div v-if="idxSlideLoading"

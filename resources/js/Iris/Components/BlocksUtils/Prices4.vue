@@ -170,7 +170,7 @@ const _popoverProfit = ref(null)
         <!-- HEADER -->
         <div style="margin-bottom: 0.25rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; font-size: 11px;">
             <div class="flex items-center gap-2">
-                <span class="font-medium text-[#333]">
+                <span class="font-medium ">
                     {{ product?.code }}
                 </span>
 
