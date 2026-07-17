@@ -33,6 +33,10 @@ trait WithOrgStockNavigation
         if ($request->route()->getName() == 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show') {
             $query->where('org_stock_family_id', $orgStock->org_stock_family_id);
         }
+
+        if (str_contains($request->route()->getName(), 'grp.org.warehouses.show.inventory.org_stocks.')) {
+            $query->where('organisation_id', $orgStock->organisation_id);
+        }
     }
 
     protected function getNavigationLabel(Model $model): string
