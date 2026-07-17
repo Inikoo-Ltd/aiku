@@ -12,17 +12,34 @@ trait WithBtreeConfiguration
 {
     protected function btreeClient(PaymentAccount $paymentAccount): PendingRequest
     {
+        [$clientId, $clientSecret] = $this->getBtreeCredentials($paymentAccount);
+
         return Http::baseUrl($this->getBtreeBaseUrl())
-            ->withBasicAuth(
-                Arr::get($paymentAccount->data, 'braintree_client_id', ''),
-                Arr::get($paymentAccount->data, 'braintree_client_secret', '')
-            )
+            ->withBasicAuth($clientId, $clientSecret)
             ->withHeaders([
                 'Braintree-Version' => '2019-01-01',
                 'Accept'            => 'application/json',
                 'Content-Type'      => 'application/json',
             ])
             ->retry(2, 500);
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    protected function getBtreeCredentials(PaymentAccount $paymentAccount): array
+    {
+        if (!app()->isProduction() && config('app.sandbox.btree.client_id')) {
+            return [
+                config('app.sandbox.btree.client_id'),
+                config('app.sandbox.btree.client_secret', ''),
+            ];
+        }
+
+        return [
+            Arr::get($paymentAccount->data, 'braintree_client_id') ?: Arr::get($paymentAccount->data, 'credentials.client_id', ''),
+            Arr::get($paymentAccount->data, 'braintree_client_secret') ?: Arr::get($paymentAccount->data, 'credentials.client_secret', ''),
+        ];
     }
 
     protected function getBtreeBaseUrl(): string

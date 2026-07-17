@@ -8,6 +8,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 const props = defineProps<{
     data: {
@@ -22,12 +23,13 @@ const props = defineProps<{
     }
     needToPay: number
     currency_code: string
-    order?: {
+    order: {
         id: number
+        slug: string
     }
 }>()
 
-const locale = inject('locale', {})
+const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
 const currencyCode = props.data.data?.currency || props.currency_code || layout.iris?.currency?.code
@@ -35,6 +37,26 @@ const currencyCode = props.data.data?.currency || props.currency_code || layout.
 const BRAINTREE_WEB_VERSION = '3.101.0'
 
 const status = ref<'loading' | 'unavailable' | 'ready' | 'paying' | 'processing'>('loading')
+
+const clientToken = ref<string | null>(props.data.data?.client_token || null)
+const amountToPay = ref<number>(Number(props.needToPay))
+
+const fetchClientToken = async () => {
+    if (clientToken.value) {
+        return
+    }
+
+    const response = await axios.get(
+        route('retina.json.get_btree_client_token_to_pay_order', {
+            order: props.order.id,
+        })
+    )
+
+    if (response.data.status === 'success' && response.data.token) {
+        clientToken.value = response.data.token
+        amountToPay.value = Number(response.data.amount_to_pay)
+    }
+}
 
 const loadScript = (src: string) => {
     return new Promise<void>((resolve, reject) => {
@@ -56,22 +78,22 @@ const submitNonce = async (nonce: string) => {
 
     try {
         const response = await axios.post(
-            route('retina.webhooks.braintree.order_payment_paypal', {
-                orderPaymentApiPoint: props.data.order_payment_api_point,
+            route('retina.models.place_order_pay_by_btree', {
+                order: props.order.slug,
             }),
             {
-                nonce: nonce,
+                payment_method_nonce: nonce,
             }
         )
 
-        if (response.data.status === 'success') {
+        if (response.data.status === 'ok') {
             router.post(route('retina.redirect_success_paid_order', {
-                order: response.data.order_id,
+                order: props.order.id,
             }))
         } else {
             notify({
                 title: trans('Something went wrong'),
-                text: response.data.msg || trans('Failed to communicate with the payment service.'),
+                text: response.data.message || trans('Failed to communicate with the payment service.'),
                 type: 'error',
             })
             status.value = 'ready'
@@ -88,19 +110,21 @@ const submitNonce = async (nonce: string) => {
 }
 
 const initialisePaypalButton = async () => {
-    if (!props.data.data?.client_token) {
-        status.value = 'unavailable'
-        return
-    }
-
     try {
+        await fetchClientToken()
+
+        if (!clientToken.value) {
+            status.value = 'unavailable'
+            return
+        }
+
         await loadScript(`https://js.braintreegateway.com/web/${BRAINTREE_WEB_VERSION}/js/client.min.js`)
         await loadScript(`https://js.braintreegateway.com/web/${BRAINTREE_WEB_VERSION}/js/paypal-checkout.min.js`)
 
         const braintree = (window as any).braintree
 
         const clientInstance = await braintree.client.create({
-            authorization: props.data.data.client_token,
+            authorization: clientToken.value,
         })
 
         const paypalCheckoutInstance = await braintree.paypalCheckout.create({
@@ -121,7 +145,7 @@ const initialisePaypalButton = async () => {
             createOrder: () => {
                 return paypalCheckoutInstance.createPayment({
                     flow: 'checkout',
-                    amount: Number(props.needToPay).toFixed(2),
+                    amount: amountToPay.value.toFixed(2),
                     currency: currencyCode,
                 })
             },
@@ -165,7 +189,7 @@ onMounted(() => {
 <template>
     <div class="relative w-full max-w-xl mx-auto my-4 md:my-8 px-4">
         <div class="mb-2 pl-2">
-            {{ trans("Need to pay") }}: <span class="font-bold">{{ locale.currencyFormat(currencyCode, Number(props.needToPay).toFixed(2)) }}</span>
+            {{ trans("Need to pay") }}: <span class="font-bold">{{ locale.currencyFormat(currencyCode, amountToPay.toFixed(2)) }}</span>
         </div>
 
         <div class="relative min-h-[200px] border border-gray-300 rounded p-6">

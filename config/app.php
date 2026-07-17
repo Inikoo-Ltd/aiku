@@ -306,6 +306,10 @@ return [
             'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
         ],
+        'btree'           => [
+            'client_id'     => env('BTREE_CLIENT_ID'),
+            'client_secret' => env('BTREE_CLIENT_SECRET'),
+        ],
         'luigisbox'       => [
             'tracker_id'  => env('LS_TRACKER_ID'),
             'private_key' => env('LS_PRIVATE_KEY'),
