@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLongArrowRight } from "@fal"
 import { faInfoCircle, faForklift, faTimes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { InputNumber } from 'primevue'
+import { InputNumber, Textarea } from 'primevue'
 import { ref, computed, onMounted } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
@@ -403,7 +403,7 @@ onMounted(() => {
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
-            <div>
+            <div class="min-w-0">
                 <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
                     {{ ctrans('Transfer reason') }}
                     <span class="text-red-500">*</span>
@@ -421,25 +421,21 @@ onMounted(() => {
                     :filter-results="false"
                     :classes="{ container: selectedReason ? 'multiselect' : 'multiselect !border-red-300' }"
                 />
-                <div class="mt-1 text-xs h-4" :class="selectedReason ? 'invisible' : 'text-red-500'">
+                <div v-if="!selectedReason" class="mt-1 text-xs h-4" :class="selectedReason ? 'invisible' : 'text-red-500'">
                     <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
                     {{ ctrans('Select a reason before saving') }}
                 </div>
             </div>
 
-            <div>
+            <div class="min-w-0">
                 <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
                     {{ ctrans('Note') }}
                     <span class="font-normal normal-case tracking-normal text-gray-400 italic">
                         {{ ctrans('optional') }}
                     </span>
                 </label>
-                <textarea
-                    v-model.trim="note"
-                    :rows="1"
-                    :placeholder="ctrans('Add more details about this move')"
-                    class="block w-full h-10 py-2 rounded border-gray-300 placeholder:text-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm leading-5 resize-none"
-                />
+                <Textarea v-model.trim="note" rows="1" :autoResize="true"
+                :placeholder="ctrans('Add more details about this move')" class="w-full rounded-xl" />
             </div>
         </div>
 

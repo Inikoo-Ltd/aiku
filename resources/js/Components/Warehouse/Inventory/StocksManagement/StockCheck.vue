@@ -6,7 +6,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faSave } from "@fal"
 import { faArrowRight, faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { InputNumber } from 'primevue'
 import { inject, ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
@@ -15,6 +14,7 @@ import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
 import { formatDistanceStrict } from 'date-fns'
 import { cloneDeep } from 'lodash'
+import { InputNumber, Textarea } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { StockLocation } from '@/types/Inventory/StocksManagement'
 import Multiselect from '@vueform/multiselect'
@@ -41,6 +41,7 @@ const cloneLocations = ref(
     cloneDeep(props.locations).sort((a, b) => a.code.localeCompare(b.code))
 )
 
+const isLoading = ref<boolean>(false)
 const inputRefs = ref<Record<number, any>>({})
 const focusInterval = ref<number | null>(null)
 const listLoadingLocations = ref<number[]>([])
@@ -89,7 +90,7 @@ const bulkSubmitAudit = () => {
             preserveScroll: true,
             preserveState: true,
             onStart: () => {
-                listLoadingLocations.value.push(Object.keys(modifiedLocationsQuantity.value));
+                isLoading.value = true
             },
             onSuccess: () => {
                 notify({
@@ -107,7 +108,7 @@ const bulkSubmitAudit = () => {
                 })
             },
             onFinish: () => {
-                listLoadingLocations.value = [];
+                isLoading.value = false
             },
         }
     )
@@ -266,7 +267,7 @@ const currentPage = ref(1);
                 </div>
             </div>
             <div v-else> 
-                <div class="grid grid-cols-6 gap-3 border-b pb-2 font-semibold">
+                <div class="hidden md:grid grid-cols-6 gap-3 border-b pb-2 font-semibold">
                     <div class="col-span-1">
                         {{ ctrans('Location Code') }}
                     </div>
@@ -284,11 +285,11 @@ const currentPage = ref(1);
                         </span>
                     </div>
                 </div>
-                <div v-for="location in modifiedLocationsQuantity" :key="location.id" class="grid grid-cols-6 gap-3 border-b py-2">
-                    <div class="col-span-1 flex items-center h-10">
-                        {{ location.code }}
+                <div v-for="location in modifiedLocationsQuantity" :key="location.id" class="grid grid-cols-2 md:grid-cols-6 gap-x-3 gap-y-2 border-b py-3 md:py-2">
+                    <div class="min-w-0 flex items-center md:h-10 font-medium md:font-normal">
+                        <span class="truncate">{{ location.code }}</span>
                     </div>
-                    <div class="col-span-1 flex items-center gap-x-2 h-10 tabular-nums">
+                    <div class="min-w-0 flex items-center justify-end md:justify-start gap-x-2 md:h-10 tabular-nums">
                         {{ location.quantity }}
                         <span
                             class="border rounded px-1.5 py-0.5 text-xs font-semibold"
@@ -297,7 +298,11 @@ const currentPage = ref(1);
                             {{ location.delta > 0 ? '+' : '' }}{{ location.delta }}
                         </span>
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-2 min-w-0">
+                        <label class="md:hidden block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                            {{ ctrans('Reason') }}
+                            <span class="text-red-500">*</span>
+                        </label>
                         <Multiselect
                             v-model="location.reason"
                             :options="(location.delta > 0 ? reasons?.increase : reasons?.decrease) ?? []"
@@ -308,16 +313,18 @@ const currentPage = ref(1);
                             :canDeselect="false"
                             :hideSelected="false"
                             :searchable="true"
-                            :filter-results="false"                           
+                            :filter-results="false"
                         />
                     </div>
-                    <div class="col-span-2">
-                        <textarea
-                            v-model.trim="location.note"
-                            :rows="1"
-                            :placeholder="ctrans('Add more details about this audit')"
-                            class="block w-full h-10 py-2 rounded border-gray-300 placeholder:text-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm leading-5 resize-none"
-                        />
+                    <div class="col-span-2 min-w-0">
+                        <label class="md:hidden block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                            {{ ctrans('Note') }}
+                            <span class="font-normal normal-case tracking-normal text-gray-400 italic">
+                                {{ ctrans('optional') }}
+                            </span>
+                        </label>
+                        <Textarea v-model.trim="location.note" rows="1" :autoResize="true"
+                        :placeholder="ctrans('Add more details about this audit')" class="w-full rounded-xl" />
                     </div>
                 </div>
             </div>
@@ -350,7 +357,7 @@ const currentPage = ref(1);
             />
             <Button 
                 :label="currentPage == 1 ? ctrans('Next') : ctrans('Save')" 
-                :type="'primary'" 
+                :type="'primary'"                 
                 :icon="currentPage == 1 ? faArrowRight : faFloppyDisk" 
                 class="ml-auto" @click="() => {
                     if (currentPage == 1) {
@@ -364,7 +371,7 @@ const currentPage = ref(1);
                         ? Object.keys(modifiedLocationsQuantity).length === 0
                         : Object.values(modifiedLocationsQuantity).some(item => !item.reason)
                 "
-                :loading="listLoadingLocations.length > 1"
+                :loading="isLoading"
             />
         </div>
     </div>
