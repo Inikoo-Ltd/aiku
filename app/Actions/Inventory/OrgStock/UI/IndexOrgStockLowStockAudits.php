@@ -53,20 +53,22 @@ class IndexOrgStockLowStockAudits extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $orderedSubQuery = DeliveryNoteItem::query()
-            ->selectRaw('COALESCE(SUM(delivery_note_items.quantity_required - COALESCE(delivery_note_items.quantity_dispatched, 0)), 0)')
+        $orderedDemand = DeliveryNoteItem::query()
             ->join('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id')
-            ->whereColumn('delivery_note_items.org_stock_id', 'org_stocks.id')
-            ->whereNotIn('delivery_notes.state', [
-                DeliveryNoteStateEnum::DISPATCHED->value,
-                DeliveryNoteStateEnum::CANCELLED->value,
-            ])
+            ->where('delivery_note_items.organisation_id', $organisation->id)
             ->whereNotIn('delivery_note_items.state', [
                 DeliveryNoteItemStateEnum::DISPATCHED->value,
                 DeliveryNoteItemStateEnum::CANCELLED->value,
                 DeliveryNoteItemStateEnum::OUT_OF_STOCK->value,
                 DeliveryNoteItemStateEnum::NO_DISPATCHED->value,
-            ]);
+            ])
+            ->whereNotIn('delivery_notes.state', [
+                DeliveryNoteStateEnum::DISPATCHED->value,
+                DeliveryNoteStateEnum::CANCELLED->value,
+            ])
+            ->groupBy('delivery_note_items.org_stock_id')
+            ->select('delivery_note_items.org_stock_id')
+            ->selectRaw('SUM(delivery_note_items.quantity_required - COALESCE(delivery_note_items.quantity_dispatched, 0)) as ordered');
 
         $queryBuilder = QueryBuilder::for(OrgStock::class);
         $queryBuilder->where('org_stocks.organisation_id', $organisation->id);
@@ -80,11 +82,12 @@ class IndexOrgStockLowStockAudits extends OrgAction
                 ->whereRaw("(picking_los.settings->>'max_stock') IS NOT NULL")
                 ->whereRaw("picking_los.quantity <= (picking_los.settings->>'min_stock')::numeric");
         });
+        $queryBuilder->leftJoinSub($orderedDemand, 'ordered_demand', 'ordered_demand.org_stock_id', '=', 'org_stocks.id');
 
         return $queryBuilder
             ->defaultSort('org_stocks.code')
             ->select('org_stocks.*')
-            ->addSelect(['ordered' => $orderedSubQuery])
+            ->selectRaw('COALESCE(ordered_demand.ordered, 0) as ordered')
             ->with(['locationOrgStocks' => fn ($query) => $query->with('location')])
             ->allowedSorts(['code', 'quantity_available'])
             ->allowedFilters([$globalSearch])
