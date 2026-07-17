@@ -29,6 +29,7 @@ use App\Actions\Discounts\Offer\StoreGiftsOffers;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\StoreProductDiscount;
+use App\Actions\Discounts\Offer\StoreProductStepDiscount;
 use App\Actions\Discounts\Offer\StoreShopOffer;
 use App\Actions\Discounts\Offer\StoreVoucherOffers;
 use App\Actions\Discounts\Offer\SuspendOffer;
@@ -1544,6 +1545,50 @@ describe('calculate order discounts', function () {
 
         SuspendOffer::run($amountOffer);
         CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('CalculateOrderDiscounts: product step discount', function () {
+        $order       = Order::first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((int)$transaction->quantity_ordered)->toBe(3);
+
+        $offer = StoreProductStepDiscount::make()->action(
+            $this->product,
+            [
+                'steps'    => [
+                    ['min_quantity' => 5, 'percentage_off' => 0.25],
+                    ['min_quantity' => 1, 'percentage_off' => 0.15],
+                ],
+                'duration' => 'interval',
+                'start_at' => now(),
+                'end_at'   => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        $offer->refresh();
+
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and($offer->status)->toBeTrue()
+            ->and($offer->trigger_type)->toBe('Product')
+            ->and($offer->type)->toBe('Product Quantity Ordered')
+            ->and($offer->allowance_signature)->toBe('product:'.$this->product->id.':percentage_off:1-0.15,5-0.25')
+            ->and(Arr::get($offer->offerAllowances->first()->data, 'steps.0.min_quantity'))->toBe(1);
+
+        CalculateOrderDiscounts::run($order);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(255.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($offer->id);
+
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 5]);
+        $transaction->refresh();
+        expect((float)$transaction->gross_amount)->toBe(500.0)
+            ->and((float)$transaction->net_amount)->toBe(375.0);
+
+        SuspendOffer::run($offer);
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 3]);
         $transaction->refresh();
         expect((float)$transaction->net_amount)->toBe(270.0);
     });

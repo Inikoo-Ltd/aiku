@@ -609,9 +609,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     {
         $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
         $productId        = Arr::get($allowanceOpsData, 'product_id');
-        $percentageOff    = max(0.0, min(1.0, (float)Arr::get($allowanceOpsData, 'percentage_off', 0)));
 
-        if (!$productId || $percentageOff <= 0) {
+        if (!$productId) {
             return;
         }
 
@@ -622,12 +621,29 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
-        $itemQuantity = (int)Arr::get($allowanceOpsData, 'item_quantity', 0);
-        $itemAmount   = (float)Arr::get($allowanceOpsData, 'item_amount', 0);
-        if ($itemQuantity > 0 && $productTransactions->sum('quantity_ordered') < $itemQuantity) {
-            return;
+        if ($steps = Arr::get($allowanceOpsData, 'steps')) {
+            $totalQuantity = (int)$productTransactions->sum('quantity_ordered');
+            $percentageOff = 0.0;
+            foreach (collect($steps)->sortBy('min_quantity') as $step) {
+                if ($totalQuantity >= (int)Arr::get($step, 'min_quantity', PHP_INT_MAX)) {
+                    $percentageOff = (float)Arr::get($step, 'percentage_off', 0);
+                }
+            }
+        } else {
+            $percentageOff = (float)Arr::get($allowanceOpsData, 'percentage_off', 0);
+
+            $itemQuantity = (int)Arr::get($allowanceOpsData, 'item_quantity', 0);
+            $itemAmount   = (float)Arr::get($allowanceOpsData, 'item_amount', 0);
+            if ($itemQuantity > 0 && $productTransactions->sum('quantity_ordered') < $itemQuantity) {
+                return;
+            }
+            if ($itemAmount > 0 && $productTransactions->sum('gross_amount') < $itemAmount) {
+                return;
+            }
         }
-        if ($itemAmount > 0 && $productTransactions->sum('gross_amount') < $itemAmount) {
+
+        $percentageOff = max(0.0, min(1.0, $percentageOff));
+        if ($percentageOff <= 0) {
             return;
         }
 
