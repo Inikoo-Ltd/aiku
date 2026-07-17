@@ -66,6 +66,7 @@ const irisLangFilter = () => {
 
 export default defineConfig(
   {
+    cacheDir: "node_modules/.vite-iris",
     server : {
       cors : true,
       watch: {
