@@ -75,7 +75,7 @@ const props = defineProps<{
     redirects?: {}
     external_links?: {},
     crawls?: {},
-    analytics: object
+    analytics?: object
     route_welcome :routeType
     route_storefront: routeType
     route_landing_page?: routeType

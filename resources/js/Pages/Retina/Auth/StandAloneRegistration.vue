@@ -16,6 +16,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
 import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
+import { pushGtmEventAndWaitForTags, buildRegistrationUserData } from "@/Composables/useGtm"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { get } from "lodash-es"
@@ -113,11 +114,14 @@ const submit = () => {
 
 			},
 			onSuccess: async () => {
-				window.dataLayer = window.dataLayer || [];
-				window.dataLayer.push({
-					event: 'registrationSuccess'
+				const gtmTagsFired = pushGtmEventAndWaitForTags('registrationSuccess', {
+					user_data: buildRegistrationUserData(form, props.countriesAddressData),
 				})
-				window.location.href = await getRefRedirect()
+
+				const redirectUrl = await getRefRedirect()
+				await gtmTagsFired
+
+				window.location.href = redirectUrl
 			}
 		})
 	} else {

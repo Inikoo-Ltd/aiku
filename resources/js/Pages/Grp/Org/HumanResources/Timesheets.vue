@@ -30,8 +30,8 @@ const props = defineProps<{
         absent: number,
         total: number
     }
-    employees: {}
-    employee: {}
+    employees?: {}
+    employee?: {}
 }>()
 
 

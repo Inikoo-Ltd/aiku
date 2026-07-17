@@ -66,8 +66,14 @@ const closeSidePanel = () => {
 
 // settingchat
 const chatSettingVisible = ref(false)
+const settingInitialTab = ref<"general" | "jira">("general")
 const selectedContact = ref<Contact | null>(null)
 const openGlobalChatSettings = () => {
+    settingInitialTab.value = "general"
+    chatSettingVisible.value = true
+}
+const openJiraSettings = () => {
+    settingInitialTab.value = "jira"
     chatSettingVisible.value = true
 }
 
@@ -401,10 +407,8 @@ onMounted(async () => {
         </div>
 
         <Dialog v-model:visible="chatSettingVisible" modal header="Chat Settings"
-            :style="{ width: '90vw', maxWidth: '560px' }">
-            <div class="p-2">
-                <SettingChat :contact="selectedContact" @close="chatSettingVisible = false" />
-            </div>
+            :style="{ width: '90vw', maxWidth: '560px' }" :breakpoints="{ '640px': '95vw' }">
+            <SettingChat :contact="selectedContact" :initial-tab="settingInitialTab" @close="chatSettingVisible = false" />
         </Dialog>
 
         <!-- My Chats / Team Chats toggle -->
@@ -586,7 +590,7 @@ onMounted(async () => {
                     <MessageAreaAgent :messages="messages" :session="selectedSession" @back="back"
                         @send-message="handleSendMessage" @close-session="closeSession" @view-history="showHistoryPanel"
                         @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
-                        @transfer-agent-success="onTransferAgentSuccess" />
+                        @transfer-agent-success="onTransferAgentSuccess" @open-jira-settings="openJiraSettings" />
                 </div>
             </div>
         </div>

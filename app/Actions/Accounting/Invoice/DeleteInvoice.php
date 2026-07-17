@@ -77,7 +77,7 @@ class DeleteInvoice extends OrgAction
     public function htmlResponse(Invoice $invoice): RedirectResponse
     {
         if ($invoice->order) {
-            return Redirect::route('grp.helpers.redirect_order', [
+            return Redirect::route('grp.majordomo.redirect_order', [
                 $invoice->order->id
             ]);
         }

@@ -100,7 +100,7 @@ class IndexOrganisationStockHistories extends OrgAction
             $table
                 ->withLabelRecord([__('record'), __('records')])
                 ->column(key: 'bucket', label: $bucketLabel, canBeHidden: false, sortable: true, type: 'date')
-                ->column(key: 'number_org_stocks', label: __('Total SKUs'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_org_stocks', label: __('Total SKOs'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_out_of_stock_org_stocks', label: __('Out of Stock'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_locations', label: __('Locations'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(
@@ -117,7 +117,7 @@ class IndexOrganisationStockHistories extends OrgAction
             //            }
 
 
-            $table->column(key: 'number_org_stocks_not_sold_1y', label: __('No sold 1Y'), icon: 'fal fa-ban', tooltip: __('Number of SKUs not sold in more than 1 year'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'number_org_stocks_not_sold_1y', label: __('No sold 1Y'), icon: 'fal fa-ban', tooltip: __('Number of SKOs not sold in more than 1 year'), canBeHidden: false, sortable: true, align: 'right');
             $table->column(
                 key: 'value_dormant_stock_1y',
                 label: __('Dormant 1Y'),

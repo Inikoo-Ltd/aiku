@@ -5,6 +5,7 @@ import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 /* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
+/* import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue" */
 
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
@@ -52,7 +53,7 @@ const Topbar1Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1Iris
 const Topbar2Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2Iris.vue"))
 
 
-const Menu1Workshop = async(() => import("@/Components/CMS/Website/Menus/Menu1Workshop.vue"))
+const Menu1Workshop = async(() => import("@/Iris/Components/IrisBlocks/Menu1Iris.vue"))
 const Footer1Iris = async(() => import("@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"))
 const SeeAlso1Iris = async(() => import("@/Iris/Components/IrisBlocks/SeeAlso1Iris.vue"))
 const family1Iris = async(() => import("@/Iris/Components/IrisBlocks/family1Iris.vue"))

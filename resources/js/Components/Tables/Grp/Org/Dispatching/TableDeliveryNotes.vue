@@ -101,7 +101,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 				deliveryNote.slug,
 			])
 		default:
-			return route("grp.helpers.redirect_delivery_notes", [deliveryNote.id])
+			return route("grp.majordomo.redirect_delivery_notes", [deliveryNote.id])
 	}
 }
 
@@ -130,7 +130,7 @@ function returnNoteRoute(returnDeliveryNote) {
 
 			])
 		default:
-			return route("grp.helpers.redirect_return_notes", returnDeliveryNote.id)
+			return route("grp.majordomo.redirect_return_notes", returnDeliveryNote.id)
 	}
 }
 
@@ -202,7 +202,7 @@ const onClickPick = () => {
 const generateRouteDeliveryNote = (id: string) => {
 	if (!id) return ""
 
-	return route("grp.helpers.redirect_delivery_notes", {
+	return route("grp.majordomo.redirect_delivery_notes", {
 		deliveryNote: id,
 	})
 }

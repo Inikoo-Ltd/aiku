@@ -66,7 +66,7 @@ class IndexProductsInMasterProduct extends OrgAction
         $queryBuilder->where('shops.state', '!=', ShopStateEnum::CLOSED->value);
 
         $queryBuilder
-            ->defaultSort('products.code')
+            ->defaultSort('products.code', 'products.id')
             ->select([
                 'products.id',
                 'products.code',

@@ -10,6 +10,7 @@ namespace App\Models\Inventory;
 
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InWarehouse;
@@ -30,8 +31,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property OrgStockMovementFlowEnum $flow
  * @property bool $is_delivered
  * @property bool $is_received
- * @property bool $is_migration_point
- * @property string|null $migration_source_id
  * @property int|null $stock_family_id
  * @property int|null $org_stock_family_id
  * @property int|null $stock_id
@@ -56,6 +55,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric|null $cost_per_sku
  * @property int|null $user_id
  * @property string|null $note
+ * @property bool $is_migration_point
+ * @property string|null $migration_source_id
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
@@ -89,6 +90,7 @@ class OrgStockMovement extends Model
             'cost_per_sku'          => 'decimal:6',
             'fixed_internal_helper' => 'boolean',
             'is_migration_point'    => 'boolean',
+            'reason'                => OrgStockMovementReasonEnum::class,
         ];
     }
 

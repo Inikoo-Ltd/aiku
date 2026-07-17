@@ -126,7 +126,7 @@ function customerRoute(order: Order) {
 const generateRouteDeliveryNote = (id: string) => {
     if (!id) return ''
 
-    return route('grp.helpers.redirect_delivery_notes', {
+    return route('grp.majordomo.redirect_delivery_notes', {
         deliveryNote: id
     })
 }

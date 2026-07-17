@@ -41,7 +41,7 @@ const props = defineProps<{
     stored_items?: {}
     history?: {}
     movements?: {}
-    showcase: {}
+    showcase?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)

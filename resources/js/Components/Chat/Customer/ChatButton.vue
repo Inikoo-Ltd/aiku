@@ -354,6 +354,9 @@ const initWebSocket = () => {
 
         if (e.session_status === "closed") {
             isRating.value = true
+        } else {
+            isRating.value = false
+            rating.value = 0
         }
 
         forceScrollBottom()

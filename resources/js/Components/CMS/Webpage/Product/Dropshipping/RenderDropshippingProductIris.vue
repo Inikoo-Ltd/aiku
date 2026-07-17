@@ -15,6 +15,7 @@ const productPageComponents: Record<string, any> = {
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import { useProductStructuredData } from "@/Iris/Composables/useProductStructuredData"
 import { set } from "lodash-es"
+import { pushGtmEvent } from "@/Composables/useGtm"
 
 library.add(
   faCube,
@@ -305,15 +306,43 @@ watch(
 const { mountProductStructuredData, removeStructuredDataScript } = useProductStructuredData()
 const productStructuredDataScript = ref<HTMLScriptElement | null>(null)
 
-onMounted(() => {
-  if (props.fieldValue?.product?.luigi_identity) {
+const pushViewItem = () => {
+  const prod = props.fieldValue?.product
+
+  if (!prod) {
+    return
+  }
+
+  if (prod.luigi_identity) {
     window?.dataLayer?.push({
       event: "view_item",
       ecommerce: {
-        items: [{ item_id: props.fieldValue.product.luigi_identity }],
+        items: [{ item_id: prod.luigi_identity }],
       },
     })
   }
+
+  const item: Record<string, any> = {
+    item_id: prod.slug,
+    item_name: prod.name,
+    price: prod.price,
+  }
+
+  if (prod.family_code) {
+    item.item_category = prod.family_code
+  }
+
+  pushGtmEvent("view_item", {
+    ecommerce: {
+      currency: prod.currency_code ?? layout?.iris?.currency?.code,
+      value: prod.price,
+      items: [item],
+    },
+  })
+}
+
+onMounted(() => {
+  pushViewItem()
 
   productStructuredDataScript.value = mountProductStructuredData({
     product: props.fieldValue?.product,

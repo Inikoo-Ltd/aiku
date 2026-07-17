@@ -43,9 +43,9 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
           current: string
           navigation: {}
       }
-      showcase: any
-      dispatched_emails: any
-      history: any
+      showcase?: any
+      dispatched_emails?: any
+      history?: any
   }>()
   
   const currentTab = ref(props.tabs.current)

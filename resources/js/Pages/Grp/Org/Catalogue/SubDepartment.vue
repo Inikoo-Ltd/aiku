@@ -74,13 +74,13 @@ const props = defineProps<{
         detach_families: routeType
     }
     url_master : routeType
-    showcase: {
+    showcase?: {
 
     }
     mini_breadcrumbs?: any[]
-    customers: {}
-    mailshots: {}
-    products: {}
+    customers?: {}
+    mailshots?: {}
+    products?: {}
     history?: {}
     images?: object
     sales?: object
@@ -95,7 +95,7 @@ const props = defineProps<{
         }
     }
     offers?: {}
-    related_product_category: object,
+    related_product_category?: object,
 }>()
 
 let currentTab = ref(props.tabs.current)

@@ -35,7 +35,7 @@ const props = defineProps<{
         navigation: object;
     }
     payments?: object;
-    history: object
+    history?: object
 }>()
 
 let currentTab = ref(props.tabs.current);

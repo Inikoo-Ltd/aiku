@@ -16,7 +16,7 @@ library.add(faExclamationCircle, faCheckCircle)
 const props = defineProps<{
     form: any
     fieldName: any
-    options: string[] | {label?: string, value: string}[]
+    options: string[] | {label?: string, value: string}[] | Record<string, any>
     fieldData: {
         placeholder?: string
         required?: boolean
@@ -67,8 +67,6 @@ onMounted(() => {
         props.form[props.fieldName] = props.options?.[0]?.value
     }
 })
-
-console.log(props)
 </script>
 
 <template>

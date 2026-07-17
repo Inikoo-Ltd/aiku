@@ -96,6 +96,7 @@ class WarehouseArea extends Model implements Auditable
             'id'              => (string)$this->id,
             'organisation_id' => $this->organisation_id,
             'warehouse_id'    => $this->warehouse_id,
+            'slug'            => (string)$this->slug,
             'code'            => $this->code,
             'name'            => $this->name,
             'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,

@@ -59,7 +59,7 @@ class CollectionsResource extends JsonResource
         $urlMaster = null;
         if ($this->master_collection_id) {
             $urlMaster = [
-                'name'       => 'grp.helpers.redirect_master_collection',
+                'name'       => 'grp.majordomo.redirect_master_collection',
                 'parameters' => [
                     $this->master_collection_id
                 ]

@@ -77,7 +77,7 @@ function orgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
     if (!orgStockRouteCache.has(deliveryNoteItem.org_stock_id)) {
         orgStockRouteCache.set(
             deliveryNoteItem.org_stock_id,
-            route("grp.helpers.redirect_org_stock", [deliveryNoteItem.org_stock_id])
+            route("grp.majordomo.redirect_org_stock", [deliveryNoteItem.org_stock_id])
         )
     }
 
@@ -695,7 +695,7 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo :useTopPagination="true">
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">

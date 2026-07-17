@@ -24,10 +24,10 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    showcase: any
-    top_listed_families: any
-    top_listed_products: any
-    top_sold_products: any
+    showcase?: any
+    top_listed_families?: any
+    top_listed_products?: any
+    top_sold_products?: any
 }>()
 
 const currentTab = ref<TabKey>(props.tabs.current as TabKey)

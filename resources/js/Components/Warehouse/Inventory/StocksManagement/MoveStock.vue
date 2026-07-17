@@ -12,6 +12,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import {formatDistanceStrict} from 'date-fns/formatDistanceStrict'
 import { notify } from '@kyvg/vue3-notification'
+import Multiselect from '@vueform/multiselect'
 library.add(faLongArrowRight, faInfoCircle, faForklift, faTimes)
 
 const props = defineProps<{
@@ -25,12 +26,22 @@ const props = defineProps<{
     replenishment_data: Record<number, {
         replenishment_stock?: number
     }>
+    reasons?: {
+        increase: [],
+        decrease: [],
+        transfer: [],
+    }
 }>()
 
 const emits = defineEmits(['close'])
 
 // Move stock state
-const moveStock = ref({
+const moveStock = ref<{
+    from: any
+    to: any
+    quantity: number
+    isActive: boolean
+}>({
     from: null,
     to: null,
     quantity: 0,
@@ -48,12 +59,16 @@ const form = useForm({
     moveStock: null
 })
 
+const selectedReason = ref('')
+const note = ref('')
+
 const isSource = (location: any) => moveStock.value.from?.id === location.id
 const isTarget = (location: any) => moveStock.value.to?.id === location.id
 
 const canSave = computed(() => {
     return !!moveStock.value.from
         && !!moveStock.value.to
+        && !!selectedReason.value
         && Number(moveStock.value.quantity) >= 1
         && Number(moveStock.value.quantity) <= Number(moveStock.value.from?.stock ?? 0)
 })
@@ -89,7 +104,7 @@ const selectSource = (location: any) => {
     }
 
     if (isTarget(location)) {
-        moveStock.value.to = null
+        moveStock.value.to = moveStock.value.from
     }
 
     moveStock.value.from = location
@@ -107,6 +122,26 @@ const selectTarget = (location: any) => {
     }
 
     if (isSource(location)) {
+        const swappedSource = moveStock.value.to
+
+        if (!swappedSource) {
+            return
+        }
+
+        if (!swappedSource.stock || swappedSource.stock <= 0) {
+            notify({
+                title: trans('Cannot swap locations'),
+                text: trans(':location has no stock to move', { location: swappedSource.name }),
+                type: 'warning',
+            })
+            return
+        }
+
+        moveStock.value.from = swappedSource
+        moveStock.value.to = location
+        moveStock.value.isActive = true
+        moveStock.value.quantity = 0
+        syncForm()
         return
     }
 
@@ -186,13 +221,15 @@ const getStockChangeIndicator = (warehouse: { id: any }) => {
 const isLoadingSubmit = ref(false);
 
 const submitCheckStock = () => {
-    if (!moveStock.value.from?.id || !moveStock.value.to?.id) return;
+    if (!canSave.value) return;
 
     router.patch(route('grp.models.location_org_stock.move', {
         locationOrgStock: moveStock.value.from.id,
         targetLocationOrgStock: moveStock.value.to.id
     }), {
-        quantity: moveStock.value.quantity
+        quantity: moveStock.value.quantity,
+        reason: selectedReason.value,
+        note: note.value
     }, {
         preserveScroll: true,
         onStart: () => {
@@ -237,6 +274,7 @@ const applyReplenishment = (location: any) => {
 
 onMounted(() => {
     const locations = form.stockCheck
+    selectedReason.value = Object.keys(props.reasons?.transfer ?? [])?.[0] ?? '';
 
     if (locations.length === 2) {
         const [loc1, loc2] = locations
@@ -258,9 +296,16 @@ onMounted(() => {
 
     syncForm()
 })
-
 </script>
+<!-- <style scoped lang="scss">
+    .child-text-sm {
+        font-size: 0.75rem;
 
+        > * {
+            font-size: 0.75rem;
+        }
+    }
+</style> -->
 <template>
     <div class="space-y-4">
         <!-- Section: Move summary + instructions -->
@@ -281,7 +326,7 @@ onMounted(() => {
                     :class="moveStock.from ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'"
                 >
                     <div
-                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition"
+                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition w-32"
                         :class="moveStock.from ? 'text-green-600' : 'text-green-500'"
                     >
                         <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
@@ -290,14 +335,25 @@ onMounted(() => {
                     <div class="font-medium" :class="moveStock.from ? 'text-green-700' : 'text-gray-400 italic'">
                         {{ moveStock.from?.name || '—' }}
                     </div>
+                    <div v-if="moveStock.from" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
+                        <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
+                            {{ moveStock.from.stock }}
+                        </span>
+                        <template v-if="moveStock.quantity > 0">
+                            <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                            <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-green-700">
+                                {{ getCalculatedStock(moveStock.from) }}
+                            </span>
+                        </template>
+                    </div>
                 </div>
 
                 <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
 
                 <div class="text-center">
                     <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Quantity') }}</div>
-                    <div class="font-medium tabular-nums text-gray-700">
-                        {{ moveStock.quantity || '—' }} <span class="text-gray-400">/ {{ getMaxQuantity() }}</span>
+                    <div class="font-medium tabular-nums text-gray-700" xclass="moveStock.quantity ? '' : ' border-b border-dashed border-gray-400'">
+                        {{ moveStock.quantity || '......' }}
                     </div>
                 </div>
 
@@ -317,10 +373,20 @@ onMounted(() => {
                     <div class="font-medium" :class="moveStock.to ? 'text-blue-700' : 'text-gray-400 italic'">
                         {{ moveStock.to?.name || '—' }}
                     </div>
+                    <div v-if="moveStock.to" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
+                        <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
+                            {{ moveStock.to.stock }}
+                        </span>
+                        <template v-if="moveStock.quantity > 0">
+                            <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                            <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-blue-700">
+                                {{ getCalculatedStock(moveStock.to) }}
+                            </span>
+                        </template>
+                    </div>
                 </div>
             </div>
-
-            <div class="text-yellow-600 text-xs text-center mt-2 h-[16px]">
+            <!-- <div class="text-yellow-600 text-xs text-center mt-2 h-[16px]">
                 <span v-if="!moveStock.from">
                     <FontAwesomeIcon :icon="faInfoCircle" />
                     {{ trans('Select the source location by clicking the forklift icon on the left') }}
@@ -333,6 +399,47 @@ onMounted(() => {
                     <FontAwesomeIcon :icon="faInfoCircle" />
                     {{ trans('Enter the quantity to move from the source') }}
                 </span>
+            </div> -->
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+            <div>
+                <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {{ ctrans('Transfer reason') }}
+                    <span class="text-red-500">*</span>
+                </label>
+                <Multiselect
+                    v-model="selectedReason"
+                    :options="reasons?.transfer ?? []"
+                    :placeholder="ctrans('Select your reason')"
+                    :canClear="false"
+                    :mode="'single'"
+                    :closeOnSelect="true"
+                    :canDeselect="false"
+                    :hideSelected="false"
+                    :searchable="true"
+                    :filter-results="false"
+                    :classes="{ container: selectedReason ? 'multiselect' : 'multiselect !border-red-300' }"
+                />
+                <div class="mt-1 text-xs h-4" :class="selectedReason ? 'invisible' : 'text-red-500'">
+                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
+                    {{ ctrans('Select a reason before saving') }}
+                </div>
+            </div>
+
+            <div>
+                <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {{ ctrans('Note') }}
+                    <span class="font-normal normal-case tracking-normal text-gray-400 italic">
+                        {{ ctrans('optional') }}
+                    </span>
+                </label>
+                <textarea
+                    v-model.trim="note"
+                    :rows="1"
+                    :placeholder="ctrans('Add more details about this move')"
+                    class="block w-full h-10 py-2 rounded border-gray-300 placeholder:text-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm leading-5 resize-none"
+                />
             </div>
         </div>
 
@@ -373,10 +480,16 @@ onMounted(() => {
                     <!-- Preview: original + change -> result -->
                     <span
                         v-if="isSource(form) || getStockChangeIndicator(form) !== null"
-                        v-tooltip="trans('Stock preview after move')"
                         class="tabular-nums text-xs flex items-center gap-x-1"
                     >
-                        <span @click="updateMoveQuantity(Number(form.stock))" class="text-gray-500 cursor-pointer">{{ form.stock }}</span>
+                        <span
+                            v-tooltip="isSource(form) ? trans('Click to move all stock (empties this location)') : trans('Current stock in this location')"
+                            :class="[
+                                'border rounded px-1.5 py-0.5 border-gray-300 text-gray-600',
+                                isSource(form) ? 'cursor-pointer hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition' : ''
+                            ]"
+                            @click="isSource(form) && updateMoveQuantity(Number(form.stock))"
+                        >{{ form.stock }}</span>
                         <span v-if="isSource(form)" class="text-red-500 font-semibold">−</span>
                         <div v-if="isSource(form)" class="w-24 shrink-0">
                             <InputNumber
@@ -395,8 +508,9 @@ onMounted(() => {
                         </span>
                         <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                         <span
-                            class="border rounded px-1.5 py-0.5 font-semibold"
-                            :class="isSource(form) ? 'border-green-300 text-green-700 bg-green-50' : 'border-blue-300 text-blue-700 bg-blue-50'"
+                            v-tooltip="trans('Stock preview after move')"
+                            class="font-semibold"
+                            :class="isSource(form) ? 'text-green-700' : 'text-blue-700'"
                         >
                             {{ getCalculatedStock(form) }}
                         </span>

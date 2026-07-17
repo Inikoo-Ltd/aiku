@@ -21,6 +21,7 @@ use App\Events\BroadcastStockMovement;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class UpdateOrgStockMovement extends OrgAction
 {
@@ -65,6 +66,15 @@ class UpdateOrgStockMovement extends OrgAction
                     'quantity' => $currentLocationOrgStockQuantity
                 ]
             );
+
+            $runningQuantityOrg = DB::table('location_org_stocks')
+                ->where('org_stock_id', $orgStockMovement->org_stock_id)->sum('quantity');
+            $orgStockMovement->update([
+                'running_quantity'           => $currentLocationOrgStockQuantity,
+                'running_quantity_org_stock' => $runningQuantityOrg,
+            ]);
+
+
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
             BroadcastStockMovement::dispatch($locationOrgStock);
         }

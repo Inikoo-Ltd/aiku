@@ -25,7 +25,6 @@ const routeParams = route().params
 const routeCurrent = route().current()
 
 function warehouseAreaRoute(warehouseArea: WarehouseArea) {
-    console.log(routeCurrent);
     switch (routeCurrent) {
         case "grp.overview.inventory.warehouses-areas.index":
             return route(

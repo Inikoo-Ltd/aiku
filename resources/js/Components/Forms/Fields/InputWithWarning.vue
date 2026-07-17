@@ -16,6 +16,7 @@ import { ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

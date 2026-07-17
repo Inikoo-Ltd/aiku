@@ -8,8 +8,6 @@
 
 namespace App\Actions\Search;
 
-use App\Http\Resources\Inventory\LocationsSearchResultResource;
-use App\Http\Resources\Inventory\WarehouseAreasSearchResultResource;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\WarehouseArea;
 use Illuminate\Support\Arr;
@@ -18,27 +16,36 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SearchLocations
 {
     use AsAction;
+    use WithRawSearchResults;
 
     public function handle(string $query, array $options): array
     {
         $organisationId = Arr::get($options, 'organisation_id');
-        $locations      = Location::search($query);
+        $locationsQuery = Location::search($query);
         if ($organisationId) {
-            $locations->where('organisation_id', $organisationId);
+            $locationsQuery->where('organisation_id', $organisationId);
         }
 
-        $warehouseAreas = WarehouseArea::search($query);
+        $warehouseAreasQuery = WarehouseArea::search($query);
         if ($organisationId) {
-            $warehouseAreas->where('organisation_id', $organisationId);
+            $warehouseAreasQuery->where('organisation_id', $organisationId);
         }
-
 
         return [
             'scope'   => 'locations',
             'results' => [
-                'locations'       => LocationsSearchResultResource::collection($locations->get()),
-                'warehouse_areas' => WarehouseAreasSearchResultResource::collection($warehouseAreas->get()),
-
+                'locations'       => array_map(static fn (array $document) => [
+                    'id'     => (int)$document['id'],
+                    'slug'   => $document['slug'] ?? null,
+                    'code'   => $document['code'] ?? null,
+                    'status' => $document['status'] ?? null,
+                ], $this->rawDocuments($locationsQuery)),
+                'warehouse_areas' => array_map(static fn (array $document) => [
+                    'id'   => (int)$document['id'],
+                    'slug' => $document['slug'] ?? null,
+                    'code' => $document['code'] ?? null,
+                    'name' => $document['name'] ?? null,
+                ], $this->rawDocuments($warehouseAreasQuery)),
             ],
         ];
     }

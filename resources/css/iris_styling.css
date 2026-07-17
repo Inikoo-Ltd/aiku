@@ -38,3 +38,10 @@
         aspect-ratio: var(--bb-ar-d, auto);
     }
 }
+
+/* carousel-cta renders every card as a vertical stack until the PrimeVue Carousel
+   chunk mounts (thousands of px, then collapses to one card = big layout shift);
+   show only the first card while pending. Class removed in CarouselCtaIris onMounted. */
+.carousel-cta-pending .p-carousel-item + .p-carousel-item {
+    display: none;
+}

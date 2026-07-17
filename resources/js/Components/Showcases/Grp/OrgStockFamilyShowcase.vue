@@ -88,7 +88,7 @@ const props = defineProps<{
 
                 <!-- Stock state counts -->
                 <div class="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{{ trans('SKU Status') }}</h3>
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{{ trans('SKO Status') }}</h3>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div v-for="item in data.stock_counts" :key="item.label"
                             class="flex items-center gap-2 p-2 rounded-lg bg-gray-50">

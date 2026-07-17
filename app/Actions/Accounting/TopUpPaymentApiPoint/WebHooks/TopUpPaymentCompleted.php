@@ -4,6 +4,7 @@ namespace App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks;
 
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\RetinaWebhookAction;
+use App\Enums\Accounting\TopUpPaymentApiPoint\TopUpPaymentApiPointStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 use Illuminate\Support\Arr;
@@ -15,8 +16,21 @@ class TopUpPaymentCompleted extends RetinaWebhookAction
 
     public function handle(TopUpPaymentApiPoint $topUpPaymentApiPoint, array $modelData): array
     {
-        $paymentAccountShopId = Arr::get($topUpPaymentApiPoint->data, 'payment_account_shop_id');
-        $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopId)->first();
+        if ($topUpPaymentApiPoint->state == TopUpPaymentApiPointStateEnum::SUCCESS) {
+            return [
+                'status'                => 'success',
+                'credit_transaction_id' => Arr::get($topUpPaymentApiPoint->data, 'credit_transaction_id'),
+            ];
+        }
+
+        $paymentAccountShop = PaymentAccountShop::find(Arr::get($topUpPaymentApiPoint->data, 'payment_account_shop_id.checkout'));
+        if (!$paymentAccountShop) {
+            return [
+                'status'         => 'error',
+                'payment_status' => 'Error',
+                'msg'            => __('Payment account not found')
+            ];
+        }
 
         $checkoutComPayment = $this->getCheckOutPayment(
             $paymentAccountShop,
@@ -33,15 +47,16 @@ class TopUpPaymentCompleted extends RetinaWebhookAction
         }
 
         $status = Arr::get($checkoutComPayment, 'status', 'Error');
-        if (in_array($status, ['Pending', 'Retry Scheduled'])) {
+
+        if (Arr::get($checkoutComPayment, 'metadata.api_point_ulid') != $topUpPaymentApiPoint->ulid) {
             return [
-                'status'         => 'pending',
+                'status'         => 'error',
                 'payment_status' => $status,
-                'msg'            => __('Payment is still pending, we will try again now')
+                'msg'            => __('The payment does not belong to this top up.')
             ];
         }
 
-        if (in_array($status, ['Voided', 'Declined', 'Cancelled', 'Expired'])) {
+        if (in_array($status, self::CHECKOUT_COM_FAILURE_STATUSES)) {
             TopUpPaymentFailure::make()->processFailure($topUpPaymentApiPoint, $checkoutComPayment);
 
             return [
@@ -51,11 +66,19 @@ class TopUpPaymentCompleted extends RetinaWebhookAction
             ];
         }
 
-        $creditTransaction = TopUpPaymentSuccess::make()->processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop);
+        if (in_array($status, self::CHECKOUT_COM_CAPTURED_STATUSES)) {
+            $creditTransaction = TopUpPaymentSuccess::make()->processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop);
+
+            return [
+                'status'                => 'success',
+                'credit_transaction_id' => $creditTransaction?->id,
+            ];
+        }
 
         return [
-            'status'                => 'success',
-            'credit_transaction_id' => $creditTransaction->id,
+            'status'         => 'pending',
+            'payment_status' => $status,
+            'msg'            => __('Payment is still pending, we will try again now')
         ];
     }
 

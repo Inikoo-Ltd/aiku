@@ -66,6 +66,14 @@ class CreateMitSavedCard extends RetinaAction
         $paymentSessionRequest->success_url = $this->getSuccessUrl($mitSavedCard);
         $paymentSessionRequest->failure_url = $this->getFailureUrl($mitSavedCard);
 
+        $paymentSessionRequest->metadata = [
+            'origin'              => 'aiku',
+            'operation'           => 'mit_save_card',
+            'mit_saved_card_ulid' => $mitSavedCard->ulid,
+            'environment'         => app()->environment(),
+            'server'              => config('app.server_name') ?? ''
+        ];
+
         /** @noinspection SpellCheckingInspection */
         $paymentSessionRequest->disabled_payment_methods = [
             'applepay',

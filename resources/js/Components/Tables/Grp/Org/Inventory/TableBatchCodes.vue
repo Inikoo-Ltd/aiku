@@ -21,10 +21,12 @@ defineProps<{
     allowEdit?: boolean
 }>()
 
+const routeParams = route().params as RouteParams
+
 function showRoute(batchCode: { id: number }) {
     return route("grp.org.warehouses.show.inventory.batch_codes.show", {
-        organisation: (route().params as RouteParams).organisation,
-        warehouse: (route().params as RouteParams).warehouse,
+        organisation: routeParams.organisation,
+        warehouse: routeParams.warehouse,
         batchCode: batchCode.id,
     })
 }
@@ -51,8 +53,8 @@ function showRoute(batchCode: { id: number }) {
         <template #cell(number_delivery_notes)="{ item }">
             <Link
                 :href="route('grp.org.warehouses.show.inventory.batch_codes.show', {
-                    organisation: (route().params as RouteParams).organisation,
-                    warehouse: (route().params as RouteParams).warehouse,
+                    organisation: routeParams.organisation,
+                    warehouse: routeParams.warehouse,
                     batchCode: item.id,
                     tab: 'delivery_notes',
                 })"
@@ -67,8 +69,8 @@ function showRoute(batchCode: { id: number }) {
                 <Link
                     v-if="allowEdit"
                     :href="route('grp.org.warehouses.show.inventory.batch_codes.edit', {
-                        organisation: (route().params as RouteParams).organisation,
-                        warehouse: (route().params as RouteParams).warehouse,
+                        organisation: routeParams.organisation,
+                        warehouse: routeParams.warehouse,
                         batchCode: item.id,
                     })"
                     class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"

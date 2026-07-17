@@ -938,7 +938,7 @@ trait WithEbayApiRequest
         try {
             $endpoint = "/sell/inventory/v1/bulk_update_price_quantity";
 
-            return $this->makeEbayRequest('put', $endpoint, $productData);
+            return $this->makeEbayRequest('post', $endpoint, $productData);
         } catch (Exception $e) {
             Log::error('Update eBay Product Price and Quantity Error: '.$e->getMessage());
 
@@ -1054,7 +1054,11 @@ trait WithEbayApiRequest
 
 
     /**
-     * Update offer by offer ID
+     * Update offer by offer ID.
+     *
+     * eBay's offer PUT is a full replace: any field omitted from the payload is deleted
+     * from the offer. To avoid wiping seller data (listing description, policies, category,
+     * pricing) the current offer is fetched first and only the provided fields are overlaid.
      *
      * @throws \Exception
      */
@@ -1063,55 +1067,79 @@ trait WithEbayApiRequest
         $currency = Arr::get($this->getEbayConfig(), 'currency');
 
         try {
-            $data = [
-                "format"              => "FIXED_PRICE",
-                "listingDescription"  => Arr::get($offerData, 'description'),
-                "availableQuantity"   => Arr::get($offerData, 'quantity', 1),
-                "pricingSummary"      => [
-                    "price" => [
-                        "value"    => Arr::get($offerData, 'price', 0),
-                        "currency" => $currency
-                    ]
-                ],
-                "listingPolicies"     => [
-                    "fulfillmentPolicyId" => $this->fulfillment_policy_id,
-                    "paymentPolicyId"     => $this->payment_policy_id,
-                    "returnPolicyId"      => $this->return_policy_id,
-                ],
-                "categoryId"          => Arr::get($offerData, 'category_id'),
-                "merchantLocationKey" => $this->location_key,
-            ];
+            $currentOffer = $this->getOffer($offerId);
+
+            if (!Arr::get($currentOffer, 'offerId')) {
+                return $currentOffer;
+            }
+
+            $data = Arr::only($currentOffer, [
+                'availableQuantity',
+                'categoryId',
+                'charity',
+                'extendedProducerResponsibility',
+                'format',
+                'hideBuyerDetails',
+                'includeCatalogProductDetails',
+                'listingDescription',
+                'listingDuration',
+                'listingPolicies',
+                'listingStartDate',
+                'lotSize',
+                'merchantLocationKey',
+                'pricingSummary',
+                'quantityLimitPerBuyer',
+                'regulatory',
+                'secondaryCategoryId',
+                'storeCategoryNames',
+                'tax',
+            ]);
+
+            if (Arr::has($offerData, 'description')) {
+                data_set($data, 'listingDescription', Arr::get($offerData, 'description'));
+            }
+
+            if (Arr::has($offerData, 'quantity')) {
+                data_set($data, 'availableQuantity', Arr::get($offerData, 'quantity'));
+            }
+
+            if (Arr::has($offerData, 'price')) {
+                data_set($data, 'pricingSummary.price', [
+                    'value'    => Arr::get($offerData, 'price'),
+                    'currency' => $currency
+                ]);
+            }
+
+            if (Arr::get($offerData, 'category_id')) {
+                data_set($data, 'categoryId', Arr::get($offerData, 'category_id'));
+            }
+
+            if (blank(Arr::get($data, 'format'))) {
+                data_set($data, 'format', 'FIXED_PRICE');
+            }
+
+            if (blank(Arr::get($data, 'merchantLocationKey'))) {
+                data_set($data, 'merchantLocationKey', $this->location_key);
+            }
+
+            if (blank(Arr::get($data, 'listingPolicies'))) {
+                data_set($data, 'listingPolicies', [
+                    'fulfillmentPolicyId' => $this->fulfillment_policy_id,
+                    'paymentPolicyId'     => $this->payment_policy_id,
+                    'returnPolicyId'      => $this->return_policy_id,
+                ]);
+            }
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";
 
             return $this->makeEbayRequest('put', $endpoint, $data);
         } catch (Exception $e) {
-            Log::error('Get eBay Offer Error: '.$e->getMessage());
+            Log::error('Update eBay Offer Error: '.$e->getMessage());
 
             return ['error' => $e->getMessage()];
         }
     }
 
-
-    /**
-     * Update offer by offer ID
-     */
-    public function updateQuantityOffer($offerId, array $offerData)
-    {
-        try {
-            $data = [
-                "availableQuantity" => Arr::get($offerData, 'availableQuantity'),
-            ];
-
-            $endpoint = "/sell/inventory/v1/offer/$offerId";
-
-            return $this->makeEbayRequest('put', $endpoint, $data);
-        } catch (Exception $e) {
-            Log::error('Get eBay Offer Error: '.$e->getMessage());
-
-            return ['error' => $e->getMessage()];
-        }
-    }
 
     /**
      * Delete product from eBay

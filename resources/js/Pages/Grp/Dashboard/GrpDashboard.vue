@@ -135,7 +135,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 				<div class="px-5 py-4">
 					<dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
 						<FontAwesomeIcon icon="fal fa-box" fixed-width aria-hidden="true" />
-						{{ trans('Stored SKUs') }}
+						{{ trans('Stored SKOs') }}
 					</dt>
 					<dd class="mt-1 text-xl sm:text-2xl font-semibold tabular-nums text-gray-800">
 						{{ locale.numberShort(stockHistoryGroup.number_org_stocks) }}
@@ -159,7 +159,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
 							{{ locale.numberShort(stockHistoryGroup.number_out_of_stock_org_stocks) }}
 						</span>
-						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKUs')">
+						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKOs')">
 							{{ stockHistoryGroup.percentage_out_of_stock }}%
 						</span>
 					</dd>
@@ -187,7 +187,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
 							{{ locale.numberShort(stockHistoryGroup.number_org_stocks_not_sold_1y) }}
 						</span>
-						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKUs')">
+						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKOs')">
 							{{ stockHistoryGroup.percentage_not_sold_1y }}%
 						</span>
 					</dd>
@@ -215,7 +215,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						<tr class="bg-gray-50 border-b border-gray-200">
 							<th class="px-4 py-2 text-left text-xs font-semibold text-gray-500">{{ trans('Organisation') }}</th>
 							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('Stock Value') }}</th>
-							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('SKUs') }}</th>
+							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('SKOs') }}</th>
 							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('Locations') }}</th>
 							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('Out of Stock') }}</th>
 							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('Dormant 1Y') }}</th>

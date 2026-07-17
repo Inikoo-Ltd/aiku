@@ -8,7 +8,7 @@
 
 namespace App\Actions\Search;
 
-use App\Http\Resources\CRM\Customer\CustomerSearchResultResource;
+use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -16,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SearchCustomers
 {
     use AsAction;
+    use WithRawSearchResults;
 
     public function handle(string $query, array $options): array
     {
@@ -24,12 +25,22 @@ class SearchCustomers
             $customersQuery->where('shop_id', $shopId);
         }
 
+        $stateIcons = CustomerStateEnum::stateIcon();
 
         return [
             'scope'   => 'customers',
             'results' => [
-                'customers' => CustomerSearchResultResource::collection($customersQuery->get()),
-
+                'customers' => array_map(static fn (array $document) => [
+                    'id'           => (int)$document['id'],
+                    'slug'         => $document['slug'] ?? null,
+                    'name'         => $document['name'] ?? null,
+                    'location'     => json_decode($document['location'] ?? 'null', true),
+                    'state_icon'   => Arr::get($stateIcons, $document['state'] ?? ''),
+                    'contact_name' => $document['contact_name'] ?? null,
+                    'company_name' => $document['company_name'] ?? null,
+                    'email'        => $document['email'] ?? null,
+                    'phone'        => $document['phone'] ?? null,
+                ], $this->rawDocuments($customersQuery)),
             ],
         ];
     }

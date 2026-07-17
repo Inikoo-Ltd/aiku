@@ -27,13 +27,13 @@ library.add(faFolder, faCube, faStream, faMoneyBillWave, faShoppingCart, faUsers
 const props = defineProps<{
   title: string
   pageHead: PageHeadingTypes,
-  channels: {},
-  products: {},
-  showcase: {},
-  customers: {},
-  top_listed_families: {},
-  top_listed_products: {},
-  top_sold_products: {},
+  channels?: {},
+  products?: {},
+  showcase?: {},
+  customers?: {},
+  top_listed_families?: {},
+  top_listed_products?: {},
+  top_sold_products?: {},
   tabs: {
       current: string
       navigation: {}

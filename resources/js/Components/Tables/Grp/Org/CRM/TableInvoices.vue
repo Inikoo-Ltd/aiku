@@ -16,7 +16,7 @@ defineProps<{
 const locale = useLocaleStore();
 
 const redirectInvoiceAccounting = (invoice: any) => {
-    return route('grp.helpers.redirect_invoice_in_accounting', {
+    return route('grp.majordomo.redirect_invoice_in_accounting', {
         invoice: invoice.id
     });
 }

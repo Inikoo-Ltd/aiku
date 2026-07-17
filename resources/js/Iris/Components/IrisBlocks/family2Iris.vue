@@ -389,7 +389,7 @@ const contentClass = computed(() =>
       flex-wrap
       2xl:pt-8
     ">
-            <a href="#family-2-extra-description" class="shrink-0">
+            <a v-if="fieldValue.family.description_extra || layout?.iris?.is_logged_in" href="#family-2-extra-description" class="shrink-0">
               <button class="
           h-[38px]
           rounded-xl

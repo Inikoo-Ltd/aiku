@@ -84,6 +84,7 @@ class WebBlockProductResource extends JsonResource
             'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
+            'family_code'       => $product->family?->code,
             'name'              => $product->name,
             'description'       => $product->description,
             'description_title' => $product->description_title,

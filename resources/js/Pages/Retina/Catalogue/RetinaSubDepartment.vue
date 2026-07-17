@@ -52,11 +52,11 @@ const props = defineProps<{
 		current: string
 		navigation: object
 	}
-	showcase: {}
+	showcase?: {}
 	customers: {}
-	products: {}
-	families: {}
-	collections: {}
+	products?: {}
+	families?: {}
+	collections?: {}
 	data: {
 		showcase: number
 		products: object

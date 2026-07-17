@@ -126,6 +126,7 @@ class Location extends Model implements Auditable
             'organisation_id'   => $this->organisation_id,
             'warehouse_id'      => $this->warehouse_id,
             'warehouse_area_id' => $this->warehouse_area_id,
+            'slug'              => (string)$this->slug,
             'code'              => $this->code,
             'status'            => $this->status->value,
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,

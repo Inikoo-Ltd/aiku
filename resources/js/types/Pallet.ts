@@ -138,6 +138,7 @@ export interface FieldOrderSummary {
     information_icon?: string
     information?: string
     slot_name?: string  // 'shipping'
+    information_icon_button? : string
     currency: {
         code: string
         symbol: string

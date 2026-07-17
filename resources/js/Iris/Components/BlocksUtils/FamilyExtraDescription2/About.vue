@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, nextTick } from "vue"
+import { computed, ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue"
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
@@ -124,6 +124,52 @@ const hasImage = (image: any) => {
 
 const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.container?.properties)))
 
+const descriptionRef = ref<HTMLElement | null>(null)
+const isDescriptionExpanded = ref(false)
+const isDescriptionOverflowing = ref(false)
+let resizeObserver: ResizeObserver | null = null
+
+const updateDescriptionOverflow = () => {
+    const element = descriptionRef.value
+
+    if (!element || isDescriptionExpanded.value) {
+        return
+    }
+
+    isDescriptionOverflowing.value = element.scrollHeight > element.clientHeight + 1
+}
+
+const expandDescription = () => {
+    isDescriptionExpanded.value = true
+}
+
+const collapseDescription = async () => {
+    isDescriptionExpanded.value = false
+    await nextTick()
+    updateDescriptionOverflow()
+    descriptionRef.value?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+}
+
+watch(cleanedDescription, async () => {
+    await nextTick()
+    updateDescriptionOverflow()
+})
+
+onMounted(async () => {
+    await nextTick()
+    updateDescriptionOverflow()
+
+    if (typeof ResizeObserver !== "undefined" && descriptionRef.value) {
+        resizeObserver = new ResizeObserver(updateDescriptionOverflow)
+        resizeObserver.observe(descriptionRef.value)
+    }
+})
+
+onBeforeUnmount(() => {
+    resizeObserver?.disconnect()
+    resizeObserver = null
+})
+
 
 </script>
 
@@ -131,9 +177,10 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.contai
     <!-- CONTENT -->
     <div class="grid grid-cols-1 lg:grid-cols-[53%_46%] lg:gap-4 gap-0 items-stretch" :style="containerStyle">
         <!-- LEFT -->
-        <div
-            class="order-2 lg:order-1 flex flex-col py-5 md:py-6 lg:py-8 text-center md:text-left lg:h-[700px] 2xl:h-[780px]">
-            <div class="
+        <div class="order-2 lg:order-1 flex flex-col py-5 md:py-6 lg:py-8 text-center md:text-left"
+            :class="isDescriptionExpanded ? 'lg:h-auto' : 'lg:h-[700px] 2xl:h-[780px]'">
+            <div ref="descriptionRef" class="
+        relative
         flex-1
         overflow-hidden
         max-w-full
@@ -144,7 +191,16 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.about?.contai
         2xl:text-[16px]
         leading-[1.8]
         text-[#334155]
-    " v-html="cleanedDescription" />
+    " :class="{ 'after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-24 after:bg-gradient-to-t  after:to-transparent': isDescriptionOverflowing && !isDescriptionExpanded }"
+                v-html="cleanedDescription" />
+
+            <div v-if="isDescriptionOverflowing || isDescriptionExpanded" class="mt-4">
+                <button type="button" class="text-[12px] md:text-[13px] font-medium text-[#24384d] underline underline-offset-4"
+                    @click="isDescriptionExpanded ? collapseDescription() : expandDescription()">
+                    <span v-if="isDescriptionExpanded">{{ ctrans('Read less') }}</span>
+                    <span v-else>{{ ctrans('Read more') }}</span>
+                </button>
+            </div>
 
             <div class="mt-8 md:mt-10">
                 <a href="#family-2">

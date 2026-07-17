@@ -81,7 +81,7 @@ const props = defineProps<{
     sales?: object
     salesData?: object
     mini_breadcrumbs?: any[]
-    related_product_category : object
+    related_product_category? : object
     delete_route?: routeType;
     delete_condition?: {
         can_delete: boolean;
@@ -120,7 +120,7 @@ function masterDepartmentRoute(department: Department) {
     }
 
     return route(
-        "grp.helpers.redirect_master_product_category",
+        "grp.majordomo.redirect_master_product_category",
         [department.master_product_category_id]);
 }
 

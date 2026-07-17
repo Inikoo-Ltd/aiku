@@ -13,10 +13,11 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
 import ProductCardEcom3 from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
+import ProductCardEcom2 from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"
 
 const productCardComponents: Record<string, any> = {
     "products-1": ProductCardEcom3,
-    "products-2": ProductCardEcom3,
+    "products-2": ProductCardEcom2,
 }
 import axios from "axios"
 import VariantDialogContent from "@/Iris/Components/IrisBlocks/Products/Ecom/VariantDialogContent.vue"

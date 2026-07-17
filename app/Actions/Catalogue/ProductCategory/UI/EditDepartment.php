@@ -49,7 +49,7 @@ class EditDepartment extends OrgAction
         $urlMaster = null;
         if ($department->master_product_category_id) {
             $urlMaster = [
-                'name'       => 'grp.helpers.redirect_master_product_category',
+                'name'       => 'grp.majordomo.redirect_master_product_category',
                 'parameters' => [
                     $department->masterProductCategory->id
                 ]

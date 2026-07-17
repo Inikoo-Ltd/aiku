@@ -15,6 +15,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetChatActivity
@@ -32,6 +33,7 @@ class GetChatActivity
                     ChatEventTypeEnum::CLOSE,
                     ChatEventTypeEnum::GUEST_PROFILE,
                     ChatEventTypeEnum::REOPEN,
+                    ChatEventTypeEnum::JIRA_TICKET,
                 ])
                 ->with(['actor'])
                 ->orderBy('created_at', 'desc')
@@ -147,6 +149,10 @@ class GetChatActivity
             case ChatEventTypeEnum::REOPEN:
                 $formatted['details'] = $this->formatReopenEvent($event);
                 break;
+
+            case ChatEventTypeEnum::JIRA_TICKET:
+                $formatted['details'] = $this->formatJiraTicketEvent($event);
+                break;
         }
 
         return $formatted;
@@ -156,6 +162,22 @@ class GetChatActivity
     {
         return [
             'description' => 'Chat session was reopened',
+        ];
+    }
+
+    private function formatJiraTicketEvent($event): array
+    {
+        $payload = $event->payload ?? [];
+
+        return [
+            'description'   => 'Jira ticket '.Arr::get($payload, 'key', '').' created',
+            'ticket_key'    => Arr::get($payload, 'key'),
+            'ticket_url'    => Arr::get($payload, 'url'),
+            'summary'       => Arr::get($payload, 'summary'),
+            'issue_type'    => Arr::get($payload, 'issue_type'),
+            'project_key'   => Arr::get($payload, 'project_key'),
+            'priority_name' => Arr::get($payload, 'priority_name'),
+            'labels'        => Arr::get($payload, 'labels', []),
         ];
     }
 
