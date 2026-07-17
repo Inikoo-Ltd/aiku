@@ -6,6 +6,7 @@
 	"website_type" : ["b2b","b2c","fulfilment"],
 	"is_in_test" : false,
 	"component": "header",
+	"shop_availability": ["uk"],
 	"fixed" : false,
 	"data": {
 		"fieldValue": {

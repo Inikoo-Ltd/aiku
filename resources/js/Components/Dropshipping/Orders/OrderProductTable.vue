@@ -368,7 +368,7 @@ const isOffersData = (offersData: any): boolean => {
                 return 'bg-yellow-50'
             }
             return ''
-        }">
+        }" :useTopPagination="true">
 
 
             <template #cell(image)="{ item }">

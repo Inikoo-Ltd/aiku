@@ -24,8 +24,15 @@ class SyncOrgStockLocations extends OrgAction
     /**
      * @throws \Throwable
      */
+    //todo delete this after all aurora migrates
     public function handle(OrgStock $orgStock, array $modelData): array
     {
+
+        if($orgStock->organisation->is_aiku_stock_control){
+            return [];
+        }
+
+
         $locationsData = $modelData['locationsData'];
 
         $oldLocations = $orgStock->locationOrgStocks()->pluck('location_id')->toArray();

@@ -108,11 +108,12 @@ class DeleteWebpage extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Webpage $webpage, bool $forceDelete = false): Webpage
+    public function action(Webpage $webpage, bool $forceDelete = false, array $modelData = []): Webpage
     {
         $this->webpage = $webpage;
+        $this->initialisationFromShop($webpage->shop, $modelData);
 
-        return $this->handle($webpage, $forceDelete);
+        return $this->handle($webpage, $forceDelete, $this->validatedData);
     }
 
     /**

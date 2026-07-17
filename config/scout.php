@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Billables\Charge\Search\GetChargeSearchSchema;
+use App\Actions\Chat\ChatMessage\Search\GetChatMessageSearchSchema;
 use App\Actions\Billables\Service\Search\GetServiceSearchSchema;
 use App\Actions\Billables\ShippingZone\Search\GetShippingZoneSearchSchema;
 use App\Actions\Billables\ShippingZoneSchema\Search\GetShippingZoneSchemaSearchSchema;
@@ -22,6 +23,7 @@ use App\Actions\Masters\MasterCollection\Search\GetMasterCollectionSearchSchema;
 use App\Actions\Masters\MasterProductCategory\Search\GetMasterProductCategorySearchSchema;
 use App\Actions\Web\Webpage\Search\GetWebpageSearchSchema;
 use App\Models\Billables\Charge;
+use App\Models\Chat\ChatMessage;
 use App\Models\Billables\Service;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
@@ -253,7 +255,8 @@ return [
             Brand::class           => GetBrandSearchSchema::run(),
             Tag::class             => GetTagSearchSchema::run(),
             Barcode::class         => GetBarcodeSearchSchema::run(),
-            Employee::class        => GetEmployeeSearchSchema::run()
+            Employee::class        => GetEmployeeSearchSchema::run(),
+            ChatMessage::class     => GetChatMessageSearchSchema::run()
 
         ],
     ],

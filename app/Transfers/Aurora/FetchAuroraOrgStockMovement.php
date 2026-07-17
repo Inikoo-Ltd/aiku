@@ -84,6 +84,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             } else {
                 return;
             }
+            $forceFetch = false;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Production') {
             if ($this->auroraModelData->{'Inventory Transaction Section'} == 'In') {
                 $type = OrgStockMovementTypeEnum::RETURN_CONSUMPTION;
@@ -103,16 +104,16 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $quantity        = 0;
             $auditedQuantity = 0;
             $type            = OrgStockMovementTypeEnum::ASSOCIATE;
-            $forceFetch = true;
+            $forceFetch = false;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Disassociate') {
             $quantity        = 0;
             $auditedQuantity = 0;
             $type            = OrgStockMovementTypeEnum::DISASSOCIATE;
-            $forceFetch = true;
+            $forceFetch = false;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Audit') {
             $auditedQuantity = $this->auroraModelData->{'Part Location Stock'};
             $type            = OrgStockMovementTypeEnum::AUDIT;
-            $forceFetch = true;
+            $forceFetch = false;
         }
 
         if ($this->organisation->is_aiku_stock_control && !$forceFetch) {

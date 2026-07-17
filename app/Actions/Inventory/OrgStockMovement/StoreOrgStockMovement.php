@@ -25,6 +25,7 @@ use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class StoreOrgStockMovement extends OrgAction
@@ -87,12 +88,28 @@ class StoreOrgStockMovement extends OrgAction
 
         if ($locationOrgStock) {
             if ($this->strict) {
+
+                $runningQuantity = $locationOrgStock->quantity + $orgStockMovement->quantity;
+
                 UpdateLocationOrgStock::run(
                     $locationOrgStock,
                     [
-                        'quantity' => $locationOrgStock->quantity + $orgStockMovement->quantity,
+                        'quantity' => $runningQuantity,
                     ]
                 );
+                //here we need to do this:
+
+                $runningQuantityOrg = DB::table('location_org_stocks')
+                    ->where('org_stock_id', $orgStock->id)->sum('quantity');
+
+
+
+                $orgStockMovement->update([
+                    'running_quantity'           => $runningQuantity,
+                    'running_quantity_org_stock' => $runningQuantityOrg,
+                ]);
+
+
                 BroadcastStockMovement::dispatch($locationOrgStock);
             } else {
                 $stock = GetLocationOrgStockQuantity::run($orgStock, $location);

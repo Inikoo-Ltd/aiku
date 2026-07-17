@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Events\BroadcastStockMovement;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
+use Illuminate\Support\Facades\DB;
 
 class DeleteOrgStockMovement extends OrgAction
 {
@@ -28,12 +29,24 @@ class DeleteOrgStockMovement extends OrgAction
             ->first();
 
         if ($locationOrgStock !== null) {
+            $runningQuantity = $locationOrgStock->quantity - $orgStockMovement->quantity;
+
+
             UpdateLocationOrgStock::run(
                 $locationOrgStock,
                 [
-                    'quantity' => $locationOrgStock->quantity - $orgStockMovement->quantity,
+                    'quantity' => $runningQuantity
                 ]
             );
+            $runningQuantityOrg = DB::table('location_org_stocks')
+                ->where('org_stock_id', $orgStockMovement->org_stock_id)->sum('quantity');
+
+            $orgStockMovement->update([
+                'running_quantity' => $runningQuantity,
+                'running_quantity_org_stock' => $runningQuantityOrg,
+            ]);
+
+
             BroadcastStockMovement::dispatch($locationOrgStock);
         }
 
@@ -47,7 +60,7 @@ class DeleteOrgStockMovement extends OrgAction
 
     public function action(OrgStockMovement $orgStockMovement): OrgStockMovement
     {
-        $this->asAction       = true;
+        $this->asAction = true;
         $this->initialisation($orgStockMovement->organisation, []);
 
         return $this->handle($orgStockMovement);

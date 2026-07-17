@@ -15,6 +15,7 @@ use App\Models\Inventory\PickingSession;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
@@ -55,6 +56,9 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.quantity_packed',
                 'delivery_note_items.quantity_dispatched',
+                'delivery_note_items.quantity_waiting_warehouse',
+                'delivery_note_items.quantity_waiting_crm',
+                'delivery_note_items.notes',
                 'delivery_note_items.batch_code',
                 'delivery_note_items.expiry_date',
                 'delivery_note_items.is_handled',
@@ -77,6 +81,16 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_notes.internal_notes as delivery_note_internal_notes',
                 'delivery_notes.shipping_notes as delivery_note_shipping_notes',
                 'delivery_notes.shop_type',
+            ])
+            ->addSelect([
+                'delivery_note_has_waiting_items' => DB::table('delivery_note_items as waiting_items')
+                    ->selectRaw('1')
+                    ->whereColumn('waiting_items.delivery_note_id', 'delivery_notes.id')
+                    ->where(function ($query) {
+                        $query->where('waiting_items.has_waiting_warehouse', true)
+                            ->orWhere('waiting_items.has_waiting_crm', true);
+                    })
+                    ->limit(1)
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])

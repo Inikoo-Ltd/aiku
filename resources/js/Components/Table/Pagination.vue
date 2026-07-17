@@ -1,6 +1,7 @@
 <template>
     <nav v-if="!hasData || pagination?.total < 1 || exportLinks?.export?.route || hasPagination && meta?.total > 15"
-        class="bg-white px-4 py-3 flex items-center space-x-2 justify-between border-t border-gray-200 sm:px-4">
+        class="bg-white px-4 py-3 flex items-center space-x-2 justify-between border-t border-gray-200 sm:px-4"
+        :class="customWrapperClass">
         <p v-if="!hasData || pagination.total < 1" class="mx-auto">
             {{ trans('No result found') }}
         </p>
@@ -12,7 +13,7 @@
 
         <template v-if="hasPagination && meta?.total > 15">
             <!-- simple and mobile -->
-            <div v-if="hasData" class="flex-1 flex justify-between" :class="{ 'sm:hidden': hasLinks }">
+            <div v-if="hasData" class="flex-1 flex justify-between " :class="{ 'sm:hidden': hasLinks }">
                 <component :is="previousPageUrl ? 'a' : 'div'" :class="{
                     'cursor-not-allowed text-gray-400': !previousPageUrl,
                     'text-gray-700 hover:text-gray-500': previousPageUrl
@@ -143,6 +144,7 @@ const props = withDefaults(defineProps<{
             route: routeType
         }
     }
+    customWrapperClass?: string
 }>(), {
     perPageOptions: () => [10, 25, 50, 100, 250, 500, 1000],
     onPerPageChange: () => {}

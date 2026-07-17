@@ -507,7 +507,7 @@ watch(
 				</div>
 			</div>
 			<!-- Button: Download PDF -->
-			<div class="relative" v-if="route().params.deliveryNote">
+			<!-- <div class="relative" v-if="route().params.deliveryNote">
 				<a	v-if="route().params.deliveryNote"
 					:href="
 						route('grp.pdfs.delivery-notes', {
@@ -520,7 +520,7 @@ watch(
 					v-tooltip="trans('Download PDF of this Delivery Note')">
 					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
 				</a>
-			</div>
+			</div> -->
 		</template>
 
 		<template #button-to-queue="{ action }">

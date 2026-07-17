@@ -53,6 +53,8 @@ it('maps known route prefixes to expected scopes', function (string $route, stri
     ['grp.org.shops.show.web.webpages.index', 'website'],
     ['grp.org.shops.show.dashboard.show', 'shop_accounting'],
     ['grp.org.hr.employees.index', 'hr'],
+    ['grp.chat.dashboard', 'chat'],
+    ['grp.org.chat.dashboard', 'chat'],
 ]);
 
 it('returns empty array for unknown search scope', function () {
