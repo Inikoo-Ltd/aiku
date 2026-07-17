@@ -26,6 +26,7 @@ const routeParams = route().params as RouteParams
 
 interface OtherLocation {
     code: string
+    slug: string
     quantity: number
 }
 
@@ -46,6 +47,14 @@ function orgStockRoute(replenishment: Replenishment) {
         routeParams.organisation,
         routeParams.warehouse,
         replenishment.slug,
+    ])
+}
+
+function locationRoute(slug: string) {
+    return route("grp.org.warehouses.show.infrastructure.locations.show", [
+        routeParams.organisation,
+        routeParams.warehouse,
+        slug,
     ])
 }
 
@@ -75,7 +84,9 @@ function recommendedLabel(recommended: { min: number | null; max: number | null 
                     :key="index"
                     class="flex justify-between gap-x-6 tabular-nums"
                 >
-                    <span class="text-gray-500">{{ otherLocation.code }}</span>
+                    <Link :href="locationRoute(otherLocation.slug) as string" class="primaryLink">
+                        {{ otherLocation.code }}
+                    </Link>
                     <span>{{ locale.number(Number(otherLocation.quantity)) }}</span>
                 </div>
             </div>
@@ -90,7 +101,9 @@ function recommendedLabel(recommended: { min: number | null; max: number | null 
                     fixed-width
                     aria-hidden="true"
                 />
-                <span>{{ replenishment.location.code }}</span>
+                <Link :href="locationRoute(replenishment.location.slug) as string" class="primaryLink">
+                    {{ replenishment.location.code }}
+                </Link>
             </div>
             <span v-else class="text-gray-400">-</span>
         </template>
