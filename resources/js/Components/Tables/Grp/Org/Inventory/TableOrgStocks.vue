@@ -47,6 +47,7 @@ const locale = inject("locale", aikuLocaleStructure)
 const isOpenMoveAllSku = ref(false)
 const transferReasonOptions = computed(() => props.transfer_reason ?? {})
 const defaultReason = computed(() => Object.keys(transferReasonOptions.value)[0] ?? null)
+const key = ref(1)
 
 const form = useForm<{ location_id: number | null; remove_after_move: boolean; reason: string | null; note: string | null }>({
     location_id: null,
@@ -154,6 +155,7 @@ function onSavePartialMoveSku() {
                         type: "success",
                     })
                     router.reload()
+                    key.value ++
                 },
                 onError: () => {
                     notify({
@@ -339,7 +341,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canMoveAllSku" @onSelectRow="onSelectRow">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canMoveAllSku" @onSelectRow="onSelectRow" :key="key">
           <template #add-on-button v-if="canMoveAllSku">
                 <Button :label="ctrans('Move All SKU')" type="white" :icon="faForklift" size="xs" @click="openMoveAllSku"></Button>
                 <Button v-if="hasSelection" :label="ctrans('Partialy Move SKU')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
