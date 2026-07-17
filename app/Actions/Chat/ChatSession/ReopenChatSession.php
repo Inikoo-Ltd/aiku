@@ -1,9 +1,8 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 30 Jun 2026 21:08:17 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
+ * Author: Andi Ferdiawan <dev@aw-advantage.com>
+ * Copyright (c) 2026, Andi Ferdiawan
  */
 
 namespace App\Actions\Chat\ChatSession;

@@ -105,7 +105,7 @@ class ShowOrgStockHistory extends OrgAction
                 ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, align: 'right')
                 ->column(key: 'number_locations', label: __('Number of Locations'), canBeHidden: false, align: 'right')
                 ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, align: 'right')
-                ->column(key: 'value_per_sku', label: __('Value per SKU'), canBeHidden: false, align: 'right');
+                ->column(key: 'value_per_sku', label: __('Value per SKO'), canBeHidden: false, align: 'right');
         };
     }
 
@@ -121,13 +121,13 @@ class ShowOrgStockHistory extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('SKU').' '.$this->orgStock->code.' ('.__('Stock History').')',
+                'title'    => __('SKO').' '.$this->orgStock->code.' ('.__('Stock History').')',
                 'pageHead' => [
                     'icon'          => [
-                        'title' => __('SKU').' ('.__('Stock History').')',
+                        'title' => __('SKO').' ('.__('Stock History').')',
                         'icon'  => 'fal fa-history',
                     ],
-                    'model'         => __('SKU'),
+                    'model'         => __('SKO'),
                     'title'         => $this->orgStock->code,
                     'subNavigation' => $subNavigation,
                 ],

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import IrisSidebar from '@/Components/IrisSidebar.vue'
 import { getStyles } from "@/Composables/styles";
-import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 import { inject, ref, onMounted } from 'vue';
@@ -31,13 +30,11 @@ import {
     faClock
 } from "@far";
 import { faLambda } from "@fad";
-import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { computed } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
-import { trans } from 'laravel-vue-i18n'
 
 // Add icons to the library
 library.add(
@@ -120,7 +117,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
             </div>
 
             <!-- Section: Logo -->
-            <div class="xcol-span-2 flex justify-end items-center w-full" :class="!isLoggedIn ?  layout.retina?.type == 'b2b' ? 'justify-end' :'justify-center' : 'justify-end'">
+            <div class="xcol-span-2 flex items-center w-full" :class="layout.retina?.type == 'b2b' ? 'justify-start' : 'justify-center'">
                 <component :is="LinkIris" :href="'/'" class="block h-fit max-h-[50px] w-full max-w-32">
                     <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" alt="logo"
                         class="w-full h-auto object-contain" />

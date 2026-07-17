@@ -139,7 +139,7 @@ const options = {
             >
                 <dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
                     <FontAwesomeIcon icon="fal fa-box" fixed-width aria-hidden="true" />
-                    {{ trans('Stored SKUs') }}
+                    {{ trans('Stored SKOs') }}
                 </dt>
                 <dd class="mt-1 text-2xl font-semibold tabular-nums text-gray-800">
                     {{ locale.number(stockHistoryToday.number_org_stocks) }}
@@ -171,7 +171,7 @@ const options = {
                     </span>
                     <span
                         class="text-sm font-medium tabular-nums text-red-500"
-                        v-tooltip="trans('Percentage of total SKUs')"
+                        v-tooltip="trans('Percentage of total SKOs')"
                     >
                         {{ stockHistoryToday.percentage_out_of_stock }}%
                     </span>
@@ -211,7 +211,7 @@ const options = {
                     </span>
                     <span
                         class="text-sm font-medium tabular-nums text-red-500"
-                        v-tooltip="trans('Percentage of total SKUs')"
+                        v-tooltip="trans('Percentage of total SKOs')"
                     >
                         {{ stockHistoryToday.percentage_not_sold_1y }}%
                     </span>

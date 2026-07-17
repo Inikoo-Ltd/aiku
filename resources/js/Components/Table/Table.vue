@@ -1096,7 +1096,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                             :exportLinks="queryBuilderProps.exportLinks"
                             :per-page-options="queryBuilderProps.perPageOptions"
                             :on-per-page-change="onPerPageChange" 
-                            :custom-wrapper-class="'sticky top-[39px] z-[50] border-b !border-gray-300'"
+                            :custom-wrapper-class="'sticky top-[39px] z-[10] border-b !border-gray-300'"
                         />
                     </slot>
 

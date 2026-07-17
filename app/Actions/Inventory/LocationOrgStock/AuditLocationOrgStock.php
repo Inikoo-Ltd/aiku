@@ -15,6 +15,7 @@ use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
@@ -41,26 +42,37 @@ class AuditLocationOrgStock extends OrgAction
         $locationOrgStock = DB::transaction(function () use ($locationOrgStock, $modelData) {
             $currentStock = $locationOrgStock->quantity;
             $newQuantity  = Arr::pull($modelData, 'quantity');
+            $reason       = Arr::pull($modelData, 'reason');
+            $note         = Arr::pull($modelData, 'note');
             $stockDiff    = $newQuantity - $currentStock;
 
             $costPerSku = $this->getCostPerSku($locationOrgStock->orgStock, Carbon::now());
 
             $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
 
+            $storedData    = [
+                'quantity'         => $stockDiff,
+                'audited_quantity' => $newQuantity,
+                'date'             => now()->format('Y-m-d H:i:s.u'),
+                'type'             => Arr::pull($modelData, 'stock_movement_type', OrgStockMovementTypeEnum::AUDIT),
+                'cost_per_sku'     => $costPerSku,
+                'org_amount'       => $stockDiff * $costPerSku,
+                'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
+                'user_id'          => $this->user?->id,
+            ];
+
+            if ($reason) {
+                data_set($storedData, 'reason', $reason);
+            }
+
+            if ($note) {
+                data_set($storedData, 'note', $note);
+            }
+
             StoreOrgStockMovement::make()->action(
                 $locationOrgStock->orgStock,
                 $locationOrgStock->location,
-                [
-                    'quantity'         => $stockDiff,
-                    'audited_quantity' => $newQuantity,
-                    'date'             => now()->format('Y-m-d H:i:s.u'),
-                    'type'             => Arr::pull($modelData, 'stock_movement_type', OrgStockMovementTypeEnum::AUDIT),
-                    'cost_per_sku'     => $costPerSku,
-                    'org_amount'       => $stockDiff * $costPerSku,
-                    'grp_amount'       => $stockDiff * $costPerSku * $exchangeRate,
-                    'user_id'          => $this->user?->id,
-
-                ]
+                $storedData
             );
             // Update audited_at
             $locationOrgStock->updateQuietly([
@@ -81,6 +93,8 @@ class AuditLocationOrgStock extends OrgAction
     {
         return [
             'quantity'              => ['required', 'numeric', 'gte:0'],
+            'reason'                => ['required', new Enum(OrgStockMovementReasonEnum::class)],
+            'note'                  => ['sometimes', 'nullable', 'string'],
             'stock_movement_type'   => ['sometimes', new Enum(OrgStockMovementTypeEnum::class)]
         ];
     }
@@ -90,16 +104,20 @@ class AuditLocationOrgStock extends OrgAction
     {
         if (!$this->has('quantity')) {
             $this->set('quantity', $this->locationOrgStock->quantity);
+            $this->set('reason', OrgStockMovementReasonEnum::RECOUNT->value);
         }
     }
 
     /**
      * @throws \Throwable
      */
-    public function action(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
+    public function action(LocationOrgStock $locationOrgStock, array $modelData, ?User $user = null): LocationOrgStock
     {
         $this->asAction         = true;
         $this->locationOrgStock = $locationOrgStock;
+        if ($user) {
+            $this->user = $user;
+        }
 
         $this->initialisation($locationOrgStock->organisation, $modelData);
 
