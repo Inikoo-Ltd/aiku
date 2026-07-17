@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 17 Jul 2026 15:18:07 Malaysia Time, Kuala Lumpur, Malaysia
@@ -8,6 +9,7 @@
 namespace App\Actions\Accounting\Payment\PastPay;
 
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Client\PendingRequest;
@@ -33,16 +35,18 @@ trait WithPastpayConfiguration
     protected function getBaseUrl(): string
     {
         return app()->isProduction()
-            ? config('services.pastpay.base_url', 'https://api.pastpay.com')
-            : config('services.pastpay.sandbox_url', 'https://api.demo.pastpay.com');
+            ? (config('services.pastpay.base_url') ?: 'https://api.pastpay.com')
+            : (config('services.pastpay.sandbox_url') ?: 'https://api.demo.pastpay.com');
     }
 
     protected function getApiKey(): string
     {
-        return config('services.pastpay.demo_api_key', Arr::get($this->paymentAccount->data, 'credentials.api_key'));
+        return app()->isProduction()
+            ? Arr::get($this->paymentAccount->data, 'credentials.api_key')
+            : config('services.pastpay.demo_api_key');
     }
 
-    protected function getShopId(): string
+    protected function getShopId(): ?string
     {
         return Arr::get($this->paymentAccount->data, 'tax_number');
     }
@@ -73,17 +77,6 @@ trait WithPastpayConfiguration
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    protected function pastpayPatch(string $endpoint, array $payload): array
-    {
-        return $this->pastpayHandleResponse(
-            $this->pastpayClient()->patch($endpoint, $payload),
-            $endpoint
-        );
-    }
-
-    /**
-     * @throws \Illuminate\Http\Client\ConnectionException
-     */
     protected function pastpayDelete(string $endpoint): array
     {
         return $this->pastpayHandleResponse(
@@ -107,7 +100,7 @@ trait WithPastpayConfiguration
         );
     }
 
-    protected function pastpayBuildOrderPayload(Order $order, array $extra = []): array
+    protected function pastpayBuildOrderPayload(Order $order, OrderPaymentApiPoint $orderPaymentApiPoint, array $extra = []): array
     {
         return array_merge([
             'debtorTaxNumber' => $order->customer->taxNumber->number,
@@ -117,29 +110,33 @@ trait WithPastpayConfiguration
                 'currency'        => $order->currency->code
             ],
             'termDays'  => Arr::get($extra, 'termDays', 30),
+            'language'  => $this->pastpayLanguage($order),
             'paymentRedirectUrl' => [
-                'success'      => route('retina.models.success_order_pay_by_pastpay', $order->slug),
-                'failure'         => route('retina.ecom.checkout.show', [
-                    'order' => $order->slug
-                ]),
+                'success' => route('retina.webhooks.pastpay.order_payment_success', $orderPaymentApiPoint->ulid),
+                'failure' => route('retina.webhooks.pastpay.order_payment_failure', $orderPaymentApiPoint->ulid),
             ],
         ], $extra);
     }
 
+    protected function pastpayLanguage(Order $order): string
+    {
+        $code = substr($order->shop->language->code ?? 'en', 0, 2);
+
+        return in_array($code, ['hu', 'en', 'de', 'it']) ? $code : 'en';
+    }
+
     public function pastpayBuildFinalizePayload(Invoice $invoice, array $extra = []): array
     {
-        return array_merge([
+        $termDays = Arr::pull($extra, 'termDays', 30);
+
+        return array_merge(array_filter([
             'creditorTaxNumber' => $this->getShopId(),
+        ]), [
             'invoiceNo' => $invoice->reference,
-            'invoicePdf' => route('retina.ecom.invoices.pdf', [
-                'invoice' => $invoice->slug
-            ]),
-            'issueDate'   => $invoice->date->toDateString(),
-            'dueDate' => $invoice->date
-                ->addDays(Arr::get($extra, 'termDays'))
-                ->toDateString(),
-            'totalPrice'       => [
-                'amount' => (float) $invoice->net_amount,
+            'issueDate' => $invoice->date->toDateString(),
+            'dueDate' => $invoice->date->copy()->addDays($termDays)->toDateString(),
+            'totalPrice' => [
+                'amount' => (float) $invoice->total_amount,
                 'currency' => $invoice->currency->code
             ],
         ], $extra);
@@ -148,9 +145,9 @@ trait WithPastpayConfiguration
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    protected function pastpayInitiateOrder(Order $order, array $extra = []): array
+    protected function pastpayInitiateOrder(Order $order, OrderPaymentApiPoint $orderPaymentApiPoint, array $extra = []): array
     {
-        return $this->pastpayPost('store/order', $this->pastpayBuildOrderPayload($order, $extra));
+        return $this->pastpayPost('store/order', $this->pastpayBuildOrderPayload($order, $orderPaymentApiPoint, $extra));
     }
 
     /**
@@ -158,10 +155,11 @@ trait WithPastpayConfiguration
      */
     protected function pastpayFinalizeOrder(Invoice $invoice, array $extra = []): array
     {
-        $pastpayOrderId = $this->pastpayResolveOrderId($invoice->order);
+        $order          = $invoice->order;
+        $pastpayOrderId = $this->pastpayResolveOrderId($order);
 
-        return $this->pastpayPatch(
-            "/order/$pastpayOrderId/finalize",
+        return $this->pastpayPost(
+            '/debtors/'.$order->customer->taxNumber->number."/order/$pastpayOrderId/finalize",
             $this->pastpayBuildFinalizePayload($invoice, $extra)
         );
     }
@@ -171,7 +169,7 @@ trait WithPastpayConfiguration
      */
     protected function pastpayCancelOrder(Order $order): array
     {
-        return $this->pastpayDelete('/order/' . $this->pastpayResolveOrderId($order));
+        return $this->pastpayDelete('/debtors/'.$order->customer->taxNumber->number.'/order/'.$this->pastpayResolveOrderId($order));
     }
 
     /**
@@ -179,7 +177,7 @@ trait WithPastpayConfiguration
      */
     protected function pastpayGetOrder(Order $order): array
     {
-        return $this->pastpayGet('/order/' . $this->pastpayResolveOrderId($order));
+        return $this->pastpayGet('/orders/'.$this->pastpayResolveOrderId($order));
     }
 
     /**

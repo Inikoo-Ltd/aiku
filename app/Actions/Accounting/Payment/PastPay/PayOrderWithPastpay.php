@@ -8,11 +8,13 @@
 
 namespace App\Actions\Accounting\Payment\PastPay;
 
+use App\Actions\Accounting\OrderPaymentApiPoint\UpdateOrderPaymentApiPoint;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
+use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
@@ -23,7 +25,7 @@ class PayOrderWithPastpay extends RetinaAction
     use CalculatesPaymentWithBalance;
     use WithPastpayConfiguration;
 
-    public function handle(Order $order, array $modelData): array
+    public function handle(Order $order, OrderPaymentApiPoint $orderPaymentApiPoint, array $modelData): array
     {
         /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $order->shop->paymentAccountShops()
@@ -37,10 +39,10 @@ class PayOrderWithPastpay extends RetinaAction
             $order->customer->balance
         );
 
-        $termDays = Arr::get($modelData, 'days');
+        $termDays         = Arr::get($modelData, 'days');
         $charges          = Arr::get($paymentAccountShop->data, 'charges.options', []);
         $chargePercentage = collect($charges)->where('days', $termDays)->first();
-        $chargeAmount     = $paymentAmounts['total'] * ($chargePercentage['charge'] / 100);
+        $chargeAmount     = round($paymentAmounts['total'] * ($chargePercentage['charge'] / 100), 2);
         $toPay            = $paymentAmounts['total'] + $chargeAmount;
 
         $toPay = (int)round((float)$toPay * 100);
@@ -53,14 +55,13 @@ class PayOrderWithPastpay extends RetinaAction
         $amount = $toPay / 100;
 
         try {
-            $response = $this->pastpayInitiateOrder($order, [
+            $response = $this->pastpayInitiateOrder($order, $orderPaymentApiPoint, [
                 'totalPrice' => [
                     'amount'   => (float)$amount,
                     'currency' => $order->currency->code
                 ],
                 'termDays'   => (int)$termDays,
             ]);
-
 
             UpdateOrder::run($order, [
                 'data' => [
@@ -72,13 +73,22 @@ class PayOrderWithPastpay extends RetinaAction
                 ]
             ]);
 
+            UpdateOrderPaymentApiPoint::run($orderPaymentApiPoint, [
+                'data' => [
+                    'pastpay' => [
+                        'payment_account_shop_id' => $paymentAccountShop->id,
+                        'charges'                 => $chargeAmount,
+                        'term_days'               => (int)$termDays,
+                        'to_pay'                  => $amount,
+                    ]
+                ]
+            ]);
 
             return [
                 'status' => 'ok',
                 'data'   => Arr::get($response, 'data.redirectUrl')
             ];
         } catch (\Exception $e) {
-            // API error
             $error_details    = $e->getMessage();
             $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
 
@@ -108,32 +118,24 @@ class PayOrderWithPastpay extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle($order, $this->validatedData);
+        $orderPaymentApiPoint = OrderPaymentApiPoint::where('ulid', Arr::get($this->validatedData, 'order_payment_api_point'))
+            ->where('order_id', $order->id)
+            ->firstOrFail();
+
+        return $this->handle($order, $orderPaymentApiPoint, $this->validatedData);
     }
 
     public function rules(): array
     {
         return [
-            'days' => [
+            'days'                     => [
                 'required',
                 'integer'
             ],
+            'order_payment_api_point' => [
+                'required',
+                'string'
+            ],
         ];
     }
-
-    public string $commandSignature = 'test_pastpay';
-
-
-    public function asCommand(): int
-    {
-        $order = Order::where('slug', 'awp31151')->first();
-
-        $result = $this->handle($order, [
-            'days' => 30
-        ]);
-        dd($result);
-
-        return 1;
-    }
-
 }
