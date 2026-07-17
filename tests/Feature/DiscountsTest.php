@@ -63,6 +63,7 @@ use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
@@ -1643,6 +1644,55 @@ describe('calculate order discounts', function () {
 
         $giftTransaction->forceDelete();
         SuspendOffer::run($offer);
+    });
+
+    test('CalculateOrderDiscounts: mix and match cheapest free across different family products', function () {
+        $order       = Order::first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((int)$transaction->quantity_ordered)->toBe(3);
+
+        $cheapProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->first();
+        expect($cheapProduct)->not->toBeNull()
+            ->and($cheapProduct->family_id)->toBe($this->product->family_id);
+
+        $cheapTransaction = StoreTransaction::make()->action(
+            $order,
+            $cheapProduct->currentHistoricProduct,
+            ['quantity_ordered' => 1]
+        );
+
+        $offer = StoreBuyXGetCheapestFree::make()->action(
+            $this->product->family,
+            [
+                'trigger_data_item_quantity' => 2,
+                'free_quantity'              => 1,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        expect($offer)->toBeInstanceOf(Offer::class);
+
+        CalculateOrderDiscounts::run($order->refresh());
+
+        $transaction->refresh();
+        $cheapTransaction->refresh();
+
+        expect((float)$cheapTransaction->gross_amount)->toBe(50.0)
+            ->and((float)$cheapTransaction->net_amount)->toBe(0.0)
+            ->and(Arr::get($cheapTransaction->offers_data, 'o.nf'))->toBe(1)
+            ->and((float)Arr::get($cheapTransaction->offers_data, 'o.f'))->toBe(50.0)
+            ->and((float)$transaction->net_amount)->toBe(200.0)
+            ->and(Arr::get($transaction->offers_data, 'o.nf'))->toBe(1)
+            ->and((float)Arr::get($transaction->offers_data, 'o.f'))->toBe(100.0);
+
+        SuspendOffer::run($offer);
+        DeleteTransaction::run($cheapTransaction->refresh());
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
     });
 
     test('customer exclusive offers: amount threshold and any order', function () {
