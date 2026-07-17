@@ -13,6 +13,7 @@ export interface Mailshot {
     created_at: string
     updated_at: string,
     slug: string,
+    type?: string,
     shop_id?: number,
     webpage_slug?: string,
     webpage_website_slug?: string,

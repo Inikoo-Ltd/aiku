@@ -108,13 +108,13 @@ function mailshotRoute(mailshot: Mailshot) {
                 <Link v-if="mailshotRoute(mailshot)" :href="(mailshotRoute(mailshot) as string)" class="primaryLink">
                     {{ mailshot["subject"] }}
                 </Link>
-                <Link v-if="mailshot.state === 'sent' && mailshot.webpage_slug && !mailshot.has_source_reference" :href="webpageRoute(mailshot)"
+                <Link v-if="mailshot.state === 'sent' && mailshot.webpage_slug && !mailshot.has_source_reference && mailshot.type !== 'invite'" :href="webpageRoute(mailshot)"
                     v-tooltip="trans('Go to the webpage created from this mailshot')"
                     class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 transition">
                     <FontAwesomeIcon :icon="faExternalLink" class="mr-1" />
                     {{ trans("Go to webpage") }}
                 </Link>
-                <span v-else-if="mailshot.state === 'sent' && !mailshot.has_source_reference"
+                <span v-else-if="mailshot.state === 'sent' && !mailshot.has_source_reference && mailshot.type !== 'invite'"
                     v-tooltip="trans('Convert this mailshot into a page')"
                     :class="[
                         'ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded transition',
