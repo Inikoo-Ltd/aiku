@@ -8,7 +8,8 @@
 
 use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\FinishOffer;
-use App\Actions\Discounts\Offer\StoreBogoOffer;
+use App\Actions\Discounts\Offer\StoreBuyXGetCheapestFree;
+use App\Actions\Discounts\Offer\StoreProductDiscount;
 use App\Actions\Discounts\Offer\StoreCustomerOffers;
 use App\Actions\Discounts\Offer\StoreGiftsOffers;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
@@ -30,4 +31,5 @@ Route::post('offers/shop/{shop:id}/shop-offer', StoreShopOffer::class)->name('sh
 Route::post('offers/shop/{shop:id}/voucher', StoreVoucherOffers::class)->name('store_voucher');
 Route::post('offers/shop/{shop:id}/customer-offer', StoreCustomerOffers::class)->name('store_customer_offer');
 Route::post('offers/shop/{shop:id}/shipping-offer', StoreDiscountShipping::class)->name('shipping_offer.store');
-Route::post('offers/shop/{shop:id}/bogo-offer', StoreBogoOffer::class)->name('bogo_offer.store');
+Route::post('offers/shop/{shop:id}/bogo-offer', StoreBuyXGetCheapestFree::class)->name('bogo_offer.store');
+Route::post('offers/shop/{shop:id}/product-offer', StoreProductDiscount::class)->name('product_offer.store');

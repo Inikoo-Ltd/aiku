@@ -205,7 +205,20 @@ class SubmitOrder extends OrgAction
         ) {
             $triggerData = json_decode($giftOfferData->trigger_data, true);
 
-            if ($order->gross_amount >= Arr::get($triggerData, 'min_order_amount', 0)) {
+            if ($giftOfferData->trigger_type == 'Product') {
+                $itemQuantity    = (int)Arr::get($triggerData, 'item_quantity', 0);
+                $orderedQuantity = DB::table('transactions')
+                    ->where('order_id', $order->id)
+                    ->where('model_type', 'Product')
+                    ->where('model_id', $giftOfferData->trigger_id)
+                    ->whereNull('deleted_at')
+                    ->sum('quantity_ordered');
+                $eligible        = $itemQuantity > 0 && $orderedQuantity >= $itemQuantity;
+            } else {
+                $eligible = $order->gross_amount >= Arr::get($triggerData, 'min_order_amount', 0);
+            }
+
+            if ($eligible) {
                 $allowanceData = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', $giftOfferData->id)->first();
                 if ($allowanceData) {
                     $allowanceGiftData = json_decode($allowanceData->data, true);
@@ -312,7 +325,7 @@ class SubmitOrder extends OrgAction
                             'model_type'            => $giftTransaction->model_type,
                             'model_id'              => $giftTransaction->model_id,
                             'offer_campaign_id'     => Arr::get($voucherOfferData, 'offer_campaign_id'),
-                            'offer_id'              => Arr::get($voucherOfferData, 'offer_campaign_id'),
+                            'offer_id'              => Arr::get($voucherOfferData, 'id'),
                             'offer_allowance_id'    => Arr::get($voucherOfferData, 'offer_allowance_id'),
                             'discounted_amount'     => 0,
                             'discounted_percentage' => 0,

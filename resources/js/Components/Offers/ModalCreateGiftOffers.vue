@@ -139,8 +139,21 @@ const submitGiftOffer = () => {
             end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
         }
 
+    const isBuyXGetFree = isLocalEnvironment.value
+        && allowanceType.value === 'free'
+        && typeOffer.value === 'quantity'
+
+    const isProductPercentage = isLocalEnvironment.value
+        && allowanceType.value === 'percentage'
+
+    const routeName = isBuyXGetFree
+        ? 'grp.models.bogo_offer.store'
+        : isProductPercentage
+            ? 'grp.models.product_offer.store'
+            : 'grp.models.gift_offer.store'
+
     axios.post(
-        route('grp.models.gift_offer.store', {
+        route(routeName, {
             shop: props.shop_data.id,
         }),
         payload
@@ -234,6 +247,15 @@ watch(typeOffer, (val) => {
     }
 })
 
+watch(allowanceType, (val) => {
+    if (val === 'free') {
+        typeOffer.value = 'quantity'
+        if ((offerQtyItems.value ?? 0) < 2) {
+            offerQtyItems.value = 2
+        }
+    }
+})
+
 watch(freeSameAsProduct, (isSame) => {
     if (isSame) {
         freeProductId.value = null
@@ -253,6 +275,9 @@ const isFormInvalid = computed(() => {
         if (allowanceType.value === 'free') {
             if (!freeQuantity.value) return true
             if (!freeSameAsProduct.value && !freeProductId.value) return true
+            if (typeOffer.value !== 'quantity') return true
+            if ((offerQtyItems.value ?? 0) < 2) return true
+            if (freeQuantity.value >= (offerQtyItems.value ?? 0)) return true
         }
         if (typeOffer.value === 'quantity' && !offerQtyItems.value) return true
         if (typeOffer.value === 'amount' && !offerAmount.value) return true
@@ -369,7 +394,7 @@ resetForm()
                                 <div class="min-h-[40px]">
                                     <InputNumber v-model="offerQtyItems" v-show="typeOffer === 'quantity'" fluid
                                         inputId="offer_quantity_item" :placeholder="trans('Enter minimum quantity')"
-                                        :disabled="typeOffer !== 'quantity'" :min="0" class="w-full" inputClass="w-full"
+                                        :disabled="typeOffer !== 'quantity'" :min="allowanceType === 'free' ? 2 : 0" class="w-full" inputClass="w-full"
                                         :suffix="' ' + ((offerQtyItems ?? 0) > 1 ? trans('items') : trans('item'))" />
                                 </div>
                             </div>
@@ -377,7 +402,7 @@ resetForm()
                             <div class="space-y-2 flex-1">
                                 <div class="flex items-center gap-2">
                                     <RadioButton v-model="typeOffer" inputId="type-amount" name="amount" value="amount"
-                                        size="small" />
+                                        size="small" :disabled="allowanceType === 'free'" />
                                     <label for="type-amount" class="cursor-pointer">{{ trans('By minimum amount')
                                         }}</label>
                                 </div>
@@ -430,8 +455,9 @@ resetForm()
                         <div v-else class="space-y-3">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span>{{ trans('Get') }}</span>
-                                <InputNumber v-model="freeQuantity" inputId="free_quantity" :min="1" class="w-40"
-                                    inputClass="w-full"
+                                <InputNumber v-model="freeQuantity" inputId="free_quantity" :min="1"
+                                    :max="typeOffer === 'quantity' ? Math.max((offerQtyItems ?? 2) - 1, 1) : undefined"
+                                    class="w-40" inputClass="w-full"
                                     :suffix="' ' + ((freeQuantity ?? 0) > 1 ? trans('items') : trans('item'))" />
                                 <span>{{ trans('for free') }}</span>
                             </div>

@@ -294,6 +294,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             ->where('status', true)
             ->whereIn('trigger_type', [
                 'Customer',
+                'Product',
                 'ProductCategory',
                 'ShopAiku'//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
             ])->get();
@@ -416,6 +417,38 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                         ];
                     }
                 }
+            } elseif (in_array($offerData->type, [
+                OfferTypeEnum::PRODUCT_FOR_EVERY_QUANTITY_ORDERED->value,
+                OfferTypeEnum::PRODUCT_QUANTITY_ORDERED->value,
+                OfferTypeEnum::PRODUCT_AMOUNT_ORDERED->value,
+            ])) {
+                $enabledOffers[$offerData->allowance_signature] = [
+                    'offer_id'    => $offerData->id,
+                    'offer_label' => $offerData->name,
+                ];
+            } elseif ($offerData->type == OfferTypeEnum::CATEGORY_FOR_EVERY_QUANTITY_ORDERED->value) {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
+                    $triggerData     = json_decode($offerData->trigger_data, true);
+                    $familyQuantity  = Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity", 0);
+                    $triggerQuantity = Arr::get($triggerData, 'item_quantity', 0);
+
+                    if ($triggerQuantity > 0 && $familyQuantity >= $triggerQuantity) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                        ];
+                    }
+
+                    $this->offerMeters[$offerData->allowance_signature] = [
+                        'offer_id' => $offerData->id,
+                        'label'    => $offerData->name,
+                        'is_gift'  => false,
+                        'metadata' => [
+                            'current' => $familyQuantity,
+                            'target'  => $triggerQuantity,
+                        ]
+                    ];
+                }
             } elseif ($offerData->type == 'Category Quantity Ordered Order Interval') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
                     $amnestyOfferId = $this->getGrAmnestyOfferId($order);
@@ -537,7 +570,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
         $allowances = DB::table('offer_allowances')
-            ->select(['target_type', 'data', 'offer_id', 'id', 'offer_campaign_id'])
+            ->select(['target_type', 'type', 'data', 'offer_id', 'id', 'offer_campaign_id'])
             ->whereIn('offer_id', array_column($this->enabledOffers, 'offer_id'))
             ->orderBy('id')
             ->get()
@@ -563,6 +596,108 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             $this->processAllowanceAllProductsInProductCategory($offerData, $allowanceData);
         } elseif ($allowanceData->target_type == 'all_products_in_department') {
             $this->processAllowanceAllProductsInDepartment($offerData, $allowanceData);
+        } elseif ($allowanceData->target_type == 'cheapest_products_in_product_category') {
+            $this->processAllowanceFreeItems($offerData, $allowanceData);
+        } elseif ($allowanceData->target_type == 'product' && $allowanceData->type == 'free_items') {
+            $this->processAllowanceFreeItems($offerData, $allowanceData);
+        } elseif ($allowanceData->target_type == 'product' && $allowanceData->type == 'percentage_off') {
+            $this->processAllowanceProductPercentage($offerData, $allowanceData);
+        }
+    }
+
+    public function processAllowanceProductPercentage(array $offerData, object $allowanceData): void
+    {
+        $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
+        $productId        = Arr::get($allowanceOpsData, 'product_id');
+        $percentageOff    = max(0.0, min(1.0, (float)Arr::get($allowanceOpsData, 'percentage_off', 0)));
+
+        if (!$productId || $percentageOff <= 0) {
+            return;
+        }
+
+        $productTransactions = $this->transactions
+            ->filter(fn ($transaction) => $transaction->model_id == $productId && $transaction->quantity_ordered > 0);
+
+        if ($productTransactions->isEmpty()) {
+            return;
+        }
+
+        $itemQuantity = (int)Arr::get($allowanceOpsData, 'item_quantity', 0);
+        $itemAmount   = (float)Arr::get($allowanceOpsData, 'item_amount', 0);
+        if ($itemQuantity > 0 && $productTransactions->sum('quantity_ordered') < $itemQuantity) {
+            return;
+        }
+        if ($itemAmount > 0 && $productTransactions->sum('gross_amount') < $itemAmount) {
+            return;
+        }
+
+        foreach ($productTransactions as $transaction) {
+            $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
+            if ($current === null || (is_numeric($current) && (float)$current < $percentageOff)) {
+                $this->applyOfferToTransaction(
+                    $transaction,
+                    $percentageOff,
+                    $offerData['offer_label'],
+                    $allowanceData
+                );
+            }
+        }
+    }
+
+    public function processAllowanceFreeItems(array $offerData, object $allowanceData): void
+    {
+        $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
+        $itemQuantity     = (int)Arr::get($allowanceOpsData, 'item_quantity', 0);
+        $freeQuantity     = (int)Arr::get($allowanceOpsData, 'free_quantity', 0);
+        $categoryId       = Arr::get($allowanceOpsData, 'category_id');
+        $productId        = Arr::get($allowanceOpsData, 'product_id');
+
+        if ($itemQuantity <= 0 || $freeQuantity <= 0 || (!$categoryId && !$productId)) {
+            return;
+        }
+
+        $familyTransactions = $this->transactions
+            ->filter(fn ($transaction) => ($productId ? $transaction->model_id == $productId : $transaction->family_id == $categoryId)
+                && $transaction->quantity_ordered > 0 && $transaction->gross_amount > 0);
+
+        $totalUnits = (int)$familyTransactions->sum('quantity_ordered');
+        $freeUnits  = min(intdiv($totalUnits, $itemQuantity) * $freeQuantity, $totalUnits);
+
+        if ($freeUnits <= 0) {
+            return;
+        }
+
+        $sortedByUnitPrice = $familyTransactions->sortBy(fn ($transaction) => $transaction->gross_amount / $transaction->quantity_ordered)->values();
+
+        foreach ($sortedByUnitPrice as $transaction) {
+            if ($freeUnits <= 0) {
+                break;
+            }
+
+            $takenUnits = (int)min($freeUnits, $transaction->quantity_ordered);
+            $freeUnits  -= $takenUnits;
+
+            $unitPrice        = $transaction->gross_amount / $transaction->quantity_ordered;
+            $discountedAmount = round($unitPrice * $takenUnits, 2);
+            $percentageOff    = $takenUnits / $transaction->quantity_ordered;
+
+            $current = property_exists($transaction, 'discounted_percentage') ? (float)$transaction->discounted_percentage : null;
+            if ($current !== null && $current >= $percentageOff) {
+                continue;
+            }
+
+            $this->applyOfferToTransaction(
+                $transaction,
+                $percentageOff,
+                $offerData['offer_label'],
+                $allowanceData
+            );
+
+            $transaction->allowance_type       = 'free_items';
+            $transaction->discounted_amount    = $discountedAmount;
+            $transaction->net_amount           = (float)$transaction->gross_amount - $discountedAmount;
+            $transaction->free_items_value     = $discountedAmount;
+            $transaction->number_of_free_items = $takenUnits;
         }
     }
 
