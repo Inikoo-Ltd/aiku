@@ -301,10 +301,12 @@ return [
         'shipper_ctt_token' => json_decode(env('CTT_TOKEN', '{}'), true),
 
         'local_share_url' => env('SANDBOX_SHARE_URL'),
+        'local_webhooks_url' => env('SANDBOX_LOCAL_WEBHOOKS_URL'),
         'checkout_com'    => [
             'public_key'      => env('CHECKOUT_COM_PUBLIC_KEY'),
             'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
+            'webhook_key'     => env('LOCAL_CHECKOUT_COM_WEBHOOK_KEY'),
         ],
         'luigisbox'       => [
             'tracker_id'  => env('LS_TRACKER_ID'),

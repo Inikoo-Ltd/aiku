@@ -15,6 +15,7 @@ import { analyzer } from 'vite-bundle-analyzer'
 
 export default defineConfig(
   {
+    cacheDir: "node_modules/.vite-retina",
     server : {
       cors   : true,
       watch: {

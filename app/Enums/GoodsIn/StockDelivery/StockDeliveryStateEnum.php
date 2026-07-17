@@ -26,6 +26,23 @@ enum StockDeliveryStateEnum: string
     case CANCELLED = 'cancelled';
     case NOT_RECEIVED = 'not_received';
 
+    public static function labels(): array
+    {
+        return [
+            'in_process'    => __('In process'),
+            'confirmed'     => __('Confirmed'),
+            'ready_to_ship' => __('Ready to ship'),
+            'dispatched'    => __('Dispatched'),
+            'received'      => __('Received'),
+            'checked'       => __('Checked'),
+            'booking_in'    => __('Booking in'),
+            'booked_in'     => __('Booked in'),
+            'placed'        => __('Placed'),
+            'cancelled'     => __('Cancelled'),
+            'not_received'  => __('Not Received'),
+        ];
+    }
+
     public static function stateIcon(): array
     {
         return [

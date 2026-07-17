@@ -13,6 +13,7 @@ import path from "node:path";
 
 export default defineConfig(
   {
+    cacheDir: "node_modules/.vite-pupil",
     server : {
       cors : true,
       watch: {
