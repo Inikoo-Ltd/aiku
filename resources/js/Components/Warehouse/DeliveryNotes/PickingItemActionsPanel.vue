@@ -63,6 +63,10 @@ const pickingDenominator = computed(() => {
     return undefined
 })
 
+const hasEnoughStockToPickAll = computed(() => {
+    return Number(currentLocation.value?.quantity ?? 0) >= Number(props.item.quantity_waiting_warehouse ?? 0)
+})
+
 const isModalLocation = ref(false)
 const isOpenModalPassToCs = ref(false)
 const errors = ref<string[]>([])
@@ -147,13 +151,16 @@ const errors = ref<string[]>([])
                 <template #save="{ isProcessing }">
                     <div class="flex gap-x-8 w-fit">
                         <ButtonWithLink
-                            v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: currentLocation.location_code || '-' })"
+                            v-tooltip="hasEnoughStockToPickAll
+                                ? trans('Pick all required quantity in location :xlocation', { xlocation: currentLocation.location_code || '-' })
+                                : trans('Not enough stock in location :xlocation to pick all :xrequired required', { xlocation: currentLocation.location_code || '-', xrequired: locale.number(item.quantity_waiting_warehouse ?? 0) })"
                             icon="fal fa-clipboard-list-check"
                             :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
                             type="secondary"
                             :loading="isProcessing"
+                            :disabled="!hasEnoughStockToPickAll"
                             class="py-0"
-                            :routeTarget="item.picking_all_route"
+                            :routeTarget="hasEnoughStockToPickAll ? item.picking_all_route : undefined"
                             :bind-to-link="{
                                 preserveScroll: true,
                                 preserveState: true,
