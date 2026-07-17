@@ -128,21 +128,25 @@ class SendDispatchedReplacementOrderEmailToCustomer extends OrgAction
             </tr>
         </table>';
 
-        return $this->sendEmailWithMergeTags(
+        $result = $this->sendEmailWithMergeTags(
             $dispatchedEmail,
             $outbox->emailOngoingRun->sender(),
             $outbox->emailOngoingRun?->email?->subject,
             $emailHtmlBody,
             '',
             additionalData: [
-                'order'           => $orderHtmlBlock,
-                'customer_name'   => $order->customer->name,
-                'order_reference' => $order->reference,
-                'date'            => $order->created_at->format('F jS, Y'),
-                'order_link'      => $orderUrl
+               'order'           => $orderHtmlBlock,
+               'customer_name'   => $order->customer->name,
+               'order_reference' => $order->reference,
+               'date'            => $order->created_at->format('F jS, Y'),
+               'order_link'      => $orderUrl
             ],
             senderName: $outbox->emailOngoingRun->senderName(),
         );
+
+        app()->setLocale($previousLocale);
+
+        return $result;
     }
 
 
