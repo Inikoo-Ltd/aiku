@@ -35,18 +35,18 @@ const layout: any = inject("layout", {})
           :class="index !== 0 ? 'border-t border-gray-200' : ''" v-slot="{ open }">
           <dt class="flex items-start justify-between gap-2 px-4 py-3">
             <div class="flex-1">
-              <DisclosureButton class="flex w-full">
+              <DisclosureButton class="flex w-full !text-left">
                 <div v-html="faq.label"></div>
               </DisclosureButton>
 
             </div>
-            <DisclosureButton class="ml-2 flex h-[44px] w-[44px] items-center justify-center transition"
+            <DisclosureButton class="ml-2 flex h-[44px] w-[44px] items-center justify-center transition "
               :name="'disclosure-button-' + index"
               :aria-label="open ? trans('Hide answer') : trans('Show answer')">
               <font-awesome-icon :icon="open ? 'minus' : 'plus'" aria-hidden="true" />
             </DisclosureButton>
           </dt>
-          <DisclosurePanel as="dd" class="px-4 pb-4 text-base text-gray-600 transition-all duration-300 ease-in-out">
+          <DisclosurePanel as="dd" class="px-4 pb-4 text-base text-gray-600 transition-all duration-300 ease-in-out !text-left">
             <div v-html="faq.description"></div>
           </DisclosurePanel>
         </Disclosure>
