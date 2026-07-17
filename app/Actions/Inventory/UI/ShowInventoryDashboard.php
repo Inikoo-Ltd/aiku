@@ -96,6 +96,28 @@ class ShowInventoryDashboard extends OrgAction
                         'color'           => '#df1c1cff',
                         'value' => '0', // No stat for this just yet
                     ],
+                    [
+                        'label' => __('Replenishments'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.replenishments.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-dolly',
+                        'backgroundColor' => '#0ea5e911',
+                        'color'           => '#0284c7ff',
+                        'value' => '0', // No stat for this just yet
+                    ],
+                    [
+                        'label' => __('Low Stock Audits'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.low_stock_audits.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-clipboard-list-check',
+                        'backgroundColor' => '#f59e0b11',
+                        'color'           => '#d97706ff',
+                        'value' => '0', // No stat for this just yet
+                    ],
                 ],
                 // 'dashboardStats' => $this->getDashboardStats(),
                 'dashboard'          => $this->getDashboard(),
