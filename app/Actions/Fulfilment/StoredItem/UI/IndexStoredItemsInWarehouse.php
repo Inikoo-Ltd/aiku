@@ -95,7 +95,7 @@ class IndexStoredItemsInWarehouse extends OrgAction
         $subNavigation = [];
 
         $icon       = ['fal', 'fa-narwhal'];
-        $title      = __("Customer's SKUs");
+        $title      = __("Customer's SKOs");
         $afterTitle = null;
         $iconRight  = null;
 
@@ -151,7 +151,7 @@ class IndexStoredItemsInWarehouse extends OrgAction
                                 'warehouse'    => $routeParameters['warehouse'],
                             ]
                         ],
-                        'label' => __("Customer's SKUs"),
+                        'label' => __("Customer's SKOs"),
                         'icon'  => 'fal fa-bars',
                     ],
 

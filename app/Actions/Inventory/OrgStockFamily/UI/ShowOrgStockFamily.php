@@ -55,18 +55,18 @@ class ShowOrgStockFamily extends OrgAction
         return [
             [
                 'isAnchor' => true,
-                'label'    => __('SKU Family'),
+                'label'    => __('SKO Family'),
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
                     'parameters' => $routeParameters,
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-boxes-alt'],
-                    'tooltip' => __('SKU Family'),
+                    'tooltip' => __('SKO Family'),
                 ],
             ],
             [
-                'label'    => __('SKUs'),
+                'label'    => __('SKOs'),
                 'number'   => $orgStockFamily->stats->number_org_stocks ?? 0,
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
@@ -74,7 +74,7 @@ class ShowOrgStockFamily extends OrgAction
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-box'],
-                    'tooltip' => __('SKUs'),
+                    'tooltip' => __('SKOs'),
                 ],
             ],
         ];
@@ -149,7 +149,7 @@ class ShowOrgStockFamily extends OrgAction
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
                                 'parameters' => Arr::except($routeParameters, ['orgStockFamily']),
                             ],
-                            'label' => __('SKUs families'),
+                            'label' => __('SKOs families'),
                             'icon'  => 'fal fa-bars',
                         ],
                         'model' => [

@@ -57,7 +57,7 @@ class ShowInventoryDashboard extends OrgAction
                 'flatTreeMaps' => [
                     [
                         [
-                            'name'  => __('SKUs Families'),
+                            'name'  => __('SKOs Families'),
                             'icon'  => ['fal', 'fa-boxes-alt'],
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
@@ -69,7 +69,7 @@ class ShowInventoryDashboard extends OrgAction
 
                         ],
                         [
-                            'name'        => 'SKUs',
+                            'name'        => 'SKOs',
                             'icon'        => ['fal', 'fa-box'],
                             'description' => __('current'),
                             'route'       => [
@@ -86,7 +86,7 @@ class ShowInventoryDashboard extends OrgAction
                 'statsBox' => [
                     [
                         'is_negative' => true,
-                        'label' => __('SKU Without Product'),
+                        'label' => __('SKO Without Product'),
                         'route' => [
                             'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',
                             'parameters' => $routeParameters

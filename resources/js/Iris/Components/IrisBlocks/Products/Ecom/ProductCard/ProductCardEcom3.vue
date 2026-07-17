@@ -26,7 +26,7 @@ import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
 const layout = inject('layout', retinaLayoutStructure)
-
+console.log(layout)
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
     hasInBasket?: any

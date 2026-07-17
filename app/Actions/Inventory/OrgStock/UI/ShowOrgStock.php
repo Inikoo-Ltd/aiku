@@ -62,7 +62,7 @@ class ShowOrgStock extends OrgAction
         return Inertia::render(
             'Org/Inventory/OrgStock',
             [
-                'title'       => __('SKU') . ' (' . $orgStock->code . ')',
+                'title'       => __('SKO') . ' (' . $orgStock->code . ')',
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $orgStock,
                     $request->route()->getName(),
@@ -74,17 +74,17 @@ class ShowOrgStock extends OrgAction
                 ],
                 'pageHead'    => [
                     'icon'          => [
-                        'title' => __('SKU'),
+                        'title' => __('SKO'),
                         'icon'  => 'fal fa-box'
                     ],
-                    'model'         => __('SKU'),
+                    'model'         => __('SKO'),
                     'title'         => $orgStock->code,
                     'iconRight'          => $orgStock->state->stateIcon()[$orgStock->state->value],
                     'actions'       => [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('Edit SKU'),
+                            'label' => __('Edit SKO'),
                             'route' => [
                                 'name'       => preg_replace('/\.show$/', '.edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters(),
@@ -146,7 +146,7 @@ class ShowOrgStock extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('SKUs')
+                            'label' => __('SKOs')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
