@@ -11,14 +11,14 @@ namespace App\Actions\Inventory\OrgStock\UI;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Inventory\OrgStockReplenishmentsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
-use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -53,17 +53,19 @@ class IndexOrgStockReplenishments extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $orderedSubQuery = PurchaseOrderTransaction::query()
-            ->selectRaw('COALESCE(SUM(purchase_order_transactions.quantity_ordered - purchase_order_transactions.quantity_dispatched), 0)')
-            ->join('purchase_orders', 'purchase_order_transactions.purchase_order_id', '=', 'purchase_orders.id')
-            ->whereColumn('purchase_order_transactions.org_stock_id', 'org_stocks.id')
-            ->whereIn('purchase_orders.delivery_state', [
-                PurchaseOrderDeliveryStateEnum::READY_TO_SHIP->value,
-                PurchaseOrderDeliveryStateEnum::DISPATCHED->value,
+        $orderedSubQuery = DeliveryNoteItem::query()
+            ->selectRaw('COALESCE(SUM(delivery_note_items.quantity_required - COALESCE(delivery_note_items.quantity_dispatched, 0)), 0)')
+            ->join('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id')
+            ->whereColumn('delivery_note_items.org_stock_id', 'org_stocks.id')
+            ->whereNotIn('delivery_notes.state', [
+                DeliveryNoteStateEnum::DISPATCHED->value,
+                DeliveryNoteStateEnum::CANCELLED->value,
             ])
-            ->whereNotIn('purchase_orders.state', [
-                PurchaseOrderStateEnum::CANCELLED->value,
-                PurchaseOrderStateEnum::NOT_RECEIVED->value,
+            ->whereNotIn('delivery_note_items.state', [
+                DeliveryNoteItemStateEnum::DISPATCHED->value,
+                DeliveryNoteItemStateEnum::CANCELLED->value,
+                DeliveryNoteItemStateEnum::OUT_OF_STOCK->value,
+                DeliveryNoteItemStateEnum::NO_DISPATCHED->value,
             ]);
 
         $queryBuilder = QueryBuilder::for(OrgStock::class);
