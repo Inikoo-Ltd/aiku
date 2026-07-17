@@ -168,8 +168,7 @@ const _popoverProfit = ref(null)
     class="font-sans border-gray-200 mt-1 mb-[-2px] px-0 tabular-nums leading-none text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] 2xl:text-sm">
 
         <!-- HEADER -->
-        <div 
-            class="mb-1 flex items-center justify-between border-b border-gray-200 pb-1 text-[11px]">
+        <div style="margin-bottom: 0.25rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; font-size: 11px;">
             <div class="flex items-center gap-2">
                 <span class="font-medium text-[#333]">
                     {{ product?.code }}
@@ -184,7 +183,8 @@ const _popoverProfit = ref(null)
                 <LabelComingSoon v-else-if="product.is_coming_soon" :product="product" />
             </div>
 
-            <div v-if="product?.rrp_per_unit ?? 0 > 0" class="ml-auto flex items-center gap-1 whitespace-nowrap">
+            <div v-if="product?.rrp_per_unit ?? 0 > 0"
+                style="margin-left: auto; display: flex; align-items: center; gap: 0.25rem; white-space: nowrap;">
                 <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
                     @mouseleave="_popoverProfit?.hide"
                     class="cursor-pointer opacity-60 hover:opacity-100 flex items-center text-[8px] sm:text-[9px] md:text-[10px]">

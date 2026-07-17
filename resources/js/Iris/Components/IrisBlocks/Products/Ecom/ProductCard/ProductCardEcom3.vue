@@ -21,7 +21,7 @@ import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import { routeType } from '@/types/route'
 /* import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue' */
-import Prices4 from '@/Iris/Components/BlocksUtils/Prices4new.vue'
+import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
