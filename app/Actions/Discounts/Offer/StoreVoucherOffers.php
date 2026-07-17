@@ -79,8 +79,9 @@ class StoreVoucherOffers extends OrgAction
 
 
         if ($allowanceType == 'percentage_off') {
-            $targetId   = Arr::pull($modelData, 'target_id');
-            $targetType = match (Arr::pull($modelData, 'target_type')) {
+            $targetId       = Arr::pull($modelData, 'target_id');
+            $rawTargetType  = Arr::pull($modelData, 'target_type');
+            $targetType     = match ($rawTargetType) {
                 'shop' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
                 'department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
                 'sub_department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
@@ -88,6 +89,18 @@ class StoreVoucherOffers extends OrgAction
                 'collection' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION->value,
                 default => OfferAllowanceTargetTypeEnum::PRODUCT->value
             };
+
+            $allowanceOpsData = ['percentage_off' => $percentageOff];
+            if (in_array($rawTargetType, ['department', 'sub_department', 'family'])) {
+                $allowanceOpsData['category_id'] = $targetId;
+            } elseif ($rawTargetType == 'collection') {
+                $allowanceOpsData['collection_id'] = $targetId;
+            } elseif ($rawTargetType == 'product') {
+                $allowanceOpsData['product_id'] = $targetId;
+            }
+            if ($rawTargetType != 'shop' && Arr::get($modelData, 'trigger_data.item_amount', 0) > 0) {
+                $allowanceOpsData['item_amount'] = Arr::get($modelData, 'trigger_data.item_amount');
+            }
 
             data_set(
                 $modelData,
@@ -98,9 +111,7 @@ class StoreVoucherOffers extends OrgAction
                         'target_type' => $targetType,
                         'target_id'   => $targetId,
                         'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
-                        'data'        => [
-                            'percentage_off' => $percentageOff,
-                        ]
+                        'data'        => $allowanceOpsData
                     ]
                 ]
             );

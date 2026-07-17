@@ -165,11 +165,11 @@ const productFetchRoute = {
 
 const targetOptions: { value: TargetType; label: string }[] = [
 	{ value: "shop", label: "Shop" },
-	// { value: "department", label: "Department" },
-	// { value: "subdepartment", label: "Sub Department" },
-	// { value: "family", label: "Family" },
-	// { value: "collection", label: "Collection" },
-	// { value: "product", label: "Product" },
+	{ value: "department", label: "Department" },
+	{ value: "subdepartment", label: "Sub Department" },
+	{ value: "family", label: "Family" },
+	{ value: "collection", label: "Collection" },
+	{ value: "product", label: "Product" },
 ]
 
 const today = new Date(new Date().setHours(0, 0, 0, 0))

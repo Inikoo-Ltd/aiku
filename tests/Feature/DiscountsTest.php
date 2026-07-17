@@ -54,6 +54,8 @@ use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\TransactionHasOfferAllowance\StoreTransactionHasOfferAllowance;
 use App\Actions\Discounts\TransactionHasOfferAllowance\UpdateTransactionHasOfferAllowance;
+use App\Actions\Catalogue\Collection\AttachModelToCollection;
+use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
@@ -1774,6 +1776,88 @@ describe('calculate order discounts', function () {
         expect((float)$transaction->net_amount)->toBe(240.0);
 
         RemoveVoucherFromOrder::run($order);
+        SuspendOffer::run($voucherOffer);
+    });
+
+    test('scoped vouchers: family target with scope minimum spend', function () {
+        $order       = Order::first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'FAM20',
+            'name'               => 'Family voucher',
+            'offer_amount'       => 250,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'percentage_off'     => 20,
+            'target_type'        => 'family',
+            'target_id'          => $this->product->family_id,
+            'allowance_type'     => 'percentage_off',
+        ]);
+        $voucherOffer->refresh();
+
+        $allowance = $voucherOffer->offerAllowances->first();
+        expect($allowance->target_type)->toBe(OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY)
+            ->and(Arr::get($allowance->data, 'category_id'))->toBe($this->product->family_id)
+            ->and((float)Arr::get($allowance->data, 'item_amount'))->toBe(250.0);
+
+        AddVoucherToOrder::run($order, ['voucher' => 'FAM20']);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(240.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($voucherOffer->id);
+
+        $allowanceData                = $allowance->data;
+        $allowanceData['item_amount'] = 5000;
+        $allowance->update(['data' => $allowanceData]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        RemoveVoucherFromOrder::run($order);
+        SuspendOffer::run($voucherOffer);
+    });
+
+    test('scoped vouchers: collection target', function () {
+        $order       = Order::first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $collection = StoreCollection::make()->action($this->shop, [
+            'code' => 'VCOL',
+            'name' => 'Voucher Collection',
+        ]);
+        AttachModelToCollection::run($collection, $this->product);
+
+        $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'COL15',
+            'name'               => 'Collection voucher',
+            'offer_amount'       => 0,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'percentage_off'     => 15,
+            'target_type'        => 'collection',
+            'target_id'          => $collection->id,
+            'allowance_type'     => 'percentage_off',
+        ]);
+        $voucherOffer->refresh();
+
+        expect($voucherOffer->offerAllowances->first()->target_type)->toBe(OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION)
+            ->and(Arr::get($voucherOffer->offerAllowances->first()->data, 'collection_id'))->toBe($collection->id);
+
+        AddVoucherToOrder::run($order, ['voucher' => 'COL15']);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(255.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($voucherOffer->id);
+
+        RemoveVoucherFromOrder::run($order);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
         SuspendOffer::run($voucherOffer);
     });
 

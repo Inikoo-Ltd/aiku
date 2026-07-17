@@ -66,6 +66,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     'model_type',
                     'model_id',
                     'family_id',
+                    'sub_department_id',
                     'department_id'
                 ])
                 ->where('order_id', $order->id)
@@ -596,6 +597,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             $this->processAllowanceAllProductsInProductCategory($offerData, $allowanceData);
         } elseif ($allowanceData->target_type == 'all_products_in_department') {
             $this->processAllowanceAllProductsInDepartment($offerData, $allowanceData);
+        } elseif ($allowanceData->target_type == 'all_products_in_sub_department') {
+            $this->applyPercentageDiscount($offerData, $allowanceData, 'sub_department');
+        } elseif ($allowanceData->target_type == 'all_products_in_collection') {
+            $this->applyPercentageDiscount($offerData, $allowanceData, 'collection');
         } elseif ($allowanceData->target_type == 'cheapest_products_in_product_category') {
             $this->processAllowanceFreeItems($offerData, $allowanceData);
         } elseif ($allowanceData->target_type == 'product' && $allowanceData->type == 'free_items') {
@@ -744,14 +749,34 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
-        foreach ($this->transactions as $transaction) {
-            if ($filterBy == 'family' && $allowanceOpsData['category_id'] != $transaction->family_id) {
-                continue;
+        $collectionProductIds = [];
+        if ($filterBy == 'collection') {
+            $collectionProductIds = DB::table('collection_has_models')
+                ->where('collection_id', Arr::get($allowanceOpsData, 'collection_id'))
+                ->where('model_type', 'Product')
+                ->pluck('model_id')
+                ->all();
+            if ($collectionProductIds === []) {
+                return;
             }
-            if ($filterBy == 'department' && $allowanceOpsData['category_id'] != $transaction->department_id) {
-                continue;
-            }
+        }
 
+        $matchingTransactions = $this->transactions->filter(
+            fn ($transaction) => match ($filterBy) {
+                'family' => Arr::get($allowanceOpsData, 'category_id') == $transaction->family_id,
+                'department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->department_id,
+                'sub_department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->sub_department_id,
+                'collection' => in_array($transaction->model_id, $collectionProductIds),
+                default => true,
+            }
+        );
+
+        $itemAmount = (float)Arr::get($allowanceOpsData, 'item_amount', 0);
+        if ($itemAmount > 0 && $matchingTransactions->sum('gross_amount') < $itemAmount) {
+            return;
+        }
+
+        foreach ($matchingTransactions as $transaction) {
             $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
 
             // Apply only if undefined or lower than the new percentage
