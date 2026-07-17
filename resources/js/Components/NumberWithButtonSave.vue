@@ -191,7 +191,9 @@ const onClickMinusButton = () => {
 			const minVal = props.bindToTarget?.min ?? props.min ?? 0
 			form.quantity = stepped < minVal ? roundQuantity(minVal) : stepped
 		} else {
-			form.quantity = roundToDecimals(form.quantity - 1)
+			const stepped = roundToDecimals(form.quantity - 1)
+			const minVal = props.bindToTarget?.min ?? props.min ?? 0
+			form.quantity = stepped < minVal ? roundToDecimals(minVal) : stepped
 		}
 	}
 }
@@ -208,7 +210,9 @@ const onClickPlusButton = () => {
 			const maxVal = props.bindToTarget?.max ?? props.max
 			form.quantity = maxVal !== undefined && stepped > maxVal ? roundQuantity(maxVal) : stepped
 		} else {
-			form.quantity = roundToDecimals(form.quantity + 1)
+			const stepped = roundToDecimals(form.quantity + 1)
+			const maxVal = props.bindToTarget?.max ?? props.max
+			form.quantity = maxVal !== undefined && stepped > maxVal ? roundToDecimals(maxVal) : stepped
 		}
 	}
 }
