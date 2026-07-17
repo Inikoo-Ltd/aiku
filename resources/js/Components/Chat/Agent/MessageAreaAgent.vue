@@ -12,7 +12,9 @@ import {
     faMessage,
     faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight
 } from "@fortawesome/free-solid-svg-icons"
+import { faJira } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
@@ -49,6 +51,7 @@ const emit = defineEmits([
     "view-user-profile",
     "view-message-details",
     "transfer-agent-success",
+    "open-jira-settings",
 ])
 
 const layout: any = inject("layout", {})
@@ -80,6 +83,20 @@ const takeoverChat = async () => {
     } finally {
         isTakingOver.value = false
     }
+}
+
+const currentOrganisation = computed(
+    () => String((route().params as Record<string, any>)?.organisation ?? "aw")
+)
+
+const isJiraModalOpen = ref(false)
+const openJiraModal = () => {
+    isMenuOpen.value = false
+    isJiraModalOpen.value = true
+}
+const onOpenJiraSettings = () => {
+    isJiraModalOpen.value = false
+    emit("open-jira-settings")
 }
 
 const isReopening = ref(false)
@@ -675,6 +692,10 @@ const handleClickOutside = (e: MouseEvent) => {
                     <button class="menu-item" @click="onViewMessageDetails">
                         <FontAwesomeIcon :icon="faMessage" /> {{ trans("Message Details") }}
                     </button>
+
+                    <button class="menu-item" @click="openJiraModal">
+                        <FontAwesomeIcon :icon="faJira" class="text-blue-600" /> {{ trans("Create Jira Ticket") }}
+                    </button>
                 </div>
             </div>
         </header>
@@ -825,11 +846,23 @@ const handleClickOutside = (e: MouseEvent) => {
                                 <FontAwesomeIcon :icon="faEnvelope" />
                             </template>
                         </Button>
+                        <button @click="openJiraModal"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create Jira ticket')">
+                            <FontAwesomeIcon :icon="faJira" class="text-sm" />
+                        </button>
                     </div>
                     <Button @click="sendMessage" :icon="faPaperPlane"></Button>
                 </div>
             </div>
         </footer>
+
+        <JiraTicketModal
+            :is-open="isJiraModalOpen"
+            :session="session"
+            :organisation="currentOrganisation"
+            @close="isJiraModalOpen = false"
+            @open-settings="onOpenJiraSettings"
+        />
     </div>
 </template>
 <style scoped>

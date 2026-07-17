@@ -18,6 +18,11 @@ trait WithJiraApiRequest
 {
     protected ?Group $jiraGroup = null;
 
+    /**
+     * @var array{base_url: ?string, email: ?string, api_token: ?string}|null
+     */
+    protected ?array $jiraCredentialsOverride = null;
+
     protected string $jiraApiVersion = '3';
 
     public int $jiraTimeOut = 30;
@@ -25,6 +30,20 @@ trait WithJiraApiRequest
     public function setJiraGroup(Group $group): static
     {
         $this->jiraGroup = $group;
+
+        return $this;
+    }
+
+    /**
+     * @param  array{base_url?: ?string, email?: ?string, api_token?: ?string}  $credentials
+     */
+    public function setJiraCredentials(array $credentials): static
+    {
+        $this->jiraCredentialsOverride = [
+            'base_url'  => rtrim((string) Arr::get($credentials, 'base_url'), '/'),
+            'email'     => Arr::get($credentials, 'email'),
+            'api_token' => Arr::get($credentials, 'api_token'),
+        ];
 
         return $this;
     }
@@ -50,6 +69,10 @@ trait WithJiraApiRequest
      */
     protected function getJiraCredentials(): array
     {
+        if ($this->jiraCredentialsOverride !== null) {
+            return $this->jiraCredentialsOverride;
+        }
+
         $settings = $this->getJiraGroup()->settings;
 
         return [
@@ -145,6 +168,26 @@ trait WithJiraApiRequest
     }
 
     /**
+     * @param  array<string, mixed>  $params
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getJiraPriorities(array $params = []): ?array
+    {
+        return $this->makeJiraRequest('GET', 'priority/search', $params);
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getJiraLabels(array $params = []): ?array
+    {
+        return $this->makeJiraRequest('GET', 'label', $params);
+    }
+
+    /**
      * @param  array<string, mixed>  $fields
      *
      * @return array<string, mixed>|null
@@ -152,6 +195,65 @@ trait WithJiraApiRequest
     public function createJiraIssue(array $fields): ?array
     {
         return $this->makeJiraRequest('POST', 'issue', ['fields' => $fields]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function attachJiraIssueFile(string $issueIdOrKey, string $contents, string $fileName): ?array
+    {
+        return $this->attachJiraIssueFiles($issueIdOrKey, [
+            ['contents' => $contents, 'name' => $fileName],
+        ]);
+    }
+
+    /**
+     * @param  array<int, array{contents: string, name: string}>  $files
+     *
+     * @return array<string, mixed>|null
+     */
+    public function attachJiraIssueFiles(string $issueIdOrKey, array $files): ?array
+    {
+        if ($files === []) {
+            return [];
+        }
+
+        $credentials = $this->getJiraCredentials();
+        $url = $this->getJiraApiUrl()."/issue/$issueIdOrKey/attachments";
+
+        try {
+            $request = Http::timeout($this->jiraTimeOut)
+                ->connectTimeout($this->jiraTimeOut)
+                ->withBasicAuth($credentials['email'], $credentials['api_token'])
+                ->withHeaders(['X-Atlassian-Token' => 'no-check'])
+                ->acceptJson();
+
+            foreach ($files as $file) {
+                $request = $request->attach('file', Arr::get($file, 'contents'), Arr::get($file, 'name', 'attachment'));
+            }
+
+            $response = $request->post($url);
+
+            if ($response->successful()) {
+                return $response->json() ?? [];
+            }
+
+            return [
+                'error'    => true,
+                'status'   => $response->status(),
+                'messages' => Arr::get($response->json(), 'errorMessages', [$response->body()]),
+            ];
+        } catch (ConnectionException $e) {
+            Log::error('Jira API Attachment Error', [
+                'url'   => $url,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'error'    => true,
+                'messages' => ['Jira API Attachment Error: '.$e->getMessage()],
+            ];
+        }
     }
 
     /**
