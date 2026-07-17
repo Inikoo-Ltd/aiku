@@ -80,7 +80,7 @@ class CloneProductImagesFromMasterProduct implements ShouldBeUnique
 
         $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
 
-        $query = Product::whereIn('shop_id', $aikuShops)->where('is_single_trade_unit', false);
+        $query = Product::whereIn('shop_id', $aikuShops)->where('is_single_trade_unit', true);
         $total = $query->count();
 
         $command->getOutput()->progressStart($total);

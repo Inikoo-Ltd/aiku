@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -66,7 +67,9 @@ class CloseChatSession
                 ]);
 
                 $agent = ChatAgent::find($assignment->chat_agent_id);
-                $agent?->decrementChatCount();
+                if ($agent) {
+                    ChatAgentHydrateChats::run($agent);
+                }
             }
 
             $closedByLabel = match ($actorType) {
