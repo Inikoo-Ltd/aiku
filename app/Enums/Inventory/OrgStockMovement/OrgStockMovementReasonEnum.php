@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * Author Louis Perez
+ * Created on 17-07-2026-15h-10m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
+
 namespace App\Enums\Inventory\OrgStockMovement;
 
 use App\Enums\EnumHelperTrait;

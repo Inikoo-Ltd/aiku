@@ -3,13 +3,12 @@
 /*
  * author Arya Permana - Kirin
  * created on 02-07-2025-17h-39m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
-namespace App\Actions\Retina\Dropshipping\Orders;
+namespace App\Actions\Accounting\Payment\PastPay;
 
-use App\Actions\Accounting\PaymentGateway\Pastpay\WithPastpayConfiguration;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\RetinaAction;
 use App\Models\Accounting\Invoice;

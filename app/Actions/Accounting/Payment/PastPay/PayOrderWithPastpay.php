@@ -6,9 +6,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Dropshipping\Orders;
+namespace App\Actions\Accounting\Payment\PastPay;
 
-use App\Actions\Accounting\PaymentGateway\Pastpay\WithPastpayConfiguration;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;

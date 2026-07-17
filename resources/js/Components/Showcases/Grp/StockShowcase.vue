@@ -9,7 +9,7 @@ import { inject, ref, computed, onMounted } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faStopCircle, faFilePdf } from "@fal"
+import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import { faExclamationTriangle } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
@@ -21,9 +21,10 @@ import SalesAnalyticsCompact from "@/Components/Product/SalesAnalyticsCompact.vu
 import Icon from "@/Components/Icon.vue"
 import JsBarcode from "jsbarcode"
 import { ctrans } from "@/Composables/useTrans"
-library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf)
+import { trans } from "laravel-vue-i18n"
+library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
 
-const props = defineProps<{
+const props = defineProps < {
     data: {
         trade_units: {
             brand: {}
@@ -51,8 +52,17 @@ const props = defineProps<{
         is_quantity_excess: boolean
         barcodes?: {
             level: string
+            label: string
             number: string
             quantity: number
+            weight: number
+            dimensions: {
+                h?: number
+                l?: number
+                w?: number
+                type?: string
+                units?: string
+            }
             packs: number | null
         }[]
         label_route?: {
@@ -78,6 +88,22 @@ const displayedStats = computed(() => {
     const filtered = props.data.stats.filter(item => !item.name.toLowerCase().includes("all"))
     return showAllStats.value ? filtered : filtered.slice(0, 6)
 })
+
+const formatWeight = (weight: number | null | undefined): string | null => {
+    if (weight == null) return null
+    if (weight >= 1000) {
+        return `${(weight / 1000).toLocaleString(locale.language.code, { maximumFractionDigits: 2 })} kg`
+    }
+    return `${weight.toLocaleString(locale.language.code, { maximumFractionDigits: 2 })} g`
+}
+
+const formatDimensions = (dimensions: { h?: number; l?: number; w?: number; units?: string } | null | undefined): string | null => {
+    if (!dimensions) return null
+    const sides = [dimensions.l, dimensions.w, dimensions.h].filter((value) => value != null)
+    if (!sides.length) return null
+    const units = dimensions.units ? ` ${dimensions.units}` : ""
+    return `${sides.join(" × ")}${units}`
+}
 
 const stockCostStats = computed(() => {
     const stockCost = props.data.stocks_management?.stock_cost
@@ -168,10 +194,30 @@ onMounted(() => {
                 <div v-for="barcode in data.barcodes" :key="barcode.level"
                     class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
                     <div class="w-8 shrink-0 text-center text-lg text-gray-500">
-                        <Icon :data="{ icon: 'fal fa-stop-circle' }" />
+                        <Icon :data="{ icon: 'fal fa-stop-circle' }" v-tooltip="trans(barcode.label)" />
                     </div>
 
                     <svg :id="'barcode-' + barcode.level" class="h-14"></svg>
+
+                    <div class="flex flex-col gap-1.5 text-sm">
+                        <span v-if="formatWeight(barcode.weight)"
+                            v-tooltip="ctrans('Weight')"
+                            class="inline-flex items-center gap-2 text-gray-700">
+                            <Icon :data="{ icon: 'fal fa-weight-hanging' }" class="w-4 shrink-0 text-gray-400" />
+                            <span class="font-medium tabular-nums">{{ formatWeight(barcode.weight) }}</span>
+                        </span>
+
+                        <span v-if="formatDimensions(barcode.dimensions)"
+                            v-tooltip="ctrans('Dimensions (L × W × H)')"
+                            class="inline-flex items-center gap-2 text-gray-700">
+                            <Icon :data="{ icon: 'fal fa-ruler-combined' }" class="w-4 shrink-0 text-gray-400" />
+                            <span class="font-medium tabular-nums">{{ formatDimensions(barcode.dimensions) }}</span>
+                            <span v-if="barcode.dimensions?.type"
+                                class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
+                                {{ barcode.dimensions.type }}
+                            </span>
+                        </span>
+                    </div>
 
                     <a v-if="data.label_route"
                         :href="route(data.label_route.name, { ...data.label_route.parameters, level: barcode.level })"

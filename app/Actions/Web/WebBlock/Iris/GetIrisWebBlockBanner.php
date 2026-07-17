@@ -77,7 +77,7 @@ class GetIrisWebBlockBanner
         'desktop' => 1440,
     ];
 
-    private const SRCSET_WIDTHS = [480, 768, 1024, 1440];
+    private const SRCSET_WIDTHS = [480, 768, 1024, 1440, 1920, 2560];
 
     private function addImageDimensions(array $component): array
     {
