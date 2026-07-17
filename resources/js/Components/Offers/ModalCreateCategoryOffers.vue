@@ -52,6 +52,8 @@ const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
 const offerCategoryId = ref<number | null>(null)
 const categoryType = ref<'department' | 'subdepartment' | 'family'>('department')
+const discountTarget = ref<'same' | 'other'>('same')
+const targetCategoryId = ref<number | null>(null)
 const isLoadingSubmit = ref(false)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
@@ -92,6 +94,7 @@ const submitCategoryOffer = () => {
             trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
             trigger_data_item_amount: offerAmount.value,
             percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
+            target_product_category_id: discountTarget.value === 'other' ? targetCategoryId.value : null,
             duration: dateType.value,
             start_at: formatDate(startDate.value),
             end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null
@@ -168,6 +171,8 @@ const resetForm = () => {
     offerAmount.value = 0
     categoryType.value = 'department'
     offerCategoryId.value = props.product_category_id ?? null
+    discountTarget.value = 'same'
+    targetCategoryId.value = null
     dateType.value = 'permanent'
     startDate.value = null
     endDate.value = null
@@ -180,6 +185,8 @@ const isFormInvalid = computed(() => {
     if (!offerLabel.value) return true
 
     if (!discountPercentage.value) return true
+
+    if (discountTarget.value === 'other' && !targetCategoryId.value) return true
 
     if (typeOffer.value === 'quantity' && !offerQtyItems.value) {
         return true
@@ -339,6 +346,43 @@ resetForm();
                     <InputNumber v-model="discountPercentage" inputId="offer_discount"
                         :placeholder="trans('Enter percentage')" suffix="%" :min="0" :max="100" class="w-full" />
 
+                </div>
+
+                <!-- Section: Discount target -->
+                <div class="space-y-2">
+                    <div class="font-medium mb-2 flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Apply discount to') }}:
+                        <InformationIcon :information="trans('The discount can apply to this category, or to another family (e.g. spend on this category to get a discount on another family)')" />
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label for="discount-target-same"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="discountTarget === 'same'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
+                            <RadioButton v-model="discountTarget" inputId="discount-target-same" value="same" />
+                            <span>{{ trans('This category') }}</span>
+                        </label>
+
+                        <label for="discount-target-other"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="discountTarget === 'other'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
+                            <RadioButton v-model="discountTarget" inputId="discount-target-other" value="other" />
+                            <span>{{ trans('Another family') }}</span>
+                        </label>
+                    </div>
+
+                    <PureMultiselectInfiniteScroll v-if="discountTarget === 'other'"
+                        v-model="targetCategoryId"
+                        :fetchRoute="categoryRoutes.family"
+                        required
+                        :placeholder="trans('Select the family that gets the discount')"
+                        valueProp="id"
+                        labelProp="name" />
                 </div>
 
                 <!-- Section: Offer Duration -->

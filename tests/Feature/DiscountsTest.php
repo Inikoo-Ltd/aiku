@@ -57,6 +57,7 @@ use App\Actions\Discounts\TransactionHasOfferAllowance\UpdateTransactionHasOffer
 use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
@@ -1298,7 +1299,7 @@ describe('calculate order discounts', function () {
         $order->refresh();
 
         $transaction   = Transaction::where('order_id', $order->id)->first();
-        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->first();
+        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->orderBy('id')->first();
 
         expect((float)$transaction->gross_amount)->toBe(300.0)
             ->and((float)$transaction->net_amount)->toBe(120.0)
@@ -1316,7 +1317,7 @@ describe('calculate order discounts', function () {
     test('suspending the winning offer falls back to next best: Vol/GR interval sub-trigger', function () {
         $order         = Order::first();
         $transaction   = Transaction::where('order_id', $order->id)->first();
-        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->first();
+        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->orderBy('id')->first();
         $volGrOffer    = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Quantity Ordered Order Interval')->first();
 
         DB::table('customers')->where('id', $order->customer_id)->update(['last_invoiced_at' => now()->subDays(5)]);
@@ -1779,6 +1780,71 @@ describe('calculate order discounts', function () {
         SuspendOffer::run($voucherOffer);
     });
 
+    test('cross family discount: spend on one family discounts another family', function () {
+        $order       = Order::first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+
+        $familyBData = ProductCategory::factory()->definition();
+        data_set($familyBData, 'code', 'XFAM-B');
+        data_set($familyBData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $familyB = StoreProductCategory::make()->action($department, $familyBData);
+
+        $productBData = array_merge(
+            Product::factory()->definition(),
+            [
+                'code'        => 'XFAM-PROD',
+                'price'       => 40,
+                'trade_units' => [
+                    [
+                        'id'       => $this->tradeUnit[0]->id ?? $this->tradeUnit->id,
+                        'quantity' => 1
+                    ]
+                ],
+            ]
+        );
+        $productB     = StoreProduct::make()->action($familyB, $productBData);
+        $transactionB = StoreTransaction::make()->action($order, $productB->currentHistoricProduct, ['quantity_ordered' => 1]);
+
+        $crossOffer = StoreProductCategoryDiscount::make()->action(
+            $this->product->family,
+            [
+                'type'                       => 'quantity',
+                'trigger_data_item_quantity' => 1,
+                'percentage_off'             => 0.50,
+                'target_product_category_id' => $familyB->id,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        $crossOffer->refresh();
+
+        $allowance = $crossOffer->offerAllowances->first();
+        expect($crossOffer->trigger_id)->toBe($this->product->family_id)
+            ->and($allowance->target_id)->toBe($familyB->id)
+            ->and(Arr::get($allowance->data, 'category_id'))->toBe($familyB->id);
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        $transactionB->refresh();
+
+        expect((float)$transactionB->gross_amount)->toBe(40.0)
+            ->and((float)$transactionB->net_amount)->toBe(20.0)
+            ->and(Arr::get($transactionB->offers_data, 'o.o'))->toBe($crossOffer->id)
+            ->and((float)$transaction->net_amount)->toBe(270.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->not->toBe($crossOffer->id);
+
+        SuspendOffer::run($crossOffer);
+        DeleteTransaction::run($transactionB->refresh());
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
     test('scoped vouchers: family target with scope minimum spend', function () {
         $order       = Order::first();
         $transaction = Transaction::where('order_id', $order->id)->first();
@@ -1936,7 +2002,7 @@ describe('calculate order discounts', function () {
     test('category amount ordered threshold', function () {
         $order         = Order::first();
         $transaction   = Transaction::where('order_id', $order->id)->first();
-        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->first();
+        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->orderBy('id')->first();
 
         ActivateOffer::run($categoryOffer);
         $categoryOffer->update(['type' => 'Category Amount Ordered', 'trigger_data' => ['item_amount' => 100]]);
