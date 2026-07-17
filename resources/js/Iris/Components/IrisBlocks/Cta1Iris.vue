@@ -97,7 +97,7 @@ const imageBoxStyle = computed(() => {
 					:style="getStyles(fieldValue?.text_block?.properties, screenType)">
 					<div class="max-w-xl w-full">
 						<div v-html="fieldValue.text"></div>
-						<div class="flex justify-center mt-6">
+						<div v-if="fieldValue.button?.use_button ?? true" class="flex justify-center mt-6">
 							<LinkIris :href="fieldValue?.button?.link?.href"
 								:canonical_url="fieldValue?.button?.link?.canonical_url"
 								:target="fieldValue?.button?.link?.taget" typeof="button"
