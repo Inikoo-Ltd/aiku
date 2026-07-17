@@ -7,6 +7,13 @@ use App\Actions\Chat\Agent\UI\CreateAgent;
 use App\Actions\Chat\Agent\UI\EditAgent;
 use App\Actions\Chat\Agent\UI\ShowAgent;
 use App\Actions\Chat\Agent\UpdateAgent;
+use App\Actions\Chat\Jira\GetChatAgentJiraSettings;
+use App\Actions\Chat\Jira\GetChatSessionJiraIssueTypes;
+use App\Actions\Chat\Jira\GetChatSessionJiraLabels;
+use App\Actions\Chat\Jira\GetChatSessionJiraPriorities;
+use App\Actions\Chat\Jira\GetChatSessionJiraProjects;
+use App\Actions\Chat\Jira\StoreChatSessionJiraTicket;
+use App\Actions\Chat\Jira\UpdateChatAgentJiraSettings;
 use App\Actions\Chat\ChatSession\AssignChatToAgent;
 use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\ForceDeleteChatAgent;
@@ -33,4 +40,15 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
     Route::patch('/sessions/{chatSession:ulid}/close', CloseChatSession::class)->name('sessions.close');
     Route::patch('/sessions/{chatSession:ulid}/reopen', ReopenChatSession::class)->name('sessions.reopen');
+    Route::name('sessions.jira.')->prefix('sessions/{chatSession:ulid}/jira')->group(function () {
+        Route::get('/projects', GetChatSessionJiraProjects::class)->name('projects');
+        Route::get('/projects/{project}/issue-types', GetChatSessionJiraIssueTypes::class)->name('issue_types');
+        Route::get('/priorities', GetChatSessionJiraPriorities::class)->name('priorities');
+        Route::get('/labels', GetChatSessionJiraLabels::class)->name('labels');
+        Route::post('/ticket', StoreChatSessionJiraTicket::class)->name('ticket');
+    });
+    Route::name('jira.settings.')->prefix('jira/settings')->group(function () {
+        Route::get('/', GetChatAgentJiraSettings::class)->name('show');
+        Route::put('/', UpdateChatAgentJiraSettings::class)->name('update');
+    });
 });

@@ -5,6 +5,7 @@ import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 /* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
+/* import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue" */
 
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({

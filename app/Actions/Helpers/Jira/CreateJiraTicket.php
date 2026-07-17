@@ -38,6 +38,15 @@ class CreateJiraTicket extends GrpAction
             $fields['description'] = $this->textToAtlassianDocument(Arr::get($modelData, 'description'));
         }
 
+        if (filled(Arr::get($modelData, 'priority'))) {
+            $fields['priority'] = ['id' => (string) Arr::get($modelData, 'priority')];
+        }
+
+        $labels = Arr::get($modelData, 'labels', []);
+        if (is_array($labels) && $labels !== []) {
+            $fields['labels'] = array_values($labels);
+        }
+
         return $this->createJiraIssue($fields);
     }
 
@@ -70,6 +79,9 @@ class CreateJiraTicket extends GrpAction
             'summary'     => ['required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'issue_type'  => ['sometimes', 'string'],
+            'priority'    => ['sometimes', 'nullable', 'string'],
+            'labels'      => ['sometimes', 'array'],
+            'labels.*'    => ['string'],
         ];
     }
 
