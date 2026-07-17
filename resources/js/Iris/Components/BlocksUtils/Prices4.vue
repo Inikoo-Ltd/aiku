@@ -184,7 +184,7 @@ const _popoverProfit = ref(null)
                 <LabelComingSoon v-else-if="product.is_coming_soon" :product="product" />
             </div>
 
-            <div v-if="product?.rrp_per_unit ?? 0 > 0" class="flex items-center gap-1 whitespace-nowrap">
+            <div v-if="product?.rrp_per_unit ?? 0 > 0" class="ml-auto flex items-center gap-1 whitespace-nowrap">
                 <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
                     @mouseleave="_popoverProfit?.hide"
                     class="cursor-pointer opacity-60 hover:opacity-100 flex items-center text-[8px] sm:text-[9px] md:text-[10px]">
@@ -198,11 +198,11 @@ const _popoverProfit = ref(null)
                     </span>
                 </span>
             </div>
-
-            <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
-                <ProfitCalculationList :product="product" />
-            </Popover>
         </div>
+
+        <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
+            <ProfitCalculationList :product="product" />
+        </Popover>
 
 
         <!-- PRICE -->
