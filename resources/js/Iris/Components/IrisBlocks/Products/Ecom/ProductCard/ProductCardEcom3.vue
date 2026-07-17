@@ -329,7 +329,9 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <Prices4 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket/>
+            <div v-if="layout?.iris?.is_logged_in">
+                  <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket/>
+            </div>
             <div v-else class="text-xs leading-tight space-y-1">
 
                 <!-- CODE + RRP + V2-->
