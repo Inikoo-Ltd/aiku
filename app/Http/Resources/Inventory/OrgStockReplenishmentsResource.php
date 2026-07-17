@@ -32,6 +32,7 @@ class OrgStockReplenishmentsResource extends JsonResource
             ->filter(fn ($locationOrgStock) => $locationOrgStock->location_id !== $this->picking_location_id)
             ->map(fn ($locationOrgStock) => [
                 'code'     => $locationOrgStock->location?->code,
+                'slug'     => $locationOrgStock->location?->slug,
                 'quantity' => trimDecimalZeros($locationOrgStock->quantity),
             ])
             ->values();
