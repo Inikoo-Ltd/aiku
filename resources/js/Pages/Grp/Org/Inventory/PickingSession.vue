@@ -31,6 +31,8 @@ const props = defineProps<{
     grouped: object
     returnType?: string
     dispatchableReturns?: any[]
+    allow_waiting: boolean
+    allow_picker_set_not_picked: boolean
     timelines: {
         [key: string]: TSTimeline
     }
@@ -141,7 +143,7 @@ const handleModalSuccess = () => {
                     {{
                         isFulfilmentSession
                             ? trans('Add/remove Pallet Returns')
-                            : trans('Add/remove Delivery Notes')
+                            : ctrans('Add Delivery Notes')
                     }}
                 </Button>
                 <Button
@@ -151,8 +153,8 @@ const handleModalSuccess = () => {
                 >
                     {{
                         isFulfilmentSession
-                            ? trans('Remove Pallet Returns')
-                            : trans('Remove Delivery Notes')
+                            ? ctrans('Remove Pallet Returns')
+                            : ctrans('Remove Delivery Notes')
                     }}
                 </Button>
             </div>
@@ -165,10 +167,12 @@ const handleModalSuccess = () => {
     <div class="pb-12">
         <component
             :is="component"
-            :data="props[currentTab]"
+            :data="props[currentTab as keyof typeof props]"
             :tab="currentTab"
             :pickingSession="data.data"
             :dispatchableReturns="dispatchableReturns"
+            :allowWaiting="allow_waiting"
+            :allowPickerSetNotPicked="allow_picker_set_not_picked"
             :key="`${currentTab}${props.data.state}`"
         />
     </div>

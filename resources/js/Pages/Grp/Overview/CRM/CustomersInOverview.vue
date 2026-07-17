@@ -8,7 +8,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    customers: object
+    customers?: object
     tabs: { current: string, navigation: object }
 }>()
 </script>

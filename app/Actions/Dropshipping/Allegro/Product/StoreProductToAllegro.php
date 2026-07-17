@@ -65,7 +65,7 @@ class StoreProductToAllegro extends RetinaAction
                 $categoryId = $foundedProduct;
             } else {
                 $parent = $product->subDepartment?->name;
-                if(! $parent) {
+                if (! $parent) {
                     $parent = $product->name;
                 }
 
@@ -173,6 +173,7 @@ class StoreProductToAllegro extends RetinaAction
                 'external' => [
                     'id' => (string) $portfolio->id
                 ],
+                'language' => 'en-US',
                 'description' => [
                     'sections' => [
                         [

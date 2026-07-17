@@ -56,6 +56,16 @@ class UpdateGroupSettings extends GrpAction
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'client_secret');
         }
+        if (Arr::has($modelData, 'page_builder_client_id')) {
+            data_set($groupSettings, 'beefree.page_builder.client_id', Arr::get($modelData, 'page_builder_client_id'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'page_builder_client_id');
+        }
+        if (Arr::has($modelData, 'page_builder_client_secret')) {
+            data_set($groupSettings, 'beefree.page_builder.client_secret', Arr::get($modelData, 'page_builder_client_secret'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'page_builder_client_secret');
+        }
         if (Arr::has($modelData, 'grant_type')) {
             data_set($groupSettings, 'beefree.grant_type', Arr::get($modelData, 'grant_type'));
             $group->update(['settings' => $groupSettings]);
@@ -70,6 +80,21 @@ class UpdateGroupSettings extends GrpAction
             data_set($groupSettings, 'printnode.print_by_printnode', Arr::get($modelData, 'print_by_printnode'));
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'print_by_printnode');
+        }
+        if (Arr::has($modelData, 'jira_base_url')) {
+            data_set($groupSettings, 'jira.base_url', Arr::get($modelData, 'jira_base_url'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'jira_base_url');
+        }
+        if (Arr::has($modelData, 'jira_email')) {
+            data_set($groupSettings, 'jira.email', Arr::get($modelData, 'jira_email'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'jira_email');
+        }
+        if (Arr::has($modelData, 'jira_api_token')) {
+            data_set($groupSettings, 'jira.api_token', Arr::get($modelData, 'jira_api_token'));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'jira_api_token');
         }
 
         return $this->update($group, $modelData);
@@ -96,10 +121,15 @@ class UpdateGroupSettings extends GrpAction
             ],
             'client_id'                         => ['sometimes', 'string', 'nullable'],
             'client_secret'                     => ['sometimes', 'string', 'nullable'],
+            'page_builder_client_id'            => ['sometimes', 'string', 'nullable'],
+            'page_builder_client_secret'        => ['sometimes', 'string', 'nullable'],
             'grant_type'                        => ['sometimes', 'string', 'nullable'],
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
+            'jira_base_url'      => ['sometimes', 'nullable', 'url'],
+            'jira_email'         => ['sometimes', 'nullable', 'email'],
+            'jira_api_token'     => ['sometimes', 'nullable', 'string'],
         ];
     }
 

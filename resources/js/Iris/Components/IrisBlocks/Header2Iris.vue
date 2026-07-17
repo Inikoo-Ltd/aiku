@@ -2,7 +2,6 @@
 import { getStyles } from "@/Composables/styles"
 import { inject, ref } from "vue"
 import Image from "@common/Components/Image.vue"
-import MobileHeader from "../MobileHeader.vue";
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Iris/Components/LinkIris.vue";
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
@@ -86,7 +85,7 @@ const loadingRedirect = ref(false)
 					</div>
 				</div>
 
-				<div class="relative w-full h-auto">
+				<div class="relative w-full h-auto my-auto">
 					<div v-html="fieldValue?.text?.text" />
 				</div>
 			</div>

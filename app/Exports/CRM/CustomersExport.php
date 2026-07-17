@@ -3,6 +3,8 @@
 namespace App\Exports\CRM;
 
 use App\Actions\CRM\Customer\GetCustomersQueryByRecipe;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
@@ -18,7 +20,7 @@ class CustomersExport implements FromArray, ShouldAutoSize, WithHeadings
     /**
      * @param array<int, string> $fields Selected field keys; empty means all fields.
      */
-    public function __construct(public Organisation|Shop $parent, public array $recipe = [], public array $states = [], public array $statuses = [], public array $fields = [])
+    public function __construct(public Organisation|Shop $parent, public array $recipe = [], public array $states = [], public array $statuses = [], public array $fields = [], public ?string $upcoming = null)
     {
     }
 
@@ -35,6 +37,7 @@ class CustomersExport implements FromArray, ShouldAutoSize, WithHeadings
             'name'             => ['heading' => 'Name', 'select' => 'customers.name'],
             'contact_name'     => ['heading' => 'Contact', 'select' => 'customers.contact_name'],
             'company_name'     => ['heading' => 'Company', 'select' => 'customers.company_name'],
+            'fiscal_name'      => ['heading' => 'Fiscal Name', 'select' => 'customers.fiscal_name'],
             'email'            => ['heading' => 'Email', 'select' => 'customers.email'],
             'phone'            => ['heading' => 'Phone', 'select' => 'customers.phone'],
             'tax_number'       => ['heading' => 'Tax Number', 'select' => 'customers.identity_document_number'],
@@ -96,6 +99,20 @@ class CustomersExport implements FromArray, ShouldAutoSize, WithHeadings
 
         if (count($this->statuses) > 0) {
             $query->whereIn('customers.status', $this->statuses);
+        }
+
+        if ($this->parent instanceof Shop && in_array($this->upcoming, ['ready', 'out_of_stock'], true)) {
+            $query->whereIn('customers.id', function ($sub) {
+                $sub->select('customer_id')
+                    ->from('upcoming_transactions')
+                    ->where('upcoming_transactions.shop_id', $this->parent->id)
+                    ->where('upcoming_transactions.state', UpcomingTransactionStateEnum::READY->value);
+
+                if ($this->upcoming === 'out_of_stock') {
+                    $sub->join('products', 'products.id', '=', 'upcoming_transactions.product_id')
+                        ->whereIn('products.status', [ProductStatusEnum::OUT_OF_STOCK->value, ProductStatusEnum::NOT_FOR_SALE->value]);
+                }
+            });
         }
 
         return $query;

@@ -26,6 +26,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 
 library.add(faPlus, faTrashAlt)
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

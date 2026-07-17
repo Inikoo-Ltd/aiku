@@ -120,12 +120,14 @@
     "fakerphp/faker": "^1.9.1",
     "fruitcake/laravel-debugbar": "^4.3",
     "laradumps/laradumps": "^4.0",
+    "larastan/larastan": "^3.0",
     "laravel/boost": "^2.4",
     "laravel/pint": "^1.0",
     "league/flysystem-sftp-v3": "^3.26",
     "mockery/mockery": "^1.4.4",
     "nunomaduro/collision": "^8.1",
     "pestphp/pest": "^4.0",
+    "pestphp/pest-plugin-browser": "^4.3",
     "pestphp/pest-plugin-laravel": "^4.0",
     "phpunit/phpunit": "^12"
   },
@@ -157,7 +159,8 @@
     ],
     "post-create-project-cmd": [
       "@php artisan key:generate --ansi"
-    ]
+    ],
+    "analyse": "phpstan analyse --memory-limit=4G"
   },
   "extra": {
     "laravel": {

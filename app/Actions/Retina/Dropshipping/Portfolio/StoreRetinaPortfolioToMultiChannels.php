@@ -48,10 +48,16 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
         $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))
             ->get();
 
-        $existingPortfolios = $channels->flatMap(function ($channel) use ($items) {
+        if ($items->isEmpty()) {
+            return;
+        }
+
+        $itemType = $items->first()->getMorphClass();
+
+        $existingPortfolios = $channels->flatMap(function ($channel) use ($items, $itemType) {
             return $channel->portfolios()
                 ->whereIn('item_id', $items->pluck('id'))
-                ->where('item_type', $items->first()->getMorphClass())
+                ->where('item_type', $itemType)
                 ->get(['item_id', 'customer_sales_channel_id'])
                 ->map(fn ($portfolio) => $portfolio->customer_sales_channel_id . '-' . $portfolio->item_id);
         })->unique()->values()->toArray();

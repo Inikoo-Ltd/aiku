@@ -143,12 +143,12 @@ class IndexAnnouncements extends OrgAction
         return Inertia::render(
             'Websites/Announcements',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
                 'title'       => __('Announcements'),
                 'pageHead'    => [
+                    'breadcrumbs' => $this->getBreadcrumbs(
+                        $request->route()->getName(),
+                        $request->route()->originalParameters()
+                    ),
                     'title'     => __('Announcements'),
                     'container' => $container,
                     'icon'      => [

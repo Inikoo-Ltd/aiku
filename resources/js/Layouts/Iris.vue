@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed, defineAsyncComponent } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -25,12 +25,12 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
-import IrisRightSideBasket from '@iris/Components/IrisRightSideBasket.vue'
+const IrisRightSideBasket = defineAsyncComponent(() => import('@iris/Components/IrisRightSideBasket.vue'))
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
-import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
+const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
 import axios from 'axios'
 import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
-import BundleSidebar from '@/Components/Dropshipping/BundleSidebar.vue'
+const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshipping/BundleSidebar.vue'))
 import { useBundle } from '@/Composables/useBundle'
 
 interface ChatConfig {
@@ -75,7 +75,13 @@ const propsAnnouncementsTopFooter = announcementsByPosition('top-footer')
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
-const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const getInitialScreenType = (): 'mobile' | 'tablet' | 'desktop' => {
+    if (typeof window === 'undefined') return 'desktop'
+    if (window.innerWidth < 640) return 'mobile'
+    if (window.innerWidth < 1024) return 'tablet'
+    return 'desktop'
+}
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>(getInitialScreenType())
 const customSidebar = usePage().props?.iris?.sidebar
 const useChat = usePage().props?.use_chat
 const chatConfig = usePage().props?.chat_config as ChatConfig
@@ -136,12 +142,63 @@ const handleTabFocus = () => {
     }
 }
 
+const resolvePaddingProp = (padding: any, screen: string, side?: string) => {
+    const read = (obj: any) => {
+        if (!obj || typeof obj !== 'object') return undefined
+        return side ? obj?.[side]?.value : obj?.unit
+    }
+    const fromScreen = read(padding?.[screen])
+    if (fromScreen !== undefined) return fromScreen
+    if (screen !== 'desktop') {
+        const fromDesktop = read(padding?.desktop)
+        if (fromDesktop !== undefined) return fromDesktop
+    }
+    return read(padding)
+}
+
+const containerPaddingCss = (() => {
+    const padding = theme?.container?.properties?.padding
+    if (!padding || typeof padding !== 'object') return null
+    if (padding.__irisCssVars) {
+        return padding.__irisCssVars
+    }
+
+    const sides: [string, string][] = [['left', '--iris-cp-l'], ['right', '--iris-cp-r']]
+    const rulesByScreen: Record<string, string> = {}
+
+    for (const screen of ['mobile', 'tablet', 'desktop']) {
+        const rules: string[] = []
+        for (const [side, cssVar] of sides) {
+            const value = resolvePaddingProp(padding, screen, side)
+            const unit = resolvePaddingProp(padding, screen)
+            if (value === null || value === undefined || !unit || (typeof value === 'string' && value.startsWith('var('))) {
+                return null
+            }
+            rules.push(`${cssVar}:${value}${unit}`)
+        }
+        rulesByScreen[screen] = rules.join(';')
+    }
+
+    for (const [side, cssVar] of sides) {
+        for (const target of [padding, padding.mobile, padding.tablet, padding.desktop]) {
+            if (target?.[side]) {
+                target[side].value = `var(${cssVar})`
+            }
+        }
+    }
+
+    padding.__irisCssVars = `:root{${rulesByScreen.mobile}}@media(min-width:640px){:root{${rulesByScreen.tablet}}}@media(min-width:1024px){:root{${rulesByScreen.desktop}}}`
+
+    return padding.__irisCssVars
+})()
+
+layout.app.webpage_layout = theme
+
 onMounted(() => {
     CustomerIdCollector(layout.iris_variables?.customer_id?.toString())
 
     checkScreenType()
     setColorStyleRoot(theme?.color)
-    layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 
     document.addEventListener('visibilitychange', handleTabFocus)
@@ -210,6 +267,8 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
 
 <template>
     <div class="editor-class">
+        <component :is="'style'" v-if="containerPaddingCss">{{ containerPaddingCss }}</component>
+
         <ScreenWarning v-if="layout.app.environment === 'staging'">
             {{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
         </ScreenWarning>
@@ -372,6 +431,16 @@ watch(() => layout.iris_variables?.cart_count, (newVal) => {
 </template>
 
 <style lang="scss">
+
+html {
+  overscroll-behavior: none;
+}
+
+/* * {
+  outline: 1px solid red;
+} */
+
+
 #iris_breadcrumbs ol,
 #iris_breadcrumbs ul {
     margin-left: 0;

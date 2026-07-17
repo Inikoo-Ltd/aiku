@@ -41,6 +41,7 @@ import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
 import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
+import TableDeliveryNoteTariffCodes from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteTariffCodes.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
 import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -60,9 +61,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
-import ButtonSetAsWaiting from "@/Components/DeliveryNote/ButtonSetAsWaiting.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import ButtonSelectBaysAndWaiting from "@/Components/DeliveryNote/ButtonSelectBaysAndWaiting.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 
@@ -75,6 +74,11 @@ const props = defineProps<{
     items?: {}
     pending_items?: {}
     done_items?: {}
+    tariff_codes?: {}
+    tariff_codes_export?: {
+        fields: { key: string; label: string }[]
+        download_route: { xlsx: routeType; csv: routeType }
+    }
     pickings?: {}
     warning?: {
         text: string
@@ -140,7 +144,7 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
-	history: {}
+	history?: {}
 	shop: {
 		type: string   // 'b2b', 'dropshipping'
 	}
@@ -160,6 +164,7 @@ const component = computed(() => {
         items: TableDeliveryNoteItems,
         pending_items: TableDeliveryNoteItems,
         done_items: TableDeliveryNoteItems,
+        tariff_codes: TableDeliveryNoteTariffCodes,
 		history: TableHistories,
         pickings: TablePickings
     };
@@ -389,27 +394,14 @@ onMounted(() => {
     console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
 
-const processReturn = () => {
-	// router.patch(route('grp.models.delivery_note.return.process', {
-	// 	deliveryNote: props.delivery_note.id
-	// }), {}, {
-	// 	onSuccess: () => {
-    //         notify({ 
-	// 			title: 'Updated', 
-	// 			text: 'Successfully created return', 
-	// 			type: 'success' 
-	// 		})
-	// 	},
-	// 	onError: (err) => {
-	// 		console.error(err)
-    //         notify({ 
-	// 			title: 'Error', 
-	// 			text: 'Failed to create return.', 
-	// 			type: 'error' 
-	// 		})
-	// 	}
-	// })
-}
+
+watch(
+	(item) => props.tabs,
+	(item: TSTabs) => {
+		if (item.current !== currentTab.value) currentTab.value = item.current;
+	},
+	{ immediate: true }
+);
 
 </script>
 
@@ -515,7 +507,7 @@ const processReturn = () => {
 				</div>
 			</div>
 			<!-- Button: Download PDF -->
-			<div class="relative" v-if="route().params.deliveryNote">
+			<!-- <div class="relative" v-if="route().params.deliveryNote">
 				<a	v-if="route().params.deliveryNote"
 					:href="
 						route('grp.pdfs.delivery-notes', {
@@ -528,7 +520,7 @@ const processReturn = () => {
 					v-tooltip="trans('Download PDF of this Delivery Note')">
 					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
 				</a>
-			</div>
+			</div> -->
 		</template>
 
 		<template #button-to-queue="{ action }">
@@ -577,17 +569,6 @@ const processReturn = () => {
 		</template>
 
 		<!-- Button: Select trolley (only for Ecom) -->
-		<!-- <template
-			#button-set-for-waiting="{ action }"
-			v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"
-		>
-			<ButtonSelectBaysAndWaiting
-				:warehouse="warehouse"
-				:deliveryNote="delivery_note"
-			/>
-		</template> -->
-
-		<!-- Button: Select trolley (only for Ecom) -->
 		<template v-if="props.shop.type !== 'dropshipping'"  #button-start-picking="{ action }">
 			<ButtonSelectTrolleys
 				:warehouse="warehouse"
@@ -607,15 +588,6 @@ const processReturn = () => {
 			</ButtonSelectBays>
 		</template>
 
-		<!-- Button: Set as waiting (only for Ecom) -->
-		<!-- <template v-if="props.shop.type === 'b2b' && layout.app.environment === 'local'"  #button-set-for-waiting="{ action }">
-			<ButtonSetAsWaiting
-				:warehouse="warehouse"
-				:deliveryNote="delivery_note"
-			>
-
-			</ButtonSetAsWaiting>
-		</template> -->
 	</PageHeading>
 
 	<!-- Section: Pallet Warning -->
@@ -674,11 +646,7 @@ const processReturn = () => {
 					:key="index + note.label"
 					:noteData="note"
 					:updateRoute="routes.update"
-					:fetchRoute="{
-						name: 'grp.models.delivery_note.copy_notes',
-						parameters: { deliveryNote: props.delivery_note.id },
-						method: 'patch',
-					}" />
+				/>
 			</div>
 		</Transition>
 	</div>
@@ -716,6 +684,7 @@ const processReturn = () => {
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:isEditable="is_editable"
+			:tariffCodesExport="tariff_codes_export"
 			:routes
 			:state="delivery_note.state"
 			:shop_type="shop_type"

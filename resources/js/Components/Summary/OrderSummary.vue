@@ -4,7 +4,7 @@ import { FieldOrderSummary } from '@/types/Pallet'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faQuestionCircle } from '@fal'
+import { faQuestionCircle, faInfoCircle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faQuestionCircle)
 
@@ -31,7 +31,7 @@ const locale = inject('locale', aikuLocaleStructure)
                         <dt class="col-span-3 flex flex-col">
                             <div class="flex items-center leading-none" :class="fieldSummary.label_class">
                                 <span>{{ fieldSummary.label }}</span>
-                                <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle' v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon v-if="fieldSummary.information_icon" :icon="fieldSummary.information_icon_button ?  fieldSummary.information_icon_button : 'fal fa-question-circle'" v-tooltip="fieldSummary.information_icon" class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width aria-hidden='true' />
                             </div>
                             <span v-if="fieldSummary.information" v-tooltip="fieldSummary.information" class="text-xs text-gray-400 truncate">{{ fieldSummary.information }}</span>
                         </dt>

@@ -4,7 +4,7 @@ import Image from "@common/Components/Image.vue"
 import Button from "@iris/Components/IrisButton.vue"
 import { getStyles } from "@/Composables/styles"
 import LinkIris from '@/Iris/Components/LinkIris.vue';
-import { inject } from 'vue'
+import { inject, onMounted, ref } from 'vue'
 
 
 const props = defineProps<{
@@ -34,10 +34,15 @@ const props = defineProps<{
 
 
 const layout: any = inject("layout", {})
+
+const isCarouselMounted = ref(false)
+onMounted(() => {
+  isCarouselMounted.value = true
+})
 </script>
 
 <template>
-  <div  :id="fieldValue?.id ? fieldValue?.id  : 'carousel-cta' + indexBlock"  component="carousel-cta" >
+  <div :id="fieldValue?.id ? fieldValue?.id : 'carousel-cta' + indexBlock" component="carousel-cta" :class="{ 'carousel-cta-pending': !isCarouselMounted }">
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType)
@@ -68,6 +73,7 @@ const layout: any = inject("layout", {})
                   class="absolute inset-0 w-full h-full object-cover"
                   :height="getStyles(fieldValue?.image?.container?.properties, screenType,false)?.height"
                   :width="getStyles(fieldValue?.image?.container?.properties, screenType,false)?.width"
+                  :preload="Number(indexBlock) === 0 && index === 0"
                 />
               </component>
 

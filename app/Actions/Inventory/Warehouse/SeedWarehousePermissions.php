@@ -34,7 +34,7 @@ class SeedWarehousePermissions
         $currentPermissions = Permission::where('scope_type', 'Warehouse')->where('scope_id', $warehouse->id)->pluck('name');
         $currentPermissions->diff($warehousePermissions)
             ->each(function ($permissionName) {
-                Permission::where('name', $permissionName)->first()->delete();
+                Permission::where('name', $permissionName)->delete();
             });
 
         $warehousePermissions->each(function ($permissionName) use ($warehouse) {
@@ -57,10 +57,7 @@ class SeedWarehousePermissions
         $currentRoles = Role::where('scope_type', 'Warehouse')->where('scope_id', $warehouse->id)->pluck('name');
         $currentRoles->diff($warehouseRoles)
             ->each(function ($roleName) {
-                Role::where(
-                    'name',
-                    $roleName
-                )->first()->delete();
+                Role::where('name', $roleName)->delete();
             });
 
 

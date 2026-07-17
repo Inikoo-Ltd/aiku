@@ -87,6 +87,7 @@ import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQr
 import ReviewRatingLabels from '@/Components/Forms/Fields/ReviewRatingLabels.vue'
 import ReviewPublishing from '@/Components/Forms/Fields/ReviewPublishing.vue'
 import ReviewVisibility from '@/Components/Forms/Fields/ReviewVisibility.vue'
+import ReviewValidationScope from '@/Components/Forms/Fields/ReviewValidationScope.vue'
 import InputFaqMaster from '@/Components/Forms/Fields/InputFaqMaster.vue'
 import InputFaqShop from '@/Components/Forms/Fields/InputFaqShop.vue'
 import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
@@ -176,6 +177,7 @@ export const componentsList: { [key: string]: Component } = {
     'review_rating_labels': ReviewRatingLabels,
     'review_publishing': ReviewPublishing,
     'review_visibility': ReviewVisibility,
+    'review_validation_scope': ReviewValidationScope,
     'input_translation_use_option' : InputTranslationWithOptionLanguages,
     'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
     'select_create': SelectCreate,

@@ -16,13 +16,13 @@ enum StockDeliveryTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE            = 'SHOWCASE';
+    // case SHOWCASE            = 'SHOWCASE';
 
     case ITEMS               = 'items';
 
     case HISTORY             = 'history';
-    case ATTACHMENTS         = 'attachments';
-    case DATA                = 'data';
+    // case ATTACHMENTS         = 'attachments';
+    // case DATA                = 'data';
 
 
 
@@ -31,33 +31,33 @@ enum StockDeliveryTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
-            StockDeliveryTabsEnum::DATA     => [
-                'title' => __('Data'),
-                'icon'  => 'fal fa-database',
-                'type'  => 'icon',
-                'align' => 'right',
-            ],
+            // StockDeliveryTabsEnum::DATA     => [
+            //     'title' => __('Data'),
+            //     'icon'  => 'fal fa-database',
+            //     'type'  => 'icon',
+            //     'align' => 'right',
+            // ],
             StockDeliveryTabsEnum::ITEMS  => [
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
-            StockDeliveryTabsEnum::SHOWCASE => [
-                'title' => __('Supplier delivery'),
-                'icon'  => 'fal fa-info-circle',
-            ],
+            // StockDeliveryTabsEnum::SHOWCASE => [
+            //     'title' => __('Supplier delivery'),
+            //     'icon'  => 'fal fa-info-circle',
+            // ],
             StockDeliveryTabsEnum::HISTORY     => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            StockDeliveryTabsEnum::ATTACHMENTS => [
-                'type'  => 'icon',
-                'align' => 'right',
-                'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
+            // StockDeliveryTabsEnum::ATTACHMENTS => [
+            //     'type'  => 'icon',
+            //     'align' => 'right',
+            //     'title' => __('Attachments'),
+            //     'icon'  => 'fal fa-paperclip',
 
-            ],
+            // ],
         };
     }
 }

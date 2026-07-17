@@ -64,6 +64,15 @@ class IndexWebsites extends OrgAction
         return $this->handle($this->parent);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle($this->parent);
+    }
+
 
     protected function getElementGroups(Group|Organisation|Shop|Fulfilment $parent): array
     {

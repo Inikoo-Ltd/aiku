@@ -12,6 +12,7 @@ import Drawer from "primevue/drawer"
 import Skeleton from "primevue/skeleton"
 import { debounce, get } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
+import MobileShowMoreButton from "@/Iris/Components/MobileShowMoreButton.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
@@ -51,6 +52,11 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)
+const MOBILE_INITIAL_PRODUCTS = 16
+const showAllProductsOnMobile = ref(false)
+const mobileHiddenProductsCount = computed(() => products.value.length - MOBILE_INITIAL_PRODUCTS)
+const isMobileCollapsed = computed(() => !showAllProductsOnMobile.value && mobileHiddenProductsCount.value > 4)
+
 const firstLoad = ref(null)
 const products = ref<any[]>(
     props.fieldValue?.products?.meta?.last_page == 1
@@ -77,6 +83,7 @@ const isFetchingOutOfStock = ref(false)
 const isNewArrivals = ref(false)
 const isLoadingInitial = ref(false)
 const isLoadingMore = ref(false)
+const renderKey = ref(0)
 
 
 const getRoutes = () => {
@@ -213,6 +220,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         isLoadingInitial.value = false;
         isLoadingMore.value = false;
         firstLoad.value++;
+        renderKey.value++;
     }
 };
 
@@ -398,22 +406,15 @@ const toggleSort = (key: string) => {
 
 
 
-const responsiveGridClass = computed(() => {
+const gridColsVars = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
+    const basketOpen = layout.rightbasket?.show
 
-    const columnCount = {
-        desktop: perRow.desktop ?? 4,
-        tablet: perRow.tablet ?? 3,
-        mobile: perRow.mobile ?? 2
+    return {
+        '--cols-mobile': basketOpen ? 2 : (perRow.mobile ?? 2),
+        '--cols-tablet': basketOpen ? 3 : (perRow.tablet ?? 3),
+        '--cols-desktop': basketOpen ? 3 : (perRow.desktop ?? 4),
     }
-
-    const count = columnCount[props.screenType] ?? 1
-
-    if (layout.rightbasket?.show) {
-        if (props.screenType == 'mobile') return `grid-cols-2`
-        return `grid-cols-3`
-    }
-    return `grid-cols-${count}`
 })
 
 
@@ -502,8 +503,8 @@ watch(
                 </div>
 
                 <!-- Product Grid -->
-                <div :class="responsiveGridClass"
-                    class="grid gap-x-6 gap-y-10 p-3 px-0 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 2xl:px-[50px]">
+                <div :style="gridColsVars"
+                    class="products-grid grid gap-x-6 gap-y-10 p-3 px-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-12 2xl:px-[50px]">
                     <!-- <pre>{{ getStyles(fieldValue?.container?.properties, screenType) }}</pre> -->
                     <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
@@ -519,10 +520,11 @@ watch(
                     <template v-else-if="products.length">
                         <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
                         <!-- <pre>{{ get(layout, ['family_quantity_ordered'], []) }}</pre> -->
-                        <div v-for="(product, index) in products"
+                        <div v-for="(product, index) in products" :key="`${renderKey}-${index}`"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class=" relative rounded flex md:flex-1 justify-center">
-                            <RenderProduct :code="code" :product="product" :key="index"
+                            class=" relative rounded flex md:flex-1 justify-center"
+                            :class="{ 'max-lg:hidden': isMobileCollapsed && index >= MOBILE_INITIAL_PRODUCTS }">
+                            <RenderProduct :code="code" :product="product" :key="`${renderKey}-${index}`"
                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
@@ -553,9 +555,14 @@ watch(
                     </template>
                 </div>
 
+                <!-- Show more (mobile only): reveal CSS-hidden products without fetching -->
+                <div v-if="isMobileCollapsed" class="lg:hidden mt-4 mb-7 px-2">
+                    <MobileShowMoreButton :count="mobileHiddenProductsCount" @show="showAllProductsOnMobile = true" />
+                </div>
+
                 <!-- Load More -->
                 <!--  {{ page   }}{{ lastPage }} -->
-                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12">
+                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12" :class="{ 'max-lg:hidden': isMobileCollapsed }">
                     <Button @click="loadMore" type="tertiary" :disabled="isLoadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
                         <template v-if="isLoadingMore">
@@ -583,6 +590,23 @@ watch(
 
 
 <style scoped>
+.products-grid {
+    grid-template-columns: repeat(var(--cols-mobile), minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-tablet), minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-desktop), minmax(0, 1fr));
+    }
+}
+
+
 .slide-fade-enter-active,
 .slide-fade-leave-active {
     transition: all 0.3s ease;

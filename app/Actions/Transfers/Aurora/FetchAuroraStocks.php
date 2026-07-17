@@ -191,7 +191,7 @@ class FetchAuroraStocks extends FetchAuroraAction
             if ($stock->state != StockStateEnum::IN_PROCESS) {
                 $orgStock = $this->processOrgStock($organisationSource, $stock, $stockData);
 
-                if ($orgStock) {
+                if ($orgStock && !$orgStock->organisation->is_aiku_stock_control) {
                     $locationsData = $this->getStockLocationData($organisationSource, $stockData['stock']['source_id']);
                     SyncOrgStockLocations::make()->action($orgStock, [
                         'locationsData' => $locationsData

@@ -167,6 +167,11 @@
                     {{ __('Order date') }}: <b>{{ $invoice->order->submitted_at->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
                 </div>
             @endif
+            @if($invoice->originalInvoice)
+                <div style="text-align: right">
+                    {{ __('Original invoice number') }}: <b>{{ $invoice->originalInvoice->reference }}</b>
+                </div>
+            @endif
 
 
         </td>
@@ -211,6 +216,12 @@
                         <span class="address_value"> {{$invoice->identity_document_number}} </span>
                     </div>
                 @endif
+                    @if($invoice->fiscal_name)
+                        <div>
+                            <span class="address_label">{{ __('Fiscal name') }}:</span>
+                            <span class="address_value">{{ $invoice->fiscal_name }}</span>
+                        </div>
+                    @endif
                 @if($invoice->identity_document_number_alt)
                     <div>
                         <span class="address_label">{{ data_get($shop->settings, 'customer.identity_document_number_alt') ?? __('Identity Document Number Alt.') }}:</span>

@@ -51,6 +51,21 @@ class CalculateOrderShipping
             }
         }
 
+        if (!$discount && $order->offer_voucher_id) {
+            $discountVoucherData = Arr::get($order->shop->offers_data, 'discounted_shipping_vouchers', []);
+            if (!empty($discountVoucherData) && key_exists($order->offer_voucher_id, $discountVoucherData)) {
+                $voucherOfferData = $discountVoucherData[$order->offer_voucher_id];
+                $minAmount        = Arr::get($voucherOfferData, 'min_amount', 0);
+                if ($minAmount <= $order->gross_amount) {
+                    $discount = true;
+
+                    $offerId = Arr::get($voucherOfferData, 'id');
+                    if ($order->discounted_shipping_offer_id != $offerId) {
+                        $insertTransactionHasOfferAllowance = true;
+                    }
+                }
+            }
+        }
 
         if (!$discount) {
             $this->removeOffer($order);
@@ -163,6 +178,7 @@ class CalculateOrderShipping
 
         return $order;
     }
+
 
     private function storeShippingTransaction(Order $order, ShippingZone $shippingZone, $shippingAmount): Transaction
     {

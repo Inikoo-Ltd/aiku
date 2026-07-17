@@ -31,6 +31,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -92,6 +93,7 @@ use Spatie\Translatable\HasTranslations;
  */
 class MasterCollection extends Model implements Auditable, HasMedia
 {
+    use HasSearch;
     use SoftDeletes;
     use HasSlug;
     use HasHistory;
@@ -215,4 +217,18 @@ class MasterCollection extends Model implements Auditable, HasMedia
     {
         return $this->hasMany(MasterCollectionTimeSeries::class);
     }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'             => (string)$this->id,
+            'group_id'       => $this->group_id,
+            'master_shop_id' => $this->master_shop_id,
+            'code'           => $this->code,
+            'name'           => (string)$this->name,
+            'state'          => $this->state->value,
+            'created_at'     => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
 }

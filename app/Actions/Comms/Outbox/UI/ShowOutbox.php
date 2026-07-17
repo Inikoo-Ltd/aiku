@@ -168,19 +168,19 @@ class ShowOutbox extends OrgAction
 
                 OutboxTabsEnum::SHOWCASE->value => $this->tab == OutboxTabsEnum::SHOWCASE->value ?
                     fn () => GetOutboxShowcase::run($outbox)
-                    : Inertia::lazy(fn () => GetOutboxShowcase::run($outbox)),
+                    : Inertia::optional(fn () => GetOutboxShowcase::run($outbox)),
 
                 OutboxTabsEnum::EMAIL_RUNS->value => $this->tab == OutboxTabsEnum::EMAIL_RUNS->value ?
                     fn () => ReorderRemainderEmailBulkRunsResource::collection(IndexReorderEmailBulkRuns::run($outbox, OutboxTabsEnum::EMAIL_RUNS->value))
-                    : Inertia::lazy(fn () => ReorderRemainderEmailBulkRunsResource::collection(IndexReorderEmailBulkRuns::run($outbox, OutboxTabsEnum::EMAIL_RUNS->value))),
+                    : Inertia::optional(fn () => ReorderRemainderEmailBulkRunsResource::collection(IndexReorderEmailBulkRuns::run($outbox, OutboxTabsEnum::EMAIL_RUNS->value))),
 
                 OutboxTabsEnum::MAILSHOTS->value => $this->tab == OutboxTabsEnum::MAILSHOTS->value ?
                     fn () => MailshotResource::collection(IndexMailshots::run($outbox, OutboxTabsEnum::MAILSHOTS->value))
-                    : Inertia::lazy(fn () => MailshotResource::collection(IndexMailshots::run($outbox, OutboxTabsEnum::MAILSHOTS->value))),
+                    : Inertia::optional(fn () => MailshotResource::collection(IndexMailshots::run($outbox, OutboxTabsEnum::MAILSHOTS->value))),
 
                 OutboxTabsEnum::DISPATCHED_EMAILS->value => $this->tab == OutboxTabsEnum::DISPATCHED_EMAILS->value ?
                     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))
-                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))),
+                    : Inertia::optional(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($outbox, OutboxTabsEnum::DISPATCHED_EMAILS->value))),
 
 
 

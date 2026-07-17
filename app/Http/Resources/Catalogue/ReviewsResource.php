@@ -32,6 +32,7 @@ class ReviewsResource extends JsonResource
             'customer_id'      => $this->customer_id,
             'scope'            => $this->scope,
             'product_code'     => $this->product_code ?? null,
+            'family_code'     => $this->family_code ?? null,
             'customer_name'    => $this->resolveCustomerName(),
             'customer_route'   => ($canManage && $this->customer_id && $this->customer_slug) ? [
                 'name'       => 'grp.org.shops.show.crm.customers.show',
@@ -123,7 +124,7 @@ class ReviewsResource extends JsonResource
             ->orderBy('sort_order')
             ->orderBy('dimension')
             ->get(['dimension', 'label', 'is_required', 'weight'])
-            ->map(fn(ReviewRatingLabel $reviewRatingLabel): array => [
+            ->map(fn (ReviewRatingLabel $reviewRatingLabel): array => [
                 'dimension'   => $reviewRatingLabel->dimension?->value ?? (string)$reviewRatingLabel->dimension,
                 'label'       => (string)$reviewRatingLabel->label,
                 'is_required' => (bool)$reviewRatingLabel->is_required,
@@ -165,7 +166,7 @@ class ReviewsResource extends JsonResource
         $rows  = (clone $baseQuery)->forPage($page, $perPage)->get();
 
         $items = $rows
-            ->map(fn($item): array => [
+            ->map(fn ($item): array => [
                 'customer_id'  => (int)data_get($item, 'customer_id'),
                 'label'        => (string)data_get($item, 'label'),
                 'contact_name' => data_get($item, 'contact_name'),

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { get } from 'lodash-es'
 
 import SlideCorner from "@/Components/Banners/Slider/SlideCorner.vue"
@@ -99,10 +99,16 @@ const compHandleBannerLessSlide = computed(() => {
                 : actualSlides.value.length >= 8 ? actualSlides.value : [...actualSlides.value, ...actualSlides.value]
 })
 
-onMounted(() => {
-    setTimeout(() => {
+const onPageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) {
         intSwiperKey.value++  // To handle bug on Browser back navigation (Agnest & Cat)
-    }, 600)
+    }
+}
+onMounted(() => {
+    window.addEventListener('pageshow', onPageShow)
+})
+onBeforeUnmount(() => {
+    window.removeEventListener('pageshow', onPageShow)
 })
 
 // Handle color of arrow navigation (default is blue)
@@ -170,7 +176,7 @@ onMounted(() => {
             : `${compWidthBanner}/1`
         }">
         <!-- Add v-if to avoid error in SSR -->
-        <template v-if="isMounted">
+        <template v-if="data">
             <Swiper ref="swiperRef"
                 :key="'banner' + intSwiperKey"
                 :slideToClickedSlide="false"
@@ -192,13 +198,15 @@ onMounted(() => {
                 :modules="[Autoplay, Pagination, Navigation]"
                 class="mySwiper h-full w-full"
             >
-                <SwiperSlide v-for="component in visibleComponents" :key="component.id"
+                <SwiperSlide v-for="(component, index) in visibleComponents" :key="component.id"
                     class="h-full overflow-hidden aspect-square">
                     <!-- Section: image or background -->
                     <div v-if="get(component, ['layout', 'backgroundType',props.view || 'desktop'], 'image') === 'image'"
                         class="relative w-full h-full">
-                        <Image :src="get(component, ['image',props.view || 'desktop', 'source'], null)"
-                            alt="Wowsbar" />
+                        <Image :src="get(component, ['image', props.view || 'desktop', 'source'], null) ?? get(component, ['image', 'desktop', 'source'], null)"
+                            :srcset="get(component, ['image', props.view || 'desktop', 'srcset'], undefined) ?? get(component, ['image', 'desktop', 'srcset'], undefined)"
+                            alt="Wowsbar"
+                            :imgAttributes="index === 0 ? { loading: 'eager', fetchpriority: 'high', decoding: 'async' } : { loading: 'lazy', decoding: 'async' }" />
                     </div>
                     <!-- Video -->
                     <div
@@ -245,7 +253,7 @@ onMounted(() => {
                         </span>
                     </div>
                     <!-- <FontAwesomeIcon v-if="!!component?.layout?.link" icon='far fa-external-link' class='text-gray-300/50 text-xl absolute top-2 right-2' aria-hidden='true' /> -->
-                    <a target="_top" v-if="!!component?.layout?.link" :href="`https://${useRemoveHttps(component?.layout?.link)}`" class="absolute bg-transparent w-full h-full" />
+                    <a target="_top" v-if="!!component?.layout?.link" :href="`https://${useRemoveHttps(component?.layout?.link)}`" :aria-label="useRemoveHttps(component?.layout?.link)" class="absolute bg-transparent w-full h-full" />
                     <SlideCorner v-for="(slideCorner, position) in filteredNulls(component?.layout?.corners)"
                         :position="position" :corner="slideCorner" />
                     <!-- CentralStage: slide-centralstage (prioritize) and common-centralStage -->

@@ -97,7 +97,7 @@ onUnmounted(() => {
     <div :style="getStyles(announcementData?.container_properties)">
         <div class="flex justify-center overflow-hidden">
             <!-- MOBILE : Carousel -->
-            <div v-if="isMobile" @click.capture="onClickAnnouncement($event, activeIndex)" class="flex items-center transition-all duration-500">
+            <div @click.capture="onClickAnnouncement($event, activeIndex)" class="flex md:hidden items-center transition-all duration-500">
                 <FontAwesomeIcon v-if="texts[activeIndex]?.icon && navigatingIndex !== activeIndex" :icon="texts[activeIndex].icon"
                     class="opacity-50 mr-2" />
                 <span v-html="texts[activeIndex]?.text"></span>
@@ -105,7 +105,7 @@ onUnmounted(() => {
             </div>
 
             <!-- DESKTOP & TABLET : Normal layout -->
-            <template v-else>
+            <div class="hidden md:flex">
                 <div v-for="(abc, idx) in texts" :key="idx" @click.capture="onClickAnnouncement($event, idx)" class="flex gap-x-2 items-center transition-all"
                     :class="idx + 1 < texts.length ? 'border-r border-black/20' : ''" :style="{
                         paddingLeft: announcementData?.fields?.text_transition_data?.gap + 'px',
@@ -115,7 +115,7 @@ onUnmounted(() => {
                     <FontAwesomeIcon v-if="navigatingIndex === idx" icon="fad fa-spinner-third" class="opacity-70 my-auto animate-spin" />
                     <span v-html="abc.text"></span>
                 </div>
-            </template>
+            </div>
         </div>
     </div>
 </template>

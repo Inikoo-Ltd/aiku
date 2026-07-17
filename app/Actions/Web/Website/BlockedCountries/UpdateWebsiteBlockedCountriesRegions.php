@@ -20,17 +20,21 @@ class UpdateWebsiteBlockedCountriesRegions extends OrgAction
 {
     use AsAction;
 
-    public function handle(Website $website, array $modelData): Website
+    public function handle(Website $website, array $modelData, bool $countyOnly = false): Website
     {
         $currentBlockedCountries = $website->blocked_country_regions;
         $countryCode             = strtoupper($modelData['country']);
 
-        if ($this->hasRestrictions($modelData)) {
+
+        if ($countyOnly) {
+            $currentBlockedCountries[$countryCode] = [];
+        } elseif ($this->hasRestrictions($modelData)) {
             $countryRestriction                    = $this->preProcessCountryRestrictions($modelData);
             $currentBlockedCountries[$countryCode] = $countryRestriction;
         } else {
             unset($currentBlockedCountries[$countryCode]);
         }
+
 
         $website->update(['blocked_country_regions' => $currentBlockedCountries]);
 

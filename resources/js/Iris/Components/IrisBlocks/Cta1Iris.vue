@@ -8,6 +8,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
+import { ctaImageBoxCss } from "@/Iris/Composables/useCtaImageBoxCss"
 import { FieldValue } from "@/types/webpageTypes"
 import { inject, computed } from 'vue'
 import { faCube, faLink, faImage } from "@fal"
@@ -40,10 +41,18 @@ const valueForField = computed(() => {
 })
 
 const isImageLeft = computed(() => valueForField.value === 'Image-left')
+
+const blockDomId = computed(() => props.fieldValue?.id ? props.fieldValue.id : 'cta1' + props.indexBlock)
+const imageBoxCss = computed(() => ctaImageBoxCss(blockDomId.value, props.fieldValue?.image?.container?.properties?.dimension))
+const imageBoxStyle = computed(() => {
+	const { height, width, ...rest } = getStyles(props.fieldValue?.image?.container?.properties, props.screenType) || {}
+	return rest
+})
 </script>
 
 <template>
-	<div :id="fieldValue?.id ? fieldValue?.id  : 'cta1'+indexBlock" class="w-full" component="cta1">
+	<div :id="blockDomId" class="w-full" component="cta1">
+		<component :is="'style'" v-if="imageBoxCss">{{ imageBoxCss }}</component>
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType),
@@ -54,19 +63,20 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 					:href="fieldValue?.image?.link?.href" 
 					:target="fieldValue?.image?.link?.target"
 					:type="fieldValue?.image?.link?.type"
-					class="relative cursor-pointer overflow-hidden w-full" 
+					class="relative cursor-pointer overflow-hidden w-full cta-image-slot"
 				:class="[
 					!fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]',
 					isImageLeft ? 'order-1' : 'order-2']"
-					:style="getStyles(fieldValue?.image?.container?.properties, screenType)"
+					:style="imageBoxStyle"
 				>
 					<template #default="{ isLoading } = { isLoading: false }">
 						<Image :src="fieldValue.image.source" :imageCover="true"
 							:alt="fieldValue.image.alt || 'Image preview'"
 							class="absolute inset-0 w-full h-full object-fill"
-							:imgAttributes="fieldValue.image.attributes" 
-							:height="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.height"
-							:width="getStyles(fieldValue?.image?.container?.properties, screenType, false)?.width"
+							:imgAttributes="fieldValue.image.attributes"
+							:height="getStyles(fieldValue?.image?.container?.properties, 'desktop', false)?.height"
+							:width="getStyles(fieldValue?.image?.container?.properties, 'desktop', false)?.width"
+							:preload="Number(indexBlock) === 0"
 							/>
 						<div
 							v-if="isLoading"
@@ -87,7 +97,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 					:style="getStyles(fieldValue?.text_block?.properties, screenType)">
 					<div class="max-w-xl w-full">
 						<div v-html="fieldValue.text"></div>
-						<div class="flex justify-center mt-6">
+						<div v-if="fieldValue.button?.use_button ?? true" class="flex justify-center mt-6">
 							<LinkIris :href="fieldValue?.button?.link?.href"
 								:canonical_url="fieldValue?.button?.link?.canonical_url"
 								:target="fieldValue?.button?.link?.taget" typeof="button"

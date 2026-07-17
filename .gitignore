@@ -2,6 +2,8 @@
 /bootstrap/ssr
 /node_modules
 /.qodo
+/.agents
+/.codex
 
 /public/build
 /public/hot
@@ -122,3 +124,10 @@ laradumps.yaml
 /nightowl/*
 /local_storage/*
 /devops/haproxy/facebook-bots.lst
+/lines_by_author_report.txt
+/lines_by_author_report.txt.formatted
+/lines_of_code_by_author.txt
+/actions_by_folder_report.txt.formatted
+/app_actions_dashboard.html
+
+/tests/Browser/Screenshots

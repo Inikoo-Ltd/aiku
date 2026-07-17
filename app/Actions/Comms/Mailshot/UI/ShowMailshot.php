@@ -71,6 +71,8 @@ class ShowMailshot extends OrgAction
 
         $isShowEditName = $this->canEdit && in_array($mailshot->state, [MailshotStateEnum::SENT]);
 
+        $hasSourceReference = filled($mailshot->source_id) || filled($mailshot->source_alt_id) || filled($mailshot->source_alt2_id);
+
         $estimatedRecipients = ($mailshot->type === MailshotTypeEnum::MARKETING && in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS, MailshotStateEnum::READY, MailshotStateEnum::SCHEDULED]))
             ? (GetMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('customers.id') ?? 0)
             : 0;
@@ -83,6 +85,8 @@ class ShowMailshot extends OrgAction
         $isHasParentMailshot = $mailshot->parentMailshot()->exists();
 
         $canLoadTemplates = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
+
+        $webpage = $mailshot->webpages()->first();
         /* NOTE:
          * is_second_wave_enabled is perspective from parent mailshot
          * is_second_wave  is perspective from child mailshot
@@ -148,6 +152,20 @@ class ShowMailshot extends OrgAction
                                 ]
                             ]
                         ] : [],
+                        $isShowEditName && !$webpage && !$hasSourceReference ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Convert to Page'),
+                            'icon'  => ["fal", "fa-file-export"],
+                            'route' => [
+                                'name'       => 'grp.models.shop.mailshot.convert-to-blog',
+                                'parameters' => [
+                                    $this->shop->id,
+                                    $mailshot->id
+                                ],
+                                'method'     => 'get'
+                            ]
+                        ] : [],
                         $isShowStop ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -175,6 +193,21 @@ class ShowMailshot extends OrgAction
                                 ],
                                 'method'     => 'post'
                             ]
+                        ] : [],
+                        $webpage && !$hasSourceReference ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Go to webpage'),
+                            'icon'  => ["fal", "fa-external-link"],
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.web.blogs.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'website'      => $webpage->website->slug,
+                                    'webpage'      => $webpage->slug,
+                                ]
+                            ]
                         ] : []
                     ]
                 ],
@@ -184,11 +217,11 @@ class ShowMailshot extends OrgAction
                 ],
                 MailshotTabsEnum::SHOWCASE->value => $this->tab == MailshotTabsEnum::SHOWCASE->value ?
                     fn () => GetMailshotShowcase::run($mailshot)
-                    : Inertia::lazy(fn () => GetMailshotShowcase::run($mailshot)),
+                    : Inertia::optional(fn () => GetMailshotShowcase::run($mailshot)),
 
                 MailshotTabsEnum::RECIPIENTS->value => $this->tab == MailshotTabsEnum::RECIPIENTS->value ?
                     fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))
-                    : Inertia::lazy(fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
+                    : Inertia::optional(fn () => MailshotRecipientsResource::collection(IndexMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
 
 
                 MailshotTabsEnum::DISPATCHED_EMAILS->value => $this->tab == MailshotTabsEnum::DISPATCHED_EMAILS->value
@@ -199,7 +232,7 @@ class ShowMailshot extends OrgAction
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
                         )
                     )
-                    : Inertia::lazy(fn () => LocationResource::collection(
+                    : Inertia::optional(fn () => LocationResource::collection(
                         IndexDispatchedEmails::run(
                             parent: $mailshot,
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value

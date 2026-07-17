@@ -466,6 +466,9 @@ trait WithLuigis
         $pricePerUnit = $productUnits > 0 ? $price / $productUnits : 0;
         $rrpPerUnit   = $productUnits > 0 ? $rrp / $productUnits : 0;
 
+
+        $availability=intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale);
+
         return [
             "identity" => $webpage->luigiIdentity(),
             "type"     => "item",
@@ -474,7 +477,7 @@ trait WithLuigis
                 "title"               => $webpage->title,
                 "web_url"             => $webpage->getCanonicalUrl(),
                 // Discontinuing display also (Tomas Request) | HELP-1677
-                "availability"        => intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale),
+                "availability"        => $availability,
                 "stock_qty"           => $product->available_quantity ?? 0,
                 "unit"                => $product->unit,   // 'bomb'
                 "units"               => $productUnits,   // '6.000'
@@ -495,6 +498,7 @@ trait WithLuigis
                 "description"         => $product->description,
                 'website_id'          => $webpage->website_id,
                 'webpage_id'          => $webpage->id,
+                'reindex_at'          => now()->utc()->format('c'),
             ]),
             ...(count($familyData) || count($departmentData) || count($subDepartmentData) || count($brandObject) || count($tagsObject) ? [
                 "nested" => array_values(array_filter([

@@ -85,6 +85,7 @@ class GetDropshippingApiProducts extends RetinaApiAction
             'products.slug',
             'products.barcode',
             'products.web_images',
+            'products.description_extra',
             'currencies.code as currency_code',
             'currencies.id as currency_id',
             'department.slug as department_slug',

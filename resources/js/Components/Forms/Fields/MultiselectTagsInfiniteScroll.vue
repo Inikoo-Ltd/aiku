@@ -59,7 +59,7 @@ const findTagById = (id: number | string) => {
 </script>
 
 <template>
-    <div class="w-full max-w-md py-4">
+    <div class="w-full max-w-md xpy-4">
         <!-- Selected tags -->
         <div v-if="formSelectedTags.length" class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
             <Tag

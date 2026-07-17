@@ -3,12 +3,14 @@
 /*
  * author Louis Perez
  * created on 09-06-2026-14h-03m
- * github: https://github.com/louis-perez
+ * GitHub: https://github.com/louis-perez
  * copyright 2026
 */
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Helpers\GetVideoThumbnail;
+use Illuminate\Support\Arr;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -32,8 +34,9 @@ class WebBlockDepartmentResource extends JsonResource
             'description_extra'         => $department->description_extra,
             'showcase_image'            => $department->imageSources(720, 480, 'showcaseImage'),
             'showcase_video'            => $department->desc_video_url,
+            'showcase_video_thumbnail'  => GetVideoThumbnail::run($department->desc_video_url),
             'offers_data'               => $department->offers_data,
-            'web_images'                => $department->web_images,
+            'web_images'                => ['main' => Arr::get($department->web_images, 'main')],
             'url'                       => $department->webpage->url,
         ];
     }

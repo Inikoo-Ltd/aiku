@@ -43,9 +43,9 @@ const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     tabs: TSTabs
-    transactions: {}
-    pallet_deliveries: {}
-    pallet_returns: {}
+    transactions?: {}
+    pallet_deliveries?: {}
+    pallet_returns?: {}
     status_rb: string
     updateRoute: routeType
     timeline_rb: {
@@ -54,7 +54,7 @@ const props = defineProps<{
     }
     box_stats: BoxStats
     consolidateRoute: routeType
-    history: {}
+    history?: {}
     currency:{}
     service_lists?: [],
     service_list_route: routeType

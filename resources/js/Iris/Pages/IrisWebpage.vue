@@ -10,10 +10,9 @@ import { faCheck, faPlus, faMinus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head, usePage } from "@inertiajs/vue3"
 import LayoutIris from "@/Layouts/Iris.vue"
-import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
+import IrisBlockRenderer from "@/Iris/Components/IrisBlockRenderer.vue"
 import { useStructuredData } from "@/Iris/Composables/useStructuredData"
-/* import ReviewByStore from "@/Components/CMS/Reviews/ReviewByStore.vue" */
-import ReviewsIris from "../Components/IrisBlocks/ReviewsIris.vue"
+import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
 library.add(faCheck, faPlus, faMinus)
 
 const props = defineProps<{
@@ -34,28 +33,39 @@ const props = defineProps<{
     allow_review_reaction : boolean
     allow_review_reply_reaction : boolean
     minimum_reviews_to_show : number
+    webpage_reviews_count?: number | null
     webpage_slug : string
+    show_staff_who_reply : boolean
+    webpage_id : number
 }>()
 
 defineOptions({ layout: LayoutIris })
 
 const layout: any = inject("layout", {})
 const review = ref(usePage().props?.iris?.website?.reviews_settings)
+const getScreenType = (): "mobile" | "tablet" | "desktop" => {
+    if (typeof window === "undefined") return "desktop"
+    if (window.innerWidth < 640) return "mobile"
+    if (window.innerWidth < 1024) return "tablet"
+    return "desktop"
+}
+// ponytail: init to the SSR value ('desktop') so client hydration matches the server DOM;
+// onMounted -> checkScreenType flips it to the real viewport post-hydration.
 const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
 const currentUrl = ref("")
 const structuredDataScript = ref<HTMLScriptElement | null>(null)
 const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
 
 provide('webpage_data', props.webpage_data)
-provide('webpage_slug', props.webpage_slug)
+provide('webpage_id', props.webpage_id)
 provide('minimum_reviews_to_show', props.minimum_reviews_to_show)
+provide('webpage_reviews_count', props.webpage_reviews_count ?? null)
 provide('allow_review_reaction', props.allow_review_reaction)
+provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
+provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
 
 const checkScreenType = () => {
-    const width = window.innerWidth
-    if (width < 640) screenType.value = "mobile"
-    else if (width >= 640 && width < 1024) screenType.value = "tablet"
-    else screenType.value = "desktop"
+    screenType.value = getScreenType()
 }
 
 const robotsContent = computed(() => {
@@ -89,6 +99,8 @@ onBeforeUnmount(() => {
     removeStructuredDataScript(structuredDataScript.value)
     window.removeEventListener("resize", checkScreenType)
 })
+
+console.log('props',props)
 </script>
 
 <template>
@@ -110,8 +122,7 @@ onBeforeUnmount(() => {
         <meta name="twitter:description" :content="webpage_data.description || ''" />
         <meta name="twitter:image" :content="webpage_img?.png || webpage_img?.url || ''" />
     </Head>
-    
-    <!-- <pre>{{ blablabla }}</pre> -->
+
     <div class="bg-white">
         <div class="mx-auto w-full">
             <div
@@ -120,10 +131,11 @@ onBeforeUnmount(() => {
                 class="w-full"
                 :id="`v-${web_block_data.type}-${index}`"
             >
-                <component
+                <IrisBlockRenderer
+                    :type="web_block_data.type"
+                    :shopType="layout.retina.type"
                     :screenType="screenType"
                     :code="web_block_data.type"
-                    :is="getIrisComponent(web_block_data.type, { shop_type: layout.retina.type })"
                     :fieldValue="web_block_data?.web_block?.layout?.data?.fieldValue || web_block_data.structure"
                     :indexBlock="Number(index)"
                 />
@@ -134,7 +146,7 @@ onBeforeUnmount(() => {
                 v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)">
                 <div>
                  <!--    <ReviewByStore :code="'review-by-store'" /> -->
-                     <ReviewsIris :webpage_slug />
+                     <ReviewsIris :webpage_id="webpage_id" />
                 </div>
             </div>
 

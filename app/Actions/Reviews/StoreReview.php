@@ -8,10 +8,10 @@
 
 namespace App\Actions\Reviews;
 
-use App\Actions\Catalogue\Review\Traits\HasReviewCommonLogic;
-use App\Actions\Catalogue\Review\Traits\HasReviewHydrators;
 use App\Actions\Comms\Email\SendNewReviewEmailToSubscribers;
 use App\Actions\OrgAction;
+use App\Actions\Reviews\Traits\HasReviewCommonLogic;
+use App\Actions\Reviews\Traits\HasReviewHydrators;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\Catalogue\Review\ReviewStateEnum;
 use App\Enums\Catalogue\Review\ReviewStatusEnum;
@@ -90,6 +90,7 @@ class StoreReview extends OrgAction
             }
 
             $this->storeReviewWebImages($review);
+            TranslateReview::dispatch($review);
 
             SendNewReviewEmailToSubscribers::dispatch($review->id);
             return $review->refresh();

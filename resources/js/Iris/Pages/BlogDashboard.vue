@@ -22,7 +22,7 @@ defineProps<{
             </div>
 
             <div v-else class="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                
+                    
                 <article v-for="post in blogs" :key="post.id"
                     class="rounded-2xl bg-white h-fit shadow-md transition duration-300 overflow-hidden border border-gray-200">
                     <a :href="post.url ? post.url : '#' " class="block">
@@ -45,7 +45,7 @@ defineProps<{
                         </span>
 
                         <div class="mt-auto">
-                            <a :href="post.url ? post.url : '#' " class="inline-flex items-center text-sm font-medium text-blue-600">
+                            <a :href="post.url ? post.url : '#' " :aria-label="trans('Read more') + ': ' + post.title" class="inline-flex items-center text-sm font-medium text-blue-600">
                                 {{ trans("Read more") }} →
                             </a>
                         </div>

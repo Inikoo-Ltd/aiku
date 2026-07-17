@@ -90,12 +90,12 @@ class ShowWorkplace extends OrgAction
                 ],
                 WorkplaceTabsEnum::SHOWCASE->value => $this->tab == WorkplaceTabsEnum::SHOWCASE->value ?
                     fn () => GetWorkplaceShowcase::run($workplace)
-                    : Inertia::lazy(fn () => GetWorkplaceShowcase::run($workplace)),
+                    : Inertia::optional(fn () => GetWorkplaceShowcase::run($workplace)),
 
 
                 WorkplaceTabsEnum::HISTORY->value => $this->tab == WorkplaceTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($workplace))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($workplace)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($workplace)))
             ]
         )->table(IndexHistory::make()->tableStructure(WorkplaceTabsEnum::HISTORY->value));
     }

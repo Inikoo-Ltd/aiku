@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 30 Jun 2026 21:09:14 Malaysia Time, Kuala Lumpur, Malaysia
@@ -10,7 +11,9 @@ namespace App\Actions\Chat\Agent;
 use App\Actions\OrgAction;
 use App\Models\Chat\ChatAgent;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -23,9 +26,11 @@ class StoreAgent extends OrgAction
     }
 
 
-    public function htmlResponse(): void
+    public function htmlResponse(ChatAgent $chatAgent): RedirectResponse
     {
-        request()->session()->flash('notification', [
+        return Redirect::route('grp.org.chat.agents.show', [
+            'organisation' => $this->organisation->slug,
+        ])->with('notification', [
             'status'      => 'success',
             'title'       => __('Success!'),
             'description' => __('Agent successfully created.'),
@@ -43,44 +48,43 @@ class StoreAgent extends OrgAction
 
 
             if ($agent && ! $agent->trashed()) {
-                throw ValidationException::withMessages([
-                    'user_id' => __('This user is already an active agent.'),
-                ]);
+                $alreadyInOrg = $agent->shopAssignments()
+                    ->where('organisation_id', $modelData['organisation_id'])
+                    ->exists();
+
+                if ($alreadyInOrg) {
+                    throw ValidationException::withMessages([
+                        'user_id' => __('This user is already an active agent in this organisation.'),
+                    ]);
+                }
             }
 
-
             if ($agent && $agent->trashed()) {
-
-                $agent->shopAssignments()->delete();
                 $agent->update([
-                    'max_concurrent_chats'  => $modelData['max_concurrent_chats'],
-                    'specialization'        => $modelData['specialization'] ?? null,
-                    'auto_accept'           => $modelData['auto_accept'] ?? true,
-                    'language_id'           => $modelData['language_id'],
-                    'is_online'             => false,
-                    'is_available'          => false,
-
+                    'max_concurrent_chats' => $modelData['max_concurrent_chats'],
+                    'specialization'       => $modelData['specialization'] ?? null,
+                    'auto_accept'          => $modelData['auto_accept'] ?? true,
+                    'language_id'          => $modelData['language_id'],
+                    'is_online'            => false,
+                    'is_available'         => false,
                 ]);
-
-
                 $agent->restore();
             }
 
-
             if (! $agent) {
                 $agent = ChatAgent::create([
-                    'user_id'               => $modelData['user_id'],
-                    'max_concurrent_chats'  => $modelData['max_concurrent_chats'],
-                    'specialization'        => $modelData['specialization'] ?? null,
-                    'auto_accept'           => $modelData['auto_accept'] ?? true,
-                    'language_id'           => $modelData['language_id'],
-                    'is_online'             => false,
-                    'is_available'          => false,
-                    'current_chat_count'    => 0,
+                    'user_id'              => $modelData['user_id'],
+                    'max_concurrent_chats' => $modelData['max_concurrent_chats'],
+                    'specialization'       => $modelData['specialization'] ?? null,
+                    'auto_accept'          => $modelData['auto_accept'] ?? true,
+                    'language_id'          => $modelData['language_id'],
+                    'is_online'            => false,
+                    'is_available'         => false,
+                    'current_chat_count'   => 0,
                 ]);
             }
 
-            AssignChatAgentToScope::run($modelData, $agent);
+            AssignChatAgentToScope::make()->update($modelData, $agent);
 
             return $agent;
         });

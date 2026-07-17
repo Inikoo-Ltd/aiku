@@ -16,9 +16,11 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -27,17 +29,22 @@ use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
+use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Models\Ordering\UpcomingTransaction;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
 
 class SubmitOrder extends OrgAction
 {
@@ -47,7 +54,6 @@ class SubmitOrder extends OrgAction
 
 
     private Order $order;
-
 
     /**
      * @throws \Throwable
@@ -78,6 +84,8 @@ class SubmitOrder extends OrgAction
 
         $this->processGrGift($order);
         $this->processGiftOffers($order);
+        $this->processVoucherGiftOffers($order);
+        $this->processUpComingTransactions($order);
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
@@ -142,6 +150,50 @@ class SubmitOrder extends OrgAction
         return $order;
     }
 
+    public function processUpComingTransactions(Order $order): void
+    {
+        $upComingTransactions = UpcomingTransaction::where('customer_id', $order->customer_id)
+            ->where('state', UpcomingTransactionStateEnum::READY)
+            ->with('product.currentHistoricProduct')
+            ->get();
+
+        /** @var UpcomingTransaction $upComingTransaction */
+        foreach ($upComingTransactions as $upComingTransaction) {
+            try {
+                /** @var Product $upComingTransactionProduct */
+                $upComingTransactionProduct = $upComingTransaction->product;
+                $historicAsset              = $upComingTransactionProduct?->currentHistoricProduct;
+
+                if (!$historicAsset || in_array($upComingTransactionProduct->status, [ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::NOT_FOR_SALE])) {
+                    continue;
+                }
+
+                $isGift = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
+
+                $transaction = StoreTransaction::make()->action(
+                    order: $order,
+                    historicAsset: $historicAsset,
+                    modelData: [
+                        'quantity_ordered' => 0,
+                        'quantity_bonus'   => $upComingTransaction->quantity,
+                        'is_gift'          => $isGift,
+                        'is_follow_on'     => true
+                    ],
+                    strict: false,
+                    forceHydrators: true
+                );
+
+                UpdateUpcomingTransaction::run($upComingTransaction, [
+                    'order_id'       => $order->id,
+                    'transaction_id' => $transaction->id,
+                    'state'          => UpcomingTransactionStateEnum::APPLIED
+                ]);
+            } catch (Exception $e) {
+                Sentry::captureException($e);
+            }
+        }
+    }
+
     public function processGiftOffers(Order $order): Order
     {
         foreach (
@@ -193,7 +245,75 @@ class SubmitOrder extends OrgAction
                             'model_id'              => $giftTransaction->model_id,
                             'offer_campaign_id'     => $giftOfferData->offer_campaign_id,
                             'offer_id'              => $giftOfferData->id,
-                            'offer_allowance_id'    => $giftOfferData->id,
+                            'offer_allowance_id'    => $allowanceData->id,
+                            'discounted_amount'     => 0,
+                            'discounted_percentage' => 0,
+                            'is_gift'               => true,
+                            'free_items_value'      => $gift->price * $quantity,
+                            'number_of_free_items'  => 1,
+                            'created_at'            => now(),
+                            'updated_at'            => now(),
+                            'data'                  => '{}'
+
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return $order;
+    }
+
+    public function processVoucherGiftOffers(Order $order): Order
+    {
+        if (!$order->offer_voucher_id) {
+            return $order;
+        }
+
+        $discountVoucherData = Arr::get($order->shop->offers_data, 'gift_from_vouchers', []);
+        if (!empty($discountVoucherData) && key_exists($order->offer_voucher_id, $discountVoucherData)) {
+            $voucherOfferData = $discountVoucherData[$order->offer_voucher_id];
+            $minAmount        = Arr::get($voucherOfferData, 'min_amount', 0);
+            if ($minAmount <= $order->gross_amount) {
+                $allowanceData = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', Arr::get($voucherOfferData, 'id'))->first();
+                if ($allowanceData) {
+                    $allowanceGiftData = json_decode($allowanceData->data, true);
+                    /** @var Product $gift */
+                    $gift     = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
+                    $quantity = Arr::get($allowanceGiftData, 'quantity', 0);
+                    if ($quantity > 0 && $gift) {
+                        $giftTransaction = StoreTransaction::make()->action(
+                            $order,
+                            $gift->currentHistoricProduct,
+                            [
+                                'quantity_ordered' => 0,
+                                'quantity_bonus'   => $quantity,
+                                'is_gift'          => true,
+                            ]
+                        );
+
+                        $giftTransaction->update([
+                            'offers_data' => [
+                                'v' => 1,
+                                'o' => [
+                                    'oc' => Arr::get($voucherOfferData, 'offer_campaign_id'),
+                                    'o'  => Arr::get($voucherOfferData, 'id'),
+                                    'oa' => Arr::get($voucherOfferData, 'offer_allowance_id'),
+                                    't'  => 'gift',
+                                    'p'  => 0,
+                                    'l'  => Arr::get($voucherOfferData, 'name'),
+                                ]
+                            ]
+                        ]);
+
+                        DB::table('transaction_has_offer_allowances')->insert([
+                            'order_id'              => $order->id,
+                            'transaction_id'        => $giftTransaction->id,
+                            'model_type'            => $giftTransaction->model_type,
+                            'model_id'              => $giftTransaction->model_id,
+                            'offer_campaign_id'     => Arr::get($voucherOfferData, 'offer_campaign_id'),
+                            'offer_id'              => Arr::get($voucherOfferData, 'offer_campaign_id'),
+                            'offer_allowance_id'    => Arr::get($voucherOfferData, 'offer_allowance_id'),
                             'discounted_amount'     => 0,
                             'discounted_percentage' => 0,
                             'is_gift'               => true,

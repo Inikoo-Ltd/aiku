@@ -303,11 +303,11 @@ class IndexMasterDepartments extends OrgAction
                 ],
                 MasterProductCategoryTabsEnum::INDEX->value => $this->tab == MasterProductCategoryTabsEnum::INDEX->value ?
                     fn () => MasterDepartmentsResource::collection($masterDepartments)
-                    : Inertia::lazy(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))),
+                    : Inertia::optional(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))),
 
                 MasterProductCategoryTabsEnum::SALES->value => $this->tab == MasterProductCategoryTabsEnum::SALES->value ?
                     fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => MasterDepartmentsResource::collection(IndexMasterDepartments::run($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value))
             ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::SALES->value, sales: true));

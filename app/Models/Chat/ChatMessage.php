@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 30 Jun 2026 21:07:06 Malaysia Time, Kuala Lumpur, Malaysia
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -60,6 +62,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  */
 class ChatMessage extends Model implements HasMedia
 {
+    use HasSearch;
     use HasFactory;
     use SoftDeletes;
     use HasImage;
@@ -188,4 +191,20 @@ class ChatMessage extends Model implements HasMedia
     {
         return $query->where('message_type', ChatMessageTypeEnum::TEXT);
     }
+
+    public function toSearchableArray(): array
+    {
+        $shop = $this->chatSession?->shop;
+
+        return [
+            'id'              => (string)$this->id,
+            'group_id'        => $shop?->group_id,
+            'organisation_id' => $shop?->organisation_id,
+            'shop_id'         => $shop?->id,
+            'message'         => (string)$this->message_text,
+            'sender_type'     => $this->sender_type->value,
+            'created_at'      => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
 }

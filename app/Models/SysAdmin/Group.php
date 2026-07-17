@@ -18,6 +18,7 @@ use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
+use App\Models\Accounting\PaymentGatewayLog;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Accounting\TopUp;
 use App\Models\Analytics\AikuSection;
@@ -73,6 +74,7 @@ use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Holiday;
 use App\Models\HumanResources\JobPosition;
+use App\Models\HumanResources\WorkSchedule;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
@@ -81,10 +83,10 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\SalesChannel;
-use App\Models\PaymentGatewayLog;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Production\Artefact;
 use App\Models\Production\ManufactureTask;
@@ -109,6 +111,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -118,8 +121,6 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
-use App\Models\HumanResources\WorkSchedule;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @property int $id
@@ -155,6 +156,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property-read LaravelCollection<int, Barcode> $barcodes
  * @property-read \App\Models\SysAdmin\GroupCatalogueStats|null $catalogueStats
  * @property-read LaravelCollection<int, Charge> $charges
+ * @property-read LaravelCollection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read LaravelCollection<int, ClockingMachine> $clockingMachines
  * @property-read LaravelCollection<int, Collection> $collections
@@ -847,6 +849,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function purges(): HasMany
     {
         return $this->hasMany(Purge::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
     }
 
     public function queries(): HasMany

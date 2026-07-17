@@ -9,7 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faStoreAltSlash, faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSkull } from '@fal'
+import { faStoreAltSlash, faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSnooze, faSkull } from '@fal'
 import { onBeforeMount, onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
@@ -31,16 +31,17 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faSearch, faBell, faPlus, faLayerGroup } from '@far'
-import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal } from '@fad'
+import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal, faSave as fadSave } from '@fad'
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
+import { pushServerGtmEvent } from "@/Composables/useGtm"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
 
-library.add(faMedal, fasMedal, faCandleHolder, faCartPlus, fadMedal, faLayerGroup)
-library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt, faPercent, faAppleCrate, faGift)
+library.add(faMedal, fasMedal, faCandleHolder, faCartPlus, fadMedal, fadSave, faLayerGroup)
+library.add(faStoreAltSlash,faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasSparkles, faSeedling, faSnooze, faSkull, falCheckCircle, faHeart, faSparkles, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faExternalLinkAlt, faPercent, faAppleCrate, faGift)
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
 
 
@@ -114,12 +115,8 @@ watch(() => usePage().props?.flash?.confetti, (newVal) => {
 watch(() => usePage().props?.flash?.gtm, (newValue) => {
     console.log('gtm ret', newValue)
     if (!newValue) return
-
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-        event: newValue.event,
-        ...newValue.data_to_submit,
-    });
+    
+    pushServerGtmEvent(newValue.event, newValue.data_to_submit)
 }, {
     deep: true,
     immediate: true

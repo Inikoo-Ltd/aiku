@@ -162,11 +162,11 @@ class ShowRetinaEcomOrder extends RetinaAction
                 ],
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
+                    : Inertia::optional(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
                 RetinaOrderTabsEnum::REVIEWS->value => $this->tab == RetinaOrderTabsEnum::REVIEWS->value
                     ? fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])
-                    : Inertia::lazy(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])),
+                    : Inertia::optional(fn () => RetinaOrderReviewListResource::collection(IndexAllReviewsInOrder::run(order: $order, customer: $this->customer, prefix: RetinaOrderTabsEnum::REVIEWS->value))->additional(['summary' => $this->getReviewSummary($order), 'settings' => $this->getReviewSettings($order)])),
 
             ]
         )

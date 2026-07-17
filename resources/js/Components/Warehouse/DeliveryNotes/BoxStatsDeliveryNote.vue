@@ -57,6 +57,7 @@ const props = withDefaults(defineProps<{
             phone?: string
         }
         delivery_address: Address,
+        is_forbidden_delivery?: boolean
         products: {
             estimated_weight: number
             number_items?: number
@@ -390,7 +391,7 @@ function returnNoteRoute(returnDeliveryNote) {
 
 			])
 		default:
-			return route("grp.helpers.redirect_return_notes", returnDeliveryNote.id)
+			return route("grp.majordomo.redirect_return_notes", returnDeliveryNote.id)
 	}
 }
 </script>
@@ -507,7 +508,11 @@ function returnNoteRoute(returnDeliveryNote) {
                     </div>
 
                     <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
-                        <div class="border border-gray-300 p-4 rounded-lg">
+                        <div class="relative border p-4 rounded-lg"
+                            :class="boxStats?.is_forbidden_delivery ? 'border-red-500 bg-red-50' : 'border-gray-300'">
+                            <div v-if="boxStats?.is_forbidden_delivery" v-tooltip="ctrans('Delivery to this address was banned (listed in Shop settings)')" class="absolute top-2 right-2">
+                                <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-red-500' fixed-width aria-hidden='true' />
+                            </div>
                             <div v-if="boxStats.customer_client" class="mb-3">
                                 <div class="xtext-xs text-gray-600 leading-snug">
                                     <div>
@@ -562,7 +567,7 @@ function returnNoteRoute(returnDeliveryNote) {
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Delivery Note") }}
-                    <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.helpers.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
+                    <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.majordomo.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
                         <FontAwesomeIcon :icon="faTruck"/>
                         {{ boxStats.parentDeliveryNote?.reference }}
                     </Link>

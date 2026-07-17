@@ -74,7 +74,7 @@ class ShowShipper extends OrgAction
 
                 ShipperTabsEnum::SHOWCASE->value => $this->tab == ShipperTabsEnum::SHOWCASE->value ?
                     fn () => GetShipperShowcase::run($shipper)
-                    : Inertia::lazy(fn () => GetShipperShowcase::run($shipper)),
+                    : Inertia::optional(fn () => GetShipperShowcase::run($shipper)),
             ]
         );
     }

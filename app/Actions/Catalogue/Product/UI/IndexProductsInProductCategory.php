@@ -425,15 +425,15 @@ class IndexProductsInProductCategory extends OrgAction
                 ],
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::INDEX_ORDERING->value => $this->tab == ProductsTabsEnum::INDEX_ORDERING->value ?
                     fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))),
+                    : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductsTabsEnum::INDEX_ORDERING->value))),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => ProductsResource::collection($this->handle($productCategory, ProductTabsEnum::SALES->value))),
 
             ]
         )

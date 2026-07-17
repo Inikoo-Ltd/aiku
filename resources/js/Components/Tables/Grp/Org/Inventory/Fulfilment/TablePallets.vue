@@ -41,26 +41,28 @@ defineProps<{
 
 const layout = useLayoutStore()
 
+const routeCurrent = route().current()
+const routeParams = route().params
+
 function palletRoute(pallet: Pallet) {
-  // console.log(route().current())
-  switch (route().current()) {
+  switch (routeCurrent) {
 
 
     case 'grp.org.warehouses.show.inventory.pallets.current.index':
       return route(
         'grp.org.warehouses.show.inventory.pallets.current.show',
         [
-          route().params["organisation"],
-          route().params["warehouse"],
+          routeParams["organisation"],
+          routeParams["warehouse"],
           pallet.slug
         ]);
     case 'grp.org.warehouses.show.fulfilment.locations.show' :
       return route(
         'grp.org.warehouses.show.fulfilment.locations.show.pallets.show',
         [
-          route().params["organisation"],
-          route().params["warehouse"],
-          route().params["location"],
+          routeParams["organisation"],
+          routeParams["warehouse"],
+          routeParams["location"],
           pallet.slug
         ]);
 
@@ -74,8 +76,8 @@ function locationRoute(pallet: Pallet) {
   return route(
     "grp.org.warehouses.show.fulfilment.locations.show",
     [
-      route().params["organisation"],
-      route().params["warehouse"],
+      routeParams["organisation"],
+      routeParams["warehouse"],
       pallet.location_slug
     ]);
 }

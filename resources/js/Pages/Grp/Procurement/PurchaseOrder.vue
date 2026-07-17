@@ -91,8 +91,8 @@ const props = defineProps<{
 		data: PalletDelivery
 	}
 	showcase: {}
-	transactions: {}
-	history: {}
+	transactions?: {}
+	history?: {}
 	alert?: {
 		status: string
 		title?: string

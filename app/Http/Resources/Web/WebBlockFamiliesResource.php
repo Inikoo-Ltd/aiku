@@ -9,7 +9,9 @@
 namespace App\Http\Resources\Web;
 
 use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Traits\HasCardWebImages;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $web_images
@@ -23,6 +25,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class WebBlockFamiliesResource extends JsonResource
 {
+    use HasCardWebImages;
     use HasSelfCall;
 
     public function toArray($request): array
@@ -41,7 +44,12 @@ class WebBlockFamiliesResource extends JsonResource
             'name'        => $this->name,
             'title'       => $this->title,
             'url'         => $this->canonical_url,
-            'web_images'  => $webImages,
+            'web_images'  => [
+                'main' => [
+                    'gallery'  => $this->getPictureFormats(Arr::get($webImages, 'main.gallery')),
+                    'original' => $this->getPictureFormats(Arr::get($webImages, 'main.original')),
+                ]
+            ],
             'offers_data' => $this->offers_data
         ];
     }

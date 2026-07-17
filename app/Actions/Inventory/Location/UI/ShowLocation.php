@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\Location\UI;
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInLocation;
+use App\Actions\Inventory\OrgStockMovement\UI\IndexOrgStockMovements;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Inventory\WarehouseArea\UI\ShowWarehouseArea;
 use App\Actions\OrgAction;
@@ -20,6 +21,7 @@ use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\LocationResource;
+use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\Http\Resources\Inventory\OrgStocksInLocationResource;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
@@ -63,7 +65,7 @@ class ShowLocation extends OrgAction
 
     public function htmlResponse(Location $location, ActionRequest $request): Response
     {
-        $navigation = LocationTabsEnum::navigation();
+        $navigation = LocationTabsEnum::navigation($location);
 
         if (!$location->allow_stocks) {
             unset($navigation[LocationTabsEnum::ORG_STOCKS->value]);
@@ -81,7 +83,7 @@ class ShowLocation extends OrgAction
         return Inertia::render(
             'Org/Warehouse/Location',
             [
-                'title'       => __('Location'),
+                'title'       => __('Location') . ' ' . $location->code,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -95,7 +97,7 @@ class ShowLocation extends OrgAction
                         'title' => __('Locations'),
                         'icon'  => 'fal fa-inventory'
                     ],
-                    'model'   => __('location'),
+                    'model'   => __('Location'),
                     'title'   => $location->slug,
                     'actions' => [
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
@@ -103,29 +105,36 @@ class ShowLocation extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => LocationTabsEnum::navigation()
+                    'navigation' => $navigation
 
                 ],
+                'location_id' => $location->id,
 
                 LocationTabsEnum::SHOWCASE->value => $this->tab == LocationTabsEnum::SHOWCASE->value ?
                     fn () => GetLocationShowcase::run($location)
-                    : Inertia::lazy(fn () => GetLocationShowcase::run($location)),
+                    : Inertia::optional(fn () => GetLocationShowcase::run($location)),
 
                 LocationTabsEnum::ORG_STOCKS->value => $this->tab == LocationTabsEnum::ORG_STOCKS->value ?
                     fn () => OrgStocksInLocationResource::collection(IndexOrgStocksInLocation::run($location))
-                    : Inertia::lazy(fn () => OrgStocksInLocationResource::collection(IndexOrgStocksInLocation::run($location))),
+                    : Inertia::optional(fn () => OrgStocksInLocationResource::collection(IndexOrgStocksInLocation::run($location))),
 
                 LocationTabsEnum::PALLETS->value => $this->tab == LocationTabsEnum::PALLETS->value ?
                     fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))
-                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),
+                    : Inertia::optional(fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),
+
+                LocationTabsEnum::STOCK_MOVEMENTS->value => $this->tab == LocationTabsEnum::STOCK_MOVEMENTS->value ?
+                    fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($location, LocationTabsEnum::STOCK_MOVEMENTS->value))
+                    : Inertia::optional(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($location, LocationTabsEnum::STOCK_MOVEMENTS->value))),
 
                 LocationTabsEnum::HISTORY->value => $this->tab == LocationTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($location))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($location)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($location)))
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: LocationTabsEnum::HISTORY->value))
-            ->table(IndexOrgStocksInLocation::make()->tableStructure($location, prefix: LocationTabsEnum::ORG_STOCKS->value))
-            ->table(IndexPalletsInWarehouse::make()->tableStructure($location, prefix: LocationTabsEnum::PALLETS->value));
+        )
+        ->table(IndexHistory::make()->tableStructure(prefix: LocationTabsEnum::HISTORY->value))
+        ->table(IndexOrgStocksInLocation::make()->tableStructure($location, prefix: LocationTabsEnum::ORG_STOCKS->value))
+        ->table(IndexOrgStockMovements::make()->tableStructure($location, prefix: LocationTabsEnum::STOCK_MOVEMENTS->value))
+        ->table(IndexPalletsInWarehouse::make()->tableStructure($location, prefix: LocationTabsEnum::PALLETS->value));
     }
 
 

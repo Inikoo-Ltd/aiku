@@ -10,7 +10,7 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -25,7 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditCustomer extends OrgAction
 {
-    use WithCRMAuthorisation;
+    use WithCRMEditAuthorisation;
 
     public function handle(Customer $customer): Customer
     {
@@ -115,6 +115,19 @@ class EditCustomer extends OrgAction
                     'value'  => $customer->is_re,
 
                 ],
+
+            ]
+        ];
+
+        $identification = [
+            'title'  => __('Id/Fiscal Name'),
+            'label'  => __('Id/Fiscal name'),
+            'fields' => [
+                'fiscal_name'             => [
+                    'type'  => 'input',
+                    'label' => __('Fiscal name'),
+                    'value' => $customer->fiscal_name
+                ],
                 'identity_document_number' => [
                     'type'          => 'input',
                     'label'         => data_get($customer->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),
@@ -127,6 +140,7 @@ class EditCustomer extends OrgAction
                 ],
             ]
         ];
+
         $accounting = [
             'title'  => __('Accounting'),
             'label'  => __('Accounting'),
@@ -201,13 +215,26 @@ class EditCustomer extends OrgAction
             ]
         ];
 
+        $vip = [
+            'title'  => __('VIP'),
+            'label'  => __('VIP'),
+            'fields' => [
+                'is_vip'   => [
+                    'type'  => 'toggle',
+                    'label' => __('VIP'),
+                    'value' => $customer->is_vip,
+                ],
+            ]
+        ];
+
         $blueprint   = [];
         $blueprint[] = $contact;
+        $blueprint[] = $identification;
         if (!$isExternal) {
             $blueprint[] = $accounting;
             $blueprint[] = $tags;
         }
-
+        $blueprint[] = $vip;
 
         return Inertia::render(
             'EditModel',

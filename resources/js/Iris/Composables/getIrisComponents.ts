@@ -1,111 +1,116 @@
 import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
-//Department
-import DepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/DepartmentDescriptionIris.vue"
-import DepartmentDescriptionIris2 from "@/Iris/Components/IrisBlocks/DepartmentDescriptionIris2.vue"
-
-// Sub-department
-import SubDepartmentDescriptionIris from "@/Iris/Components/IrisBlocks/SubDepartmentDescriptionIris.vue"
-
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
-import ListProductsIris from "@/Iris/Components/IrisBlocks/Products/ds/ListProductsIris.vue"
-import ProductRender from "@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue"
-import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"
-import ProductIris1 from '@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue'
-import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue'
-import LuigiTrends1Iris from '@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue'
-import LuigiLastSeen1Iris from '@/Iris/Components/IrisBlocks/LuigiLastSeen1Iris.vue'
-import LuigiItemAlternatives1Iris from '@/Iris/Components/IrisBlocks/LuigiItemAlternatives1Iris.vue'
-import AnnouncementInformation1 from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation1.vue'
-import AnnouncementPromo1 from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo1Iris.vue'
-import AnnouncementPromo2Countdown from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo2Countdown.vue'
-import AnnouncementInformation2TransitionText from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation2TransitionText.vue'
-import AnnouncementPromo3 from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo3.vue'
-import RenderDropshippingProduct from "@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"
-import RenderEcommerceProduct from "@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"
-
-import RecommendationCRB1Iris from '@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue'
-import ProductIris2Ecom from "@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"
-
-import AnnouncementInformational1 from '@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformational1Iris.vue'
-import Products2Render from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"
-
-import Header2Iris from "@/Iris/Components/IrisBlocks/Header2Iris.vue"
-import Header1Iris from "@/Iris/Components/IrisBlocks/Header1Iris.vue"
-
-import Topbar1FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar1FulfilmentIris.vue"
-import Topbar2FulfilmentIris from "@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"
-
-import Topbar1Iris from "@/Iris/Components/IrisBlocks/Topbar1Iris.vue"
-import Topbar2Iris from "@/Iris/Components/IrisBlocks/Topbar2Iris.vue"
-
-
-import Menu1Workshop from "@/Components/CMS/Website/Menus/Menu1Workshop.vue"
-import Footer1Iris from "@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"
-import SeeAlso1Iris from "@/Iris/Components/IrisBlocks/SeeAlso1Iris.vue"
-import family1Iris from "@/Iris/Components/IrisBlocks/family1Iris.vue"
-import family2Iris from "@/Iris/Components/IrisBlocks/family2Iris.vue"
-import family3Iris from "@/Iris/Components/IrisBlocks/family3Iris.vue"
-import FamiliesIris1 from "@/Iris/Components/IrisBlocks/FamiliesIris1.vue"
-import FamiliesIris2 from "@/Iris/Components/IrisBlocks/FamiliesIris2.vue"
-import FamiliesIris3 from "@/Iris/Components/IrisBlocks/FamiliesIris3.vue"
-
-import SubDepartment1Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris.vue"
-import SubDepartment2Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris2.vue"
-import SubDepartment3Iris from "@/Iris/Components/IrisBlocks/SubDepartmentsIris3.vue"
-
-import CtaImageBackroundIris from "@/Iris/Components/IrisBlocks/CtaImageBackroundIris.vue"
-import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"
-import BentoGridIris from "@/Iris/Components/IrisBlocks/BentoGridIris.vue"
-import GalleryIris from "@/Iris/Components/IrisBlocks/GalleryIris.vue"
-import Cta1Iris from "@/Iris/Components/IrisBlocks/Cta1Iris.vue"
-import Cta2Iris from "@/Iris/Components/IrisBlocks/Cta2Iris.vue"
-import Cta3Iris from "@/Iris/Components/IrisBlocks/Cta3Iris.vue"
-import IframeIris from "@/Iris/Components/IrisBlocks/IframeIris.vue"
-import ImageIris from "@/Iris/Components/IrisBlocks/ImageIris.vue"
-import OverviewIris from "@/Iris/Components/IrisBlocks/OverviewIris.vue"
-import Overview2Iris from "@/Iris/Components/IrisBlocks/Overview2Iris.vue"
-import ScriptIris from "@/Iris/Components/IrisBlocks/ScriptIris.vue"
+/* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
-import CtaAurora1Iris from "@/Iris/Components/IrisBlocks/CtaAurora1Iris.vue"
-import TextColumnIris from "@/Iris/Components/IrisBlocks/TextColumnIris.vue"
-import PricingIris from "@/Iris/Components/IrisBlocks/PricingIris.vue"
-import ButtonIris from "@/Iris/Components/IrisBlocks/ButtonIris.vue"
-import ColumnIris from "@/Iris/Components/IrisBlocks/ColumnIris.vue"
-import Column3Iris from "@/Iris/Components/IrisBlocks/Column3Iris.vue"
-import Column4Iris from "@/Iris/Components/IrisBlocks/Column4Iris.vue"
-import DisclosureIris from "@/Iris/Components/IrisBlocks/DisclosureIris.vue"
-import TimelineIris from "@/Iris/Components/IrisBlocks/TimelineIris.vue"
+import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
+/* import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue" */
 
-import Carousel1Iris from "@/Iris/Components/IrisBlocks/Carousel1Iris.vue"
-import CarouselCtaIris from "@/Iris/Components/IrisBlocks/CarouselCtaIris.vue"
-import CarouselImageBackgroundIris from "@/Iris/Components/IrisBlocks/CarouselImageBackgroundIris.vue"
-import CtaVideo1Iris from "@/Iris/Components/IrisBlocks/CtaVideo1Iris.vue"
-import Video1Iris from "@/Iris/Components/IrisBlocks/Video1Iris.vue"
-import UserSubscribeIris from "@/Iris/Components/IrisBlocks/UserSubscribeIris.vue"
-import Cta4Iris from "@/Iris/Components/IrisBlocks/Cta4Iris.vue"
-import BlogIris from "@/Iris/Components/IrisBlocks/BlogIris.vue"
-import Step2Iris from "@/Iris/Components/IrisBlocks/Step2Iris.vue"
-import Step1Iris from "@/Iris/Components/IrisBlocks/Step1Iris.vue"
-import Slider1Iris from "@/Iris/Components/IrisBlocks/Slider1Iris.vue"
-import CollectionDescriptionIris from "@/Iris/Components/IrisBlocks/CollectionDescriptionIris.vue"
-import ProductRenderEcom3 from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
-import Family2ExtraDescriptionIris from '@/Iris/Components/IrisBlocks/Family2ExtraDescriptionIris.vue'
-import Families1Overview from '@/Iris/Components/IrisBlocks/FamiliesOverviewIris1.vue'
-import RecommendationFromMasterIris from '@/Iris/Components/IrisBlocks/RecommendationFromMasterIris.vue'
-import RealatedProductCategoryIris from "@/Iris/Components/IrisBlocks/RealatedProductCategoryIris.vue"
-import RelatedProductcategoryFormMaster from '@/Iris/Components/IrisBlocks/RecommendationProductCategoryFromMasterIris.vue'
-import TabsIris from "@/Iris/Components/IrisBlocks/TabsIris.vue"
-import FaqDepartment from "@/Iris/Components/IrisBlocks/FaqDepartment.vue"
-import TopFamiliesIris from "@/Iris/Components/IrisBlocks/TopFamiliesIris.vue"
-
-const async = (loader: () => Promise<Component>) =>
+const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
 		loader,
 		delay: 200,
 		timeout: 15000,
 	})
+
+//Department
+const DepartmentDescriptionIris = async(() => import("@/Iris/Components/IrisBlocks/DepartmentDescriptionIris.vue"))
+const DepartmentDescriptionIris2 = async(() => import("@/Iris/Components/IrisBlocks/DepartmentDescriptionIris2.vue"))
+
+// Sub-department
+const SubDepartmentDescriptionIris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentDescriptionIris.vue"))
+
+const ListProductsIris = async(() => import("@/Iris/Components/IrisBlocks/Products/ds/ListProductsIris.vue"))
+const ProductRender = async(() => import("@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue"))
+const ListProductsEcomIris = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"))
+const ProductIris1 = async(() => import("@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue"))
+const ProductIris1Ecom = async(() => import("@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue"))
+const LuigiTrends1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue"))
+const LuigiLastSeen1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiLastSeen1Iris.vue"))
+const LuigiItemAlternatives1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiItemAlternatives1Iris.vue"))
+const AnnouncementInformation1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation1.vue"))
+const AnnouncementPromo1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo1Iris.vue"))
+const AnnouncementPromo2Countdown = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo2Countdown.vue"))
+const AnnouncementInformation2TransitionText = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation2TransitionText.vue"))
+const AnnouncementPromo3 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo3.vue"))
+const RenderDropshippingProduct = async(() => import("@/Components/CMS/Webpage/Product/Dropshipping/RenderDropshippingProductIris.vue"))
+const RenderEcommerceProduct = async(() => import("@/Components/CMS/Webpage/Product/Ecommerce/RenderEcommerceProductIris.vue"))
+
+const RecommendationCRB1Iris = async(() => import("@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue"))
+const ProductIris2Ecom = async(() => import("@/Components/CMS/Webpage/Product2/ProductIris2Ecom.vue"))
+
+const AnnouncementInformational1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformational1Iris.vue"))
+const Products2Render = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"))
+
+const Header2Iris = async(() => import("@/Iris/Components/IrisBlocks/Header2Iris.vue"))
+const Header1Iris = async(() => import("@/Iris/Components/IrisBlocks/Header1Iris.vue"))
+
+const Topbar1FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1FulfilmentIris.vue"))
+const Topbar2FulfilmentIris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2FulfilmentIris.vue"))
+
+const Topbar1Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar1Iris.vue"))
+const Topbar2Iris = async(() => import("@/Iris/Components/IrisBlocks/Topbar2Iris.vue"))
+
+
+const Menu1Workshop = async(() => import("@/Iris/Components/IrisBlocks/Menu1Iris.vue"))
+const Footer1Iris = async(() => import("@/Components/CMS/Website/Footers/footerTheme1/Footer1Iris.vue"))
+const SeeAlso1Iris = async(() => import("@/Iris/Components/IrisBlocks/SeeAlso1Iris.vue"))
+const family1Iris = async(() => import("@/Iris/Components/IrisBlocks/family1Iris.vue"))
+const family2Iris = async(() => import("@/Iris/Components/IrisBlocks/family2Iris.vue"))
+const family3Iris = async(() => import("@/Iris/Components/IrisBlocks/family3Iris.vue"))
+const FamiliesIris1 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris1.vue"))
+const FamiliesIris2 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris2.vue"))
+const FamiliesIris3 = async(() => import("@/Iris/Components/IrisBlocks/FamiliesIris3.vue"))
+
+const SubDepartment1Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris.vue"))
+const SubDepartment2Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris2.vue"))
+const SubDepartment3Iris = async(() => import("@/Iris/Components/IrisBlocks/SubDepartmentsIris3.vue"))
+
+const WowsbarBannerIris = async(() => import("@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue"))
+const ImageIris = async(() => import("@/Iris/Components/IrisBlocks/ImageIris.vue"))
+const TextContentIris = async(() => import("@/Iris/Components/IrisBlocks/TextContentIris.vue"))
+const CtaImageBackroundIris = async(() => import("@/Iris/Components/IrisBlocks/CtaImageBackroundIris.vue"))
+const BentoGridIris = async(() => import("@/Iris/Components/IrisBlocks/BentoGridIris.vue"))
+const GalleryIris = async(() => import("@/Iris/Components/IrisBlocks/GalleryIris.vue"))
+const Cta1Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta1Iris.vue"))
+const Cta2Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta2Iris.vue"))
+const Cta3Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta3Iris.vue"))
+const IframeIris = async(() => import("@/Iris/Components/IrisBlocks/IframeIris.vue"))
+const OverviewIris = async(() => import("@/Iris/Components/IrisBlocks/OverviewIris.vue"))
+const Overview2Iris = async(() => import("@/Iris/Components/IrisBlocks/Overview2Iris.vue"))
+const ScriptIris = async(() => import("@/Iris/Components/IrisBlocks/ScriptIris.vue"))
+const CtaAurora1Iris = async(() => import("@/Iris/Components/IrisBlocks/CtaAurora1Iris.vue"))
+const TextColumnIris = async(() => import("@/Iris/Components/IrisBlocks/TextColumnIris.vue"))
+const PricingIris = async(() => import("@/Iris/Components/IrisBlocks/PricingIris.vue"))
+const ButtonIris = async(() => import("@/Iris/Components/IrisBlocks/ButtonIris.vue"))
+const ColumnIris = async(() => import("@/Iris/Components/IrisBlocks/ColumnIris.vue"))
+const Column3Iris = async(() => import("@/Iris/Components/IrisBlocks/Column3Iris.vue"))
+const Column4Iris = async(() => import("@/Iris/Components/IrisBlocks/Column4Iris.vue"))
+const DisclosureIris = async(() => import("@/Iris/Components/IrisBlocks/DisclosureIris.vue"))
+const TimelineIris = async(() => import("@/Iris/Components/IrisBlocks/TimelineIris.vue"))
+
+const Carousel1Iris = async(() => import("@/Iris/Components/IrisBlocks/Carousel1Iris.vue"))
+const CarouselCtaIris = async(() => import("@/Iris/Components/IrisBlocks/CarouselCtaIris.vue"))
+const CarouselImageBackgroundIris = async(() => import("@/Iris/Components/IrisBlocks/CarouselImageBackgroundIris.vue"))
+const CtaVideo1Iris = async(() => import("@/Iris/Components/IrisBlocks/CtaVideo1Iris.vue"))
+const Video1Iris = async(() => import("@/Iris/Components/IrisBlocks/Video1Iris.vue"))
+const UserSubscribeIris = async(() => import("@/Iris/Components/IrisBlocks/UserSubscribeIris.vue"))
+const Cta4Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta4Iris.vue"))
+const BlogIris = async(() => import("@/Iris/Components/IrisBlocks/BlogIris.vue"))
+const Step2Iris = async(() => import("@/Iris/Components/IrisBlocks/Step2Iris.vue"))
+const Step1Iris = async(() => import("@/Iris/Components/IrisBlocks/Step1Iris.vue"))
+const Slider1Iris = async(() => import("@/Iris/Components/IrisBlocks/Slider1Iris.vue"))
+const CollectionDescriptionIris = async(() => import("@/Iris/Components/IrisBlocks/CollectionDescriptionIris.vue"))
+const ProductRenderEcom3 = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"))
+const Family2ExtraDescriptionIris = async(() => import("@/Iris/Components/IrisBlocks/Family2ExtraDescriptionIris.vue"))
+const Families1Overview = async(() => import("@/Iris/Components/IrisBlocks/FamiliesOverviewIris1.vue"))
+const RecommendationFromMasterIris = async(() => import("@/Iris/Components/IrisBlocks/RecommendationFromMasterIris.vue"))
+const RealatedProductCategoryIris = async(() => import("@/Iris/Components/IrisBlocks/RealatedProductCategoryIris.vue"))
+const RelatedProductcategoryFormMaster = async(() => import("@/Iris/Components/IrisBlocks/RecommendationProductCategoryFromMasterIris.vue"))
+const TabsIris = async(() => import("@/Iris/Components/IrisBlocks/TabsIris.vue"))
+const FaqDepartment = async(() => import("@/Iris/Components/IrisBlocks/FaqDepartment.vue"))
+const TopFamiliesIris = async(() => import("@/Iris/Components/IrisBlocks/TopFamiliesIris.vue"))
 
 const components = (shop_type?: string): Record<string, Component> => {
 	return {
@@ -119,7 +124,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		//header
 		"header-1": Header1Iris,
 		"header-2": Header2Iris,
-		
+
 
 		//menu
 		"menu-1": Menu1Workshop,
@@ -133,7 +138,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'department-description-2' : DepartmentDescriptionIris2,
 		'sub-department-description-1' : SubDepartmentDescriptionIris,
 
-		//sub-department	
+		//sub-department
 		"sub-departments-1": SubDepartment1Iris,
 		"sub-departments-2": SubDepartment2Iris,
 		"sub-departments-3": SubDepartment3Iris,

@@ -200,10 +200,10 @@ class IndexDepartmentsInMasterDepartment extends OrgAction
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => DepartmentsResource::collection($departments)
-                    : Inertia::lazy(fn () => DepartmentsResource::collection($departments)),
+                    : Inertia::optional(fn () => DepartmentsResource::collection($departments)),
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    : Inertia::optional(fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
         )
         ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value))

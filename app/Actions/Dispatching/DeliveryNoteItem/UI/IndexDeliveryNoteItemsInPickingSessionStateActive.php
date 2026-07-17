@@ -15,11 +15,12 @@ use App\Models\Inventory\PickingSession;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
 {
-    public function handle(PickingSession $parent, $prefix = null): LengthAwarePaginator
+    public function handle(PickingSession $parent, $prefix = null, ?int $deliveryNoteItemId = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -35,6 +36,11 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.picking_session_id', $parent->id);
+
+        if ($deliveryNoteItemId) {
+            $query->where('delivery_note_items.id', $deliveryNoteItemId);
+        }
+
         $query->leftJoin('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id');
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
         $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
@@ -50,6 +56,9 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.quantity_packed',
                 'delivery_note_items.quantity_dispatched',
+                'delivery_note_items.quantity_waiting_warehouse',
+                'delivery_note_items.quantity_waiting_crm',
+                'delivery_note_items.notes',
                 'delivery_note_items.batch_code',
                 'delivery_note_items.expiry_date',
                 'delivery_note_items.is_handled',
@@ -72,6 +81,16 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_notes.internal_notes as delivery_note_internal_notes',
                 'delivery_notes.shipping_notes as delivery_note_shipping_notes',
                 'delivery_notes.shop_type',
+            ])
+            ->addSelect([
+                'delivery_note_has_waiting_items' => DB::table('delivery_note_items as waiting_items')
+                    ->selectRaw('1')
+                    ->whereColumn('waiting_items.delivery_note_id', 'delivery_notes.id')
+                    ->where(function ($query) {
+                        $query->where('waiting_items.has_waiting_warehouse', true)
+                            ->orWhere('waiting_items.has_waiting_crm', true);
+                    })
+                    ->limit(1)
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])
@@ -101,7 +120,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
             $table->column(key: 'org_stock_code', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('SKU Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-            $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
+            $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: false);
         };
     }
 

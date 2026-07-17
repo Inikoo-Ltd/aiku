@@ -11,10 +11,9 @@ namespace App\Actions\Dropshipping\Allegro\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -27,7 +26,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class StoreAllegroOrder extends RetinaAction
 {
@@ -35,6 +33,7 @@ class StoreAllegroOrder extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
     use WithGeneratedTiktokAddress;
+    use WithPayAndSubmitOrder;
 
     /**
      * @throws \Throwable
@@ -52,8 +51,8 @@ class StoreAllegroOrder extends RetinaAction
             'is_shipping_by_external'   => true,
             'platform_id'               => $customerSalesChannel->platform_id,
             'customer_sales_channel_id' => $allegroUser->customer_sales_channel_id,
-            'customer_reference'        => Arr::get($allegroOrders, 'user_id'),
             'platform_order_id'         => Arr::get($allegroOrders, 'id'),
+            'customer_notes'            => Arr::get($allegroOrders, 'note.text'),
             'delivery_address'          => $this->digestAllegroAddress($allegroOrders),
             'data'                      => ['allegro_order' => $allegroOrders]
         ];
@@ -73,13 +72,7 @@ class StoreAllegroOrder extends RetinaAction
             );
         }
 
-        try {
-            PayOrderAsync::run($order);
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-        }
-
-        SubmitOrder::run($order);
+        $this->payAndSubmitOrder($order);
     }
 
     /**
@@ -155,7 +148,7 @@ class StoreAllegroOrder extends RetinaAction
                 if ($product) {
                     $orderedProducts[] = [
                         'historicAsset'           => $product->currentHistoricProduct,
-                        'quantity_ordered'        => Arr::get($item, 'offer.quantity'),
+                        'quantity_ordered'        => Arr::get($item, 'quantity'),
                         'platform_transaction_id' => $item['id']
                     ];
                 }

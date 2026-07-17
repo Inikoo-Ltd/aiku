@@ -64,6 +64,7 @@ import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue"
 import GoldReward from "@/Components/Utils/GoldReward.vue"
 import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimeline.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
+import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
 import { PDRNotes } from "@/types/Pallet"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent, faHistory, faPaperclip)
@@ -82,6 +83,12 @@ interface Customer {
     company_name: string
     location: string[]
     email: string
+    fiscal_name: string | null
+    identity_document_number_alt: {
+        number: string
+        label: string
+    } | null
+
 
     created_at: string
     number_current_customer_clients: number | null
@@ -171,6 +178,10 @@ const props = defineProps<{
             type: string
             type_icon?: { icon: string, tooltip: string, class: string }
         }>
+        upcoming_transaction_route:{
+            index: routeType
+            store: routeType
+        }
     },
     gr_data: {
         gr_label: string
@@ -193,9 +204,8 @@ const props = defineProps<{
             color: string
             metadata: Record<string, unknown>
         }[]
-    }
+    }    
 }>()
-
 
 const locale = inject("locale", aikuLocaleStructure)
 const layout = inject("layout")
@@ -461,45 +471,53 @@ const submitNote = async () => {
     </div>
 
     <!-- Quick Actions Bar -->
-    <div class="px-4 pt-6 md:px-6 lg:px-8 flex flex-wrap gap-3">
-        <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true">
-            <template #mainIcon>
-                <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
-                {{ trans("Add Note") }}
-            </template>
-        </BoxNote>
-        <Link
-            v-if="data.orders_route"
-            :href="route(data.orders_route.name, data.orders_route.parameters)"
-            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-            <FontAwesomeIcon icon="fal fa-list-alt" class="text-indigo-500 text-xs" />
-            {{ trans("View Orders") }}
-        </Link>
-        <button
-            v-if="handleTabUpdate"
-            @click="() => handleTabUpdate('timeline')"
-            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-            <FontAwesomeIcon icon="fal fa-code-branch" class="text-green-500 text-xs" />
-            {{ trans("Full Timeline") }}
-        </button>
-        <a
-            v-if="data.customer.email"
-            :href="`mailto:${data.customer.email}`"
-            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-            <FontAwesomeIcon icon="fal fa-envelope" class="text-blue-500 text-xs" />
-            {{ trans("Send Email") }}
-        </a>
-        <button
-            v-if="data.store_note_route"
-            @click="() => (isModalNote = true)"
-            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-            <FontAwesomeIcon icon="fal fa-history" class="text-rose-500 text-xs" />
-            {{ trans("Add History Note") }}
-        </button>
+    <div class="px-4 pt-6 md:px-6 lg:px-8">
+        <div class="flex flex-wrap items-center gap-3">
+            <BoxNote :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
+                <template #mainIcon>
+                    <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
+                    {{ trans("Add Note") }}
+                </template>
+            </BoxNote>
+            <Link
+                v-if="data.orders_route"
+                :href="route(data.orders_route.name, data.orders_route.parameters)"
+                class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+                <FontAwesomeIcon icon="fal fa-list-alt" class="text-indigo-500 text-xs" />
+                {{ trans("View Orders") }}
+            </Link>
+            <button
+                v-if="handleTabUpdate"
+                @click="() => handleTabUpdate('timeline')"
+                class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+                <FontAwesomeIcon icon="fal fa-code-branch" class="text-green-500 text-xs" />
+                {{ trans("Full Timeline") }}
+            </button>
+            <a
+                v-if="data.customer.email"
+                :href="`mailto:${data.customer.email}`"
+                class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+                <FontAwesomeIcon icon="fal fa-envelope" class="text-blue-500 text-xs" />
+                {{ trans("Send Email") }}
+            </a>
+            <button
+                v-if="data.store_note_route"
+                @click="() => (isModalNote = true)"
+                class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+                <FontAwesomeIcon icon="fal fa-history" class="text-rose-500 text-xs" />
+                {{ trans("Add History Note") }}
+            </button>
+
+            <UpcomingTransactionsPanel
+                v-if="data.upcoming_transaction_route"
+                :routes="data.upcoming_transaction_route"
+                :shopSlug="data.shop.slug"                
+            />
+        </div>
     </div>
 
     <!-- 3-Column Hub Layout -->
@@ -852,6 +870,20 @@ const submitNote = async () => {
                         </div>
                     </div>
                 </dd>
+            </div>
+
+            <!-- Field: Fiscal Name -->
+            <div v-if="data?.customer.fiscal_name"
+                 class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
+                <dt v-tooltip="data.customer.fiscal_name" class="flex-none">
+                    <span class="sr-only">{{ data.customer.fiscal_name }}</span>
+                    <FontAwesomeIcon :icon="faIdCard" class="text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
+                <dd class="text-gray-500">
+                    {{ data?.customer?.fiscal_name }}
+                    <span class="text-xs text-gray-400">{{trans('Fiscal name')}}</span>
+                </dd>
+
             </div>
 
             <!-- Offers Section -->

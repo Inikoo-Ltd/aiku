@@ -71,7 +71,7 @@ const emits = defineEmits<{
 const layout = inject("layout", {})
 const screenType = inject("screenType", ref('desktop'))
 const expanded = ref(false)
-const webpage_slug = inject("webpage_slug", {})
+const webpage_id = inject("webpage_id", {})
 
 const onSelectProduct = (p: ProductResource) => emits("selectProduct", p)
 const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)
@@ -89,18 +89,18 @@ const openBundlePanel = (product:any) => {
 </script>
 
 <template>
-    <div v-if="screenType != 'mobile'" :id="fieldValue?.id ? fieldValue?.id  : 'product-ds-1'+indexBlock"  component="product-ds-1" :style="{
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'product-ds-1'+indexBlock"  component="product-ds-1" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         marginLeft: 'auto',
         marginRight: 'auto'
-    }" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 block">
+    }" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">
                     <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
                 </div>
 
-                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="product?.tags?.length">
+                <div v-if="props?.fieldValue?.product?.is_single_trade_unit && product?.tags?.length" class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in product.tags" :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
                         <div v-else class="aspect-square w-full h-[15px]">
@@ -260,7 +260,7 @@ const openBundlePanel = (product:any) => {
     </div>
 
     <!-- Mobile Layout -->
-    <div v-else class="block px-4 py-6 text-gray-800">
+    <div class="block sm:hidden px-4 py-6 text-gray-800">
         <h1 class="text-xl font-bold mb-2">{{ product.name }}</h1>
         <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
 
@@ -270,7 +270,7 @@ const openBundlePanel = (product:any) => {
             <ProductPrices :field-value="fieldValue" />
         </div>
 
-        <div class="flex flex-wrap gap-2 mt-4" v-if="product?.tags?.length">
+        <div v-if="props?.fieldValue?.product?.is_single_trade_unit && product?.tags?.length" class="flex flex-wrap gap-2 mt-4">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in product.tags"
                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
@@ -343,7 +343,7 @@ const openBundlePanel = (product:any) => {
         </div>
     </div>
 
-  <ReviewsIris  :webpage_slug="webpage_slug"/>
+  <ReviewsIris  :webpage_id="webpage_id"/>
 </template>
 
 

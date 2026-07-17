@@ -15,10 +15,10 @@ use App\Actions\Catalogue\Variant\IndexVariant;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
-use App\Actions\Catalogue\Review\UI\IndexReviews;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Reviews\UI\IndexReviews;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
@@ -160,7 +160,7 @@ class ShowFamily extends OrgAction
         $urlMaster = null;
         if ($family->master_product_category_id) {
             $urlMaster = [
-                'name'       => 'grp.helpers.redirect_master_product_category',
+                'name'       => 'grp.majordomo.redirect_master_product_category',
                 'parameters' => [
                     $family->masterProductCategory->id
                 ]
@@ -186,47 +186,47 @@ class ShowFamily extends OrgAction
         $tabs = [
             FamilyTabsEnum::SALES->value => $this->tab == FamilyTabsEnum::SALES->value ?
                 fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))
-                : Inertia::lazy(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))),
+                : Inertia::optional(fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($family, FamilyTabsEnum::SALES->value))),
 
             FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                 fn () => GetProductCategoryShowcase::run($family)
-                : Inertia::lazy(fn () => GetProductCategoryShowcase::run($family)),
+                : Inertia::optional(fn () => GetProductCategoryShowcase::run($family)),
 
             FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-                : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
+                : Inertia::optional(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
 
             FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))),
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($family, FamilyTabsEnum::HISTORY->value))),
 
             FamilyTabsEnum::IMAGES->value => $this->tab == FamilyTabsEnum::IMAGES->value ?
                 fn () => GetProductCategoryImages::run($family)
-                : Inertia::lazy(fn () => GetProductCategoryImages::run($family)),
+                : Inertia::optional(fn () => GetProductCategoryImages::run($family)),
 
             FamilyTabsEnum::CONTENT->value => $this->tab == FamilyTabsEnum::CONTENT->value ?
                 fn () => GetProductCategoryContent::run($family)
-                : Inertia::lazy(fn () => GetProductCategoryContent::run($family)),
+                : Inertia::optional(fn () => GetProductCategoryContent::run($family)),
 
             FamilyTabsEnum::OFFERS->value => $this->tab == FamilyTabsEnum::OFFERS->value ?
                 fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))
-                : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
+                : Inertia::optional(fn () => OffersResource::collection(IndexOffers::make()->inProductCategory(parent: $family, prefix: FamilyTabsEnum::OFFERS->value))),
 
             FamilyTabsEnum::REVIEWS->value => $this->tab == FamilyTabsEnum::REVIEWS->value ?
                 fn () => $this->getReviewsTabData($family)
-                : Inertia::lazy(fn () => $this->getReviewsTabData($family)),
+                : Inertia::optional(fn () => $this->getReviewsTabData($family)),
 
             FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCT_CATEGORY->value ?
                     fn () => GetRelatedProductCategories::run($family)
-                    : Inertia::lazy(fn () => GetRelatedProductCategories::run($family)),
+                    : Inertia::optional(fn () => GetRelatedProductCategories::run($family)),
 
             FamilyTabsEnum::RELATED_PRODUCTS->value => $this->tab == FamilyTabsEnum::RELATED_PRODUCTS->value ?
                 fn () => GetRelatedProducts::run($family)
-                : Inertia::lazy(fn () => GetRelatedProducts::run($family)),
+                : Inertia::optional(fn () => GetRelatedProducts::run($family)),
 
             FamilyTabsEnum::VARIANTS->value => $this->tab === FamilyTabsEnum::VARIANTS->value ?
                 fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))
-                : Inertia::lazy(fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))),
+                : Inertia::optional(fn () => VariantsResource::collection(IndexVariant::run($family, FamilyTabsEnum::VARIANTS->value))),
         ];
 
         return Inertia::render(
@@ -305,7 +305,7 @@ class ShowFamily extends OrgAction
                 'is_orphan'             => !$family->department_id,
                 'salesData'             => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryTimeSeriesData::run($family)
-                    : Inertia::lazy(fn () => GetProductCategoryTimeSeriesData::run($family)),
+                    : Inertia::optional(fn () => GetProductCategoryTimeSeriesData::run($family)),
                 ...$tabs
             ]
         )

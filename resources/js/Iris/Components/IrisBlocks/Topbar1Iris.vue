@@ -136,11 +136,11 @@ const goToBundle = () => {
 </script>
 
 <template>
-    <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4 md:sticky top-0 z-50"
+    <div id="top_bar_1_iris" class="py-[10px] px-4 flex flex-col md:flex-row md:justify-between gap-x-4 md:sticky top-0 z-50"
         :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenTypeInject),
+        ...getStyles(model?.container?.properties, screenTypeInject),
         margin: 0,
-        ...getStyles(model?.container?.properties, screenTypeInject)
     }">
         <!-- layout?.app?.webpage_layout?.container?.properties   // TODO: should exist in Retina -->
 
@@ -148,7 +148,8 @@ const goToBundle = () => {
             <!-- Section: Main title -->
             <div v-if="layout.offer_data && isLoggedIn" class="text-center md:text-left md:flex md:gap-4">
                 <span>
-                    {{ trans("Hello") }}, <LinkIris href="/app/dashboard" :type="'internal'" class="inline-flex items-center justify-center hover:underline">
+                    {{ trans("Hello") }}, 
+                    <LinkIris href="/app/dashboard" :type="'internal'" class="inline-flex items-center justify-center hover:underline">
                         <span class="font-bold">{{ layout.iris_variables?.name }}</span>
                     </LinkIris>!
                 </span>
@@ -205,6 +206,11 @@ const goToBundle = () => {
                 class="text-center flex items-center"
                 v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
             />
+            <!-- Reserve the greeting row while the first-hit data is still on the wire,
+                 so the bar doesn't grow when "Hello, name" arrives -->
+            <div v-else-if="layout.iris?.is_logged_in" class="invisible text-center md:text-left" aria-hidden="true">
+                <span>{{ trans("Hello") }}!</span>
+            </div>
         </div>
 
         <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
@@ -213,9 +219,9 @@ const goToBundle = () => {
 
             <!-- v-if="!layout.offer_data" -->
             <!-- Section: Profile -->
-            <LinkIris href="/app/dashboard" :type="'internal'" class="flex items-center justify-center" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris  v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))" href="/app/dashboard" :type="'internal'" class="flex items-center justify-center" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
+                 
                     :loading="isLoading"
                     icon="fal fa-user"
                     type="transparent"
@@ -235,9 +241,8 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: My Interest -->
-            <LinkIris v-if="layout.retina?.type !== 'dropshipping'" href="/app/interest/favourites" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris v-if="layout.retina?.type !== 'dropshipping' && checkVisible(model?.favourite?.visible || null, isLoggedIn)" href="/app/interest/favourites" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                     v-tooltip="trans('My Interest')"
                     type="transparent"
                     :loading="isLoading"
@@ -258,9 +263,8 @@ const goToBundle = () => {
                 </Button>
             </LinkIris>
 
-            <LinkIris v-else href="/app/dropshipping/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris v-if="isLoggedIn" href="/app/dropshipping/back-in-stocks" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                     v-tooltip="trans('Reminder back in stock')"
                     type="transparent"
                     :loading="isLoading"
@@ -289,9 +293,9 @@ const goToBundle = () => {
             </Button>
 
             <!-- Section: Basket (cart) -->
-            <LinkIris href="/app/basket" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')" href="/app/basket" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')"
+                    
                     v-tooltip="trans('Cart count and amount')"  
                     :loading="isLoading"
                     type="transparent"
@@ -312,9 +316,9 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Register -->
-            <LinkIris href="/app/register" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris  v-if="(checkVisible(model?.register?.visible || null, isLoggedIn))" href="/app/register" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-if="(checkVisible(model?.register?.visible || null, isLoggedIn))"
+                   
                     :loading="isLoading"
                     icon="fal fa-user-plus"
                     type="transparent"
@@ -332,9 +336,8 @@ const goToBundle = () => {
             </LinkIris>
 
             <!-- Section: Login -->
-            <LinkIris :href="urlLoginWithRedirect()" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+            <LinkIris   v-if="checkVisible(model?.login?.visible || null, isLoggedIn)" :href="urlLoginWithRedirect()" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
                 <Button
-                    v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
                     :loading="isLoading"
                     icon="fal fa-sign-in"
                     type="transparent"

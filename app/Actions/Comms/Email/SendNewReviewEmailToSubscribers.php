@@ -3,14 +3,12 @@
 namespace App\Actions\Comms\Email;
 
 use App\Actions\Comms\Traits\WithSendSubscribersOutboxEmail;
-use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
-use App\Models\Helpers\Media;
 use App\Models\Reviews\Review;
 use Illuminate\Support\Arr;
 
@@ -73,13 +71,8 @@ class SendNewReviewEmailToSubscribers extends OrgAction
     {
         $urls = [];
 
-        foreach ($review->images as $media) {
-            /** @var Media $media */
-            $urls[] = Arr::get(GetPictureSources::run($media->getImage()->resize(200, 200)), 'png', '');
-        }
-
-        foreach (Arr::get($review->web_images ?? [], 'main', []) as $webImageUrl) {
-            $urls[] = $webImageUrl;
+        foreach ((array) ($review->web_images ?? []) as $webImage) {
+            $urls[] = Arr::get($webImage, 'original.png', '');
         }
 
         $urls = array_filter($urls);

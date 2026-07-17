@@ -630,6 +630,7 @@ class EditProduct extends OrgAction
                     'fields' => [
                         'is_for_sale' => [
                             'type'  => 'toggle',
+                            'information'   => __("If an item is not for sale, it will not appear in the website's search results and will be excluded from other related features"),
                             'label' => __('For Sale'),
                             'value' => $product->is_for_sale,
                         ],

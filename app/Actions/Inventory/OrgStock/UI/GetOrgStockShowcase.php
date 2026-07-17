@@ -31,7 +31,7 @@ class GetOrgStockShowcase
             $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
         }
 
-        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks()->with(['location', 'organisation', 'warehouse'])->get())->toArray(request());
+        $locations = LocationOrgStocksResource::collection($orgStock->locationOrgStocks()->with(['location', 'organisation', 'warehouse', 'orgStock'])->get())->toArray(request());
         usort($locations, function ($a, $b) {
             return $a['code'] <=> $b['code'];
         });
@@ -40,6 +40,16 @@ class GetOrgStockShowcase
             [
                 'trade_units'        => $dataTradeUnits,
                 'currency_code'      => $orgStock->organisation->currency->code,
+                'sales_data'         => GetOrgStockTimeSeriesData::run($orgStock),
+                'barcodes'           => GetOrgStockBarcodes::run($orgStock),
+                'label_route'        => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.label',
+                    'parameters' => [
+                        'organisation' => $warehouse->organisation->slug,
+                        'warehouse'    => $warehouse->slug,
+                        'orgStock'     => $orgStock->slug,
+                    ],
+                ],
                 'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
                 'stocks_management'  => [
                     'routes'          => [
@@ -82,6 +92,13 @@ class GetOrgStockShowcase
                         'current_supplier_sku_cost' => $orgStock->current_supplier_sku_cost,
                     ],
                     'summary'         => [
+                        'quantity_in_locations' => [
+                            'icon_state' => [
+                                'icon'    => 'fas fa-inventory',
+                                'tooltip' => __("Stock in locations"),
+                            ],
+                            'value'      => $orgStock->quantity_in_locations
+                        ],
                         'quantity_in_submitted_orders' => [
                             'icon_state' => [
                                 'icon'    => 'fas fa-shopping-cart',
@@ -98,7 +115,8 @@ class GetOrgStockShowcase
                         ],
                     ],
                     'locations'       => $locations,
-                    'qty_in_location' => $orgStock->quantity_in_locations
+                    'qty_in_location'               => $orgStock->quantity_in_locations,
+                    'qty_in_location_fractional'    => riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->quantity_in_locations ?? 0)), $orgStock->packed_in ?? 1),
                 ]
             ]
         );
@@ -115,6 +133,8 @@ class GetOrgStockShowcase
                 'id'     => $tradeUnit->id,
                 'stock'  => $tradeUnit->orgStocks->sum('quantity_in_locations'),
                 'name'   => $tradeUnit->name,
+                'unit'   => $tradeUnit->type,
+                'units'  => trimDecimalZeros($tradeUnit->pivot->quantity),
                 'images' => $this->getImagesData($tradeUnit),
             ];
         })->toArray();

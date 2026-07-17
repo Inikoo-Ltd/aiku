@@ -44,10 +44,18 @@ class PickAllItem extends OrgAction
 
             $locationOrgStock = LocationOrgStock::find($modelData['location_org_stock_id']);
 
+            $availableInLocation = (float) ($locationOrgStock?->quantity ?? 0);
+            $toPickQuantity      = min($toPickQuantity, $availableInLocation);
+
+            if (!$locationOrgStock || $toPickQuantity <= 0) {
+                $deliveryNoteItem->update(['locked_at' => null]);
+
+                return null;
+            }
 
             data_set($modelData, 'quantity', $toPickQuantity);
 
-            $picking = StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+            $picking = StorePicking::make()->action($deliveryNoteItem, request()->user(), $modelData);
 
             $deliveryNoteItem->update(['locked_at' => null]);
 

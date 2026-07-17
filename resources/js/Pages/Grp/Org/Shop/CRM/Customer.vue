@@ -9,7 +9,7 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, defineAsyncComponent, ref, inject } from "vue"
+import { computed, ref, inject } from "vue"
 import type { Component } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
@@ -41,7 +41,6 @@ import { useForm } from "@inertiajs/vue3"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn)
-const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 
 const props = defineProps<{
@@ -103,6 +102,7 @@ let currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
 const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
 const orderForm = useForm({
     sales_channel_id: null as number | null
 })
@@ -141,12 +141,12 @@ const layout = inject('layout')
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other>
+        <template #other>            
             <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
             <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
-                icon="plus" />
+                icon="plus" />            
         </template>
     </PageHeading>
 
@@ -174,7 +174,7 @@ const layout = inject('layout')
         :gr_data
         :handleTabUpdate
         :timeline="props.timeline"
-        :detachRoute="attachmentRoutes.detachRoute"
+        :detachRoute="attachmentRoutes.detachRoute"        
     />
 
   <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{

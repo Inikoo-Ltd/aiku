@@ -37,6 +37,7 @@ const props = defineProps<{
         content_blog_stats: StatsBoxTS[]
         website_stats: StatsBoxTS[]
         website_type: string
+        route_restricted_country?: routeType
     }
     route_storefront: routeType
     route_landing_page?: routeType
@@ -145,6 +146,12 @@ const links = computed(() => {
             <!-- Buttons Card (in the right part of the grid) -->
             <div class="flex justify-end">
                 <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
+                    <div class="p-2" v-if="props.data.route_restricted_country?.name">
+                        <ButtonWithLink :routeTarget="props.data.route_restricted_country" icon="fal fa-ban"
+                            type="tertiary" :label="trans('Restricted Countries')"
+                            :tooltip="trans('Countries restricted from this website')" full />
+                    </div>
+
                     <div class="p-2">
                         <ButtonWithLink :routeTarget="route_storefront" icon="fal fa-home" type="tertiary"
                             :label="trans('Storefront')" full />

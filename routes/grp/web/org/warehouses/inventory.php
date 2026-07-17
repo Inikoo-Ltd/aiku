@@ -34,6 +34,7 @@ use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProcurement;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProducts;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockStockHistory;
+use App\Actions\Inventory\OrgStock\UI\PdfOrgStockLabel;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexInvoicesInOrgStockFamily;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexOrgStockFamilies;
@@ -58,6 +59,7 @@ Route::prefix('stock-histories')->as('org_stock_histories.')->group(function () 
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
     Route::patch('{orgStock}/update', UpdateOrgStock::class)->name('update');
+    Route::get('{orgStock}/label', PdfOrgStockLabel::class)->name('label');
 
     Route::prefix('orphans-from-product')->as('orphan-product.')->group(function () {
         Route::get('/all', IndexOrgStocksWithNoProducts::class)->name('index');

@@ -182,7 +182,7 @@ class IndexFulfilmentRentals extends OrgAction
 
                 RentalsTabsEnum::RENTALS->value => $this->tab == RentalsTabsEnum::RENTALS->value ?
                     fn () => RentalsResource::collection($rentals)
-                    : Inertia::lazy(fn () => RentalsResource::collection($rentals)),
+                    : Inertia::optional(fn () => RentalsResource::collection($rentals)),
 
             ]
         )->table(

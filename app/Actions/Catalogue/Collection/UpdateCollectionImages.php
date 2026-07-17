@@ -9,9 +9,9 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\Concerns\CanUpdateImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Helpers\CanUpdateImages;
 use App\Models\Catalogue\Collection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;

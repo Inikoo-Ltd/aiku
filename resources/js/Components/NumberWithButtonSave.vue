@@ -79,11 +79,20 @@ const roundToDecimals = (value: number, decimals: number = 2): number => {
 	return Number(Number(value).toFixed(decimals))
 }
 
+// Snap fractional (denominator based) quantities to the nearest 1/denominator multiple
+// while keeping full precision, otherwise fall back to 2-decimals rounding.
+const roundQuantity = (value: number): number => {
+	if (props.denominator) {
+		return Math.round(Number(value) * props.denominator) / props.denominator
+	}
+	return roundToDecimals(value)
+}
+
 const form = useForm({
-	quantity: roundToDecimals(props.modelValue),
+	quantity: roundQuantity(props.modelValue),
 })
 const formDefaultValue = ref({
-	quantity: roundToDecimals(props.modelValue),
+	quantity: roundQuantity(props.modelValue),
 })
 
 const onSaveViaForm = async () => {
@@ -97,15 +106,16 @@ const onSaveViaForm = async () => {
 				route(props.routeSubmit?.name, props.routeSubmit?.parameters),
 				{
 					[props.keySubmit || "quantity"]: form.quantity,
+					...props.additionalData,
 				}
 			)
 
-			form.defaults("quantity", roundToDecimals(form.quantity))
+			form.defaults("quantity", roundQuantity(form.quantity))
 			emits("onSuccess", form.quantity, formDefaultValue.value.quantity)
 			formDefaultValue.value.quantity = form.quantity
 			// console.log('ee axios', form.processing)
 		} catch (error) {
-			console.log("ERR1", errors);
+			console.log("ERR1", error);
 			emits("onError", error?.response?.data)
 			notify({
 				title: trans("Something went wrong"),
@@ -161,7 +171,7 @@ watch(
 	() => props.modelValue,
 	async (newVal: number) => {
 		if (props.isWithRefreshModel) {
-			const roundedVal = roundToDecimals(newVal)
+			const roundedVal = roundQuantity(newVal)
 			form.defaults('quantity', roundedVal)
 			form.reset()
 		}
@@ -177,9 +187,13 @@ const onClickMinusButton = () => {
 		return false // Prevent decreasing when the quantity is at or below the min value
 	} else {
 		if (props.denominator) {
-			form.quantity = roundToDecimals(Number(form.quantity) - Number((1 / props.denominator).toPrecision(5)))
+			const stepped = roundQuantity(Number(form.quantity) - 1 / props.denominator)
+			const minVal = props.bindToTarget?.min ?? props.min ?? 0
+			form.quantity = stepped < minVal ? roundQuantity(minVal) : stepped
 		} else {
-			form.quantity = roundToDecimals(form.quantity - 1)
+			const stepped = roundToDecimals(form.quantity - 1)
+			const minVal = props.bindToTarget?.min ?? props.min ?? 0
+			form.quantity = stepped < minVal ? roundToDecimals(minVal) : stepped
 		}
 	}
 }
@@ -192,9 +206,13 @@ const onClickPlusButton = () => {
 		return false // Prevent increase if quantity is at or exceeds max value
 	} else {
 		if (props.denominator) {
-			form.quantity = roundToDecimals(Number(form.quantity) + Number((1 / props.denominator).toPrecision(5)))
+			const stepped = roundQuantity(Number(form.quantity) + 1 / props.denominator)
+			const maxVal = props.bindToTarget?.max ?? props.max
+			form.quantity = maxVal !== undefined && stepped > maxVal ? roundQuantity(maxVal) : stepped
 		} else {
-			form.quantity = roundToDecimals(form.quantity + 1)
+			const stepped = roundToDecimals(form.quantity + 1)
+			const maxVal = props.bindToTarget?.max ?? props.max
+			form.quantity = maxVal !== undefined && stepped > maxVal ? roundToDecimals(maxVal) : stepped
 		}
 	}
 }
@@ -293,9 +311,9 @@ const stopHold = () => {
 					</span>
 					<InputNumber
 						vxmodel="form.quantity"
-						:modelValue="props.denominator ? roundToDecimals(Math.floor(form.quantity * props.denominator)) : form.quantity"
-						@update:model-value="(e) => (props.denominator? (form.quantity = roundToDecimals(e/props.denominator)) : (form.quantity = roundToDecimals(e)))"
-						@input="(e) => (props.denominator ? (form.quantity = roundToDecimals(e.value/props.denominator)) : (form.quantity = roundToDecimals(e.value)))"
+						:modelValue="props.denominator ? Math.round(form.quantity * props.denominator) : form.quantity"
+						@update:model-value="(e) => (props.denominator? (form.quantity = roundQuantity(e/props.denominator)) : (form.quantity = roundToDecimals(e)))"
+						@input="(e) => (props.denominator ? (form.quantity = roundQuantity(e.value/props.denominator)) : (form.quantity = roundToDecimals(e.value)))"
 						buttonLayout="horizontal"
 						:min="min || 0"
 						:max="max || undefined"

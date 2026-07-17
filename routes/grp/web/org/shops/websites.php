@@ -6,24 +6,25 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Analytics\WebUserRequest\UI\IndexWebUserRequests;
 use App\Actions\Comms\Mailshot\UI\ShowMailshot;
 use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
+use App\Actions\Helpers\Snapshot\UI\ShowSnapshot;
+use App\Actions\Helpers\Snapshot\UI\ShowSnapshotPreview;
+use App\Actions\SysAdmin\WebUserRequest\UI\IndexWebUserRequests;
 use App\Actions\Web\Announcement\UI\CreateAnnouncement;
 use App\Actions\Web\Announcement\UI\EditAnnouncement;
 use App\Actions\Web\Announcement\UI\IndexAnnouncements;
 use App\Actions\Web\Announcement\UI\ShowAnnouncement;
 use App\Actions\Web\Announcement\UI\ShowAnnouncementWorkshop;
-use App\Actions\Helpers\Snapshot\UI\ShowSnapshot;
-use App\Actions\Helpers\Snapshot\UI\ShowSnapshotPreview;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
 use App\Actions\Web\Banner\UI\ShowBanner;
 use App\Actions\Web\Banner\UI\ShowBannerWorkshop;
+use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\Redirect\ExportRedirects;
 use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
@@ -50,7 +51,6 @@ use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
 use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
-use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\Website\UI\CreateWebsite;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
@@ -59,11 +59,12 @@ use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshopPreview;
+use App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors;
 use Illuminate\Support\Facades\Route;
 
 Route::name('websites.')->group(function () {
     Route::get('/', [IndexWebsites::class, 'inShop'])->name('index');
-    Route::get('/create', [CreateWebsite::class, 'inShop'])->name('create');
+    Route::get('/create', CreateWebsite::class)->name('create');
 
     Route::prefix('{website}')
         ->group(function () {
@@ -184,5 +185,5 @@ Route::prefix('{website}/crawls')->name('crawls.')->group(function () {
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('', ShowWebsiteAnalyticsDashboard::class)->name('dashboard');
     Route::get('web-user-requests', IndexWebUserRequests::class)->name('web_user_requests.index');
-    Route::get('visitors', [\App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors::class, 'asController'])->name('visitors.index');
+    Route::get('visitors', IndexWebsiteVisitors::class)->name('visitors.index');
 });

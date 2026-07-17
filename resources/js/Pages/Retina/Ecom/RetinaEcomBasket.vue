@@ -34,6 +34,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
+import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
 library.add(faTag, faCheck, faExclamationTriangle)
 
 interface ChargeResource {
@@ -62,6 +63,17 @@ const props = defineProps<{
         customer_slug: string
         customer_name: string
         slug: string
+    }
+    upcoming_transactions: {
+        data: {
+            id: number
+            product_code: string | null
+            product_name: string | null
+            quantity: number | string
+            public_notes: string | null
+            type: 'gift' | 'follow_on'
+            state: string
+        }[]
     }
     transactions: {
         data: {
@@ -108,7 +120,8 @@ const props = defineProps<{
     is_in_basket: boolean
     contact_address: Address | null
     address_management: AddressManagement
-    is_unable_dispatch: boolean
+    is_forbidden_delivery: boolean
+    is_forbidden_billing: boolean
     charges: {
         premium_dispatch?: ChargeResource
         extra_packing?: ChargeResource
@@ -139,7 +152,7 @@ const props = defineProps<{
         name: string
         discount: string
     } | null
-
+    is_basket_created: boolean
 }>()
 
 
@@ -262,8 +275,62 @@ interface Product {
     quantity_selected?: number
     transaction_id?: string
     quantity_ordered?: number
+    slug?: string | null
+    name?: string | null
+    code?: string | null
+    price?: number | string | null
+    currency_code?: string | null
+    family_code?: string | null
+    luigi_identity?: string | null
 }
+
+const pushAddToCartLuigi = (product: Product) => {
+    if (product?.transaction_id) {
+        return
+    }
+
+    const addToCartEcommerce = {
+        currency: layout?.iris?.currency?.code,
+        value: product.price,
+        items: [
+            {
+                item_id: product?.luigi_identity,
+            }
+        ]
+    }
+
+    window?.dataLayer?.push({
+        event: "add_to_cart",
+        ecommerce: addToCartEcommerce,
+    })
+}
+
+const pushAddToCartGtm = (product: Product, quantity: number) => {
+    if (quantity <= 0) {
+        return
+    }
+
+    pushGtmEvent(
+        'add_to_cart',
+        buildGtmProductPayload(
+            {
+                slug: product?.slug,
+                name: product?.name,
+                price: product?.price,
+                currency_code: product?.currency_code ?? layout?.iris?.currency?.code ?? props.order?.currency_code ?? null,
+                family_code: product?.family_code,
+            },
+            { quantity }
+        )
+    )
+}
+
 const onAddProducts = async (product: Product) => {
+    const quantitySelected = Number(product.quantity_selected ?? 1)
+    const quantityAdded = product?.transaction_id
+        ? quantitySelected - Number(product.quantity_ordered ?? 0)
+        : quantitySelected
+
     const storeRoute = {
         route_post: route('retina.models.product.add-to-basket', { 
             product: product.id
@@ -306,23 +373,8 @@ const onAddProducts = async (product: Product) => {
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
             },
             onSuccess: () => {
-                // Luigi: event add to cart
-                if (!product?.transaction_id) {
-                    if (!product?.transaction_id) {
-                        window?.dataLayer?.push({
-                            event: "add_to_cart",
-                            ecommerce: {
-                                currency: layout?.iris?.currency?.code,
-                                value: product.price,
-                                items: [
-                                    {
-                                        item_id: product?.luigi_identity,
-                                    }
-                                ]
-                            }
-                        })
-                    }
-                }
+                pushAddToCartLuigi(product)
+                pushAddToCartGtm(product, quantityAdded)
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
                 layout?.reload_handle?.()
             },
@@ -390,17 +442,18 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     type: "success"
                 })
                 
+                const addToCartEcommerce = {
+                    currency: layout?.iris?.currency?.code,
+                    value: productLuigi?.attributes?.price || 0,
+                    items: [
+                        {
+                            item_id: productLuigi?.url,
+                        }
+                    ]
+                }
                 window?.dataLayer?.push({
                     event: "add_to_cart",
-                    ecommerce: {
-                        currency: layout?.iris?.currency?.code,
-                        value: productLuigi?.attributes?.price || 0,
-                        items: [
-                            {
-                                item_id: productLuigi?.url,
-                            }
-                        ]
-                    }
+                    ecommerce: addToCartEcommerce,
                 })
                 layout?.reload_handle?.()
 
@@ -599,12 +652,14 @@ const onChangeInsurance = async (val: boolean) => {
         :summary
         :balance
         :address_management
-        :is_unable_dispatch
+        :is_forbidden_delivery
+        :is_forbidden_billing
         :contact_address
         :currency_code="order?.currency_code"
         :isInBasket="true"
         :updateRoute="routes.update_route"
         :missed_offers
+        :upcoming_transactions
         :isShowAllOffersMeter="true"
     />
     
@@ -770,7 +825,7 @@ const onChangeInsurance = async (val: boolean) => {
             
             <div class="border-t flex justify-end py-5 px-4 md:px-8">
                 <!-- Section: button Place Order & button Checkout -->
-                <div v-if="!is_unable_dispatch || order.is_collection" class="w-full md:w-72">
+                <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || order.is_collection" class="w-full md:w-72">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink
@@ -809,7 +864,8 @@ const onChangeInsurance = async (val: boolean) => {
                     />
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
-                    <div class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
+                    <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
+                    <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
                 </div>
             </div>
         </div>
@@ -824,11 +880,11 @@ const onChangeInsurance = async (val: boolean) => {
     </div>
 
     <!-- Section: Recommendations -->
-    <Teleport xv-if="layout.app.environment !== 'production'" to="#retina-end-of-main" :disabled="!isTeleportReady" :key="teleportKey">
+    <Teleport v-if="is_basket_created" xv-if="layout.app.environment !== 'production'" to="#retina-end-of-main" :disabled="!isTeleportReady" :key="teleportKey">
         <div class="w-full mt-2 pt-4 border-t border-gray-300 border-dashed"
             :class="layout.leftSidebar.show ? 'max-w-[calc(1280px-200px)]' : 'max-w-[calc(1280px-(56px-0.5rem))]'"
         >
-            <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ trans('You might also like') }}</h2>
+            <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ ctrans('You might also like') }}</h2>
             <div class="bg-white p-4 rounded-md shadow-lg">
                 <BasketRecommendations
                     @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"

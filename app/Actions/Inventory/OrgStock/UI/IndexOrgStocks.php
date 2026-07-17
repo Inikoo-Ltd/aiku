@@ -313,7 +313,7 @@ class IndexOrgStocks extends OrgAction
 
             $table
                 ->defaultSort('code')
-                ->withLabelRecord(['SKU','SKUs'])
+                ->withLabelRecord(['SKO','SKOs'])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'code', label: __('Reference'), sortable: true, searchable: true);
@@ -363,19 +363,19 @@ class IndexOrgStocks extends OrgAction
 
         return [
             [
-                'label'    => __('SKU Family'),
+                'label'    => __('SKO Family'),
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
                     'parameters' => array_diff_key($routeParameters, ['orgStock' => null]),
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-boxes-alt'],
-                    'tooltip' => __('SKU Family'),
+                    'tooltip' => __('SKO Family'),
                 ],
             ],
             [
                 'isAnchor' => true,
-                'label'    => __('SKUs'),
+                'label'    => __('SKOs'),
                 'number'   => $orgStockFamily->stats->number_org_stocks ?? 0,
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
@@ -383,7 +383,7 @@ class IndexOrgStocks extends OrgAction
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-box'],
-                    'tooltip' => __('SKUs'),
+                    'tooltip' => __('SKOs'),
                 ],
             ],
         ];
@@ -458,11 +458,11 @@ class IndexOrgStocks extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $stocks, ActionRequest $request): Response
     {
-        $title = __('SKUs');
+        $title = __('SKOs');
         $model = '';
         $icon = [
             'icon' => ['fal', 'fa-box'],
-            'title' => __('SKUs'),
+            'title' => __('SKOs'),
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -472,46 +472,46 @@ class IndexOrgStocks extends OrgAction
             $title         = $this->parent->name;
             $icon          = [
                 'icon'  => ['fal', 'fa-boxes-alt'],
-                'title' => __('SKU Family'),
+                'title' => __('SKO Family'),
             ];
             $iconRight  = [
                 'icon' => 'fal fa-box',
             ];
             $afterTitle = [
-                'label' => __('SKUs'),
+                'label' => __('SKOs'),
             ];
         } elseif ($this->parent instanceof OrgPartner) {
             $subNavigation = $this->getOrgPartnerNavigation($this->parent);
             $title         = $this->parent->partner->name;
             $icon          = [
                 'icon'  => ['fal', 'fa-users-class'],
-                'title' => __('SKUs'),
+                'title' => __('SKOs'),
             ];
             $iconRight  = [
                 'icon' => 'fal fa-box',
             ];
             $afterTitle = [
-                'label' => __('SKUs'),
+                'label' => __('SKOs'),
             ];
         } elseif ($this->parent instanceof OrgAgent) {
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
             $title         = $this->parent->agent->organisation->name;
             $icon          = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('SKUs'),
+                'title' => __('SKOs'),
             ];
             $iconRight  = [
                 'icon' => 'fal fa-box',
             ];
             $afterTitle = [
-                'label' => __('SKUs'),
+                'label' => __('SKOs'),
             ];
         } else {
             $subNavigation = $this->getOrgStocksSubNavigation();
         }
 
         if ($this->bucket == 'current') {
-            $title = __('Current SKUs');
+            $title = __('Current SKOs');
         }
 
         return Inertia::render(
@@ -537,11 +537,11 @@ class IndexOrgStocks extends OrgAction
 
                 OrgStocksTabsEnum::INDEX->value => $this->tab == OrgStocksTabsEnum::INDEX->value
                     ? fn () => OrgStocksResource::collection($stocks)
-                    : Inertia::lazy(fn () => OrgStocksResource::collection($stocks)),
+                    : Inertia::optional(fn () => OrgStocksResource::collection($stocks)),
 
                 OrgStocksTabsEnum::SALES->value => $this->tab == OrgStocksTabsEnum::SALES->value
                     ? fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket))
-                    : Inertia::lazy(fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket))),
+                    : Inertia::optional(fn () => OrgStocksResource::collection($this->handle(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::INDEX->value, bucket: $this->bucket))
          ->table($this->tableStructure(parent: $this->parent, prefix: OrgStocksTabsEnum::SALES->value, bucket: $this->bucket, sales: true));
@@ -555,7 +555,7 @@ class IndexOrgStocks extends OrgAction
                     'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => 'SKUs',
+                        'label' => 'SKOs',
                         'icon' => 'fal fa-bars',
                     ],
                     'suffix' => $suffix,

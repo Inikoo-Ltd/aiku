@@ -77,7 +77,7 @@ class ShowCharge extends OrgAction
 
                     ChargeTabsEnum::SHOWCASE->value => $this->tab == ChargeTabsEnum::SHOWCASE->value ?
                     fn () => GetChargeShowcase::run($charge)
-                    : Inertia::lazy(fn () => GetChargeShowcase::run($charge)),
+                    : Inertia::optional(fn () => GetChargeShowcase::run($charge)),
 
             ]
         );

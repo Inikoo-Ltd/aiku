@@ -120,7 +120,7 @@ const props = defineProps<{
         pay_with_balance: routeType
     }
 
-    transactions: {}
+    transactions?: {}
     currency: Currency
 
 
@@ -134,7 +134,8 @@ const props = defineProps<{
         extra_packing?: ChargeResource
         insurance?: ChargeResource
     }
-    is_unable_dispatch: boolean
+    is_forbidden_delivery: boolean
+    is_forbidden_billing?: boolean
 }>()
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
@@ -420,7 +421,8 @@ const onChangeInsurance = async (val: boolean) => {
         :balance="balance"
         :address_management
         :updateOrderRoute="routes?.update_route"
-        :is_unable_dispatch
+        :is_forbidden_delivery
+        :is_forbidden_billing
         :order="data.data"
     />
 
@@ -574,7 +576,7 @@ const onChangeInsurance = async (val: boolean) => {
 
 
         <!-- Button: Continue to checkout, Place Order -->
-        <div v-if="!is_unable_dispatch || data.data.is_collection" class="w-72 pt-5">
+        <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || data.data.is_collection" class="w-72 pt-5">
             <!-- Place Order -->
             <template v-if="total_to_pay == 0 && balance > 0">
                 <ButtonWithLink
@@ -612,7 +614,8 @@ const onChangeInsurance = async (val: boolean) => {
             />
         </div>
         <div v-else class="w-72 pt-5 text-sm">
-            <div class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: box_stats?.customer?.addresses?.delivery?.country?.name}) }}</div>
+            <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: box_stats?.customer?.addresses?.billing?.country?.name }) }}</div>
+            <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: box_stats?.customer?.addresses?.delivery?.country?.name}) }}</div>
         </div>
     </div>
 

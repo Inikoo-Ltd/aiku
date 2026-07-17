@@ -188,25 +188,25 @@ class ShowFulfilmentInvoice extends OrgAction
                 'download_pdf_column'  => ShowInvoice::make()->getDownloadPdfColumns($invoice),
 
                 FulfilmentInvoiceTabsEnum::REFUNDS->value => $this->tab == FulfilmentInvoiceTabsEnum::REFUNDS->value
-                    ? fn() => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn() => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))),
+                    ? fn () => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))
+                    : Inertia::optional(fn () => RefundsResource::collection(IndexRefunds::run($invoice, FulfilmentInvoiceTabsEnum::REFUNDS->value))),
 
                 FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
-                    fn() => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn() => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
+                    fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::optional(fn () => InvoiceTransactionsGroupedByAssetResource::collection(IndexInvoiceTransactionsGroupedByAsset::run($invoice, FulfilmentInvoiceTabsEnum::GROUPED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
                 FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value => $this->tab == FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value ?
-                    fn() => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
-                    : Inertia::lazy(fn() => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
+                    fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))
+                    : Inertia::optional(fn () => ItemizedInvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, FulfilmentInvoiceTabsEnum::ITEMIZED_FULFILMENT_INVOICE_TRANSACTIONS->value))),
 
                 FulfilmentInvoiceTabsEnum::EMAIL->value => $this->tab == FulfilmentInvoiceTabsEnum::EMAIL->value ?
-                    fn() => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))
-                    : Inertia::lazy(fn() => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))),
+                    fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))
+                    : Inertia::optional(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($invoice->customer, FulfilmentInvoiceTabsEnum::EMAIL->value))),
 
 
                 FulfilmentInvoiceTabsEnum::PAYMENTS->value => $this->tab == FulfilmentInvoiceTabsEnum::PAYMENTS->value ?
-                    fn() => PaymentsResource::collection(IndexPayments::run($invoice))
-                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run($invoice))),
+                    fn () => PaymentsResource::collection(IndexPayments::run($invoice))
+                    : Inertia::optional(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
 
             ]
         )

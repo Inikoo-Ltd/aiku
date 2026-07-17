@@ -14,7 +14,7 @@ import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import DatePicker from '@vuepic/vue-datepicker'
 import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faCalendar, faCalendarAlt, faInfoCircle } from "@fal"
-import { faShieldAlt, faStar, faHighlighter, faPennant } from "@fas"
+import { faShieldAlt, faStar, faHighlighter, faPennant, faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { trans } from "laravel-vue-i18n"
@@ -126,7 +126,7 @@ function customerRoute(order: Order) {
 const generateRouteDeliveryNote = (id: string) => {
     if (!id) return ''
 
-    return route('grp.helpers.redirect_delivery_notes', {
+    return route('grp.majordomo.redirect_delivery_notes', {
         deliveryNote: id
     })
 }
@@ -215,10 +215,10 @@ const setNewMarkerDate = (newVal: Date) => {
       </span>
         </template>
 
-        <template #cell(reference)="{ item: order }">            
+        <template #cell(reference)="{ item: order }">
             <div class="flex gap-2 flex-wrap items-center">
                 <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
-                    <FontAwesomeIcon 
+                    <FontAwesomeIcon
                         v-if="isValidMark && isBeforeMark(order['date'])"
                         v-tooltip="trans('Order created at :_dateCreated', {_dateCreated: getDateLocaleString(new Date(order['date']))})"
                         :icon="faPennant"
@@ -229,6 +229,13 @@ const setNewMarkerDate = (newVal: Date) => {
 
                 <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon
+         			v-if="order.is_customer_vip"
+         			v-tooltip="trans('VIP Customer')"
+         			:icon="faCertificate"
+                    color="#191970"
+         			fixed-width
+    			/>
                 <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />
                 <!-- <FontAwesomeIcon v-if="order.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt"
@@ -263,7 +270,7 @@ const setNewMarkerDate = (newVal: Date) => {
                       v-tooltip="
                           trans('Order Timeline:') + '<br>' +
                           trans('Draft Initiated:') + ' ' + useFormatTime(order.platform_milestones.draft_created_at, { localeCode: locale.language.code, formatTime: 'aiku' }) + '<br>' +
-                          trans('Paid / Placed:') + ' ' + useFormatTime(order.platform_milestones.placed_at, { localeCode: locale.language.code, formatTime: 'aiku' }) + 
+                          trans('Paid / Placed:') + ' ' + useFormatTime(order.platform_milestones.placed_at, { localeCode: locale.language.code, formatTime: 'aiku' }) +
                           (order.submitted_at ? ('<br>' + trans('Warehouse Submitted:') + ' ' + useFormatTime(order.submitted_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '') +
                           (order.dispatched_at ? ('<br>' + trans('Dispatched:') + ' ' + useFormatTime(order.dispatched_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '')
                       "
@@ -278,9 +285,9 @@ const setNewMarkerDate = (newVal: Date) => {
         </template>
 
         <template #cell(delivery)="{ item: order }">
-            
+
             <div v-if="order.state === 'cancelled'">
-                
+
             </div>
             <div v-else-if="order.shipping_data?.is_collection && order.state === 'dispatched'" class="border rounded border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
                 {{ trans("Collected") }}
@@ -289,7 +296,7 @@ const setNewMarkerDate = (newVal: Date) => {
             <div v-else-if="order.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
                 {{ trans("For Collection") }}
             </div>
-            
+
             <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex gap-2 pr-2 py-1.5">
                 <div class="group w-fit whitespace-nowrap ">
                     <!-- Delivery Note -->
@@ -302,7 +309,7 @@ const setNewMarkerDate = (newVal: Date) => {
                             <FontAwesomeIcon icon="fal fa-truck" class="" fixed-width aria-hidden="true" />
                         </Link>
                     </template>
-                    
+
                     <template v-if="order.shipping_data?.[0].trackings?.[0]">
                         <span>
                             <span class="opacity-70">|</span>
@@ -329,7 +336,7 @@ const setNewMarkerDate = (newVal: Date) => {
                                 {{ order.shipping_data?.[0].trackings?.[0] }}
                                 <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
                             </a>
-                            
+
                             <span v-else>
                                 {{ order.shipping_data?.[0].trackings?.[0] }}
                             </span>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Multiselect from "@vueform/multiselect"
+import "@vueform/multiselect/themes/default.css"
 import { lowerCase, snakeCase } from "lodash-es"
 import { ref, watch, computed } from "vue"
 import {useFontFamilyList} from "@/Composables/useFont"

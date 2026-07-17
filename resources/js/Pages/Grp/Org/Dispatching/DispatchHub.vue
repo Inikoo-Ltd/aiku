@@ -27,10 +27,10 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    delivery_note: object
-    picking_session: object
-    pickers: object[]
-    packers: object[]
+    delivery_note?: object
+    picking_session?: object
+    pickers?: object[]
+    packers?: object[]
     intervals: any
     settings: any
 }>()

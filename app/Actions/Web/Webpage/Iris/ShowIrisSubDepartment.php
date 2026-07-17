@@ -51,6 +51,7 @@ class ShowIrisSubDepartment extends IrisAction
                 'mini_breadcrumbs' => array_filter([
                     $subDepartment->department ? [
                         'label'   => $subDepartment->department->name,
+                        'url'     => route('iris.catalogue.department.show', ['department' => $subDepartment->department->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.department.show',
                             'parameters' => [
@@ -62,6 +63,7 @@ class ShowIrisSubDepartment extends IrisAction
                     ] : [],
                     [
                         'label'   => $subDepartment->name,
+                        'url'     => route('iris.catalogue.sub_department.show', ['subDepartment' => $subDepartment->slug]),
                         'to'      => [
                             'name'       => 'iris.catalogue.sub_department.show',
                             'parameters' => [
@@ -91,7 +93,7 @@ class ShowIrisSubDepartment extends IrisAction
                             IrisSubDepartmentTabsEnum::FAMILIES->value
                         )
                     )
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'family',
@@ -116,7 +118,7 @@ class ShowIrisSubDepartment extends IrisAction
                             IrisSubDepartmentTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => ProductsResource::collection(
+                    : Inertia::optional(fn () => ProductsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'product',
@@ -141,7 +143,7 @@ class ShowIrisSubDepartment extends IrisAction
                             IrisSubDepartmentTabsEnum::COLLECTIONS->value
                         )
                     )
-                    : Inertia::lazy(fn () => CollectionsResource::collection(
+                    : Inertia::optional(fn () => CollectionsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'collection',

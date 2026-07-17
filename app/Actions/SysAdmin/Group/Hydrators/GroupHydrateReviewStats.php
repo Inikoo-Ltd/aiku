@@ -2,7 +2,7 @@
 
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
-use App\Actions\Catalogue\Review\Hydrators\Concerns\BuildsReviewStats;
+use App\Actions\Reviews\Hydrators\Concerns\BuildsReviewStats;
 use App\Models\Reviews\Review;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;

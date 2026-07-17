@@ -8,7 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Helpers\Country\UI\GetAddressDataForShop;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
@@ -67,12 +67,11 @@ class GetOrderDeliveryAddressManagement
                     'order' => $order->id
                 ]
             ],
-
             'addresses'           => [
                 'isCannotSelect'                 => true,
                 'address_list'                   => $addressCollection,
                 'options'                        => [
-                    'countriesAddressData' => GetAddressData::run($order->shop)
+                    'countriesAddressData' => GetAddressDataForShop::run($order->shop, excludeForbiddenBilling:false, excludeForbiddenDelivery:true)
                 ],
                 'pinned_address_id'              => $order->customer?->delivery_address_id,
                 'home_address_id'                => $order->customer?->address_id,

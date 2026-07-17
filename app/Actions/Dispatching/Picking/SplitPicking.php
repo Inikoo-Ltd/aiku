@@ -8,6 +8,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\Picking;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,6 +18,8 @@ class SplitPicking extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+
+    private User|null $user = null;
 
     public function handle(Picking $picking, float $splitQuantity): Picking
     {
@@ -41,7 +44,8 @@ class SplitPicking extends OrgAction
                     $picking->location,
                     [
                         'quantity' => -$splitQuantity,
-                        'type'     => OrgStockMovementTypeEnum::PICKED
+                        'type'     => OrgStockMovementTypeEnum::PICKED,
+                        'user_id'  => $this->user?->id,
                     ]
                 );
             }
@@ -61,6 +65,7 @@ class SplitPicking extends OrgAction
                 SavePickingInAurora::dispatch($newPicking);
             }
 
+
             CalculateDeliveryNoteItemTotalPicked::make()->action($picking->deliveryNoteItem);
 
             return $newPicking;
@@ -69,6 +74,7 @@ class SplitPicking extends OrgAction
 
     public function asController(Picking $picking, ActionRequest $request): void
     {
+        $this->user = request()->user();
         $this->initialisationFromShop($picking->shop, $request);
         $splitQuantity = (float) $request->input('split_quantity');
 

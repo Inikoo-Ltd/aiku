@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, computed } from 'vue'
+import { inject, computed, ref } from 'vue'
 import Carousel from 'primevue/carousel'
 import Image from "@common/Components/Image.vue"
 import Blueprint from './Blueprint'
@@ -41,10 +41,14 @@ const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
+const activeEditorIndex = ref<number | null>(null)
+const isEditing = computed(() => activeEditorIndex.value !== null)
+
 </script>
 
 <template>
-    <div :id="modelValue?.id ? modelValue?.id  : 'carousel-cta' + indexBlock" >
+    <div :id="modelValue?.id ? modelValue?.id  : 'carousel-cta' + indexBlock"
+        :class="isEditing ? 'is-editing' : ''" >
         <div :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(modelValue.container?.properties, screenType)
@@ -74,6 +78,8 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                     :alt="data.image.alt || 'Image preview'"
                                     class="absolute inset-0 w-full h-full object-cover"
                                     :imgAttributes="data.image.attributes"
+                                    :height="getStyles(modelValue?.image?.container?.properties, screenType, false)?.height"
+                                    :width="getStyles(modelValue?.image?.container?.properties, screenType, false)?.width"
                                     />
                             </div>
 
@@ -86,11 +92,12 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                         sendMessageToParent('activeChildBlockArray', index)
                                     }
                                 ">
-                                    <EditorV2 
-                                        v-if="data?.text" 
+                                    <EditorV2
+                                        v-if="data?.text"
                                         v-model="data.text"
-                                        @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-                                        @update:modelValue="(e) => { data.text = e, emits('autoSave')}" 
+                                        @focus="() => { activeEditorIndex = index; sendMessageToParent('activeChildBlock', bKeys[1]) }"
+                                        @blur="() => { activeEditorIndex = null }"
+                                        @update:modelValue="(e) => { data.text = e, emits('autoSave')}"
                                         class="mb-6" 
                                         :uploadImageRoute="{
                                             name: webpageData.images_upload_route.name,
@@ -133,5 +140,12 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 :deep(.p-carousel-indicator-list) {
     display: none;
+}
+
+.is-editing :deep(.p-carousel-content),
+.is-editing :deep(.p-carousel-content-container),
+.is-editing :deep(.p-carousel-viewport) {
+    overflow-x: clip;
+    overflow-y: visible;
 }
 </style>

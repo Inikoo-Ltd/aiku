@@ -85,7 +85,6 @@ class EditRetinaPallet extends RetinaAction
     {
         return ShowRetinaPallet::make()->getBreadcrumbs(
             pallet: $pallet,
-            routeName: preg_replace('/edit$/', 'show', $routeName),
             suffix: '('.__('Editing').')'
         );
     }

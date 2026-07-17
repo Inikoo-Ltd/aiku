@@ -46,10 +46,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_slug
  * @property mixed $shop_name
  * @property mixed $shop_slug
+ * @property mixed $shop_id
+ * @property mixed $webpage_slug
+ * @property mixed $webpage_website_slug
  * @property mixed $number_deliveries_success
  * @property mixed $number_try_send_success
  * @property mixed $number_delivered_open_success
  * @property mixed $unsubscribed
+ * @property mixed $source_id
+ * @property mixed $source_alt_id
+ * @property mixed $source_alt2_id
  */
 class NewsletterMailshotsResource extends JsonResource
 {
@@ -80,8 +86,10 @@ class NewsletterMailshotsResource extends JsonResource
             'organisation_slug'         => $this->organisation_slug,
             'shop_name'                 => $this->shop_name,
             'shop_slug'                 => $this->shop_slug,
-
-
+            'shop_id'                   => $this->shop_id,
+            'webpage_slug'              => $this->webpage_slug,
+            'webpage_website_slug'      => $this->webpage_website_slug,
+            'has_source_reference'      => filled($mailshot->source_id) || filled($mailshot->source_alt_id) || filled($mailshot->source_alt2_id),
         ];
     }
 }

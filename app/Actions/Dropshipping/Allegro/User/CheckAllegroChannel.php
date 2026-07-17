@@ -12,7 +12,6 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
@@ -29,16 +28,6 @@ class CheckAllegroChannel
 
         if (!$customerSalesChannel) {
             return;
-        }
-
-        $isExpired = $allegroUser->access_token_expire_in && now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($allegroUser->access_token_expire_in));
-
-        if ($isExpired && $allegroUser->refresh_token) {
-            try {
-                $allegroUser->refreshAndPersistTokens();
-            } catch (\Exception $e) {
-                Sentry::captureException($e);
-            }
         }
 
         try {

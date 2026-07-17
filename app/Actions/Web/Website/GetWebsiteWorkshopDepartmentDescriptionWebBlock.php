@@ -31,7 +31,13 @@ class GetWebsiteWorkshopDepartmentDescriptionWebBlock
 
         return [
             'web_block_types'   => WebBlockTypesResource::collection($webBlockTypes),
-            'department'        => WorkshopDepartmentsResource::collection($website->shop->getDepartmentsRelation()->where('state', ProductCategoryStateEnum::ACTIVE)->get()),
+            'department'        => WorkshopDepartmentsResource::collection(
+                $website
+                ->shop
+                ->getDepartmentsRelation()
+                ->where('state', ProductCategoryStateEnum::ACTIVE)
+                ->get()
+            ),
          /*    'layout'            => collect($website->unpublishedDepartmentDescriptionSnapshot['layout'] ?? [])->map(fn ($item) => [
                                         'code'  => $item['code'] ?? null,
                                         ...$item['data'] ?? []

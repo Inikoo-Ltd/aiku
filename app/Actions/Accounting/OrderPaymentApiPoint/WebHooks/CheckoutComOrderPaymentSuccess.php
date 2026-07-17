@@ -20,12 +20,15 @@ use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
+use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccountShop;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class CheckoutComOrderPaymentSuccess extends IrisAction
 {
@@ -58,8 +61,45 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
             $modelData['cko-payment-id']
         );
 
+        $status = Arr::get($checkoutComPayment, 'status');
 
-        return $this->processSuccessfulPayment($orderPaymentApiPoint, $paymentAccountShop, $checkoutComPayment);
+        $paymentApiPointId = Arr::get($checkoutComPayment, 'metadata.api_point_id');
+        if (!Arr::get($checkoutComPayment, 'error') && $paymentApiPointId != $orderPaymentApiPoint->id) {
+            return [
+                'status'   => 'failure',
+                'success'  => false,
+                'reason'   => __('The payment does not belong to this order.'),
+                'order'    => $orderPaymentApiPoint->order,
+                'order_id' => $orderPaymentApiPoint->order->id,
+            ];
+        }
+
+        if (in_array($status, self::CHECKOUT_COM_FAILURE_STATUSES)) {
+            CheckoutComOrderPaymentFailure::make()->processFailure($orderPaymentApiPoint, $checkoutComPayment);
+
+            return [
+                'status'   => 'failure',
+                'success'  => false,
+                'reason'   => $this->getFailureMessage($status),
+                'order'    => $orderPaymentApiPoint->order,
+                'order_id' => $orderPaymentApiPoint->order->id,
+            ];
+        }
+
+        if (in_array($status, self::CHECKOUT_COM_CAPTURED_STATUSES)) {
+            return $this->processSuccessfulPayment($orderPaymentApiPoint, $paymentAccountShop, $checkoutComPayment);
+        }
+
+        /** Anything else (API error, Pending, Authorized-before-capture, unknown) waits for the
+         * capture webhook: money must be captured before the order is marked as paid */
+        return [
+            'status'         => 'pending',
+            'success'        => false,
+            'reason'         => __('Your payment is still being confirmed. Your order will be submitted automatically once the payment is confirmed.'),
+            'order'          => $orderPaymentApiPoint->order,
+            'order_id'       => $orderPaymentApiPoint->order->id,
+            'cko_payment_id' => $modelData['cko-payment-id'],
+        ];
     }
 
     /**
@@ -83,6 +123,17 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
 
 
         $order = DB::transaction(function () use ($orderPaymentApiPoint, $paymentAccountShop, $paymentData) {
+            /** @var OrderPaymentApiPoint $orderPaymentApiPoint locked to stop the client callback, the redirect and the webhook processing the same payment twice */
+            $orderPaymentApiPoint = OrderPaymentApiPoint::lockForUpdate()->find($orderPaymentApiPoint->id);
+
+            $paymentAlreadyStored = Payment::where('payment_account_shop_id', $paymentAccountShop->id)
+                ->where('reference', $paymentData['reference'])
+                ->exists();
+
+            if ($paymentAlreadyStored) {
+                return $orderPaymentApiPoint->order;
+            }
+
             $payment = StorePayment::make()->action($orderPaymentApiPoint->order->customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             $order = $orderPaymentApiPoint->order;
@@ -110,7 +161,15 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
 
             $order->refresh();
 
-            return SubmitOrder::run($order);
+            if ($order->state == OrderStateEnum::CREATING) {
+                $order = SubmitOrder::run($order);
+            } elseif ($order->state == OrderStateEnum::CANCELLED) {
+                Sentry::captureMessage(
+                    'Captured checkout.com payment '.$payment->reference.' recorded on cancelled order '.$order->id.' — refund may be needed'
+                );
+            }
+
+            return $order;
         });
 
         return [

@@ -107,6 +107,23 @@ class EditGroupSettings extends GrpAction
 
                         ],
                     ],
+                     [
+                        'label'  => __('Page Builder'),
+                        'icon'   => 'fa-light fa-pager',
+                        'fields' => [
+                            "page_builder_client_id" => [
+                                "type"        => "input",
+                                "label"       => __("Beefree Client ID"),
+                                "value"       => Arr::get($group->settings, 'beefree.page_builder.client_id', ''),
+                            ],
+                            "page_builder_client_secret" => [
+                                "type"        => "input",
+                                "label"       => __("Beefree Client Secret"),
+                                "value"       => Arr::get($group->settings, 'beefree.page_builder.client_secret', ''),
+                            ],
+                        ],
+
+                    ],
                     [
                         'label'  => __('Email Builder'),
                         'icon'   => 'fa-light fa-satellite-dish',
@@ -163,6 +180,28 @@ class EditGroupSettings extends GrpAction
                                 'type'  => 'toggle',
                                 'label' => __('Print by Printnode'),
                                 'value' => Arr::get($group->settings, 'printnode.print_by_printnode', false),
+                            ],
+                        ]
+                    ],
+                    [
+                        'label'  => __('Jira'),
+                        'icon'   => 'fa-brands fa-jira',
+                        'fields' => [
+                            "jira_base_url" => [
+                                "type"        => "input",
+                                "label"       => __("Jira Base URL"),
+                                "placeholder" => "https://your-domain.atlassian.net",
+                                "value"       => Arr::get($group->settings, 'jira.base_url', ''),
+                            ],
+                            "jira_email" => [
+                                "type"        => "input",
+                                "label"       => __("Jira Email"),
+                                "value"       => Arr::get($group->settings, 'jira.email', ''),
+                            ],
+                            "jira_api_token" => [
+                                "type"        => "purePassword",
+                                "label"       => __("Jira API Token"),
+                                "value"       => Arr::get($group->settings, 'jira.api_token', ''),
                             ],
                         ]
                     ],

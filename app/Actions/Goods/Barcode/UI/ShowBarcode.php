@@ -87,11 +87,11 @@ class ShowBarcode extends GrpAction
 
             BarcodeTabsEnum::SHOWCASE->value => $this->tab == BarcodeTabsEnum::SHOWCASE->value ?
                 fn () => $this->jsonResponse($barcode) :
-                Inertia::lazy(fn () => $this->jsonResponse($barcode)),
+                Inertia::optional(fn () => $this->jsonResponse($barcode)),
 
             BarcodeTabsEnum::HISTORY->value => $this->tab == BarcodeTabsEnum::HISTORY->value ?
                 fn () => HistoryResource::collection(IndexHistory::run($barcode))
-                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($barcode))),
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($barcode))),
         ])
         ->table(IndexHistory::make()->tableStructure(prefix: BarcodeTabsEnum::HISTORY->value));
     }

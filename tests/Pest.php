@@ -50,6 +50,7 @@ use Illuminate\Foundation\Testing\TestCase;
 uses(TestCase::class)->in('Feature');
 uses(TestCase::class)->in('Unit');
 uses(TestCase::class)->group('integration')->in('Integration');
+uses(TestCase::class)->group('browser')->in('Browser');
 
 function loadDB(): void
 {
@@ -61,6 +62,13 @@ function loadDB(): void
     if (env('TEST_TOKEN')) {
         $databaseName .= '_'.env('TEST_TOKEN');
         $numberParallelRestoreJobs = 2;
+
+        // The app boots and reads DB_DATABASE for its 'aiku'/'aiku_no_sticky'
+        // connections after this runs, so the env var (not just the dump target)
+        // must point at the token-suffixed database for TEST_TOKEN isolation to work.
+        putenv("DB_DATABASE={$databaseName}");
+        $_ENV['DB_DATABASE']    = $databaseName;
+        $_SERVER['DB_DATABASE'] = $databaseName;
     }
 
     shell_exec(

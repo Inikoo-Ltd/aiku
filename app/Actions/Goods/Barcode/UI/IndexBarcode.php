@@ -18,6 +18,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\Barcode;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
+use Closure;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -75,7 +76,7 @@ class IndexBarcode extends GrpAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group $parent, string $prefix)
+    public function tableStructure(Group $parent, string $prefix): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
@@ -106,8 +107,8 @@ class IndexBarcode extends GrpAction
             $table
                 ->column(key: 'status', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'number', label: __('Barcode Number'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'note', label: __('Note'), className: 'w-2/5', canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true)
+                ->column(key: 'note', label: __('Note'), canBeHidden: false, sortable: true, searchable: true, className: 'w-2/5')
                 ->column(key: 'trade_units', label: __('Trade Units'), canBeHidden: false);
         };
     }
@@ -136,25 +137,25 @@ class IndexBarcode extends GrpAction
             ),
             'title'                        => $title,
             'pageHead'                     => [
-                'title'         => $title,
-                'color'         => '#075192',
-                'iconRight'     => [
+                'title'     => $title,
+                'color'     => '#075192',
+                'iconRight' => [
                     'icon'  => ['fal', 'fa-barcode'],
                     'title' => $title,
                 ],
-                'actions'       => [
+                'actions'   => [
 
                 ]
             ],
-            'tabs'        => [
+            'tabs'                         => [
                 'current'    => $this->tab,
                 'navigation' => BarcodesTabsEnum::navigation(),
             ],
             BarcodesTabsEnum::INDEX->value => $this->tab == BarcodesTabsEnum::INDEX->value
-                    ? fn () => $this->jsonResponse($this->handle(group(), BarcodesTabsEnum::INDEX->value))
-                    : Inertia::lazy(fn () => $this->jsonResponse($this->handle(group(), BarcodesTabsEnum::INDEX->value))),
+                ? fn () => $this->jsonResponse($this->handle(group(), BarcodesTabsEnum::INDEX->value))
+                : Inertia::optional(fn () => $this->jsonResponse($this->handle(group(), BarcodesTabsEnum::INDEX->value))),
         ])
-        ->table($this->tableStructure($this->parent, prefix: BarcodesTabsEnum::INDEX->value));
+            ->table($this->tableStructure($this->parent, prefix: BarcodesTabsEnum::INDEX->value));
     }
 
     protected function getElementGroups(Group $parent): array
@@ -166,7 +167,7 @@ class IndexBarcode extends GrpAction
                     BarcodeStatusEnum::labels(),
                     BarcodeStatusEnum::count($parent)
                 ),
-                'engine' => function ($query, $elements) {
+                'engine'   => function ($query, $elements) {
                     $query->whereIn('status', $elements);
                 }
 

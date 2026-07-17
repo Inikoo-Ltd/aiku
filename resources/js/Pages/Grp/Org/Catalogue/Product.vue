@@ -39,6 +39,7 @@ import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategory
 import { trans } from "laravel-vue-i18n"
 import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import Action from '@/Components/Forms/Fields/Action.vue'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import { faShapes, faStar } from '@fas'
 import { faHatCowboy } from "@far"
@@ -50,6 +51,7 @@ import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
+import ModalCreateStepDiscountProduct from '@/Components/Offers/ModalCreateStepDiscountProduct.vue'
 
 library.add(
     faFolder,
@@ -93,8 +95,8 @@ const props = defineProps<{
     content?: {}
     offers?: {}
     reviews?: {}
-    service: {}
-    rental: {}
+    service?: {}
+    rental?: {}
     trade_units?: {}
     history?: {}
     stocks?: {}
@@ -136,6 +138,7 @@ const props = defineProps<{
     product_id: number
 }>()
 
+const layout = inject('layout')
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const isOpenDialog = ref(false)
@@ -283,8 +286,33 @@ const saveProductReview = async () => {
 
         </template>
 
-        <template #button-reindex>
-            <div class="w-fit">
+        <template #button-create-review="{ action }">
+            <div v-if="currentTab != 'reviews'"></div>
+            <div v-else>
+                <Button :style="action.style" :label="action.label" @click="openDialog" />
+            </div>
+        </template>        
+        <template #other>
+        </template>
+        <template #otherBefore>
+            <Action
+                v-if="currentTab === 'images'"
+                :action="{
+                    key: 'repair-images',
+                    type: 'button',
+                    style: 'edit',
+                    icon: 'fal fa-tools',
+                    label: trans('Repair Images'),
+                    tooltip: trans('Sync Product Images from Trade Units'),
+                    route: {
+                        name: 'grp.models.product.repair_product_images',
+                        method: 'patch',
+                        parameters: { product: product_id },
+                    },
+                }"
+            />
+
+            <div class="w-fit" v-if="currentTab === 'showcase'">
                 <ButtonReindexWebpage
                     :webpage="{
                         id: luigi_data.webpage_id,
@@ -313,17 +341,6 @@ const saveProductReview = async () => {
                     </template>
                 </ButtonReindexWebpage>
             </div>
-        </template>
-
-         <template #button-create-review="{ action }">
-            <div v-if="currentTab != 'reviews'"></div>
-            <div v-else>
-                <Button :style="action.style" :label="action.label" @click="openDialog" />
-            </div>
-            </template>
-        <template #other>
-        </template>
-        <template #otherBefore>
 
             <ModalCreateGiftOffers
                 v-if="currentTab === 'offers'"
@@ -331,6 +348,20 @@ const saveProductReview = async () => {
                 :shop_data="props.shop_data"
                 :product_id="props.product_id"
                  />
+
+            <div
+                v-if="currentTab === 'offers' && layout?.app?.environment == 'local'"
+                class="relative inline-flex"
+            >
+                <ModalCreateStepDiscountProduct
+                    v-tooltip="'Create New Offer'"
+                    :shop_data="props.shop_data"
+                    :product_id="props.product_id"
+                />
+                <span class="pointer-events-none absolute -top-2 -right-1.5 z-10 rounded bg-red-500 px-1 py-px text-[10px] font-bold leading-none text-white shadow">
+                    {{ trans('Local') }}
+                </span>
+            </div>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />

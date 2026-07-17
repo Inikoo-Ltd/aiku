@@ -37,7 +37,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
 
         $oldPackedQuantity  = (int) ($deliveryNoteItem->getOriginal('quantity_packed') ?? 0);
 
-        StorePacking::make()->action($deliveryNoteItem, $this->user, []);
+        StorePacking::make()->action($deliveryNoteItem, $user, []);
         $deliveryNoteItem->refresh();
 
         $newPackedQuantity = (int) $deliveryNoteItem->quantity_packed;

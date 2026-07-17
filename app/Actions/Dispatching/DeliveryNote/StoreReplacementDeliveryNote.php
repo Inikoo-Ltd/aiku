@@ -148,6 +148,7 @@ class StoreReplacementDeliveryNote extends OrgAction
      */
     public function action(Order $order, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): DeliveryNote
     {
+        $this->order = $order;
         if (!$audit) {
             DeliveryNote::disableAuditing();
         }

@@ -76,23 +76,23 @@ class ShowRetinaStoredItem extends RetinaAction
 
                 StoredItemTabsEnum::SHOWCASE->value => $this->tab == StoredItemTabsEnum::SHOWCASE->value ?
                     fn () => GetStoredItemShowcase::run($storedItem)
-                    : Inertia::lazy(fn () => GetStoredItemShowcase::run($storedItem)),
+                    : Inertia::optional(fn () => GetStoredItemShowcase::run($storedItem)),
 
                 StoredItemTabsEnum::PALLETS->value => $this->tab == StoredItemTabsEnum::PALLETS->value ?
                     fn () => PalletsInStoredItemResource::collection(IndexStoredItemPallets::run($storedItem, StoredItemTabsEnum::PALLETS->value))
-                    : Inertia::lazy(fn () => PalletsInStoredItemResource::collection(IndexStoredItemPallets::run($storedItem, StoredItemTabsEnum::PALLETS->value))),
+                    : Inertia::optional(fn () => PalletsInStoredItemResource::collection(IndexStoredItemPallets::run($storedItem, StoredItemTabsEnum::PALLETS->value))),
 
                 StoredItemTabsEnum::AUDITS->value => $this->tab == StoredItemTabsEnum::AUDITS->value ?
                 fn () => StoredItemAuditDeltasResource::collection(IndexStoredItemAuditDeltas::run($storedItem, prefix: StoredItemTabsEnum::AUDITS->value))
-                : Inertia::lazy(fn () => StoredItemAuditDeltasResource::collection(IndexStoredItemAuditDeltas::run($storedItem, prefix: StoredItemTabsEnum::AUDITS->value))),
+                : Inertia::optional(fn () => StoredItemAuditDeltasResource::collection(IndexStoredItemAuditDeltas::run($storedItem, prefix: StoredItemTabsEnum::AUDITS->value))),
 
                 StoredItemTabsEnum::MOVEMENTS->value => $this->tab == StoredItemTabsEnum::MOVEMENTS->value ?
                     fn () =>  StoredItemMovementsResource::collection(IndexStoredItemMovements::run($storedItem, StoredItemTabsEnum::MOVEMENTS->value))
-                    : Inertia::lazy(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($storedItem, StoredItemTabsEnum::MOVEMENTS->value))),
+                    : Inertia::optional(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($storedItem, StoredItemTabsEnum::MOVEMENTS->value))),
 
                 StoredItemTabsEnum::HISTORY->value => $this->tab == StoredItemTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($storedItem, StoredItemTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($storedItem, StoredItemTabsEnum::HISTORY->value))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($storedItem, StoredItemTabsEnum::HISTORY->value))),
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: StoredItemTabsEnum::HISTORY->value))

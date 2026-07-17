@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, ref, provide, inject, onMounted, onUnmounted } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -50,20 +50,20 @@ const props = defineProps<{
   currency: Record<string, any>
   category?: Record<string, any>
   product?: Record<string, any>
-  website_layout: Record<string, any>
+  website_layout?: Record<string, any>
   families?: Record<string, any>
   families_overview?: Record<string, any>
   products?: Record<string, any>
   settings: Record<string, any>
   department: Record<string, any>
-  department_description: Record<string, any>
-  sub_department: Record<string, any>
-  families_description: Record<string, any>
+  department_description?: Record<string, any>
+  sub_department?: Record<string, any>
+  families_description?: Record<string, any>
   collection: Record<string, any>
   publishRoute: Record<string, routeType>
   website_slug: string
   layout_theme: Array<any>
-  history: {}
+  history?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -155,6 +155,7 @@ onUnmounted(() => stopSocketListener())
 </script>
 
 <template>
+  <Head :title="title" />
   <PageHeading :data="pageHead" ignoreIsolate>
     <template #button-publish="{ action }">
       <Button v-if="currentTab !== 'history'" v-bind="action" @click="onPublish">

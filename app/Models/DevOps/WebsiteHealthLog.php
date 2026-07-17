@@ -16,9 +16,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $is_up
  * @property int|null $status_code
  * @property string|null $error_message
+ * @property string|null $last_deployment_date
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $last_deployment_date
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteHealthLog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteHealthLog newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteHealthLog query()

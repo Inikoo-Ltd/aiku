@@ -27,8 +27,6 @@ use App\Models\Traits\HasRoles;
 use App\Models\Traits\HasSearch;
 use App\Models\Traits\IsUserable;
 use App\Models\Traits\WithPushNotifications;
-use App\Models\UserFailedLogIn;
-use App\Models\UserLogin;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -82,6 +80,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $google2fa_secret
  * @property bool $is_two_factor_required
  * @property array<array-key, mixed> $bookmarks
+ * @property int|null $employed_in_organisation_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedDigitalAgencyOrganisations
@@ -93,6 +92,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Warehouse> $authorisedWarehouses
  * @property-read ChatAgent|null $chatAgent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DispatchedEmail> $dispatchedEmails
+ * @property-read \App\Models\SysAdmin\Organisation|null $employedInOrganisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Employee> $employees
  * @property-read \App\Models\Notifications\FcmToken|null $fcmToken
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Notifications\FcmToken> $fcmTokens
@@ -114,8 +114,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserTimeSeries> $timeSeries
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserHasAuthorisedModels> $userAuthorisedModels
- * @property-read \Illuminate\Database\Eloquent\Collection<int, UserFailedLogIn> $userFailedLogins
- * @property-read \Illuminate\Database\Eloquent\Collection<int, UserLogin> $userLogins
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserFailedLogIn> $userFailedLogins
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserLogin> $userLogins
  * @property-read \Illuminate\Database\Eloquent\Collection<int, UserRequest> $userRequests
  * @method static \Database\Factories\SysAdmin\UserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
@@ -149,13 +149,14 @@ class User extends Authenticatable implements HasMedia, Auditable
     ];
 
     protected $casts = [
-        'data'      => 'array',
-        'settings'  => 'array',
-        'sources'   => 'array',
-        'bookmarks' => 'array',
-        'status'    => 'boolean',
-        'auth_type' => UserAuthTypeEnum::class,
-        'password'  => 'hashed',
+        'data'                        => 'array',
+        'settings'                    => 'array',
+        'sources'                     => 'array',
+        'bookmarks'                   => 'array',
+        'status'                      => 'boolean',
+        'auth_type'                   => UserAuthTypeEnum::class,
+        'password'                    => 'hashed',
+        'employed_in_organisation_id' => 'integer',
     ];
 
 
@@ -174,19 +175,21 @@ class User extends Authenticatable implements HasMedia, Auditable
                 'email',
                 'contact_name',
                 'status',
-                'created_at'
+                'created_at',
+                'employed_in_organisation_id'
             ]);
     }
 
     public function toSearchableArray(): array
     {
         return [
-            'id'           => (string)$this->id,
-            'username'     => $this->username,
-            'email'        => (string)$this->email,
-            'contact_name' => (string)$this->contact_name,
-            'status'       => $this->status,
-            'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'id'                          => (string)$this->id,
+            'username'                    => $this->username,
+            'email'                       => (string)$this->email,
+            'contact_name'                => (string)$this->contact_name,
+            'status'                      => $this->status,
+            'employed_in_organisation_id' => $this->employed_in_organisation_id,
+            'created_at'                  => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
 
@@ -243,6 +246,11 @@ class User extends Authenticatable implements HasMedia, Auditable
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
+    }
+
+    public function employedInOrganisation(): BelongsTo
+    {
+        return $this->belongsTo(Organisation::class, 'employed_in_organisation_id');
     }
 
 

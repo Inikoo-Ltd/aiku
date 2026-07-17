@@ -7,9 +7,12 @@
 <script setup lang="ts">
 import { capitalize } from "@/Composables/capitalize"
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     data: string[]
-}>()
+    use_flag?: boolean
+}>(), {
+    use_flag: true
+})
 
 const countryCode = props.data?.[0]
 const countryName = props.data?.[1]
@@ -23,7 +26,16 @@ if (countryCode) {
 </script>
 
 <template>
-    <img v-if="flag" class="inline pr-1 pl-1 h-[1em]" :src='flag' :alt="countryCode"   :title='capitalize(countryName)'  /> {{addressLocation}}
+    <span class="inline-flex items-center">
+        <img
+            v-if="flag && use_flag"
+            class="mr-1 h-[1em] w-auto shrink-0"
+            :src="flag"
+            :alt="countryCode"
+            :title="capitalize(countryName)"
+        />
+        <span>{{ addressLocation }}</span>
+    </span>
 </template>
 
 

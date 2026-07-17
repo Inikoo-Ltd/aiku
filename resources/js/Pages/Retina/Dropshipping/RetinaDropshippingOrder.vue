@@ -142,14 +142,17 @@ const props = defineProps<{
 
     address_management: AddressManagement
 
-    transactions: {}
+    transactions?: {}
     invoices?: {}
-    delivery_notes: {
+    delivery_notes?: {
         data: Array<any>
     }
-    reviews : any
+    reviews? : any
     attachments?: {}
     review_settings : any
+
+    is_forbidden_delivery?: boolean
+    is_forbidden_billing?: boolean
 
 }>()
 
@@ -293,9 +296,8 @@ const syncOrderCancellationShopify = async (order) => {
         <Timeline v-if="timelines" :options="timelines" :state="props.order?.data?.state" :slidesPerView="6"/>
     </div>
     
-
     <!-- Section: Alert if unpaid -->
-    <Message v-if="!(box_stats.products.payment.paid_amount >= box_stats.products.payment.total_amount) && !(order.data.state === 'cancelled' || order.data.state === 'creating')" severity="warn" class="mx-4 mt-4 ">
+    <Message v-if="!(box_stats.products.payment.paid_amount >= box_stats.products.payment.total_amount) && !(order.data.state === 'cancelled' || order.data.state === 'creating') && (!is_forbidden_delivery && !is_forbidden_billing)" severity="warn" class="mx-4 mt-4 ">
         <template #icon>
             <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true"/>
         </template>
@@ -320,6 +322,8 @@ const syncOrderCancellationShopify = async (order) => {
         :address_management
         :summary="box_stats"
         :order
+        :is_forbidden_delivery 
+        :is_forbidden_billing
     />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"

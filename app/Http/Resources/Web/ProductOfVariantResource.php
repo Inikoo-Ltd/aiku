@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Helpers\NaturalLanguage;
@@ -17,7 +18,6 @@ use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Helpers\ImageResource;
 use Illuminate\Support\Arr;
 
 /**
@@ -83,6 +83,7 @@ class ProductOfVariantResource extends JsonResource
             'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
+            'family_code'       => $product->family?->code,
             'name'              => $product->name,
             'description'       => $product->description,
             'description_title' => $product->description_title,
@@ -108,7 +109,7 @@ class ProductOfVariantResource extends JsonResource
             'web_images'        => $product->web_images,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
-            'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
+            'images'            => $product->bucket_images ? $this->getImagesData($product, false, 800) : $this->getResizedMediaImages($product, 800),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $product->is_on_demand,
@@ -125,5 +126,18 @@ class ProductOfVariantResource extends JsonResource
 
 
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getResizedMediaImages($product, int $maxWidth): array
+    {
+        return $product->images->map(fn ($media) => [
+            'id'        => $media->id,
+            'source'    => GetPictureSources::run($media->getImage()->resize($maxWidth, $maxWidth)),
+            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 48)),
+            'alt'       => $media->pivot?->caption,
+        ])->all();
     }
 }

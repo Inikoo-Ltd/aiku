@@ -24,7 +24,6 @@ class CheckIfCountryRegionsIsBlocked
         $isBlocked = false;
         if ($request->input('has_blocked_country_regions')) {
             $countryFromCloudFlare = $request->header('CF-IPCountry');
-
             if ($countryFromCloudFlare && in_array($countryFromCloudFlare, $request->input('blocked_countries'))) {
                 $ip  = $request->ip();
                 $key = "website-geo-blocked-ips:{$request->input('website')?->id}:$countryFromCloudFlare:$ip";

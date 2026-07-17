@@ -162,6 +162,10 @@ Route::middleware(
         ->name("websites.")
         ->group(__DIR__."/websites.php");
 
+    Route::prefix("majordomo")
+        ->name("majordomo.")
+        ->group(__DIR__."/majordomo.php");
+
     Route::prefix("helpers")
         ->name("helpers.")
         ->group(__DIR__."/helpers.php");

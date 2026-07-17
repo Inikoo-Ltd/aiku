@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 30 Jun 2026 21:08:17 Malaysia Time, Kuala Lumpur, Malaysia
@@ -10,6 +11,7 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\OrgAction;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -24,7 +26,7 @@ class IndexChatConversations extends OrgAction
 {
     use AsAction;
 
-    public function handle(Organisation $organisation, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|Shop $parent, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -42,9 +44,13 @@ class IndexChatConversations extends OrgAction
         }
 
         return QueryBuilder::for(ChatSession::class)
-            ->whereHas('shop', function ($q) use ($organisation) {
-                $q->where('organisation_id', $organisation->id);
-            })
+            ->when(
+                $parent instanceof Shop,
+                fn ($query) => $query->where('chat_sessions.shop_id', $parent->id),
+                fn ($query) => $query->whereHas('shop', function ($q) use ($parent) {
+                    $q->where('organisation_id', $parent->id);
+                })
+            )
             ->whereHas('messages')
             ->leftJoin('web_users', 'chat_sessions.web_user_id', '=', 'web_users.id')
             ->leftJoin('shops', 'chat_sessions.shop_id', '=', 'shops.id')
@@ -80,9 +86,9 @@ class IndexChatConversations extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function tableStructure(?string $prefix = null, bool $withShopColumn = true): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $withShopColumn) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix . 'Page');
             }
@@ -98,8 +104,13 @@ class IndexChatConversations extends OrgAction
             $table
                 ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true)
                 ->column(key: 'ulid', label: __('Session ID'), canBeHidden: false, sortable: true)
-                ->column(key: 'contact', label: __('Contact'), canBeHidden: false)
-                ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false)
+                ->column(key: 'contact', label: __('Contact'), canBeHidden: false);
+
+            if ($withShopColumn) {
+                $table->column(key: 'shop_name', label: __('Shop'), canBeHidden: false);
+            }
+
+            $table
                 ->column(key: 'assigned_agent', label: __('Agent'), canBeHidden: true)
                 ->column(key: 'ai_summary', label: __('Summary'), canBeHidden: true)
                 ->column(key: 'created_at', label: __('Started'), canBeHidden: false, sortable: true)

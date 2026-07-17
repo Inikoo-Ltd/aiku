@@ -52,7 +52,7 @@ class StoreDiscountShipping extends OrgAction
         data_set(
             $modelData,
             'name',
-            Translate::run('Category Discount', $english, $shop->language).' '.$shop->code,
+            Translate::run('Category Discount', $english, $shop->language, 'gpt-5-nano').' '.$shop->code,
             false
         );
 

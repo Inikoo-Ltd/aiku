@@ -12,10 +12,10 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
-use App\Models\Bundle;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
+use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
@@ -31,6 +31,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearch;
 use App\Models\Web\ModelHasContent;
 use App\Models\Web\Webpage;
 use App\Models\Web\WebpageHasProduct;
@@ -45,8 +46,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -337,6 +338,7 @@ class Product extends Model implements Auditable, HasMedia
             'state'             => $this->state->value,
             'is_for_sale'       => $this->is_for_sale,
             'is_on_demand'      => $this->is_on_demand,
+            'image'             => json_encode(Arr::get($this->web_images, 'main.gallery')),
             'created_at'        => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }

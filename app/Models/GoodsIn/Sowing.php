@@ -115,6 +115,6 @@ class Sowing extends Model
 
     public function return(): BelongsTo
     {
-        return $this->belongsTo(ReturnDeliveryNote::class, 'return_item_id');
+        return $this->belongsTo(ReturnDeliveryNote::class, 'return_id');
     }
 }

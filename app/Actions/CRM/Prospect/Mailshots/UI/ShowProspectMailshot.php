@@ -71,6 +71,8 @@ class ShowProspectMailshot extends OrgAction
             ? (GetProspectMailshotRecipientsQueryBuilder::make()->handle($mailshot)?->count('prospects.id') ?? 0)
             : 0;
 
+        $isRecipientsCapped = $estimatedRecipients > 1000;
+
         $canLoadTemplates = in_array($mailshot->state, [MailshotStateEnum::IN_PROCESS]);
 
         /* NOTE:
@@ -176,11 +178,11 @@ class ShowProspectMailshot extends OrgAction
 
                 MailshotTabsEnum::SHOWCASE->value => $this->tab == MailshotTabsEnum::SHOWCASE->value ?
                     fn () => GetMailshotShowcase::run($mailshot)
-                    : Inertia::lazy(fn () => GetMailshotShowcase::run($mailshot)),
+                    : Inertia::optional(fn () => GetMailshotShowcase::run($mailshot)),
 
                 MailshotTabsEnum::RECIPIENTS->value => $this->tab == MailshotTabsEnum::RECIPIENTS->value ?
                     fn () => ProspectMailshotRecipientsResource::collection(IndexProspectMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))
-                    : Inertia::lazy(fn () => ProspectMailshotRecipientsResource::collection(IndexProspectMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
+                    : Inertia::optional(fn () => ProspectMailshotRecipientsResource::collection(IndexProspectMailshotRecipients::run($mailshot, MailshotTabsEnum::RECIPIENTS->value))),
 
 
                 MailshotTabsEnum::DISPATCHED_EMAILS->value => $this->tab == MailshotTabsEnum::DISPATCHED_EMAILS->value
@@ -191,7 +193,7 @@ class ShowProspectMailshot extends OrgAction
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
                         )
                     )
-                    : Inertia::lazy(fn () => LocationResource::collection(
+                    : Inertia::optional(fn () => LocationResource::collection(
                         IndexDispatchedEmails::run(
                             parent: $mailshot,
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
@@ -259,6 +261,7 @@ class ShowProspectMailshot extends OrgAction
                 'status' => $mailshot->state->value,
                 'secondWaveStatus' => $mailshot->secondWave?->state?->value,
                 'estimatedRecipients' => $estimatedRecipients,
+                'isRecipientsCapped' => $isRecipientsCapped,
                 'mailshotType' => $mailshot->type->value,
                 'isSecondWaveActive' => $isSecondWaveActive,
                 'secondwaveSubject' => $mailshotSecondWave?->subject,

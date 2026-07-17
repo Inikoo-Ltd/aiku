@@ -54,6 +54,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric|null $cost_per_sku
  * @property int|null $user_id
  * @property string|null $note
+ * @property bool $is_migration_point
+ * @property string|null $migration_source_id
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
@@ -71,23 +73,28 @@ class OrgStockMovement extends Model
 
     protected $dateFormat = 'Y-m-d H:i:s.uP';
 
-    protected $casts = [
-        'data'       => 'array',
-        'type'       => OrgStockMovementTypeEnum::class,
-        'flow'       => OrgStockMovementFlowEnum::class,
-        'class'      => OrgStockMovementClassEnum::class,
-        'date'       => 'datetime',
-        'quantity'         => 'decimal:3',
-        'audited_quantity' => 'decimal:6',
-        'amount'           => 'decimal:3',
-        'grp_amount' => 'decimal:3',
-        'org_amount' => 'decimal:3',
-        'cost_per_sku' => 'decimal:6',
-        'fixed_internal_helper' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'data'                  => 'array',
+            'type'                  => OrgStockMovementTypeEnum::class,
+            'flow'                  => OrgStockMovementFlowEnum::class,
+            'class'                 => OrgStockMovementClassEnum::class,
+            'date'                  => 'datetime',
+            'quantity'              => 'decimal:3',
+            'audited_quantity'      => 'decimal:6',
+            'amount'                => 'decimal:3',
+            'grp_amount'            => 'decimal:3',
+            'org_amount'            => 'decimal:3',
+            'cost_per_sku'          => 'decimal:6',
+            'fixed_internal_helper' => 'boolean',
+            'is_migration_point'    => 'boolean',
+        ];
+    }
 
     protected $attributes = [
-        'data' => '{}',
+        'data'               => '{}',
+        'is_migration_point' => false,
     ];
 
     protected $guarded = [];

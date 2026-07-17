@@ -40,7 +40,8 @@ class CreatePoll extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'   => __('New poll'),
+                    'model' => __('Poll'),
+                    'title'   => __('Create'),
                     'icon'    => [
                         'title' => __('Polls'),
                         'icon'  => 'fal fa-cube'
@@ -84,11 +85,13 @@ class CreatePoll extends OrgAction
                                     ]
                                 ],
                                 'in_registration'          => [
+                                    'information'   => __('If active, the poll will be shown in the registration form of Retina app'),
                                     'type'  => 'toggle',
-                                    'label' => __('In Registration'),
+                                    'label' => __('Display in registration?'),
                                     'value' => false
                                 ],
                                 'in_registration_required' => [
+                                    'information'   => __('If active, will show the icon asterisk (*) and user need to fill the poll before being able to register'),
                                     'type'  => 'toggle',
                                     'label' => __('Registration Required'),
                                     'value' => false

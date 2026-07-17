@@ -33,7 +33,6 @@ defineProps<{
     <div class="col-span-3 border-r p-4 bg-gray-50">
         <p class="text-xs text-gray-400 mb-1">Query</p>
         <p class="font-semibold text-sm mb-4">{{ query }}</p>
-        <p class="text-xs text-gray-400 mb-2">Summary</p>
         <div v-if="isLoading" class="space-y-2">
             <Skeleton height="2.5rem" borderRadius="0.75rem" />
             <Skeleton height="2.5rem" borderRadius="0.75rem" />

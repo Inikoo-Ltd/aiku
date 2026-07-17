@@ -78,6 +78,7 @@ use App\Models\Inventory\PickedBay;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Procurement\OrgAgent;
@@ -147,7 +148,11 @@ use App\Models\HumanResources\WorkSchedule;
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property array<array-key, mixed> $opening_hours
  * @property int $late_grace_period_minutes
- * @property string $banned_country_regions
+ * @property array<array-key, mixed> $banned_country_regions
+ * @property bool $is_aiku_stock_control
+ * @property bool $is_aiku_stock_hr
+ * @property bool $is_aiku_stock_procurement
+ * @property bool $is_aiku_stock_production
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
@@ -161,6 +166,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Box> $boxes
  * @property-read \App\Models\SysAdmin\OrganisationCatalogueStats|null $catalogueStats
  * @property-read LaravelCollection<int, Charge> $charges
+ * @property-read LaravelCollection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read LaravelCollection<int, ClockingMachine> $clockingMachines
  * @property-read LaravelCollection<int, Collection> $collections
@@ -291,7 +297,11 @@ class Organisation extends Model implements HasMedia, Auditable
         'forbidden_dispatch_countries' => 'array',
         'banned_country_regions'       => 'array',
         'type'                         => OrganisationTypeEnum::class,
-        'opening_hours'                => 'array'
+        'opening_hours'                => 'array',
+        'is_aiku_stock_control'        => 'boolean',
+        'is_aiku_stock_hr'             => 'boolean',
+        'is_aiku_stock_procurement'    => 'boolean',
+        'is_aiku_stock_production'     => 'boolean',
     ];
 
     protected $attributes = [
@@ -301,7 +311,11 @@ class Organisation extends Model implements HasMedia, Auditable
         'location'                     => '{}',
         'forbidden_dispatch_countries' => '{}',
         'banned_country_regions'       => '{}',
-        'opening_hours'                => '{}'
+        'opening_hours'                => '{}',
+        'is_aiku_stock_control'        => false,
+        'is_aiku_stock_hr'             => false,
+        'is_aiku_stock_procurement'    => false,
+        'is_aiku_stock_production'     => false,
     ];
 
     protected $guarded = [];
@@ -336,6 +350,16 @@ class Organisation extends Model implements HasMedia, Auditable
         return [
             'sysadmin',
         ];
+    }
+
+    public function bannedBillingCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['billing']);
+    }
+
+    public function bannedDeliveryCountries(): array
+    {
+        return array_filter($this->banned_country_regions, fn ($item) => $item['delivery']);
     }
 
     public function employees(): HasMany
@@ -783,6 +807,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function purges(): HasMany
     {
         return $this->hasMany(Purge::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
     }
 
     public function serialReferences(): MorphMany

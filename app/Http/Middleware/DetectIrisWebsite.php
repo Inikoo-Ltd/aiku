@@ -41,7 +41,14 @@ class DetectIrisWebsite
         }
         $request->merge($websiteData);
 
-        return $next($request);
+        $response = $next($request);
+
+        $website = $request->input('website');
+        if ($website && !$response->headers->has('X-AIKU-WEBSITE')) {
+            $response->headers->set('X-AIKU-WEBSITE', (string) $website->id);
+        }
+
+        return $response;
     }
 
     public function getWebsiteData(string $domain): array

@@ -23,7 +23,7 @@ class RedoShopTimeSeries implements ShouldBeUnique
     }
 
     public string $jobQueue = 'long-low-priority';
-    public string $commandSignature = 'shops:redo_time_series {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
+    public string $commandSignature = 'shops:redo_time_series {--O|organisation= : Organisation slug} {--from= : Start date (Y-m-d)} {--to= : End date (Y-m-d)} {--a|async : Run asynchronously}';
 
     public function __construct()
     {

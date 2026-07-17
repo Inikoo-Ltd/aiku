@@ -71,6 +71,12 @@ task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
         run("cd {{release_path}} && {{bin/npm}} run build");
+        run(
+            'for dir in retina iris grp pupil aiku-public; do '
+            .'if [ -d {{previous_release}}/public/$dir/assets ]; then '
+            .'rsync -a --ignore-existing {{previous_release}}/public/$dir/assets/ {{release_path}}/public/$dir/assets/; '
+            .'fi; done'
+        );
     } else {
         // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
@@ -101,9 +107,6 @@ task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod'
 
 desc('Refresh vue after deployment');
 task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
-
-desc('Log deployment');
-task('artisan:log-app-deployment', artisan('deploy:record-deployment --commit={{release_revision}}'))->select('env=prod');
 
 
 desc('Refresh vue after deployment');
@@ -254,7 +257,52 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 
     if ($shouldRestartSSR) {
-        run("sudo supervisorctl restart inertia-ssr-production");
+        // ponytail: wrap in bash -c so the command does not start with "sudo" —
+        // Deployer's run() treats any failing sudo command as "needs password" and
+        // crashes on {{remote_user}}, masking a transient supervisorctl non-zero exit.
+        run("bash -c 'sudo /usr/bin/supervisorctl restart inertia-ssr-production || true'");
+
+        // ponytail: SSR is slow to stop on some hosts (STOPPING lingers after
+        // restart returns), so poll up to 60s instead of a single status check.
+        $status = run(
+            "bash -c 'for i in \$(seq 1 30); do "
+            ."s=\$(sudo /usr/bin/supervisorctl status inertia-ssr-production); "
+            ."case \$s in *RUNNING*) echo \"\$s\"; exit 0;; esac; "
+            ."sleep 2; done; echo \"\$s\"; exit 0'"
+        );
+        if (!str_contains($status, 'RUNNING')) {
+            run("bash -c 'sudo /usr/bin/supervisorctl start inertia-ssr-production || true'");
+            $status = run("bash -c 'sleep 3; sudo /usr/bin/supervisorctl status inertia-ssr-production || true'");
+        }
+
+        writeln($status);
+        if (!str_contains($status, 'RUNNING')) {
+            throw new \RuntimeException('SSR failed to restart: '.$status);
+        }
+    }
+
+    /*
+     * Always verify the SSR server answers, even when no restart was needed:
+     * supervisor can report RUNNING while the port is dead, and a daemon that
+     * died between deploys would otherwise stay dead through every
+     * no-frontend-change deploy (helio served CSR silently until 2026-07-13).
+     */
+    $health = run(
+        "bash -c 'for i in \$(seq 1 15); do "
+        ."curl -fsS -m 2 http://127.0.0.1:13714/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
+        ."sleep 2; done; echo DEAD; exit 0'"
+    );
+    if (!str_contains($health, 'OK')) {
+        run("bash -c 'sudo /usr/bin/supervisorctl restart inertia-ssr-production || true'");
+        $health = run(
+            "bash -c 'for i in \$(seq 1 15); do "
+            ."curl -fsS -m 2 http://127.0.0.1:13714/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
+            ."sleep 2; done; echo DEAD; exit 0'"
+        );
+    }
+    writeln('SSR health on '.currentHost()->getAlias().': '.$health);
+    if (!str_contains($health, 'OK')) {
+        throw new \RuntimeException('Inertia SSR server is not answering on 127.0.0.1:13714 on host '.currentHost()->getAlias());
     }
 })->select('env=prod');
 
@@ -298,6 +346,10 @@ task('deploy:view-cache', function () {
     artisan('view:cache', ['skipIfNoEnv', 'showOutput'])();
 });
 
+desc('Log deployment');
+task('artisan:log-app-deployment', artisan('deploy:record-deployment --commit={{release_revision}}'))->select('env=prod');
+
+
 desc('Log app deployment');
 task('deploy:log-app-deployment', function () {
     if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
@@ -305,9 +357,19 @@ task('deploy:log-app-deployment', function () {
 
         return;
     }
-
     invoke('artisan:log-app-deployment');
 });
+
+
+desc('Artisan Setup guess language');
+task('artisan:translations:setup-guess-language', artisan('translations:setup-guess-language'))->select('env=prod');
+
+
+desc('Setup guess language');
+task('deploy:translations:setup-guess-language', function () {
+    invoke('artisan:translations:setup-guess-language');
+});
+
 
 desc('Deploys your project');
 task('deploy', [
@@ -333,4 +395,5 @@ task('deploy', [
     'deploy:refresh-vue',
     'deploy:flush-varnish',
     'deploy:log-app-deployment',
+    'deploy:translations:setup-guess-language',
 ]);

@@ -6,6 +6,8 @@ import { trans } from 'laravel-vue-i18n'
 import { inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
 import { faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -91,7 +93,12 @@ const fetchRecommenders = async (nextPage = false) => {
           recommender_client_identifier: 'basket',
           size,
           user_id: layout.user?.customer_id?.toString(),
-          recommendation_context: {},
+          recommendation_context: {
+            availability: {
+              values: ["1"],
+              operator: "or"
+            }
+          },
         }
       ],
       { headers: { 'Content-Type': 'application/json;charset=utf-8' }, signal: undefined /* atau AbortController */ }

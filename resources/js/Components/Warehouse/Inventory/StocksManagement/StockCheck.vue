@@ -201,8 +201,8 @@ watch(
             </div>
         </div>
         <!-- Section: buttons -->
-         <div class="flex justify-end gap-2 pt-3">
-            <Button label="Close" type="cancel" @click="emits('close')" />
+         <div class="flex xjustify-end gap-2 pt-3">
+            <Button label="Close" type="tertiary" icon="far fa-arrow-left" @click="emits('close')" />
         </div>
     </div>
 </template>

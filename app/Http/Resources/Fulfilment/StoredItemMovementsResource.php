@@ -55,7 +55,7 @@ class StoredItemMovementsResource extends JsonResource
                 ];
             } else {
                 $route = [
-                    'name' => 'grp.helpers.redirect_stored_item_audit',
+                    'name' => 'grp.majordomo.redirect_stored_item_audit',
                     'parameters' => [
                         'storedItemAudit' => $this->stored_item_audit_id
                     ]
@@ -74,7 +74,7 @@ class StoredItemMovementsResource extends JsonResource
                 ];
             } else {
                 $route = [
-                    'name' => '	grp.helpers.redirect_pallet_delivery',
+                    'name' => '	grp.majordomo.redirect_pallet_delivery',
                     'parameters' => [
                         'palletDelivery' => $this->pallet_delivery_id
                     ]
@@ -102,7 +102,7 @@ class StoredItemMovementsResource extends JsonResource
                 }
             } else {
                 $route = [
-                    'name' => 'grp.helpers.redirect_pallet_return',
+                    'name' => 'grp.majordomo.redirect_pallet_return',
                     'parameters' => [
                         'palletReturn' => $this->pallet_returns_id
                     ]

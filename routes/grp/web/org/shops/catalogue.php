@@ -43,6 +43,7 @@ use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
 use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\Catalogue\Variant\EditVariant;
 use App\Actions\Catalogue\Variant\ShowVariant;
 use App\Actions\Discounts\Offer\UI\ShowOffer;
 use Illuminate\Support\Facades\Route;
@@ -241,6 +242,7 @@ Route::name("departments.")->prefix('departments')
                     Route::get('', ShowFamily::class)->name('show');
                     Route::prefix('variant')->as('variants.')->group(function () {
                         Route::get('/{variant}', [ShowVariant::class,'inDepartment'])->name('show');
+                        Route::get('/{variant}/edit', [EditVariant::class,'inDepartment'])->name('edit');
                     });
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {
@@ -281,6 +283,7 @@ Route::name("departments.")->prefix('departments')
                             Route::get('', [ShowFamily::class, 'inSubDepartment']);
                             Route::prefix('variant')->as('.variants.')->group(function () {
                                 Route::get('/{variant}', [ShowVariant::class,'inSubDepartment'])->name('show');
+                                Route::get('/{variant}/edit', [EditVariant::class,'inSubDepartment'])->name('edit');
                             });
                             Route::prefix('products')->name('.products.')->group(function () {
                                 Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInSubDepartmentInDepartment'])->name('index');
@@ -309,6 +312,7 @@ Route::name("families.")->prefix('families')
             Route::get('', [ShowFamily::class, 'inShop']);
             Route::prefix('variant')->as('.variants.')->group(function () {
                 Route::get('/{variant}', [ShowVariant::class,'inShop'])->name('show');
+                Route::get('/{variant}/edit', [EditVariant::class,'inShop'])->name('edit');
             });
             Route::prefix('offers')->as('.offers.')->group(function () {
                 Route::get('/{offer}', [ShowOffer::class,'inFamily'])->name('show');
@@ -371,6 +375,7 @@ Route::name("sub_departments.")->prefix('sub-departments')
                     Route::get('', [ShowFamily::class, 'inSubDepartmentInShop'])->name('show');
                     Route::prefix('variant')->as('variants.')->group(function () {
                         Route::get('/{variant}', [ShowVariant::class,'inSubDepartmentInShop'])->name('show');
+                        Route::get('/{variant}/edit', [EditVariant::class,'inSubDepartmentInShop'])->name('edit');
                     });
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {

@@ -22,8 +22,16 @@ type ScopeTab = {
 }
 
 const props = defineProps<{
-    navigation: ScopeTab[]
+    navigation?: ScopeTab[]
 }>()
+
+const defaultNavigation: ScopeTab[] = [
+    { key: 'department', label: 'Departments' },
+    { key: 'sub_department', label: 'Sub Departments' },
+    { key: 'family', label: 'Families' },
+    { key: 'product', label: 'Products' },
+    { key: 'collection', label: 'Collections' },
+]
 
 const iconMap: Record<string, any> = {
     department: faFolderTree,
@@ -41,15 +49,17 @@ const activeScope = computed<string>(() => {
     const scope = page.props.catalogue_scope as string | undefined
     return scope ?? 'department'
 })
+
+const navigation = computed<ScopeTab[]>(() => props.navigation ?? defaultNavigation)
 </script>
 
 <template>
     <div class="border-b border-gray-200">
         <nav class="-mb-px flex w-full gap-x-6 overflow-x-auto px-4" aria-label="Catalogue Tabs">
             <Link
-                v-for="tab in props.navigation"
+                v-for="tab in navigation"
                 :key="tab.key"
-                :href="route('iris.catalogue_iris', { scope: tab.key })"
+                :href="`/catalogue?scope=${tab.key}`"
                 :class="[tab.key === activeScope ? 'tabNavigationActive' : 'tabNavigation']"
                 class="group relative inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-1 py-2 text-left text-sm font-medium md:text-base"
                 @start="() => (isLoading = tab.key)"

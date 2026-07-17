@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -64,6 +65,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $label
  * @property string|null $voucher
  * @property int|null $customer_id exclusive customer offer
+ * @property string|null $allowance_type Used for performance, to avoid load offer_allowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
@@ -86,6 +88,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Offer extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use HasSlug;
     use HasFactory;
@@ -185,6 +188,20 @@ class Offer extends Model implements Auditable
     public function trigger(): MorphTo
     {
         return $this->morphTo();
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'shop_id'    => $this->shop_id,
+            'code'       => $this->code,
+            'name'       => (string)$this->name,
+            'state'      => $this->state->value,
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }

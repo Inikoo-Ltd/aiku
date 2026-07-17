@@ -11,6 +11,9 @@ import { FulfilmentCustomer } from "@/types/fulfilment-customer"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { RouteParams } from "@/types/route-params"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faStar } from "@fas"
+import { trans } from "laravel-vue-i18n"
 
 defineProps<{
     data: object,
@@ -29,10 +32,14 @@ function customerRoute(customer: FulfilmentCustomer) {
                 "grp.fulfilment.customers.show",
                 [customer.slug])
         case "grp.overview.crm.customers.index":
-            return null
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [customer.organisation_slug, customer.shop_slug, customer.slug])
         case "grp.org.overview.customers.index":
         case "grp.org.overview.crm.customers.index":
-            return null
+            return route(
+                "grp.org.shops.show.crm.customers.show",
+                [(route().params as RouteParams).organisation, customer.shop_slug, customer.slug])
         default:
             return route(
                 "grp.org.shops.show.crm.customers.show",
@@ -75,6 +82,13 @@ function tagColorClass(scope?: string) {
             <span v-else>
                 {{ customer["reference"] }}
             </span>
+            <FontAwesomeIcon
+                v-if="customer.is_vip"
+                :icon="faStar"
+                size="sm"
+                color="#FFC000"
+                v-tooltip="trans('VIP Customer')"
+            />
         </template>
         <template #cell(shop)="{ item: customer }" class="primaryLink">
             <Link :href="shopRoute(customer)">
@@ -105,6 +119,22 @@ function tagColorClass(scope?: string) {
             </div>
             <div v-else class="text-gray-400 text-xs italic">
                 No tags
+            </div>
+        </template>
+        <template #cell(upcoming_products)="{ item: customer }">
+            <div v-if="customer.upcoming_products && customer.upcoming_products.length" class="flex flex-wrap gap-1">
+                <span
+                    v-for="product in customer.upcoming_products"
+                    :key="product.code"
+                    v-tooltip="product.out_of_stock ? `${product.name} (${product.status_label})` : product.name"
+                    class="text-xs px-1.5 py-0.5 rounded"
+                    :class="product.out_of_stock ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'"
+                >
+                    {{ product.code }}
+                </span>
+            </div>
+            <div v-else class="text-gray-400 text-xs italic">
+                -
             </div>
         </template>
     </Table>

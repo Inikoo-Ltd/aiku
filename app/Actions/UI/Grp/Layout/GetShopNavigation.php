@@ -62,6 +62,16 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    [
+                        "label"   => __("Changelogs"),
+                        "tooltip" => __("Changelogs"),
+                        "icon"    => ["fal", "fa-history"],
+                        'root'    => 'grp.org.shops.show.dashboard.changelogs',
+                        "route"   => [
+                            "name"       => "grp.org.shops.show.dashboard.changelogs.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ]
                 ],
             ]
         ];
@@ -535,21 +545,51 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
-                        app()->environment('local') ?
-                            [
-                                "label"   => __("Chat"),
-                                "icon"    => ["fal", "fa-comment-alt"],
-                                "root"    => "grp.org.shops.show.crm.chat.",
-                                "route"   => [
-                                    "name"       => "grp.org.shops.show.crm.chat.dashboard",
-                                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                                ],
-                            ]
-                        : [],
                     ],
                 ],
             ];
         }
+
+        $navigation["chat"] = [
+            "root"  => "grp.org.shops.show.chat.",
+            "label" => __("Chat"),
+            "icon"  => ["fal", "comment-alt"],
+            "route" => [
+                "name"       => "grp.org.shops.show.chat.dashboard",
+                "parameters" => [$shop->organisation->slug, $shop->slug],
+            ],
+            "topMenu" => [
+                "subSections" => [
+                    [
+                        "label" => __("Dashboard"),
+                        "icon"  => ["fal", "comment-alt"],
+                        "root"  => "grp.org.shops.show.chat.dashboard",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.dashboard",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Agents"),
+                        "icon"  => ["fal", "fa-headset"],
+                        "root"  => "grp.org.shops.show.chat.agents.show",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.agents.show",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Conversations"),
+                        "icon"  => ["fal", "fa-comments"],
+                        "root"  => "grp.org.shops.show.chat.conversations.show",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.chat.conversations.show",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
 
         if ($user->hasAnyPermission(["orders.$shop->id.view", "accounting.$shop->organisation_id.view"])) {
             $navigation["ordering"] = [
@@ -619,6 +659,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.ordering.couriers.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.ordering.couriers.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Abandoned Checkouts"),
+                            "tooltip" => __("Abandoned Checkouts"),
+                            "icon"    => ["fal", "fa-shopping-cart"],
+                            'root'    => 'grp.org.shops.show.ordering.checkout_abandonments.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.checkout_abandonments.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

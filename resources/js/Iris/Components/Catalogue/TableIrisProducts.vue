@@ -54,7 +54,7 @@ console.log("products", props.data)
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image
-                    :src="item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    :src="item.image_thumbnail ?? item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
                     class="w-6 aspect-square rounded-full overflow-hidden shadow"
                 />
             </div>

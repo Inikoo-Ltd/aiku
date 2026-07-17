@@ -8,7 +8,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\Helpers\Language;
@@ -19,6 +21,32 @@ use Throwable;
 
 trait WithIrisInertia
 {
+    use WithIrisImageVariants;
+
+    public const int HEADER_LOGO_SIZE = 160;
+
+    /**
+     * Header logos are stored as unresized originals in published_layout;
+     * rebuild the source capped at HEADER_LOGO_SIZE (2x variant added by GetPictureSources).
+     */
+    protected function resizeHeaderLogo(array $header): array
+    {
+        $source = Arr::get($header, 'header.data.fieldValue.logo.image.source');
+        if (!is_array($source)) {
+            return $header;
+        }
+
+        $media = $this->findMediaFromImgProxyUrl(Arr::get($source, 'original'));
+        if ($media) {
+            data_set(
+                $header,
+                'header.data.fieldValue.logo.image.source',
+                GetPictureSources::run($media->getImage()->resize(self::HEADER_LOGO_SIZE, self::HEADER_LOGO_SIZE))
+            );
+        }
+
+        return $header;
+    }
     public function getIrisData(Website $website): array
     {
         $locale = app()->getLocale();
@@ -50,9 +78,9 @@ trait WithIrisInertia
             $currentLanguage = Language::where('code', $locale)->first();
 
             return [
-                'header'               => array_merge(
-                    $isHeaderActive == 'active' ? Arr::get($website->published_layout, 'header') : [],
-                ),
+                'header'               => $isHeaderActive == 'active'
+                    ? $this->resizeHeaderLogo(Arr::get($website->published_layout, 'header', []))
+                    : [],
                 'menu'                 => $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
                 'shop'                 => [
                     'type'                  => $shop->type->value,
@@ -62,7 +90,8 @@ trait WithIrisInertia
                     'number_brands'         => $shop->stats->number_brands,
                     'number_current_brands' => $shop->stats->number_current_brands,
                     'number_tags'           => $shop->stats->number_brands,
-                    'number_current_tags'   => $shop->stats->number_current_tags
+                    'number_current_tags'   => $shop->stats->number_current_tags,
+                    'location'              => is_string($shop->location) ? json_decode($shop->location, true) : $shop->location,
                 ],
                 "website"              => WebsiteIrisResource::make($website)->getArray(),
                 'theme'                => Arr::get($website->published_layout, 'theme'),

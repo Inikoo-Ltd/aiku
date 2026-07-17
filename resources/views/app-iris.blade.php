@@ -6,28 +6,72 @@
     <title inertia>{{ $browserTitle ?? config('app.name') }}</title>
 
 
-    <link rel="preload" as="style" href="https://fonts.bunny.net/css?family=fira-sans:200,400,500,700,900&display=swap"
-          onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="preload" as="style"
-          href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Inter&family=Laila&family=Lobster&family=Playfair&family=Port+Lligat+Slab&family=Quicksand&family=Yatra+One&family=Raleway:ital,wght@0,200;0,400;0,500;0,700;0,900;1,200;1,400;1,500;1,700;1,900&display=swap"
-          onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://media.aiku.io">
+@php
+    $irisPublishedLayout = request()->input('website')?->published_layout ?? [];
+    $irisSiteFontCss = Arr::get($irisPublishedLayout, 'theme.container.properties.text.fontFamily');
+    preg_match("/'([^']+)'/", (string) $irisSiteFontCss, $irisFontMatch);
+    $irisSiteFont = $irisFontMatch[1] ?? null;
+
+    /*
+     * Website furniture (topbar, announcements, header, menu) can set per-block fonts in
+     * inline styles independent of the theme font (awgifts.pl: theme unset, announcement
+     * uses Raleway); those render above the fold on every page so they are critical too.
+     */
+    preg_match_all(
+        "/(?:font-family:|fontFamily[\"']?\s*[:=])\s*\\\\?[\"']*\\\\?[\"']?([A-Za-z][A-Za-z ]+)/",
+        json_encode($irisPublishedLayout),
+        $irisFurnitureFontMatches
+    );
+    $irisFurnitureFonts = array_unique(array_map('trim', $irisFurnitureFontMatches[1] ?? []));
+    $irisFontPreloads = [
+        'Inter'     => [
+            'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiJ-Ck-8.woff2',
+            'https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZFhiJ-Ck-_seA.woff2',
+        ],
+        'Raleway'   => [
+            'https://fonts.gstatic.com/s/raleway/v37/1Ptug8zYS_SKggPNyC0IT4ttDfA.woff2',
+            'https://fonts.gstatic.com/s/raleway/v37/1Ptug8zYS_SKggPNyCMIT4ttDfCmxA.woff2',
+        ],
+        'Quicksand' => [
+            'https://fonts.gstatic.com/s/quicksand/v37/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o58a-wjw3UD0.woff2',
+            'https://fonts.gstatic.com/s/quicksand/v37/6xK-dSZaM9iE8KbpRA_LJ3z8mH9BOJvgkP8o58i-wjw3UD2uFw.woff2',
+        ],
+    ];
+    $irisCriticalFamilies = collect(['Inter', $irisSiteFont])->merge($irisFurnitureFonts)->filter()->unique();
+    $irisPreloadFontUrls = $irisCriticalFamilies->flatMap(fn ($f) => $irisFontPreloads[$f] ?? [])->unique()->all();
+
+    /*
+     * Only Inter + the website's own font may block rendering; the other editor-pickable
+     * families (decorative, used by some CMS text blocks) load after first paint so they
+     * never sit on the LCP critical request chain.
+     */
+    $irisCss2Specs = [
+        'Comfortaa'        => 'Comfortaa',
+        'Inter'            => 'Inter',
+        'Laila'            => 'Laila',
+        'Lobster'          => 'Lobster',
+        'Playfair'         => 'Playfair',
+        'Playfair Display' => 'Playfair',
+        'Port Lligat Slab' => 'Port+Lligat+Slab',
+        'Quicksand'        => 'Quicksand',
+        'Yatra One'        => 'Yatra+One',
+        'Raleway'          => 'Raleway:wght@200;400;500;700;900',
+    ];
+    $irisCriticalFontSpecs = $irisCriticalFamilies->map(fn ($f) => $irisCss2Specs[$f] ?? null)->filter()->unique()->values();
+    $irisDeferredFontSpecs = collect($irisCss2Specs)->values()->unique()->diff($irisCriticalFontSpecs)->values();
+    $irisCss2Url = fn ($specs) => 'https://fonts.googleapis.com/css2?family='.$specs->implode('&family=').'&display=swap';
+@endphp
+    @foreach($irisPreloadFontUrls as $irisFontUrl)
+        <link rel="preload" as="font" type="font/woff2" href="{{ $irisFontUrl }}" crossorigin>
+    @endforeach
+    <link rel="stylesheet" href="{{ $irisCss2Url($irisCriticalFontSpecs) }}">
+    <link rel="stylesheet" href="{{ $irisCss2Url($irisDeferredFontSpecs) }}" media="print" onload="this.media='all'">
     <noscript>
-        <link rel="stylesheet" href="https://fonts.bunny.net/css?family=fira-sans:200,400,500,700,900&display=swap">
-        <link
-            href="https://fonts.googleapis.com/css2?family=Comfortaa&family=Inter&family=Laila&family=Lobster&family=Playfair&family=Port+Lligat+Slab&family=Quicksand&family=Yatra+One&family=Raleway:ital,wght@0,200;0,400;0,500;0,700;0,900;1,200;1,400;1,500;1,700;1,900&display=swap"
-            rel="stylesheet">
+        <link rel="stylesheet" href="{{ $irisCss2Url($irisDeferredFontSpecs) }}">
     </noscript>
-{{--Note: this not work because of varnish X-Logged-Status is not longer set--}}
-{{--    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', ''))--}}
-{{--        @if(request()->header('X-Logged-Status') !== null || auth()->check())--}}
-{{--            @if(request()->header('X-Logged-Status') === 'In' || auth()->check())--}}
-{{--                <script async data-jsd-embedded--}}
-{{--                        data-key="{{Arr::get(request()->input('website')->settings, 'jira_help_desk_widget', '') }}"--}}
-{{--                        data-base-url="https://jsd-widget.atlassian.com"--}}
-{{--                        src="https://jsd-widget.atlassian.com/assets/embed.js"></script>--}}
-{{--            @endif--}}
-{{--        @endif--}}
-{{--    @endif--}}
 
 
     @if(request()->input('favicons'))
@@ -43,39 +87,51 @@
     @endif
 
     <!-- Scripts -->
-    @routes('iris')
     <!-- SSR: add Tailwind -->
     <link rel="stylesheet"
           href="{{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->asset('resources/css/app.css') }}">
-    <link rel="stylesheet"
-          href="{{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->asset('node_modules/@fortawesome/fontawesome-free/css/svg-with-js.min.css') }}">
 
     {{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->withEntryPoints(['resources/js/app-iris.js']) }}
     @inertiaHead
 
-    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
-        <!-- Google Tag Manager -->
-        <script>(function (w, d, s, l, i) {
-                w[l] = w[l] || [];
-                w[l].push({
-                    "gtm.start":
-                        new Date().getTime(), event: "gtm.js"
-                });
-                var f = d.getElementsByTagName(s)[0],
-                    j = d.createElement(s), dl = l != "dataLayer" ? "&l=" + l : "";
-                j.async = true;
-                j.src =
-                    "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
-                f.parentNode.insertBefore(j, f);
-            })(window, document, "script", "dataLayer", '{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');</script>
-        <!-- End Google Tag Manager -->
-    @endif
+    <!-- Third parties (GTM, Luigi search) deferred to first interaction or shortly after load -->
+    <script>
+        (function () {
+            var fired = false;
+            var events = ["pointerdown", "keydown", "touchstart", "scroll"];
+            var loadThirdParties = function () {
+                if (fired) return;
+                fired = true;
+                events.forEach(function (e) { window.removeEventListener(e, loadThirdParties, { passive: true }); });
 
-    <!-- Section: Luigi analytics -->
-    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', ''))
-        <script async
-                src="https://scripts.luigisbox.tech/{{ Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script>
-    @endif
+                @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
+                (function (w, d, s, l, i) {
+                    w[l] = w[l] || [];
+                    w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+                    var f = d.getElementsByTagName(s)[0],
+                        j = d.createElement(s), dl = l != "dataLayer" ? "&l=" + l : "";
+                    j.async = true;
+                    j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+                    f.parentNode.insertBefore(j, f);
+                })(window, document, "script", "gtmDataLayer", '{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');
+                @endif
+
+                @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', ''))
+                var lbx = document.createElement("script");
+                lbx.async = true;
+                lbx.src = "https://scripts.luigisbox.tech/{{ Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') }}.js";
+                document.head.appendChild(lbx);
+                @endif
+            };
+
+            events.forEach(function (e) { window.addEventListener(e, loadThirdParties, { once: true, passive: true }); });
+            if (document.readyState === "complete") {
+                setTimeout(loadThirdParties, 3500);
+            } else {
+                window.addEventListener("load", function () { setTimeout(loadThirdParties, 3500); }, { once: true });
+            }
+        })();
+    </script>
 
     <style>
         #jsd-widget {
@@ -318,6 +374,7 @@
         'isLoggedIn' => (bool) request()->user(),
         'shopType' => $shopType,
         'supportsBasket' => $supportsBasket,
+        'chatEnabled' => (bool) Arr::get(request()->input('website')?->settings ?? [], 'enable_chat', false),
         'oosNotificationActive' => $oosNotificationActive,
         'currencyCode' => Arr::get(request()->input('currency_data', []), 'code'),
         'basketTransactionDataUrl' => route('iris.json.basket.transaction_data'),

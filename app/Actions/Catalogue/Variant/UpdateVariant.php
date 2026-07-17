@@ -16,11 +16,13 @@ use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Http\Resources\Catalogue\VariantsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Variant;
 use App\Models\Masters\MasterVariant;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateVariant extends OrgAction
 {
@@ -39,61 +41,85 @@ class UpdateVariant extends OrgAction
             $variant->update($modelData);
             $variant->refresh();
 
-            $leader = $variant->leaderProduct;
-            $productsInVariant = $variant->fetchProductFromData();
-            $productIds = $productsInVariant->pluck('id');
+            if ($variant->status) {
+                $leader = $variant->leaderProduct;
+                $productsInVariant = $variant->fetchProductFromData();
+                $productIds = $productsInVariant->pluck('id');
 
-            $website = $variant->shop->website;
+                $website = $variant->shop->website;
 
-            // Detach other product not in variant
-            Product::where('variant_id', $variant->id)
-                ->whereNotIn('id', $productIds)
-                ->update([
-                    'is_main'           => true,
-                    'variant_id'        => null,
-                    'is_variant_leader' => false,
-                    'is_minion_variant' => false
-                ]);
-            // Attach minion
-            Product::whereIn('id', $productIds)
-                ->update([
-                    'is_for_sale'       => true,
-                    'is_main'           => false,
-                    'variant_id'        => $variant->id,
-                    'is_variant_leader' => false,
-                    'is_minion_variant' => true
-                ]);
-            // Attach leader
-            Product::where('id', $variant->leader_id)
-                ->update([
-                    'is_for_sale'       => true,
-                    'is_main'           => true,
-                    'is_variant_leader' => true,
-                    'is_minion_variant' => false
-                ]);
-
-            if (!$leader->webpage) {
-                $webpage = StoreProductWebpage::run($leader);
-                PublishWebpage::make()->action($webpage, [
-                    'comment' => 'first publish'
-                ]);
-                $leader->refresh();
-            }
-
-            foreach ($productsInVariant as $product) {
-                if ($product->webpage()->exists()) {
-                    UpdateWebpage::make()->action($product->webpage()->first(), [
-                         'state_data' => [
-                             'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
-                             'redirect_webpage_id'   => $variant->leaderProduct->webpage?->id
-                         ]
+                // Detach other product not in variant
+                Product::where('variant_id', $variant->id)
+                    ->whereNotIn('id', $productIds)
+                    ->update([
+                        'is_main'           => true,
+                        'variant_id'        => null,
+                        'is_variant_leader' => false,
+                        'is_minion_variant' => false
                     ]);
-                } else {
-                    StoreRedirectFromWebsite::make()->action($website, [
-                        'from_url'     => $product->slug,
-                        'to_url'       => $leader->webpage->id,
+                // Attach minion
+                Product::whereIn('id', $productIds)
+                    ->update([
+                        'is_for_sale'       => true,
+                        'is_main'           => false,
+                        'variant_id'        => $variant->id,
+                        'is_variant_leader' => false,
+                        'is_minion_variant' => true
                     ]);
+                // Attach leader
+                Product::where('id', $variant->leader_id)
+                    ->update([
+                        'is_for_sale'       => true,
+                        'is_main'           => true,
+                        'is_variant_leader' => true,
+                        'is_minion_variant' => false
+                    ]);
+
+                if (!$leader->webpage) {
+                    $webpage = StoreProductWebpage::run($leader);
+                    PublishWebpage::make()->action($webpage, [
+                        'comment' => 'first publish'
+                    ]);
+                    $leader->refresh();
                 }
+
+                foreach ($productsInVariant as $product) {
+                    if ($product->webpage()->exists()) {
+                        UpdateWebpage::make()->action($product->webpage()->first(), [
+                             'state_data' => [
+                                 'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
+                                 'redirect_webpage_id'   => $variant->leaderProduct->webpage?->id
+                             ]
+                        ]);
+                    } else {
+                        StoreRedirectFromWebsite::make()->action($website, [
+                            'from_url'     => $product->slug,
+                            'to_url'       => $leader->webpage->id,
+                        ]);
+                    }
+                }
+            } else {
+                $productsInVariant = $variant->allProduct();
+                $productIds = $productsInVariant->pluck('id');
+
+                Product::whereIn('id', $productIds)
+                    ->update([
+                        'is_main'           => true,
+                        'variant_id'        => null,
+                        'is_variant_leader' => false,
+                        'is_minion_variant' => false
+                    ]);
+
+                foreach ($productsInVariant as $product) {
+                    if ($product->webpage()->exists()) {
+                        UpdateWebpage::make()->action($product->webpage()->first(), [
+                             'state_data' => [
+                                 'state'                 => WebpageStateEnum::LIVE->value,
+                             ]
+                        ]);
+                    }
+                }
+
             }
 
             return $variant;
@@ -110,15 +136,16 @@ class UpdateVariant extends OrgAction
     public function rules(): array
     {
         return [
-            'leader_id'                     =>  ['required', 'exists:products,id'],
-            'number_minions'                =>  ['required', 'numeric'],
-            'number_dimensions'             =>  ['required', 'numeric'],
-            'number_used_slots'             =>  ['required', 'numeric'],
-            'number_used_slots_for_sale'    =>  ['required', 'numeric'],
-            'data'                          =>  ['required', 'array'],
-            'data.variants'                 =>  ['required', 'array'],
-            'data.groupBy'                  =>  ['required', 'string'],
-            'data.products'                 =>  ['required', 'array', 'min:1'],
+            'leader_id'                     =>  ['sometimes', 'exists:products,id'],
+            'number_minions'                =>  ['required_with:leader_id', 'numeric'],
+            'number_dimensions'             =>  ['required_with:leader_id', 'numeric'],
+            'number_used_slots'             =>  ['required_with:leader_id', 'numeric'],
+            'number_used_slots_for_sale'    =>  ['required_with:leader_id', 'numeric'],
+            'data'                          =>  ['required_with:leader_id', 'array'],
+            'data.variants'                 =>  ['required_with:leader_id', 'array'],
+            'data.groupBy'                  =>  ['required_with:leader_id', 'string'],
+            'data.products'                 =>  ['required_with:leader_id', 'array', 'min:1'],
+            'status'                        =>  ['sometimes', 'boolean']
         ];
     }
 
@@ -144,5 +171,20 @@ class UpdateVariant extends OrgAction
         $this->initialisationFromGroup($variant->group, $modelData);
 
         return $this->handle($variant, $this->validatedData);
+    }
+
+    public function asController(Variant $variant, ActionRequest $request): Variant
+    {
+        $this->parent = $variant->masterVariant;
+        $this->shop = $variant->shop;
+
+        $this->initialisationFromShop($variant->shop, $request);
+
+        return $this->handle($variant, $this->validatedData);
+    }
+
+    public function jsonResponse(Variant $variant): VariantsResource
+    {
+        return new VariantsResource($variant);
     }
 }

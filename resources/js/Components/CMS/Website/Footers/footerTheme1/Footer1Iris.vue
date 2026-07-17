@@ -350,12 +350,10 @@ const getValueColumn4Transleted = (value: string) => {
 
                     <div class="flex flex-col items-center gap-y-6 mt-4">
                         <div v-for="(payment,index) of modelValue.paymentData.data" :key="payment.key">
-                            <img 
-                                :src="payment?.image" 
+                            <img
+                                :src="payment?.image"
                                 :alt="payment?.alt || 'payment' + index"
                                 class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain"
-                                :srcset="`${payment.image} 1x, ${payment.image} 2x`"
-                                sizes="(max-width: 768px) 50px, 100px"
                                 loading="lazy"
                             />
                         </div>
@@ -430,9 +428,11 @@ const getValueColumn4Transleted = (value: string) => {
                     <div v-html="modelValue?.columns.column_4.data.textBox4"></div>
                 </h2> -->
 
-                <div v-if="modelValue?.socialMedia?.length" class="flex gap-x-6 justify-center">
-                    <a v-for="(socmed,index) of modelValue?.socialMedia" target="_blank" :href="socmed.link" :name="socmed.type || 'sosmed' + index">
-                        <FontAwesomeIcon :icon="socmed.icon" class="text-4xl md:text-2xl"></FontAwesomeIcon>
+                <div v-if="modelValue?.socialMedia?.length" class="flex gap-x-5 justify-center">
+                    <a v-for="(socmed,index) of modelValue?.socialMedia" target="_blank" :href="socmed.link" :name="socmed.type || 'sosmed' + index"
+                        :aria-label="socmed.type || 'socmed' + index"
+                    >
+                        <FontAwesomeIcon :icon="socmed.icon" class="text-4xl md:text-2xl" fixed-width />
                     </a>
                 </div>
             </div>

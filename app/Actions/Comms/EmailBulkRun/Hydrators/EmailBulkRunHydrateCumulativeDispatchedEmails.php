@@ -43,9 +43,9 @@ class EmailBulkRunHydrateCumulativeDispatchedEmails implements ShouldBeUnique
         if ($state == DispatchedEmailStateEnum::SENT) {
             $query->whereNotNull('sent_at');
         } elseif ($state == DispatchedEmailStateEnum::OPENED) {
-            $query->where('number_reads' > 0);
+            $query->where('number_reads', '>', 0);
         } elseif ($state == DispatchedEmailStateEnum::CLICKED) {
-            $query->where('number_clicks' > 0);
+            $query->where('number_clicks', '>', 0);
         } else {
             // not supported DispatchedEmailStateEnum
             return;

@@ -8,9 +8,7 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
-use App\Actions\Catalogue\Review\UI\IndexReviewsInIris;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
-use App\Http\Resources\Catalogue\ReviewsInIrisResource;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
@@ -51,20 +49,8 @@ class GetWebBlockProduct
 
         $variant     = $product->is_variant_leader ? Variant::where('leader_id', $product->id)->first() : null;
 
-        $reviews = IndexReviewsInIris::run(parent: $webpage->model, prefix: $webpage->title);
-        $avgReview = IndexReviewsInIris::make()->avgReview($webpage->model);
-
-        $review = [
-            'reviews'                           => ReviewsInIrisResource::collection($reviews),
-            'review_summary'                    => $avgReview ?? 0,
-            'allow_review_reaction'             => data_get($webpage->shop->settings, 'reviews.allow_reactions', true),
-            'allow_review_reply_reaction'       => data_get($webpage->shop->settings, 'reviews.allow_reactions', true),
-            'minimum_reviews_to_show'           => data_get($webpage->shop->settings, 'reviews.minimum_reviews_to_show', 0),    
-        ];
-
         $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.reviews', $review);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
 

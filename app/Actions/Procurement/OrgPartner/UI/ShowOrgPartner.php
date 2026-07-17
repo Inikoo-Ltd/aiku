@@ -67,7 +67,7 @@ class ShowOrgPartner extends OrgAction
 
                 OrgPartnerTabsEnum::SHOWCASE->value => $this->tab == OrgPartnerTabsEnum::SHOWCASE->value ?
                 fn () => GetOrgPartnerShowcase::run($orgPartner)
-                : Inertia::lazy(fn () => GetOrgPartnerShowcase::run($orgPartner)),
+                : Inertia::optional(fn () => GetOrgPartnerShowcase::run($orgPartner)),
 
             ]
         );

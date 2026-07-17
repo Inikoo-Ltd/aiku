@@ -51,7 +51,7 @@ class CalculateInvoiceTotals extends OrgAction
         data_set($modelData, 'net_amount', $netAmount);
 
         data_set($modelData, 'grp_net_amount', $netAmount * $invoice->grp_exchange);
-        data_set($modelData, 'org_net_amount', $netAmount * $invoice->grp_exchange);
+        data_set($modelData, 'org_net_amount', $netAmount * $invoice->org_exchange);
 
 
         data_set($modelData, 'total_amount', $totalAmount);

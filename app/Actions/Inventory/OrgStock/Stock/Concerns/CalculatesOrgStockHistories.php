@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\Stock\Concerns;
 
+use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
 use App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateFromOrgStockHistories;
 use App\Models\Inventory\GroupStockHistory;
 use App\Models\Inventory\Location;
@@ -53,30 +54,7 @@ trait CalculatesOrgStockHistories
 
     public function getStockQuantity(OrgStock $orgStock, Location $location, ?Carbon $date = null): float
     {
-        if (!$date) {
-            $date = now();
-        }
-
-        $lastHelper = OrgStockMovement::on('aiku_no_sticky')->select(['audited_quantity', 'date'])
-            ->where('org_stock_id', $orgStock->id)
-            ->where('location_id', $location->id)
-            ->where('class', OrgStockMovementClassEnum::HELPER)
-            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))->orderBy('date', 'desc')->first();
-
-        $seedQuantity = $lastHelper?->audited_quantity ?? 0;
-
-        $query = OrgStockMovement::on('aiku_no_sticky')->where('org_stock_id', $orgStock->id)
-            ->where('location_id', $location->id)
-            ->where('class', OrgStockMovementClassEnum::MOVEMENT)
-            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'));
-
-        if ($lastHelper) {
-            $query->where('date', '>', Carbon::parse($lastHelper->date)->format('Y-m-d H:i:s.u'));
-        }
-
-        $sumMovements = $query->sum('quantity');
-
-        return (float)($seedQuantity + $sumMovements);
+        return GetLocationOrgStockQuantity::run($orgStock, $location, $date);
     }
 
     public function lastSoldDate(OrgStock $orgStock, Carbon $date): ?Carbon

@@ -12,9 +12,7 @@ use DOMDocument;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 trait WithAllegroApiServices
 {
@@ -24,7 +22,7 @@ trait WithAllegroApiServices
 
     public function restApi(string $method = 'GET', array $params = []): PendingRequest
     {
-        if($this->access_token_expire_in < now()->timestamp) {
+        if ($this->access_token_expire_in < now()->timestamp) {
             $this->refreshAccessToken($this->refresh_token);
         }
 
@@ -81,13 +79,12 @@ trait WithAllegroApiServices
                     ?? Arr::get($firstError, 'message')
                     ?? 'Unknown Allegro API error';
 
-                throw new \Exception($errorMessage);
+                return ['message' => $errorMessage];
             }
 
             return $response->json() ?? [];
         } catch (\Exception $e) {
-            Log::error('Allegro API Request failed: ' . $e->getMessage());
-            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+            return ['message' => $e->getMessage()];
         }
     }
 
@@ -248,6 +245,13 @@ trait WithAllegroApiServices
     {
         return $this->makeApiRequest('PUT', "/order/checkout-forms/$orderId/fulfillment", [
             'status' => 'SENT',
+        ]);
+    }
+
+    public function setOrderCancelled(string $orderId): array
+    {
+        return $this->makeApiRequest('PUT', "/order/checkout-forms/$orderId/fulfillment", [
+            'status' => 'CANCELLED',
         ]);
     }
 
@@ -494,6 +498,7 @@ trait WithAllegroApiServices
     {
         $data = [
             'name'             => Arr::get($data, 'name', 'Default return policy'),
+            'isFulfillment' => false,
             'availability'     => [
                 'range' => 'FULL'
             ],

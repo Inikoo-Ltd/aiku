@@ -47,7 +47,7 @@ class WebsitesDashboard extends GrpAction
 
                 WebsiteDashboardTabsEnum::CRAWLS->value => $this->tab == WebsiteDashboardTabsEnum::CRAWLS->value ?
                     fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))
-                    : Inertia::lazy(fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))),
+                    : Inertia::optional(fn () => CrawlsResource::collection(IndexCrawls::make()->inGroup($group))),
             ]
         )->table(IndexCrawls::make()->tableStructure(parent: $group, prefix: WebsiteDashboardTabsEnum::CRAWLS->value));
     }

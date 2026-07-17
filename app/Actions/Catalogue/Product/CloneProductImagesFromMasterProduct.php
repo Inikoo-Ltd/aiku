@@ -14,6 +14,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class CloneProductImagesFromMasterProduct implements ShouldBeUnique
 {
@@ -38,21 +39,27 @@ class CloneProductImagesFromMasterProduct implements ShouldBeUnique
         }
 
 
+        try {
+            if (!$canUpdate) {
+                CloneProductImagesFromTradeUnits::run($product);
 
-        if (!$canUpdate) {
-            CloneProductImagesFromTradeUnits::run($product);
+                return;
+            }
 
-            return;
+
+            $masterProduct = $product->masterProduct;
+
+            if (!$masterProduct) {
+                return;
+            }
+
+            $this->syncProductImages($masterProduct, $product);
+        }catch (\Exception $exception){
+            Sentry::captureException($exception);
         }
 
 
-        $masterProduct = $product->masterProduct;
 
-        if (!$masterProduct) {
-            return;
-        }
-
-        $this->syncProductImages($masterProduct, $product);
     }
 
     public string $commandSignature = 'catalogue:product:clone-images-from-master-product {product?}';

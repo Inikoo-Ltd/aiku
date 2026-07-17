@@ -5,12 +5,20 @@ import { computed, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(faInfoCircle)
 
+interface Offer {
+    max_percentage_discount?: string | number
+    category_qty_trigger?: number
+    triggers_labels?: string[]
+    allowances?: { label?: string }[]
+}
+
 const props = defineProps<{
-    offer: {}
-    offer_allowances?: {}
+    offer: Offer
+    offer_allowances?: { data?: { percentage_off?: string | number } }[]
 }>()
 
 const _popoverInfoCircle = ref<InstanceType<any>[] | null>(null)

@@ -10,6 +10,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
@@ -17,18 +18,17 @@ use App\Actions\Web\Webpage\Luigi\DeleteReindexWebpageLuigiData;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class DeleteWebpage extends OrgAction
 {
-    use AsAction;
     use WithAttributes;
 
     private Webpage $webpage;
@@ -38,9 +38,12 @@ class DeleteWebpage extends OrgAction
      */
     public function handle(Webpage $webpage, bool $forceDelete = false, array $modelData = []): Webpage
     {
+        $product = $webpage->model instanceof Product ? $webpage->model : null;
+
         DeleteReindexWebpageLuigiData::dispatch($webpage)->delay(5);
 
-        BreakWebpageCache::run($webpage);
+        DB::table('webpages')->where('redirect_webpage_id', $webpage->id)->update(['redirect_webpage_id' => null]);
+
         if ($forceDelete) {
             $webpage = DB::transaction(function () use ($webpage) {
                 DB::table('web_block_histories')->where('webpage_id', $webpage->id)->delete();
@@ -51,15 +54,9 @@ class DeleteWebpage extends OrgAction
                 DB::table('redirects')->where('to_webpage_id', $webpage->id)->delete();
                 DB::table('redirects')->where('from_webpage_id', $webpage->id)->update(['from_webpage_id' => null]);
                 DB::table('model_has_web_blocks')->where('webpage_id', $webpage->id)->delete();
-                if ($webpage->model_type == 'Product') {
-                    DB::table('products')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
-                }
-                if ($webpage->model_type == 'ProductCategory') {
-                    DB::table('product_categories')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
-                }
-                if ($webpage->model_type == 'Collection') {
-                    DB::table('collections')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
-                }
+
+                $this->detachAssociatedModels($webpage);
+
                 $webpage->images()->detach();
                 $webpage->forceDelete();
 
@@ -70,15 +67,7 @@ class DeleteWebpage extends OrgAction
 
             $webpage->delete();
 
-            if ($webpage->model_type == 'Product') {
-                DB::table('products')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
-            }
-            if ($webpage->model_type == 'ProductCategory') {
-                DB::table('product_categories')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
-            }
-            if ($webpage->model_type == 'Collection') {
-                DB::table('collections')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
-            }
+            $this->detachAssociatedModels($webpage);
 
             if ($redirect) {
                 DB::table('redirects')->where('to_webpage_id', $webpage->id)->delete();
@@ -98,6 +87,10 @@ class DeleteWebpage extends OrgAction
             }
         }
 
+        if ($product) {
+            ProductHydrateHasLiveWebpage::run($product);
+        }
+
         BreakWebpageCache::run($webpage);
         return $webpage;
     }
@@ -115,11 +108,12 @@ class DeleteWebpage extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Webpage $webpage, bool $forceDelete = false): Webpage
+    public function action(Webpage $webpage, bool $forceDelete = false, array $modelData = []): Webpage
     {
         $this->webpage = $webpage;
+        $this->initialisationFromShop($webpage->shop, $modelData);
 
-        return $this->handle($webpage, $forceDelete);
+        return $this->handle($webpage, $forceDelete, $this->validatedData);
     }
 
     /**
@@ -147,5 +141,18 @@ class DeleteWebpage extends OrgAction
                 'webpage'      => $webpage->slug
             ]
         );
+    }
+
+    private function detachAssociatedModels(Webpage $webpage): void
+    {
+        if ($webpage->model_type == 'Product') {
+            DB::table('products')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+        }
+        if ($webpage->model_type == 'ProductCategory') {
+            DB::table('product_categories')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+        }
+        if ($webpage->model_type == 'Collection') {
+            DB::table('collections')->where('webpage_id', $webpage->id)->update(['webpage_id' => null]);
+        }
     }
 }

@@ -187,7 +187,7 @@ class UpdateWebsite extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'domain'                                 => [
+            'domain'                                     => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -259,7 +259,7 @@ class UpdateWebsite extends OrgAction
             'welcome_message'                            => ['sometimes', 'nullable', 'string'],
             'company_name_label'                         => ['sometimes', 'nullable', 'string'],
             'company_name_placeholder'                   => ['sometimes', 'nullable', 'string'],
-            'tax_number_is_required'                     => ['sometimes', 'nullable','boolean'],
+            'tax_number_is_required'                     => ['sometimes', 'nullable', 'boolean'],
             'title_recommender'                          => ['sometimes', 'nullable', 'string'],
             'min_amt_shown_recommender'                  => ['sometimes', 'numeric', 'min:1'],
             'max_amt_shown_recommender'                  => ['sometimes', 'numeric', 'min:1'],

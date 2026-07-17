@@ -5,20 +5,22 @@
 * Copyright: 2026
 -->
 
+<!-- Similar to SelectPickingLocation.vue -->
+
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInventory } from "@fal"
-import Modal from "@/Components/Utils/Modal.vue"
-import { RadioButton } from "primevue"
+import { Dialog, RadioButton } from "primevue"
 import { trans } from "laravel-vue-i18n"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { RouteParams } from "@/types/route-params"
+import { ctrans } from "@/Composables/useTrans"
+import MoveStockControl from "@/Components/Warehouse/Inventory/StocksManagement/MoveStockControl.vue"
 
 library.add(faInventory)
 
-defineProps<{
+const props = defineProps<{
     isOpen: boolean
     item: any | null
     selectedLocationCode: string
@@ -40,10 +42,29 @@ const generateLocationRoute = (location: any): string => {
 </script>
 
 <template>
-    <Modal :isOpen="isOpen" @onClose="emit('close')" width="w-full max-w-3xl" xdialogStyle="{ background: '#ffffff' }">
-        <div class="text-center font-semibold mb-4 text-2xl">
-            {{ trans('Location list for') }} {{ item?.org_stock_code }}
+    <Dialog
+        :visible="isOpen"
+        @update:visible="(value) => { if (!value) emit('close') }"
+        modal
+        :header="`${trans('Location list for')} ${item?.org_stock_code ?? ''}`"
+        :draggable="false"
+        dismissableMask
+        :style="{ width: '48rem' }"
+        :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
+        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+    >
+        <div v-if="item?.org_stock_id" class="flex justify-center mb-4">
+            <MoveStockControl
+                :fetchRoute="{
+                    name: 'grp.json.warehouse.org_stock.stocks_management',
+                    parameters: {
+                        warehouse: (route().params as RouteParams).warehouse,
+                        orgStock: item.org_stock_id,
+                    },
+                }"
+            />
         </div>
+
         <div class="rounded p-1 grid grid-cols-2 lg:grid-cols-3 gap-3">
             <div
                 v-for="location in item?.locations"
@@ -79,5 +100,5 @@ const generateLocationRoute = (location: any): string => {
                 />
             </div>
         </div>
-    </Modal>
+    </Dialog>
 </template>

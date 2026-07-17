@@ -5,10 +5,15 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router, useForm } from "@inertiajs/vue3"
+import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
-import { inject } from "vue"
+import { computed, inject, ref } from "vue"
+import Dialog from "primevue/dialog"
+import DataTable from "primevue/datatable"
+import Column from "primevue/column"
+import PureInputNumber from "@/Components/Pure/PureInputNumber.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Icon from "@/Components/Icon.vue"
 import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus } from "@fas"
@@ -17,28 +22,177 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
 import { OrgStock } from "@/types/org-stock"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import { faForklift, faCheck, faHandPaper, faUnlink } from "@fal"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { ctrans } from "@/Composables/useTrans"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus)
+library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus, faUnlink)
 
-defineProps<{
+const props = defineProps<{
     data: object
     tab?: string
+    canMoveAllSku?:boolean,
+    location_id: number,
 }>()
 
+const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
-const layout = inject("layout", {})
+const isOpenMoveAllSku = ref(false)
+const form = useForm({
+    location_id: null,
+    remove_after_move : false
+})
+
+interface PartialMoveRow {
+    org_stock_id: number
+    code: string
+    name: string
+    available: number
+    quantity_to_move: number
+    remove_after_move: boolean
+}
+
+function onCancelPartialMoveSku() {
+    isOpenPartialMove.value = false
+}
+
+const isOpenPartialMove = ref(false)
+const selectedRows = ref<Record<string, boolean>>({})
+
+const selectedStocks = computed(() => {
+    const rows = (props.data as { data?: OrgStock[] })?.data ?? []
+    return rows.filter((row) => selectedRows.value[row.id])
+})
+
+const hasSelection = computed(() => selectedStocks.value.length > 0)
+
+function onSelectRow(value: Record<string, boolean>) {
+    selectedRows.value = { ...value }
+}
+
+const partialForm = useForm<{ location_id: number | null; org_stocks: PartialMoveRow[] }>({
+    location_id: null,
+    org_stocks: [],
+})
+
+const isPartialMoveValid = computed(() => {
+    if (!partialForm.location_id || partialForm.org_stocks.length === 0) {
+        return false
+    }
+
+    return partialForm.org_stocks.every((row) => Number(row.quantity_to_move) > 0 && Number(row.quantity_to_move) <= row.available)
+})
+
+function openPartialMoveSku() {
+    partialForm.reset()
+    partialForm.location_id = null
+    partialForm.org_stocks = selectedStocks.value.map((stock) => ({
+        org_stock_id: stock.id,
+        code: stock.code,
+        name: stock.name,
+        available: Number(stock.quantity),
+        quantity_to_move: Number(stock.quantity),
+        remove_after_move: false,
+    }))
+    isOpenPartialMove.value = true
+}
+
+function onToggleRemoveAfterMove(row: PartialMoveRow) {
+    if (row.remove_after_move) {
+        row.quantity_to_move = row.available
+    }
+}
+
+function onSavePartialMoveSku() {
+    const params = route().params as RouteParams
+    console.log(partialForm)
+    partialForm
+        .transform((data) => ({
+            location_id: data.location_id,
+            org_stocks: data.org_stocks.map((row) => ({
+                org_stock_id: row.org_stock_id,
+                quantity: row.quantity_to_move,
+                remove_after_move: row.remove_after_move,
+            })),
+        }))
+        .post(
+            route("grp.models.location.partial_move_stock", {
+                location: props.location_id,
+            }),
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    isOpenPartialMove.value = false
+                    partialForm.reset()
+                    selectedRows.value = {}
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("SKU moved successfully"),
+                        type: "success",
+                    })
+                    router.reload()
+                },
+                onError: () => {
+                    notify({
+                        title: ctrans("Something went wrong"),
+                        text: ctrans("Failed to move SKU"),
+                        type: "error",
+                    })
+                },
+            }
+        )
+}
+
+function onSaveMoveAllSku() {
+
+    form.post(
+        route("grp.models.location.mass_move_stock", {
+            location: props.location_id,
+        }),
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                isOpenMoveAllSku.value = false
+                form.reset()
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("All SKU moved successfully"),
+                    type: "success",
+                })
+            },
+            onError: () => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to move all SKU"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
+
+function onCancelMoveAllSku() {
+    isOpenMoveAllSku.value = false
+}
+
+const routeCurrent = route().current()
+const routeParams = route().params as RouteParams
 
 function orgStockRoute(orgStock: OrgStock) {
-    const current = route().current()
-    console.log(current)
+    const current = routeCurrent
 
     if (current === "grp.org.warehouses.show.inventory.org_stock_families.show") {
         return route(
             "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show",
             [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).warehouse,
-                (route().params as RouteParams).orgStockFamily,
+                routeParams.organisation,
+                routeParams.warehouse,
+                routeParams.orgStockFamily,
                 orgStock.slug
             ]
         )
@@ -46,21 +200,21 @@ function orgStockRoute(orgStock: OrgStock) {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show",
             [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).warehouse,
+                routeParams.organisation,
+                routeParams.warehouse,
                 orgStock.slug
             ]
         )
     } else if (current === "grp.overview.inventory.org-stocks.index" || current === "grp.org.shops.show.catalogue.products.all_products.show") {
         return route(
-            "grp.helpers.redirect_org_stock",
+            "grp.majordomo.redirect_org_stock",
             [orgStock.id])
     } else if (current === "grp.org.warehouses.show.inventory.org_stocks.index") {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.show",
             [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).warehouse,
+                routeParams.organisation,
+                routeParams.warehouse,
                 orgStock.slug
             ]
         )
@@ -68,14 +222,14 @@ function orgStockRoute(orgStock: OrgStock) {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
             [
-                (route().params as RouteParams).organisation,
-                (route().params as RouteParams).warehouse,
+                routeParams.organisation,
+                routeParams.warehouse,
                 orgStock.slug
             ]
         )
     }else{
       return route(
-            "grp.helpers.redirect_org_stock",
+            "grp.majordomo.redirect_org_stock",
             [
                 orgStock.id
             ]
@@ -99,8 +253,8 @@ function stockFamilyRoute(stock: Stock) {
     return route(
         "grp.org.warehouses.show.inventory.org_stock_families.show",
         [
-            (route().params as RouteParams).organisation,
-            (route().params as RouteParams).warehouse,
+            routeParams.organisation,
+            routeParams.warehouse,
             stock.family_slug
         ]
     )
@@ -108,15 +262,15 @@ function stockFamilyRoute(stock: Stock) {
 
 
 const orgStockRouteProductIndex = (orgStock: OrgStock) => {
-    const current = route().current()
+    const current = routeCurrent
 
     if (current === "grp.org.warehouses.show.inventory.org_stock_families.show") {
         return route(
             "grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.products",
             {
-                organisation: (route().params as RouteParams).organisation,
-                warehouse: (route().params as RouteParams).warehouse,
-                orgStockFamily: (route().params as RouteParams).orgStockFamily,
+                organisation: routeParams.organisation,
+                warehouse: routeParams.warehouse,
+                orgStockFamily: routeParams.orgStockFamily,
                 orgStock: orgStock.slug,
                 tab: 'products'
             }
@@ -125,22 +279,22 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show.products",
             {
-                organisation: (route().params as RouteParams).organisation,
-                warehouse: (route().params as RouteParams).warehouse,
+                organisation: routeParams.organisation,
+                warehouse: routeParams.warehouse,
                 orgStock: orgStock.slug,
                 tab: 'products'
             }
         )
     } else if (current === "grp.overview.inventory.org-stocks.index" || current === "grp.org.shops.show.catalogue.products.all_products.show") {
         return route(
-            "grp.helpers.redirect_org_stock",
+            "grp.majordomo.redirect_org_stock",
             [orgStock.id])
     } else if (current === "grp.org.warehouses.show.inventory.org_stocks.index") {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.show.products",
             {
-                organisation: (route().params as RouteParams).organisation,
-                warehouse: (route().params as RouteParams).warehouse,
+                organisation: routeParams.organisation,
+                warehouse: routeParams.warehouse,
                 orgStock: orgStock.slug,
                 tab: 'products'
             }
@@ -149,15 +303,15 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         return route(
             "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.products",
             {
-                organisation: (route().params as RouteParams).organisation,
-                warehouse: (route().params as RouteParams).warehouse,
+                organisation: routeParams.organisation,
+                warehouse: routeParams.warehouse,
                 orgStock: orgStock.slug,
                 tab: 'products'
             }
         )
     }else{
       return route(
-            "grp.helpers.redirect_org_stock.to_products_index",
+            "grp.majordomo.redirect_org_stock.to_products_index",
             [
                 orgStock.id
             ]
@@ -167,9 +321,16 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canMoveAllSku" @onSelectRow="onSelectRow">
+          <template #add-on-button v-if="canMoveAllSku">
+                <Button :label="ctrans('Move All SKU')" type="white" :icon="faForklift" size="xs" @click="isOpenMoveAllSku = true"></Button>
+                <Button v-if="hasSelection" :label="ctrans('Partialy Move SKU')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
+          </template>
         <template #cell(state)="{ item: stock }">
             <Icon :data="stock.state"></Icon>
+        </template>
+        <template #cell(type)="{ item: stock }">
+            <FontAwesomeIcon v-if="stock.type" :icon="stock.type == 'picking' ? faCheck : faHandPaper  " :data="stock.type"></FontAwesomeIcon>
         </template>
         <template #cell(org_sku)="{ item: stock }">
             <Link :href="orgStockRoute(stock) as string" class="primaryLink">
@@ -196,9 +357,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 {{ stock["family_code"] }}
             </Link>
         </template>
-        <template #cell(type)="{ item: stock }">
+        <!-- <template #cell(type)="{ item: stock }">
             {{ stock.type ?? "" }}
-        </template>
+        </template> -->
 
         <template #cell(picking_priority)="{ item: stock }">
             {{ stock.picking_priority ?? "" }}
@@ -215,6 +376,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         <template #cell(quantity)="{ item: stock }">
             <div class="text-right">
                 <FractionDisplay v-if="stock.pick_fractional?.length > 0" :fractionData="stock.pick_fractional"/>
+                <span v-else>
+                    {{ stock.quantity }}
+                </span>
             </div>
         </template>
 
@@ -314,7 +478,141 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <span class="tabular-nums">{{ locale.number(item.non_moving_1y) }}</span>
         </template>
 
+        <template #cell(actions)="{ item: stock }">
+            <div v-if="layout.app.environment === 'local'" class="flex justify-end">
+                <ModalConfirmationDelete
+                    :routeDelete="{
+                        name: 'grp.models.location_org_stock.delete',
+                        parameters: { 
+                            locationOrgStock: stock.location_org_stock_id
+                        },
+                    }"
+                    :title="ctrans('Are you sure you want to unlink this SKU from the location?')"
+                    :description="ctrans(':qty stock will be removed and marked as lost!', { qty: locale.number(Number(stock.quantity)) })"
+                    isFullLoading
+                    :noLabel="ctrans('Yes, unlink SKU :code', { code: stock.code })"
+                    noIcon="fal fa-unlink"
+                >
+                    <template #default="{ changeModel, isLoadingdelete }">
+                        <div
+                            @click="changeModel"
+                            class="cursor-pointer text-red-500 opacity-50 hover:opacity-100"
+                            v-tooltip="ctrans('Unlink from location')"
+                        >
+                            <LoadingIcon v-if="isLoadingdelete" />
+                            <FontAwesomeIcon v-else :icon="faUnlink" fixed-width aria-hidden="true" />
+                        </div>
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
+        </template>
+
 
 
     </Table>
+
+    <Dialog
+        :header="ctrans('Move All SKU')"
+        v-model:visible="isOpenMoveAllSku"
+        modal
+        closable
+        :content-style="{ width: '500px', overflow : 'visible' }"
+    >
+        <div class="px-2">
+            <PureMultiselectInfiniteScroll
+                mode="single"
+                v-model="form.location_id"
+                :fetchRoute="{
+                    name: 'grp.org.warehouses.show.infrastructure.locations.index',
+                    parameters: {
+                        organisation: routeParams.organisation,
+                        warehouse: routeParams.warehouse,
+                    },
+                }"
+                valueProp="id"
+                labelProp="code"
+                :placeholder="ctrans('Select a location')"
+            />
+
+            <label class="mt-4 flex items-center gap-2 cursor-pointer">
+                <PureCheckbox v-model="form.remove_after_move" />
+                <span>{{ ctrans('Remove after move') }}</span>
+            </label>
+        </div>
+
+        <template #footer>
+            <div class="flex justify-end gap-2">
+                <Button type="cancel" :label="ctrans('Cancel')" @click="onCancelMoveAllSku" />
+                <Button type="save" :label="ctrans('Save')" :loading="form.processing" :disabled="!form.location_id" @click="onSaveMoveAllSku" />
+            </div>
+        </template>
+    </Dialog>
+
+    <Dialog
+        :header="ctrans('Partialy Move SKU')"
+        v-model:visible="isOpenPartialMove"
+        modal
+        closable
+        :content-style="{ width: '720px', overflow: 'visible' }"
+    >
+        <div class="px-2 space-y-4">
+            <div>
+                <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Move to location') }}</label>
+                <PureMultiselectInfiniteScroll
+                    mode="single"
+                    v-model="partialForm.location_id"
+                    :fetchRoute="{
+                        name: 'grp.org.warehouses.show.infrastructure.locations.index',
+                        parameters: {
+                            organisation: routeParams.organisation,
+                            warehouse: routeParams.warehouse,
+                        },
+                    }"
+                    valueProp="id"
+                    labelProp="code"
+                    :placeholder="ctrans('Select a location')"
+                />
+            </div>
+
+            <DataTable :value="partialForm.org_stocks" class="border border-gray-200 rounded-md" scrollable scrollHeight="360px">
+                <Column field="code" :header="ctrans('Reference')">
+                    <template #body="{ data }">
+                        <div class="flex flex-col">
+                            <span class="font-medium">{{ data.code }}</span>
+                            <span class="text-xs text-gray-500">{{ data.name }}</span>
+                        </div>
+                    </template>
+                </Column>
+                <Column :header="ctrans('Available')">
+                    <template #body="{ data }">
+                        <span class="tabular-nums">{{ data.available }}</span>
+                    </template>
+                </Column>
+                <Column :header="ctrans('Quantity to move')">
+                    <template #body="{ data }">
+                        <PureInputNumber
+                            v-model="data.quantity_to_move"
+                            :minValue="0"
+                            :maxValue="data.available"
+                            :disabled="data.remove_after_move"
+                        />
+                    </template>
+                </Column>
+                <Column :header="ctrans('Remove after move')">
+                    <template #body="{ data }">
+                        <div class="flex justify-center">
+                            <PureCheckbox v-model="data.remove_after_move" @update:modelValue="onToggleRemoveAfterMove(data)" />
+                        </div>
+                    </template>
+                </Column>
+            </DataTable>
+        </div>
+
+        <template #footer>
+            <div class="flex justify-end gap-2">
+                <Button type="cancel" :label="ctrans('Cancel')" @click="onCancelPartialMoveSku" />
+                <Button type="save" :label="ctrans('Save')" :loading="partialForm.processing" :disabled="!isPartialMoveValid" @click="onSavePartialMoveSku" />
+            </div>
+        </template>
+    </Dialog>
 </template>

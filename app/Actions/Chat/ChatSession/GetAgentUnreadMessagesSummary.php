@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 30 Jun 2026 21:08:17 Malaysia Time, Kuala Lumpur, Malaysia
@@ -74,9 +75,14 @@ class GetAgentUnreadMessagesSummary
 
         if (!$user || !$user->chatAgent) {
             return response()->json([
-                'success' => false,
-                'message' => 'Only authenticated agents can check unread messages',
-            ], 403);
+                'success' => true,
+                'message' => 'User is not a chat agent',
+                'data' => [
+                    'assigned_unread_count' => 0,
+                    'unassigned_unread_count' => 0,
+                    'total_unread_count' => 0,
+                ],
+            ]);
         }
 
         $summary = $this->handle($user->chatAgent);

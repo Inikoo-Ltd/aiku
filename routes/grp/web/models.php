@@ -63,13 +63,6 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryTranslations;
 use App\Actions\Catalogue\ProductCategory\UploadImagesToProductCategory;
-use App\Actions\Catalogue\Review\ApproveReview;
-use App\Actions\Catalogue\Review\RejectReview;
-use App\Actions\Catalogue\Review\GetReviewCustomers;
-use App\Actions\Catalogue\Review\UpdateReview;
-use App\Actions\Catalogue\ReviewReply\DeleteReviewReply;
-use App\Actions\Catalogue\ReviewReply\StoreReviewReply;
-use App\Actions\Catalogue\ReviewReply\UpdateReviewReply;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
@@ -83,11 +76,13 @@ use App\Actions\CRM\ChatAutomation\ToggleChatAutomation;
 use App\Actions\CRM\ChatAutomation\Knowledge\UploadChatKnowledgeFile;
 use App\Actions\CRM\ChatAutomation\Knowledge\FetchChatKnowledgeUrl;
 use App\Actions\CRM\ChatAutomation\Knowledge\PreviewChatRagAnswer;
+use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
+use App\Actions\Comms\Mailshot\ConvertMailshotToBlog;
 use App\Actions\Comms\Mailshot\DeleteMailshot;
 use App\Actions\Comms\Mailshot\DeleteMailshotTemplate;
 use App\Actions\Comms\Mailshot\PublishMailShot;
@@ -120,6 +115,9 @@ use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
+use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
+use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
@@ -144,6 +142,8 @@ use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dispatching\Trolley\UpdateTrolley;
+use App\Actions\Dropshipping\Allegro\Product\MatchPortfolioToCurrentAllegroProduct;
+use App\Actions\Dropshipping\Allegro\Product\StoreNewProductToCurrentAllegro;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
@@ -161,6 +161,8 @@ use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProdu
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\Dropshipping\Tiktok\Product\MatchPortfolioToCurrentTiktokProduct;
+use App\Actions\Dropshipping\Tiktok\Product\StoreNewProductToCurrentTiktok;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
@@ -264,6 +266,7 @@ use App\Actions\Helpers\Brand\DeleteBrand;
 use App\Actions\Helpers\Brand\DetachBrandFromModel;
 use App\Actions\Helpers\Brand\StoreBrand;
 use App\Actions\Helpers\Brand\UpdateBrand;
+use App\Actions\Helpers\Dashboard\BreakDashboardTimeSeriesCache;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
@@ -370,7 +373,14 @@ use App\Actions\Production\ManufactureTask\UpdateManufactureTask;
 use App\Actions\Production\RawMaterial\ImportRawMaterial;
 use App\Actions\Production\RawMaterial\StoreRawMaterial;
 use App\Actions\Production\RawMaterial\UpdateRawMaterial;
+use App\Actions\Reviews\ApproveReview;
 use App\Actions\Reviews\DeleteReview;
+use App\Actions\Reviews\GetReviewCustomers;
+use App\Actions\Reviews\RejectReview;
+use App\Actions\Reviews\ReviewReply\DeleteReviewReply;
+use App\Actions\Reviews\ReviewReply\StoreReviewReply;
+use App\Actions\Reviews\ReviewReply\UpdateReviewReply;
+use App\Actions\Reviews\UpdateReview;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
@@ -385,11 +395,9 @@ use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
-use App\Actions\Web\Announcement\CloseAnnouncement;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
 use App\Actions\Web\Announcement\PublishAnnouncement;
 use App\Actions\Web\Announcement\ResetAnnouncement;
-use App\Actions\Web\Announcement\StartAnnouncement;
 use App\Actions\Web\Announcement\StoreAnnouncement;
 use App\Actions\Web\Announcement\ToggleAnnouncement;
 use App\Actions\Web\Announcement\UpdateAnnouncement;
@@ -438,6 +446,8 @@ use App\Stubs\UIDummies\ImportDummy;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
+
+Route::post('dashboard/break-cache', BreakDashboardTimeSeriesCache::class)->name('dashboard.break_cache');
 
 Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('profile.app-login-qrcode');
 
@@ -502,6 +512,15 @@ Route::patch('credit-transaction/{customer:id}/increase', IncreaseCreditTransact
 Route::patch('credit-transaction/{customer:id}/decrease', DecreaseCreditTransactionCustomer::class)->name('credit_transaction.decrease')->withoutScopedBindings();
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
+
+Route::prefix('customer/{customer:id}/upcoming-transactions')->name('customer.upcoming_transactions.')->group(function () {
+    Route::post('', StoreUpcomingTransaction::class)->name('store')->withoutScopedBindings();
+});
+
+Route::prefix('upcoming-transaction/{upcomingTransaction:id}')->name('upcoming_transaction.')->group(function () {
+    Route::patch('', UpdateUpcomingTransaction::class)->name('update');
+    Route::delete('', DeleteUpcomingTransaction::class)->name('delete');
+});
 
 Route::patch('master-product-category/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product_category.update')->withoutScopedBindings();
 Route::post('master-product-category/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_category_image.upload')->withoutScopedBindings();
@@ -857,6 +876,12 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreNewProductToC
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
 
+Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product');
+Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreNewProductToCurrentTiktok::class)->name('portfolio.store_new_tiktok_product');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-allegro-product', MatchPortfolioToCurrentAllegroProduct::class)->name('portfolio.match_to_existing_allegro_product');
+Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product');
+
 Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class)->name('stored-items.pallets.update');
 Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('stored-items.move');
 Route::delete('{storedItem:id}/stored-items', DeleteStoredItem::class)->name('stored-items.delete');
@@ -908,8 +933,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
             Route::patch('{announcement}/publish', PublishAnnouncement::class)->name('publish')->withoutScopedBindings();
             Route::patch('{announcement}', UpdateAnnouncement::class)->name('update')->withoutScopedBindings();
             Route::delete('{announcement}/reset', ResetAnnouncement::class)->name('reset')->withoutScopedBindings();
-            Route::patch('{announcement}/close', CloseAnnouncement::class)->name('close')->withoutScopedBindings();
-            Route::patch('{announcement}/start', StartAnnouncement::class)->name('start')->withoutScopedBindings();
             Route::patch('{announcement}/toggle', ToggleAnnouncement::class)->name('toggle')->withoutScopedBindings();
             Route::delete('{announcement}', DeleteAnnouncement::class)->name('delete')->withoutScopedBindings();
         });
@@ -938,6 +961,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::patch('recipient-filter', UpdateMailshotRecipientFilter::class)->name('recipient-filter.update')->withoutScopedBindings();
         Route::post('stop-mailshot', StopMailshot::class)->name('stop')->withoutScopedBindings();
         Route::post('resume-mailshot', ResumeMailshot::class)->name('resume')->withoutScopedBindings();
+        Route::get('convert-to-blog', ConvertMailshotToBlog::class)->name('convert-to-blog')->withoutScopedBindings();
         Route::post('second-wave', SetMailshotSecondWaveStatus::class)->name('second-wave')->withoutScopedBindings();
         Route::patch('second-wave', UpdateMailshotSecondWave::class)->name('second-wave.update')->withoutScopedBindings();
     });
@@ -1307,6 +1331,7 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
 
+Route::patch('variant/{variant:id}', UpdateVariant::class)->name('variant.update');
 
 Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
 Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');

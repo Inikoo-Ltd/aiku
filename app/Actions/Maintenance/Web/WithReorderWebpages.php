@@ -69,7 +69,7 @@ trait WithReorderWebpages
     public function ensureFamilyPageHasRequiredBlocks(Webpage $webpage): void
     {
         $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
-        
+
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
         if (count($countFamilyWebBlock) == 0) {
             $this->createWebBlock($webpage, 'luigi-trends-1');

@@ -27,98 +27,104 @@ class UpdateInventoryInEbayPortfolio
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
-        $platform              = Platform::where('type', PlatformTypeEnum::EBAY)->first();
+        $platform = Platform::where('type', PlatformTypeEnum::EBAY)->first();
 
         if ($customerSalesChannel === null) {
             $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
                 ->where('platform_status', true)
                 ->where('stock_update', true)
+                ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+                ->where(function ($query) {
+                    $query->whereNull('ban_stock_update_util')
+                        ->orWhere('ban_stock_update_util', '<=', now());
+                })
                 ->get();
         } else {
             $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
                 ->where('id', $customerSalesChannel->id)
+                ->where('status', CustomerSalesChannelStatusEnum::OPEN)
                 ->get();
         }
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
-
-
-            if ($customerSalesChannel->ban_stock_update_util && $customerSalesChannel->ban_stock_update_util->gt(now())) {
-                continue;
-            }
-
-            if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
-                continue;
-            }
-
             /** @var \App\Models\Dropshipping\EbayUser $ebayUser */
             $ebayUser = $customerSalesChannel->user;
 
             if (!$ebayUser) {
-
                 continue;
             }
 
             $ebayUser->setTimeout(20);
             $result = $ebayUser->getUser();
 
-            if ($result && Arr::has($result, 'username')) {
+            if (!$result || !Arr::has($result, 'username')) {
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => now()->addSeconds(10)
+                ]);
 
+                continue;
+            }
+
+            if ($customerSalesChannel->ban_stock_update_util !== null) {
                 $customerSalesChannel->update([
                     'ban_stock_update_util' => null
                 ]);
+            }
 
-                $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
-                    ->whereNotNull('platform_product_id')
-                    ->where('item_type', 'Product')
-                    ->where('platform_status', true)
-                    ->get();
-
-
-                $first = true;
-                /** @var Portfolio $portfolio */
-                foreach ($portfolios as $portfolio) {
-                    if ($this->checkIfApplicable($portfolio)) {
-                        if ($first) {
-                            $ebayUser->setTimeout(45);
-                            UpdateEbayPortfolio::run($portfolio->id);
-                            $first = false;
-                        } else {
-                            // Add jitter to spread API calls and avoid bursts
+            Portfolio::query()
+                ->select([
+                    'id',
+                    'item_id',
+                    'item_type',
+                    'stock_last_updated_at',
+                    'stock_last_fail_updated_at',
+                ])
+                ->where('customer_sales_channel_id', $customerSalesChannel->id)
+                ->whereNotNull('platform_product_id')
+                ->where('item_type', 'Product')
+                ->where('platform_status', true)
+                ->with('item:id,available_quantity,is_for_sale,available_quantity_updated_at')
+                ->chunkById(500, function ($portfolioChunk): void {
+                    /** @var Portfolio $portfolio */
+                    foreach ($portfolioChunk as $portfolio) {
+                        if ($this->checkIfApplicable($portfolio)) {
                             $delaySeconds = random_int(1, 120);
                             UpdateEbayPortfolio::dispatch($portfolio->id)->delay(now()->addSeconds($delaySeconds));
                         }
                     }
-
-                }
-            } else {
-                $customerSalesChannel->update([
-                    'ban_stock_update_util' => now()->addSeconds(10)
-                ]);
-            }
-
+                });
         }
     }
 
     public function checkIfApplicable(Portfolio $portfolio): bool
     {
-        $applicable = false;
+        $product = $portfolio->item;
 
-
-
-        if (!$portfolio->stock_last_updated_at) {
-            $applicable = true;
-        } else {
-            /** @var Product $product */
-            $product = $portfolio->item;
-
-            if (!$product->available_quantity_updated_at || !$portfolio->stock_last_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
-                $applicable = true;
-            }
+        if (!$product instanceof Product) {
+            return false;
         }
 
-        return $applicable;
+        $lastSuccessAt = $portfolio->stock_last_updated_at;
+        $lastFailAt = $portfolio->stock_last_fail_updated_at;
+
+        $lastAttemptAt = $lastSuccessAt;
+        $lastAttemptFailed = false;
+
+        if ($lastFailAt && (!$lastAttemptAt || $lastFailAt->gt($lastAttemptAt))) {
+            $lastAttemptAt = $lastFailAt;
+            $lastAttemptFailed = true;
+        }
+
+        if (!$lastAttemptAt) {
+            return true;
+        }
+
+        if ($product->available_quantity_updated_at && $product->available_quantity_updated_at->gt($lastAttemptAt)) {
+            return true;
+        }
+
+        return $lastAttemptFailed && $lastAttemptAt->lt(now()->subDay());
     }
 
 

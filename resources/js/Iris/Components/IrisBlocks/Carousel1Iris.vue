@@ -92,8 +92,17 @@ watch(
     spaceBetween.value = (newVal || 0)
     refreshCarousel()
   },
-  { immediate: true, deep: true }
+  { deep: true }
 )
+
+const imageSizes = computed(() => {
+  const settings = props.fieldValue?.carousel_data?.carousel_setting?.slidesPerView || {}
+  const mobile = settings.mobile || 1
+  const tablet = settings.tablet || 2
+  const desktop = settings.desktop || 4
+
+  return `(max-width: 767px) ${Math.round(100 / mobile)}vw, (max-width: 1199px) ${Math.round(100 / tablet)}vw, ${Math.round(100 / desktop)}vw`
+})
 
 const breakpoints = computed(() => {
   const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
@@ -102,6 +111,18 @@ const breakpoints = computed(() => {
     768: { slidesPerView: settings.slidesPerView?.tablet || 2 },
     1200: { slidesPerView: settings.slidesPerView?.desktop || 4 }
   }
+})
+
+const blockDomId = computed(() => props.fieldValue?.id ? props.fieldValue.id : 'carousel' + props.indexBlock)
+
+const preInitSlideCss = computed(() => {
+  const gap = Number(props.fieldValue?.carousel_data?.carousel_setting?.spaceBetween || 0)
+  const rule = (n: number) =>
+    `#${blockDomId.value} .swiper:not(.swiper-initialized) .swiper-slide{width:calc((100% - ${(n - 1) * gap}px)/${n});margin-right:${gap}px}`
+  const bp = breakpoints.value
+  return rule(bp[0].slidesPerView)
+    + `@media(min-width:768px){${rule(bp[768].slidesPerView)}}`
+    + `@media(min-width:1200px){${rule(bp[1200].slidesPerView)}}`
 })
 
 const onSwiper = (swiper: any) => {
@@ -132,13 +153,14 @@ const idxSlideLoading = ref<number | null>(null)
 </script>
 
 <template>
-<div  :id="fieldValue?.id ? fieldValue?.id  : 'carousel' + indexBlock"  component="carousel" class="relative overflow-hidden">
+<div :id="blockDomId" component="carousel" class="relative overflow-hidden">
+    <component :is="'style'">{{ preInitSlideCss }}</component>
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(fieldValue?.container?.properties, props.screenType)
     }">
       <button v-if="swiperInstance?.allowSlidePrev && isLooping" ref="prevEl"
-        class="absolute left-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+        class="absolute left-6 top-1/2 -translate-y-1/2 z-20 flex h-[44px] w-[44px] items-center justify-center rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
         <FontAwesomeIcon :icon="faChevronLeft" />
       </button>
@@ -171,14 +193,17 @@ const idxSlideLoading = ref<number | null>(null)
                     :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)" >
                     <div class="overflow-hidden w-full flex items-center justify-center "
                       :style="{  ...getStyles(fieldValue.carousel_data.card_container?.image_properties, screenType) }">
-                      <Image 
-                        v-if="data?.image?.source" 
-                        :src="data.image.source" 
+                      <Image
+                        v-if="data?.image?.source"
+                        :src="data.image.source"
+                        :srcset="data.image.srcset"
+                        :sizes="imageSizes"
                         :alt="data.image.alt || `image-${index}`"
-                        :class="'image-container'" 
-                        class="w-full h-full flex justify-center items-center" 
+                        :class="'image-container'"
+                        class="w-full h-full flex justify-center items-center"
                         :height="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.height"
                         :width="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.width"
+                        :preload="Number(indexBlock) === 0 && index === 0"
                       />
                       <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
                         <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
@@ -203,7 +228,7 @@ const idxSlideLoading = ref<number | null>(null)
 
       </div>
       <button v-if="swiperInstance?.allowSlideNext && isLooping" ref="nextEl"
-        class="absolute right-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+        class="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex h-[44px] w-[44px] items-center justify-center rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
         <FontAwesomeIcon :icon="faChevronRight" />
       </button>

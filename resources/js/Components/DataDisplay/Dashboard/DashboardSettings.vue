@@ -8,12 +8,13 @@ import { debounce } from 'lodash-es'
 import axios from "axios"
 import { RadioGroup, RadioGroupLabel, RadioGroupOption } from '@headlessui/vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCog, faChevronLeft, faChevronRight } from "@far"
+import { faCog, faChevronLeft, faChevronRight, faTrashAlt } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
 import DashboardCustomDateRange from "./DashboardCustomDateRange.vue"
-library.add(faCog, faChevronLeft, faChevronRight)
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+library.add(faCog, faChevronLeft, faChevronRight, faTrashAlt)
 
 const props = defineProps<{
     intervals: Intervals
@@ -215,7 +216,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="relative px-1 md:px-4 md:mt-1">
+    <div class="relative px-3 sm:px-6 md:mt-1">
         <div class="mb-2 flex justify-between gap-2">
             <!-- Section: Period options list with overflow indicators -->
             <div class="relative flex-1 min-w-0">
@@ -384,6 +385,26 @@ onMounted(() => {
                                 </RadioGroupOption>
                             </div>
                         </RadioGroup>
+                    </div>
+
+                    <div class="flex items-center gap-x-2 flex-shrink-0">
+                        <ModalConfirmationDelete
+                            :title="trans('Break dashboard cache')"
+                            :description="trans('Clear cached time-series aggregates so dashboards recompute fresh data on the next load.')"
+                            :noLabel="trans('Break cache')"
+                            :routeDelete="{
+                                name: 'grp.models.dashboard.break_cache',
+                                method: 'post'
+                            }">
+                            <template #default="{ changeModel }">
+                                <button type="button" @click="changeModel"
+                                    v-tooltip="trans('Force recompute of cached dashboard data')"
+                                    class="flex items-center gap-x-2 rounded border border-gray-300 px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-200 whitespace-nowrap">
+                                    <FontAwesomeIcon icon="far fa-trash-alt" fixed-width aria-hidden="true" />
+                                    {{ trans('Break cache') }}
+                                </button>
+                            </template>
+                        </ModalConfirmationDelete>
                     </div>
                 </div>
             </div>
