@@ -29,7 +29,7 @@ const props = defineProps<{
     organisation: string
 }>()
 
-const emit = defineEmits(["close", "created"])
+const emit = defineEmits(["close", "created", "open-settings"])
 
 interface JiraProject {
     id: string
@@ -333,14 +333,20 @@ watch(
             </div>
         </div>
 
-        <Message v-if="!jiraConfigured" severity="warn" :closable="false" class="mb-2">
-            <div class="flex flex-col">
-                <span class="text-sm font-medium">{{ trans("Jira is not configured") }}</span>
-                <span class="text-xs opacity-80">
-                    {{ trans("Ask a group administrator to add Jira credentials in group settings.") }}
-                </span>
+        <div v-if="!jiraConfigured" class="py-4">
+            <Message severity="warn" :closable="false" class="mb-4">
+                <div class="flex flex-col">
+                    <span class="text-sm font-medium">{{ trans("You haven't set up your Jira account") }}</span>
+                    <span class="text-xs opacity-80">
+                        {{ trans("Add your own Jira credentials so tickets are reported under your name.") }}
+                    </span>
+                </div>
+            </Message>
+            <div class="flex items-center justify-end gap-2">
+                <Button type="tertiary" size="sm" :label="trans('Cancel')" @click="close" />
+                <Button size="sm" :icon="faJira" :label="trans('Open Jira settings')" @click="emit('open-settings')" />
             </div>
-        </Message>
+        </div>
 
         <div v-else-if="createdTicket" class="flex flex-col items-center text-center py-6 px-4">
             <FontAwesomeIcon :icon="faCheckCircle" class="text-emerald-500 text-3xl mb-3" />

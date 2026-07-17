@@ -51,6 +51,7 @@ const emit = defineEmits([
     "view-user-profile",
     "view-message-details",
     "transfer-agent-success",
+    "open-jira-settings",
 ])
 
 const layout: any = inject("layout", {})
@@ -92,6 +93,10 @@ const isJiraModalOpen = ref(false)
 const openJiraModal = () => {
     isMenuOpen.value = false
     isJiraModalOpen.value = true
+}
+const onOpenJiraSettings = () => {
+    isJiraModalOpen.value = false
+    emit("open-jira-settings")
 }
 
 const isReopening = ref(false)
@@ -856,6 +861,7 @@ const handleClickOutside = (e: MouseEvent) => {
             :session="session"
             :organisation="currentOrganisation"
             @close="isJiraModalOpen = false"
+            @open-settings="onOpenJiraSettings"
         />
     </div>
 </template>

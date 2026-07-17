@@ -8,30 +8,34 @@
 namespace App\Actions\Chat\Jira;
 
 use App\Actions\Chat\Jira\Concerns\WithChatJiraContext;
-use App\Actions\Helpers\Jira\GetJiraProjects;
+use App\Actions\Helpers\Jira\Traits\WithJiraApiRequest;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetChatSessionJiraProjects
 {
     use AsAction;
     use WithChatJiraContext;
+    use WithJiraApiRequest;
 
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession): JsonResponse
     {
-        if (!$this->currentChatAgent()) {
+        $agent = $this->currentChatAgent();
+
+        if (!$agent) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only authenticated agents can access Jira',
             ], 403);
         }
 
-        $group = $this->resolveJiraGroup($chatSession);
+        $credentials = $this->agentJiraCredentials($agent);
 
-        if (!$this->jiraIsConfigured($group)) {
+        if (!$this->jiraCredentialsConfigured($credentials)) {
             return response()->json([
                 'success'    => true,
                 'configured' => false,
@@ -40,13 +44,21 @@ class GetChatSessionJiraProjects
         }
 
         try {
-            $projects = GetJiraProjects::make()->action($group);
+            $response = $this->setJiraCredentials($credentials)->getJiraProjects(['maxResults' => 100]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
             ], 502);
         }
+
+        $projects = array_map(static function (array $project): array {
+            return [
+                'id'   => Arr::get($project, 'id'),
+                'key'  => Arr::get($project, 'key'),
+                'name' => Arr::get($project, 'name'),
+            ];
+        }, Arr::get($response, 'values', []));
 
         return response()->json([
             'success'    => true,

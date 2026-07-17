@@ -8,8 +8,6 @@
 namespace App\Actions\Chat\Jira\Concerns;
 
 use App\Models\Chat\ChatAgent;
-use App\Models\Chat\ChatSession;
-use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,25 +18,36 @@ trait WithChatJiraContext
         return Auth::user()?->chatAgent;
     }
 
-    protected function resolveJiraGroup(ChatSession $chatSession): ?Group
+    /**
+     * @return array{base_url: ?string, email: ?string, api_token: ?string}
+     */
+    protected function agentJiraCredentials(?ChatAgent $agent): array
     {
-        return $chatSession->shop?->group;
+        $jira = Arr::get($agent?->user?->settings ?? [], 'jira', []);
+
+        return [
+            'base_url'  => rtrim((string) Arr::get($jira, 'base_url', ''), '/'),
+            'email'     => Arr::get($jira, 'email'),
+            'api_token' => Arr::get($jira, 'api_token'),
+        ];
     }
 
-    protected function jiraIsConfigured(?Group $group): bool
+    /**
+     * @param  array{base_url: ?string, email: ?string, api_token: ?string}  $credentials
+     */
+    protected function jiraCredentialsConfigured(array $credentials): bool
     {
-        if (!$group) {
-            return false;
-        }
-
-        return filled(Arr::get($group->settings, 'jira.base_url'))
-            && filled(Arr::get($group->settings, 'jira.email'))
-            && filled(Arr::get($group->settings, 'jira.api_token'));
+        return filled(Arr::get($credentials, 'base_url'))
+            && filled(Arr::get($credentials, 'email'))
+            && filled(Arr::get($credentials, 'api_token'));
     }
 
-    protected function jiraBrowseUrl(?Group $group, ?string $issueKey): ?string
+    /**
+     * @param  array{base_url: ?string, email: ?string, api_token: ?string}  $credentials
+     */
+    protected function jiraBrowseUrl(array $credentials, ?string $issueKey): ?string
     {
-        $baseUrl = rtrim((string) Arr::get($group?->settings, 'jira.base_url'), '/');
+        $baseUrl = rtrim((string) Arr::get($credentials, 'base_url', ''), '/');
 
         if ($baseUrl === '' || blank($issueKey)) {
             return null;

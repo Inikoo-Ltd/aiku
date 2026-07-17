@@ -9,13 +9,11 @@ namespace App\Actions\Chat\Jira;
 
 use App\Actions\Chat\ChatSession\StoreChatEvent;
 use App\Actions\Chat\Jira\Concerns\WithChatJiraContext;
-use App\Actions\Helpers\Jira\CreateJiraTicket;
 use App\Actions\Helpers\Jira\Traits\WithJiraApiRequest;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
-use App\Models\SysAdmin\Group;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,20 +27,36 @@ class StoreChatSessionJiraTicket
     use WithJiraApiRequest;
 
     /**
+     * @param  array{base_url: ?string, email: ?string, api_token: ?string}  $credentials
      * @param  array<string, mixed>  $modelData
      *
      * @return array<string, mixed>
      */
-    public function handle(ChatSession $chatSession, Group $group, ChatAgent $agent, array $modelData): array
+    public function handle(ChatSession $chatSession, ChatAgent $agent, array $credentials, array $modelData): array
     {
-        $response = CreateJiraTicket::make()->action($group, [
-            'project_key' => Arr::get($modelData, 'project_key'),
-            'summary'     => Arr::get($modelData, 'summary'),
-            'issue_type'  => Arr::get($modelData, 'issue_type', 'Task'),
-            'description' => $this->composeDescription($modelData),
-            'priority'    => Arr::get($modelData, 'priority'),
-            'labels'      => Arr::get($modelData, 'labels', []),
-        ]);
+        $this->setJiraCredentials($credentials);
+
+        $fields = [
+            'project'   => ['key' => Arr::get($modelData, 'project_key')],
+            'summary'   => Arr::get($modelData, 'summary'),
+            'issuetype' => ['name' => Arr::get($modelData, 'issue_type', 'Task')],
+        ];
+
+        $description = $this->composeDescription($modelData);
+        if ($description !== null) {
+            $fields['description'] = $this->textToAtlassianDocument($description);
+        }
+
+        if (filled(Arr::get($modelData, 'priority'))) {
+            $fields['priority'] = ['id' => (string) Arr::get($modelData, 'priority')];
+        }
+
+        $labels = Arr::get($modelData, 'labels', []);
+        if (is_array($labels) && $labels !== []) {
+            $fields['labels'] = array_values($labels);
+        }
+
+        $response = $this->createJiraIssue($fields);
 
         if (!is_array($response) || Arr::get($response, 'error')) {
             $messages = Arr::get($response, 'messages', ['Failed to create Jira ticket']);
@@ -51,17 +65,15 @@ class StoreChatSessionJiraTicket
         }
 
         $issueKey = Arr::get($response, 'key');
-        $browseUrl = $this->jiraBrowseUrl($group, $issueKey);
+        $browseUrl = $this->jiraBrowseUrl($credentials, $issueKey);
 
         $attachments = Arr::get($modelData, 'attachments', []);
         $attachmentCount = 0;
 
         if (is_array($attachments) && $attachments !== []) {
-            $this->setJiraGroup($group)->attachJiraIssueFiles($issueKey, $attachments);
+            $this->attachJiraIssueFiles($issueKey, $attachments);
             $attachmentCount = count($attachments);
         }
-
-        $labels = Arr::get($modelData, 'labels', []);
 
         $ticket = [
             'id'               => Arr::get($response, 'id'),
@@ -111,6 +123,28 @@ class StoreChatSessionJiraTicket
         return $description === '' ? null : $description;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    protected function textToAtlassianDocument(string $text): array
+    {
+        return [
+            'type'    => 'doc',
+            'version' => 1,
+            'content' => [
+                [
+                    'type'    => 'paragraph',
+                    'content' => [
+                        [
+                            'type' => 'text',
+                            'text' => $text,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
     public function rules(): array
     {
         return [
@@ -140,12 +174,12 @@ class StoreChatSessionJiraTicket
             ], 403);
         }
 
-        $group = $this->resolveJiraGroup($chatSession);
+        $credentials = $this->agentJiraCredentials($agent);
 
-        if (!$this->jiraIsConfigured($group)) {
+        if (!$this->jiraCredentialsConfigured($credentials)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Jira is not configured for this group',
+                'message' => 'You have not configured your Jira account yet',
             ], 422);
         }
 
@@ -161,7 +195,7 @@ class StoreChatSessionJiraTicket
             ->all();
 
         try {
-            $ticket = $this->handle($chatSession, $group, $agent, $validated);
+            $ticket = $this->handle($chatSession, $agent, $credentials, $validated);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,

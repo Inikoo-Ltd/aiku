@@ -24,16 +24,18 @@ class GetChatSessionJiraLabels
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession): JsonResponse
     {
-        if (!$this->currentChatAgent()) {
+        $agent = $this->currentChatAgent();
+
+        if (!$agent) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only authenticated agents can access Jira',
             ], 403);
         }
 
-        $group = $this->resolveJiraGroup($chatSession);
+        $credentials = $this->agentJiraCredentials($agent);
 
-        if (!$this->jiraIsConfigured($group)) {
+        if (!$this->jiraCredentialsConfigured($credentials)) {
             return response()->json([
                 'success'    => true,
                 'configured' => false,
@@ -42,7 +44,7 @@ class GetChatSessionJiraLabels
         }
 
         try {
-            $response = $this->setJiraGroup($group)->getJiraLabels(['maxResults' => 500]);
+            $response = $this->setJiraCredentials($credentials)->getJiraLabels(['maxResults' => 500]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,

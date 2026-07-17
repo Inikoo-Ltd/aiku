@@ -18,6 +18,11 @@ trait WithJiraApiRequest
 {
     protected ?Group $jiraGroup = null;
 
+    /**
+     * @var array{base_url: ?string, email: ?string, api_token: ?string}|null
+     */
+    protected ?array $jiraCredentialsOverride = null;
+
     protected string $jiraApiVersion = '3';
 
     public int $jiraTimeOut = 30;
@@ -25,6 +30,20 @@ trait WithJiraApiRequest
     public function setJiraGroup(Group $group): static
     {
         $this->jiraGroup = $group;
+
+        return $this;
+    }
+
+    /**
+     * @param  array{base_url?: ?string, email?: ?string, api_token?: ?string}  $credentials
+     */
+    public function setJiraCredentials(array $credentials): static
+    {
+        $this->jiraCredentialsOverride = [
+            'base_url'  => rtrim((string) Arr::get($credentials, 'base_url'), '/'),
+            'email'     => Arr::get($credentials, 'email'),
+            'api_token' => Arr::get($credentials, 'api_token'),
+        ];
 
         return $this;
     }
@@ -50,6 +69,10 @@ trait WithJiraApiRequest
      */
     protected function getJiraCredentials(): array
     {
+        if ($this->jiraCredentialsOverride !== null) {
+            return $this->jiraCredentialsOverride;
+        }
+
         $settings = $this->getJiraGroup()->settings;
 
         return [

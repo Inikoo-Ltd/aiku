@@ -8,31 +8,34 @@
 namespace App\Actions\Chat\Jira;
 
 use App\Actions\Chat\Jira\Concerns\WithChatJiraContext;
-use App\Actions\Helpers\Jira\GetJiraIssueTypes;
+use App\Actions\Helpers\Jira\Traits\WithJiraApiRequest;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetChatSessionJiraIssueTypes
 {
     use AsAction;
     use WithChatJiraContext;
+    use WithJiraApiRequest;
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function asController(?string $organisation, ChatSession $chatSession, string $project, ActionRequest $request): JsonResponse
+    public function asController(?string $organisation, ChatSession $chatSession, string $project): JsonResponse
     {
-        if (!$this->currentChatAgent()) {
+        $agent = $this->currentChatAgent();
+
+        if (!$agent) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only authenticated agents can access Jira',
             ], 403);
         }
 
-        $group = $this->resolveJiraGroup($chatSession);
+        $credentials = $this->agentJiraCredentials($agent);
 
-        if (!$this->jiraIsConfigured($group)) {
+        if (!$this->jiraCredentialsConfigured($credentials)) {
             return response()->json([
                 'success'    => true,
                 'configured' => false,
@@ -41,7 +44,7 @@ class GetChatSessionJiraIssueTypes
         }
 
         try {
-            $issueTypes = GetJiraIssueTypes::make()->action($group, $project);
+            $response = $this->setJiraCredentials($credentials)->getJiraProjectIssueTypes($project);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -49,9 +52,16 @@ class GetChatSessionJiraIssueTypes
             ], 502);
         }
 
-        $issueTypes = array_values(array_filter($issueTypes, static function (array $issueType): bool {
-            return !($issueType['subtask'] ?? false);
-        }));
+        $issueTypes = array_values(array_filter(
+            array_map(static function (array $issueType): array {
+                return [
+                    'id'      => Arr::get($issueType, 'id'),
+                    'name'    => Arr::get($issueType, 'name'),
+                    'subtask' => (bool) Arr::get($issueType, 'subtask', false),
+                ];
+            }, Arr::get($response, 'issueTypes', [])),
+            static fn (array $issueType): bool => !$issueType['subtask']
+        ));
 
         return response()->json([
             'success'    => true,
