@@ -27,6 +27,7 @@ use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
+use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
@@ -65,7 +66,9 @@ use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\UI\Grp\Layout\GetShopNavigation;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
@@ -107,9 +110,11 @@ use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Models\SysAdmin\Permission;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
@@ -834,6 +839,68 @@ test('UI index ordering purges', function () {
                     ->etc()
             );
     });
+});
+
+test('UI index ordering invoices by payment status', function () {
+    $this->withoutExceptionHandling();
+
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $this->user->givePermissionTo(
+        Permission::where('name', "orders.{$this->shop->id}.view")->firstOrFail()
+    );
+    Cache::forget(
+        "auth-user:{$this->user->id};can:orders.{$this->shop->id}.view|accounting.{$this->organisation->id}.view"
+    );
+    actingAs($this->user->fresh());
+
+    $orderingNavigation = GetShopNavigation::run($this->shop, $this->user->fresh());
+    expect(collect(data_get($orderingNavigation, 'ordering.topMenu.subSections'))->pluck('route.name')->all())
+        ->toContain('grp.org.shops.show.ordering.invoices.index');
+
+    StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+    $paidInvoice = StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+    $paidInvoice->updateQuietly([
+        'pay_status' => InvoicePayStatusEnum::PAID,
+    ]);
+
+    $invoiceQuery = Invoice::query()
+        ->where('shop_id', $this->shop->id)
+        ->where('type', InvoiceTypeEnum::INVOICE)
+        ->whereNot('in_process', true);
+
+    $allInvoicesCount    = (clone $invoiceQuery)->count();
+    $paidInvoicesCount   = (clone $invoiceQuery)->where('pay_status', InvoicePayStatusEnum::PAID)->count();
+    $unpaidInvoicesCount = (clone $invoiceQuery)->where('pay_status', InvoicePayStatusEnum::UNPAID)->count();
+
+    $routeParameters = [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+    ];
+
+    get(route('grp.org.shops.show.ordering.invoices.index', $routeParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Ordering/Invoices')
+            ->where('title', 'Invoices')
+            ->where('tabs.current', 'all')
+            ->has('tabs.navigation', 3)
+            ->where('all.meta.total', $allInvoicesCount)
+            ->where('pageHead.subNavigation.1.route.name', 'grp.org.shops.show.ordering.invoices.index')
+            ->has('breadcrumbs', 3));
+
+    get(route('grp.org.shops.show.ordering.invoices.index', [
+        ...$routeParameters,
+        'tab' => 'paid',
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('tabs.current', 'paid')
+        ->where('paid.meta.total', $paidInvoicesCount));
+
+    get(route('grp.org.shops.show.ordering.invoices.index', [
+        ...$routeParameters,
+        'tab' => 'unpaid',
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('tabs.current', 'unpaid')
+        ->where('unpaid.meta.total', $unpaidInvoicesCount));
 });
 
 test('UI create ordering purge', function () {
