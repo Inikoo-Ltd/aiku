@@ -7,15 +7,17 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, ref } from "vue"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
+import Timeline from "@/Components/Utils/Timeline.vue"
+import { Timeline as TSTimeline } from "@/types/Timeline"
 
 const props = defineProps<{
     title: string,
@@ -26,6 +28,12 @@ const props = defineProps<{
     },
     attachments?: {}
     attachmentRoutes?: {}
+    stock_delivery: {}
+    items?: {}
+    history?: {}
+    timelines: {
+        [key: string]: TSTimeline
+    }
 }>()
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle } from '@fal'
@@ -41,10 +49,10 @@ const component = computed(() => {
 
     const components = {
         details: ModelDetails,
-        history: ModelChangelog,
+        history: TableHistories,
         attachments: TableAttachments,
         SHOWCASE: ComsDashboard,
-        items: ComsDashboard,
+        items: TableStockDeliveryItems,
     }
     return components[currentTab.value]
 
@@ -60,6 +68,13 @@ const component = computed(() => {
                 icon="upload" />
         </template>
     </PageHeading>
+   	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
+		<Timeline
+			:options="timelines"
+			:state="stock_delivery.state"
+			:slidesPerView="6"
+			:format-time="'MMMM d yyyy, HH:mm'" />
+	</div>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute">
     </component>
