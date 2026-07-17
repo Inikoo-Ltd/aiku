@@ -14,6 +14,7 @@ use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Dispatching\RetinaShipmentsResource;
 use App\Models\Comms\DispatchedEmail;
@@ -29,19 +30,35 @@ class SendDispatchedReplacementOrderEmailToCustomer extends OrgAction
     use WithOrderingCustomerNotification;
 
 
-    private Email $email;
 
     public function handle(DeliveryNote $deliveryNote): ?DispatchedEmail
     {
         $order = $deliveryNote->orders->first();
 
-        list($emailHtmlBody, $dispatchedEmail) = $this->getEmailBody($order->customer, OutboxCodeEnum::DELIVERY_CONFIRMATION);
-        if (!$emailHtmlBody) {
+        if (!$order) {
             return null;
         }
+
+        if ($order->shop->type === ShopTypeEnum::EXTERNAL) {
+            return null;
+        }
+
+        $previousLocale = app()->getLocale();
+        app()->setLocale($order->shop->language->code);
+
+        list($emailHtmlBody, $dispatchedEmail) = $this->getEmailBody($order->customer, OutboxCodeEnum::DELIVERY_CONFIRMATION);
+        if (!$emailHtmlBody) {
+            app()->setLocale($previousLocale);
+
+            return null;
+        }
+
         $outbox = $dispatchedEmail->outbox;
+
+        $order->dispatchedEmails()->attach($dispatchedEmail, ['outbox_id' => $outbox->id]);
+
         $orderUrl   = $this->getOrderLink($order);
-        $deliveryNote = $order->deliveryNotes->first();
+
         $shipments    = $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null;
 
         // Create an email-client compatible HTML block with order information
@@ -91,7 +108,7 @@ class SendDispatchedReplacementOrderEmailToCustomer extends OrgAction
                                             <strong><span class="fallback-text">'.__('Dispatched Date').':</span></strong>
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
-                                            <span class="fallback-text">'.($order->dispatched_at ? $order->dispatched_at->format('F j, Y h:i A P') : 'N/A').'</span>
+                                            <span class="fallback-text">'.($deliveryNote->dispatched_at ? $deliveryNote->dispatched_at->format('F j, Y h:i A P') : 'N/A').'</span>
                                         </td>
                                     </tr>';
 
@@ -111,21 +128,25 @@ class SendDispatchedReplacementOrderEmailToCustomer extends OrgAction
             </tr>
         </table>';
 
-        return $this->sendEmailWithMergeTags(
+        $result = $this->sendEmailWithMergeTags(
             $dispatchedEmail,
             $outbox->emailOngoingRun->sender(),
             $outbox->emailOngoingRun?->email?->subject,
             $emailHtmlBody,
             '',
             additionalData: [
-                'order'           => $orderHtmlBlock,
-                'customer_name'   => $order->customer->name,
-                'order_reference' => $order->reference,
-                'date'            => $order->created_at->format('F jS, Y'),
-                'order_link'      => $orderUrl
+               'order'           => $orderHtmlBlock,
+               'customer_name'   => $order->customer->name,
+               'order_reference' => $order->reference,
+               'date'            => $order->created_at->format('F jS, Y'),
+               'order_link'      => $orderUrl
             ],
             senderName: $outbox->emailOngoingRun->senderName(),
         );
+
+        app()->setLocale($previousLocale);
+
+        return $result;
     }
 
 
@@ -160,15 +181,21 @@ class SendDispatchedReplacementOrderEmailToCustomer extends OrgAction
 
                     if ($trackingNumber) {
                         if ($trackingUrl && $trackingUrl !== __('tracking')) {
-                            $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">'.$shipperName.': </span>';
-                            $html .= '<a href="'.$trackingUrl.'" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">'.$trackingNumber.'</span></a></div>';
+                            $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': </span>';
+                            $html .= '<a href="' . $trackingUrl . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $trackingNumber . '</span></a></div>';
                         } else {
-                            $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">'.$shipperName.': '.$trackingNumber.'</span></div>';
+                            $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': ' . $trackingNumber . '</span></div>';
                         }
                     }
                 }
             } elseif (!empty($shipment['tracking'])) {
-                $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">'.$shipperName.': '.$shipment['tracking'].'</span></div>';
+                $shipperUrl = $shipment['shipper_url'] ?? null;
+                if ($shipperUrl) {
+                    $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': </span>';
+                    $html .= '<a href="' . $shipperUrl . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $shipment['tracking'] . '</span></a></div>';
+                } else {
+                    $html .= '<div style="margin-bottom: 4px;"><span class="fallback-text">' . $shipperName . ': ' . $shipment['tracking'] . '</span></div>';
+                }
             }
         }
 

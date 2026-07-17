@@ -166,7 +166,6 @@ const onPointerDown = (event: PointerEvent) => {
   isPointerDown = true
   dragStartX = event.clientX
   dragStartPos = pos
-  el.setPointerCapture(event.pointerId)
 }
 
 const onPointerMove = (event: PointerEvent) => {
@@ -175,6 +174,10 @@ const onPointerMove = (event: PointerEvent) => {
 
   const delta = event.clientX - dragStartX
   if (!isDragging.value && Math.abs(delta) < DRAG_THRESHOLD) return
+
+  if (!isDragging.value) {
+    el.setPointerCapture(event.pointerId)
+  }
 
   isDragging.value = true
   pos = wrapPos(dragStartPos - delta)
@@ -234,8 +237,9 @@ onBeforeUnmount(stopAutoMove)
                 :style="imageContainerStyle"
               >
                 <component
-                  :is="data?.link?.href ? LinkIris : 'div'"
-                  :href="data?.link?.url ?? data?.link?.href "
+                  :is="(data?.link?.href || data?.link?.url) ? LinkIris : 'div'"
+                  :href="data?.link?.url ?? data?.link?.href"
+                  :canonical_url="data?.link?.canonical_url"
                   :target="data?.link?.target"
                   :type="data?.link?.type"
                   class="overflow-hidden w-full flex items-center justify-center relative image-hover-wrap"

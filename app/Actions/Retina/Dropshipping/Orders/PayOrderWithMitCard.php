@@ -98,7 +98,8 @@ class PayOrderWithMitCard
             'origin'      => 'aiku',
             'operation'   => 'mit',
             'order_id'    => $order->id,
-            'environment' => app()->environment()
+            'environment' => app()->environment(),
+            'server'      => config('app.server_name') ?? ''
         ];
 
         try {

@@ -26,6 +26,7 @@ const props = defineProps<{
 interface PagePropsWithFlash extends InertiaPageProps {
     flash: {
         notification?: FlashNotificationType
+        pending_cko_payment_id?: string
     }
 }
 
@@ -35,8 +36,10 @@ console.log(props)
 
 
 
-const MAX_RETRIES = 5
+const MAX_RETRIES = 12
 const retryCount = ref(0)
+const paymentDone = ref(false)
+const fromPendingRedirect = ref(false)
 
 
 const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
@@ -57,9 +60,13 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
         if (status === "success") {
             console.log("Payment successful:", response)
             retryCount.value = 0
-            router.post(route("retina.redirect_success_paid_top_up", {
-                creditTransaction: response.data.credit_transaction_id,
-            }))
+            if (response.data.credit_transaction_id) {
+                router.post(route("retina.redirect_success_paid_top_up", {
+                    creditTransaction: response.data.credit_transaction_id,
+                }))
+            } else {
+                window.location.href = route("retina.top_up.dashboard")
+            }
 
         } else if (status === "error") {
             console.warn("Payment error:", msg)
@@ -70,6 +77,9 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
                 type: "error"
             })
 
+            if (fromPendingRedirect.value) {
+                setTimeout(() => window.location.reload(), 2500)
+            }
 
         } else {
             console.log("Payment still processing:", status)
@@ -80,11 +90,11 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
                 setTimeout(() => hitWebhookAfterSuccess(paymentResponseId), 5000)
             } else {
                 retryCount.value = 0
-                // ⛔ Final error after max retries
                 notify({
-                    title: trans("Something went wrong"),
-                    text: response.data.msg ? response.data.msg : trans("Failed to communicate with the payment service."),
-                    type: "error"
+                    title: trans("Payment still processing"),
+                    text: trans("Your balance will be topped up automatically once the payment is confirmed."),
+                    type: "warn",
+                    duration: 10000,
                 })
             }
         }
@@ -93,13 +103,22 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
         retryCount.value = 0
         notify({
             title: trans("Something went wrong"),
-            text: error.data.message ? error.data.message : trans("Failed to communicate with the payment service."),
+            text: error?.data?.message || error?.message || trans("Failed to communicate with the payment service."),
             type: "error"
         })
     }
 }
 
 onMounted(async () => {
+    const pendingPaymentId = page.props?.flash?.pending_cko_payment_id
+    if (pendingPaymentId) {
+        fromPendingRedirect.value = true
+        paymentDone.value = true
+        isLoading.value = false
+        hitWebhookAfterSuccess(pendingPaymentId)
+        return
+    }
+
     // isLoading.value = true
     const checkout = await loadCheckoutWebComponents({
         paymentSession: props.checkout_com_data?.data,
@@ -112,6 +131,7 @@ onMounted(async () => {
 
         onPaymentCompleted: (_component, paymentResponse) => {
             console.log("Create Payment with PaymentId: ", paymentResponse.id)
+            paymentDone.value = true
             hitWebhookAfterSuccess(paymentResponse.id)
         },
 
@@ -144,10 +164,17 @@ onMounted(async () => {
     <FlashNotification :notification="page.props.flash.notification" />
     <div class="flex justify-center">
         <div class="mt-6 relative w-full max-w-xl min-h-[200px]">
-            <div id="flow-container" class="w-full border-b border-gray-300" />
-            <div v-show="isLoading" class="pointer-events-none absolute top-0 h-full w-full z-10">
-                <div class="w-full min-h-[200px] h-full xmd:h-[511px] skeleton">
+            <template v-if="!paymentDone">
+                <div id="flow-container" class="w-full border-b border-gray-300" />
+                <div v-show="isLoading" class="pointer-events-none absolute top-0 h-full w-full z-10">
+                    <div class="w-full min-h-[200px] h-full xmd:h-[511px] skeleton">
+                    </div>
                 </div>
+            </template>
+
+            <div v-else class="h-64 flex flex-col items-center justify-center gap-y-2 bg-gray-100 border border-gray-300 rounded">
+                <FontAwesomeIcon :icon="faSpinner" class="text-3xl animate-spin text-gray-500" fixed-width aria-hidden="true" />
+                <div>{{ trans("Payment done. Waiting for confirmation...") }}</div>
             </div>
 
             <Transition name="fade">
