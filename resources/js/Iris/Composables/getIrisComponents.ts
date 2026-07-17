@@ -5,6 +5,7 @@ import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 /* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
+import ListProductsEcomIris from "@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"
 
 const async = (loader: () => Promise<any>): Component =>
 	defineAsyncComponent({
@@ -22,7 +23,7 @@ const SubDepartmentDescriptionIris = async(() => import("@/Iris/Components/IrisB
 
 const ListProductsIris = async(() => import("@/Iris/Components/IrisBlocks/Products/ds/ListProductsIris.vue"))
 const ProductRender = async(() => import("@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue"))
-const ListProductsEcomIris = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"))
+/* const ListProductsEcomIris = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue")) */
 const ProductIris1 = async(() => import("@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue"))
 const ProductIris1Ecom = async(() => import("@/Components/CMS/Webpage/Product1/Ecommerce/ProductIris1Ecom.vue"))
 const LuigiTrends1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue"))
