@@ -53,6 +53,19 @@ class CalculateOrderShipping
             }
         }
 
+        if (!$discount) {
+            $scopedOfferData = $this->matchScopedShippingOffer($order, $shopOffersData);
+            if ($scopedOfferData) {
+                $discount = true;
+
+                $shippingOfferData = $scopedOfferData;
+                $offerId           = Arr::get($scopedOfferData, 'id');
+                if ($order->discounted_shipping_offer_id != $offerId) {
+                    $insertTransactionHasOfferAllowance = true;
+                }
+            }
+        }
+
         if (!$discount && $order->offer_voucher_id) {
             $discountVoucherData = Arr::get($order->shop->offers_data, 'discounted_shipping_vouchers', []);
             if (!empty($discountVoucherData) && key_exists($order->offer_voucher_id, $discountVoucherData)) {
@@ -278,6 +291,50 @@ class CalculateOrderShipping
 
 
         return $helperZone->match($helperAddress);
+    }
+
+    public function matchScopedShippingOffer(Order $order, array $shopOffersData): ?array
+    {
+        foreach (Arr::get($shopOffersData, 'discounted_shipping_scoped', []) as $scopedOfferData) {
+            $scopeAmount = $this->getScopeAmount($order, Arr::get($scopedOfferData, 'target_type'), Arr::get($scopedOfferData, 'target_id'));
+            if ($scopeAmount > 0 && $scopeAmount >= Arr::get($scopedOfferData, 'min_amount', 0)) {
+                return $scopedOfferData;
+            }
+        }
+
+        return null;
+    }
+
+    private function getScopeAmount(Order $order, ?string $targetType, $targetId): float
+    {
+        if (!$targetId) {
+            return 0.0;
+        }
+
+        return match ($targetType) {
+            'department' => (float)Arr::get($order->categories_data, "department.$targetId.net_amount", 0),
+            'sub_department' => (float)Arr::get($order->categories_data, "sub_department.$targetId.net_amount", 0),
+            'family' => (float)Arr::get($order->categories_data, "family.$targetId.net_amount", 0),
+            'product' => (float)DB::table('transactions')
+                ->where('order_id', $order->id)
+                ->where('model_type', 'Product')
+                ->where('model_id', $targetId)
+                ->whereNull('deleted_at')
+                ->sum('net_amount'),
+            'collection' => (float)DB::table('transactions')
+                ->where('order_id', $order->id)
+                ->where('model_type', 'Product')
+                ->whereNull('deleted_at')
+                ->whereIn(
+                    'model_id',
+                    DB::table('collection_has_models')
+                        ->where('collection_id', $targetId)
+                        ->where('model_type', 'Product')
+                        ->pluck('model_id')
+                )
+                ->sum('net_amount'),
+            default => 0.0,
+        };
     }
 
     public function saveTransactionOfferAllowances(Order $order, Transaction $shippingTransaction, array $shippingOfferData): void

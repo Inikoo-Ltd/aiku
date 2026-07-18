@@ -63,6 +63,7 @@ use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -82,6 +83,7 @@ use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
@@ -1925,6 +1927,58 @@ describe('calculate order discounts', function () {
         expect((float)$transaction->net_amount)->toBe(270.0);
 
         SuspendOffer::run($voucherOffer);
+    });
+
+    test('scoped discounted shipping offers', function () {
+        $order       = Order::first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $offer = StoreDiscountShipping::make()->handle($this->shop, [
+            'name'             => 'Family free shipping',
+            'min_order_amount' => 250,
+            'target_type'      => 'family',
+            'target_id'        => $this->product->family_id,
+            'start_at'         => now()->toDateTimeString(),
+            'end_at'           => now()->addDays(7)->toDateTimeString(),
+        ]);
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and(Arr::get($offer->trigger_data, 'target_type'))->toBe('family')
+            ->and(Arr::get($offer->trigger_data, 'target_id'))->toBe($this->product->family_id);
+
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+
+        $scopedData = Arr::get($this->shop->offers_data, 'discounted_shipping_scoped');
+        expect($scopedData)->toHaveKey($offer->id)
+            ->and(Arr::get($this->shop->offers_data, 'discounted_shipping.id'))->not->toBe($offer->id);
+
+        $order->refresh();
+        $matched = CalculateOrderShipping::make()->matchScopedShippingOffer($order, $this->shop->offers_data);
+        expect(Arr::get($matched, 'id'))->toBe($offer->id)
+            ->and(Arr::get($matched, 'offer_allowance_id'))->not->toBeNull();
+
+        $offer->update(['trigger_data' => ['min_order_amount' => 5000, 'target_type' => 'family', 'target_id' => $this->product->family_id]]);
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+        expect(CalculateOrderShipping::make()->matchScopedShippingOffer($order, $this->shop->offers_data))->toBeNull();
+
+        $offer->update(['trigger_data' => ['min_order_amount' => 250, 'target_type' => 'product', 'target_id' => $this->product->id]]);
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+        expect(Arr::get(CalculateOrderShipping::make()->matchScopedShippingOffer($order, $this->shop->offers_data), 'id'))->toBe($offer->id);
+
+        $collection = Collection::where('shop_id', $this->shop->id)->where('code', 'VCOL')->first();
+        expect($collection)->not->toBeNull();
+        $offer->update(['trigger_data' => ['min_order_amount' => 250, 'target_type' => 'collection', 'target_id' => $collection->id]]);
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+        expect(Arr::get(CalculateOrderShipping::make()->matchScopedShippingOffer($order, $this->shop->offers_data), 'id'))->toBe($offer->id);
+
+        SuspendOffer::run($offer);
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+        expect(Arr::get($this->shop->offers_data, 'discounted_shipping_scoped'))->toBe([]);
     });
 
     test('shop wide offers: amount threshold and unconditional', function () {

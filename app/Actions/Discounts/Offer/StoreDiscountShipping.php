@@ -38,14 +38,21 @@ class StoreDiscountShipping extends OrgAction
     public function handle(Shop $shop, array $modelData): ?Offer
     {
         $minOrderAmount = (int)Arr::pull($modelData, 'min_order_amount');
+        $targetType     = Arr::pull($modelData, 'target_type');
+        $targetId       = Arr::pull($modelData, 'target_id');
 
         $offerCampaign = OfferCampaign::where('shop_id', $shop->id)->where('type', OfferCampaignTypeEnum::SHIPPING)->first();
         if (!$offerCampaign) {
             return null;
         }
 
-
-        $code = Str::lower($offerCampaign->code.'-'.$shop->code);
+        $triggerData = ['min_order_amount' => $minOrderAmount];
+        $code        = Str::lower($offerCampaign->code.'-'.$shop->code);
+        if ($targetType && $targetType != 'shop' && $targetId) {
+            $triggerData['target_type'] = $targetType;
+            $triggerData['target_id']   = (int)$targetId;
+            $code                       .= '-'.$targetType.'-'.$targetId;
+        }
         data_set($modelData, 'code', $code, false);
 
         $english = Language::where('code', 'en')->first();
@@ -61,13 +68,7 @@ class StoreDiscountShipping extends OrgAction
         data_set($modelData, 'trigger_type', 'Customer');//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
         //  data_set($modelData, 'trigger_id', $shop->id);
 
-        data_set(
-            $modelData,
-            'trigger_data',
-            [
-                'min_order_amount' => $minOrderAmount
-            ]
-        );
+        data_set($modelData, 'trigger_data', $triggerData);
 
         data_set(
             $modelData,
@@ -100,6 +101,8 @@ class StoreDiscountShipping extends OrgAction
         return [
             'name'             => ['sometimes', 'string', 'max:255'],
             'min_order_amount' => ['nullable', 'required_if:type,amount', 'numeric', 'min:0'],
+            'target_type'      => ['sometimes', 'nullable', 'string', 'in:shop,department,sub_department,family,collection,product'],
+            'target_id'        => ['sometimes', 'nullable', 'integer'],
             'start_at'         => [
                 'required',
                 'date',
