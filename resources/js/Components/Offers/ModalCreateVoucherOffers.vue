@@ -45,15 +45,23 @@ const closeModal = () => {
 }
 const isLoadingSubmit = ref(false)
 
-type VoucherType = "percentage_off" | "discounted_shipping" | "gift"
+type VoucherType = "percentage_off" | "amount_off" | "discounted_shipping" | "gift"
 const offerType = ref<VoucherType>("percentage_off")
 const offerTypeOptions: { value: VoucherType; label: string }[] = [
 	{ value: "percentage_off", label: "Percentage off" },
+	{ value: "amount_off", label: "Amount off" },
 	{ value: "discounted_shipping", label: "Discounted shipping" },
 	{ value: "gift", label: "Free Gift" },
 ]
 const isPercentageOff = computed(() => offerType.value === "percentage_off")
+const isAmountOff = computed(() => offerType.value === "amount_off")
 const isFreeGift = computed(() => offerType.value === "gift")
+
+const MAX_AMOUNT_OFF_RATIO = 0.3
+const amountOff = ref<number | null>(null)
+const maxAmountOff = computed(() =>
+	Math.round((offerAmount.value ?? 0) * MAX_AMOUNT_OFF_RATIO * 100) / 100
+)
 
 const productId = ref<number | null>(0)
 const selectedProduct = ref<any | null>(null)
@@ -228,6 +236,7 @@ const submitVoucherOffer = () => {
 		end_at: formatDate(endDate.value),
 		can_customer_reuse: reuseCustomer.value,
 		percentage_off: isPercentageOff.value ? discountPercentage.value : null,
+		amount_off: isAmountOff.value ? amountOff.value : null,
 		gift_product_id: isFreeGift.value ? productId.value : null,
 		gift_quantity: isFreeGift.value ? quantity.value : null,
 		target_type: targetPayload?.target_type ?? null,
@@ -291,6 +300,7 @@ function resetForm() {
 	startDate.value = null
 	endDate.value = null
 	discountPercentage.value = null
+	amountOff.value = null
 	reuseCustomer.value = false
 	productId.value = null
 	quantity.value = 1
@@ -321,6 +331,12 @@ const isFormInvalid = computed(() => {
 	if (isPercentageOff.value) {
 		const pct = discountPercentage.value
 		if (pct === null || pct === undefined || pct <= 0 || pct > 100) return true
+	}
+
+	if (isAmountOff.value) {
+		if (!offerAmount.value || offerAmount.value <= 0) return true
+		if (!amountOff.value || amountOff.value <= 0) return true
+		if (amountOff.value > maxAmountOff.value) return true
 	}
 
 	if(isFreeGift.value) {
@@ -572,6 +588,42 @@ const isFormInvalid = computed(() => {
 							:min="0"
 							:max="100"
 							class="w-full" />
+					</div>
+
+					<!-- Section: Amount off -->
+					<div v-if="isAmountOff" class="space-y-2">
+						<div class="font-medium mb-2 flex items-center gap-x-1">
+							<FontAwesomeIcon
+								icon="fas fa-asterisk"
+								class="font-light text-xs text-red-400 align-middle" />
+							{{ trans("Amount off") }}:
+							<InformationIcon
+								:information="trans('Fixed amount deducted from the order (before tax). Requires a minimum purchase amount.')" />
+						</div>
+
+						<InputNumber
+							v-model="amountOff"
+							inputId="offer_amount_off"
+							mode="currency"
+							:currency="props.shop_data.currency_code"
+							locale="en-US"
+							:min="0"
+							:max="maxAmountOff || undefined"
+							:disabled="!offerAmount || offerAmount <= 0"
+							:placeholder="trans('Enter amount off')"
+							class="w-full"
+							inputClass="w-full" />
+
+						<p v-if="!offerAmount || offerAmount <= 0" class="text-xs text-amber-600">
+							{{ trans("Set a minimum purchase amount first: amount off vouchers require one.") }}
+						</p>
+						<p v-else class="text-xs text-gray-500">
+							{{ trans("Maximum 30% of the minimum purchase amount") }}:
+							<span class="font-medium text-gray-700">{{ maxAmountOff }} {{ props.shop_data.currency_code }}</span>
+						</p>
+						<p v-if="amountOff && amountOff > maxAmountOff" class="text-xs text-red-500">
+							{{ trans("The amount off cannot exceed 30% of the minimum purchase amount") }}
+						</p>
 					</div>
 
 					<!-- Section: Product Gift -->

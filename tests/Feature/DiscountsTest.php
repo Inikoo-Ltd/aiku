@@ -98,6 +98,7 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -2194,6 +2195,74 @@ describe('calculate order discounts', function () {
         ShopHydrateOffersData::run($this->shop->id);
         $this->shop->refresh();
         expect(Arr::get($this->shop->offers_data, 'discounted_shipping_scoped'))->toBe([]);
+    });
+
+    test('amount off vouchers: 30% cap validation, order totals and tax base', function () {
+        $order       = Order::first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((float)$order->refresh()->amount_off)->toBe(0.0);
+
+        expect(fn () => StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'CASH40',
+            'name'               => 'Too big amount off',
+            'offer_amount'       => 100,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'amount_off'         => 40,
+            'target_type'        => 'shop',
+            'target_id'          => $this->shop->id,
+            'allowance_type'     => 'amount_off',
+        ]))->toThrow(ValidationException::class);
+
+        expect(fn () => StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'CASH25',
+            'name'               => 'No min purchase',
+            'offer_amount'       => 0,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'amount_off'         => 25,
+            'target_type'        => 'shop',
+            'target_id'          => $this->shop->id,
+            'allowance_type'     => 'amount_off',
+        ]))->toThrow(ValidationException::class);
+
+        $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'CASH25',
+            'name'               => '25 off',
+            'offer_amount'       => 100,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'amount_off'         => 25,
+            'target_type'        => 'shop',
+            'target_id'          => $this->shop->id,
+            'allowance_type'     => 'amount_off',
+        ]);
+        $voucherOffer->refresh();
+
+        expect($voucherOffer->offerAllowances->first()->type)->toBe(OfferAllowanceType::AMOUNT_OFF)
+            ->and((float)Arr::get($voucherOffer->offerAllowances->first()->data, 'amount_off'))->toBe(25.0);
+
+        AddVoucherToOrder::run($order, ['voucher' => 'CASH25']);
+        $order->refresh();
+        $transaction->refresh();
+
+        $taxRate = $order->taxCategory->rate;
+        expect((float)$order->amount_off)->toBe(25.0)
+            ->and((float)$transaction->net_amount)->toBe(270.0)
+            ->and((float)$order->net_amount)->toBe(245.0)
+            ->and((float)$order->tax_amount)->toEqualWithDelta(245.0 * $taxRate, 0.01)
+            ->and((float)$order->total_amount)->toEqualWithDelta(245.0 * (1 + $taxRate), 0.01);
+
+        RemoveVoucherFromOrder::run($order);
+        $order->refresh();
+        expect((float)$order->amount_off)->toBe(0.0)
+            ->and((float)$order->net_amount)->toBe(270.0);
+
+        SuspendOffer::run($voucherOffer);
     });
 
     test('CalculateOrderShipping end to end: zone schema, scoped discount and revert', function () {

@@ -29,6 +29,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     private array $enabledOffers = [];
     private array $offerMeters = [];
+    private float $amountOff = 0.0;
     private bool $isLastInvoicedSet = false;
     private bool $isGrAmnestyOfferIdSet = false;
     private int|null $daysSinceLastInvoiced = null;
@@ -53,6 +54,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
         $this->transactions = collect();
+        $this->amountOff    = 0.0;
 
         $this->setEnabledOffers($order);
 
@@ -126,6 +128,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 $this->regenerateSubmittedTransactionDiscounts($order);
             }
         });
+
+        if ((float)$order->amount_off != $this->amountOff) {
+            $order->update(['amount_off' => $this->amountOff]);
+        }
 
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
@@ -265,7 +271,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
                 ->where('shop_id', $order->shop_id)
                 ->where('status', true)
-                ->where('allowance_type', 'percentage_off')
+                ->whereIn('allowance_type', ['percentage_off', 'amount_off'])
                 ->where('id', $order->offer_voucher_id)
                 ->first();
 
@@ -591,6 +597,12 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function processAllowance(array $offerData, object $allowanceData): void
     {
+        if ($allowanceData->type == 'amount_off') {
+            $this->processAllowanceAmountOff($allowanceData);
+
+            return;
+        }
+
         if ($allowanceData->target_type == 'all_products_in_order') {
             $this->processAllowanceAllProductsInOrder($offerData, $allowanceData);
         } elseif ($allowanceData->target_type == 'all_products_in_product_category') {
@@ -749,27 +761,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
-        $collectionProductIds = [];
-        if ($filterBy == 'collection') {
-            $collectionProductIds = DB::table('collection_has_models')
-                ->where('collection_id', Arr::get($allowanceOpsData, 'collection_id'))
-                ->where('model_type', 'Product')
-                ->pluck('model_id')
-                ->all();
-            if ($collectionProductIds === []) {
-                return;
-            }
-        }
-
-        $matchingTransactions = $this->transactions->filter(
-            fn ($transaction) => match ($filterBy) {
-                'family' => Arr::get($allowanceOpsData, 'category_id') == $transaction->family_id,
-                'department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->department_id,
-                'sub_department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->sub_department_id,
-                'collection' => in_array($transaction->model_id, $collectionProductIds),
-                default => true,
-            }
-        );
+        $matchingTransactions = $this->getMatchingTransactions($allowanceOpsData, $filterBy);
 
         $itemAmount = (float)Arr::get($allowanceOpsData, 'item_amount', 0);
         if ($itemAmount > 0 && $matchingTransactions->sum('gross_amount') < $itemAmount) {
@@ -791,6 +783,65 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 );
             }
         }
+    }
+
+    private function getMatchingTransactions(array $allowanceOpsData, ?string $filterBy): \Illuminate\Support\Collection
+    {
+        $collectionProductIds = [];
+        if ($filterBy == 'collection') {
+            $collectionProductIds = DB::table('collection_has_models')
+                ->where('collection_id', Arr::get($allowanceOpsData, 'collection_id'))
+                ->where('model_type', 'Product')
+                ->pluck('model_id')
+                ->all();
+            if ($collectionProductIds === []) {
+                return collect();
+            }
+        }
+
+        return $this->transactions->filter(
+            fn ($transaction) => match ($filterBy) {
+                'family' => Arr::get($allowanceOpsData, 'category_id') == $transaction->family_id,
+                'department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->department_id,
+                'sub_department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->sub_department_id,
+                'collection' => in_array($transaction->model_id, $collectionProductIds),
+                'product' => Arr::get($allowanceOpsData, 'product_id') == $transaction->model_id,
+                default => true,
+            }
+        );
+    }
+
+    public function processAllowanceAmountOff(object $allowanceData): void
+    {
+        $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
+        $amountOff        = (float)Arr::get($allowanceOpsData, 'amount_off', 0);
+
+        if ($amountOff <= 0) {
+            return;
+        }
+
+        $filterBy = match ($allowanceData->target_type) {
+            'all_products_in_product_category' => 'family',
+            'all_products_in_department' => 'department',
+            'all_products_in_sub_department' => 'sub_department',
+            'all_products_in_collection' => 'collection',
+            'product' => 'product',
+            default => null,
+        };
+
+        $matchingTransactions = $this->getMatchingTransactions($allowanceOpsData, $filterBy);
+        if ($matchingTransactions->isEmpty()) {
+            return;
+        }
+
+        $matchingGross = (float)$matchingTransactions->sum('gross_amount');
+
+        $itemAmount = (float)Arr::get($allowanceOpsData, 'item_amount', 0);
+        if ($itemAmount > 0 && $matchingGross < $itemAmount) {
+            return;
+        }
+
+        $this->amountOff = min($amountOff, $matchingGross);
     }
 
     private function applyDiscretionaryOffer(object $transaction, float $percentageOff, string $label, OfferAllowance $allowance): void
