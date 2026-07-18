@@ -54,6 +54,8 @@ use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\TransactionHasOfferAllowance\StoreTransactionHasOfferAllowance;
 use App\Actions\Discounts\TransactionHasOfferAllowance\UpdateTransactionHasOfferAllowance;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\StoreProduct;
@@ -63,6 +65,7 @@ use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
@@ -81,6 +84,7 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Collection;
@@ -2190,6 +2194,114 @@ describe('calculate order discounts', function () {
         ShopHydrateOffersData::run($this->shop->id);
         $this->shop->refresh();
         expect(Arr::get($this->shop->offers_data, 'discounted_shipping_scoped'))->toBe([]);
+    });
+
+    test('CalculateOrderShipping end to end: zone schema, scoped discount and revert', function () {
+        $order       = Order::first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $schema = StoreShippingZoneSchema::make()->action($this->shop, ['name' => 'Normal shipping']);
+        $zone   = StoreShippingZone::make()->action($schema, [
+            'code'        => 'ZONE-ALL',
+            'name'        => 'Whole world',
+            'status'      => true,
+            'price'       => [
+                'type'  => 'Step Order Items Net Amount',
+                'steps' => [
+                    ['from' => 0, 'to' => 500, 'price' => 10],
+                    ['from' => 500, 'to' => 'INF', 'price' => 0],
+                ],
+            ],
+            'position'    => 1,
+            'is_failover' => false,
+        ]);
+
+        $discountSchema = StoreShippingZoneSchema::make()->action($this->shop, ['name' => 'Discounted shipping']);
+        $discountZone   = StoreShippingZone::make()->action($discountSchema, [
+            'code'        => 'ZONE-FREE',
+            'name'        => 'Whole world free',
+            'status'      => true,
+            'price'       => [
+                'type'  => 'Step Order Items Net Amount',
+                'steps' => [
+                    ['from' => 0, 'to' => 'INF', 'price' => 0],
+                ],
+            ],
+            'position'    => 1,
+            'is_failover' => false,
+        ]);
+
+        $this->shop->update([
+            'shipping_zone_schema_id'          => $schema->id,
+            'discount_shipping_zone_schema_id' => $discountSchema->id,
+        ]);
+
+        $order->update(['shipping_engine' => OrderShippingEngineEnum::AUTO]);
+        OrderHydrateTransactions::run($order);
+        $order = $order->refresh();
+        expect($order->stats->number_item_transactions)->toBeGreaterThan(0);
+        CalculateOrderShipping::run($order);
+        $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
+        $order->refresh();
+        expect($shippingTransaction)->not->toBeNull()
+            ->and((float)$shippingTransaction->net_amount)->toBe(10.0)
+            ->and($order->shipping_zone_id)->toBe($zone->id)
+            ->and($order->shipping_zone_schema_id)->toBe($schema->id)
+            ->and((float)$order->shipping_amount)->toBe(10.0);
+
+        $shippingOffer = StoreDiscountShipping::make()->handle($this->shop, [
+            'code'             => 'sh-e2e-family',
+            'name'             => 'Family shipping discount',
+            'min_order_amount' => 250,
+            'target_type'      => 'family',
+            'target_id'        => $this->product->family_id,
+            'start_at'         => now()->toDateTimeString(),
+            'end_at'           => now()->addDays(7)->toDateTimeString(),
+        ]);
+        ShopHydrateOffersData::run($this->shop->id);
+
+        $order = $order->fresh();
+        CalculateOrderShipping::run($order);
+        $shippingTransaction->refresh();
+        $order->refresh();
+        expect((float)$shippingTransaction->net_amount)->toBe(0.0)
+            ->and($order->shipping_zone_id)->toBe($discountZone->id)
+            ->and($order->discounted_shipping_offer_id)->toBe($shippingOffer->id);
+
+        $pivot = DB::table('transaction_has_offer_allowances')
+            ->where('transaction_id', $shippingTransaction->id)
+            ->where('offer_id', $shippingOffer->id)
+            ->first();
+        expect($pivot)->not->toBeNull()
+            ->and($pivot->offer_allowance_id)->not->toBeNull();
+
+        SuspendOffer::run($shippingOffer);
+        ShopHydrateOffersData::run($this->shop->id);
+
+        $order = $order->fresh();
+        CalculateOrderShipping::run($order);
+        $shippingTransaction->refresh();
+        $order->refresh();
+        expect((float)$shippingTransaction->net_amount)->toBe(10.0)
+            ->and($order->shipping_zone_id)->toBe($zone->id)
+            ->and($order->discounted_shipping_offer_id)->toBeNull()
+            ->and(
+                DB::table('transaction_has_offer_allowances')
+                    ->where('order_id', $order->id)
+                    ->where('model_type', 'ShippingZone')
+                    ->count()
+            )->toBe(0);
+
+        DB::table('transactions')->where('id', $shippingTransaction->id)->delete();
+        $this->shop->update([
+            'shipping_zone_schema_id'          => null,
+            'discount_shipping_zone_schema_id' => null,
+        ]);
+        $order = $order->fresh();
+        CalculateOrderTotalAmounts::run(order: $order, calculateShipping: false, calculateDiscounts: false);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
     });
 
     test('shop wide offers: amount threshold and unconditional', function () {
