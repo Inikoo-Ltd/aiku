@@ -98,7 +98,7 @@ class StoreProductToAllegro extends RetinaAction
             }
 
             if (!$allegroProductId) {
-                throw new \Exception('Failed to propose product to Allegro: no product ID returned.');
+                throw new \Exception(Arr::get($proposedProduct, 'message', 'Failed to propose product to Allegro: no product ID returned.'));
             }
 
             $availableQuantity = $product->available_quantity;
@@ -188,13 +188,24 @@ class StoreProductToAllegro extends RetinaAction
                 ]
             ];
 
-            $allegroOffer = $allegroUser->createOffer($offerData);
-            $allegroUser->publishOffers(Str::uuid(), [Arr::get($allegroOffer, 'id')]);
+            $allegroOffer   = $allegroUser->createOffer($offerData);
+            $allegroOfferId = Arr::get($allegroOffer, 'id');
+
+            if (!$allegroOfferId) {
+                throw new \Exception(Arr::get($allegroOffer, 'message', 'Failed to create Allegro offer: no offer ID returned.'));
+            }
 
             UpdatePortfolio::run($portfolio, [
-                'platform_product_id'         => Arr::get($allegroOffer, 'id'),
-                'platform_product_variant_id' => Arr::get($allegroOffer, 'id')
+                'platform_product_id'         => $allegroOfferId,
+                'platform_product_variant_id' => $allegroOfferId,
+                'errors_response'             => null
             ]);
+
+            $publishResponse = $allegroUser->publishOffers(Str::uuid(), [$allegroOfferId]);
+
+            if ($publishError = Arr::get($publishResponse, 'message')) {
+                throw new \Exception($publishError);
+            }
 
             CheckAllegroPortfolio::run($portfolio);
 
@@ -212,19 +223,17 @@ class StoreProductToAllegro extends RetinaAction
             }
 
             return $portfolio;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
+            ]);
+
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [
                     'message' => $e->getMessage()
                 ]
             ]);
-
-            if ($logs) {
-                UpdatePlatformPortfolioLog::dispatch($logs, [
-                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $e->getMessage()
-                ]);
-            }
 
             return $portfolio;
         }
