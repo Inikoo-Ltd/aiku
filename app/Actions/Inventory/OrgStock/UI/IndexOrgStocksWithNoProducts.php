@@ -196,6 +196,15 @@ class IndexOrgStocksWithNoProducts extends OrgAction
         "
         );
 
+
+        // stock_value
+        // on_the_way_po_value
+        // invoices
+        // invoices_delta
+        // sales_grp_currency_external
+        // sales_grp_currency_external_delta
+        // health_rank
+
         $selects = [
             'org_stocks.id',
             'org_stocks.code',
@@ -216,57 +225,6 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             'organisations.slug as organisation_slug',
             'currencies.code as currency_code',
             'warehouses.slug as warehouse_slug',
-            'org_stock_intervals.dispatched_ytd as dispatched',
-            'org_stock_sales_intervals.revenue_org_currency_ytd as revenue',
-            DB::raw(
-                "(
-                SELECT COALESCE(SUM(os2.quantity_in_locations), 0)
-                FROM org_stocks os2
-                INNER JOIN model_has_trade_units mhtu2 ON mhtu2.model_id = os2.id AND mhtu2.model_type = 'OrgStock'
-                WHERE mhtu2.trade_unit_id IN (
-                    SELECT mhtu.trade_unit_id
-                    FROM model_has_trade_units mhtu
-                    WHERE mhtu.model_id = org_stocks.id
-                    AND mhtu.model_type = 'OrgStock'
-                )
-            ) as stock_value"
-            ),
-            DB::raw(
-                "(
-                SELECT COALESCE(SUM(pot.org_net_amount), 0)
-                FROM purchase_order_transactions pot
-                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
-                WHERE pot.org_stock_id = org_stocks.id
-                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
-                AND po.state NOT IN ('cancelled', 'not_received')
-            ) as on_the_way_po_value"
-            ),
-            DB::raw(
-                "(
-                SELECT COUNT(DISTINCT po.id)
-                FROM purchase_order_transactions pot
-                INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
-                WHERE pot.org_stock_id = org_stocks.id
-                AND po.delivery_state IN ('ready_to_ship', 'dispatched')
-                AND po.state NOT IN ('cancelled', 'not_received')
-            ) as on_the_way_po_count"
-            ),
-            DB::raw(
-                "(
-                SELECT
-                    CASE
-                        WHEN SUM(it.quantity) > 0 THEN
-                            org_stocks.quantity_available
-                            * EXTRACT(EPOCH FROM (NOW() - MIN(it.date))) / (7.0 * 86400)
-                            / SUM(it.quantity)
-                        ELSE NULL
-                    END
-                FROM invoice_transactions it
-                INNER JOIN invoice_transaction_has_org_stocks ithos ON ithos.invoice_transaction_id = it.id
-                WHERE ithos.org_stock_id = org_stocks.id
-                AND it.deleted_at IS NULL
-            ) as woc"
-            ),
             DB::raw(
                 "(
                 SELECT COUNT(*)
@@ -294,6 +252,57 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = 'org_stock_intervals.dispatched_ytd as dispatched';
+            $selects[] = 'org_stock_sales_intervals.revenue_org_currency_ytd as revenue';
+            $selects[] = DB::raw(
+                "(
+                    SELECT COALESCE(SUM(os2.quantity_in_locations), 0)
+                    FROM org_stocks os2
+                    INNER JOIN model_has_trade_units mhtu2 ON mhtu2.model_id = os2.id AND mhtu2.model_type = 'OrgStock'
+                    WHERE mhtu2.trade_unit_id IN (
+                        SELECT mhtu.trade_unit_id
+                        FROM model_has_trade_units mhtu
+                        WHERE mhtu.model_id = org_stocks.id
+                        AND mhtu.model_type = 'OrgStock'
+                    )
+                ) as stock_value"
+            );
+            $selects[] = DB::raw(
+                "(
+                    SELECT COALESCE(SUM(pot.org_net_amount), 0)
+                    FROM purchase_order_transactions pot
+                    INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
+                    WHERE pot.org_stock_id = org_stocks.id
+                    AND po.delivery_state IN ('ready_to_ship', 'dispatched')
+                    AND po.state NOT IN ('cancelled', 'not_received')
+                ) as on_the_way_po_value"
+            );
+            $selects[] = DB::raw(
+                "(
+                    SELECT COUNT(DISTINCT po.id)
+                    FROM purchase_order_transactions pot
+                    INNER JOIN purchase_orders po ON pot.purchase_order_id = po.id
+                    WHERE pot.org_stock_id = org_stocks.id
+                    AND po.delivery_state IN ('ready_to_ship', 'dispatched')
+                    AND po.state NOT IN ('cancelled', 'not_received')
+                ) as on_the_way_po_count"
+            );
+            $selects[] = DB::raw(
+                    "(
+                    SELECT
+                        CASE
+                            WHEN SUM(it.quantity) > 0 THEN
+                                org_stocks.quantity_available
+                                * EXTRACT(EPOCH FROM (NOW() - MIN(it.date))) / (7.0 * 86400)
+                                / SUM(it.quantity)
+                            ELSE NULL
+                        END
+                    FROM invoice_transactions it
+                    INNER JOIN invoice_transaction_has_org_stocks ithos ON ithos.invoice_transaction_id = it.id
+                    WHERE ithos.org_stock_id = org_stocks.id
+                    AND it.deleted_at IS NULL
+                ) as woc"
+            );
         }
 
         $allowedSorts = [

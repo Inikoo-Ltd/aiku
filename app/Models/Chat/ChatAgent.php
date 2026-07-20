@@ -160,18 +160,6 @@ class ChatAgent extends Model
 
 
 
-    public function incrementChatCount(): void
-    {
-        $this->increment('current_chat_count');
-    }
-
-
-    public function decrementChatCount(): void
-    {
-        $this->decrement('current_chat_count');
-    }
-
-
     public function setOnline(bool $online = true): void
     {
         $this->update(['is_online' => $online]);

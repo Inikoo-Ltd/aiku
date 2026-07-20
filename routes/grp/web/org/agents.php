@@ -8,6 +8,7 @@ use App\Actions\Chat\Agent\UI\EditAgent;
 use App\Actions\Chat\Agent\UI\ShowAgent;
 use App\Actions\Chat\Agent\UpdateAgent;
 use App\Actions\Chat\Jira\GetChatAgentJiraSettings;
+use App\Actions\Chat\Jira\GetChatSessionJiraFields;
 use App\Actions\Chat\Jira\GetChatSessionJiraIssueTypes;
 use App\Actions\Chat\Jira\GetChatSessionJiraLabels;
 use App\Actions\Chat\Jira\GetChatSessionJiraPriorities;
@@ -43,6 +44,7 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::name('sessions.jira.')->prefix('sessions/{chatSession:ulid}/jira')->group(function () {
         Route::get('/projects', GetChatSessionJiraProjects::class)->name('projects');
         Route::get('/projects/{project}/issue-types', GetChatSessionJiraIssueTypes::class)->name('issue_types');
+        Route::get('/projects/{project}/issue-types/{issueType}/fields', GetChatSessionJiraFields::class)->name('fields');
         Route::get('/priorities', GetChatSessionJiraPriorities::class)->name('priorities');
         Route::get('/labels', GetChatSessionJiraLabels::class)->name('labels');
         Route::post('/ticket', StoreChatSessionJiraTicket::class)->name('ticket');

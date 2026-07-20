@@ -17,7 +17,10 @@ class GetOrgStockBarcodes
 
     public function handle(OrgStock $orgStock): array
     {
-        $baseNumber = $orgStock->tradeUnits->first()?->barcode;
+        $tradeUnit = $orgStock->tradeUnits->first();
+        $baseNumber = $tradeUnit?->barcode;
+        $unitWeight = $tradeUnit?->marketing_weight;
+        $unitDimensions = $tradeUnit?->marketing_dimensions;
 
         if (blank($baseNumber)) {
             return [];
@@ -25,10 +28,13 @@ class GetOrgStockBarcodes
 
         return [
             [
-                'level'    => 'unit',
-                'number'   => $baseNumber,
-                'quantity' => 1,
-                'packs'    => null,
+                'level'      => 'unit',
+                'label'      => 'Unit',
+                'number'     => $baseNumber,
+                'quantity'   => 1,
+                'weight'     => $unitWeight,
+                'dimensions' => $unitDimensions,
+                'packs'      => null,
             ],
         ];
     }

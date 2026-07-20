@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, inject, watch } from 'vue'
+import { ref, onMounted, inject, watch, nextTick } from 'vue'
 import { FilterMatchMode } from '@primevue/core/api'
 import { Button as ButtonPrime, Column, DataTable, Dialog, FileUpload, FloatLabel, IconField, InputIcon, InputNumber, InputText, MultiSelect, Popover, RadioButton, Rating, Select, Skeleton, Tag, Textarea, Toolbar } from 'primevue'
 import axios from 'axios'
@@ -21,6 +21,7 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue'
 import PureInput from '../Pure/PureInput.vue'
+import { RouteParams } from 'ziggy-js'
 
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
@@ -44,12 +45,14 @@ const exportCSV = () => {
 const productsList = ref([])
 const productsToCompare = ref([])
 const isLoadingFetch = ref(false)
+
+const routeParams = route().params as RouteParams
 onMounted(async () => {
 
-    const parsedQueryIdToArray = Array.isArray(route().params.id)
-        ? route().params.id.map(Number)
-        : route().params.id
-            ? Object.values(route().params.id)
+    const parsedQueryIdToArray = Array.isArray(routeParams.id)
+        ? routeParams.id.map(Number)
+        : routeParams.id
+            ? Object.values(routeParams.id)
             : []
 
 
@@ -59,7 +62,7 @@ onMounted(async () => {
             route(
                 'grp.masters.master_shops.show.bulk-edit.selected_list',
                 {
-                    masterShop: route().params.masterShop
+                    masterShop: routeParams.masterShop
                 }
             ),
             { 
@@ -75,42 +78,41 @@ onMounted(async () => {
         productsList.value = response.data
         productsToCompare.value = response.data
     } catch (error: any) {
-        
         console.log('zzzzzzzzzzzzzzz', error)
     } finally {
         isLoadingFetch.value = false
     }
 })
 
-const familiesList = ref<{}[] | null>(null)
-const fetchFamilies = async (shop_id: number, family_data?: {}) => {
-    try {
-        const response = await axios.get(
-            route(
-                'grp.json.master-family.all-master-family',
-                {
-                    masterShop: route().params.masterShop
-                }
-            )
-        )
-        console.log('response', response)
+// const familiesList = ref<{}[] | null>(null)
+// const fetchFamilies = async (shop_id: number, family_data?: {}) => {
+//     try {
+//         const response = await axios.get(
+//             route(
+//                 'grp.json.master-family.all-master-family',
+//                 {
+//                     masterShop: routeParams.masterShop
+//                 }
+//             )
+//         )
+//         console.log('response', response)
 
-        if (response.status !== 200) {
+//         if (response.status !== 200) {
             
-        }
+//         }
 
-        familiesList.value = response.data?.data
+//         familiesList.value = response.data?.data
 
-        const families = response.data?.data || []
-        if (family_data?.id && !families.find(f => f.id === family_data.id)) {
-            families.push(family_data)
-        }
-        familiesList.value = families
-    } catch (error: any) {
+//         const families = response.data?.data || []
+//         if (family_data?.id && !families.find(f => f.id === family_data.id)) {
+//             families.push(family_data)
+//         }
+//         familiesList.value = families
+//     } catch (error: any) {
         
-        console.log('fetchFamilies', error)
-    }
-}
+//         console.log('fetchFamilies', error)
+//     }
+// }
 
 
 const rowClass = (xxx: any) => {
@@ -126,7 +128,7 @@ const rowClass = (xxx: any) => {
 
 
 // Section: multiselect columns selector
-const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'price', 'units', 'unit', 'gross_weight', 'family_id', ])
+const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'price', 'rrp', 'units', 'unit', 'gross_weight', 'family_id', ])
 const groupedColumnList = ref([
     {
         label: 'General',
@@ -141,12 +143,13 @@ const groupedColumnList = ref([
         label: 'Pricing',
         items: [
             { label: 'Price', value: 'price' },
+            { label: 'RRP', value: 'rrp' },
         ]
     },
     {
         label: 'Uniting',
         items: [
-            // { label: 'Units', value: 'units' },
+            { label: 'Units', value: 'units' },
             { label: 'Unit', value: 'unit' }
         ]
     },
@@ -181,7 +184,7 @@ const onSave = async () => {
             route(
                 'grp.masters.master_shops.show.bulk-edit.update',
                 {
-                    masterShop: route().params.masterShop
+                    masterShop: routeParams.masterShop
                 }
             ),
             { data: productsList.value }
@@ -219,6 +222,30 @@ const selectedRowToEdit = ref(null)
 const _popoverDescription = ref(null)
 const toggleDescription = (event) => {
     _popoverDescription.value?.toggle(event);
+}
+
+const selectedRowFamily = ref<any>(null)
+const _popoverFamily = ref()
+const _familyMultiselect = ref()
+const toggleFamily = (event: Event, data: any) => {
+    selectedRowFamily.value = data
+    _popoverFamily.value?.toggle(event)
+}
+const onShowFamilyPopover = async () => {
+    await nextTick()
+    _familyMultiselect.value?.multiselectRef?.open()
+}
+const onSelectFamily = (option: any) => {
+    const row = selectedRowFamily.value
+    if (!row) {
+        return
+    }
+
+    if (!row.master_family_id) {
+        row.master_family_data = null
+    } else if (option) {
+        row.master_family_data = option
+    }
 }
 </script>
 
@@ -288,7 +315,9 @@ const toggleDescription = (event) => {
                                         display="comma"
                                         :maxSelectedLabels="2"
                                         placeholder="Select Columns"
+                                        filterPlaceholder="Type to search"
                                         selectedItemsLabel="{0} columns"
+                                        scrollHeight="34rem"
                                     >
                                         <template #optiongroup="slotProps">
                                             <div class="flex items-center">
@@ -303,7 +332,7 @@ const toggleDescription = (event) => {
                             <div class="h-full border-l border-gray-300 py-3 ml-3.5 pl-6 ">
                                 <Button
                                     @click="() => onSave()"
-                                    label="Save"
+                                    label="Save Bulk Edit"
                                     icon="fas fa-save"
                                     size="lg"
                                     :loading="isLoadingSave"
@@ -343,9 +372,9 @@ const toggleDescription = (event) => {
                 </Column>
 
                 <!-- Column: Description -->
-                <Column v-if="selectedColumns.includes('description')" field="description" header="Description" style="min-width: 20rem">
+                <Column v-if="selectedColumns.includes('description')" field="description" header="Description" style="min-width: 20rem; max-width: 20rem">
                     <template #body="slotProps">
-                        <div @click="(e) => (toggleDescription(e), selectedRowToEdit = slotProps.data)" class="h-16 overflow-hidden rounded border border-gray-300 px-2 py-1 text-gray-600">
+                        <div @click="(e) => (toggleDescription(e), selectedRowToEdit = slotProps.data)" class="h-16 w-full max-w-[20rem] cursor-pointer overflow-hidden break-words rounded border border-gray-300 px-2 py-1 text-gray-600">
                             <span v-if="slotProps.data.description" v-html="slotProps.data.description"></span>
                             <span v-else class="text-gray-400 italic">No description</span>
                         </div>
@@ -374,9 +403,8 @@ const toggleDescription = (event) => {
                         <InputNumber
                             v-model="slotProps.data.price"
                             @input="(e) => slotProps.data.price = e?.value ?? 0"
-                            inputId="currency-us"
                             mode="currency"
-                            :currency="'eur'"
+                            :currency="slotProps.data.currency"
                             inputClass="text-right"
                             :maxFractionDigits="2"
                             locale="en-US"
@@ -386,15 +414,14 @@ const toggleDescription = (event) => {
                     </template>
                 </Column>
                 
-                <!-- Column: RPP -->
-                <!-- <Column v-if="selectedColumns.includes('rrp')" field="rrp" header="RRP" sortable style="min-width: 8rem">
+                <!-- Column: RRP -->
+                <Column v-if="selectedColumns.includes('rrp')" field="rrp" header="RRP" sortable style="min-width: 8rem">
                     <template #body="slotProps">
                         <InputNumber
                             v-model="slotProps.data.rrp"
                             @input="(e) => slotProps.data.rrp = e?.value ?? 0"
-                            inputId="currency-us"
                             mode="currency"
-                            :currency="'eur'"
+                            :currency="slotProps.data.currency"
                             inputClass="text-right"
                             :maxFractionDigits="2"
                             locale="en-US"
@@ -402,7 +429,7 @@ const toggleDescription = (event) => {
                             fluid
                         />
                     </template>
-                </Column> -->
+                </Column>
                 
                 <!-- Column: Unit price -->
                 <!-- <Column v-if="selectedColumns.includes('unit_price')" field="unit_price" header="Unit price" sortable style="min-width: 8rem">
@@ -471,18 +498,12 @@ const toggleDescription = (event) => {
                 <!-- Column: Family -->
                 <Column v-if="selectedColumns.includes('family_id')" field="family_id" header="Family" style="min-width: 10rem">
                     <template #body="{ data }">
-                        <div class="w-full md:w-64">
-                            <PureMultiselectInfiniteScroll
-                                v-model="data.master_family_id"
-                                :fetch-route="{
-                                    name: 'grp.json.master-family.all-master-family',
-                                    parameters: {
-                                        masterShop: route().params.masterShop
-                                    }
-                                }"
-                                :initOptions="data.master_family_data ? [data.master_family_data] : undefined"
-                                :placeholder="trans('Select a family')"
-                            />
+                        <div
+                            @click="(e) => toggleFamily(e, data)"
+                            class="w-full md:w-64 cursor-pointer truncate rounded border border-gray-300 px-2 py-2 text-sm"
+                            :class="data.master_family_data ? 'text-gray-600' : 'text-gray-400 italic'"
+                        >
+                            {{ data.master_family_data?.name ?? ctrans('Select a family') }}
                         </div>
                     </template>
                 </Column>
@@ -511,7 +532,27 @@ const toggleDescription = (event) => {
                     </Editor>
                 </div>
             </Popover>
-            
+
+            <Popover ref="_popoverFamily" @show="onShowFamilyPopover">
+                <div class="w-72">
+                    <PureMultiselectInfiniteScroll
+                        v-if="selectedRowFamily"
+                        ref="_familyMultiselect"
+                        :key="selectedRowFamily.id"
+                        v-model="selectedRowFamily.master_family_id"
+                        @selectedObject="onSelectFamily"
+                        :fetch-route="{
+                            name: 'grp.json.master-family.all-master-family',
+                            parameters: {
+                                masterShop: routeParams.masterShop
+                            }
+                        }"
+                        :initOptions="selectedRowFamily.master_family_data ? [selectedRowFamily.master_family_data] : undefined"
+                        :placeholder="ctrans('Select a family')"
+                    />
+                </div>
+            </Popover>
+
         </div>
     </div>
 </template>
@@ -519,5 +560,9 @@ const toggleDescription = (event) => {
 <style scoped lang="scss">
 :deep(.p-datatable-header) {
     @apply py-0
+}
+
+:deep(.multiselect .multiselect-dropdown) {
+    max-height: 22rem !important;
 }
 </style>
