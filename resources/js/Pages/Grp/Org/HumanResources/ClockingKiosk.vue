@@ -1,7 +1,3 @@
-<!--
-  -  Public, login free clocking kiosk page.
-  -  Reached with the machine's kiosk token so a wall tablet never holds an admin session.
-  -->
 
 <script setup lang="ts">
 import QrcodeVue from "qrcode.vue"
