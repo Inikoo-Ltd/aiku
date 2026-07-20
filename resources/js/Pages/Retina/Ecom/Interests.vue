@@ -15,7 +15,7 @@ import { get, set } from "lodash-es"
 import axios from "axios"
 
 import { GridProducts } from "@/Components/Product"
-import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
 
 library.add(faHeart, faBoxOpen, faImage)
 
@@ -55,7 +55,7 @@ const emits = defineEmits([
 const isLoadingFavourite = ref<number[]>([])
 const isLoadingRemindBackInStock = ref<number[]>([])
 const key = ref(ulid())
-const layout = inject("layout", retinaLayoutStructure)
+const layout = inject("layout")
 
 const startLoading = (state: typeof isLoadingFavourite, id: number) => {
     if (!state.value.includes(id)) state.value.push(id)

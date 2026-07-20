@@ -8,8 +8,9 @@
 import { defineStore } from "pinia"
 import { Image } from "@/types/Image"
 import { Colors } from "@/types/Color"
-import { computed, ref } from "vue"
+import { ref } from "vue"
 import { useColorTheme } from "@/Composables/useStockList"
+import { useFamilyPageBasket } from "@/Composables/useFamilyPageBasket"
 
 
 interface User {
@@ -25,22 +26,6 @@ interface App {
 	theme: string[]
 	url: string | null
 	environment: string | null
-}
-
-interface ProductInBasketItem {
-	transaction_id?: number
-	quantity_ordered?: number | string
-	quantity_ordered_new?: number | string
-	department_id?: number | null
-	sub_department_id?: number | null
-	family_id?: number | null
-}
-
-interface FamilyPage {
-	productInBasket: {
-		isLoading: boolean
-		list: Record<string, ProductInBasketItem>
-	}
 }
 
 interface RightBasketProduct {
@@ -91,28 +76,7 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 	const outboxes = ref(null)
 	const isSidebarLoaded = ref(false)
 
-	// Basket state of the products shown on the current family/category page
-	const family_page = ref<FamilyPage>({
-		productInBasket: {
-			isLoading: false,
-			list: {},
-		},
-	})
-
-	// Total of quantity_ordered_new grouped by family_id (derived from productInBasket.list)
-	const family_quantity_ordered = computed<Record<string, number>>(() => {
-		const totals: Record<string, number> = {}
-
-		for (const item of Object.values(family_page.value?.productInBasket?.list ?? {})) {
-			if (item?.family_id == null) {
-				continue
-			}
-
-			totals[item.family_id] = (totals[item.family_id] ?? 0) + Number(item.quantity_ordered_new ?? 0)
-		}
-
-		return totals
-	})
+	const { family_page, family_quantity_ordered } = useFamilyPageBasket()
 
 	const rightbasket = ref<{ show: boolean; products: RightBasketProduct[] }>({
         show: false,
