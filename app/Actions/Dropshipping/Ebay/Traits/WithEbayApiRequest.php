@@ -337,12 +337,12 @@ trait WithEbayApiRequest
 
         $services = [
             'EBAY_GB' => [
-                'UK_OtherCourier'     => [
+                /*'UK_OtherCourier'     => [
                     'service_code' => 'UK_OtherCourier',
                     'service_name' => 'Yodel',
                     'carrier_code' => 'Yodel',
                     'carrier_name' => 'Yodel',
-                ],
+                ],*/
                 'UK_RoyalMailNextDay' => [
                     'service_code' => 'UK_RoyalMailNextDay',
                     'service_name' => 'Royal Mail',

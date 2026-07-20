@@ -53,8 +53,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'lime',
                 'app'     => [
                     'name' => 'seedling',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'confirmed'     => [
                 'tooltip' => __('Confirmed'),
@@ -63,8 +63,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'emerald',
                 'app'     => [
                     'name' => 'spell-check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'ready_to_ship' => [
                 'tooltip' => __('Ready to ship'),
@@ -73,8 +73,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'indigo',
                 'app'     => [
                     'name' => 'box-check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'dispatched'    => [
                 'tooltip' => __('Dispatched'),
@@ -83,8 +83,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'indigo',
                 'app'     => [
                     'name' => 'truck',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'received'      => [
                 'tooltip' => __('Received'),
@@ -93,8 +93,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'slate',
                 'app'     => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'checked'       => [
                 'tooltip' => __('Checked'),
@@ -103,8 +103,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'slate',
                 'app'     => [
                     'name' => 'clipboard-check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'booking_in'    => [
                 'tooltip' => __('Booking in'),
@@ -113,8 +113,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'purple',
                 'app'     => [
                     'name' => 'check',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'booked_in'     => [
                 'tooltip' => __('Booked in'),
@@ -123,8 +123,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'purple',
                 'app'     => [
                     'name' => 'check-double',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'placed'        => [
                 'tooltip' => __('Placed'),
@@ -133,8 +133,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'success',
                 'app'     => [
                     'name' => 'check-double',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'cancelled'     => [
                 'tooltip' => __('Cancelled'),
@@ -143,8 +143,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'danger',
                 'app'     => [
                     'name' => 'times-circle',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
             'not_received'  => [
                 'tooltip' => __('Not Received'),
@@ -153,8 +153,8 @@ enum StockDeliveryStateEnum: string
                 'color'   => 'warning',
                 'app'     => [
                     'name' => 'exclamation-circle',
-                    'type' => 'font-awesome-5'
-                ]
+                    'type' => 'font-awesome-5',
+                ],
             ],
         ];
     }
