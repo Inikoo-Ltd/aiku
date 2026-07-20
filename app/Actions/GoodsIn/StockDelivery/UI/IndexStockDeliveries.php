@@ -141,7 +141,7 @@ class IndexStockDeliveries extends OrgAction
             }
 
             $table
-                ->column(key: 'state', label: '', type: 'icon')
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true)
