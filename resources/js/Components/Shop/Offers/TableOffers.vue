@@ -79,6 +79,15 @@ function offerRoute(offer: {}, extraParams?: {}) {
                     offer: offer.slug,
                     ...extraParams
                 })
+        case "grp.org.shops.show.catalogue.families.show.products.show":
+            return route(
+                "grp.org.shops.show.discounts.offers.show",
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: (route().params as RouteParams).shop,
+                    offer: offer.slug,
+                    ...extraParams
+                })
         case "grp.org.shops.show.discounts.campaigns.show":
             return route(
                 returnRouteOffer(offer),
