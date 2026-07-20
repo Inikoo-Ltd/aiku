@@ -30,6 +30,7 @@ class AuthServiceProvider extends ServiceProvider
     {
         Passkeys::useUserModel(User::class);
         Passkeys::ignoreRoutes();
+        Passkeys::authorizeLoginUsing(fn ($request, User $user) => $user->status);
         $this->app->bind(PasskeyLoginResponse::class, ProcessSuccessfulLogin::class);
     }
 

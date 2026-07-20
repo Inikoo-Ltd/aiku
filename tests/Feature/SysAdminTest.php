@@ -890,6 +890,23 @@ test('passkey enrollment satisfies 2fa requirement', function (Guest $guest) {
     $user->update(['is_two_factor_required' => false]);
 })->depends('create guest');
 
+test('inactive user can not login with passkey', function (Guest $guest) {
+    $user = $guest->getUser();
+    $passkey = $user->passkeys()->create([
+        'name'          => 'Test device',
+        'credential_id' => 'test-credential-id-status',
+        'credential'    => [],
+    ]);
+
+    expect(\Laravel\Passkeys\Passkeys::allowsLogin(request(), $passkey))->toBeTrue();
+
+    $user->update(['status' => false]);
+    expect(\Laravel\Passkeys\Passkeys::allowsLogin(request(), $passkey->refresh()))->toBeFalse();
+
+    $user->update(['status' => true]);
+    $passkey->delete();
+})->depends('create guest');
+
 
 test('Hydrate group', function (Group $group) {
     HydrateGroup::run($group);
