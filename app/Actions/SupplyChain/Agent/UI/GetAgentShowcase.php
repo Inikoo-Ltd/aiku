@@ -22,7 +22,7 @@ class GetAgentShowcase
             "contactCard" => AgentResource::make($agent)->getArray(),
             "stats" => [
                 [
-                    "label" => __("suppliers"),
+                    "label" => __("Suppliers"),
                     "count" => $agent->stats->number_active_suppliers,
                     "orther_counts" => [
                         [
@@ -37,8 +37,8 @@ class GetAgentShowcase
                 ],
 
                 [
-                    "label" => __("products"),
-                    "count" => $agent->stats->number_supplier_products,
+                    "label" => __("Products"),
+                    "count" => $agent->stats->number_current_supplier_products,
                     "orther_counts" => [
                         [
                             "icon" => [
@@ -46,7 +46,37 @@ class GetAgentShowcase
                                 "title" => __("Archived Products"),
                                 "class" => "text-gray-500"
                             ],
-                            "count" => $agent->stats->number_archived_products,
+                            "count" => $agent->stats->number_supplier_products_state_discontinued,
+                        ],
+                    ],
+                ],
+
+                [
+                    "label" => __("Purchase orders"),
+                    "count" => $agent->stats->number_purchase_orders,
+                    "orther_counts" => [
+                        [
+                            "icon" => [
+                                "icon" => ["fal", "fa-box-open"],
+                                "title" => __("Open Purchase Orders"),
+                                "class" => "text-indigo-500"
+                            ],
+                            "count" => $agent->stats->number_open_purchase_orders,
+                        ],
+                    ],
+                ],
+
+                [
+                    "label" => __("Deliveries"),
+                    "count" => $agent->stats->number_stock_deliveries,
+                    "orther_counts" => [
+                        [
+                            "icon" => [
+                                "icon" => ["fal", "fa-truck"],
+                                "title" => __("Current Deliveries"),
+                                "class" => "text-indigo-500"
+                            ],
+                            "count" => $agent->stats->number_current_stock_deliveries,
                         ],
                     ],
                 ],

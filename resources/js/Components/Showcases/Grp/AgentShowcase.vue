@@ -5,12 +5,12 @@
   -->
 
 <script setup lang="ts">
-import ShowcaseStats from '@/Components/ShowcaseStats.vue'
+import { trans } from 'laravel-vue-i18n'
 import ShowcaseContactCard from "@/Components/ShowcaseContactCard.vue"
 import BoxDisplay from "@/Components/DataDisplay/BoxDisplay.vue"
 import { Agent } from '@/types/Grp/Agent'
 
-const props = defineProps<{
+defineProps<{
     data: {
         contactCard: Agent
         stats: {
@@ -18,25 +18,28 @@ const props = defineProps<{
             count: number
             description?: string
             full?: boolean
+            orther_counts: any
         }[]
     }
-
 }>()
 </script>
 
 <template>
-    <div class="grid text-gray-600 gap-y-3 md:gap-y-0 md:grid-cols-2 px-4 pt-4 gap-x-6">
-        <!-- Section 1 -->
-        <div class="">
+    <div class="grid text-gray-600 gap-y-6 md:gap-y-0 md:grid-cols-2 px-4 py-6 gap-x-6">
+        <!-- Section 1: Contact -->
+        <div>
+            <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                {{ trans('Details') }}
+            </h3>
             <ShowcaseContactCard :data="data.contactCard" />
         </div>
 
-        <!-- Section 2: Statistic -->
-        <div class="">
+        <!-- Section 2: Statistics -->
+        <div>
+            <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                {{ trans('Statistics') }}
+            </h3>
             <BoxDisplay :data="data.stats" />
-            <!-- <ShowcaseStats :data="data.stats" /> -->
         </div>
-
-
     </div>
 </template>

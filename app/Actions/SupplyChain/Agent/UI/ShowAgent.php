@@ -52,11 +52,11 @@ class ShowAgent extends GrpAction
 
     public function htmlResponse(Agent $agent, ActionRequest $request): Response
     {
-
+// dd($agent);
         return Inertia::render(
             'SupplyChain/Agent',
             [
-                'title'                        => __("agent"),
+                'title'                        => __("Agent") . " " . $agent->name,
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $agent,
                     $request->route()->originalParameters()
@@ -66,7 +66,7 @@ class ShowAgent extends GrpAction
                     'next'     => $this->getNext($agent, $request),
                 ],
                 'pageHead'                     => [
-                    'model'   => __('agent'),
+                    'model'   => __('Agent'),
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'people-arrows'],
