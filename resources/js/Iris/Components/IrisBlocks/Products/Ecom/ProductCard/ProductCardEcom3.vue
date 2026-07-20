@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<{
     isLoadingRemindBackInStock: boolean
     screenType: string
     hideLogin?:boolean
+    routeGettransactionProductData?:routeType
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -48,6 +49,9 @@ const props = withDefaults(defineProps<{
     },
     updateBasketQuantityRoute: {
         name: 'iris.models.transaction.update',
+    },
+     routeGettransactionProductData: {
+        name: 'iris.json.basket_transaction_product_data'
     },
 })
 
@@ -273,7 +277,7 @@ defineExpose({
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
-                        :buttonStyle="buttonStyle" />
+                        :buttonStyle="buttonStyle"  :routeGettransactionProductData/>
                     <button
                         v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"

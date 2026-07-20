@@ -52,7 +52,23 @@ class GetTradeUnitsCountryOriginFromAurora
             $auroraData = DB::connection('aurora')->table('Part Dimension')->select('Part Origin Country Code')->where('Part SKU', $sourceData[1])->first();
 
 
-            $countryOrigins[$organisation->id] = $auroraData->{'Part Origin Country Code'};
+            $countryCode = strtoupper($auroraData->{'Part Origin Country Code'});
+
+            if ($countryCode == 'UK') {
+                $countryCode = 'GBR';
+            } elseif ($countryCode == 'IDO') {
+                $countryCode = 'IDN';
+            } elseif ($countryCode == 'MOR') {
+                $countryCode = 'MAR';
+            } elseif ($countryCode == 'CHI') {
+                $countryCode = 'CHN';
+            }
+
+            if ($countryCode == 'UNK') {
+                continue;
+            }
+
+            $countryOrigins[$organisation->id] = $countryCode;
         }
 
 
@@ -62,9 +78,10 @@ class GetTradeUnitsCountryOriginFromAurora
 
 
         if (count($cleanCountryOrigins) > 1) {
-            print_r($countryOrigins);
-            $command->info('Multiple country origins found for trade unit.');
 
+            $command->info('Multiple country origins found for trade unit. '.$tradeUnit->slug);
+            print_r($cleanCountryOrigins);
+            $command->info('------');
             return;
         } elseif (empty($cleanCountryOrigins)) {
             // $command->info("$tradeUnit->slug No country origins found for trade unit.");
@@ -169,7 +186,7 @@ class GetTradeUnitsCountryOriginFromAurora
                         $this->handle($tradeUnit, $command, $command->option('dry-run'));
                     }
                     $processed++;
-                    $bar->advance();
+                  //  $bar->advance();
                 }
             }, 'id');
 
