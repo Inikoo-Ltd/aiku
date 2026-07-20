@@ -223,6 +223,7 @@ trait IsDeliveryNotesIndex
             'delivery_notes.shipping_notes',
             'delivery_notes.shipping_data',
             'orders.in_warehouse_at',
+            'orders.collection_address_id',
         ];
 
         if ($isReturn) {
