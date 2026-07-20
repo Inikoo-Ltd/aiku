@@ -207,8 +207,11 @@ const contentClass = computed(() =>
     }">
       <div :class="contentClass">
         <!-- IMAGE SECTION -->
+        <!-- ============================================================= -->
+        <!-- OLD IMAGE SECTION (kept for rollback, do not delete)          -->
+        <!-- ============================================================= -->
+        <!--
         <div class="flex shrink-0 items-start justify-center gap-[6px]">
-          <!-- IMAGE 1 -->
           <template v-if="hasImage(0)">
             <Image :src="images[0].original" :srcset="images[0].srcset"
               sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
@@ -241,7 +244,6 @@ const contentClass = computed(() =>
           </div>
 
           <div ref="imageRef"  class="flex flex-col gap-[6px]">
-            <!-- IMAGE 2 -->
             <template v-if="hasImage(1)">
               <Image :src="images[1].original" :srcset="images[1].srcset"
                   sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
@@ -272,7 +274,6 @@ const contentClass = computed(() =>
               <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
             </div>
 
-            <!-- IMAGE 3 -->
             <template v-if="hasImage(2)">
               <Image :src="images[2].original" :srcset="images[2].srcset"
                   sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
@@ -302,6 +303,61 @@ const contentClass = computed(() =>
               ">
               <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
             </div>
+          </div>
+        </div>
+        -->
+
+        <!-- ============================================================= -->
+        <!-- NEW IMAGE SECTION                                             -->
+        <!-- 1 image  -> only large image                                 -->
+        <!-- 2 images -> large + small top-right                          -->
+        <!-- 3 images -> large + small top-right + small bottom-right     -->
+        <!-- ============================================================= -->
+        <div v-if="hasImage(0)" ref="imageRef" class="flex shrink-0 items-start justify-center gap-[6px]">
+          <!-- IMAGE 1 (large) -->
+          <Image :src="images[0].original" :srcset="images[0].srcset"
+            sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
+            :imageCover="true" :alt="images[0]?.alt || 'family image'"
+            class="
+              h-[280px]
+              w-[220px]
+              object-cover
+              sm:w-[290px]
+              lg:h-[320px]
+              lg:w-[340px]
+              2xl:h-[380px]
+              2xl:w-[420px]
+            " />
+
+          <!-- Right column only when there is a 2nd image -->
+          <div v-if="hasImage(1)" class="flex flex-col gap-[6px]">
+            <!-- IMAGE 2 (small, top-right) -->
+            <Image :src="images[1].original" :srcset="images[1].srcset"
+                sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+                :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
+                h-[137px]
+                w-[105px]
+                object-cover
+                sm:w-[140px]
+                lg:h-[157px]
+                lg:w-[160px]
+                2xl:h-[187px]
+                2xl:w-[200px]
+              " />
+
+            <!-- IMAGE 3 (small, bottom-right) only when there is a 3rd image -->
+            <Image v-if="hasImage(2)" :src="images[2].original" :srcset="images[2].srcset"
+                sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+                :imageCover="true" :alt="images[2]?.alt || 'family image'" class="
+                h-[137px]
+                w-[105px]
+                object-cover
+                sm:w-[140px]
+                lg:h-[157px]
+                lg:w-[160px]
+                2xl:h-[187px]
+                2xl:w-[200px]
+              " />
           </div>
         </div>
 
@@ -343,6 +399,7 @@ const contentClass = computed(() =>
 
           <!-- Description fills remaining space -->
           <div class="
+          mt-4
     relative
     flex-1
     min-h-0

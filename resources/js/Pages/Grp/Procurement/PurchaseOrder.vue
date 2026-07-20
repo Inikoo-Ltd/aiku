@@ -4,108 +4,48 @@
   -  Copyright (c) 2022, Raul A Perusquia Flores
   -->
 <script setup lang="ts">
-import { Head, router, useForm } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
-import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, ref } from "vue"
 import type { Component } from "vue"
-import { useTabChange } from "@/Composables/tab-change"
-import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
-import { capitalize } from "@/Composables/capitalize"
-import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import { PageHeadingTypes } from "@/types/PageHeading"
-import { BoxNote as BoxNoteTS } from "@/types/Components/BoxNotes"
-import { routeType } from "@/types/route"
+import { Head } from "@inertiajs/vue3"
+import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
-import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
-import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import Tabs from "@/Components/Navigation/Tabs.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import AlertMessage from "@/Components/Utils/AlertMessage.vue"
-import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
-import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import Popover from "@/Components/Popover.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import ModalProductList from "@/Components/Utils/ModalProductList.vue"
+import Timeline from "@/Components/Utils/Timeline.vue"
+import OrderSummary from "@/Components/Summary/OrderSummary.vue"
+import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import TableProductList from "@/Components/Tables/Grp/Helpers/TableProductList.vue"
-import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
-import ModalProductList from "@/Components/Utils/ModalProductList.vue"
+
+import { useTabChange } from "@/Composables/tab-change"
+import { capitalize } from "@/Composables/capitalize"
+
+import { PageHeadingTypes } from "@/types/PageHeading"
+import { routeType } from "@/types/route"
 import { Timeline as TSTimeline } from "@/types/Timeline"
-import { Currency } from "@/types/LayoutRules"
-import Modal from "@/Components/Utils/Modal.vue"
-import PureInput from "@/Components/Pure/PureInput.vue"
-import axios from "axios"
-import OrderSummary from "@/Components/Summary/OrderSummary.vue"
-import Timeline from "@/Components/Utils/Timeline.vue"
+import { PalletDelivery } from "@/types/Pallet"
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
-import { faExclamationTriangle, faExclamation, faPencil } from "@fas"
-import {
-	faStickyNote,
-	faPaperclip,
-	faDollarSign,
-	faIdCardAlt,
-	faShippingFast,
-	faIdCard,
-	faEnvelope,
-	faPhone,
-	faWeight,
-	faTruck,
-	faFilePdf,
-} from "@fal"
-import { Action } from "@/types/Action"
-import { get } from 'lodash-es'
-import { faMinus, faPlus } from "@far"
-import { PalletDelivery } from "@/types/Pallet"
-library.add(
-	faStickyNote,
-	faPaperclip,
-	fadExclamationTriangle,
-	faExclamationTriangle,
-	faDollarSign,
-	faIdCardAlt,
-	faShippingFast,
-	faIdCard,
-	faEnvelope,
-	faPhone,
-	faWeight,
-	faStickyNote,
-	faExclamation,
-	faTruck,
-	faFilePdf,
-	faPaperclip,
-	faPencil,
-	faPlus,
-	faMinus
-)
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote } from "@fal"
+import { faPencil } from "@fas"
+import { faPlus } from "@far"
+
+library.add(faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faPencil, faPlus)
 
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
-	tabs: {
-		current: string
-		navigation: {}
-	}
-    currency: {}
-	data?: {
-		data: PalletDelivery
-	}
-	showcase: {}
-	transactions?: {}
-	history?: {}
-	alert?: {
-		status: string
-		title?: string
-		description?: string
-	}
 	routes: {
 		updatePurchaseOrderRoute: routeType
 		products_list: routeType
-	}
-	attachments?: {}
-	attachmentRoutes?: {}
-	timelines: {
-		[key: string]: TSTimeline
 	}
 	box_stats: {
 		orderer: {
@@ -126,48 +66,71 @@ const props = defineProps<{
 		}
 		order_summary: {}
 	}
+	timelines: {
+		[key: string]: TSTimeline
+	}
+	currency: {}
+	data?: {
+		data: PalletDelivery
+	}
+	tabs: {
+		current: string
+		navigation: {}
+	}
+	showcase: {}
+	transactions?: {}
+	history?: {}
+	attachments?: {}
+	attachmentRoutes?: {}
 }>()
 
+const fallbackBgColor = "#f9fafb"
+const fallbackColor = "#374151"
+
 const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const currentAction = ref(null)
+const isModalOpen = ref(false)
+const isModalUploadOpen = ref(false)
+const isSubmitNoteLoading = ref(false)
+const noteModalValue = ref(props.box_stats.mid_block.notes || "")
+
 const component = computed(() => {
 	const components: Component = {
 		history: TableHistories,
 		transactions: TablePurchaseOrderTransactions,
 		attachments: TableAttachments,
-		products: TableProductList
+		products: TableProductList,
 	}
 
 	return components[currentTab.value]
 })
-const isModalOpen = ref(false)
-const noteModalValue = ref(props.box_stats.mid_block.notes || "")
-const currentAction = ref(null);
-const isLoadingButton = ref<string | boolean>(false)
-const isModalUploadOpen = ref(false)
-const isSubmitNoteLoading = ref(false)
 
-//submit notes
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const openModal = (action: any) => {
+	currentAction.value = action
+	isModalUploadOpen.value = true
+}
+
+const closeModal = () => {
+	isModalOpen.value = false
+	noteModalValue.value = props.box_stats.mid_block.notes || ""
+}
+
 const onSubmitNote = async () => {
 	isSubmitNoteLoading.value = true
 
 	try {
-		const response = await axios.patch(
+		await axios.patch(
 			route(
 				props.routes.updatePurchaseOrderRoute.name,
 				props.routes.updatePurchaseOrderRoute.parameters
 			),
-			{
-				notes: noteModalValue.value,
-			},
-			{
-				headers: { "Content-Type": "application/json" },
-			}
+			{ notes: noteModalValue.value },
+			{ headers: { "Content-Type": "application/json" } }
 		)
 		props.box_stats.mid_block.notes = noteModalValue.value
 	} catch (error) {
-		console.log(error, "faf")
-
 		notify({
 			title: "Failed",
 			text: "Failed to update the note, try again.",
@@ -178,19 +141,6 @@ const onSubmitNote = async () => {
 	isSubmitNoteLoading.value = false
 	isModalOpen.value = false
 }
-
-const closeModal = () => {
-	isModalOpen.value = false
-	noteModalValue.value = props.box_stats.mid_block.notes || ""
-}
-
-const openModal = (action :any) => {
-	currentAction.value = action;
-    isModalUploadOpen.value = true;
-};
-
-const fallbackBgColor = "#f9fafb" // Background
-const fallbackColor = "#374151"
 </script>
 
 <template>
@@ -210,34 +160,27 @@ const fallbackColor = "#374151"
 		</template>
 	</PageHeading>
 
-	<!-- Section: Pallet Warning -->
-	<div v-if="alert?.status" class="p-2 pb-0">
-		<AlertMessage :alert />
-	</div>
-
 	<!-- Section: Timeline -->
-	<div
-		v-if="data?.data?.state != 'in_process' && currentTab != 'products'"
-		class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
+	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
 		<Timeline
-			v-if="timelines"
 			:options="timelines"
 			:state="props.data?.data?.state"
-			:slidesPerView="6" />
+			:slidesPerView="6"
+			:format-time="'MMMM d yyyy, HH:mm'"
+		/>
 	</div>
 
 	<div v-if="currentTab != 'products'" class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
 		<BoxStatPallet class="py-2 px-3" icon="fal fa-user">
 			<!-- Field: Reference Number -->
-			<div
-				v-if="box_stats?.orderer.data.code"
-				class="pl-1 flex items-center w-fit flex-none gap-x-2">
+			<div v-if="box_stats?.orderer.data.code" class="pl-1 flex items-center w-fit flex-none gap-x-2">
 				<dt class="flex-none">
 					<FontAwesomeIcon
 						icon="fal fa-user"
 						class="text-gray-400"
 						fixed-width
-						aria-hidden="true" />
+						aria-hidden="true"
+					/>
 				</dt>
 				<dd class="text-sm text-gray-500">{{ box_stats?.orderer.data.code }}</dd>
 			</div>
@@ -252,7 +195,8 @@ const fallbackColor = "#374151"
 						icon="fal fa-id-card-alt"
 						class="text-gray-400"
 						fixed-width
-						aria-hidden="true" />
+						aria-hidden="true"
+					/>
 				</dt>
 				<dd class="text-sm text-gray-500">{{ box_stats?.orderer.data.name }}</dd>
 			</div>
@@ -363,7 +307,6 @@ const fallbackColor = "#374151"
 						<FontAwesomeIcon
 							v-tooltip="trans('Add note')"
 							icon="far fa-plus"
-							class=""
 							fixed-width
 							aria-hidden="true"
 							:style="{
@@ -396,33 +339,26 @@ const fallbackColor = "#374151"
 		<!-- Box: Order summary -->
 		<BoxStatPallet class="col-span-2 border-t lg:border-t-0 border-gray-300">
 			<section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
-				<!-- <h2 id="summary-heading" class="text-lg font-medium">Order summary</h2> -->
-
 				<OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency?.code" />
-
-				<!-- <div class="mt-6">
-                    <button type="submit"
-                        class="w-full rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50">Checkout</button>
-                </div> -->
 			</section>
 		</BoxStatPallet>
 	</div>
 
-	<Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+	<Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
 		<component
-            :currency="props.currency"
 			:is="component"
+			:currency="props.currency"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:updateRoute="routes.updateOrderRoute"
 			:state="data?.data?.state"
-			:detachRoute="attachmentRoutes?.detachRoute" 
+			:detachRoute="attachmentRoutes?.detachRoute"
 			:fetchRoute="routes.products_list"
 			:modalOpen="isModalUploadOpen"
 			:action="currentAction"
-			@update:tab="handleTabUpdate"/>
+			@update:tab="handleTabUpdate" />
 	</div>
 
 	<ModalProductList v-model="isModalUploadOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  @update:tab="handleTabUpdate" :typeModel="'purchase_order'" />

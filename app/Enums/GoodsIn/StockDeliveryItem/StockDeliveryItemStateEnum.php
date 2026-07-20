@@ -20,9 +20,8 @@ enum StockDeliveryItemStateEnum: string
     case DISPATCHED   = 'dispatched';
     case RECEIVED     = 'received';
     case CHECKED      = 'checked';
+    // Final
     case PLACED      = 'placed';
     case CANCELLED      = 'cancelled';
     case NOT_RECEIVED      = 'not_received';
-
-
 }

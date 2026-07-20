@@ -5,7 +5,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
-import { faCircle, faHeart as fasHeart } from '@fas'
+import { faHeart as fasHeart } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
@@ -19,8 +19,6 @@ import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import { routeType } from '@/types/route'
-import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
-import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -40,6 +38,7 @@ const props = withDefaults(defineProps<{
     isLoadingRemindBackInStock?: boolean
     screenType?: string
     hideLogin?:boolean
+    routeGettransactionProductData? : routeType
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -47,6 +46,9 @@ const props = withDefaults(defineProps<{
     },
     updateBasketQuantityRoute: {
         name: 'iris.models.transaction.update',
+    },
+    routeGettransactionProductData: {
+        name: 'iris.json.basket_transaction_product_data'
     },
 })
 
@@ -110,43 +112,6 @@ const images = computed(() => {
 const currentIndex = ref(0)
 const mobileSlider = ref<HTMLElement | null>(null)
 
-let startX = 0
-let isDragging = false
-
-const onTouchStart = (e: TouchEvent) => {
-    startX = e.touches[0].clientX
-    isDragging = true
-}
-
-const onTouchEnd = (e: TouchEvent) => {
-    if (!mobileSlider.value || !isDragging) return
-
-    const endX = e.changedTouches[0].clientX
-    const diff = startX - endX
-    const threshold = 50 // minimal swipe distance
-
-    if (Math.abs(diff) > threshold) {
-        if (diff > 0 && currentIndex.value < images.value.length - 1) {
-            currentIndex.value++
-        } else if (diff < 0 && currentIndex.value > 0) {
-            currentIndex.value--
-        }
-    }
-
-    scrollToIndex(currentIndex.value)
-    isDragging = false
-}
-
-const scrollToIndex = (index: number) => {
-    if (!mobileSlider.value) return
-    const el = mobileSlider.value
-    const slideWidth = el.clientWidth
-
-    el.scrollTo({
-        left: slideWidth * index,
-        behavior: 'smooth'
-    })
-}
 
 const onScroll = () => {
     if (!mobileSlider.value) return
@@ -273,7 +238,7 @@ defineExpose({
 
                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
-                        :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
+                        :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :routeGettransactionProductData
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
                         :buttonStyle="buttonStyle" />
                     <button
