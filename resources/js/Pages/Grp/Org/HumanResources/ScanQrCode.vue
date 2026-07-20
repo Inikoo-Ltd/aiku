@@ -125,7 +125,7 @@ const downloadQrCode = async () => {
 
     const title = trans("Employee Scan")
     const subtitle = trans("Scan QR to clock in or out")
-    const expiredAtText = `${trans("Expired at")}: ${formattedExpiredAt.value}`
+    const expiredAtText = `${trans("Expires at")}: ${formattedExpiredAt.value}`
     const qrSize = qrCanvas.width
     const canvasPadding = 48
     const textTopHeight = 120
@@ -205,7 +205,7 @@ onUnmounted(() => stopQR())
                     {{ trans("Expires in") }} <span class="font-semibold text-gray-700">{{ formattedCountdown }}</span>
                 </div>
                 <div class="text-sm text-gray-500">
-                    {{ trans("Expired at") }}: {{ formattedExpiredAt }}
+                    {{ trans("Expires at") }}: {{ formattedExpiredAt }}
                 </div>
             </div>
 
