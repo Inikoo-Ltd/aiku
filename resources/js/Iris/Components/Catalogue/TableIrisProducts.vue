@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, inject } from "vue"
 import { usePage } from "@inertiajs/vue3"
 import Table from "../Tables/Table.vue"
 import Icon from "@/Components/Icon.vue"
@@ -14,6 +14,8 @@ import { Link } from "@inertiajs/vue3";
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure.js"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure.js"
 
 const props = defineProps<{
     data: any
@@ -21,6 +23,9 @@ const props = defineProps<{
 }>()
 
 const page = usePage()
+
+const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout', retinaLayoutStructure)
 
 const labelMap: Record<string, string> = {
     department: 'Department',
@@ -83,6 +88,18 @@ console.log("products", props.data)
             <span class="font-medium">
                 {{ item.family_name }}
             </span>
+        </template>
+
+        <template #cell(rrp)="{ item }">
+            <div class="!text-right w-full">
+                {{ locale.currencyFormat(layout.iris.currency.code, item.rrp) }}
+            </div>
+        </template>
+
+        <template #cell(price)="{ item }">
+            <div class="!text-right w-full">
+                {{ locale.currencyFormat(layout.iris.currency.code, item.price) }}
+            </div>
         </template>
 
         <template #cell(public_url)="{ item: item }">
