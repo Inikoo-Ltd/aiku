@@ -146,8 +146,6 @@ class CallApiApcGbShipping extends OrgAction
             ]
         ];
 
-        dd($prepareParams);
-
         $productCode = '';
         if (count($parcels) == 1) {
             $dimensions = [
