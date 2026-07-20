@@ -56,7 +56,7 @@ const headerAlignmentClass = computed(() => {
         props.cell?.type === 'date_hm' ||
         props.cell?.type === 'date_hms'
     ) {
-        return 'text-right'
+        return '!text-right'
     }
 
     if (props.cell?.align === 'center') {
@@ -117,7 +117,7 @@ const headerJustifyClass = computed(() => {
                     <div v-else class="text-xs md:text-sm lg:text-base w-full" v-tooltip="cell?.tooltip"
                         :class="[
                             cell?.type == 'number' || cell?.type == 'currency'
-                                ? 'text-right pr-3'
+                                ? '!text-right pr-3'
                                 : cell?.align === 'center'
                                     ? 'text-center'
                                     : ''
