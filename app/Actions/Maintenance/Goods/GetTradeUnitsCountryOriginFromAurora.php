@@ -52,14 +52,18 @@ class GetTradeUnitsCountryOriginFromAurora
             $auroraData = DB::connection('aurora')->table('Part Dimension')->select('Part Origin Country Code')->where('Part SKU', $sourceData[1])->first();
 
 
-            $countryCode=strtoupper($auroraData->{'Part Origin Country Code'});
+            $countryCode = strtoupper($auroraData->{'Part Origin Country Code'});
 
-            if($countryCode=='UK'){
-                $countryCode='GBR';
-            }elseif($countryCode=='IDO'){
-                $countryCode='IDN';
-            }elseif($countryCode=='MOR'){
-                $countryCode='MAR';
+            if ($countryCode == 'UK') {
+                $countryCode = 'GBR';
+            } elseif ($countryCode == 'IDO') {
+                $countryCode = 'IDN';
+            } elseif ($countryCode == 'MOR') {
+                $countryCode = 'MAR';
+            }
+
+            if ($countryCode == 'UNK') {
+                continue;
             }
 
             $countryOrigins[$organisation->id] = $countryCode;
