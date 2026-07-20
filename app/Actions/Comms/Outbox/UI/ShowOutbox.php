@@ -131,6 +131,7 @@ class ShowOutbox extends OrgAction
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
+            OutboxCodeEnum::ABANDONED_CART_REMINDER,
         ])) {
             unset($navigation[OutboxTabsEnum::EMAIL_RUNS->value]);
         }

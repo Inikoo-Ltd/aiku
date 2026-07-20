@@ -29,9 +29,8 @@ class RunAbandonedCartReminderEmailBulkRuns
         $queryOutbox->where('is_applicable', true);
         $queryOutbox->whereNotNull('shop_id');
         $queryOutbox->whereNotNull('interval');
-        $queryOutbox->whereNotNull('threshold');
 
-        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at', 'outboxes.interval', 'outboxes.threshold');
+        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at', 'outboxes.interval');
         $outboxes = $queryOutbox->get();
 
         /** @var Outbox $outbox */
