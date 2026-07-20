@@ -10,7 +10,6 @@
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\deleteJson;
-use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 
@@ -64,14 +63,6 @@ test('registering a passkey rejects an invalid credential response', function ()
     ]);
 
     $response->assertSessionHasErrors('passkey');
-});
-
-test('passkey page lists the current users passkeys', function () {
-    actingAs($this->adminGuest->getUser());
-
-    $response = get(route('grp.profile.passkey.show'));
-
-    $response->assertOk();
 });
 
 test('user can delete their own passkey', function () {

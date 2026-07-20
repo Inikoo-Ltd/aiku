@@ -10,7 +10,6 @@ namespace App\Actions\UI\Profile;
 
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
@@ -33,7 +32,7 @@ class RegisterPasskey
                 $request->validated('passkey'),
                 $request->validated('options'),
                 $request->getHost(),
-                ['name' => Str::random(10)],
+                ['name' => $request->input('name', 'Passkey '.now()->format('Y-m-d H:i'))],
             );
         } catch (InvalidPasskey|InvalidPasskeyOptions) {
             throw ValidationException::withMessages([
@@ -49,6 +48,7 @@ class RegisterPasskey
         return [
             'passkey' => ['required', 'json'],
             'options' => ['required', 'json'],
+            'name'    => ['nullable', 'string', 'max:255'],
         ];
     }
 
