@@ -125,7 +125,7 @@ class EditOutboxInShop extends OrgAction
             ];
             $fields[] = $intervalField;
             $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
-        } elseif (in_array($outbox->code, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION])) {
+        } elseif (in_array($outbox->code, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION, OutboxCodeEnum::ABANDONED_CART_REMINDER])) {
             $fields[] = $subjectField;
             $fields[] = $intervalField;
             $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;

@@ -32,14 +32,7 @@ class ProcessAbandonedCartReminderPerOutbox
         }
 
         $currentDateTime = Carbon::now()->utc();
-
-        $lastOutBoxSent = $outbox->last_sent_at ?? null;
-
-        if ($lastOutBoxSent && Carbon::parse($lastOutBoxSent)->diffInHours($currentDateTime) < $outbox->interval) {
-            return;
-        }
-
-        $eligibleBefore = $currentDateTime->copy()->subHours($outbox->threshold);
+        $compareDate = $currentDateTime->copy()->subHours($outbox->interval);
 
         $baseQuery = DB::table('checkout_abandonments');
         $baseQuery->join('customers', 'customers.id', '=', 'checkout_abandonments.customer_id');
@@ -47,12 +40,14 @@ class ProcessAbandonedCartReminderPerOutbox
             $join->on('customers.id', '=', 'customer_comms.customer_id')
                 ->where('customer_comms.is_subscribed_to_abandoned_cart', true);
         });
-        $baseQuery->where('checkout_abandonments.shop_id', $outbox->shop_id);
-        $baseQuery->where('checkout_abandonments.state', CheckoutAbandonmentStateEnum::ABANDONED->value);
-        $baseQuery->whereNull('checkout_abandonments.email_sent_at');
-        $baseQuery->where('checkout_abandonments.checkout_visited_at', '<', $eligibleBefore);
         $baseQuery->whereNull('customers.deleted_at');
         $baseQuery->whereNotNull('customers.email');
+
+        $baseQuery->where('checkout_abandonments.shop_id', $outbox->shop_id);
+        $baseQuery->where('checkout_abandonments.state', CheckoutAbandonmentStateEnum::ABANDONED->value);
+        $baseQuery->where('checkout_abandonments.checkout_visited_at', '<=', $compareDate);
+        $baseQuery->whereNull('checkout_abandonments.recovered_at');
+        $baseQuery->whereNull('checkout_abandonments.email_sent_at');
 
         $baseQuery->select(
             'checkout_abandonments.id',
