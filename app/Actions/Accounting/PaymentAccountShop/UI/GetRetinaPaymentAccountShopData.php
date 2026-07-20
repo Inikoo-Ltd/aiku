@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
@@ -24,6 +25,10 @@ class GetRetinaPaymentAccountShopData
 
     public function handle(Order $order, PaymentAccountShop $paymentAccountShop, OrderPaymentApiPoint $orderPaymentApiPoint): ?array
     {
+        if ($paymentAccountShop->state != PaymentAccountShopStateEnum::ACTIVE) {
+            return null;
+        }
+
         if ($paymentAccountShop->type == PaymentAccountTypeEnum::CHECKOUT) {
             if (app()->environment('production')) {
                 $publicKey = Arr::get($paymentAccountShop->paymentAccount->data, 'credentials.public_key');
@@ -58,17 +63,20 @@ class GetRetinaPaymentAccountShopData
 
             $options = Arr::get($paymentAccountShop->data, 'charges.options', []);
 
-
-            if (app()->environment('production')) {
-                return [];
-            }
-
             if (empty($options)) {
-                return [];
+                return null;
             }
 
             if (!$order->customer->taxNumber) {
-                return [];
+                return null;
+            }
+
+            if (blank(Arr::get($paymentAccountShop->paymentAccount->data, 'tax_number'))) {
+                return null;
+            }
+
+            if (blank(trim(strip_tags((string) $paymentAccountShop->invoice_footer)))) {
+                return null;
             }
 
             return
