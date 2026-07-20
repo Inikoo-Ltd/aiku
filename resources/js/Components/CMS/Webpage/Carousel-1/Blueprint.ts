@@ -5,7 +5,7 @@ export default {
 			label: "# Id ",
 			key: ["id"],
 			type: "text",
-			information : 'id selector is used to select one unique element!'
+			information: "id selector is used to select one unique element!",
 		},
 		{
 			label: "Responsive Visibility",
@@ -37,18 +37,28 @@ export default {
 					label: "Autoplay",
 					key: ["carousel_setting", "autoplay"],
 					type: "switch",
-					information : 'if autoplay is enabled, the carousel will automatically switch slides after a set interval (only works on live site)'
+					information:
+						"if autoplay is enabled, the carousel will automatically switch slides after a set interval (only works on live site)",
 				},
 				{
 					label: "Autoplay Interval (ms)",
 					key: ["carousel_setting", "interval"],
 					type: "number",
-					information : 'should put in milisecond (only works on live site)' 
+					information: "should put in milisecond (only works on live site)",
 				},
 				{
 					label: "Loop",
 					key: ["carousel_setting", "loop"],
 					type: "switch",
+				},
+				{
+					key: ["mobile_display"],
+					label: "Mobile Display",
+					type: "select-button",
+					defaultValue: "carousel",
+					props_data: {
+						options: ["carousel", "grid"],
+					},
 				},
 			],
 		},
@@ -61,7 +71,7 @@ export default {
 					key: ["card_container", "properties"],
 					replaceForm: [
 						{
-							key: [ "dimension"],
+							key: ["dimension"],
 							label: "Dimension",
 							type: "dimension",
 							useIn: ["desktop", "tablet", "mobile"],
@@ -96,7 +106,7 @@ export default {
 					key: ["card_container"],
 					replaceForm: [
 						{
-							key: [ "image_properties","dimension"],
+							key: ["image_properties", "dimension"],
 							label: "Dimension",
 							type: "dimension",
 							useIn: ["desktop", "tablet", "mobile"],
@@ -106,24 +116,24 @@ export default {
 			],
 		},
 		{
-					key: ["carousel_data","cards"],
-					name: "Cards  Data",
-					type: "array-data-drawer",
-					props_data: {
-						blueprint: CardBlueprint.blueprint,
-						order_name: "card",
-						can_drag: true,
-						can_delete: true,
-						can_add: true,
-						new_value_data: {
-							text: "Lorem Ipsum",
-							image: {
-								source: null,
-								alt: "Image",
-							},
-						},
+			key: ["carousel_data", "cards"],
+			name: "Cards  Data",
+			type: "array-data-drawer",
+			props_data: {
+				blueprint: CardBlueprint.blueprint,
+				order_name: "card",
+				can_drag: true,
+				can_delete: true,
+				can_add: true,
+				new_value_data: {
+					text: "Lorem Ipsum",
+					image: {
+						source: null,
+						alt: "Image",
 					},
 				},
+			},
+		},
 		{
 			name: "Layout",
 			key: ["container", "properties"],
