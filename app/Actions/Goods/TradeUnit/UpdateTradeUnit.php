@@ -339,9 +339,10 @@ class UpdateTradeUnit extends GrpAction
     {
         if ($this->has('origin_country_id')) {
             if (is_string($this->get('origin_country_id'))) {
+
                 $countryId = (int)$this->get('origin_country_id');
                 $this->set('origin_country_id', value: $countryId);
-            } else {
+            } elseif (is_array($this->get('origin_country_id'))) {
                 $this->set('origin_country_id', Arr::get($this->get('origin_country_id'), 'id'));
             }
         }
@@ -359,7 +360,6 @@ class UpdateTradeUnit extends GrpAction
 
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($tradeUnit->group, $modelData);
-
         return $this->handle($tradeUnit, $this->validatedData);
     }
 
