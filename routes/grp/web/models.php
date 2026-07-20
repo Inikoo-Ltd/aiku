@@ -275,6 +275,7 @@ use App\Actions\Helpers\Translations\Translate;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
+use App\Actions\HumanResources\ClockingMachine\SetClockingMachineKioskToken;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
@@ -1322,6 +1323,7 @@ Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateD
 
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
     Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
+    Route::post('{clockingMachine}/kiosk-token', SetClockingMachineKioskToken::class)->name('kiosk_token.set');
     Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
     Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
 });
