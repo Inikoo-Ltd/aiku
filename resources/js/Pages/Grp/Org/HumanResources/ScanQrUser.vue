@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted } from "vue"
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from "vue"
 import { QrcodeStream } from "vue-qrcode-reader"
 import { LMap, LTileLayer, LMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
 import { addMinutes, formatDuration, intervalToDuration, parseISO, set } from "date-fns"
@@ -204,6 +204,10 @@ const fetchShiftSchedules = async () => {
 
 onMounted(() => {
 	fetchShiftSchedules()
+})
+
+onBeforeUnmount(() => {
+	stopCamera()
 })
 
 const detectMyLocation = () => {

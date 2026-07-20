@@ -52,7 +52,7 @@
     ":itemNotPick items will not picked, and will not billed to customer": ":itemNotPick tétel nem kerül összekészítésre, és nem lesz kiszámlázva a vásárlónak.",
     ":label copied to clipboard": ":címke a vágólapra másolva",
     ":mailshotSubject is still in process": "A :mailshotSubject tárgy még feldolgozás alatt áll.",
-    ":n or more": "",
+    ":n or more": ":n vagy több darabnál",
     ":percentage_discount OFF": ":percentage_discount KEDVEZMÉNY",
     ":product has been added to favorites": ":a termék hozzáadva a kedvencekhez",
     ":qty stock will be removed and marked as lost!": ":qty készlet eltávolításra kerül és veszteségként lesz megjelölve!",

@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
+use App\Support\Forms\SesConfigurationBlueprint;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -81,11 +82,12 @@ class EditOrganisationSettings extends OrgAction
         }
 
         $allowWaiting = Arr::get($organisation->settings, 'orders.allow_waiting', false);
+        $routeParameters = request()->route()->originalParameters();
 
         return Inertia::render(
             'EditModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->getBreadcrumbs($routeParameters),
                 'title' => $title,
                 'pageHead' => [
                     'title' => $title,
@@ -162,6 +164,14 @@ class EditOrganisationSettings extends OrgAction
                                     'value' => Arr::get($organisation->settings, 'invoice_export.show_omega', false),
                                 ],
                             ],
+                        ],
+                        [
+                            'label'  => __('AWS-SES configuration'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => SesConfigurationBlueprint::make(
+                                $organisation->settings ?? [],
+                                ['failover', 'customer_notification']
+                            ),
                         ],
                         [
                             "label" => __("google drive"),
@@ -311,8 +321,10 @@ class EditOrganisationSettings extends OrgAction
     }
 
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(array $routeParameters): array
     {
+        $organisationRouteParameters = Arr::only($routeParameters, 'organisation');
+
         return
             array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
@@ -322,7 +334,7 @@ class EditOrganisationSettings extends OrgAction
                         'simple' => [
                             'route' => [
                                 'name' => 'grp.org.settings.edit',
-                                'parameters' => [$this->organisation->slug]
+                                'parameters' => $organisationRouteParameters
                             ],
                             'label' => __('Organisation settings'),
                         ]

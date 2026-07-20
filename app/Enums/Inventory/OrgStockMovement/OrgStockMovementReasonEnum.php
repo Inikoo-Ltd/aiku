@@ -43,7 +43,7 @@ enum OrgStockMovementReasonEnum: string
 
     case TRANSFER        = 'transfer';
     case BIN_ERROR       = 'bin_error';
-    
+
     case RETURN_TO_STOCK = 'return_to_stock';
     case BARCODE         = 'barcode';
     case UOM             = 'uom';

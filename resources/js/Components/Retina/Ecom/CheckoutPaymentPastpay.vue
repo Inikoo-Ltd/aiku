@@ -18,6 +18,7 @@ library.add(faArrowRight, faCheckCircle)
 
 const props = defineProps<{
 	data: {
+		order_payment_api_point: string
 		data: {
 			bank_name: string
 			bank_code: string
@@ -58,6 +59,7 @@ const onSubmitPlaceOrder = async () => {
 			}),
 			{
 				days: selectedOption.value?.days,
+				order_payment_api_point: props.data.order_payment_api_point,
 			}
 		)
 		isModalPastpayRedirected.value = true

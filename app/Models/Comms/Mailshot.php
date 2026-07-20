@@ -87,6 +87,7 @@ use App\Models\Web\Webpage;
  * @property-read Mailshot|null $secondWave
  * @property-read Shop|null $shop
  * @property-read \App\Models\Comms\MailshotStats|null $stats
+ * @property-read Collection<int, Webpage> $webpages
  * @method static \Database\Factories\Comms\MailshotFactory factory($count = null, $state = [])
  * @method static Builder<static>|Mailshot newModelQuery()
  * @method static Builder<static>|Mailshot newQuery()

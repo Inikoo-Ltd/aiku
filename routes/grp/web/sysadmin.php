@@ -22,10 +22,12 @@ use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\IndexUserActions;
 use App\Actions\SysAdmin\User\UI\IndexUsers;
 use App\Actions\SysAdmin\User\UI\ShowUser;
+use App\Actions\SysAdmin\Group\UI\IndexHistoryInGroupSetting;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowSysAdminDashboard::class)->name('dashboard');
 Route::get('/settings', EditGroupSettings::class)->name('settings.edit');
+Route::get('/changelogs', IndexHistoryInGroupSetting::class)->name('changelogs.index');
 
 Route::prefix('analytics')->as('analytics.')->group(function () {
     Route::get('', ShowSysAdminAnalyticsDashboard::class)->name('dashboard');
