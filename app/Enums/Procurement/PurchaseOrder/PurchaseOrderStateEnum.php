@@ -17,6 +17,7 @@ enum PurchaseOrderStateEnum: string
     case IN_PROCESS = 'in_process';
     case SUBMITTED = 'submitted';
     case CONFIRMED = 'confirmed';
+    // Final
     case SETTLED = 'settled';
     case CANCELLED = 'cancelled';
     case NOT_RECEIVED = 'not_received';

@@ -6,10 +6,10 @@ import 'swiper/css/navigation'
 import { format } from 'date-fns'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCalendarAlt, faSparkles, faSpellCheck, faSeedling, } from '@fal'
+import { faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { localesCode, OptionsTime, useFormatTime as useFormatTimeComposables } from '@/Composables/useFormatTime'
-library.add(faCalendarAlt, faSparkles, faSpellCheck, faSeedling)
+library.add(faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle)
 import type { Timeline } from '@/types/Timeline'
 
 const props = defineProps<{
@@ -154,9 +154,16 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                     <!-- <pre>{{ step }}</pre> -->
 
                     <!-- Step: Description -->
-                    <div v-tooltip="useFormatTimeComposables(step.timestamp, { formatTime: 'PPPPpp' })"
+                    <div v-tooltip="step.timestamp ? useFormatTimeComposables(step.timestamp, { formatTime: 'PPPPpp' }) : undefined"
                         class="text-xxs md:text-xs text-[#555] text-center select-none">
-                        <span v-if="step.format_time">{{ useFormatTimeComposables(step.timestamp, { formatTime: step.format_time }) }}</span>
+                        <template v-if="step.timestamp">
+                            <span v-if="step.format_time">{{ useFormatTimeComposables(step.timestamp, { formatTime: step.format_time }) }}</span>
+                            <span v-else>{{ useFormatTime(step.timestamp) }}</span>
+                        </template>
+                        <span v-else-if="step.sub_label" class="italic text-gray-400 whitespace-nowrap">
+                            <FontAwesomeIcon :icon="faInfoCircle" class="text-xxs" aria-hidden="true" />
+                            {{ step.sub_label }}
+                        </span>
                         <span v-else>{{ useFormatTime(step.timestamp) }}</span>
                     </div>
                 </SwiperSlide>

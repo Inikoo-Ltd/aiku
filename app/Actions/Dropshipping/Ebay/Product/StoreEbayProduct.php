@@ -307,7 +307,12 @@ class StoreEbayProduct extends RetinaAction
             }
 
             return $portfolio;
-        } catch (\Exception) {
+        } catch (\Exception $e) {
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
+            ]);
+
             return $portfolio;
 
         }
