@@ -300,7 +300,8 @@ class ShowWebsite extends OrgAction
                         'stats'              => $stats,
                         'content_blog_stats' => $content_blog_stats,
                         'website_stats'      => $website_stats,
-                        'website_type'       => $website->shop->type
+                        'website_type'       => $website->shop->type,
+                        'iris_search_model'  => Arr::get($website->settings, 'iris_search_model', 'luigi'),
                     ],
                     [
                         'pic' => null,// todo this is wrong User::permission("web.{$website->shop_id}.edit")->get()

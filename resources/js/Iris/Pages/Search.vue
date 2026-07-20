@@ -193,6 +193,10 @@ const LBInitSearchResult = async () => {
 }
 
 onBeforeMount(() => {
+    if (layout.iris?.iris_search_model === 'internal') {
+        return
+    }
+
     const script = document.createElement('script');
     script.src = "https://cdn.luigisbox.tech/search.js";
     script.async = true;

@@ -119,6 +119,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.luigisbox.last_reindex_at", Arr::pull($modelData, "last_reindex_at"));
         }
 
+        if (Arr::has($modelData, "iris_search_model")) {
+            data_set($modelData, "settings.iris_search_model", Arr::pull($modelData, "iris_search_model"));
+        }
+
         if (Arr::has($modelData, "return_policy")) {
             data_set($modelData, "settings.return_policy", Arr::pull($modelData, "return_policy"));
         }
@@ -246,6 +250,7 @@ class UpdateWebsite extends OrgAction
             'luigisbox_lbx_code'                         => ['sometimes', 'nullable', 'string', 'regex:/^LBX-\d{6,8}$/'],
             'luigisbox_private_key'                      => ['sometimes', 'nullable', 'string'],
             'last_reindex_at'                            => ['sometimes', 'nullable', 'string'],
+            'iris_search_model'                          => ['sometimes', 'string', Rule::in(['internal', 'luigi'])],
             'jira_help_desk_widget'                      => ['sometimes', 'nullable', 'string'],
             'return_policy'                              => ['sometimes', 'string'],
             'image'                                      => ['sometimes', 'nullable', File::image()->max(12 * 1024)],

@@ -6,10 +6,11 @@
 
 <script setup lang="ts">
 import { faFragile, faGlobe, faLink, faSearch, faPencil, faPlaneArrival, faUser, faChartLine } from "@fal"
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, watch } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import PureRadio from "@/Components/Pure/PureRadio.vue"
 import { trans } from "laravel-vue-i18n"
 import { StatsBoxTS } from "@/types/Components/StatsBox"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
@@ -25,6 +26,7 @@ library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChar
 
 const props = defineProps<{
     data: {
+        id: number
         slug: string
         url: string
         domain: string
@@ -38,6 +40,7 @@ const props = defineProps<{
         website_stats: StatsBoxTS[]
         website_type: string
         route_restricted_country?: routeType
+        iris_search_model?: "luigi" | "internal"
     }
     route_storefront: routeType
     route_landing_page?: routeType
@@ -51,6 +54,47 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+
+// Section: Search engine model (internal / luigi)
+const searchModelOptions = [
+    { value: "luigi", name: trans("Luigi") },
+    { value: "internal", name: trans("Internal") },
+]
+const savedSearchModel = ref<"luigi" | "internal">(props.data.iris_search_model ?? "luigi")
+const searchModel = ref<"luigi" | "internal">(savedSearchModel.value)
+const isSavingSearchModel = ref(false)
+
+const saveSearchModel = async (value: "luigi" | "internal") => {
+    isSavingSearchModel.value = true
+    try {
+        await axios.patch(
+            route("grp.models.website.update", { website: props.data.id }),
+            { iris_search_model: value }
+        )
+        savedSearchModel.value = value
+        notify({
+            title: trans("Success"),
+            text: trans("Search engine updated"),
+            type: "success",
+        })
+    } catch (error) {
+        searchModel.value = savedSearchModel.value
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to update the search engine"),
+            type: "error",
+        })
+    } finally {
+        isSavingSearchModel.value = false
+    }
+}
+
+watch(searchModel, (value) => {
+    if (value === savedSearchModel.value) {
+        return
+    }
+    saveSearchModel(value)
+})
 
 const links = computed(() => {
     const baseLinks = [
@@ -170,6 +214,26 @@ const links = computed(() => {
                     <div v-for="(item, index) in links" :key="index" class="px-2 py-1">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
                             type="secondary" :disabled="item?.disabled" />
+                    </div>
+
+                    <!-- Section: Search Engine radio -->
+                    <div class="p-2 mt-1 border-t border-gray-200"
+                        :class="layout.app.environment === 'local' ? '' : 'hidden'"
+                    >
+                        <div class="flex items-center gap-x-1.5 text-sm font-medium text-gray-600 mb-2">
+                            <FontAwesomeIcon :icon="faSearch" class="text-gray-400" fixed-width aria-hidden="true" />
+                            {{ trans('Search Engine') }}
+                            <FontAwesomeIcon icon="fal fa-info-circle" fixed-width aria-hidden="true"
+                                class="text-gray-400 hover:text-gray-700"
+                                v-tooltip="trans('Choose which engine powers the website search. Internal disables the Luigi search script.')" />
+                        </div>
+                        <PureRadio
+                            v-model="searchModel"
+                            mode="compact"
+                            by="value"
+                            label="name"
+                            :options="searchModelOptions"
+                            :class="{ 'opacity-50 pointer-events-none': isSavingSearchModel }" />
                     </div>
 
                     <div class="p-2 space-y-2">

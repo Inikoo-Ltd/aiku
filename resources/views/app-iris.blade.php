@@ -116,7 +116,7 @@
                 })(window, document, "script", "gtmDataLayer", '{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');
                 @endif
 
-                @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', ''))
+                @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') && Arr::get(request()->input('website')->settings, 'iris_search_model', 'luigi') !== 'internal')
                 var lbx = document.createElement("script");
                 lbx.async = true;
                 lbx.src = "https://scripts.luigisbox.tech/{{ Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') }}.js";
