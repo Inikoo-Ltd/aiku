@@ -21,6 +21,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
@@ -131,6 +132,16 @@ class StoreInvoice extends OrgAction
 
         if ($parent instanceof Order) {
             data_set($modelData, 'is_pastpay', $parent->is_pastpay);
+
+            if ($parent->is_pastpay) {
+                $pastpayFooter = $this->shop->paymentAccountShops()
+                    ->where('type', PaymentAccountTypeEnum::PASTPAY)
+                    ->first()?->invoice_footer;
+
+                if ($pastpayFooter) {
+                    data_set($modelData, 'footer', $pastpayFooter);
+                }
+            }
         }
 
 
@@ -224,7 +235,11 @@ class StoreInvoice extends OrgAction
         }
 
         if ($invoice->is_pastpay) {
-            FinalizeOrderWithPastpay::run($invoice);
+            try {
+                FinalizeOrderWithPastpay::run($invoice);
+            } catch (\Throwable $e) {
+                \Sentry::captureException($e);
+            }
         }
 
         return $invoice;

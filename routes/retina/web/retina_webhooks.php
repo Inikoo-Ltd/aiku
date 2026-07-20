@@ -11,6 +11,8 @@ use App\Actions\Accounting\MitSavedCard\WebHooks\CheckoutComMitSavedCardSuccess;
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentCompleted;
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentFailure;
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentSuccess;
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\PastpayOrderPaymentFailure;
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\PastpayOrderPaymentSuccess;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentCompleted;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentFailure;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentSuccess;
@@ -33,6 +35,10 @@ Route::name('webhooks.')->prefix('webhooks')->group(function () {
         Route::get('mit-saved-card-success/{mitSavedCard:ulid}', CheckoutComMitSavedCardSuccess::class)->name('mit_saved_card_success');
         Route::get('mit-saved-card-failure/{mitSavedCard:ulid}', CheckoutComMitSavedCardFailure::class)->name('mit_saved_card_failure');
 
+    });
+    Route::name('pastpay.')->prefix('pastpay')->group(function () {
+        Route::get('order-payment-success/{orderPaymentApiPoint:ulid}', PastpayOrderPaymentSuccess::class)->name('order_payment_success');
+        Route::get('order-payment-failure/{orderPaymentApiPoint:ulid}', PastpayOrderPaymentFailure::class)->name('order_payment_failure');
     });
     Route::post('subscribe-newsletter', CreateProspectFromWebBlock::class)->name('subscribe_newsletter.store');
 });

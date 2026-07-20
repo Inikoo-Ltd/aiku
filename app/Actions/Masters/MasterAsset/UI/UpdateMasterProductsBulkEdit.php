@@ -45,6 +45,7 @@ class UpdateMasterProductsBulkEdit extends GrpAction
             'data.*.description'            =>  ['sometimes', 'string', 'nullable'],
             'data.*.is_for_sale'            =>  ['sometimes', 'boolean'],
             'data.*.price'                  =>  ['sometimes', 'numeric'],
+            'data.*.rrp'                    =>  ['sometimes', 'numeric'],
             'data.*.units'                  =>  ['sometimes', 'numeric'],
             'data.*.unit'                   =>  ['sometimes', 'required', 'string'],
             'data.*.gross_weight'           =>  ['sometimes', 'numeric'],
@@ -57,6 +58,7 @@ class UpdateMasterProductsBulkEdit extends GrpAction
         return [
             'data.*.name.string'                =>  __('Product Name cannot be empty'),
             'data.*.price.numeric'              =>  __('Product Price must be a number and cannot be empty'),
+            'data.*.rrp.numeric'                =>  __('Product RRP must be a number and cannot be empty'),
             'data.*.units.numeric'              =>  __('Product Units must be a number and cannot be empty'),
             'data.*.unit.required'              =>  __('Product Unit cannot be empty'),
             'data.*.unit.string'                =>  __('Product Unit cannot be empty'),
