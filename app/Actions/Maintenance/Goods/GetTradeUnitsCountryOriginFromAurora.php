@@ -78,9 +78,10 @@ class GetTradeUnitsCountryOriginFromAurora
 
 
         if (count($cleanCountryOrigins) > 1) {
-            print_r($countryOrigins);
-            $command->info('Multiple country origins found for trade unit.');
 
+            $command->info('Multiple country origins found for trade unit. '.$tradeUnit->slug);
+            print_r($cleanCountryOrigins);
+            $command->info('------');
             return;
         } elseif (empty($cleanCountryOrigins)) {
             // $command->info("$tradeUnit->slug No country origins found for trade unit.");
@@ -185,7 +186,7 @@ class GetTradeUnitsCountryOriginFromAurora
                         $this->handle($tradeUnit, $command, $command->option('dry-run'));
                     }
                     $processed++;
-                    $bar->advance();
+                  //  $bar->advance();
                 }
             }, 'id');
 
