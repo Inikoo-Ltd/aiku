@@ -60,6 +60,8 @@ class GetTradeUnitsCountryOriginFromAurora
                 $countryCode = 'IDN';
             } elseif ($countryCode == 'MOR') {
                 $countryCode = 'MAR';
+            } elseif ($countryCode == 'CHI') {
+                $countryCode = 'CHN';
             }
 
             if ($countryCode == 'UNK') {
