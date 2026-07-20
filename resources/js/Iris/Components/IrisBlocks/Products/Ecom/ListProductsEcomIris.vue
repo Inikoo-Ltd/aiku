@@ -68,7 +68,11 @@ const products = ref<any[]>(
 );
 
 const q = ref("")
-const orderBy = ref(layout.params?.order_by || props.fieldValue?.sub_type == 'family' ? 'recommended' : '-created_at')
+const orderByFromUrl = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("order_by")
+    : null
+const defaultOrderBy = props.fieldValue?.sub_type == 'family' ? 'recommended' : '-created_at'
+const orderBy = ref(orderByFromUrl || defaultOrderBy)
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
@@ -273,8 +277,8 @@ const sortOptions = computed(() => {
     return baseOptions
 })
 
-const sortKey = ref(props.fieldValue.sub_type == 'family' ? 'recommended' : 'created_at')
-const isAscending = ref(true)
+const sortKey = ref(orderBy.value.replace(/^-/, ""))
+const isAscending = ref(!orderBy.value.startsWith("-"))
 
 
 const getArrow = (key: typeof sortKey.value) => {
@@ -288,9 +292,6 @@ const getArrow = (key: typeof sortKey.value) => {
 const isMobile = computed(() => props.screenType === "mobile")
 
 onMounted(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const sortParam = urlParams.get("order_by")
-
     layout.buttonBasket = {
         buttonStyle: getStyles(props.fieldValue?.button?.properties, props.screenType, false),
         buttonStyleLogin: getStyles(props.fieldValue?.buttonLogin?.properties, props.screenType),
@@ -298,18 +299,16 @@ onMounted(() => {
         button: props.fieldValue?.button
     }
 
-    if (sortParam) {
-        orderBy.value = sortParam
-        const key = sortParam.replace("-", "")
-        sortKey.value = key as typeof sortKey.value
-        isAscending.value = !sortParam.startsWith("-")
-    }
-
     if (layout?.iris?.is_logged_in) {
         firstLoad.value = 1
         fetchProducts(); // break chace from product dont deleted
         /* fetchHasInBasket(); */
     } else {
+        if (orderByFromUrl) {
+            firstLoad.value = 1
+            fetchProducts()
+        }
+
         setTimeout(() => {   // Needed, to handle, after login phase
             if (layout?.iris?.is_logged_in) {
                 firstLoad.value = 1

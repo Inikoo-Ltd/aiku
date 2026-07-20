@@ -96,6 +96,6 @@ const isHidden = computed(() => {
       />
     </template>
   </PageHeading>
-   <HasPickTableDeliveryNote v-if="todo" :data="data" v-model:selectedDeliveryNotes="selectedDeliveryNotes"/>
+  <HasPickTableDeliveryNote v-if="todo" :data="data" v-model:selectedDeliveryNotes="selectedDeliveryNotes"/>
   <TableDeliveryNotes v-else :data="data" />
 </template>

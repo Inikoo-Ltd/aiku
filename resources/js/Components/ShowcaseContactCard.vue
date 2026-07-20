@@ -18,6 +18,7 @@ import { Agent } from '@/types/Grp/Agent'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import CopyButton from './Utils/CopyButton.vue'
 
 library.add(faEnvelope, faPhone, faPersonDolly, faBoxFull, faCopy, faBan, faArrowUp, faMapMarkerAlt, faMale, faMapMarkedAlt, faCalendarPlus, faMoneyBillWaveAlt, faBuilding)
 
@@ -80,12 +81,13 @@ const props = defineProps<{
                 <div v-if="props.data?.website" class="grid grid-flow-col justify-start items-center">
                     <FontAwesomeIcon fixed-width icon="fal fa-male" class="mr-4 text-gray-400" aria-hidden="true" />
                     {{ props.data?.website }}
-                    <div class="group cursor-pointer px-1.5 flex justify-center text-xl "
+                    <CopyButton :text="props.data?.website" class="ml-2" />
+                    <!-- <div class="group cursor-pointer px-1.5 flex justify-center text-xl "
                         @click="useCopyText(props.data?.website)">
                         <FontAwesomeIcon icon="fal fa-copy"
                             class="text-sm leading-none mr-1 opacity-20 group-hover:opacity-75 group-active:opacity-100"
                             aria-hidden="true" />
-                    </div>
+                    </div> -->
                 </div>
 
                 <!-- Email -->
@@ -93,25 +95,15 @@ const props = defineProps<{
                     class="grid grid-flow-col justify-start items-center">
                     <FontAwesomeIcon fixed-width icon="fal fa-envelope" class="mr-4 text-gray-400" aria-hidden="true" />
                     <a :href="`mailto:${props.data?.email}`" class="hover:text-indigo-500 hover:underline">{{ props.data?.email }}</a>
-                    <div class="group cursor-pointer px-1.5 flex justify-center text-xl "
-                        @click="useCopyText(props.data?.email)">
-                        <FontAwesomeIcon icon="fal fa-copy"
-                            class="text-sm leading-none mr-1 opacity-20 group-hover:opacity-75 group-active:opacity-100"
-                            aria-hidden="true" />
-                    </div>
+                    <CopyButton :text="props.data?.email" class="ml-2" />
                 </div>
 
                 <!-- Telephone -->
                 <div v-if="data?.phone && props.data?.phone.length != 0"
                     class="grid grid-flow-col justify-start items-center">
                     <FontAwesomeIcon fixed-width icon="fal fa-phone" class="mr-4 text-gray-400" aria-hidden="true" />
-                    <a :href="`tel:${props.data?.email}`" class="hover:text-indigo-500 hover:underline">{{ props.data?.phone }}</a>
-                    <div class="group cursor-pointer px-1.5 flex justify-center text-xl "
-                        @click="useCopyText(props.data?.phone)">
-                        <FontAwesomeIcon icon="fal fa-copy"
-                            class="text-sm leading-none mr-1 opacity-20 group-hover:opacity-75 group-active:opacity-100"
-                            aria-hidden="true" />
-                    </div>
+                    <a :href="`tel:${props.data?.phone}`" class="hover:text-indigo-500 hover:underline">{{ props.data?.phone }}</a>
+                    <CopyButton :text="props.data?.phone" class="ml-2" />
                 </div>
 
                 <!-- Location -->

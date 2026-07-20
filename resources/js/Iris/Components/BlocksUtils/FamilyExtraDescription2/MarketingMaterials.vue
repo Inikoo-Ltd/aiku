@@ -24,7 +24,7 @@ library.add(faHeart,
     faBullhorn)
 
 const containerStyle = computed(() => (getStyles(props.fieldValue?.marketing?.container?.properties)))
-console.log(props.fieldValue)
+
 </script>
 
 <template>

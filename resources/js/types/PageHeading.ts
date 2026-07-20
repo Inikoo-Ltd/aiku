@@ -14,6 +14,7 @@ export interface PageHeadingTypes {
     afterTitle?: {
         label: string
         class?: string
+        tooltip?: string
     }
     platform?:{
         icon: string | string[],

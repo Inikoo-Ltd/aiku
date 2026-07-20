@@ -21,7 +21,7 @@ import NotesDisplay from "@/Components/NotesDisplay.vue"
 import WaitingOppositeCountBadge from "@/Components/Warehouse/DeliveryNotes/WaitingOppositeCountBadge.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTruck, faYinYang } from "@fal"
+import { faMapMarkerAlt, faTruck, faYinYang } from "@fal"
 import { faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTruck, faYinYang)
@@ -223,44 +223,56 @@ const generateRouteDeliveryNote = (id: string) => {
 		</template>
 
 		<template #cell(reference)="{ item: deliveryNote }">
-			<div class="flex gap-2 flex-wrap items-center">
-				<Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
-					{{ deliveryNote["reference"] }}
-				</Link>
-				<FontAwesomeIcon
-					v-if="deliveryNote.is_premium_dispatch"
-					v-tooltip="trans('Priority dispatch')"
-					icon="fas fa-star"
-					class="text-yellow-500"
-					fixed-width
-					aria-hidden="true" />
-				<FontAwesomeIcon
-					v-if="deliveryNote.is_customer_vip"
-					v-tooltip="trans('VIP Customer')"
-					:icon="faCertificate"
-                    color="#191970"
-					fixed-width
-				/>
-				<FontAwesomeIcon
-					v-if="deliveryNote.has_extra_packing"
-					v-tooltip="trans('Extra packing')"
-					icon="fas fa-box-heart"
-					class="text-yellow-500"
-					fixed-width
-					aria-hidden="true" />
-				<NotesDisplay :item="deliveryNote" reference-field="reference" />
-				<WaitingOppositeCountBadge
-					v-if="Number(deliveryNote.waiting_warehouse_count) > 0"
-					:count="Number(deliveryNote.waiting_warehouse_count)"
-					type="warehouse"
-					:href="deliveryNoteRoute(deliveryNote)"
-				/>
-				<WaitingOppositeCountBadge
-					v-if="Number(deliveryNote.waiting_crm_count) > 0"
-					:count="Number(deliveryNote.waiting_crm_count)"
-					type="crm"
-					:href="deliveryNoteRoute(deliveryNote)"
-				/>
+            <div class="flex flex-rows gap-2">
+				<div class="flex gap-2 flex-wrap items-center">
+					<Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
+						{{ deliveryNote["reference"] }}
+					</Link>
+					<FontAwesomeIcon
+						v-if="deliveryNote.is_premium_dispatch"
+						v-tooltip="trans('Priority dispatch')"
+						icon="fas fa-star"
+						class="text-yellow-500"
+						fixed-width
+						aria-hidden="true" />
+					<FontAwesomeIcon
+						v-if="deliveryNote.is_customer_vip"
+						v-tooltip="trans('VIP Customer')"
+						:icon="faCertificate"
+						color="#191970"
+						fixed-width
+					/>
+					<FontAwesomeIcon
+						v-if="deliveryNote.has_extra_packing"
+						v-tooltip="trans('Extra packing')"
+						icon="fas fa-box-heart"
+						class="text-yellow-500"
+						fixed-width
+						aria-hidden="true" />
+					<NotesDisplay :item="deliveryNote" reference-field="reference" />
+					<WaitingOppositeCountBadge
+						v-if="Number(deliveryNote.waiting_warehouse_count) > 0"
+						:count="Number(deliveryNote.waiting_warehouse_count)"
+						type="warehouse"
+						:href="deliveryNoteRoute(deliveryNote)"
+					/>
+					<WaitingOppositeCountBadge
+						v-if="Number(deliveryNote.waiting_crm_count) > 0"
+						:count="Number(deliveryNote.waiting_crm_count)"
+						type="crm"
+						:href="deliveryNoteRoute(deliveryNote)"
+					/>
+				</div>
+				<span
+                    v-if="deliveryNote.is_collection"
+					class="border border-pink-500 text-pink-500 py-[0.15rem] px-[0.25rem] rounded-md ml-auto text-xs my-auto whitespace-nowrap"
+				>
+					{{ ctrans('Collection') }}
+					<FontAwesomeIcon 
+						:icon="faMapMarkerAlt"
+						class="text-pink-500"
+					/>
+				</span>
 			</div>
 		</template>
 

@@ -85,33 +85,33 @@ class ShowSupplier extends GrpAction
                         ],
                     'title'   => $supplier->name,
                     'subNavigation' => $this->getSupplierNavigation($supplier),
-                    'actions' => [
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'grp.supply-chain.suppliers.remove',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                        $this->canEdit && !$supplier->agent_id ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'route' => [
-                                'name'       => 'grp.supply-chain.suppliers.show.purchase_orders.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                            'label' => __('Purchase Order')
-                        ] : false,
-                    ],
+                    // 'actions' => [
+                    //     $this->canEdit ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'edit',
+                    //         'route' => [
+                    //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ] : false,
+                    //     $this->canDelete ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'delete',
+                    //         'route' => [
+                    //             'name'       => 'grp.supply-chain.suppliers.remove',
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ] : false,
+                    //     $this->canEdit && !$supplier->agent_id ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'create',
+                    //         'route' => [
+                    //             'name'       => 'grp.supply-chain.suppliers.show.purchase_orders.create',
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ],
+                    //         'label' => __('Purchase Order')
+                    //     ] : false,
+                    // ],
                     'meta'    => [
                         [
                             'name'     => trans_choice('Purchases|Sales', $supplier->stats->number_open_purchase_orders),
