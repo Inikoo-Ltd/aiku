@@ -74,33 +74,33 @@ class ShowAgent extends GrpAction
                         ],
                     'subNavigation' => $this->getAgentNavigation($agent),
                     'title'   => $agent->organisation->name,
-                    'actions' => [
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'grp.org.procurement.marketplace.agents.remove',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'route' => [
-                                'name'       => 'grp.org.procurement.marketplace.agents.show.suppliers.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                            'label' => __('supplier')
-                        ] : false,
-                    ],
+                    // 'actions' => [
+                    //     $this->canEdit ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'edit',
+                    //         'route' => [
+                    //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ] : false,
+                    //     $this->canDelete ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'delete',
+                    //         'route' => [
+                    //             'name'       => 'grp.org.procurement.marketplace.agents.remove',
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ] : false,
+                    //     $this->canEdit ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'create',
+                    //         'route' => [
+                    //             'name'       => 'grp.org.procurement.marketplace.agents.show.suppliers.create',
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ],
+                    //         'label' => __('supplier')
+                    //     ] : false,
+                    // ],
 
 
                 ],
