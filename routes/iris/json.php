@@ -47,6 +47,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
 use App\Actions\Reviews\Iris\GetIrisReviews;
+use App\Actions\Search\SearchIrisCatalogue;
 use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +67,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('basket-transaction-product-data/{transaction:id}', GetIrisBasketTransactionProductData::class)->name('basket_transaction_product_data')->whereNumber('transaction');
 
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
+
+    Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
     Route::get('/footer', GetIrisFooterData::class)->name('footer');

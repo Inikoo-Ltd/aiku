@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { inject, onMounted, ref, onBeforeMount } from "vue"
+import { inject, onMounted, ref, computed, watch, onBeforeMount, defineAsyncComponent } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
+import axios from "axios"
+import { debounce } from "lodash-es"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { LuigiTranslation } from "@/Composables/Unique/LuigiTranslation"
 import { loadLuigiAutocomplete, onFirstInteractionOrIdle } from "@/Composables/useLuigiAutocomplete"
+import Popover from "primevue/popover"
 // import { AutoComplete } from "primevue"   /// No need to import AutoComplete
 library.add(faSearch)
+
+const SearchResultCatalogue = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogue.vue"))
 
 
 
@@ -31,8 +37,82 @@ onBeforeMount(() => {
 })
 
 
-const layout = inject('layout', {})
+const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
+
+// Section: Internal catalogue search (used when website search model is 'internal')
+const isInternalSearch = computed(() => layout.iris?.iris_search_model === 'internal')
+const internalResults = ref<any>(null)
+const isInternalLoading = ref(false)
+const showDropdown = ref(false)
+const inputRef = ref<HTMLInputElement | null>(null)
+const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const isPopoverVisible = ref(false)
+let internalAbort: AbortController | null = null
+let internalRequestId = 0
+
+const openInternalPopover = () => {
+    if (isPopoverVisible.value || !inputRef.value) {
+        return
+    }
+    popoverRef.value?.show({ currentTarget: inputRef.value } as any)
+}
+
+const closeInternalPopover = () => {
+    popoverRef.value?.hide()
+}
+
+const fetchInternalResults = debounce(async (query: string) => {
+    const requestId = ++internalRequestId
+    internalAbort?.abort()
+    internalAbort = new AbortController()
+    isInternalLoading.value = true
+    try {
+        const { data } = await axios.get(
+            route('iris.json.search.catalogue', { q: query }),
+            { signal: internalAbort.signal }
+        )
+        if (requestId !== internalRequestId) {
+            return
+        }
+        internalResults.value = data.results ?? null
+    } catch (error) {
+        if (axios.isCancel(error) || requestId !== internalRequestId) {
+            return
+        }
+        internalResults.value = null
+    } finally {
+        if (requestId === internalRequestId) {
+            isInternalLoading.value = false
+        }
+    }
+}, 250)
+
+const onInternalInput = () => {
+    if (!inputValue.value.trim()) {
+        fetchInternalResults.cancel()
+        internalResults.value = null
+        closeInternalPopover()
+        return
+    }
+    openInternalPopover()
+    isInternalLoading.value = true
+    fetchInternalResults(inputValue.value)
+}
+
+// SearchResultCatalogue sets open=false when a result is clicked
+watch(showDropdown, (open) => {
+    if (!open) {
+        closeInternalPopover()
+    }
+})
+
+const onSearchInput = (event: Event) => {
+    inputValue.value = (event.target as HTMLInputElement)?.value ?? ''
+    if (isInternalSearch.value) {
+        onInternalInput()
+    }
+}
 
 
 const LBInitAutocompleteNew = async () => {
@@ -151,6 +231,10 @@ const LBInitAutocompleteNew = async () => {
 
 
 onMounted(() => {
+    if (isInternalSearch.value) {
+        return
+    }
+
     onFirstInteractionOrIdle(() => {
         loadLuigiAutocomplete()
             .then(() => LBInitAutocompleteNew())
@@ -179,8 +263,10 @@ const visitSearchPage = () => {
 <template>
     <div class="w-full relative group">
         <input
+            ref="inputRef"
             :value="inputValue"
-            @input="(q) => (inputValue = q?.target?.value)"
+            @input="onSearchInput"
+            @focus="() => { if (isInternalSearch && inputValue.trim()) openInternalPopover() }"
             afocus="(q) => getTopItemsSuggestions()"
             xdisabled
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
@@ -190,10 +276,42 @@ const visitSearchPage = () => {
             @keydown.enter="() => visitSearchPage()"
         />
         <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+
+        <!-- Internal search: catalogue results in a centered popover with an arrow to the input -->
+        <Popover
+            v-if="isInternalSearch"
+            ref="popoverRef"
+            appendTo="body"
+            :dismissable="true"
+            class="luigi-internal-search-popover"
+            @show="() => { isPopoverVisible = true; showDropdown = true }"
+            @hide="() => { isPopoverVisible = false; showDropdown = false }"
+        >
+            <div class="h-[70vh] max-h-[700px] w-full overflow-hidden">
+                <SearchResultCatalogue
+                    v-model:open="showDropdown"
+                    :results="internalResults"
+                    :is-loading="isInternalLoading"
+                    :query="inputValue"
+                />
+            </div>
+        </Popover>
     </div>
 </template>
 
 <style lang="scss">
+
+/* Internal search popover: wide (90vw) panel; PrimeVue keeps its arrow pointing at the input */
+.luigi-internal-search-popover.p-popover {
+    width: 90vw !important;
+    max-width: 1100px !important;
+}
+
+.luigi-internal-search-popover .p-popover-content {
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: inherit;
+}
 
 .luigi-ac-heromobile-input { // Input on mobile
     @apply border border-[var(--theme-color-0)] focus:border-[var(--theme-color-0)] focus:ring-[var(--theme-color-0)] rounded-sm !important;
