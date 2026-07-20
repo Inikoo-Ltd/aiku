@@ -2,7 +2,7 @@
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { ref, computed, nextTick, watch, inject } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { InputNumber, RadioButton, DatePicker, Checkbox } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -28,10 +28,6 @@ const props = defineProps<{
     }
     product_id?: number
 }>()
-
-const layout = inject('layout')
-
-const isLocalEnvironment = computed(() => layout?.app?.environment === 'local')
 
 const today = new Date(new Date().setHours(0, 0, 0, 0))
 const isOpenModal = ref(false)
@@ -116,35 +112,23 @@ const buildAllowancePayload = () => {
 const submitGiftOffer = () => {
     isLoadingSubmit.value = true
 
-    const payload = isLocalEnvironment.value
-        ? {
-            name: offerLabel.value,
-            type: typeOffer.value,
-            trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
-            trigger_data_item_amount: offerAmount.value,
-            ...buildAllowancePayload(),
-            product_id: productId.value || props.product_id,
-            quantity: quantity.value,
-            duration: dateType.value,
-            start_at: formatDate(startDate.value),
-            end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
-        }
-        : {
-            name: offerLabel.value,
-            product_id: productId.value || props.product_id,
-            quantity: quantity.value,
-            min_order_amount: offerAmount.value,
-            duration: dateType.value,
-            start_at: formatDate(startDate.value),
-            end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
-        }
+    const payload = {
+        name: offerLabel.value,
+        type: typeOffer.value,
+        trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
+        trigger_data_item_amount: offerAmount.value,
+        ...buildAllowancePayload(),
+        product_id: productId.value || props.product_id,
+        quantity: quantity.value,
+        duration: dateType.value,
+        start_at: formatDate(startDate.value),
+        end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
+    }
 
-    const isBuyXGetFree = isLocalEnvironment.value
-        && allowanceType.value === 'free'
+    const isBuyXGetFree = allowanceType.value === 'free'
         && typeOffer.value === 'quantity'
 
-    const isProductPercentage = isLocalEnvironment.value
-        && allowanceType.value === 'percentage'
+    const isProductPercentage = allowanceType.value === 'percentage'
 
     const routeName = isBuyXGetFree
         ? 'grp.models.bogo_offer.store'
@@ -270,20 +254,16 @@ const isFormInvalid = computed(() => {
     if (!startDate.value) return true
     if (dateType.value === 'interval' && !endDate.value) return true
 
-    if (isLocalEnvironment.value) {
-        if (allowanceType.value === 'percentage' && !discountPercentage.value) return true
-        if (allowanceType.value === 'free') {
-            if (!freeQuantity.value) return true
-            if (!freeSameAsProduct.value && !freeProductId.value) return true
-            if (typeOffer.value !== 'quantity') return true
-            if ((offerQtyItems.value ?? 0) < 2) return true
-            if (freeQuantity.value >= (offerQtyItems.value ?? 0)) return true
-        }
-        if (typeOffer.value === 'quantity' && !offerQtyItems.value) return true
-        if (typeOffer.value === 'amount' && !offerAmount.value) return true
-    } else {
-        if (!quantity.value) return true
+    if (allowanceType.value === 'percentage' && !discountPercentage.value) return true
+    if (allowanceType.value === 'free') {
+        if (!freeQuantity.value) return true
+        if (!freeSameAsProduct.value && !freeProductId.value) return true
+        if (typeOffer.value !== 'quantity') return true
+        if ((offerQtyItems.value ?? 0) < 2) return true
+        if (freeQuantity.value >= (offerQtyItems.value ?? 0)) return true
     }
+    if (typeOffer.value === 'quantity' && !offerQtyItems.value) return true
+    if (typeOffer.value === 'amount' && !offerAmount.value) return true
 
     return false
 })
@@ -346,39 +326,11 @@ resetForm()
                     </div>
                 </div>
 
-                <template v-if="!isLocalEnvironment">
-                    <div>
-                        <div class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk"
-                                class="font-light text-xs text-red-400 align-middle" />
-                            {{ trans('Quantity') }}:
-                        </div>
-
-                        <InputNumber v-model="quantity" inputId="offer_discount"
-                            :placeholder="trans('Enter quantity')" :min="1" class="w-full" />
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="font-medium flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk"
-                                class="font-light text-xs text-red-400 align-middle" />
-                            {{ trans('Minimum purchase amount') }}:
-                        </label>
-                        <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
-                            :currency="props.shop_data.currency_code" locale="en-US"
-                            :placeholder="trans('Enter minimum amount')" />
-                    </div>
-                </template>
-
-                <template v-else>
-                    <!-- Section: Offer type (Local only) -->
+                <!-- Section: Offer type -->
                     <div class="space-y-2">
                         <div class="font-medium mb-2 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
                             {{ trans('Select offer type') }}:
-                            <span class="inline-flex items-center rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-600">
-                                {{ trans('Local only') }}
-                            </span>
                         </div>
 
                         <div class="flex items-stretch gap-x-8">
@@ -417,14 +369,11 @@ resetForm()
                         </div>
                     </div>
 
-                    <!-- Section: Allowance (Local only) -->
+                    <!-- Section: Allowance -->
                     <div class="space-y-3">
                         <div class="font-medium flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
                             {{ trans('Allowance') }}:
-                            <span class="inline-flex items-center rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-600">
-                                {{ trans('Local only') }}
-                            </span>
                         </div>
 
                         <div class="flex flex-wrap items-center gap-4">
@@ -461,6 +410,9 @@ resetForm()
                                     :suffix="' ' + ((freeQuantity ?? 0) > 1 ? trans('items') : trans('item'))" />
                                 <span>{{ trans('for free') }}</span>
                             </div>
+                            <span class="text-sm text-red-500" v-if="(freeQuantity ?? 0) >= (offerQtyItems ?? 0)">
+                                {{ trans('Free quantity must be less than the minimum quantity to qualify for the offer') }}
+                            </span>
 
                             <label for="free_same_product" class="flex w-fit items-center gap-2 cursor-pointer">
                                 <Checkbox v-model="freeSameAsProduct" :binary="true" inputId="free_same_product" />
@@ -507,7 +459,6 @@ resetForm()
                             </div>
                         </div>
                     </div>
-                </template>
 
                 <!-- Section: Offer Duration -->
                 <div class="space-y-3">

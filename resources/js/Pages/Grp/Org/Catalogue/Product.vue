@@ -138,7 +138,6 @@ const props = defineProps<{
     product_id: number
 }>()
 
-const layout = inject('layout')
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const isOpenDialog = ref(false)
@@ -350,7 +349,7 @@ const saveProductReview = async () => {
                  />
 
             <div
-                v-if="currentTab === 'offers' && layout?.app?.environment == 'local'"
+                v-if="currentTab === 'offers'"
                 class="relative inline-flex"
             >
                 <ModalCreateStepDiscountProduct
@@ -358,9 +357,6 @@ const saveProductReview = async () => {
                     :shop_data="props.shop_data"
                     :product_id="props.product_id"
                 />
-                <span class="pointer-events-none absolute -top-2 -right-1.5 z-10 rounded bg-red-500 px-1 py-px text-[10px] font-bold leading-none text-white shadow">
-                    {{ trans('Local') }}
-                </span>
             </div>
         </template>
     </PageHeading>
