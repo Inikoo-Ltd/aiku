@@ -6,4 +6,6 @@ export interface Timeline {
     tooltip?: string
     timestamp?: string | Date
     current?: boolean
+    sub_label?: string
+    format_time?: string
 }
