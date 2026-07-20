@@ -186,7 +186,7 @@ class StoreEbayProduct extends RetinaAction
 
             $availableQuantity = $product->available_quantity;
 
-            if($availableQuantity < 1) {
+            if ($availableQuantity < 1) {
                 $availableQuantity = 1;
             }
 

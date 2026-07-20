@@ -467,7 +467,7 @@ trait WithLuigis
         $rrpPerUnit   = $productUnits > 0 ? $rrp / $productUnits : 0;
 
 
-        $availability=intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale);
+        $availability = intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale);
 
         return [
             "identity" => $webpage->luigiIdentity(),

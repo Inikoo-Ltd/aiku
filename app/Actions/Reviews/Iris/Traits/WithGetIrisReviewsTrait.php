@@ -141,8 +141,8 @@ trait WithGetIrisReviewsTrait
         //         ->defaultSort($randomSort);
 
         // } else {
-            $queryBuilder
-                ->defaultSort('-created_at');
+        $queryBuilder
+            ->defaultSort('-created_at');
         // }
 
         return $queryBuilder
