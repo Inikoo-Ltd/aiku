@@ -74,6 +74,8 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -1655,6 +1657,45 @@ test('update user group pseudo job positions', function (User $user) {
 
     UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
     expect($groupPseudoCount())->toBe(0);
+})->depends('SetUserAuthorisedModels command');
+
+test('changing group permissions leaves the cached ui props in sync with the menu', function (User $admin) {
+    $this->withoutExceptionHandling();
+    config()->set('ui.cache.layout', true);
+    setPermissionsTeamId($admin->group_id);
+
+    $code = JobPosition::where('group_id', $admin->group_id)->where('scope', 'group')->value('code');
+
+    $cachedNavigation = function (User $target) {
+        return data_get(Cache::get('grp-first-load-props:'.$target->id.':'.$target->language->code), 'layout.navigation.grp');
+    };
+    $freshNavigation = function (User $target) {
+        setPermissionsTeamId($target->group_id);
+
+        return GetGroupNavigation::run(User::find($target->id));
+    };
+
+    $editPermissionsOf = function (User $target, array $permissions) use ($admin) {
+        actingAs($admin);
+        patch(route('grp.models.user.group_permissions.update', [$target]), ['permissions' => $permissions]);
+    };
+
+    // Production shape: an admin edits somebody else, who is signed in elsewhere.
+    $victim = User::where('group_id', $admin->group_id)->where('id', '!=', $admin->id)->firstOrFail();
+
+    $editPermissionsOf($victim, [$code]);
+    expect($cachedNavigation($victim))->not->toBeNull()
+        ->and($cachedNavigation($victim))->toEqual($freshNavigation($victim));
+
+    $editPermissionsOf($victim, []);
+    expect($cachedNavigation($victim))->toEqual($freshNavigation($victim));
+
+    // Self-edit must hold too.
+    $editPermissionsOf($admin, [$code]);
+    expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
+
+    $editPermissionsOf($admin, []);
+    expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
 })->depends('SetUserAuthorisedModels command');
 
 

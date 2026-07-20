@@ -54,7 +54,7 @@ class BreakUserUiProps implements ShouldBeUnique
 
         try {
             $shouldCacheLayout
-                ? Cache::remember($cacheKey, $ttl, $compute)
+                ? Cache::put($cacheKey, $compute(), $ttl)
                 : $compute();
         } catch (Throwable $e) {
             Sentry::captureException($e);
