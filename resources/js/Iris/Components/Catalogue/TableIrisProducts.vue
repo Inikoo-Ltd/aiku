@@ -6,16 +6,16 @@
 
 <script setup lang="ts">
 import { computed, inject } from "vue"
-import { usePage } from "@inertiajs/vue3"
+import { usePage, Link } from "@inertiajs/vue3"
 import Table from "../Tables/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
-import { Link } from "@inertiajs/vue3";
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure.js"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure.js"
+import { GridProducts } from "@/Components/Product"
 
 const props = defineProps<{
     data: any
@@ -46,7 +46,7 @@ const parentInfo = computed(() => {
         name: params.get('parent_name') ?? '',
     }
 })
-console.log("products", props.data)
+
 </script>
 
 <template>
@@ -55,7 +55,7 @@ console.log("products", props.data)
         <span class="text-sm font-medium text-gray-800" v-if="parentInfo.code">{{ parentInfo.code }}</span>
         <span class="text-sm text-gray-500" v-if="parentInfo.name">— {{ parentInfo.name }}</span>
     </div>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5 hidden md:block">
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image
@@ -116,4 +116,33 @@ console.log("products", props.data)
             </a>
         </template>
     </Table>
+
+     <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 md:hidden" :name="tab"
+        :gridClass="'grid grid-cols-1'">
+        <template #card="{ item }">
+            <div
+                class="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-primary-300 hover:shadow-sm">
+                <Image
+                    :src="item.image_thumbnail ?? item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="h-12 w-12 rounded-full object-cover shadow-sm flex-shrink-0" />
+
+                <div class="min-w-0 flex-1">
+                    <div  class="  truncate text-sm">
+                        {{ item.code }}
+                    </div>
+
+                    <p class="mt-2 p-1 truncate text-sm text-gray-500">
+                        {{ item.name }}
+                    </p>
+                </div>
+
+
+                <a v-if="item.public_url" :href="item.public_url" target="_blank"
+                    class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-primary-600"
+                    title="Open public page">
+                    <FontAwesomeIcon :icon="faExternalLink" />
+                </a>
+            </div>
+        </template>
+    </GridProducts>
 </template>

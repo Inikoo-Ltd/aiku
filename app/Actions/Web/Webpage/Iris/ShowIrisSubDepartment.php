@@ -46,7 +46,7 @@ class ShowIrisSubDepartment extends IrisAction
                         'icon'  => ['fal', 'fa-dot-circle'],
                         'title' => __('Sub Department'),
                     ],
-                    'iconRight' => $subDepartment->state->stateIcon()[$subDepartment->state->value],
+                    /* 'iconRight' => $subDepartment->state->stateIcon()[$subDepartment->state->value], */
                 ],
                 'tabs' => [
                     'current'    => $this->tab,

@@ -14,6 +14,7 @@ import { Link } from "@inertiajs/vue3";
 import Image from "@common/Components/Image.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
+import { GridProducts } from "@/Components/Product"
 
 const props = defineProps<{
     data: any
@@ -41,6 +42,7 @@ const parentInfo = computed(() => {
         name: params.get('parent_name') ?? '',
     }
 })
+
 </script>
 
 <template>
@@ -49,7 +51,7 @@ const parentInfo = computed(() => {
         <span class="text-sm font-medium text-gray-800" v-if="parentInfo.code">{{ parentInfo.code }}</span>
         <span class="text-sm text-gray-500" v-if="parentInfo.name">— {{ parentInfo.name }}</span>
     </div>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5 hidden md:block">
         <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image
@@ -100,4 +102,33 @@ const parentInfo = computed(() => {
             </div>
         </template>
     </Table>
+
+     <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 md:hidden" :name="tab"
+        :gridClass="'grid grid-cols-1'">
+        <template #card="{ item }">
+            <div
+                class="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-primary-300 hover:shadow-sm">
+                <Image
+                    :src="item.image_thumbnail ?? item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="h-12 w-12 rounded-full object-cover shadow-sm flex-shrink-0" />
+
+                <div class="min-w-0 flex-1">
+                    <Link :href="`/catalogue/collection/${item.slug}`" class="primaryLink  truncate text-sm">
+                        {{ item.code }}
+                    </Link>
+
+                    <p class="mt-2 p-1 truncate text-sm text-gray-500">
+                        {{ item.name }}
+                    </p>
+                </div>
+
+
+                <a v-if="item.public_url" :href="item.public_url" target="_blank"
+                    class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-primary-600"
+                    title="Open public page">
+                    <FontAwesomeIcon :icon="faExternalLink" />
+                </a>
+            </div>
+        </template>
+    </GridProducts>
 </template>
