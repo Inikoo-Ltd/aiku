@@ -20,6 +20,7 @@ use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -65,11 +66,22 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
                 'products.barcode as barcode',
                 'products.web_images',
                 'products.state as product_state',
+                'products.status as product_status',
                 'products.is_for_sale',
             );
         $query->selectRaw("'{$customerSalesChannel->shop->currency->code}'  as currency_code");
-        $query->where('products.status', ProductStatusEnum::FOR_SALE);
-        $query->where('products.state', ProductStateEnum::ACTIVE);
+
+        if (!is_null(Arr::get($modelData, 'is_for_sale'))) {
+            $query->where('products.is_for_sale', filter_var($modelData['is_for_sale'], FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if (Arr::get($modelData, 'state')) {
+            $query->where('products.state', $modelData['state']);
+        }
+
+        if (Arr::get($modelData, 'status')) {
+            $query->where('products.status', $modelData['status']);
+        }
 
         return $query->withPaginator(null, queryName: 'per_page')
             ->withQueryString();
@@ -91,10 +103,13 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
     public function rules(): array
     {
         return [
-            'search'   => ['nullable', 'string'],
-            'page'     => ['nullable', 'integer'],
-            'per_page' => ['nullable', 'integer'],
-            'sort'     => ['nullable', 'string'],
+            'search'      => ['nullable', 'string'],
+            'page'        => ['nullable', 'integer'],
+            'per_page'    => ['nullable', 'integer'],
+            'sort'        => ['nullable', 'string'],
+            'is_for_sale' => ['nullable', 'in:true,false,1,0'],
+            'state'       => ['nullable', Rule::enum(ProductStateEnum::class)],
+            'status'      => ['nullable', Rule::enum(ProductStatusEnum::class)],
         ];
     }
 
@@ -102,10 +117,13 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
     {
         $request->merge(
             [
-                'search'   => $request->query('search'),
-                'page'     => $request->query('page', 1),
-                'per_page' => $request->query('per_page', 50),
-                'sort'     => $request->query('sort', 'id'),
+                'search'      => $request->query('search'),
+                'page'        => $request->query('page', 1),
+                'per_page'    => $request->query('per_page', 50),
+                'sort'        => $request->query('sort', 'id'),
+                'is_for_sale' => $request->query('is_for_sale'),
+                'state'       => $request->query('state'),
+                'status'      => $request->query('status'),
             ]
         );
     }
