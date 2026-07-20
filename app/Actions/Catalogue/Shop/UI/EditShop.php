@@ -29,6 +29,7 @@ use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
+use App\Support\Forms\SesConfigurationBlueprint;
 use Exception;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -633,6 +634,14 @@ class EditShop extends OrgAction
                         ],
                         default => []
                     } : [],
+                [
+                    'label'  => __('AWS-SES configuration'),
+                    'icon'   => 'fa-light fa-key',
+                    'fields' => SesConfigurationBlueprint::make(
+                        $shop->settings ?? [],
+                        ['failover', 'customer_notification']
+                    ),
+                ],
                 [
                     'label'  => __('Chat'),
                     'icon'   => 'fal fa-comment-alt',

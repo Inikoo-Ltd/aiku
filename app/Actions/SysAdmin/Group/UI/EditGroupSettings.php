@@ -12,6 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
 use App\Models\SysAdmin\Group;
+use App\Support\Forms\SesConfigurationBlueprint;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -147,25 +148,12 @@ class EditGroupSettings extends GrpAction
 
                     ],
                     [
-                        'label'  => __('Email Provider'),
-                        'icon'   => 'fa-light fa-satellite-dish',
-                        'fields' => [
-                            "access_id" => [
-                                "type"        => "input",
-                                "label"       => __("Access ID"),
-                                "value"       => $group->settings['email']['provider']['access_id'] ?? '',
-                            ],
-                            "access_key" => [
-                                "type"        => "input",
-                                "label"       => __("Access Key"),
-                                "value"       => $group->settings['email']['provider']['access_key'] ?? '',
-                            ],
-                            "region" => [
-                                "type"        => "input",
-                                "label"       => __("Region"),
-                                "value"       => $group->settings['email']['provider']['region'] ?? '',
-                            ]
-                        ]
+                        'label'  => __('AWS-SES configuration'),
+                        'icon'   => 'fa-light fa-key',
+                        'fields' => SesConfigurationBlueprint::make(
+                            $group->settings ?? [],
+                            ['failover', 'customer_notification', 'user_notification']
+                        ),
                     ],
                     [
                         'label'  => __('Printer'),

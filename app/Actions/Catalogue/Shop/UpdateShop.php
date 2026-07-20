@@ -25,6 +25,7 @@ use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
@@ -154,6 +155,63 @@ class UpdateShop extends OrgAction
             }
         }
 
+        $sesFailoverAuditOld = [];
+        $sesFailoverAuditNew = [];
+
+        foreach ([
+                    'access_id' => 'aws_ses_failover_access_id', 
+                    'access_key' => 'aws_ses_failover_access_key', 
+                    'region' => 'aws_ses_failover_region'
+                ] as $field => $auditKey) {
+            if(!Arr::exists($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($shop->settings ?? [], "email.provider.failover.$field");
+            $newValue = Arr::get($modelData, $field);
+
+            if($oldValue === $newValue) {
+                continue;
+            }
+
+            if($field === 'region') {
+                $sesFailoverAuditOld[$auditKey] = $oldValue;
+                $sesFailoverAuditNew[$auditKey] = $newValue;
+
+                continue;
+            }
+
+            $sesFailoverAuditOld[$auditKey] = $oldValue;
+            $sesFailoverAuditNew[$auditKey] = $newValue;
+        }
+
+        foreach ([
+                    'customer_notification_access_id' => 'aws_ses_customer_notification_access_id', 
+                    'customer_notification_access_key' => 'aws_ses_customer_notification_access_key', 
+                    'customer_notification_region' => 'aws_ses_customer_notification_region'
+                ] as $field => $auditKey) {
+            if(!Arr::exists($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($shop->settings ?? [], "email.provider.customer_notification.$field");
+            $newValue = Arr::get($modelData, $field);
+
+            if($oldValue === $newValue) {
+                continue;
+            }
+
+            if($field === 'region') {
+                $sesFailoverAuditOld[$auditKey] = $oldValue;
+                $sesFailoverAuditNew[$auditKey] = $newValue;
+
+                continue;
+            }
+
+            $sesFailoverAuditOld[$auditKey] = $oldValue;
+            $sesFailoverAuditNew[$auditKey] = $newValue;
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -241,6 +299,12 @@ class UpdateShop extends OrgAction
                     'portal_link' => 'settings.portal.link',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
                     'bank_transfer_instructions_for_email' => 'settings.bank_transfer_instructions_for_email',
+                    'access_id' => 'settings.email.provider.failover.access_id',
+                    'access_key' => 'settings.email.provider.failover.access_key',
+                    'region' => 'settings.email.provider.failover.region',
+                    'customer_notification_access_id' => 'settings.email.provider.customer_notification.access_id',
+                    'customer_notification_access_key' => 'settings.email.provider.customer_notification.access_key',
+                    'customer_notification_region' => 'settings.email.provider.customer_notification.region',
                     default => $key
                 },
                 $value
@@ -270,6 +334,12 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
         data_forget($modelData, 'review_rating_labels');
+        data_forget($modelData, 'access_id');
+        data_forget($modelData, 'access_key');
+        data_forget($modelData, 'region');
+        data_forget($modelData, 'customer_notification_access_id');
+        data_forget($modelData, 'customer_notification_access_key');
+        data_forget($modelData, 'customer_notification_region');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -511,6 +581,15 @@ class UpdateShop extends OrgAction
             Event::dispatch(new AuditCustom($shop));
         }
 
+        if ($sesFailoverAuditNew !== []) {
+            $shop->auditEvent = 'update';
+            $shop->isCustomEvent = true;
+            $shop->auditCustomOld = $sesFailoverAuditOld;
+            $shop->auditCustomNew = $sesFailoverAuditNew;
+
+            Event::dispatch(new AuditCustom($shop));
+        }
+
         return $shop;
     }
 
@@ -738,6 +817,12 @@ class UpdateShop extends OrgAction
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'access_id'                                               => ['sometimes', 'nullable', 'string'],
+            'access_key'                                              => ['sometimes', 'nullable', 'string'],
+            'region'                                                  => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
+            'customer_notification_access_id'                         => ['sometimes', 'nullable', 'string'],
+            'customer_notification_access_key'                        => ['sometimes', 'nullable', 'string'],
+            'customer_notification_region'                            => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],
