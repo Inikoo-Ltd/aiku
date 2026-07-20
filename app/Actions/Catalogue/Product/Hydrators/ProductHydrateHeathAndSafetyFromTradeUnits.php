@@ -98,7 +98,7 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
             $product->update($dataToUpdate);
 
             if ($product->wasChanged() && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
-                BreakWebpageCache::dispatch($product->webpage);
+                BreakWebpageCache::dispatch($product->webpage)->delay(5);
             }
         }
     }
