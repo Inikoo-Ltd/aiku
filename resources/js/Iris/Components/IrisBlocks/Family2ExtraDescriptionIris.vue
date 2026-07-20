@@ -84,7 +84,6 @@ const sectionStyle = computed(() => {
 })
 
 const isMobile = computed(() => props.screenType === "mobile")
-console.log('family-extra-des',props)
 </script>
 
 <template>

@@ -388,6 +388,8 @@ const contentClass = computed(() =>
       gap-4
       flex-wrap
       2xl:pt-8
+      justify-center
+      lg:justify-start
     ">
             <a v-if="fieldValue.family.description_extra || layout?.iris?.is_logged_in" href="#family-2-extra-description" class="shrink-0">
               <button class="
