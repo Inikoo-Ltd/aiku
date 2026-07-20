@@ -144,7 +144,7 @@ function masterDepartmentRoute(department: Department) {
     }
 
     return route(
-        "grp.helpers.redirect_master_product_category",
+        "grp.majordomo.redirect_master_product_category",
         [department.master_product_category_id])
 }
 

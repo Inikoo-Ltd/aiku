@@ -85,33 +85,33 @@ class ShowSupplier extends GrpAction
                         ],
                     'title'   => $supplier->name,
                     'subNavigation' => $this->getSupplierNavigation($supplier),
-                    'actions' => [
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'grp.supply-chain.suppliers.remove',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                        $this->canEdit && !$supplier->agent_id ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'route' => [
-                                'name'       => 'grp.supply-chain.suppliers.show.purchase_orders.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                            'label' => __('Purchase Order')
-                        ] : false,
-                    ],
+                    // 'actions' => [
+                    //     $this->canEdit ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'edit',
+                    //         'route' => [
+                    //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ] : false,
+                    //     $this->canDelete ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'delete',
+                    //         'route' => [
+                    //             'name'       => 'grp.supply-chain.suppliers.remove',
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ] : false,
+                    //     $this->canEdit && !$supplier->agent_id ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'create',
+                    //         'route' => [
+                    //             'name'       => 'grp.supply-chain.suppliers.show.purchase_orders.create',
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ],
+                    //         'label' => __('Purchase Order')
+                    //     ] : false,
+                    // ],
                     'meta'    => [
                         [
                             'name'     => trans_choice('Purchases|Sales', $supplier->stats->number_open_purchase_orders),
@@ -162,7 +162,7 @@ class ShowSupplier extends GrpAction
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
                     fn () => GetSupplierShowcase::run($supplier)
-                    : Inertia::lazy(fn () => GetSupplierShowcase::run($supplier)),
+                    : Inertia::optional(fn () => GetSupplierShowcase::run($supplier)),
 
                 SupplierTabsEnum::PURCHASES_SALES->value => $this->tab == SupplierTabsEnum::PURCHASES_SALES->value ?
                     fn () => SupplierProductResource::collection(
@@ -171,16 +171,16 @@ class ShowSupplier extends GrpAction
                             prefix: 'supplier_products'
                         )
                     )
-                    : Inertia::lazy(fn () => SupplierProductResource::collection(IndexSupplierProducts::run($supplier))),
+                    : Inertia::optional(fn () => SupplierProductResource::collection(IndexSupplierProducts::run($supplier))),
 
 
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplier))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($supplier))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplier))),
 
                 SupplierTabsEnum::ATTACHMENTS->value => $this->tab == SupplierTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier)))
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier)))
             ]
         )->table(IndexSupplierProducts::make()->tableStructure())
             ->table(IndexAttachments::make()->tableStructure(SupplierTabsEnum::ATTACHMENTS->value))

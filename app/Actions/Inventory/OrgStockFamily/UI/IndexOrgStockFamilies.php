@@ -222,8 +222,8 @@ class IndexOrgStockFamilies extends OrgAction
                     ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
             } else {
                 $table
-                    ->column(key: 'number_current_org_stocks', label: __('SKUs'), canBeHidden: false, sortable: true)
-                    ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKU)'), canBeHidden: false)
+                    ->column(key: 'number_current_org_stocks', label: __('SKOs'), canBeHidden: false, sortable: true)
+                    ->column(key: 'number_out_of_stock_org_stocks', label: __('OOS (SKO)'), canBeHidden: false)
                     ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
                     ->defaultSort('code');
             }
@@ -312,14 +312,14 @@ class IndexOrgStockFamilies extends OrgAction
         $subNavigation = $this->getOrgStockFamiliesSubNavigation();
 
         $title = match ($this->bucket) {
-            'active' => __('Active SKU Families'),
-            'in_process' => __('In process SKU Families'),
-            'discontinuing' => __('Discontinuing SKU Families'),
-            'discontinued' => __('Discontinued SKU Families'),
-            default => __('SKU Families')
+            'active' => __('Active SKO Families'),
+            'in_process' => __('In process SKO Families'),
+            'discontinuing' => __('Discontinuing SKO Families'),
+            'discontinued' => __('Discontinued SKO Families'),
+            default => __('SKO Families')
         };
 
-        $titlePage = __("SKUs families");
+        $titlePage = __("SKOs families");
 
 
         return Inertia::render(
@@ -345,11 +345,11 @@ class IndexOrgStockFamilies extends OrgAction
 
                 OrgStockFamiliesTabsEnum::INDEX->value => $this->tab == OrgStockFamiliesTabsEnum::INDEX->value
                     ? fn () => OrgStockFamiliesResource::collection($orgStockFamilies)
-                    : Inertia::lazy(fn () => OrgStockFamiliesResource::collection($orgStockFamilies)),
+                    : Inertia::optional(fn () => OrgStockFamiliesResource::collection($orgStockFamilies)),
 
                 OrgStockFamiliesTabsEnum::SALES->value => $this->tab == OrgStockFamiliesTabsEnum::SALES->value
                     ? fn () => OrgStockFamiliesResource::collection($this->handle($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => OrgStockFamiliesResource::collection($this->handle($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => OrgStockFamiliesResource::collection($this->handle($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($this->organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value))
          ->table($this->tableStructure($this->organisation, prefix: OrgStockFamiliesTabsEnum::SALES->value, sales: true));

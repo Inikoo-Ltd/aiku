@@ -181,12 +181,13 @@ class GetOffersInsightsData
 
     protected function getTrend(Shop $shop, ?OfferCampaign $offerCampaign, ?string $offerType, ?string $fromDate, ?string $toDate): array
     {
-        $granularity = $this->resolveTrendGranularity($fromDate, $toDate);
-        $format      = $granularity === 'day' ? 'YYYY-MM-DD' : 'YYYY-MM';
-
         $redemptionOrders = $this->buildRedemptionOrdersQuery($shop, $offerCampaign, $offerType, $fromDate, $toDate);
+        $perOrder         = $this->buildPerOrderQuery($redemptionOrders);
 
-        return DB::query()->fromSub($this->buildPerOrderQuery($redemptionOrders), 'orders_redeemed')
+        $granularity = $this->resolveTrendGranularity($perOrder, $fromDate, $toDate);
+        $format      = $granularity === 'month' ? 'YYYY-MM' : 'YYYY-MM-DD';
+
+        return DB::query()->fromSub($perOrder, 'orders_redeemed')
             ->selectRaw("
                 TO_CHAR(DATE_TRUNC('$granularity', used_at), '$format') as period,
                 COUNT(*) as redemptions,
@@ -205,16 +206,28 @@ class GetOffersInsightsData
             ->all();
     }
 
-    protected function resolveTrendGranularity(?string $fromDate, ?string $toDate): string
+    protected function resolveTrendGranularity(Builder $perOrder, ?string $fromDate, ?string $toDate): string
     {
-        if (!$fromDate) {
-            return 'month';
+        if ($fromDate) {
+            $from = Carbon::createFromFormat('Ymd', $fromDate);
+        } else {
+            $minDate = DB::query()->fromSub($perOrder, 'orders_redeemed')->min('used_at');
+
+            if (!$minDate) {
+                return 'day';
+            }
+
+            $from = Carbon::parse($minDate);
         }
 
-        $from = Carbon::createFromFormat('Ymd', $fromDate);
         $to   = $toDate ? Carbon::createFromFormat('Ymd', $toDate) : now();
+        $days = $from->diffInDays($to);
 
-        return $from->diffInDays($to) > 92 ? 'month' : 'day';
+        return match (true) {
+            $days <= 366  => 'day',
+            $days <= 1096 => 'week',
+            default       => 'month',
+        };
     }
 
     protected function buildOfferRedemptionsQuery(Shop $shop, ?OfferCampaign $offerCampaign, ?string $offerType, ?string $fromDate, ?string $toDate): Builder

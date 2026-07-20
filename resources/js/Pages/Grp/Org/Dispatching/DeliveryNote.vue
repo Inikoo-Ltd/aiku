@@ -41,6 +41,7 @@ import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
 import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
+import TableDeliveryNoteTariffCodes from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteTariffCodes.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
 import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -73,6 +74,11 @@ const props = defineProps<{
     items?: {}
     pending_items?: {}
     done_items?: {}
+    tariff_codes?: {}
+    tariff_codes_export?: {
+        fields: { key: string; label: string }[]
+        download_route: { xlsx: routeType; csv: routeType }
+    }
     pickings?: {}
     warning?: {
         text: string
@@ -138,7 +144,7 @@ const props = defineProps<{
     warehouse: {
         slug: string
     }
-	history: {}
+	history?: {}
 	shop: {
 		type: string   // 'b2b', 'dropshipping'
 	}
@@ -158,6 +164,7 @@ const component = computed(() => {
         items: TableDeliveryNoteItems,
         pending_items: TableDeliveryNoteItems,
         done_items: TableDeliveryNoteItems,
+        tariff_codes: TableDeliveryNoteTariffCodes,
 		history: TableHistories,
         pickings: TablePickings
     };
@@ -500,7 +507,7 @@ watch(
 				</div>
 			</div>
 			<!-- Button: Download PDF -->
-			<div class="relative" v-if="route().params.deliveryNote">
+			<!-- <div class="relative" v-if="route().params.deliveryNote">
 				<a	v-if="route().params.deliveryNote"
 					:href="
 						route('grp.pdfs.delivery-notes', {
@@ -513,7 +520,7 @@ watch(
 					v-tooltip="trans('Download PDF of this Delivery Note')">
 					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
 				</a>
-			</div>
+			</div> -->
 		</template>
 
 		<template #button-to-queue="{ action }">
@@ -677,6 +684,7 @@ watch(
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:isEditable="is_editable"
+			:tariffCodesExport="tariff_codes_export"
 			:routes
 			:state="delivery_note.state"
 			:shop_type="shop_type"

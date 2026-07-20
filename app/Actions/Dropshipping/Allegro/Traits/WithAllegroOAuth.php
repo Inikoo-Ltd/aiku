@@ -260,6 +260,8 @@ trait WithAllegroOAuth
                 return [];
             }
         }
+
+        return [];
     }
 
     // -------------------------------------------------------------------------
@@ -299,6 +301,12 @@ trait WithAllegroOAuth
 
         if (blank($result)) {
             return [];
+        }
+
+        if(Arr::get($result, 'message')) {
+            return [
+                'message' => Arr::get($result, 'message')
+            ];
         }
 
         $accessTokenExpiresAt = now()->addSeconds($result['expires_in'])->timestamp;

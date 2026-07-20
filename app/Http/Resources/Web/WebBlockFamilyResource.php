@@ -8,14 +8,19 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Helpers\Images\GetImgProxyUrl;
+use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Traits\HasCardWebImages;
 use Illuminate\Support\Arr;
 
 class WebBlockFamilyResource extends JsonResource
 {
+    use HasCardWebImages;
     use HasSelfCall;
+    use WithIrisImageVariants;
 
     public function toArray($request): array
     {
@@ -30,14 +35,12 @@ class WebBlockFamilyResource extends JsonResource
             'description_title'         => $family->description_title,
             'description_extra'         => $family->description_extra,
             'id'                        => $family->id,
-            'image'                     => Arr::get($family->web_images, 'main.original'),
-            'description_image'         => Arr::get($family->web_images, 'description'),
+            'description_image'         => collect(Arr::get($family->web_images, 'description', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
             'description_video'         => $family->desc_video_url,
-            'extra_description_image'   => Arr::get($family->web_images, 'extraDescription'),
+            'extra_description_image'   => collect(Arr::get($family->web_images, 'extraDescription', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
             'url'                       => $family->webpage->url,
             'offers_data'               => $family->offers_data,
-            'web_images'                => $family->web_images,
-            'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get(),
+            'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => $tag->name, 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
             'faq'                       => $family->faq,
             'marketing_material_route'  => [
                 'name'          => 'iris.catalogue.feeds.product_category.download_img',
@@ -47,5 +50,48 @@ class WebBlockFamilyResource extends JsonResource
                 ]
             ],
         ];
+    }
+
+    /**
+     * Description image slots store whatever urls existed when the family was saved,
+     * including unresized originals; rebuild them capped at 1200px.
+     *
+     * @return array<string, string>|null
+     */
+    private function getResizedSlot(mixed $slot): ?array
+    {
+        if (!is_array($slot)) {
+            return null;
+        }
+
+        $originalUrl = Arr::get($slot, 'original');
+        if (is_array($originalUrl)) {
+            $originalUrl = Arr::get($originalUrl, 'original');
+        }
+
+        $media = is_string($originalUrl) ? $this->findMediaFromImgProxyUrl($originalUrl) : null;
+        if (!$media) {
+            return $slot;
+        }
+
+        $formats = [
+            'original' => GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)),
+        ];
+        if (in_array('avif', config('img-proxy.formats')) && !$media->is_animated) {
+            $formats['avif'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('avif'));
+        }
+        if (in_array('webp', config('img-proxy.formats'))) {
+            $formats['webp'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('webp'));
+        }
+
+        $resized = [
+            'original' => $formats,
+            'srcset'   => $this->getWidthSrcSets($media, [360, 720, 1200]),
+        ];
+        if (Arr::has($slot, 'alt')) {
+            $resized['alt'] = Arr::get($slot, 'alt');
+        }
+
+        return $resized;
     }
 }

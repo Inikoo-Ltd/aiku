@@ -200,6 +200,22 @@ class GetCustomerShowcase
             'tags_selected_id' => $customer->tags->pluck('id')->toArray(),
             'tags'             => TagsResource::collection($customer->tags)->toArray(request()),
             'offers'           => OffersResource::collection($customerOffers)->toArray(request()),
+            'upcoming_transaction_route' => [
+                'store' => [
+                    'name'       => 'grp.models.customer.upcoming_transactions.store',
+                    'parameters' => [
+                        'customer' => $customer->id
+                    ]
+                ],
+                'index' => [
+                    'name' => 'grp.org.shops.show.crm.customers.show.upcoming_transactions.index',
+                    'parameters' => [
+                        'organisation' => $customer->organisation->slug,
+                        'shop'         => $customer->shop->slug,
+                        'customer'     => $customer->slug
+                    ]
+                ]
+            ]
         ];
     }
 }

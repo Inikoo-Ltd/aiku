@@ -24,50 +24,30 @@ class UpdateInventoryInWooPortfolio
 
     public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
     {
+        if ($customerSalesChannel !== null) {
+            if ($customerSalesChannel->status == CustomerSalesChannelStatusEnum::OPEN) {
+                UpdateWooCustomerSalesChannelPortfolio::dispatch($customerSalesChannel);
+            }
+
+            return;
+        }
+
         $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
 
-        if ($customerSalesChannel === null) {
-            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
-                ->where('platform_status', true)
-                ->where('stock_update', true)
-                ->get();
-        } else {
-            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)
-                ->where('id', $customerSalesChannel->id)
-                ->get();
-        }
-
-        /** @var CustomerSalesChannel $customerSalesChannel */
-        foreach ($customerSalesChannels as $customerSalesChannel) {
-            if ($customerSalesChannel->ban_stock_update_util && $customerSalesChannel->ban_stock_update_util->gt(now())) {
-                continue;
-            }
-
-            if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
-                continue;
-            }
-
-            /** @var \App\Models\Dropshipping\WooCommerceUser $wooCommerceUser */
-            $wooCommerceUser = $customerSalesChannel->user;
-
-            if (!$wooCommerceUser) {
-                continue;
-            }
-
-            $wooCommerceUser->setTimeout(30);
-            $result = $wooCommerceUser->checkConnection();
-            if ($result) {
-                $customerSalesChannel->update([
-                    'ban_stock_update_util' => null
-                ]);
-
-                UpdateWooCustomerSalesChannelPortfolio::run($customerSalesChannel);
-            } else {
-                $customerSalesChannel->update([
-                    'ban_stock_update_util' => now()->addSeconds(10)
-                ]);
-            }
-        }
+        CustomerSalesChannel::query()
+            ->where('platform_id', $platform->id)
+            ->where('platform_status', true)
+            ->where('stock_update', true)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->where(function ($query) {
+                $query->whereNull('ban_stock_update_util')
+                    ->orWhere('ban_stock_update_util', '<=', now());
+            })
+            ->chunkById(200, function ($customerSalesChannels): void {
+                foreach ($customerSalesChannels as $customerSalesChannel) {
+                    UpdateWooCustomerSalesChannelPortfolio::dispatch($customerSalesChannel);
+                }
+            });
     }
 
 

@@ -25,6 +25,7 @@ use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
@@ -40,6 +41,10 @@ use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Ordering\SalesChannel;
 use Closure;
+use App\Actions\Web\Website\BreakWebsiteCache;
+use App\Enums\Web\Crawl\CrawlTriggerEnum;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateShop extends OrgAction
 {
@@ -54,12 +59,15 @@ class UpdateShop extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
+        return $request->user()->authTo(['org-admin.' . $this->organisation->id, 'shop-admin.' . $this->shop->id]);
     }
 
     public function handle(Shop $shop, array $modelData): Shop
     {
-        if (Arr::exists($modelData, 'review_rating_labels')) {
+        $originalReviewSettings   = Arr::get($shop->settings ?? [], 'reviews');
+        $reviewRatingLabelsTouched = Arr::exists($modelData, 'review_rating_labels');
+
+        if ($reviewRatingLabelsTouched) {
             $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
         }
 
@@ -92,6 +100,9 @@ class UpdateShop extends OrgAction
             );
         }
 
+        $bannedCountriesUpdated = false;
+        $oldBannedCountries = null;
+        $newBannedCountries = null;
         if (Arr::has($modelData, 'banned_countries')) {
             $bannedCountries = Arr::pull($modelData, 'banned_countries');
 
@@ -103,6 +114,102 @@ class UpdateShop extends OrgAction
             if ($shop->website) {
                 SyncWebsiteBlockedCountries::run($shop->website, $bannedIPCountries);
             }
+
+            $newBannedCountriesFull = Arr::get($bannedCountries, 'banned_list', []);
+            $oldBannedCountriesFull = $shop->banned_country_regions ?? [];
+
+            if ($oldBannedCountriesFull !== $newBannedCountriesFull) {
+                $oldBannedCountries = [];
+                $newBannedCountries = [];
+
+                foreach ($newBannedCountriesFull as $key => $value) {
+                    $oldVal = $oldBannedCountriesFull[$key] ?? null;
+
+                    // Sort arrays by key to ensure consistent json_encode
+                    $valToCompare = is_array($value) ? $value : [];
+                    $oldToCompare = is_array($oldVal) ? $oldVal : [];
+                    ksort($valToCompare);
+                    ksort($oldToCompare);
+
+                    // Normalize boolean/string types for comparison
+                    // $jsonNew = json_encode($valToCompare);
+                    // $jsonOld = json_encode($oldToCompare);
+
+                    // Simple loose check to avoid type issues like "0" vs false, or "" vs null
+                    // If they are not loosely equal, or if json differs
+                    if ($oldToCompare != $valToCompare) {
+                        $oldBannedCountries[$key] = $oldVal;
+                        $newBannedCountries[$key] = $value;
+                    }
+                }
+                foreach ($oldBannedCountriesFull as $key => $value) {
+                    if (!array_key_exists($key, $newBannedCountriesFull)) {
+                        $oldBannedCountries[$key] = $value;
+                        $newBannedCountries[$key] = null;
+                    }
+                }
+
+                if (!empty($oldBannedCountries) || !empty($newBannedCountries)) {
+                    $bannedCountriesUpdated = true;
+                }
+            }
+        }
+
+        $sesFailoverAuditOld = [];
+        $sesFailoverAuditNew = [];
+
+        foreach ([
+                    'access_id' => 'aws_ses_failover_access_id', 
+                    'access_key' => 'aws_ses_failover_access_key', 
+                    'region' => 'aws_ses_failover_region'
+                ] as $field => $auditKey) {
+            if(!Arr::exists($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($shop->settings ?? [], "email.provider.failover.$field");
+            $newValue = Arr::get($modelData, $field);
+
+            if($oldValue === $newValue) {
+                continue;
+            }
+
+            if($field === 'region') {
+                $sesFailoverAuditOld[$auditKey] = $oldValue;
+                $sesFailoverAuditNew[$auditKey] = $newValue;
+
+                continue;
+            }
+
+            $sesFailoverAuditOld[$auditKey] = $oldValue;
+            $sesFailoverAuditNew[$auditKey] = $newValue;
+        }
+
+        foreach ([
+                    'customer_notification_access_id' => 'aws_ses_customer_notification_access_id', 
+                    'customer_notification_access_key' => 'aws_ses_customer_notification_access_key', 
+                    'customer_notification_region' => 'aws_ses_customer_notification_region'
+                ] as $field => $auditKey) {
+            if(!Arr::exists($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($shop->settings ?? [], "email.provider.customer_notification.$field");
+            $newValue = Arr::get($modelData, $field);
+
+            if($oldValue === $newValue) {
+                continue;
+            }
+
+            if($field === 'region') {
+                $sesFailoverAuditOld[$auditKey] = $oldValue;
+                $sesFailoverAuditNew[$auditKey] = $newValue;
+
+                continue;
+            }
+
+            $sesFailoverAuditOld[$auditKey] = $oldValue;
+            $sesFailoverAuditNew[$auditKey] = $newValue;
         }
 
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
@@ -192,6 +299,12 @@ class UpdateShop extends OrgAction
                     'portal_link' => 'settings.portal.link',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
                     'bank_transfer_instructions_for_email' => 'settings.bank_transfer_instructions_for_email',
+                    'access_id' => 'settings.email.provider.failover.access_id',
+                    'access_key' => 'settings.email.provider.failover.access_key',
+                    'region' => 'settings.email.provider.failover.region',
+                    'customer_notification_access_id' => 'settings.email.provider.customer_notification.access_id',
+                    'customer_notification_access_key' => 'settings.email.provider.customer_notification.access_key',
+                    'customer_notification_region' => 'settings.email.provider.customer_notification.region',
                     default => $key
                 },
                 $value
@@ -221,6 +334,12 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
         data_forget($modelData, 'review_rating_labels');
+        data_forget($modelData, 'access_id');
+        data_forget($modelData, 'access_key');
+        data_forget($modelData, 'region');
+        data_forget($modelData, 'customer_notification_access_id');
+        data_forget($modelData, 'customer_notification_access_key');
+        data_forget($modelData, 'customer_notification_region');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -407,6 +526,10 @@ class UpdateShop extends OrgAction
         $changes = $shop->getChanges();
         $shop->refresh();
 
+        if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings)) {
+            BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
+        }
+
         if (Arr::hasAny($changes, ['state', 'type'])) {
             GroupHydrateShops::dispatch($shop->group)->delay($this->hydratorsDelay);
             OrganisationHydrateShops::dispatch($shop->organisation)->delay($this->hydratorsDelay);
@@ -427,6 +550,44 @@ class UpdateShop extends OrgAction
         if ($reHydrateChildPrices) {
             // TODO MasterLevel Price RRP (Raul)
             // TODO Rehydrate Child Prices according to their master counterpart prices & rrp here
+        }
+
+        if ($bannedCountriesUpdated) {
+            $oldFlattened = [];
+            $newFlattened = [];
+            $cast = fn ($v) => match($v) {
+                'true', '1' => true, 'false', '0' => false, default => $v
+            };
+
+            foreach ($oldBannedCountries as $code => $oldVal) {
+                $newVal = $newBannedCountries[$code] ?? null;
+                $keys = array_unique(array_merge(array_keys((array) $oldVal), array_keys((array) $newVal)));
+
+                foreach ($keys as $prop) {
+                    $o = $cast(((array) $oldVal)[$prop] ?? null);
+                    $n = $cast(((array) $newVal)[$prop] ?? null);
+
+                    if ($o != $n) {
+                        $oldFlattened["banned_country_{$code}_{$prop}"] = $o;
+                        $newFlattened["banned_country_{$code}_{$prop}"] = $n;
+                    }
+                }
+            }
+
+            $shop->auditCustomOld = $oldFlattened;
+            $shop->auditCustomNew = $newFlattened;
+            $shop->auditEvent = 'update';
+            $shop->isCustomEvent = true;
+            Event::dispatch(new AuditCustom($shop));
+        }
+
+        if ($sesFailoverAuditNew !== []) {
+            $shop->auditEvent = 'update';
+            $shop->isCustomEvent = true;
+            $shop->auditCustomOld = $sesFailoverAuditOld;
+            $shop->auditCustomNew = $sesFailoverAuditNew;
+
+            Event::dispatch(new AuditCustom($shop));
         }
 
         return $shop;
@@ -639,7 +800,7 @@ class UpdateShop extends OrgAction
             'review_visibility.visibility.public'                     => ['sometimes', 'boolean'],
             'review_publishing'                                       => ['sometimes', 'nullable', 'array'],
             'review_publishing.auto_publishing.mode'                  => ['sometimes', 'required', Rule::enum(ReviewAutoPublishingEnum::class)],
-            'review_publishing.auto_publishing.delay_hours'           => ['sometimes', 'nullable', 'integer', 'min:1', 'required_if:review_publishing.auto_publishing.mode,'.ReviewAutoPublishingEnum::DELAY->value],
+            'review_publishing.auto_publishing.delay_hours'           => ['sometimes', 'nullable', 'integer', 'min:1', 'required_if:review_publishing.auto_publishing.mode,' . ReviewAutoPublishingEnum::DELAY->value],
             'review_public_rating_threshold'                          => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'review_minimum_rating_to_show'                           => ['sometimes', 'nullable', 'integer', 'min:1', 'max:5'],
             'review_minimum_reviews_to_show'                          => ['sometimes', 'nullable', 'integer', 'min:0'],
@@ -656,6 +817,12 @@ class UpdateShop extends OrgAction
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'access_id'                                               => ['sometimes', 'nullable', 'string'],
+            'access_key'                                              => ['sometimes', 'nullable', 'string'],
+            'region'                                                  => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
+            'customer_notification_access_id'                         => ['sometimes', 'nullable', 'string'],
+            'customer_notification_access_key'                        => ['sometimes', 'nullable', 'string'],
+            'customer_notification_region'                            => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],
@@ -683,7 +850,7 @@ class UpdateShop extends OrgAction
 
         $channelIds = SalesChannel::pluck('id');
         foreach ($channelIds as $id) {
-            $rules['sales_channel_'.$id] = ['sometimes', 'boolean'];
+            $rules['sales_channel_' . $id] = ['sometimes', 'boolean'];
         }
 
         if (!$this->strict) {
@@ -719,5 +886,4 @@ class UpdateShop extends OrgAction
     {
         return new ShopResource($shop);
     }
-
 }

@@ -218,7 +218,7 @@ class StoreSupplier extends OrgAction
             /** @var Agent $agent */
             $agent = $supplier->agent;
 
-            return Redirect::route('grp.supply-chain.agents.show.suppliers.index', $agent->slug);
+            return Redirect::route('grp.supply-chain.agents.show.suppliers.show', [$agent->slug, $supplier->slug]);
         }
 
         return Redirect::route('grp.supply-chain.suppliers.show', $supplier->slug);

@@ -296,11 +296,11 @@ class IndexCollectionsInProductCategory extends OrgAction
 
                 CollectionsTabsEnum::INDEX->value => $this->tab == CollectionsTabsEnum::INDEX->value ?
                     fn () => CollectionsResource::collection($collections)
-                    : Inertia::lazy(fn () => CollectionsResource::collection($collections)),
+                    : Inertia::optional(fn () => CollectionsResource::collection($collections)),
 
                 CollectionsTabsEnum::SALES->value => $this->tab == CollectionsTabsEnum::SALES->value ?
                     fn () => CollectionsResource::collection($this->handle($productCategory, prefix: CollectionsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => CollectionsResource::collection($this->handle($productCategory, prefix: CollectionsTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => CollectionsResource::collection($this->handle($productCategory, prefix: CollectionsTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure($productCategory, prefix: CollectionsTabsEnum::INDEX->value))
           ->table($this->tableStructure($productCategory, prefix: CollectionsTabsEnum::SALES->value));

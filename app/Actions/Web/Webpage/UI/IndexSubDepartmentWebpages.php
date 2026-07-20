@@ -203,9 +203,10 @@ class IndexSubDepartmentWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Webpages'),
+                'title'       => __('Webpages') . ' ' . __('Sub Department'),
                 'pageHead'    => [
-                    'title'         => __('sub department webpages'),
+                    'model'         => __('Webpages'),
+                    'title'         => __('Sub Department'),
                     'color'         => '#f59e0b',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder-download'],

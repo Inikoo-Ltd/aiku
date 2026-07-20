@@ -14,6 +14,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class CloneProductImagesFromMasterProduct implements ShouldBeUnique
 {
@@ -38,21 +39,27 @@ class CloneProductImagesFromMasterProduct implements ShouldBeUnique
         }
 
 
+        try {
+            if (!$canUpdate) {
+                CloneProductImagesFromTradeUnits::run($product);
 
-        if (!$canUpdate) {
-            CloneProductImagesFromTradeUnits::run($product);
+                return;
+            }
 
-            return;
+
+            $masterProduct = $product->masterProduct;
+
+            if (!$masterProduct) {
+                return;
+            }
+
+            $this->syncProductImages($masterProduct, $product);
+        } catch (\Exception $exception) {
+            Sentry::captureException($exception);
         }
 
 
-        $masterProduct = $product->masterProduct;
 
-        if (!$masterProduct) {
-            return;
-        }
-
-        $this->syncProductImages($masterProduct, $product);
     }
 
     public string $commandSignature = 'catalogue:product:clone-images-from-master-product {product?}';
@@ -73,7 +80,7 @@ class CloneProductImagesFromMasterProduct implements ShouldBeUnique
 
         $aikuShops = Shop::where('is_aiku', true)->pluck('id')->toArray();
 
-        $query = Product::whereIn('shop_id', $aikuShops)->where('is_single_trade_unit', false);
+        $query = Product::whereIn('shop_id', $aikuShops)->where('is_single_trade_unit', true);
         $total = $query->count();
 
         $command->getOutput()->progressStart($total);

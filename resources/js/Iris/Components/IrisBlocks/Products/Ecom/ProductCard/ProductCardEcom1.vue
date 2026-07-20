@@ -164,7 +164,7 @@ defineExpose({
 </script>
 
 <template>
-    <div class="relative text-gray-800 isolate h-full min-h-0 min-w-0 flex flex-col flex-grow" comp="product-render-ecom">
+    <div id="product-card-ecom-1" class="relative text-gray-800 isolate h-full min-h-0 min-w-0 flex flex-col flex-grow" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate h-full">
@@ -314,12 +314,12 @@ defineExpose({
                 </div>
 
                 <!-- Product Code -->
-                <div class="flex items-center text-xs mt-1">
+               <!--  <div class="flex items-center text-xs mt-1">
                     {{ product?.code }}
-                </div>
+                </div> -->
 
-                <!-- Section: 'Coming Soon', Stock -->
-                <div v-if="layout?.iris?.is_logged_in"
+
+                <!-- <div v-if="layout?.iris?.is_logged_in"
                     class="text-xs text-gray-600 xmb-1 w-full flex justify-between gap-x-2 items-center">
                     <div class="flex items-center w-full">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center " />
@@ -339,7 +339,7 @@ defineExpose({
                             </span>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
 

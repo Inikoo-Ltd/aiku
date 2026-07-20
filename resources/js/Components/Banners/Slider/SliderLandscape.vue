@@ -71,34 +71,48 @@ watch(() => props.data.components.filter(component => component.ulid == props.ju
     swiperRef.value?.$el.swiper.slideToLoop(compIndexCurrentComponent.value, 0, false)
 })
 
-onMounted(() => {
-    setTimeout(() => {
+const onPageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) {
         intSwiperKey.value++  // To handle bug on Browser back navigation (Agnest & Cat)
-    }, 600)
+    }
+}
+onMounted(() => {
+    window.addEventListener('pageshow', onPageShow)
+})
+onBeforeUnmount(() => {
+    window.removeEventListener('pageshow', onPageShow)
 })
 
 const compColorNav = computed(() => {
     return get(props.data, ['navigation', 'colorNav'], 'blue')
 })
 
-const renderImage = (component) => {
+const activeView = (): string => {
     if (props.production) {
-        let view = "desktop"
-        if (window) {
+        if (typeof window !== "undefined") {
             if (window?.matchMedia("(max-width: 767px)").matches) {
-                view = "mobile";
+                return "mobile"
             } else if (window?.matchMedia("(min-width: 768px) and (max-width: 1023px)").matches) {
-                view = "tablet";
+                return "tablet"
             }
         }
-        return get(component, ['image', view, 'source'], get(component, ['image', 'desktop', 'source'], null))
-    } else return get(component, ['image', props.view, 'source'], get(component, ['image', 'desktop', 'source'], null))
+        return "desktop"
+    }
+    return props.view || "desktop"
+}
+
+const renderImage = (component) => {
+    return get(component, ['image', activeView(), 'source'], get(component, ['image', 'desktop', 'source'], null))
+}
+
+const renderImageSrcset = (component) => {
+    return get(component, ['image', activeView(), 'srcset'], get(component, ['image', 'desktop', 'srcset'], undefined))
 }
 
 const renderBackground = (component) => {
     if (props.production) {
         let view = "desktop"
-        if (window) {
+        if (typeof window !== "undefined") {
             if (window?.matchMedia("(max-width: 767px)").matches) {
                 view = "mobile";
             } else if (window?.matchMedia("(min-width: 768px) and (max-width: 1023px)").matches) {
@@ -241,7 +255,7 @@ onBeforeUnmount(() => {
         <div class="relative mx-auto w-full h-full overflow-hidden" :style="wrapperStyle">
 
             <!-- Add v-if to avoid error in SSR -->
-            <template v-if="isMounted">
+            <template v-if="data">
                 <Swiper class="w-full h-full" ref="swiperRef" :key="'banner' + intSwiperKey" :slideToClickedSlide="true"
                     :spaceBetween="get(data, ['common', 'spaceBetween']) ? data.common.spaceBetween : 0"
                     :slidesPerView="1" :centeredSlides="true"
@@ -257,7 +271,7 @@ onBeforeUnmount(() => {
                         <!-- Slide: Image -->
                         <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"
                             class="relative w-full h-full">
-                            <Image :src="renderImage(component)" alt="Wowsbar" :imgAttributes="slideImgAttributes(index)" />
+                            <Image :src="renderImage(component)" :srcset="renderImageSrcset(component)" sizes="100vw" alt="Wowsbar" :imgAttributes="slideImgAttributes(index)" />
                         </div>
                         <div v-else-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'video'"
                             class="relative w-full h-full overflow-hidden">
@@ -290,6 +304,7 @@ onBeforeUnmount(() => {
                             v-if="!!component?.layout?.link"
                             :href="`https://${useRemoveHttps(component?.layout?.link)}`"
                             target="_top"
+                            :aria-label="useRemoveHttps(component?.layout?.link)"
                             class="absolute bg-transparent w-full h-full"
                             @click="startSlideNavigation(component?.ulid, component?.layout?.link)"
                             @dragstart="resetSlideNavigation"

@@ -80,7 +80,7 @@ const resetModalProducts = () => {
 }
 
 const linkRedirectAsset = (item) => {
-   return route("grp.helpers.redirect_asset", {asset: item.asset_id});
+   return route("grp.majordomo.redirect_asset", {asset: item.asset_id});
 }
 
 </script>

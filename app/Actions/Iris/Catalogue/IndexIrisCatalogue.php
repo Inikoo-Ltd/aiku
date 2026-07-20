@@ -198,7 +198,7 @@ class IndexIrisCatalogue extends IrisAction
 
             $query->where(function ($query) use ($value, $tableName) {
                 $query->whereAnyWordStartWith("{$tableName}.name", $value)
-                    ->orWhereStartWith("{$tableName}.slug", $value);
+                    ->orWhereStartWith("{$tableName}.code", $value);
             });
         });
 
@@ -227,6 +227,11 @@ class IndexIrisCatalogue extends IrisAction
             ],
             'family' => [
                 'number_current_products',
+            ],
+            'product' => [
+                'available_quantity',
+                'price',
+                'rrp',
             ],
             default => [],
         };
@@ -266,8 +271,8 @@ class IndexIrisCatalogue extends IrisAction
                 $table
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'gross_weight', label: __('Weight'), canBeHidden: false, align: 'right')
-                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: 'price', label: __('Price'), type: 'currency', canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'rrp', label: __('RRP'), type: 'currency', canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
             $columns = match ($scope) {
@@ -301,11 +306,11 @@ class IndexIrisCatalogue extends IrisAction
         };
     }
 
-    public function action(array $modelData, ActionRequest $request): LengthAwarePaginator
+    public function action(array $modelData, ActionRequest $request, ?string $prefix = null): LengthAwarePaginator
     {
         $this->asAction = true;
         $this->initialisation($request);
 
-        return $this->handle($modelData);
+        return $this->handle($modelData, $prefix);
     }
 }

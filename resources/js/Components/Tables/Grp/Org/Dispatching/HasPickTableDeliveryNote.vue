@@ -21,6 +21,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 // Import the new NotesDisplay component
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import { faCertificate } from "@fas"
+import { faMapMarkerAlt } from "@fal"
 
 const props = defineProps<{
     data: TableTS,
@@ -141,7 +142,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
 
 function pickingSessionRoute(id) {
     return route(
-        "grp.helpers.redirect_picking_session",
+        "grp.majordomo.redirect_picking_session",
         [id])
 }
 
@@ -209,31 +210,43 @@ const warehouseDaysClass = (days?: number | null) => {
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
-            <div class="flex gap-2 flex-wrap items-center">
-                <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
-                    {{ deliveryNote["reference"] }}
-                </Link>
-                <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
-                    icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon
-					v-if="deliveryNote.is_customer_vip"
-					v-tooltip="trans('VIP Customer')"
-					:icon="faCertificate"
-                    color="#191970"
-					fixed-width
-				/>
-                <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')"
-                    icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
-                <NotesDisplay :item="deliveryNote" reference-field="reference" />
+            <div class="flex flex-rows gap-2">
+                <div class="flex gap-2 flex-wrap items-center">
+                    <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
+                        {{ deliveryNote["reference"] }}
+                    </Link>
+                    <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
+                        icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon
+                        v-if="deliveryNote.is_customer_vip"
+                        v-tooltip="trans('VIP Customer')"
+                        :icon="faCertificate"
+                        color="#191970"
+                        fixed-width
+                    />
+                    <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')"
+                        icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
+                    <NotesDisplay :item="deliveryNote" reference-field="reference" />
+                    
+                </div>
+                <span
+                    v-if="deliveryNote.is_collection"
+                    class="border border-pink-500 text-pink-500 py-[0.15rem] px-[0.25rem] rounded-md ml-auto text-xs my-auto whitespace-nowrap"
+                >
+                    {{ ctrans('Collection') }}
+                    <FontAwesomeIcon 
+                        :icon="faMapMarkerAlt"
+                        class="text-pink-500"
+                    />
+                </span>
+                <template v-if="deliveryNote.picking_sessions_count > 0 && deliveryNote.picking_session_ids">
+                    <Link v-for="id in deliveryNote.picking_session_ids.split(',')" :key="id"
+                        :href="pickingSessionRoute(id)" class="secondaryLink">
+                        <FontAwesomeIcon icon="fab fa-stack-overflow" class="text-yellow-500" fixed-width
+                            aria-hidden="true" />
+                    </Link>
+                </template>
             </div>
-
-            <template v-if="deliveryNote.picking_sessions_count > 0 && deliveryNote.picking_session_ids">
-                <Link v-for="id in deliveryNote.picking_session_ids.split(',')" :key="id"
-                    :href="pickingSessionRoute(id)" class="secondaryLink">
-                    <FontAwesomeIcon icon="fab fa-stack-overflow" class="text-yellow-500" fixed-width
-                        aria-hidden="true" />
-                </Link>
-            </template>
         </template>
 
         <template #cell(date)="{ item }">

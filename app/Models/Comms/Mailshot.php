@@ -30,6 +30,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasSearch;
+use App\Models\Web\Webpage;
 
 /**
  * App\Models\Comms\Mailshot
@@ -85,6 +87,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Mailshot|null $secondWave
  * @property-read Shop|null $shop
  * @property-read \App\Models\Comms\MailshotStats|null $stats
+ * @property-read Collection<int, Webpage> $webpages
  * @method static \Database\Factories\Comms\MailshotFactory factory($count = null, $state = [])
  * @method static Builder<static>|Mailshot newModelQuery()
  * @method static Builder<static>|Mailshot newQuery()
@@ -96,6 +99,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Mailshot extends Model implements Auditable
 {
+    use HasSearch;
     use SoftDeletes;
     use HasFactory;
     use InShop;
@@ -224,5 +228,24 @@ class Mailshot extends Model implements Auditable
     public function parentMailshot(): BelongsTo
     {
         return $this->belongsTo(Mailshot::class, 'parent_mailshot_id');
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'         => (string)$this->id,
+            'group_id'   => $this->group_id,
+            'shop_id'    => $this->shop_id,
+            'subject'    => (string)$this->subject,
+            'type'       => $this->type->value,
+            'state'      => $this->state->value,
+            'created_at' => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
+
+    public function webpages(): MorphMany
+    {
+        return $this->morphMany(Webpage::class, 'model');
     }
 }

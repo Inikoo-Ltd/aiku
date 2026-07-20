@@ -18,6 +18,7 @@ import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 import { trans } from "laravel-vue-i18n"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
+import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
@@ -189,9 +190,6 @@ const showIntervalOffer = computed(() => {
 })
 
 
-
-
-
 watch([variantPrevEl, variantNextEl], () => {
   if (variantPrevEl.value && variantNextEl.value) {
     varinatNavigation.value = {
@@ -201,19 +199,30 @@ watch([variantPrevEl, variantNextEl], () => {
   }
 })
 
+// Section: GTM / dataLayer - view_item
+const pushViewItem = () => {
+    if (!product.value?.code) {
+        return
+    }
 
+    pushGtmEvent("view_item", buildGtmProductPayload(product.value as any, {
+        currencyCode: (layout as any)?.iris?.currency?.code,
+    }))
+}
 
 onMounted(async () => {
   await nextTick()
   varinatNavigation.value.prevEl = variantPrevEl.value
   varinatNavigation.value.nextEl = variantNextEl.value
+  pushViewItem()
 })
+
 </script>
 
 
 <template>
     <!-- DESKTOP -->
-    <div v-if="screenType !== 'mobile'"  :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'+indexBlock"  component="product-ecom-1"
+    <div :id="fieldValue?.id ? fieldValue?.id  : 'product-ecom-1'+indexBlock"  component="product-ecom-1"
         class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block mt-4 rating" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft: 'auto',
@@ -489,13 +498,13 @@ onMounted(async () => {
     </div>
 
     <!-- MOBILE -->
-    <div v-else class="block sm:hidden px-4 py-6 text-gray-800">
+    <div class="block sm:hidden px-4 py-6 text-gray-800">
 
         <!-- TITLE -->
-        <h1 class="text-xl font-bold mb-3">
+        <p class="text-xl font-bold mb-3">
             <span v-if="product.units > 1">{{ product.units }}x</span>
             {{ product.name }}
-        </h1>
+        </p>
 
         <!-- MEDIA -->
         <ImageProducts :images="validImages" :video="videoSetup?.url" />

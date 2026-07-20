@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 19 Apr 2024 13:42:37 Malaysia Time, Kuala Lumpur , Malaysia
+ * Created: Fri, 19 Apr 2024 13:42:37 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -67,6 +67,7 @@ class IndexInvoiceTransactionsInGroup extends OrgAction
                 'historic_assets.code',
                 'invoice_transactions.invoice_id',
                 'invoice_transactions.data',
+                'invoice_transactions.is_gift',
                 'historic_assets.name',
                 'assets.id',
                 'invoice_transactions.in_process',
@@ -87,7 +88,17 @@ class IndexInvoiceTransactionsInGroup extends OrgAction
 
     public function tableStructure($prefix = null): Closure
     {
-        return IndexInvoiceTransactionsGroupedByAsset::make()->tableStructure($prefix);
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table->name($prefix)->pageName($prefix.'Page');
+            }
+            $table->withModelOperations()->withGlobalSearch();
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Product name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->defaultSort('code');
+        };
     }
 
     public function htmlResponse(LengthAwarePaginator $transactions, ActionRequest $request): Response
@@ -114,7 +125,7 @@ class IndexInvoiceTransactionsInGroup extends OrgAction
                 'data' => InvoiceTransactionsResource::collection($transactions),
 
             ]
-        )->table($this->tableStructure($this->group));
+        )->table($this->tableStructure());
     }
 
 

@@ -10,15 +10,21 @@ import { faImage } from '@fal'
 import { getStyles } from '@/Composables/styles'
 import { faChevronRight, faChevronLeft } from '@fas'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { createReusableTemplate } from '@vueuse/core'
+
+const [DefineCard, ReuseCard] = createReusableTemplate<{ data: any; index: number }>()
 
 const props = defineProps<{
   fieldValue: {
+  id?: string
     container?: { properties?: any }
     carousel_data: {
+      mobile_display?: 'carousel' | 'grid'
       carousel_setting: {
         slidesPerView: { mobile: number; tablet: number; desktop: number }
         loop?: boolean
         autoplay?: any
+        interval?: number
         spaceBetween?: number
         use_text?: boolean
       }
@@ -33,7 +39,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
-  indexBlock?:number | string
+  indexBlock : number
 }>()
 
 
@@ -56,6 +62,19 @@ const isLooping = computed(() => {
   const settingsLoop = props.fieldValue?.carousel_data?.carousel_setting?.loop || false
   return settingsLoop && props.fieldValue.carousel_data.cards.length > slidesPerView.value
 })
+
+const mobileDisplay = computed(() =>
+  props.fieldValue?.carousel_data?.mobile_display ?? 'carousel'
+)
+
+const isMobileGrid = computed(() =>
+  props.screenType === 'mobile' && mobileDisplay.value === 'grid'
+)
+
+const gridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${slidesPerView.value}, minmax(0, 1fr))`,
+  gap: `${spaceBetween.value}px`,
+}))
 
 const cardStyle = ref(getStyles(props.fieldValue?.carousel_data?.card_container?.properties, props.screenType, false))
 const ImageContainer = ref(getStyles(props.fieldValue.carousel_data.card_container?.container_image, props.screenType, false))
@@ -92,8 +111,17 @@ watch(
     spaceBetween.value = (newVal || 0)
     refreshCarousel()
   },
-  { immediate: true, deep: true }
+  { deep: true }
 )
+
+const imageSizes = computed(() => {
+  const settings = props.fieldValue?.carousel_data?.carousel_setting?.slidesPerView || {}
+  const mobile = settings.mobile || 1
+  const tablet = settings.tablet || 2
+  const desktop = settings.desktop || 4
+
+  return `(max-width: 767px) ${Math.round(100 / mobile)}vw, (max-width: 1199px) ${Math.round(100 / tablet)}vw, ${Math.round(100 / desktop)}vw`
+})
 
 const breakpoints = computed(() => {
   const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
@@ -102,6 +130,18 @@ const breakpoints = computed(() => {
     768: { slidesPerView: settings.slidesPerView?.tablet || 2 },
     1200: { slidesPerView: settings.slidesPerView?.desktop || 4 }
   }
+})
+
+const blockDomId = computed(() => props.fieldValue?.id ? props.fieldValue.id : 'carousel' + props.indexBlock)
+
+const preInitSlideCss = computed(() => {
+  const gap = Number(props.fieldValue?.carousel_data?.carousel_setting?.spaceBetween || 0)
+  const rule = (n: number) =>
+    `#${blockDomId.value} .swiper:not(.swiper-initialized) .swiper-slide{width:calc((100% - ${(n - 1) * gap}px)/${n});margin-right:${gap}px}`
+  const bp = breakpoints.value
+  return rule(bp[0].slidesPerView)
+    + `@media(min-width:768px){${rule(bp[768].slidesPerView)}}`
+    + `@media(min-width:1200px){${rule(bp[1200].slidesPerView)}}`
 })
 
 const onSwiper = (swiper: any) => {
@@ -132,79 +172,83 @@ const idxSlideLoading = ref<number | null>(null)
 </script>
 
 <template>
-<div  :id="fieldValue?.id ? fieldValue?.id  : 'carousel' + indexBlock"  component="carousel" class="relative overflow-hidden">
+  <div :id="blockDomId" component="carousel" class="relative overflow-hidden">
+    <component :is="'style'">{{ preInitSlideCss }}</component>
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(fieldValue?.container?.properties, props.screenType)
     }">
       <button v-if="swiperInstance?.allowSlidePrev && isLooping" ref="prevEl"
-        class="absolute left-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+        class="absolute left-2 lg:left-6 top-1/2 -translate-y-1/2 z-20 flex h-[44px] w-[44px] items-center justify-center rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
         <FontAwesomeIcon :icon="faChevronLeft" />
       </button>
-      <div class="mx-10 overflow-hidden">
-         <Swiper v-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
-        :space-between="spaceBetween" :breakpoints="breakpoints" 
-        :autoplay="fieldValue.carousel_data.carousel_setting?.interval && fieldValue.carousel_data.carousel_setting?.autoplay
-          ? {
-            delay: fieldValue.carousel_data.carousel_setting.interval,
-            disableOnInteraction: false,
-            pauseOnMouseEnter: true
-          }
-          : false" @swiper="onSwiper" class="w-full">
 
-       <SwiperSlide
-  v-for="(data, index) in fieldValue.carousel_data.cards"
-  :key="index"
-  class="!flex !justify-center !items-center"
->
-  <div class="space-card flex justify-center items-center w-full h-full">
+      <DefineCard v-slot="{ data, index }">
+        <div class="space-card flex justify-center items-center w-full h-full">
 
-             <div class="card flex flex-col h-full ">
-                <component :is="data?.link?.href  ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
-                  :href="data?.link?.href" :target="data?.link?.target" class="relative flex flex-1 flex-col" :type="data?.link?.type"
-                  @start="() => idxSlideLoading = index"
-                  @finish="() => idxSlideLoading = null"
-                >
-                  <!-- Image Container -->
-                  <div class="flex justify-center overflow-visible"
-                    :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)" >
-                    <div class="overflow-hidden w-full flex items-center justify-center "
-                      :style="{  ...getStyles(fieldValue.carousel_data.card_container?.image_properties, screenType) }">
-                      <Image 
-                        v-if="data?.image?.source" 
-                        :src="data.image.source" 
-                        :alt="data.image.alt || `image-${index}`"
-                        :class="'image-container'" 
-                        class="w-full h-full flex justify-center items-center" 
-                        :height="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.height"
-                        :width="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.width"
-                        :preload="Number(indexBlock) === 0 && index === 0"
-                      />
-                      <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
-                        <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
-                      </div>
-                    </div>
+          <div class="card flex flex-col h-full ">
+            <component :is="data?.link?.href ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
+              :href="data?.link?.href" :target="data?.link?.target" class="relative flex flex-1 flex-col"
+              :type="data?.link?.type" @start="() => idxSlideLoading = index" @finish="() => idxSlideLoading = null">
+              <!-- Image Container -->
+              <div class="flex justify-center overflow-visible"
+                :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)">
+                <div class="overflow-hidden w-full flex items-center justify-center "
+                  :style="{ ...getStyles(fieldValue.carousel_data.card_container?.image_properties, screenType) }">
+                  <Image v-if="data?.image?.source" :src="data.image.source" :srcset="data.image.srcset"
+                    :sizes="imageSizes" :alt="data.image.alt || `image-${index}`" :class="'image-container'"
+                    class="w-full h-full flex justify-center items-center"
+                    :height="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.height"
+                    :width="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.width"
+                    :preload="Number(indexBlock) === 0 && index === 0" />
+                  <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
+                    <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
                   </div>
-
-                  <!-- Text Content -->
-                  <div v-if="fieldValue.carousel_data.carousel_setting?.use_text"
-                    class="p-4 flex flex-col flex-1 justify-between">
-                    <div v-html="data.text" class="text-center leading-relaxed" />
-                  </div>
-
-                  <div v-if="idxSlideLoading == index" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
-                    <LoadingIcon />
-                  </div>
-                </component>
+                </div>
               </div>
+
+              <!-- Text Content -->
+              <div v-if="fieldValue.carousel_data.carousel_setting?.use_text"
+                class="p-4 flex flex-col flex-1 justify-between">
+                <div v-html="data.text" class="text-center leading-relaxed" />
+              </div>
+
+              <div v-if="idxSlideLoading == index"
+                class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+                <LoadingIcon />
+              </div>
+            </component>
           </div>
-        </SwiperSlide>
-      </Swiper>
+        </div>
+      </DefineCard>
+      
+      <div class="mx-10 overflow-hidden">
+        <div v-if="hasCards && isMobileGrid" class="grid w-full" :style="gridStyle">
+          <div v-for="(data, index) in fieldValue.carousel_data.cards" :key="index"
+            class="flex justify-center items-center">
+            <ReuseCard :data="data" :index="index" />
+          </div>
+        </div>
+
+        <Swiper v-else-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
+          :space-between="spaceBetween" :breakpoints="breakpoints" :autoplay="fieldValue.carousel_data.carousel_setting?.interval && fieldValue.carousel_data.carousel_setting?.autoplay
+            ? {
+              delay: fieldValue.carousel_data.carousel_setting.interval,
+              disableOnInteraction: false,
+              pauseOnMouseEnter: true
+            }
+            : false" @swiper="onSwiper" class="w-full">
+
+          <SwiperSlide v-for="(data, index) in fieldValue.carousel_data.cards" :key="index"
+            class="!flex !justify-center !items-center">
+            <ReuseCard :data="data" :index="index" />
+          </SwiperSlide>
+        </Swiper>
 
       </div>
       <button v-if="swiperInstance?.allowSlideNext && isLooping" ref="nextEl"
-        class="absolute right-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
+        class="absolute right-2 lg:right-6 top-1/2 -translate-y-1/2 z-20 flex h-[44px] w-[44px] items-center justify-center rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
         <FontAwesomeIcon :icon="faChevronRight" />
       </button>

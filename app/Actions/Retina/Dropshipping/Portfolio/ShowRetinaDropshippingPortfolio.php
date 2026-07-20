@@ -70,7 +70,7 @@ class ShowRetinaDropshippingPortfolio extends RetinaAction
 
                 RetinaProductTabsEnum::SHOWCASE->value => $this->tab == RetinaProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcaseInPortfolio::run($product)
-                    : Inertia::lazy(fn () => GetProductShowcaseInPortfolio::run($product)),
+                    : Inertia::optional(fn () => GetProductShowcaseInPortfolio::run($product)),
 
             ]
         );

@@ -4,18 +4,15 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-import { BrowserAgent } from "@newrelic/browser-agent/loaders/browser-agent";
-import "./bootstrap";
+import "./bootstrap_iris";
 import "../css/app.css";
 
-import { createApp, h } from "vue";
+import { createSSRApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
-import { ZiggyVue } from "ziggy-js";
+import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
 import { i18nVue } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
 import { createPinia } from "pinia";
-
-import * as Sentry from "@sentry/vue";
 
 import FloatingVue from "floating-vue";
 import "floating-vue/dist/style.css";
@@ -25,48 +22,6 @@ import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
 import { ctrans } from "@/Composables/useTrans";
-
-if (import.meta.env.VITE_NEW_RELIC_BROWSER_ENABLED) {
-  const options = {
-    "info"         : {
-      "applicationID": import.meta.env.VITE_NEW_RELIC_BROWSER_IRIS,
-      "beacon"       : "bam.nr-data.net",
-      "errorBeacon"  : "bam.nr-data.net",
-      "licenseKey"   : import.meta.env.VITE_NEW_RELIC_BROWSER_LICENCE_KEY,
-      "sa"           : 1
-    },
-    "init"         : {
-      "ajax"                : {
-        "deny_list": [
-          "bam.nr-data.net"
-        ]
-      },
-      "browser_consent_mode": {
-        "enabled": false
-      },
-      "distributed_tracing" : {
-        "enabled": true
-      },
-      "performance"         : {
-        "capture_detail"  : false,
-        "capture_marks"   : false,
-        "capture_measures": true
-      },
-      "privacy"             : {
-        "cookies_enabled": true
-      }
-    },
-    "loader_config": {
-      "accountID"    : import.meta.env.VITE_NEW_RELIC_BROWSER_ACCOUNT_ID,
-      "agentID"      : import.meta.env.VITE_NEW_RELIC_BROWSER_IRIS,
-      "applicationID": import.meta.env.VITE_NEW_RELIC_BROWSER_IRIS,
-      "licenseKey"   : import.meta.env.VITE_NEW_RELIC_BROWSER_LICENCE_KEY,
-      "trustKey"     : import.meta.env.VITE_NEW_RELIC_BROWSER_ACCOUNT_ID
-    }
-  };
-  new BrowserAgent(options);
-
-}
 
 const MyPreset = definePreset(Aura, {
   semantic: {
@@ -114,30 +69,33 @@ createInertiaApp(
         return page
     },
     setup({ el, App, props, plugin }) {
-      const app = createApp({ render: () => h(App, props) });
+      const app = createSSRApp({ render: () => h(App, props) });
       if (import.meta.env.VITE_SENTRY_IRIS_DSN) {
-        Sentry.init({
-                      app,
-                      dsn                     : import.meta.env.VITE_SENTRY_IRIS_DSN,
-                      environment             : import.meta.env.VITE_APP_ENV,
-                      release                 : import.meta.env.VITE_RELEASE,
-                      tracesSampleRate        : 1.0,
-                      replaysSessionSampleRate: 0.001,
-                      replaysOnErrorSampleRate: 0.01,
-                      profilesSampleRate      : 1.0,
-                      integrations            : [
-                        Sentry.browserTracingIntegration(),
-                        Sentry.replayIntegration()
-                      ]
-                    });
+        const initSentry = () => import("@sentry/vue").then((Sentry) => {
+          Sentry.init({
+                        app,
+                        dsn             : import.meta.env.VITE_SENTRY_IRIS_DSN,
+                        environment     : import.meta.env.VITE_APP_ENV,
+                        release         : import.meta.env.VITE_RELEASE,
+                        tracesSampleRate: 0.05,
+                        integrations    : [Sentry.browserTracingIntegration()]
+                      });
+        });
+        if (document.readyState === "complete") {
+          initSentry();
+        } else {
+          window.addEventListener("load", initSentry, { once: true });
+        }
       }
 
       app.use(plugin);
       app.config.globalProperties.ctrans = ctrans;  // global function for
                                                     // <template> -- Custom
                                                     // translation
+      const ziggyConfig = props.initialPage.props.ziggy;
+      window.route = (name, params, absolute) => ziggyRoute(name, params, absolute, ziggyConfig);
       app.use(createPinia()).
-        use(ZiggyVue, Ziggy).
+        use(ZiggyVue, { ...ziggyConfig, location: new URL(ziggyConfig.location) }).
         use(Notifications).
         use(FloatingVue).
         use(ConfirmationService).

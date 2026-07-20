@@ -2,12 +2,10 @@
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import Tabs from "@/Components/Navigation/Tabs.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
-import TableAgents from "@/Pages/Grp/Agent/Agents.vue"
-import { computed, ref } from "vue"
-import { useTabChange } from "@/Composables/tab-change"
+import ChatVisitorsBubble from "@/Components/Chat/ChatVisitorsBubble.vue"
+import { computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
@@ -33,10 +31,7 @@ library.add(
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    tabs: {
-        current: string
-        navigation: Record<string, { name: string; icon: string; label: string }>
-    }
+    dashboardVisitorsRoute: string
     stats: {
         chatEnabled: boolean
         chatAgents: number
@@ -47,11 +42,7 @@ const props = defineProps<{
         chatMessagesTotal: number
         chatMessagesUnread: number
     }
-    agents: any
 }>()
-
-const currentTab = ref(props.tabs.current ?? "dashboard")
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const tabsBox = computed(() => [
     {
@@ -123,13 +114,9 @@ const tabsBox = computed(() => [
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <div v-if="currentTab === 'dashboard'" class="px-4 pb-8 pt-8">
+    <div class="p-4 space-y-4">
+        <ChatVisitorsBubble :route="dashboardVisitorsRoute" />
         <TabsBoxDisplay :tabs_box="tabsBox" />
-    </div>
-
-    <div v-else-if="currentTab === 'agents'">
-        <TableAgents :title="title" :pageHeading="({} as any)" :data="agents" />
     </div>
 </template>

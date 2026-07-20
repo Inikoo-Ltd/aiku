@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getIrisComponent } from "@/Iris/Composables/getIrisComponents";
 import { routeType } from "@/types/route";
-import { inject, provide, computed, ref } from "vue";
+import { inject, provide, computed, ref, onErrorCaptured } from "vue";
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import axios from "axios";
@@ -74,13 +74,40 @@ const onClickLogout = () => {
 
 provide("onLogout", onClickLogout);
 
+onErrorCaptured((error, _instance, info) => {
+    const blockCode = (props.data as any)?.header?.code;
+
+    console.error(
+        `[IrisHeader] header block "${blockCode}" failed to render (${info}):`,
+        error
+    );
+
+    import("@sentry/vue").then((Sentry) => {
+        Sentry.captureException(error, {
+            tags: {
+                area: "iris-header",
+                header_block: blockCode,
+            },
+            contexts: {
+                vue: {
+                    lifecycleHook: info,
+                    headerBlock: blockCode,
+                },
+            },
+        });
+    });
+
+    return false;
+});
+
 </script>
 
 <template>
   <!-- Section: Topbar (login, logout) -->
-  <component 
+  <component
     v-if="data?.topBar?.data.fieldValue" :is="getIrisComponent(data?.topBar.code)"
-    :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" 
+    :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue"
+    class="iris-topbar-reserve"
    />
 
   <!-- Section: Header (logo, search, Title) -->
@@ -91,8 +118,14 @@ provide("onLogout", onClickLogout);
              :colorThemed="colorThemed" class="hidden md:block" />
 
   <!-- Section: Mobile Header -->
-  <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)" class="sticky top-0 z-50"> 
+  <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)" class="sticky top-0 z-50">
       <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :productCategories="menu?.product_categories ?? []" :screenType="screenType" />
   </div>
 
 </template>
+
+<style scoped>
+.iris-topbar-reserve {
+  min-height: 2.25rem;
+}
+</style>

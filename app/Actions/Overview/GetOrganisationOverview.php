@@ -300,6 +300,12 @@ class GetOrganisationOverview extends OrgAction
                 'route' => '',
                 'count' => $organisation->orderingStats->number_invoice_transactions ?? 0
             ],
+            [
+                'name'  => __('Abandoned Checkouts'),
+                'icon'  => 'fal fa-shopping-cart',
+                'route' => route('grp.org.overview.checkout_abandonments.index', $organisation->slug),
+                'count' => $organisation->checkoutAbandonments()->count(),
+            ],
         ];
     }
 

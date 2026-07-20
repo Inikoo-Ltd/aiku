@@ -46,11 +46,11 @@ class UpdatePicking extends OrgAction
         $picking = $this->update($picking, $modelData);
 
 
-        if($picking->orgStockMovement){
+        if ($picking->orgStockMovement) {
 
-            if($oldQuantity!=$picking->quantity){
+            if ($oldQuantity != $picking->quantity) {
                 UpdateOrgStockMovement::make()->action($picking->orgStockMovement, [
-                    'quantity' => $picking->quantity,
+                    'quantity' => -($picking->quantity),
                 ]);
             }
 

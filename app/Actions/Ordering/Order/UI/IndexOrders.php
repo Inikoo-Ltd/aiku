@@ -441,7 +441,7 @@ class IndexOrders extends OrgAction
 
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
                     fn () => OrdersResource::collection($orders)
-                    : Inertia::lazy(fn () => OrdersResource::collection($orders)),
+                    : Inertia::optional(fn () => OrdersResource::collection($orders)),
 
                 OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value => $this->tab == OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                     ?
@@ -452,7 +452,7 @@ class IndexOrders extends OrgAction
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => OrdersResource::collection(
+                    : Inertia::optional(fn () => OrdersResource::collection(
                         IndexOrders::run(
                             $this->parent,
                             OrdersTabsEnum::ORDERS_WITH_REPLACEMENTS->value,
@@ -462,11 +462,11 @@ class IndexOrders extends OrgAction
 
                 OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
                     fn () => GetLastOrders::run($this->parent)
-                    : Inertia::lazy(fn () => GetLastOrders::run($this->parent)),
+                    : Inertia::optional(fn () => GetLastOrders::run($this->parent)),
 
                 OrdersTabsEnum::EXCESS_ORDERS->value => $this->tab == OrdersTabsEnum::EXCESS_ORDERS->value ?
                     fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))),
+                    : Inertia::optional(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value))),
             ]
         )->table(
             $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)

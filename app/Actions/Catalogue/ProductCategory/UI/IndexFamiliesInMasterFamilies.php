@@ -292,15 +292,15 @@ class IndexFamiliesInMasterFamilies extends OrgAction
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    : Inertia::optional(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    : Inertia::optional(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
 
                 ProductCategoryTabsEnum::MISSING_GR->value => $this->tab == ProductCategoryTabsEnum::MISSING_GR->value
                     ? fn () => FamiliesResource::collection($this->handle($this->parent, ProductCategoryTabsEnum::MISSING_GR->value, missingGr: true))
-                    : Inertia::lazy(fn () => FamiliesResource::collection($this->handle($this->parent, ProductCategoryTabsEnum::MISSING_GR->value, missingGr: true))),
+                    : Inertia::optional(fn () => FamiliesResource::collection($this->handle($this->parent, ProductCategoryTabsEnum::MISSING_GR->value, missingGr: true))),
             ]
         )
         ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value))

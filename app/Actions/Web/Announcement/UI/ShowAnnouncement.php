@@ -90,7 +90,7 @@ class ShowAnnouncement extends OrgAction
                 AnnouncementTabsEnum::SHOWCASE->value => $this->tab == AnnouncementTabsEnum::SHOWCASE->value
                     ?
                     fn () => AnnouncementResource::make($announcement)->getArray()
-                    : Inertia::lazy(
+                    : Inertia::optional(
                         fn () => AnnouncementResource::make($announcement)->getArray()
                     ),
 
@@ -102,7 +102,7 @@ class ShowAnnouncement extends OrgAction
                             prefix: AnnouncementTabsEnum::SNAPSHOTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => SnapshotResource::collection(
+                    : Inertia::optional(fn () => SnapshotResource::collection(
                         IndexSnapshots::run(
                             parent: $announcement,
                             prefix: AnnouncementTabsEnum::SNAPSHOTS->value

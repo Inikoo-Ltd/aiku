@@ -8,7 +8,7 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
-use App\Actions\Analytics\WebUserRequest\StoreWebUserRequest;
+use App\Actions\SysAdmin\WebUserRequest\StoreWebUserRequest;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\Analytics\WebUserRequest;
 use App\Models\CRM\WebUser;

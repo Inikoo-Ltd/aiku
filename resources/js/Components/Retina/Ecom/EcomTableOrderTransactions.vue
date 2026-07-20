@@ -18,6 +18,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faGift } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
+import { GridProducts } from "@/Components/Product"
+
 library.add(faGift)
 
 const props = defineProps<{
@@ -75,7 +77,7 @@ const debounceUpdateQuantity = debounce(
 
 
 <template>
-    <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200 overflow-x-auto">
+    <div class="mb-12 mx-4 mt-4 rounded-md border border-gray-200 overflow-x-auto hidden md:block">
         <Table :resource="data" :name="tab">
             <!-- Column: Image -->
             <template #cell(image)="{ item }">
@@ -95,13 +97,25 @@ const debounceUpdateQuantity = debounce(
             <template #cell(asset_name)="{ item }">
                 <div>
                     <div>{{ item.asset_name }}</div>
+
                     <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
                         <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
                     </div>
                     <div v-else class="text-gray-500 italic text-xs">
                         {{ trans('Stock :xquantityx available', {
                             xquantityx: locale.number(item.available_quantity ||
-                        0) }) }}
+                                0)
+                        }) }}
+                        <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
+                            <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-2"
+                                aria-hidden="true" />
+                        </span>
+                        <span v-if="item.is_gift" v-tooltip="ctrans('Free gift')">
+                            <FontAwesomeIcon icon="fal fa-gift" class="text-green-500 not-italic mx-2"
+                                aria-hidden="true" />
+                        </span>
+                        <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}
+                        </div>
                     </div>
 
                     <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />
@@ -111,8 +125,8 @@ const debounceUpdateQuantity = debounce(
             <!-- Column: Quantity -->
             <template #cell(quantity_ordered)="{ item }">
                 <div class="flex items-center justify-end">
-                    <div v-if="item.is_gift">
-                        {{ locale.number(item.quantity_bonus) }}
+                    <div v-if="item.is_gift" class="flex items-center gap-x-1">
+                        <FractionDisplay :fractionData="item.quantity_bonus_fractional" />
                         <span v-tooltip="ctrans('Quantity of free gift')">
                             <FontAwesomeIcon icon="fal fa-gift" class="" fixed-width aria-hidden="true" />
                         </span>
@@ -196,5 +210,123 @@ const debounceUpdateQuantity = debounce(
             </template>
         </Table>
     </div>
+
+    <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 md:hidden" :name="tab"
+        :gridClass="'grid grid-cols-1'">
+        <template #card="{ item }">
+            <div class="rounded-xl border border-gray-200 bg-white p-3 transition hover:border-primary-300 hover:shadow-sm">
+
+                <div class="flex items-start gap-3">
+                    <!-- Product Image -->
+                    <div
+                        class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-gray-50">
+                        <Image :src="item.image?.thumbnail" class="h-full w-full object-contain" />
+                    </div>
+
+                    <!-- Product Info -->
+                    <div class="min-w-0 flex-1">
+                        <LinkIris :href="productRoute(item)" class="primaryLink  truncate font-semibold"
+                            target="_blank">
+                            {{ item.asset_code }}
+                        </LinkIris>
+
+                        <p class="text-sm text-gray-700 line-clamp-2">
+                            {{ item.asset_name }}
+                        </p>
+
+                        <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1"
+                            class="mt-1">
+                            <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+                        </div>
+
+                        <div v-else class="mt-1 text-xs italic text-gray-500">
+
+                            {{ trans('Stock :xquantityx available', {
+                                xquantityx: locale.number(item.available_quantity || 0)
+                            }) }}
+
+                            <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
+                                <FontAwesomeIcon icon="fal fa-repeat" class="ml-2 text-sky-500" />
+                            </span>
+
+                            <span v-if="item.is_gift" v-tooltip="ctrans('Free gift')">
+                                <FontAwesomeIcon icon="fal fa-gift" class="mx-2 text-green-500" />
+                            </span>
+
+                            <div v-if="item.upcoming_transaction_public_notes" class="mt-1 text-orange-600 not-italic">
+                                {{ item.upcoming_transaction_public_notes }}
+                            </div>
+                        </div>
+
+                        <div v-if="Object.keys(item.offers_data || {})?.length" class="mt-2">
+                            <Discount :offers_data="item.offers_data" />
+                        </div>
+                    </div>
+
+                    <!-- Action -->
+                    <Link v-if="state === 'creating' || state === 'xsubmitted'"
+                        :href="route(item.deleteRoute.name, item.deleteRoute.parameters)" as="button"
+                        :method="item.deleteRoute.method" @start="() => isLoading = 'unselect' + item.id"
+                        @finish="() => isLoading = false" :preserveScroll="true"
+                        v-tooltip="trans('Unselect this product')" class="shrink-0">
+
+                        <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
+                            :loading="isLoading === 'unselect' + item.id" />
+
+                    </Link>
+                </div>
+
+                <div class="mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2 border-t border-gray-100 pt-3">
+                    <!-- Quantity -->
+                    <div class="min-w-0">
+                        <div class="mb-1 text-[11px] uppercase tracking-wide text-gray-400">{{ trans('Quantity') }}</div>
+
+                        <div v-if="item.is_gift" class="flex items-center gap-1">
+                            <FractionDisplay :fractionData="item.quantity_bonus_fractional" />
+
+                            <span v-tooltip="ctrans('Quantity of free gift')">
+                                <FontAwesomeIcon icon="fal fa-gift" fixed-width />
+                            </span>
+                        </div>
+
+                        <div v-else-if="state === 'creating' || state === 'xsubmitted'" class="w-32">
+                            <NumberWithButtonSave :modelValue="item.quantity_ordered" :routeSubmit="item.updateRoute"
+                                :bindToTarget="{ min: 0 }" isWithRefreshModel keySubmit="quantity_ordered"
+                                :isLoading="isLoading === 'quantity' + item.id" :readonly="readonly"
+                                @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
+                                noUndoButton noSaveButton />
+                        </div>
+
+                        <div v-else>
+                            <FractionDisplay :fractionData="item.quantity_ordered_fractional" />
+                        </div>
+                    </div>
+
+                    <!-- Unit Price -->
+                    <div v-if="!item.is_gift" class="text-right">
+                        <div class="mb-1 text-[11px] uppercase tracking-wide text-gray-400">{{ trans('Price') }}</div>
+                        <div class="text-sm font-medium">
+                            {{ locale.currencyFormat(item.currency_code || '', item.price) }}
+                        </div>
+                    </div>
+
+                    <!-- Total -->
+                    <div v-if="!item.is_gift" class="text-right">
+                        <div class="mb-1 text-[11px] uppercase tracking-wide text-gray-400">{{ trans('Total') }}</div>
+                        <p :class="item.gross_amount != item.net_amount ? 'text-green-600 font-semibold' : 'font-semibold'">
+
+                            <span v-if="item.gross_amount != item.net_amount"
+                                class="mr-1 text-xs text-gray-400 line-through">
+                                {{ locale.currencyFormat(item.currency_code, item.gross_amount) }}
+                            </span>
+
+                            {{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </template>
+    </GridProducts>
 
 </template>

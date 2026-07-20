@@ -359,6 +359,12 @@ class IndexRetinaPortfolios extends RetinaAction
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
+                    'bulk_unlink_only'            => [
+                        'name'       => 'retina.models.dropshipping.bulk.unlink_only',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
                     'batch_all_dimensions_update' => [
                         'name'       => 'retina.models.dropshipping.shopify.batch_all_dimensions_update',
                         'parameters' => [
@@ -577,16 +583,16 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value => $this->tab == CustomerSalesChannelPortfolioTabsEnum::PRODUCTS->value ?
                     fn () => DropshippingPortfoliosResource::collection($portfolios)
-                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($portfolios)),
+                    : Inertia::optional(fn () => DropshippingPortfoliosResource::collection($portfolios)),
 
                 CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value => $this->tab == CustomerSalesChannelPortfolioTabsEnum::BUNDLES->value ?
                     fn () => DropshippingPortfoliosResource::collection($portfolios)
-                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($portfolios)),
+                    : Inertia::optional(fn () => DropshippingPortfoliosResource::collection($portfolios)),
 
 
                 CustomerSalesChannelPortfolioTabsEnum::LOGS->value => $this->tab == CustomerSalesChannelPortfolioTabsEnum::LOGS->value ?
                     fn () => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))
-                    : Inertia::lazy(fn () => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))),
+                    : Inertia::optional(fn () => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel, CustomerSalesChannelPortfolioTabsEnum::LOGS->value))),
 
 
                 'is_platform_connected'                                     => $this->customerSalesChannel->platform_status,

@@ -11,7 +11,7 @@ import IrisFooter from "@/Layouts/Iris/Footer.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faBooks } from "@fal"
+import { faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faBooks , faHistory} from "@fal"
 import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add( faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faBooks, faExclamationCircle, faCheckCircle, faArrowRight, faListUl, faEye )
@@ -22,7 +22,7 @@ import { trans } from "laravel-vue-i18n"
 import RetinaEcomLeftSidebar from "./Retina/RetinaEcomLeftSidebar.vue"
 import RetinaMobileNavigationSimple from "./Retina/RetinaMobileNavigationSimple.vue"
 import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
-library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
+library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder,faHistory)
 
 const layout = useLayoutStore()
 const locale = useLocaleStore()
@@ -60,7 +60,6 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 			:data="layout.iris.header"
 			:colorThemed="irisTheme"
 			:menu="layout.iris.menu" />
-
 
 		<!-- wrapper for mobile overlay + content -->
 		<div class="relative">
@@ -112,6 +111,18 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 					<div class="overflow-x-auto w-full">
 						<div class="relative pb-6 bg-white shadow-lg rounded-lg">
+							<!-- Section: mobile navigation -->
+							<div
+								v-if="layout.user && screenType === 'mobile'"
+								class="sticky top-0 z-40 flex justify-center items-center gap-x-1 px-3 py-2 bg-white/95 backdrop-blur border-b border-slate-200 rounded-t-lg overflow-x-auto">
+								<template v-for="(grpNav, itemKey) in layout.navigation">
+									<RetinaMobileNavigationSimple
+										:nav="grpNav"
+										:navKey="generateNavigationName(itemKey)"
+									/>
+								</template>
+							</div>
+
 							<!-- Section: Top navigation -->
 							<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 overflow-x-auto" />
 
@@ -126,18 +137,6 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 		</div>
 
 		<IrisFooter :colorThemed="irisTheme" />
-		
-		<!-- Section: bottom navigation -->
-		<div v-if="layout.user && screenType === 'mobile'" class="bg-[rgb(20,20,20)] text-white sticky bottom-0 w-full z-10">
-			<div class="flex gap-x-3 pt-2 pb-3 px-4 overflow-x-auto">
-				<template v-for="(grpNav, itemKey) in layout.navigation">
-					<RetinaMobileNavigationSimple
-						:nav="grpNav"
-						:navKey="generateNavigationName(itemKey)"
-					/>
-				</template>
-			</div>
-		</div>
 	</div>
 </template>
 

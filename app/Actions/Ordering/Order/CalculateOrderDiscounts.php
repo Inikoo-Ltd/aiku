@@ -129,6 +129,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
         $this->getGiftsMeters($order);
+        $this->getVoucherMeterNonPercentage($order);
 
 
         $order->update(
@@ -195,6 +196,37 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ]
             ];
         }
+    }
+
+    public function getVoucherMeterNonPercentage(Order $order): void
+    {
+        if (!$order->offer_voucher_id) {
+            return;
+        }
+
+        $voucherData = DB::table('offers')
+            ->select(['id', 'trigger_data', 'allowance_signature', 'name', 'allowance_type'])
+            ->where('shop_id', $order->shop_id)
+            ->where('status', true)
+            ->whereIn('allowance_type', ['gift', 'discounted_shipping'])
+            ->where('id', $order->offer_voucher_id)
+            ->first();
+
+        if (!$voucherData) {
+            return;
+        }
+
+        $triggerData = json_decode($voucherData->trigger_data, true);
+
+        $this->offerMeters[$voucherData->allowance_signature] = [
+            'offer_id' => $voucherData->id,
+            'label'    => $voucherData->name,
+            'is_gift'  => $voucherData->allowance_type === 'gift',
+            'metadata' => [
+                'current' => $order->gross_amount,
+                'target'  => Arr::get($triggerData, 'item_amount', 0),
+            ]
+        ];
     }
 
     private function setEnabledOffers(Order $order): void
@@ -445,7 +477,6 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function getDaysSinceLastInvoiced(Order $order): int
     {
-
         $customer = $order->customer;
         if (!$customer) {
             return 10000;

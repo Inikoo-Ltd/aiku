@@ -26,6 +26,10 @@ Route::prefix('{fulfilment}')->name('show.')
         Route::name("crm.")
             ->group(__DIR__."/crm.php");
 
+        Route::prefix("chat")
+            ->name("chat.")
+            ->group(__DIR__."/chat.php");
+
         Route::name("backlogs.")
             ->group(__DIR__."/backlogs.php");
 

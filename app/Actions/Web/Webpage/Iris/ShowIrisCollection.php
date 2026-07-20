@@ -37,6 +37,10 @@ class ShowIrisCollection extends IrisAction
                 'pageHead'        => [
                     'title' => $collection->name,
                     'model' => __('Collection'),
+                    'afterTitle'    => [
+                        'label' => $collection->code,
+                        'tooltip' => __('Collection Code'),
+                    ],
                     'icon'  => [
                         'icon'  => ['fal', 'fa-album-collection'],
                         'title' => __('Collection'),
@@ -78,7 +82,7 @@ class ShowIrisCollection extends IrisAction
                             IrisCollectionTabsEnum::FAMILIES->value
                         )
                     )
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'family',
@@ -103,7 +107,7 @@ class ShowIrisCollection extends IrisAction
                             IrisCollectionTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => ProductsResource::collection(
+                    : Inertia::optional(fn () => ProductsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'product',

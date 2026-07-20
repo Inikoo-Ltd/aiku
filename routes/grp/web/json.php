@@ -50,6 +50,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
 use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
+use App\Actions\Comms\BeeFreeSDK\BeefreeConvertEmailJsonToPageJson;
 use App\Actions\Comms\EmailCopy\GetEmailCopy;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
@@ -95,6 +96,7 @@ use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
+use App\Actions\Inventory\OrgStock\Json\FetchOrgStockStocksManagement;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
@@ -151,6 +153,7 @@ Route::get('fulfilment-customer/{fulfilmentCustomer}/storing-pallets', GetFulfil
 Route::get('fulfilment-customer/{fulfilmentCustomer}/audit/{storedItemAudit}/stored-items', GetPalletAuditStoredItems::class)->name('fulfilment-customer.audit.stored-items.index');
 
 Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->name('mailshot.merge-tags');
+Route::get('/mailshot/{mailshot:id}/convert-to-page', BeefreeConvertEmailJsonToPageJson::class)->name('mailshot.convert-to-page');
 
 Route::get('email/dispatched-email/{dispatchedEmail:id}/copy', GetEmailCopy::class)->name('email.dispatched-email.copy');
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
@@ -204,6 +207,7 @@ Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModificati
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
 Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes', GetBatchCodes::class)->name('org_stock.batch_codes.index');
+Route::get('warehouse/{warehouse}/org-stock/{orgStock:id}/stocks-management', FetchOrgStockStocksManagement::class)->name('warehouse.org_stock.stocks_management')->withoutScopedBindings();
 
 Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('brands', GetBrands::class)->name('brands.index');

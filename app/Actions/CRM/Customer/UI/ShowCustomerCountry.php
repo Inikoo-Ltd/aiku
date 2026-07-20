@@ -100,15 +100,15 @@ class ShowCustomerCountry extends OrgAction
 
                 CustomerCountryTabsEnum::TOP_PRODUCTS->value => $this->tab == CustomerCountryTabsEnum::TOP_PRODUCTS->value
                     ? fn () => IndexTopSoldProductsInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::TOP_PRODUCTS->value)
-                    : Inertia::lazy(fn () => IndexTopSoldProductsInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::TOP_PRODUCTS->value)),
+                    : Inertia::optional(fn () => IndexTopSoldProductsInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::TOP_PRODUCTS->value)),
 
                 CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value => $this->tab == CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value
                     ? fn () => IndexTopSoldProductsInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value)
-                    : Inertia::lazy(fn () => IndexTopSoldProductsInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value)),
+                    : Inertia::optional(fn () => IndexTopSoldProductsInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::SEASONAL_PRODUCTS->value)),
 
                 CustomerCountryTabsEnum::COURIERS->value => $this->tab == CustomerCountryTabsEnum::COURIERS->value
                     ? fn () => IndexCouriersInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::COURIERS->value)
-                    : Inertia::lazy(fn () => IndexCouriersInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::COURIERS->value)),
+                    : Inertia::optional(fn () => IndexCouriersInCountry::run($this->shop, $data['country_code'], CustomerCountryTabsEnum::COURIERS->value)),
             ]
         )
         ->table(IndexTopSoldProductsInCountry::make()->tableStructure(prefix: CustomerCountryTabsEnum::TOP_PRODUCTS->value))

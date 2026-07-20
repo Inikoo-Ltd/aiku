@@ -10,7 +10,6 @@
 
 namespace Tests\Feature;
 
-use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrder\UpdateJobOrder;
@@ -20,6 +19,7 @@ use App\Actions\Production\Production\StoreProduction;
 use App\Actions\Production\Production\UpdateProduction;
 use App\Actions\Production\RawMaterial\StoreRawMaterial;
 use App\Actions\Production\RawMaterial\UpdateRawMaterial;
+use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowanceTypeEnum;
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;

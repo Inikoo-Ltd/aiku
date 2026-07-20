@@ -13,14 +13,17 @@ use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
+use App\Actions\Audits\DispatchSimpleAudit;
 
 class UpdateOrganisation extends OrgAction
 {
@@ -29,6 +32,8 @@ class UpdateOrganisation extends OrgAction
 
     public function handle(Organisation $organisation, array $modelData): Organisation
     {
+        $settingAudits = $this->customAudit($organisation, $modelData);
+
         if (Arr::has($modelData, 'ui_name')) {
             data_set($modelData, "settings.ui.name", Arr::pull($modelData, 'ui_name'));
         }
@@ -41,6 +46,27 @@ class UpdateOrganisation extends OrgAction
         if (Arr::has($modelData, 'google_drive_folder_key')) {
             data_set($modelData, "settings.google.drive.folder", Arr::pull($modelData, 'google_drive_folder_key'));
         }
+
+        if (Arr::has($modelData, 'access_id')) {
+            data_set($modelData, "settings.email.provider.failover.access_id", Arr::pull($modelData, 'access_id'));
+        }
+        if (Arr::has($modelData, 'access_key')) {
+            data_set($modelData, "settings.email.provider.failover.access_key", Arr::pull($modelData, 'access_key'));
+        }
+        if (Arr::has($modelData, 'region')) {
+            data_set($modelData, "settings.email.provider.failover.region", Arr::pull($modelData, 'region'));
+        }
+
+        if (Arr::has($modelData, 'customer_notification_access_id')) {
+            data_set($modelData, "settings.email.provider.customer_notification.access_id", Arr::pull($modelData, 'customer_notification_access_id'));
+        }
+        if (Arr::has($modelData, 'customer_notification_access_key')) {
+            data_set($modelData, "settings.email.provider.customer_notification.access_key", Arr::pull($modelData, 'customer_notification_access_key'));
+        }
+        if (Arr::has($modelData, 'customer_notification_region')) {
+            data_set($modelData, "settings.email.provider.customer_notification.region", Arr::pull($modelData, 'customer_notification_region'));
+        }
+
 
         if (Arr::has($modelData, 'show_omega')) {
             data_set($modelData, "settings.invoice_export.show_omega", Arr::pull($modelData, 'show_omega'));
@@ -118,6 +144,16 @@ class UpdateOrganisation extends OrgAction
 
         $organisation = $this->update($organisation, $modelData, ['data', 'settings']);
 
+        foreach ($settingAudits as $audit) {
+            DispatchSimpleAudit::run(
+                auditableModel: $organisation,
+                logKey: $audit['key'],
+                oldValue: $audit['old'],
+                newValue: $audit['new'],
+                eventName: 'updated',
+            );
+        }
+
         $organisation->refresh();
 
 
@@ -150,6 +186,12 @@ class UpdateOrganisation extends OrgAction
             'attach_isdoc_to_pdf'                   => ['sometimes', 'boolean'],
             'show_tax_liability_date'               => ['sometimes', 'boolean'],
             'google_drive_folder_key'               => ['sometimes', 'string'],
+            'access_id'                             => ['sometimes', 'string', 'nullable'],
+            'access_key'                            => ['sometimes', 'string', 'nullable'],
+            'region'                                => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
+            'customer_notification_access_id'       => ['sometimes', 'string', 'nullable'],
+            'customer_notification_access_key'      => ['sometimes', 'string', 'nullable'],
+            'customer_notification_region'          => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'address'                               => ['sometimes', 'required', new ValidAddress()],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
@@ -206,5 +248,40 @@ class UpdateOrganisation extends OrgAction
         $this->initialisation($organisation, $modelData);
 
         return $this->handle($organisation, $this->validatedData);
+    }
+
+    public function customAudit(Organisation $organisation, array $modelData)
+    {
+        $settingAudits = [];
+
+        foreach ([
+            'access_id'                         => ['email.provider.failover.access_id', true],
+            'access_key'                        => ['email.provider.failover.access_key', true],
+            'region'                            => ['email.provider.failover.region', true],
+            'customer_notification_access_id'   => ['email.provider.customer_notification.access_id', true],
+            'customer_notification_access_key'  => ['email.provider.customer_notification.access_key', true],
+            'customer_notification_region'      => ['email.provider.customer_notification.region', true],
+        ] as $field => [$path, $shouldAudit]) {
+            if (!Arr::has($modelData, $field)) {
+                continue;
+            }
+
+            $oldValue = Arr::get($organisation->settings, $path);
+            $newValue = Arr::pull($modelData, $field);
+
+            data_set($modelData, "settings.$path", $newValue);
+
+            if (!$shouldAudit || $oldValue === $newValue) {
+                continue;
+            }
+            
+            $settingAudits[] = [
+                'key' => str_replace('.', '_', $path),
+                'old' => $oldValue,
+                'new' => $newValue,
+            ];
+        };
+
+        return $settingAudits;
     }
 }

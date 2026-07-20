@@ -170,7 +170,7 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
 
         $baseData[MasterProductCategoryTabsEnum::INDEX->value] = $this->tab == MasterProductCategoryTabsEnum::INDEX->value ?
             fn () => MasterFamiliesResource::collection($masterFamilies)
-            : Inertia::lazy(fn () => MasterFamiliesResource::collection($masterFamilies));
+            : Inertia::optional(fn () => MasterFamiliesResource::collection($masterFamilies));
 
         return Inertia::render(
             'Masters/MasterFamilies',

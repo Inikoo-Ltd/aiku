@@ -293,7 +293,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 										{{
 											review_settings.show_staff_who_reply
 												? item.review.reply.contact_name
-												: layout.iris.shop.name
+												: layout?.iris?.shop?.name
 										}}
 									</span>
 

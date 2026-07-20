@@ -6,6 +6,7 @@ import { watchEffect } from "vue"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal.js'
 import { useEchoGrpGeneral } from '@/Stores/echo-grp-general.js'
 import { useLiveUsers } from '@/Stores/active-users'
+import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
 
 export const initialiseApp = () => {
     const layout = useLayoutStore()
@@ -32,6 +33,10 @@ export const initialiseApp = () => {
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
         router.on('navigate', (event) => {
+
+            // Close overlays left open by the previous page so they don't block clicks
+            layout.stackedComponents = []
+            resetStuckOverlays()
 
             // To see Vue filename in console (component.vue)
             if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
@@ -188,6 +193,13 @@ export const initialiseApp = () => {
         // Set Navigation (for LeftSidebar)
         if (usePage().props.layout?.navigation) {
             layout.navigation = usePage().props.layout.navigation ?? null
+        }
+
+        // Set Bookmarks (for Breadcrumbs), sent on first load only
+        if (usePage().props.layout?.bookmarks) {
+            layout.bookmarks = Array.isArray(usePage().props.layout.bookmarks)
+                ? usePage().props.layout.bookmarks
+                : []
         }
 
 

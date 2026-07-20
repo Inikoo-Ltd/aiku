@@ -322,15 +322,15 @@ class IndexSubDepartments extends OrgAction
 
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
                     fn () => SubDepartmentsResource::collection($subDepartment)
-                    : Inertia::lazy(fn () => SubDepartmentsResource::collection($subDepartment)),
+                    : Inertia::optional(fn () => SubDepartmentsResource::collection($subDepartment)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
                     fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    : Inertia::optional(fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
         )->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value))
         ->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))

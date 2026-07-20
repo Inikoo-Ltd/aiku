@@ -142,6 +142,7 @@ class OrgStock extends Model implements Auditable
                 'code',
                 'state',
                 'name',
+                'organisation_id',
                 'created_at'
             ]);
     }
@@ -149,11 +150,12 @@ class OrgStock extends Model implements Auditable
     public function toSearchableArray(): array
     {
         return [
-            'id'         => (string)$this->id,
-            'code'       => $this->code,
-            'name'       => $this->name,
-            'state'      => $this->state->value,
-            'created_at' => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+            'id'              => (string)$this->id,
+            'organisation_id' => $this->organisation_id,
+            'code'            => $this->code,
+            'name'            => $this->name,
+            'state'           => $this->state->value,
+            'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];
     }
 

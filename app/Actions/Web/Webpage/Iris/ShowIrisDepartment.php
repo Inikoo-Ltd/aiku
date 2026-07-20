@@ -39,11 +39,15 @@ class ShowIrisDepartment extends IrisAction
                 'pageHead'        => [
                     'title'     => $department->name,
                     'model'     => __('Department'),
+                    'afterTitle'    => [
+                        'label' => $department->code,
+                        'tooltip' => __('Department Code'),
+                    ],
                     'icon'      => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('Department'),
                     ],
-                    'iconRight' => $department->state->stateIcon()[$department->state->value],
+                    /* 'iconRight' => $department->state->stateIcon()[$department->state->value], */
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
@@ -83,7 +87,7 @@ class ShowIrisDepartment extends IrisAction
                             IrisDepartmentTabsEnum::SUB_DEPARTMENTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => SubDepartmentsResource::collection(
+                    : Inertia::optional(fn () => SubDepartmentsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'sub_department',
@@ -108,7 +112,7 @@ class ShowIrisDepartment extends IrisAction
                             IrisDepartmentTabsEnum::FAMILIES->value
                         )
                     )
-                    : Inertia::lazy(fn () => FamiliesResource::collection(
+                    : Inertia::optional(fn () => FamiliesResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'family',
@@ -133,7 +137,7 @@ class ShowIrisDepartment extends IrisAction
                             IrisDepartmentTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => ProductsResource::collection(
+                    : Inertia::optional(fn () => ProductsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'product',
@@ -158,7 +162,7 @@ class ShowIrisDepartment extends IrisAction
                             IrisDepartmentTabsEnum::COLLECTIONS->value
                         )
                     )
-                    : Inertia::lazy(fn () => CollectionsResource::collection(
+                    : Inertia::optional(fn () => CollectionsResource::collection(
                         IndexIrisCatalogue::make()->action(
                             [
                                 'scope'      => 'collection',

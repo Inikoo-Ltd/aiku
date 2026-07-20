@@ -44,8 +44,10 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Models\Ordering\UpcomingTransaction;
 use App\Models\Reviews\Review;
 use App\Models\Reviews\ReviewReaction;
 use App\Models\SysAdmin\Group;
@@ -152,10 +154,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AllegroUser> $allegroUsers
  * @property-read Collection<int, AmazonUser> $amazonUsers
- * @property-read Collection<int, \App\Models\CRM\Appointment> $appointments
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, BackInStockReminder> $backInStockReminder
+ * @property-read Collection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read Collection<int, CustomerClient> $clients
  * @property-read \App\Models\CRM\CustomerComms|null $comms
  * @property-read Collection<int, CreditTransaction> $creditTransactions
@@ -207,6 +209,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\CRM\TrafficSource|null $trafficSource
  * @property-read Collection<int, \App\Models\CRM\TrafficSource> $trafficSources
  * @property-read Collection<int, Transaction> $transactions
+ * @property-read Collection<int, UpcomingTransaction> $upcomingTransactions
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
  * @property-read WooCommerceUser|null $wooCommerceUser
  * @method static \Database\Factories\CRM\CustomerFactory factory($count = null, $state = [])
@@ -297,9 +300,11 @@ class Customer extends Model implements HasMedia, Auditable
         return [
             'id'                       => (string)$this->id,
             'shop_id'                  => $this->shop_id,
+            'slug'                     => (string)$this->slug,
             'status'                   => $this->status->value,
             'state'                    => $this->state->value,
             'reference'                => $this->reference,
+            'location'                 => json_encode($this->location),
             'name'                     => (string)$this->name,
             'contact_name'             => (string)$this->contact_name,
             'company_name'             => (string)$this->company_name,
@@ -452,6 +457,16 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Order::class);
     }
 
+    public function upcomingTransactions(): HasMany
+    {
+        return $this->hasMany(UpcomingTransaction::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
@@ -470,12 +485,6 @@ class Customer extends Model implements HasMedia, Auditable
     public function fulfilmentCustomer(): HasOne
     {
         return $this->hasOne(FulfilmentCustomer::class);
-    }
-
-
-    public function appointments(): HasMany
-    {
-        return $this->hasMany(Appointment::class);
     }
 
     public function hasUsers(): bool

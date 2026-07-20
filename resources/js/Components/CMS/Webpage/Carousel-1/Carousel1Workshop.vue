@@ -12,16 +12,21 @@ import CardBlueprint from './CardBlueprint'
 import { sendMessageToParent } from "@/Composables/Workshop"
 import EditorV2 from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { faChevronRight, faChevronLeft } from '@fas'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { createReusableTemplate } from '@vueuse/core'
+
+const [DefineCard, ReuseCard] = createReusableTemplate<{ data: any; index: number }>()
 
 const props = defineProps<{
   modelValue: {
+    id?: string
     container?: { properties?: any }
     carousel_data: {
+      mobile_display?: 'carousel' | 'grid'
       carousel_setting: {
         slidesPerView: { mobile: number; tablet: number; desktop: number }
         loop?: boolean
         autoplay?: any
+        interval?: number
         spaceBetween?: number
         use_text?: boolean
       }
@@ -69,6 +74,19 @@ const isLooping = computed(() => {
   const settingsLoop = props.modelValue?.carousel_data?.carousel_setting?.loop || false
   return settingsLoop && props.modelValue.carousel_data.cards.length > slidesPerView.value
 })
+
+const mobileDisplay = computed(() =>
+  props.modelValue?.carousel_data?.mobile_display ?? 'carousel'
+)
+
+const isMobileGrid = computed(() =>
+  props.screenType === 'mobile' && mobileDisplay.value === 'grid'
+)
+
+const gridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${slidesPerView.value}, minmax(0, 1fr))`,
+  gap: `${spaceBetween.value}px`,
+}))
 
 const cardStyle = ref(getStyles(props.modelValue?.carousel_data?.card_container?.properties, props.screenType, false))
 const ImageContainer = ref(getStyles(props.modelValue.carousel_data.card_container?.container_image, props.screenType, false))
@@ -152,11 +170,14 @@ const onEditorBlur = () => {
   activeEditorIndex.value = null
 }
 
+const isEditing = computed(() => activeEditorIndex.value !== null)
+
 
 </script>
 
 <template>
-  <div :id="modelValue?.id ? modelValue?.id : 'carousel' + indexBlock" component="carousel" class="relative overflow-hidden">
+  <div :id="modelValue?.id ? modelValue?.id : 'carousel' + indexBlock" component="carousel" class="relative"
+    :class="isEditing ? 'overflow-visible' : 'overflow-hidden'">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
@@ -166,8 +187,64 @@ const onEditorBlur = () => {
         @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
         <FontAwesomeIcon :icon="faChevronLeft" />
       </button>
-      <div class="mx-10 overflow-hidden">
-        <Swiper v-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
+      
+      <DefineCard v-slot="{ data, index }">
+        <div class="space-card flex justify-center items-center w-full h-full">
+          <div class="card flex flex-col h-full">
+            <div class="flex flex-1 flex-col">
+
+              <!-- Image -->
+              <div class="flex justify-center overflow-visible"
+                :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)"
+                @click.stop="() => {
+                  sendMessageToParent('activeBlock', indexBlock)
+                  sendMessageToParent('activeChildBlock', bKeys[2])
+                  sendMessageToParent('activeChildBlockArray', index)
+                  sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
+                }"
+                @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })">
+                <div class="overflow-hidden w-full flex items-center justify-center"
+                  :style="{ ...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
+                  <Image v-if="data?.image?.source" :src="data.image.source"
+                    :alt="data.image.alt || `image-${index}`"
+                    class="w-full h-full flex justify-center items-center"
+                    :height="getStyles(modelValue.carousel_data.card_container?.image_properties, screenType, false)?.height"
+                    :width="getStyles(modelValue.carousel_data.card_container?.image_properties, screenType, false)?.width" />
+                    <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
+                      <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+                    </div>
+                </div>
+              </div>
+
+              <!-- Text -->
+              <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
+                class="p-4 flex flex-col flex-1 justify-between">
+                <div class="text-center leading-relaxed">
+                  <EditorV2 v-model="data.text" @focus="() => onEditorFocus(bKeys[1], index)" @blur="onEditorBlur"
+                    @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
+                      name: webpageData.images_upload_route.name,
+                      parameters: {
+                        ...webpageData.images_upload_route.parameters,
+                        modelHasWebBlocks: blockData?.id,
+                      },
+                    }" />
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </DefineCard>
+
+      <div class="mx-10" :class="isEditing ? 'overflow-visible' : 'overflow-hidden'">
+        <div v-if="hasCards && isMobileGrid" class="grid w-full" :style="gridStyle">
+          <div v-for="(data, index) in modelValue.carousel_data.cards" :key="index"
+            class="flex justify-center items-center" :style="{ zIndex: activeEditorIndex === index ? 99 : 1 }">
+            <ReuseCard :data="data" :index="index" />
+          </div>
+        </div>
+
+        <Swiper v-else-if="hasCards" :modules="[Autoplay]" :slides-per-view="slidesPerView" :loop="isLooping"
           :space-between="spaceBetween" :breakpoints="breakpoints" :autoplay="modelValue.carousel_data.carousel_setting?.interval && modelValue.carousel_data.carousel_setting?.autoplay
             ? {
               delay: modelValue.carousel_data.carousel_setting.interval,
@@ -178,52 +255,7 @@ const onEditorBlur = () => {
 
         <SwiperSlide v-for="(data, index) in modelValue.carousel_data.cards" :key="index"
             class="!flex !justify-center !items-center" :style="{ zIndex: activeEditorIndex === index ? 99 : 1 }">
-            <div class="space-card flex justify-center items-center w-full h-full">
-              <div class="card flex flex-col h-full">
-                <div class="flex flex-1 flex-col">
-
-                  <!-- Image -->
-                  <div class="flex justify-center overflow-visible"
-                    :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)"
-                    @click.stop="() => {
-                      sendMessageToParent('activeBlock', indexBlock)
-                      sendMessageToParent('activeChildBlock', bKeys[2])
-                      sendMessageToParent('activeChildBlockArray', index)
-                      sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
-                    }"
-                    @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })">
-                    <div class="overflow-hidden w-full flex items-center justify-center"
-                      :style="{ ...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
-                      <Image v-if="data?.image?.source" :src="data.image.source"
-                        :alt="data.image.alt || `image-${index}`"
-                        class="w-full h-full flex justify-center items-center"
-                        :height="getStyles(modelValue.carousel_data.card_container?.image_properties, screenType, false)?.height"
-                        :width="getStyles(modelValue.carousel_data.card_container?.image_properties, screenType, false)?.width" />
-                        <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
-                          <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
-                        </div>
-                    </div>
-                  </div>
-
-                  <!-- Text -->
-                  <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
-                    class="p-4 flex flex-col flex-1 justify-between">
-                    <div class="text-center leading-relaxed">
-                      <EditorV2 v-model="data.text" @focus="() => onEditorFocus(bKeys[1], index)" @blur="onEditorBlur"
-                        @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
-                          name: webpageData.images_upload_route.name,
-                          parameters: {
-                            ...webpageData.images_upload_route.parameters,
-                            modelHasWebBlocks: blockData?.id,
-                          },
-                        }" />
-
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </div>
+            <ReuseCard :data="data" :index="index" />
           </SwiperSlide>
         </Swiper>
 

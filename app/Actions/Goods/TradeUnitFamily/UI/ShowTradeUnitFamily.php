@@ -104,15 +104,15 @@ class ShowTradeUnitFamily extends GrpAction
 
                 TradeUnitFamilyTabsEnum::SHOWCASE->value => $this->tab == TradeUnitFamilyTabsEnum::SHOWCASE->value ?
                 fn () => $this->getShowcase($tradeUnitFamily)
-                : Inertia::lazy(fn () => $this->getShowcase($tradeUnitFamily)),
+                : Inertia::optional(fn () => $this->getShowcase($tradeUnitFamily)),
 
                 TradeUnitFamilyTabsEnum::TRADE_UNITS->value => $this->tab == TradeUnitFamilyTabsEnum::TRADE_UNITS->value ?
                 fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))
-                : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))),
+                : Inertia::optional(fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))),
 
                 TradeUnitFamilyTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitFamilyTabsEnum::ATTACHMENTS->value ?
                 fn () => $this->getAttachments($tradeUnitFamily)
-                : Inertia::lazy(fn () => $this->getAttachments($tradeUnitFamily)),
+                : Inertia::optional(fn () => $this->getAttachments($tradeUnitFamily)),
             ]
         )->table(IndexTradeUnitsInTradeUnitFamily::make()->tableStructure(prefix: TradeUnitFamilyTabsEnum::TRADE_UNITS->value));
     }

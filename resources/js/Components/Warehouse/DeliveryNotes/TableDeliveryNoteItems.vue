@@ -15,7 +15,7 @@ import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
-import { ref, onMounted, reactive, inject, computed, watch } from "vue";
+import { ref, onMounted, reactive, inject, computed, watch, onUnmounted } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode } from "@fal";
 import { faSkull, faWandMagic } from "@fas";
@@ -23,7 +23,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import Modal from "@/Components/Utils/Modal.vue"
-import { RadioButton } from "primevue"
+import { RadioButton, Dialog } from "primevue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -77,7 +77,7 @@ function orgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
     if (!orgStockRouteCache.has(deliveryNoteItem.org_stock_id)) {
         orgStockRouteCache.set(
             deliveryNoteItem.org_stock_id,
-            route("grp.helpers.redirect_org_stock", [deliveryNoteItem.org_stock_id])
+            route("grp.majordomo.redirect_org_stock", [deliveryNoteItem.org_stock_id])
         )
     }
 
@@ -86,9 +86,65 @@ function orgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
 
 
 const isMounted = ref(false);
+let socketChannel: any = null
+
+const initSocketListener = () => {
+    const socketEvent = `grp.${route().params['organisation']}.stock_movement`;
+
+    if (['finalised', 'dispatched', 'cancelled'].includes(props.state)) return; // No need initiate listener if finished finished
+
+    socketChannel = window.Echo.private(socketEvent).listen(".stock_update", async (eventData: any) => {
+        const affectedData = eventData.affected_data;
+
+        let itemToSet = props.data.data.find(
+            item => item.org_stock_id === affectedData.org_stock_id
+        );
+
+        if (!itemToSet) {
+            return;
+        }
+
+        let locationOrgStock = itemToSet.locations.find(
+            item => item.location_id === affectedData.location_id
+        )
+
+        const remainingItem =
+            parseFloat(itemToSet.quantity_required) -
+            (parseFloat(itemToSet.quantity_not_picked ?? 0) +
+            parseFloat(itemToSet.quantity_picked ?? 0));
+
+        const shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
+
+        if (shouldRefetch) {
+            const response = await axios.get(
+                route('grp.json.delivery_note_item_row', {
+                    deliveryNoteItem: itemToSet.id,
+                })
+            );
+            Object.assign(itemToSet, response.data.data);
+        }
+    })
+
+    // console.log('Subscribed to channel for Stock Movement. Channel:', socketEvent, socketChannel);
+}
+
+const stopSocketListener = () => {
+    if (socketChannel) {
+        socketChannel.stopListening(".stock_update");
+        window.Echo.leave(`private-grp.${route().params['organisation']}.stock_movement`);
+        socketChannel = null;
+    }
+}
+
 onMounted(() => {
     isMounted.value = true;
+    initSocketListener();
 });
+
+onUnmounted(() => {
+    stopSocketListener();
+})
+
 
 // const onPickingQuantity = (pick_route: routeType, quantity: number) => {
 //     router[pick_route.method || "post"](
@@ -316,6 +372,29 @@ const GetQuantityToPickFractional = (item) => {
     if(props.shop_type == 'dropshipping'){
         return item.quantity_to_pick_fractional_ds
     }else return item.quantity_to_pick_fractional
+}
+
+const GetWaitingWarehouseFractional = (item) => {
+    if (props.shop_type == 'dropshipping') {
+        return item?.quantity_waiting_warehouse_fractional_ds
+    }
+    return null
+}
+
+const GetWaitingCrmFractional = (item) => {
+    if (props.shop_type == 'dropshipping') {
+        return item?.quantity_waiting_crm_fractional_ds
+    }
+    return null
+}
+
+// Dropshipping items are picked in fractions (e.g. 1/3), so the picking input must
+// step by 1/packed_in instead of whole units. Non-dropshipping keeps whole-unit steps.
+const GetPickingDenominator = (item) => {
+    if (props.shop_type == 'dropshipping' && Number(item?.packed_in) > 1) {
+        return Number(item.packed_in)
+    }
+    return undefined
 }
 
 
@@ -579,9 +658,9 @@ watch(
     async (isOpened) => {
         if (isOpened) {
             isLoadingImage.value = true
-            let imageData = await fetchImage(isOpenModalUndoWaitingWarehouse);
-            if (imageData && isOpenModalUndoWaitingWarehouse.value) {
-                isOpenModalUndoWaitingWarehouse.value.org_stock_image_thumbnail = imageData;
+            let imageData = await fetchImage(selectedItemToUndoWaitingWarehouse.value?.id);
+            if (imageData && selectedItemToUndoWaitingWarehouse.value) {
+                selectedItemToUndoWaitingWarehouse.value.org_stock_image_thumbnail = imageData;
             }
         }
     }
@@ -592,8 +671,8 @@ watch(
     async (isOpened) => {
         if (isOpened) {
             isLoadingImage.value = true
-            let imageData = await fetchImage(selectedTransactionToSetAsWaiting);
-            console.log(imageData);
+            let imageData = await fetchImage(selectedTransactionToSetAsWaiting.value?.id);
+            // console.log(imageData);
             if (imageData ) {
                 selectedTransactionToSetAsWaiting.value.org_stock_image_thumbnail = imageData;
             }
@@ -601,9 +680,12 @@ watch(
     }
 )
 
-const fetchImage = async (deliveryNoteItem: any)   => {
+const fetchImage = async (deliveryNoteItemId: number)   => {
+    if (!deliveryNoteItemId) {
+        return null
+    }
     const response = await axios.get(route('grp.json.fetch_single_delivery_note_item.image', {
-        deliveryNoteItem: deliveryNoteItem.value.id,
+        deliveryNoteItem: deliveryNoteItemId,
     }))
 
     isLoadingImage.value = false;
@@ -613,7 +695,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo>
+    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo :useTopPagination="true">
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
@@ -631,14 +713,14 @@ const fetchImage = async (deliveryNoteItem: any)   => {
         </template>
 
         <template #cell(quantity_picked_readonly)="{ item }">
-            <FractionDisplay v-if="item.quantity_to_pick && item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
             <span v-else-if="Number(item.quantity_picked)">{{ locale.number(item.quantity_picked ?? 0) }}</span>
             <span v-else class="opacity-60 italic text-sm">{{ ctrans("No item picked yet") }}</span>
 
             <!-- Label: warehouse waiting -->
             <div v-if="Number(item.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
                 <Link :href="urlItemsWaitingWarehouse" class="hover:underline">
-                    <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)">
+                    <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)" :fractionData="GetWaitingWarehouseFractional(item)">
                     </LabelItemsWaitingForWarehouse>
                 </Link>
             </div>
@@ -646,7 +728,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
             <!-- Section: items are waiting for CRM -->
             <div v-if="Number(item.quantity_waiting_crm) > 0" class="mx-auto w-fit">
                 <Link :href="urlItemsWaitingCrm" class="hover:underline">
-                    <LabelItemsWaitingForCrm v-if="Number(item.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(item.quantity_waiting_crm)" />
+                    <LabelItemsWaitingForCrm :qty_waiting_crm="Number(item.quantity_waiting_crm)" :fractionData="GetWaitingCrmFractional(item)" />
                 </Link>
             </div>
         </template>
@@ -753,14 +835,14 @@ const fetchImage = async (deliveryNoteItem: any)   => {
             </span>
 
             <template v-if="state === 'handling'">
-                <span v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2">
+                <!-- <div v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2 mt-1.5">
 
                     <ButtonWithLink v-if="!item.is_handled" type="negative"
                         :label="locale.number(item.quantity_to_pick)"  v-tooltip="ctrans('Set as not picked')" icon="fal fa-debug"
                         size="xs" :routeTarget="item.not_picking_route" :bindToLink="{
                             preserveScroll: true,
                         }" />
-                </span>
+                </div> -->
 
                 <!-- <div v-else-if="Number(item.quantity_not_picked > 0)" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
                     <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
@@ -781,9 +863,9 @@ const fetchImage = async (deliveryNoteItem: any)   => {
             <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
             <span v-else>{{ item.quantity_picked }}</span>
             
-            <span v-if="Number(item.quantity_not_picked) > 0" v-tooltip="ctrans('Not picked')"  class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
+            <!-- <span v-if="Number(item.quantity_not_picked) > 0" v-tooltip="ctrans('Not picked')"  class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_not_picked) }}
-            </span>
+            </span> -->
 
             <!-- Number: waiting warehouse -->
             <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="urlItemsWaitingWarehouse" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
@@ -919,10 +1001,11 @@ const fetchImage = async (deliveryNoteItem: any)   => {
 
             <!-- Section: items are waiting for warehouse -->
             <div v-if="!isEditable && Number(item.quantity_waiting_warehouse) > 0" class="mt-2 xmx-auto w-fit flex gap-x-2">
-                <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)" />
+                <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(item.quantity_waiting_warehouse)" :fractionData="GetWaitingWarehouseFractional(item)" />
             </div>
         </template>
 
+        <!-- Column: To do actions -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="false" class="hidden">
                 <div><span class="bg-yellow-400">itemValue.is_picked</span>: {{ itemValue.is_picked }}</div>
@@ -953,6 +1036,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
                             <!-- Button: input number (picking) -->
                             <NumberWithButtonSave
                                 v-if="!itemValue.is_handled && findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).quantity > 0"
+                                :denominator="GetPickingDenominator(itemValue)"
                                 :key="findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code" noUndoButton
                                 @onError="(error: any) => {
                                     proxyItem.errors = Object.values(error || {})
@@ -1036,7 +1120,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
                                         :size="screenType == 'desktop' ? 'sm' : 'lg'"
                                         :routeTarget="itemValue.not_picking_route"
                                         :bindToLink="{preserveScroll: true}"
-                                        v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                                        v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: (itemValue.quantity_to_pick ?? 0) < 0 ? '0' : locale.number(itemValue.quantity_to_pick ?? 0)})"
                                     >
                                         <template #label>
                                             <div>
@@ -1148,7 +1232,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
             
             <div v-if="Number(itemValue.quantity_waiting_warehouse) > 0" class="mt-2 mx-auto w-fit flex gap-x-2">
                 <Link :href="urlItemsWaitingWarehouse" class="hover:underline">
-                    <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)">
+                    <LabelItemsWaitingForWarehouse :qty_waiting_warehouse="Number(itemValue.quantity_waiting_warehouse)" :fractionData="GetWaitingWarehouseFractional(itemValue)">
                     </LabelItemsWaitingForWarehouse>
                 </Link>
                 <Button
@@ -1163,7 +1247,7 @@ const fetchImage = async (deliveryNoteItem: any)   => {
             <!-- Section: items are waiting for CRM -->
             <div v-if="Number(itemValue.quantity_waiting_crm) > 0" class="mx-auto w-fit">
                 <Link :href="urlItemsWaitingCrm" class="hover:underline">
-                    <LabelItemsWaitingForCrm v-if="Number(itemValue.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(itemValue.quantity_waiting_crm)" />
+                    <LabelItemsWaitingForCrm v-if="Number(itemValue.quantity_waiting_crm) > 0" :qty_waiting_crm="Number(itemValue.quantity_waiting_crm)" :fractionData="GetWaitingCrmFractional(itemValue)" />
                 </Link>
             </div>
 
@@ -1267,15 +1351,24 @@ const fetchImage = async (deliveryNoteItem: any)   => {
     </Modal>
 
 
-    <!-- Modal: Location picker -->
-    
-    <Modal :isOpen="isModalLocation" @onClose="isModalLocation = false" width="w-full max-w-3xl" xdialogStyle="{ background: '#ffffff' }">
+    <!-- Modal: Location picker (PrimeVue Dialog so the nested Stock Management dialog doesn't fight a Headless UI focus trap) -->
+    <Dialog
+        v-model:visible="isModalLocation"
+        modal
+        :draggable="false"
+        dismissableMask
+        :style="{ width: '48rem' }"
+        :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
+        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+        @hide="onCloseModal"
+        :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
+    >
         <SelectPickingLocation
             :item="selectedItemValue"
             :selectedLocationCode="get(selectedLocationCode, [selectedItemValue?.id], null)"
             @select="(code) => { set(selectedLocationCode, [selectedItemValue?.id], code); isModalLocation = false; }"
         />
-    </Modal>
+    </Dialog>
 
     <!-- Modal: Select batch code -->
     <Modal :isOpen="isModalEditExpiryDate" @onClose="() => onCloseModalExpiryDate()" width="w-full max-w-lg">
@@ -1425,12 +1518,12 @@ const fetchImage = async (deliveryNoteItem: any)   => {
                 {{ ctrans('Quantity to set as waiting') }}:
             </span>
             <span class="font-bold text-amber-800">
-                <!-- <FractionDisplay
+                <FractionDisplay
                     v-if="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                     :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                 />
-                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) ?? 0) }}</template> -->
-                {{ Number(selectedTransactionToSetAsWaiting?.quantity_to_pick ?? 0) + Number(selectedTransactionToSetAsWaiting?.quantity_waiting_warehouse || 0) }}
+                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) ?? 0) }}</template>
+                <!-- {{ Number(selectedTransactionToSetAsWaiting?.quantity_to_pick ?? 0) + Number(selectedTransactionToSetAsWaiting?.quantity_waiting_warehouse || 0) }} -->
                 
             </span>
         </div>

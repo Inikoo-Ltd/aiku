@@ -16,7 +16,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-3 px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 px-3 sm:px-6">
         <WidgetOrganisations
             v-if="props.tableData?.tables?.organisations"
             :tableData="props.tableData"

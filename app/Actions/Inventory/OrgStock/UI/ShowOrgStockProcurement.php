@@ -40,7 +40,7 @@ class ShowOrgStockProcurement extends OrgAction
         return Inertia::render(
             'Org/Inventory/OrgStock',
             [
-                'title'       => __('SKU').' '.$orgStock->code.' ('.__('Procurement').')',
+                'title'       => __('SKO').' '.$orgStock->code.' ('.__('Procurement').')',
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $orgStock,
                     $request->route()->getName(),
@@ -52,10 +52,10 @@ class ShowOrgStockProcurement extends OrgAction
                 ],
                 'pageHead'    => [
                     'icon'          => [
-                        'title' => __('SKU').' ('.__('Procurement').')',
+                        'title' => __('SKO').' ('.__('Procurement').')',
                         'icon'  => 'fal fa-box'
                     ],
-                    'model'         => __('SKU'),
+                    'model'         => __('SKO'),
                     'title'         => $orgStock->code,
                     'subNavigation' => $subNavigation
                 ],
@@ -74,7 +74,7 @@ class ShowOrgStockProcurement extends OrgAction
 
                 $this->tabsEnum::PURCHASE_ORDERS->value => $this->tab == $this->tabsEnum::PURCHASE_ORDERS->value ?
                     fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, $this->tabsEnum::PURCHASE_ORDERS->value))
-                    : Inertia::lazy(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, $this->tabsEnum::PURCHASE_ORDERS->value))),
+                    : Inertia::optional(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($orgStock, $this->tabsEnum::PURCHASE_ORDERS->value))),
 
             ]
         )->table(IndexPurchaseOrders::make()->tableStructure($orgStock, prefix: $this->tabsEnum::PURCHASE_ORDERS->value));

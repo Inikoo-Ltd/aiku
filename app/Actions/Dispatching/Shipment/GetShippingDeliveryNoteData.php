@@ -63,8 +63,12 @@ class GetShippingDeliveryNoteData
 
         $toEmail       = $deliveryNote->email ?? '';
         $toCompanyName = $deliveryNote->company_name ?? '';
-        $contactName   = $deliveryNote->contact_name ?? '';
 
+        if($deliveryNote->customerClient?->contact_name){
+            $contactName = $deliveryNote->customerClient->contact_name;
+        } else {
+            $contactName   = $deliveryNote->contact_name ?? '';
+        }
 
         $toFirstName = '';
         $toLastName  = '';

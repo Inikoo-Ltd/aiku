@@ -34,12 +34,11 @@ onUnmounted(() => {
 
 <template>
     <Link :href="nav?.route?.name ? route(nav.route?.name, nav?.route?.parameters) : '#'"
-        class="group flex items-center px-2 text-[20px] gap-x-2"
+        class="group flex items-center justify-center flex-shrink-0 h-9 w-9 rounded-lg text-[15px] transition-colors"
         :class="[
             isNavigationActive(layout.currentRoute, props.nav.root)
                 ? 'navigationActive'
-                : 'navigation',
-            layout.leftSidebar.show ? '' : 'pl-3',
+                : 'navigation text-slate-500 hover:text-slate-900 hover:bg-slate-100',
         ]"
         :style="[isNavigationActive(layout.currentRoute, props.nav.root) ? {
             'background-color': layout.app?.theme[1],

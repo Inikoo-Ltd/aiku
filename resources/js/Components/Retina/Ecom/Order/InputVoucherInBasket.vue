@@ -26,7 +26,7 @@ const props = defineProps<{
         end_at: string
         name: string
         discount: number
-        allowance_type?: string
+        allowance_type?: string   // 'gift' | 'discounted_shipping'
         gift_product_code?: string | null
     } | null
     order?: {
@@ -83,7 +83,9 @@ const voucherLabel = computed(() => {
 
     const detail = voucher.allowance_type === 'gift'
         ? `${ctrans('Free gift')} (${voucher.gift_product_code})`
-        : voucher.discount
+        : voucher.allowance_type === 'discounted_shipping'
+            ? `${ctrans('Shipping discount')}`
+            : voucher.discount
 
     return `${voucher.voucher_code} - ${detail}`
 })
@@ -194,7 +196,6 @@ const onRemoveVoucher = () => {
         <div v-if="hasAttachedVoucher" class="w-full">
             <div class="flex flex-nowrap items-stretch justify-end gap-x-3 gap-y-2" :class="inIris ? '' : 'pr-2 md:pr-6'">
                 <div class="" :class="inIris ? 'w-full' : 'w-72'">
-                    <!-- <InputText type="text" v-model="voucherCode" size="small" /> -->
                     <PureInput
                         :modelValue="voucherLabel"
                         xisLoading="isLoadingVoucher"

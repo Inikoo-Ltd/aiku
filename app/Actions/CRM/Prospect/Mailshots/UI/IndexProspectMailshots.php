@@ -80,10 +80,14 @@ class IndexProspectMailshots extends InertiaAction
             ->select([
                 'mailshots.state',
                 'mailshots.date',
+                'mailshots.type',
                 'mailshots.slug',
                 'mailshots.id',
                 'mailshots.subject',
                 'mailshots.name',
+                'mailshots.source_id',
+                'mailshots.source_alt_id',
+                'mailshots.source_alt2_id',
                 'mailshot_stats.number_deliveries_success',
                 'mailshot_stats.number_try_send_success',
                 'mailshot_stats.number_delivered_open_success',
@@ -214,11 +218,11 @@ class IndexProspectMailshots extends InertiaAction
 
                 // ProspectsMailshotsTabsEnum::SETTINGS->value => $this->tab == ProspectsMailshotsTabsEnum::SETTINGS->value ?
                 //     fn () => ProspectMailshotSettings::run($shop)
-                //     : Inertia::lazy(fn () => ProspectMailshotSettings::run($shop)),
+                //     : Inertia::optional(fn () => ProspectMailshotSettings::run($shop)),
 
                 ProspectsMailshotsTabsEnum::MAILSHOTS->value => $this->tab == ProspectsMailshotsTabsEnum::MAILSHOTS->value ?
                     fn () => ProspectMailshotsResource::collection($mailshots)
-                    : Inertia::lazy(fn () => ProspectMailshotsResource::collection($mailshots)),
+                    : Inertia::optional(fn () => ProspectMailshotsResource::collection($mailshots)),
 
 
             ]

@@ -38,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
             return 'aiku';
         });
 
+        $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
+
         $this->app->singleton(GeocoderService::class, function ($app) {
             return new GeocoderService();
         });
@@ -150,7 +152,6 @@ class AppServiceProvider extends ServiceProvider
                 'Service'                          => 'App\Models\Billables\Service',
 
                 // CRM
-                'Appointment'                      => 'App\Models\CRM\Appointment',
                 'Customer'                         => 'App\Models\CRM\Customer',
                 'CustomerNote'                     => 'App\Models\CRM\CustomerNote',
                 'Favourite'                        => 'App\Models\CRM\Favourite',

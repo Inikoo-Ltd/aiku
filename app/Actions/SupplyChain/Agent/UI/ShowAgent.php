@@ -52,11 +52,11 @@ class ShowAgent extends GrpAction
 
     public function htmlResponse(Agent $agent, ActionRequest $request): Response
     {
-
+// dd($agent);
         return Inertia::render(
             'SupplyChain/Agent',
             [
-                'title'                        => __("agent"),
+                'title'                        => __("Agent") . " " . $agent->name,
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $agent,
                     $request->route()->originalParameters()
@@ -66,7 +66,7 @@ class ShowAgent extends GrpAction
                     'next'     => $this->getNext($agent, $request),
                 ],
                 'pageHead'                     => [
-                    'model'   => __('agent'),
+                    'model'   => __('Agent'),
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'people-arrows'],
@@ -74,33 +74,33 @@ class ShowAgent extends GrpAction
                         ],
                     'subNavigation' => $this->getAgentNavigation($agent),
                     'title'   => $agent->organisation->name,
-                    'actions' => [
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'grp.org.procurement.marketplace.agents.remove',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'route' => [
-                                'name'       => 'grp.org.procurement.marketplace.agents.show.suppliers.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                            'label' => __('supplier')
-                        ] : false,
-                    ],
+                    // 'actions' => [
+                    //     $this->canEdit ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'edit',
+                    //         'route' => [
+                    //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ] : false,
+                    //     $this->canDelete ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'delete',
+                    //         'route' => [
+                    //             'name'       => 'grp.org.procurement.marketplace.agents.remove',
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ] : false,
+                    //     $this->canEdit ? [
+                    //         'type'  => 'button',
+                    //         'style' => 'create',
+                    //         'route' => [
+                    //             'name'       => 'grp.org.procurement.marketplace.agents.show.suppliers.create',
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ],
+                    //         'label' => __('supplier')
+                    //     ] : false,
+                    // ],
 
 
                 ],
@@ -110,7 +110,7 @@ class ShowAgent extends GrpAction
                 ],
                 AgentTabsEnum::SHOWCASE->value => $this->tab == AgentTabsEnum::SHOWCASE->value ?
                     fn () => GetAgentShowcase::run($agent)
-                    : Inertia::lazy(fn () => GetAgentShowcase::run($agent)),
+                    : Inertia::optional(fn () => GetAgentShowcase::run($agent)),
 
                 // AgentTabsEnum::SUPPLIERS->value => $this->tab == AgentTabsEnum::SUPPLIERS->value
                 //     ?
@@ -120,7 +120,7 @@ class ShowAgent extends GrpAction
                 //             prefix: 'suppliers'
                 //         )
                 //     )
-                //     : Inertia::lazy(fn () => SuppliersResource::collection(
+                //     : Inertia::optional(fn () => SuppliersResource::collection(
                 //         IndexSuppliers::run(
                 //             parent: $agent,
                 //             prefix: 'suppliers'
@@ -129,11 +129,11 @@ class ShowAgent extends GrpAction
 
                 // AgentTabsEnum::SUPPLIER_PRODUCTS->value => $this->tab == AgentTabsEnum::SUPPLIER_PRODUCTS->value ?
                 //     fn () => SupplierProductsResource::collection(IndexSupplierProducts::run($agent))
-                //     : Inertia::lazy(fn () => SupplierProductsResource::collection(IndexSupplierProducts::run($agent))),
+                //     : Inertia::optional(fn () => SupplierProductsResource::collection(IndexSupplierProducts::run($agent))),
 
                 AgentTabsEnum::HISTORY->value => $this->tab == AgentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($agent))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($agent)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($agent)))
 
 
             ]

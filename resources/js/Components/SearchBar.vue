@@ -5,22 +5,47 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, computed, defineAsyncComponent } from 'vue'
+import { inject, provide, ref, computed, defineAsyncComponent, watch, onMounted, onUnmounted } from 'vue'
 import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash-es'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { faTimes, faSearch } from '@fal'
+import { faTimes, faSearch, faSpinnerThird, faHistory } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Skeleton from 'primevue/skeleton'
+import LoadingIcon from './Utils/LoadingIcon.vue'
+import { faBookmark as fasBookmark } from '@fas'
+import { Bookmark } from '@/types/Bookmark.js'
+import { notify } from '@kyvg/vue3-notification'
+import { SearchBookmarkKey } from '@/types/SearchBookmark'
 
-library.add(faTimes, faSearch)
+library.add(faTimes, faSearch, faSpinnerThird, faHistory, fasBookmark)
+
+const SearchResultGeneric = defineAsyncComponent(() => import('@/Components/Search/SearchResultGeneric.vue'))
 
 const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
     sysadmin: defineAsyncComponent(() => import('@/Components/Search/SearchResultSysAdmin.vue')),
     catalogue: defineAsyncComponent(() => import('@/Components/Search/SearchResultCatalogue.vue')),
     customers: defineAsyncComponent(() => import('@/Components/Search/SearchResultCustomers.vue')),
+    inventory: defineAsyncComponent(() => import('@/Components/Search/SearchResultOrgStocks.vue')),
+    locations: defineAsyncComponent(() => import('@/Components/Search/SearchResultLocations.vue')),
+    prospects: SearchResultGeneric,
+    orders: SearchResultGeneric,
+    reviews: SearchResultGeneric,
+    accounting: SearchResultGeneric,
+    dispatching: SearchResultGeneric,
+    goods: SearchResultGeneric,
+    supply_chain: SearchResultGeneric,
+    billables: SearchResultGeneric,
+    offers: SearchResultGeneric,
+    marketing: SearchResultGeneric,
+    website: SearchResultGeneric,
+    master_shop: SearchResultGeneric,
+    trade_units: SearchResultGeneric,
+    hr: SearchResultGeneric,
+    chat: SearchResultGeneric,
 }
 
 const isOpen = defineModel<boolean>()
@@ -32,13 +57,157 @@ const scope = ref<string | null>(null)
 const resultsSearch = ref<Record<string, any> | null>(null)
 let abortController: AbortController | null = null
 
+const sessionId = ref('')
+const searchLogUlid = ref<string | null>(null)
+const suggestions = ref<string[]>([])
+
+const isBookmarkAvailable = computed(() => Array.isArray(layout.bookmarks))
+const bookmarks = computed<Bookmark[]>(() => layout.bookmarks ?? [])
+const isSavingBookmarks = ref(false)
+
+const getBookmarkSubtitle = (bookmark: Bookmark) => {
+    return [bookmark.organisation, bookmark.shop].filter(Boolean).join(' / ')
+}
+
+const normalizeBookmarkUrl = (url: string) => url.replace(/^https?:\/\/[^/]+/i, '')
+
+const persistBookmarks = async (nextBookmarks: Bookmark[]) => {
+    const previousBookmarks = [...bookmarks.value]
+
+    layout.bookmarks = nextBookmarks
+    isSavingBookmarks.value = true
+
+    try {
+        await window.axios.patch(route('grp.profile.bookmarks.update'), { bookmarks: nextBookmarks })
+    } catch (error) {
+        layout.bookmarks = previousBookmarks
+        notify({
+            title: trans('Something went wrong'),
+            text: trans('Failed to save bookmarks'),
+            type: 'error',
+        })
+    } finally {
+        isSavingBookmarks.value = false
+    }
+}
+
+const isBookmarked = (url: string) => {
+    const normalizedUrl = normalizeBookmarkUrl(url)
+    return bookmarks.value.some((bookmark) => bookmark.url === normalizedUrl)
+}
+
+const toggleBookmark = (item: { label: string, url: string }) => {
+    if (isSavingBookmarks.value) {
+        return
+    }
+
+    const normalizedUrl = normalizeBookmarkUrl(item.url)
+
+    if (isBookmarked(normalizedUrl)) {
+        persistBookmarks(bookmarks.value.filter((bookmark) => bookmark.url !== normalizedUrl))
+        return
+    }
+
+    persistBookmarks([...bookmarks.value, { label: item.label, url: normalizedUrl }])
+}
+
+const removeBookmark = (bookmarkToRemove: Bookmark) => {
+    if (isSavingBookmarks.value) {
+        return
+    }
+
+    persistBookmarks(bookmarks.value.filter((bookmark) => bookmark.url !== bookmarkToRemove.url))
+}
+
+provide(SearchBookmarkKey, {
+    isAvailable: isBookmarkAvailable,
+    isSaving: isSavingBookmarks,
+    isBookmarked,
+    toggleBookmark,
+})
+
+type VisitedPage = { url: string, title: string, at: number }
+const NAV_HISTORY_KEY = 'aiku-nav-history'
+const NAV_HISTORY_MAX = 30
+const navHistory = ref<VisitedPage[]>([])
+
+const readNavHistory = (): VisitedPage[] => {
+    try {
+        return JSON.parse(localStorage.getItem(NAV_HISTORY_KEY) ?? '[]')
+    } catch {
+        return []
+    }
+}
+
+const recordVisit = (url: string) => {
+    setTimeout(() => {
+        try {
+            const entry: VisitedPage = { url, title: document.title, at: Date.now() }
+            const history = [entry, ...readNavHistory().filter((page) => page.url !== url)].slice(0, NAV_HISTORY_MAX)
+            localStorage.setItem(NAV_HISTORY_KEY, JSON.stringify(history))
+        } catch {
+        }
+    }, 300)
+}
+
+let stopNavListener: (() => void) | null = null
+onMounted(() => {
+    recordVisit(window.location.pathname + window.location.search)
+    stopNavListener = router.on('navigate', (event) => {
+        recordVisit(event.detail.page.url)
+    })
+})
+onUnmounted(() => stopNavListener?.())
+
+const relativeTime = (at: number): string => {
+    const minutes = Math.floor((Date.now() - at) / 60000)
+    if (minutes < 1) return trans('now')
+    if (minutes < 60) return `${minutes}m`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h`
+    return `${Math.floor(hours / 24)}d`
+}
+
+watch(isOpen, async (open) => {
+    if (!open) return
+    sessionId.value = crypto.randomUUID()
+    const currentUrl = window.location.pathname + window.location.search
+    navHistory.value = readNavHistory().filter((page) => page.url !== currentUrl)
+    if (!suggestions.value.length) {
+        try {
+            const response = await fetch(`${urlSearch()}/suggestions`)
+            suggestions.value = (await response.json()).suggestions ?? []
+        } catch {
+            suggestions.value = []
+        }
+    }
+})
+
+const searchSuggestion = (suggestion: string) => {
+    searchValue.value = suggestion
+    onTypeSearch()
+}
+
+const onResultsClick = (event: Event) => {
+    const anchor = (event.target as HTMLElement).closest('a')
+    if (!anchor?.href || !searchLogUlid.value) return
+    window.axios.post(`${urlSearch()}/click`, {
+        ulid: searchLogUlid.value,
+        url: anchor.href,
+    }).catch(() => {})
+}
+
 const activeComponent = computed(() => {
     return scope.value ? scopeComponents[scope.value] ?? null : null
 })
 
+const hasResults = computed(() => resultsSearch.value !== null)
+const isInitialLoading = computed(() => isLoadingSearch.value && !hasResults.value)
+const isRefreshing = computed(() => isLoadingSearch.value && hasResults.value)
+
 const paramsToString = () => {
     return route().routeParams
-        ? '&' + Object.entries(route().routeParams).map(([key, value]) => `${key}=${value}`).join('&')
+        ? '&' + Object.entries(route().routeParams).map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`).join('&')
         : ''
 }
 
@@ -48,39 +217,98 @@ const urlSearch = () => {
         : `${location.origin}/search`
 }
 
+let requestId = 0
+
+const CACHE_TTL_MS = 30_000
+const CACHE_MAX_ENTRIES = 50
+const responseCache = new Map<string, { data: Record<string, any>, expiresAt: number }>()
+
+const buildSearchUrl = (query: string) => {
+    return `${urlSearch()}?q=${encodeURIComponent(query)}&session=${sessionId.value}&route_src=${route().current()}${paramsToString()}`
+}
+
+const cacheResponse = (url: string, data: Record<string, any>) => {
+    if (responseCache.size >= CACHE_MAX_ENTRIES) {
+        responseCache.delete(responseCache.keys().next().value as string)
+    }
+    responseCache.set(url, { data, expiresAt: Date.now() + CACHE_TTL_MS })
+}
+
+const getCachedResponse = (url: string): Record<string, any> | null => {
+    const entry = responseCache.get(url)
+    if (!entry) return null
+    if (entry.expiresAt < Date.now()) {
+        responseCache.delete(url)
+        return null
+    }
+    return entry.data
+}
+
+const applyResponse = (data: Record<string, any>) => {
+    scope.value = data.scope ?? null
+    resultsSearch.value = data.results ?? null
+    searchLogUlid.value = data.search_log_ulid ?? null
+}
+
 const fetchApi = debounce(async (query: string) => {
-    if (!query) return
+    const currentRequestId = ++requestId
 
     abortController?.abort()
     abortController = new AbortController()
 
-    resultsSearch.value = null
     isLoadingSearch.value = true
 
     try {
-        const url = `${urlSearch()}?q=${query}&route_src=${route().current()}${paramsToString()}`
+        const url = buildSearchUrl(query)
         const response = await fetch(url, { signal: abortController.signal })
         const data = await response.json()
-        scope.value = data.scope ?? null
-        resultsSearch.value = data.results ?? null
+        if (currentRequestId !== requestId) return
+        cacheResponse(url, data)
+        applyResponse(data)
     } catch (e) {
-        if ((e as DOMException).name === 'AbortError') return
+        if ((e as DOMException).name === 'AbortError' || currentRequestId !== requestId) return
         resultsSearch.value = null
         scope.value = null
     } finally {
-        isLoadingSearch.value = false
+        if (currentRequestId === requestId) {
+            isLoadingSearch.value = false
+        }
     }
-}, 400)
+}, 250)
+
+const resetSearchState = () => {
+    requestId++
+    fetchApi.cancel()
+    abortController?.abort()
+    resultsSearch.value = null
+    scope.value = null
+    isLoadingSearch.value = false
+}
 
 const onTypeSearch = () => {
+    if (!searchValue.value.trim()) {
+        resetSearchState()
+        return
+    }
+
+    const cached = getCachedResponse(buildSearchUrl(searchValue.value))
+    if (cached) {
+        requestId++
+        fetchApi.cancel()
+        abortController?.abort()
+        isLoadingSearch.value = false
+        applyResponse(cached)
+        return
+    }
+
+    isLoadingSearch.value = true
     fetchApi(searchValue.value)
 }
 
 const closeModal = () => {
     isOpen.value = false
     searchValue.value = ''
-    resultsSearch.value = null
-    scope.value = null
+    resetSearchState()
 }
 </script>
 
@@ -100,8 +328,9 @@ const closeModal = () => {
                     <DialogPanel
                         class="w-full max-w-lg sm:max-w-2xl md:min-w-[60vw] lg:max-w-4xl xl:max-w-[1200px] h-[75vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
 
-                        <div class="border-b p-3 flex items-center gap-2">
-                            <FontAwesomeIcon icon="fal fa-search" class="text-gray-400" />
+                        <div class="border-b p-5 flex items-center gap-2">
+                            <LoadingIcon v-if="isLoadingSearch" class="text-gray-400" />
+                            <FontAwesomeIcon v-else icon="fal fa-search" class="text-gray-400" fixed-width />
                             <input
                                 v-model="searchValue"
                                 @input="onTypeSearch"
@@ -110,22 +339,70 @@ const closeModal = () => {
                                 :placeholder="trans('Search...')"
                             />
                             <button @click="closeModal">
-                                <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
+                                <FontAwesomeIcon icon="fal fa-times" class="text-lg" fixed-width />
                             </button>
                         </div>
 
-                        <div v-if="!searchValue" class="flex flex-1 items-center justify-center text-center text-gray-400 p-6">
+                        <div v-if="isBookmarkAvailable && bookmarks.length" class="border-b px-5 py-2.5 flex items-center gap-3">
+                            <span class="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                                <FontAwesomeIcon icon="fas fa-bookmark" class="text-indigo-400" aria-hidden="true" />
+                                {{ ctrans('Bookmarks') }}
+                            </span>
+                            <div class="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto py-0.5">
+                                <div
+                                    v-for="bookmark in bookmarks"
+                                    :key="bookmark.url"
+                                    class="group shrink-0 inline-flex items-center rounded-full bg-indigo-50 ring-1 ring-indigo-100 transition hover:bg-indigo-100/70 hover:ring-indigo-300"
+                                >
+                                    <Link
+                                        :href="bookmark.url"
+                                        @start="() => isOpen = false"
+                                        class="inline-flex items-center gap-1.5 min-w-0 max-w-[12rem] pl-2.5 pr-1 py-1"
+                                        v-tooltip="getBookmarkSubtitle(bookmark) ? `${bookmark.label} — ${getBookmarkSubtitle(bookmark)}` : bookmark.label"
+                                    >
+                                        <FontAwesomeIcon icon="fas fa-bookmark" class="shrink-0 text-[11px] text-indigo-500" aria-hidden="true" />
+                                        <span class="truncate text-xs font-medium text-indigo-900">{{ bookmark.label }}</span>
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        :disabled="isSavingBookmarks"
+                                        class="shrink-0 mr-1 grid h-4 w-4 place-items-center rounded-full text-indigo-400 transition group-hover:opacity-100 hover:bg-white/60 hover:text-red-500 disabled:opacity-40"
+                                        v-tooltip="ctrans('Remove bookmark')"
+                                        @click="removeBookmark(bookmark)"
+                                    >
+                                        <FontAwesomeIcon icon="fal fa-times" class="text-[10px]" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-1 min-h-0">
+                        <div class="flex-1 min-w-0 min-h-0 flex flex-col">
+                        <div v-if="!searchValue && !hasResults" class="flex flex-1 items-center justify-center text-center text-gray-400 p-6">
                             <div class="space-y-2">
-                                <p class="text-base font-medium text-gray-500">{{ trans('Type to search...') }}</p>
-                                <p class="text-sm">{{ trans('Search across orders, customers, prospects and more') }}</p>
+                                <p class="text-base font-medium text-gray-500">{{ ctrans('Type to search...') }}</p>
+                                <p class="text-sm">{{ ctrans('Search across orders, customers, prospects and more') }}</p>
+                                <div v-if="suggestions.length" class="pt-4">
+                                    <p class="text-xs text-gray-400 mb-2">{{ ctrans('Popular searches') }}</p>
+                                    <div class="flex flex-wrap justify-center gap-2">
+                                        <button
+                                            v-for="suggestion in suggestions"
+                                            :key="suggestion"
+                                            type="button"
+                                            class="px-3 py-1 rounded-full text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+                                            @click="searchSuggestion(suggestion)"
+                                        >
+                                            {{ suggestion }}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <div v-else-if="!isLoadingSearch && !activeComponent" class="flex flex-1 items-center justify-center text-gray-400 p-6">
-                            <p class="text-sm">{{ trans('No results found') }}</p>
+                            <p class="text-sm">{{ ctrans('No results found') }}</p>
                         </div>
 
-                        <div v-else-if="isLoadingSearch && !activeComponent" class="grid grid-cols-12 flex-1 min-h-0">
+                        <div v-else-if="isInitialLoading && !activeComponent" class="grid grid-cols-12 flex-1 min-h-0">
                             <div class="col-span-3 border-r p-4 bg-gray-50 space-y-2">
                                 <Skeleton height="2.5rem" borderRadius="0.75rem" />
                                 <Skeleton height="2.5rem" borderRadius="0.75rem" />
@@ -138,14 +415,41 @@ const closeModal = () => {
                             </div>
                         </div>
 
-                        <div v-else class="grid grid-cols-12 flex-1 min-h-0">
+                        <div
+                            v-else
+                            class="grid grid-cols-12 flex-1 min-h-0 overflow-hidden transition-opacity duration-200 [&>*]:min-w-0"
+                            :class="isRefreshing ? 'opacity-60' : 'opacity-100'"
+                            @click.capture="onResultsClick"
+                        >
                             <component
                                 v-model:open="isOpen"
                                 :is="activeComponent"
                                 :results="resultsSearch"
-                                :is-loading="isLoadingSearch"
+                                :is-loading="isInitialLoading"
                                 :query="searchValue"
                             />
+                        </div>
+                        </div>
+
+                        <aside v-if="navHistory.length" class="w-72 shrink-0 border-l bg-gray-50 overflow-y-auto p-3 hidden md:block">
+                            <p class="text-xs text-gray-400 font-medium mb-2 px-2">
+                                <FontAwesomeIcon icon="fal fa-history" fixed-width aria-hidden="true" />
+                                {{ ctrans('Recently visited') }}
+                            </p>
+                            <Link
+                                v-for="page in navHistory"
+                                :key="page.url"
+                                :href="page.url"
+                                class="block px-2 py-1.5 rounded-md hover:bg-slate-100 transition"
+                                @start="closeModal"
+                            >
+                                <div class="flex items-baseline justify-between gap-2">
+                                    <p class="text-sm text-slate-700 truncate min-w-0">{{ page.title || page.url }}</p>
+                                    <span class="shrink-0 text-[10px] text-gray-400 tabular-nums">{{ relativeTime(page.at) }}</span>
+                                </div>
+                                <p class="text-[11px] text-gray-400 truncate">{{ page.url }}</p>
+                            </Link>
+                        </aside>
                         </div>
 
                     </DialogPanel>

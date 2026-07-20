@@ -24,6 +24,10 @@ class GetLocationSearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name' => 'organisation_id',
+                        'type' => 'int32',
+                    ],
+                    [
                         'name' => 'warehouse_id',
                         'type' => 'int32',
                     ],
@@ -43,6 +47,11 @@ class GetLocationSearchSchema
                     [
                         'name' => 'created_at',
                         'type' => 'int64',
+                    ],
+                    [
+                        'name'     => 'slug',
+                        'type'     => 'string',
+                        'optional' => true,
                     ],
                     [
                         'name'     => '__soft_deleted',

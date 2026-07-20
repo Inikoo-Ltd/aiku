@@ -10,25 +10,27 @@
 
 namespace Tests\Feature;
 
-use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\HydrateLocation;
+use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateTotalWeight;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\Location\UpdateLocation;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\DeleteLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\AddLostAndFoundOrgStock;
-use App\Actions\Inventory\OrgStock\HydrateOrgStock;
-use App\Actions\Inventory\OrgStock\RemoveLostAndFoundStock;
-use App\Actions\Inventory\OrgStock\StoreOrgStock;
-use App\Actions\Inventory\OrgStock\DeleteOrgStock;
-use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStock\AssociateOrgStockToOrgStockFamily;
+use App\Actions\Inventory\OrgStock\DeleteOrgStock;
+use App\Actions\Inventory\OrgStock\HydrateOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
@@ -42,8 +44,11 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateValueInLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateWeekOfCover;
+use App\Actions\Inventory\OrgStock\RemoveLostAndFoundStock;
 use App\Actions\Inventory\OrgStock\StoreAbnormalOrgStock;
+use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\OrgStock\SyncOrgStockLocations;
+use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStockAuditDelta\StoreOrgStockAuditDelta;
 use App\Actions\Inventory\OrgStockFamily\DeleteOrgStockFamily;
 use App\Actions\Inventory\OrgStockFamily\HydrateOrgStockFamily;
@@ -57,16 +62,6 @@ use App\Actions\Inventory\OrgStockMovement\CalculateRunningQuantityOrgStockMovem
 use App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
-use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
-use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
-use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
-use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
-use App\Actions\Inventory\Location\Hydrators\LocationHydrateTotalWeight;
-use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
-use App\Actions\Inventory\WarehouseArea\DeleteWarehouseArea;
-use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
-use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateStocks;
-use App\Actions\Inventory\WarehouseArea\HydrateWarehouseAreaLocationsSortLocations;
 use App\Actions\Inventory\Warehouse\DeleteWarehouse;
 use App\Actions\Inventory\Warehouse\HydrateWarehouse;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
@@ -74,9 +69,14 @@ use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateStocks;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateWarehouseAreas;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Inventory\Warehouse\UpdateWarehouse;
+use App\Actions\Inventory\WarehouseArea\DeleteWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\HydrateWarehouseArea;
+use App\Actions\Inventory\WarehouseArea\HydrateWarehouseAreaLocationsSortLocations;
+use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
+use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateStocks;
 use App\Actions\Inventory\WarehouseArea\StoreWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\UpdateWarehouseArea;
+use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
@@ -1204,7 +1204,7 @@ test('OrgStockHydrate simple field hydrators recompute their target fields', fun
         ->and((float) $stats->on_the_way_po_value)->toBe(0.0);
 });
 
-test('LocationHydrateStocks recomputes slot counts and flags', function () {
+test('LocationHydrateOrgStocks recomputes slot counts and flags', function () {
     $location            = Location::first();
     $expectedSlots       = $location->locationOrgStocks()->count();
     $expectedHasStock    = $location->locationOrgStocks()->where('dropshipping_pipe', false)->count() > 0;
@@ -1213,7 +1213,7 @@ test('LocationHydrateStocks recomputes slot counts and flags', function () {
     $location->update(['has_stock_slots' => !$expectedHasStock, 'has_dropshipping_slots' => !$expectedHasDrop]);
     $location->stats->update(['number_org_stock_slots' => 9999]);
 
-    LocationHydrateStocks::run($location);
+    LocationHydrateOrgStocks::run($location);
 
     $location->refresh();
     expect((int) $location->stats->fresh()->number_org_stock_slots)->toBe($expectedSlots)
@@ -1362,7 +1362,6 @@ test('store, update, and delete org stock movement', function () {
 
     CalculateRunningQuantityOrgStockMovement::run($movement->id);
     CalculateRunningQuantityOrgStockMovement::run(null);
-    CalculateRunningQuantityOrgStockMovement::run(999999999);
 
     $deleted = DeleteOrgStockMovement::make()->action($movement);
     expect(OrgStockMovement::find($deleted->id))->toBeNull();

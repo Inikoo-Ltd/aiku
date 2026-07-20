@@ -118,13 +118,13 @@ function organisationRoute(order: Order) {
 
 function shopRoute(invoice: Invoice) {
   return route(
-    "grp.helpers.redirect_invoices_in_shop",
+    "grp.majordomo.redirect_invoices_in_shop",
     [invoice.id]);
 }
 
 function customerRoute(invoice: Invoice) {
   return route(
-    "grp.helpers.redirect_invoices_in_customer",
+    "grp.majordomo.redirect_invoices_in_customer",
     [invoice.id]);
 }
 

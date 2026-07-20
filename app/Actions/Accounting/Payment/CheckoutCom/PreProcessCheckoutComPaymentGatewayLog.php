@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\Payment\CheckoutCom;
 
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStateEnum;
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStatusEnum;
+use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentGatewayLog;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 use App\Models\Ordering\Order;
@@ -37,13 +38,16 @@ class PreProcessCheckoutComPaymentGatewayLog
             'gateway_date'       => Arr::get($payload, 'data.processed_on'),
         ]);
 
-        if ($duplicatedPaymentGatewayLog = PaymentGatewayLog::where('id', '!=', $paymentGatewayLog->id)
+        /** Only defer to an OLDER log: when two deliveries of the same event race, the earliest
+         * one always processes itself, so the event can never be dropped by mutual deferral */
+        if ($duplicatedPaymentGatewayLog = PaymentGatewayLog::where('id', '<', $paymentGatewayLog->id)
             ->where('gateway_id', $gatewayId)
             ->orderBy('id')
             ->first()) {
             $paymentGatewayLog->update([
-                'status' => PaymentGatewayLogStatusEnum::DUPLICATED,
-                'state'  => PaymentGatewayLogStateEnum::PROCESSED
+                'status'       => PaymentGatewayLogStatusEnum::DUPLICATED,
+                'state'        => PaymentGatewayLogStateEnum::PROCESSED,
+                'processed_at' => now(),
             ]);
 
             ProcessCheckoutComPaymentGatewayLog::run($duplicatedPaymentGatewayLog);
@@ -52,7 +56,7 @@ class PreProcessCheckoutComPaymentGatewayLog
         }
 
 
-        if (!Arr::get($payload, 'data.metadata.origin') == 'aiku') {
+        if (Arr::get($payload, 'data.metadata.origin') != 'aiku') {
             return $this->processAurora($paymentGatewayLog);
         }
 
@@ -65,6 +69,17 @@ class PreProcessCheckoutComPaymentGatewayLog
 
         if (app()->isProduction() && $environment != 'production') {
             return $paymentGatewayLog;
+        }
+
+        if (!app()->isProduction() && $environment == 'production') {
+            return $paymentGatewayLog;
+        }
+
+        if (!app()->isProduction()) {
+            $eventServer = Arr::get($payload, 'data.metadata.server');
+            if (!$eventServer || !config('app.server_name') || $eventServer != config('app.server_name')) {
+                return $paymentGatewayLog;
+            }
         }
 
         $paymentGatewayLog = $this->processAiku($paymentGatewayLog);
@@ -90,6 +105,18 @@ class PreProcessCheckoutComPaymentGatewayLog
                 $dataToUpdate['organisation_id']      = $topUpPaymentApiPoint->organisation_id;
                 $dataToUpdate['shop_id']              = $topUpPaymentApiPoint->customer?->shop_id;
                 $dataToUpdate['customer_id']          = $topUpPaymentApiPoint->customer_id;
+            } else {
+                $dataToUpdate['status'] = PaymentGatewayLogStatusEnum::FAIL;
+            }
+        } elseif ($operation == 'order') {
+            $orderPaymentApiPoint = OrderPaymentApiPoint::find(Arr::get($payload, 'data.metadata.api_point_id'));
+            if ($orderPaymentApiPoint) {
+                $dataToUpdate['api_point_model_type'] = 'OrderPaymentApiPoint';
+                $dataToUpdate['api_point_model_id']   = $orderPaymentApiPoint->id;
+                $dataToUpdate['organisation_id']      = $orderPaymentApiPoint->organisation_id;
+                $dataToUpdate['shop_id']              = $orderPaymentApiPoint->order?->shop_id;
+                $dataToUpdate['customer_id']          = $orderPaymentApiPoint->order?->customer_id;
+                $dataToUpdate['order_id']             = $orderPaymentApiPoint->order_id;
             } else {
                 $dataToUpdate['status'] = PaymentGatewayLogStatusEnum::FAIL;
             }
@@ -125,19 +152,19 @@ class PreProcessCheckoutComPaymentGatewayLog
 
     public function getCommandSignature(): string
     {
-        return 'payment_gateway_log:process {payment_gateway_log?}';
+        return 'payment_gateway_log:process {payment_gateway_log}';
     }
 
     public function asCommand(Command $command): int
     {
-        if ($command->argument('payment_gateway_log')) {
-            $paymentGatewayLog = PaymentGatewayLog::find($command->argument('payment_gateway_log'));
-            $this->handle($paymentGatewayLog);
-        } else {
-            foreach (PaymentGatewayLog::orderBy('id')->get() as $paymentGatewayLog) {
-                $this->handle($paymentGatewayLog);
-            }
+        $paymentGatewayLog = PaymentGatewayLog::find($command->argument('payment_gateway_log'));
+        if (!$paymentGatewayLog) {
+            $command->error('Payment gateway log not found');
+
+            return 1;
         }
+
+        $this->handle($paymentGatewayLog);
 
         return 0;
     }

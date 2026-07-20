@@ -17,8 +17,7 @@ import PrimeVue from "primevue/config"
 import Aura from "@primevue/themes/aura"
 import { definePreset } from "@primevue/themes"
 import { ctrans } from "@/Composables/useTrans"
-
-const pinia = createPinia()
+import IrisLayout from "@/Layouts/Iris.vue"
 
 
 const MyPreset = definePreset(Aura, {
@@ -59,7 +58,10 @@ createServer(
 					throw new Error(`Page not found: ${name}`)
 				}
 
-				return page.default ?? page
+				const component = page.default ?? page
+				component.layout = component.layout || IrisLayout
+
+				return component
 			},
 			setup({ App, props, plugin }) {
 				const app = createSSRApp({ render: () => h(App, props) })
@@ -80,7 +82,7 @@ createServer(
 						},
 					})
 					.use(plugin)
-					.use(pinia)
+					.use(createPinia())
 					.use(ZiggyVue, {
 						...page.props.ziggy,
 						location: new URL(page.props.ziggy.location),

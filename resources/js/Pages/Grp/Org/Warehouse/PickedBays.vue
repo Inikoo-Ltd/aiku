@@ -27,7 +27,7 @@ const props = defineProps<{
 	},
 	title: string
 	bays?: {}
-	bays_histories: {}
+	bays_histories?: {}
 }>()
 
 const currentTab = ref(props.tabs.current)

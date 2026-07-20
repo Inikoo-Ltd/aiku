@@ -6,12 +6,18 @@
 
 export interface Mailshot {
 
+    id: number,
     state:string,
     outbox_id:string,
     data: string,
     created_at: string
     updated_at: string,
     slug: string,
+    type?: string,
+    shop_id?: number,
+    webpage_slug?: string,
+    webpage_website_slug?: string,
+    has_source_reference?: boolean,
 
 
 }

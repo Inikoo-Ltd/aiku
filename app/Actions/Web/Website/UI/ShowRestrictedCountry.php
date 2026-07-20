@@ -66,11 +66,11 @@ class ShowRestrictedCountry extends OrgAction
 
                 WebsiteRestrictedCountryTabsEnum::OVERVIEW->value => $this->tab == WebsiteRestrictedCountryTabsEnum::OVERVIEW->value
                     ? fn () => GetRestrictedCountryOverview::run($website)
-                    : Inertia::lazy(fn () => GetRestrictedCountryOverview::run($website)),
+                    : Inertia::optional(fn () => GetRestrictedCountryOverview::run($website)),
 
                 WebsiteRestrictedCountryTabsEnum::LOGS->value => $this->tab == WebsiteRestrictedCountryTabsEnum::LOGS->value ?
                     fn () => RestrictedCountryLogResource::collection(IndexRestrictedCountryLogs::run($website, WebsiteRestrictedCountryTabsEnum::LOGS->value))
-                    : Inertia::lazy(fn () => RestrictedCountryLogResource::collection(IndexRestrictedCountryLogs::run($website, WebsiteRestrictedCountryTabsEnum::LOGS->value))),
+                    : Inertia::optional(fn () => RestrictedCountryLogResource::collection(IndexRestrictedCountryLogs::run($website, WebsiteRestrictedCountryTabsEnum::LOGS->value))),
             ]
         )
         ->table(IndexRestrictedCountryLogs::make()->tableStructure(website: $website, prefix: WebsiteRestrictedCountryTabsEnum::LOGS->value));

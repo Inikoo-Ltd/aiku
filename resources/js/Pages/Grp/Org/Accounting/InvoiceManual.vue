@@ -102,10 +102,10 @@ const props = defineProps<{
     order_summary: FieldOrderSummary[][]
     recurring_bill_route: routeType
     invoice: InvoiceResource
-    items: {}
-    payments: {}
-    details: {}
-    history: {}
+    items?: {}
+    payments?: {}
+    details?: {}
+    history?: {}
 
     outbox: {
         state: string

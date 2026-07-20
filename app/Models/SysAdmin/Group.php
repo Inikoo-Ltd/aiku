@@ -83,6 +83,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Adjustment;
+use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\SalesChannel;
@@ -155,6 +156,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Barcode> $barcodes
  * @property-read \App\Models\SysAdmin\GroupCatalogueStats|null $catalogueStats
  * @property-read LaravelCollection<int, Charge> $charges
+ * @property-read LaravelCollection<int, CheckoutAbandonment> $checkoutAbandonments
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read LaravelCollection<int, ClockingMachine> $clockingMachines
  * @property-read LaravelCollection<int, Collection> $collections
@@ -847,6 +849,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function purges(): HasMany
     {
         return $this->hasMany(Purge::class);
+    }
+
+    public function checkoutAbandonments(): HasMany
+    {
+        return $this->hasMany(CheckoutAbandonment::class);
     }
 
     public function queries(): HasMany

@@ -22,7 +22,6 @@ import { inject, ref, toRaw } from "vue"
 import { set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Skeleton from 'primevue/skeleton';
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"

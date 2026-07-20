@@ -104,6 +104,16 @@ const getVal = (base: any, path?: string[]) => {
   return resolveResponsiveValue(base, props.screenType, path);
 }
 
+const imageSizes = computed(() => {
+  const largestFraction: Record<string, number> = {
+    "1": 1, "2": 0.5, "3": 1 / 3, "4": 0.25, "6": 1 / 6,
+    "12": 0.5, "21": 0.5, "13": 0.75, "31": 0.75, "211": 0.5,
+  }
+  const fraction = largestFraction[String(getVal(props.fieldValue?.value?.layout_type) ?? "1")] ?? 1
+
+  return `${Math.round(fraction * 100)}vw`
+})
+
 
 const resolvedGap = computed(() => {
   return ( props.fieldValue?.value?.gap?.[props.screenType || 'desktop'] || 0 ) + 'px'
@@ -129,9 +139,9 @@ const imgAttrsFor = (image: any, index: number) => {
       width: 'auto'
     }" aria-label="Image Gallery Section">
       <!-- Mobile Carousel -->
-      <Swiper v-if="screenType === 'mobile' && fieldValue?.mobile?.type === 'carousel'" :slides-per-view="1"
+      <Swiper v-if="fieldValue?.mobile?.type === 'carousel'" :slides-per-view="1"
         :loop="true" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay, Pagination]"
-        class="w-full" :style="getStyles(fieldValue?.value?.layout?.properties, screenType)">
+        class="w-full sm:!hidden" :style="getStyles(fieldValue?.value?.layout?.properties, screenType)">
         <SwiperSlide v-for="(image, index) in fieldValue?.value?.images" :key="index" class="w-full">
             <component
                 v-if="getHref(index)"
@@ -151,6 +161,8 @@ const imgAttrsFor = (image: any, index: number) => {
             <template #default>
                 <Image
                     :src="image?.source"
+                    :srcset="image?.srcset"
+                    :sizes="imageSizes"
                     :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`"
                     :imageCover="true"
                     :height="getStyles(image.properties, screenType, false)?.height"
@@ -169,7 +181,9 @@ const imgAttrsFor = (image: any, index: number) => {
             </component>
           <div v-else class="block w-full h-full">
             <Image 
-              :src="image?.source" 
+              :src="image?.source"
+                    :srcset="image?.srcset"
+                    :sizes="imageSizes" 
               :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`" 
               :imageCover="true" :style="{
               ...getStyles(fieldValue?.value?.layout?.properties, screenType),
@@ -196,6 +210,8 @@ const imgAttrsFor = (image: any, index: number) => {
             <a v-if="getHref(index - 1)" :href="getHref(index - 1)" :target="getTarget(index - 1)"
               rel="noopener noreferrer" class="block w-full h-full">
               <Image :src="fieldValue?.value?.images?.[index - 1]?.source"
+              :srcset="fieldValue?.value?.images?.[index - 1]?.srcset"
+              :sizes="imageSizes"
                 :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
                 class="w-full h-full aspect-square object-cover rounded-lg" :style="{
                   ...getStyles(fieldValue?.value?.layout?.properties, screenType),
@@ -205,6 +221,8 @@ const imgAttrsFor = (image: any, index: number) => {
 
             <div v-else class="block w-full h-full">
               <Image :src="fieldValue?.value?.images?.[index - 1]?.source"
+              :srcset="fieldValue?.value?.images?.[index - 1]?.srcset"
+              :sizes="imageSizes"
                 :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
                 class="w-full h-full aspect-square object-cover rounded-lg" :style="{
                   ...getStyles(fieldValue?.value?.layout?.properties, screenType),
@@ -226,7 +244,8 @@ const imgAttrsFor = (image: any, index: number) => {
     
     
     
-      <div v-else class="grid w-full" :style="{
+      <div v-if="fieldValue?.mobile?.type !== 'carousel' || screenType !== 'mobile'" class="grid w-full"
+        :class="fieldValue?.mobile?.type === 'carousel' ? 'max-sm:hidden' : ''" :style="{
         gap: resolvedGap,
         ...getGridTemplate(getVal(fieldValue.value.layout_type))
       }">
@@ -242,9 +261,11 @@ const imgAttrsFor = (image: any, index: number) => {
             @start="() => idxSlideLoading = index"
             @finish="() => idxSlideLoading = null"
           >
-            <Image 
-              v-if="image?.source" 
-              :src="image.source" 
+            <Image
+              v-if="image?.source"
+              :src="image.source"
+              :srcset="image?.srcset"
+              :sizes="imageSizes"
               :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`"
               :imageCover="true" 
               class="w-full h-full aspect-square object-cover rounded-lg"

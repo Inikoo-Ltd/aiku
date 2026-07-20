@@ -51,7 +51,7 @@ const props = defineProps<{
     }
     address_management: AddressManagement
     currency: Currency
-    overall_review: {}
+    overall_review?: {}
     family_reviews?: {}
     product_reviews?: {}
     transactions: {}

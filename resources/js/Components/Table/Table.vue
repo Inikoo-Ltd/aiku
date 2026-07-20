@@ -231,6 +231,12 @@ const props = defineProps(
             default: false,
             required: false,
         },
+
+        useTopPagination: {
+            type: Boolean,
+            default: false,
+            required: false,
+        }
     });
 
 // Flatten a row into a stable list of primitives for v-memo. Nested objects/arrays are stringified
@@ -942,7 +948,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
                     <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
                         <!-- Result Number -->
-                        <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
+                        <div v-if="!useTopPagination" class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
                             <div class="grid justify-end items-center text-base font-normal text-gray-700">
                                 <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
                                     <span class="font-semibold tabular-nums">
@@ -1085,13 +1091,27 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
             <!-- The Main Table -->
             <slot name="tableWrapper" :meta="compResourceMeta">
                 <TableWrapper :result="compResourceMeta.total === 0" :class="{ 'mt-0': !hasOnlyData }">
+                    <slot v-if="useTopPagination" name="pagination" :on-click="visit" :has-data="hasData" :meta="compResourceMeta" :per-page-options="queryBuilderProps.perPageOptions" :on-per-page-change="onPerPageChange">
+                        <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
+                            :exportLinks="queryBuilderProps.exportLinks"
+                            :per-page-options="queryBuilderProps.perPageOptions"
+                            :on-per-page-change="onPerPageChange" 
+                            :custom-wrapper-class="'sticky top-[39px] z-[10] border-b !border-gray-300'"
+                        />
+                    </slot>
+
                     <slot name="table">
                         <div ref="virtualContainerRef"
                             @scroll="virtualScroll ? onVirtualScroll() : undefined"
                             :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
                         <table class="divide-y divide-gray-200 bg-white w-full">
                             <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
-                                <tr class="border-t border-gray-200 divide-x divide-gray-200">
+                                <tr 
+                                    class="border-t border-gray-200 divide-x divide-gray-200"
+                                    :class="{
+                                        'border-t': !useTopPagination
+                                    }"
+                                >
                                     <slot v-if="isCheckBox" :name="`header-checkbox`"
                                         :header="{ value : compIsAllChecked , onClick : onClickSelectAll }">
                                         <div @click="() => onClickSelectAll(compIsAllChecked)"
@@ -1401,8 +1421,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                     </slot>
 
                     <!-- Pagination -->
-                    <slot name="pagination" :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
-                        :per-page-options="queryBuilderProps.perPageOptions" :on-per-page-change="onPerPageChange">
+                    <slot v-if="!useTopPagination"name="pagination" :on-click="visit" :has-data="hasData" :meta="compResourceMeta" :per-page-options="queryBuilderProps.perPageOptions" :on-per-page-change="onPerPageChange">
                         <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
                             :exportLinks="queryBuilderProps.exportLinks"
                             :per-page-options="queryBuilderProps.perPageOptions"

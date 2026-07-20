@@ -113,7 +113,7 @@ class ShowCustomer extends OrgAction
         return Inertia::render(
             'Org/Shop/CRM/Customer',
             [
-                'title'            => __('Customer'),
+                'title'            => __('Customer') . ' #' . $customer->reference,
                 'breadcrumbs'      => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -204,36 +204,36 @@ class ShowCustomer extends OrgAction
 
                 $tabs::SHOWCASE->value            => $this->tab == $tabs::SHOWCASE->value ?
                     fn () => GetCustomerShowcase::run($customer)
-                    : Inertia::lazy(fn () => GetCustomerShowcase::run($customer)),
+                    : Inertia::optional(fn () => GetCustomerShowcase::run($customer)),
                 $tabs::TIMELINE->value            => $this->tab == $tabs::TIMELINE->value || $this->tab == $tabs::SHOWCASE->value ?
                     fn () => GetCustomerTimeline::run($customer)
-                    : Inertia::lazy(fn () => GetCustomerTimeline::run($customer)),
+                    : Inertia::optional(fn () => GetCustomerTimeline::run($customer)),
 
                 $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($customer))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($customer))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($customer))),
                 $tabs::ATTACHMENTS->value         => $this->tab == $tabs::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($customer))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($customer))),
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($customer))),
                 $tabs::PAYMENTS->value            => $this->tab == $tabs::PAYMENTS->value ?
                     fn () => PaymentsResource::collection(IndexPayments::run($customer, $tabs::PAYMENTS->value))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($customer))),
+                    : Inertia::optional(fn () => PaymentsResource::collection(IndexPayments::run($customer))),
                 $tabs::CREDIT_TRANSACTIONS->value => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
                     fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
-                    : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
+                    : Inertia::optional(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
                 $tabs::FAVOURITES->value          => $this->tab == $tabs::FAVOURITES->value ?
                     fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
-                    : Inertia::lazy(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
+                    : Inertia::optional(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
                 $tabs::REMINDERS->value           => $this->tab == $tabs::REMINDERS->value ?
                     fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))
-                    : Inertia::lazy(fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))),
+                    : Inertia::optional(fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))),
                 $tabs::DISPATCHED_EMAILS->value   => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
                     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
-                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
+                    : Inertia::optional(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
 
                 $tabs::OFFERS->value   => $this->tab == $tabs::OFFERS->value ?
                     fn () => OffersResource::collection(IndexOffers::run($customer, $tabs::OFFERS->value))
-                    : Inertia::lazy(fn () => OffersResource::collection(IndexOffers::run($customer, $tabs::OFFERS->value))),
+                    : Inertia::optional(fn () => OffersResource::collection(IndexOffers::run($customer, $tabs::OFFERS->value))),
             ]
         )
         ->table(IndexOrders::make()->tableStructure($customer))

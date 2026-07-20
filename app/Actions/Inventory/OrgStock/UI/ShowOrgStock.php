@@ -14,11 +14,15 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStockResource;
+use App\Http\Resources\Inventory\OrgStockSupplierProductsResource;
+use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -59,7 +63,7 @@ class ShowOrgStock extends OrgAction
         return Inertia::render(
             'Org/Inventory/OrgStock',
             [
-                'title'       => __('SKU'),
+                'title'       => __('SKO') . ' (' . $orgStock->code . ')',
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $orgStock,
                     $request->route()->getName(),
@@ -71,17 +75,17 @@ class ShowOrgStock extends OrgAction
                 ],
                 'pageHead'    => [
                     'icon'          => [
-                        'title' => __('SKU'),
+                        'title' => __('SKO'),
                         'icon'  => 'fal fa-box'
                     ],
-                    'model'         => __('SKU'),
+                    'model'         => __('SKO'),
                     'title'         => $orgStock->code,
                     'iconRight'          => $orgStock->state->stateIcon()[$orgStock->state->value],
                     'actions'       => [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('Edit SKU'),
+                            'label' => __('Edit SKO'),
                             'route' => [
                                 'name'       => preg_replace('/\.show$/', '.edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters(),
@@ -101,22 +105,38 @@ class ShowOrgStock extends OrgAction
                         'stock' => $orgStock->stock->slug
                     ]
                 ] : null,
+                'reasons'     => [
+                    'increase'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::increaseReason()),
+                    'decrease'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::decreaseReason()),
+                    'transfer'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
+                ],
+                'org_stock_id'  => $orgStock->id,
+
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)
-                    : Inertia::lazy(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),
+                    : Inertia::optional(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),
 
                 OrgStockTabsEnum::TRADE_UNITS->value => $this->tab == OrgStockTabsEnum::TRADE_UNITS->value ?
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))),
+                    : Inertia::optional(fn () => TradeUnitsResource::collection(IndexTradeUnitsInOrgStock::run($orgStock, OrgStockTabsEnum::TRADE_UNITS->value))),
 
                 OrgStockTabsEnum::HISTORY->value => $this->tab == OrgStockTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgStock))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStock)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStock))),
 
+                OrgStockTabsEnum::PURCHASE_ORDERS->value => $this->tab == OrgStockTabsEnum::PURCHASE_ORDERS->value ?
+                    fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::PURCHASE_ORDERS->value))
+                    : Inertia::optional(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::PURCHASE_ORDERS->value))),
+
+                OrgStockTabsEnum::SUPPLIER_PRODUCTS->value => $this->tab == OrgStockTabsEnum::SUPPLIER_PRODUCTS->value ?
+                    fn () => OrgStockSupplierProductsResource::collection(IndexOrgStockSupplierProducts::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::SUPPLIER_PRODUCTS->value))
+                    : Inertia::optional(fn () => OrgStockSupplierProductsResource::collection(IndexOrgStockSupplierProducts::make()->inOrgStock($this->organisation, $orgStock, $request, OrgStockTabsEnum::SUPPLIER_PRODUCTS->value)))
             ]
         )
         ->table(IndexTradeUnitsInOrgStock::make()->tableStructure(prefix: OrgStockTabsEnum::TRADE_UNITS->value))
-        ->table(IndexHistory::make()->tableStructure(prefix: OrgStockTabsEnum::HISTORY->value));
+        ->table(IndexHistory::make()->tableStructure(prefix: OrgStockTabsEnum::HISTORY->value))
+        ->table(IndexPurchaseOrders::make()->tableStructure(parent: $orgStock, prefix: OrgStockTabsEnum::PURCHASE_ORDERS->value))
+        ->table(IndexOrgStockSupplierProducts::make()->tableStructure(prefix: OrgStockTabsEnum::SUPPLIER_PRODUCTS->value));
     }
 
 
@@ -134,7 +154,7 @@ class ShowOrgStock extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('SKUs')
+                            'label' => __('SKOs')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

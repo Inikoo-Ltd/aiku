@@ -136,6 +136,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_pastpay
  * @property string|null $fiscal_name
  * @property-read Address|null $address
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
  * @property-read Currency $currency
@@ -147,6 +148,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group|null $group
  * @property-read \App\Models\Accounting\InvoiceCategory|null $invoiceCategory
  * @property-read Collection<int, \App\Models\Accounting\InvoiceTransaction> $invoiceTransactions
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Order|null $order
  * @property-read Collection<int, Order> $orders
  * @property-read Organisation $organisation

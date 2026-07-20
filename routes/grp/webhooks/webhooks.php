@@ -23,6 +23,7 @@ use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
+use App\Actions\Helpers\Jira\Webhook\HandleJiraWebhook;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::name('webhooks.')->group(function () {
@@ -73,4 +74,8 @@ Route::prefix('tiktok')->as('webhooks.tiktok.')->group(function () {
 
 Route::prefix('allegro')->as('allegro.')->group(function () {
     Route::get('callback', AuthenticateAllegroAccount::class)->name('callback');
+});
+
+Route::prefix('jira/{group:id}')->as('webhooks.jira.')->group(function () {
+    Route::post('updated', HandleJiraWebhook::class)->name('updated');
 });

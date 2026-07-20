@@ -12,7 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockTypesResource;
-use App\Http\Resources\Web\WebpageWorkshopResource;
+use App\Http\Resources\Web\BlogWebpageWorkshopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
@@ -34,19 +34,36 @@ class ShowBlogWebpageWorkshop extends OrgAction
 
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
-        $url = $webpage->website->domain.'/'.$webpage->url;
-        if ($webpage->website->is_migrating) {
+        $website    = $webpage->website;
+        $url = $website->domain.'/'.$webpage->url;
+        if ($website->is_migrating) {
             $url = 'https://v2.'.$url;
         } else {
             $url = 'https://'.$url;
         }
-        $webBlockTypes = $this->organisation->group->webBlockTypes()->where('fixed', false)->where('scope', 'webpage')->get();
+        $webBlockTypes = $this
+            ->organisation
+            ->group
+            ->webBlockTypes()
+            ->where('fixed', false)
+            ->where('scope', 'webpage')
+            ->whereJsonContains('website_type', $website->shop->type)
+            ->where(function ($q) use ($website) {
+                $q->whereJsonContains('shop_availability', $website->shop->slug)
+                    ->orWhere('shop_availability', '[]');
+            })
+            ->get();
         if (!in_array($webpage->sub_type, [WebpageSubTypeEnum::PRODUCT, WebpageSubTypeEnum::FAMILY])) {
             $webBlockTypes = $this->organisation->group
             ->webBlockTypes()
             ->where('fixed', false)
             ->where('scope', 'webpage')
             ->where('name', 'not like', '%see-also%')
+            ->whereJsonContains('website_type', $website->shop->type)
+            ->where(function ($q) use ($website) {
+                $q->whereJsonContains('shop_availability', $website->shop->slug)
+                    ->orWhere('shop_availability', '[]');
+            })
             ->get();
         }
         // dd($webBlockTypes);
@@ -84,6 +101,7 @@ class ShowBlogWebpageWorkshop extends OrgAction
                             'type'  => 'button',
                             'style' => 'save',
                             'label' => __('publish'),
+                            'key'   => 'publish',
                             'route' => [
                                 'name'       => 'grp.models.webpage.publish',
                                 'parameters' => $webpage->id,
@@ -93,8 +111,9 @@ class ShowBlogWebpageWorkshop extends OrgAction
                     ],
                 ],
                 'url'           => $url,
-                'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
-                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes)
+                'webpage'       => BlogWebpageWorkshopResource::make($webpage)->getArray(),
+                'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes),
+                'webpage_sub_type' => $webpage->sub_type,
 
             ]
         );

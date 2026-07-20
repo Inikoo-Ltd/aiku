@@ -181,11 +181,11 @@ class IndexProductsWithNoFamily extends OrgAction
                 'is_orphan_products' => true,
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
 
                 ProductsTabsEnum::SALES->value => $this->tab == ProductsTabsEnum::SALES->value ?
                     fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => ProductsResource::collection(IndexProducts::run($shop, ProductsTabsEnum::SALES->value))),
 
 
             ]

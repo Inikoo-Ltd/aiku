@@ -13,6 +13,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref } from "vue"
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     form: any

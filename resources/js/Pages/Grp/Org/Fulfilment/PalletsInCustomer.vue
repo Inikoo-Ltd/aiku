@@ -29,11 +29,11 @@ const props = defineProps<{
         navigation: {}
     }
 
-    storing: Table
-    incoming: Table
-    returned: Table
-    incident: Table
-    all: Table
+    storing?: Table
+    incoming?: Table
+    returned?: Table
+    incident?: Table
+    all?: Table
 
 }>()
 

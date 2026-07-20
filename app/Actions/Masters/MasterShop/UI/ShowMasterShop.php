@@ -87,15 +87,15 @@ class ShowMasterShop extends GrpAction
                 MasterShopTabsEnum::SHOWCASE->value => $this->tab == MasterShopTabsEnum::SHOWCASE->value
                     ?
                     fn () => MasterShopResource::make($masterShop)->resolve()
-                    : Inertia::lazy(fn () => MasterShopResource::make($masterShop)->resolve()),
+                    : Inertia::optional(fn () => MasterShopResource::make($masterShop)->resolve()),
                 MasterShopTabsEnum::SHOPS->value    => $this->tab == MasterShopTabsEnum::SHOPS->value
                     ?
                     fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)
-                    : Inertia::lazy(fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)),
+                    : Inertia::optional(fn () => IndexOpenShopsInMasterShop::run($masterShop, prefix: MasterShopTabsEnum::SHOPS->value)),
 
                 MasterShopTabsEnum::HISTORY->value => $this->tab == MasterShopTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterShop, MasterShopTabsEnum::HISTORY->value))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterShop, MasterShopTabsEnum::HISTORY->value))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterShop, MasterShopTabsEnum::HISTORY->value))),
 
             ]
         )->table(IndexOpenShopsInMasterShop::make()->tableStructure($masterShop, prefix: MasterShopTabsEnum::SHOPS->value))

@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import Multiselect from '@vueform/multiselect'
+import "@vueform/multiselect/themes/default.css"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 import { trans } from 'laravel-vue-i18n'
 import PureInput from '@/Components/Pure/PureInput.vue'

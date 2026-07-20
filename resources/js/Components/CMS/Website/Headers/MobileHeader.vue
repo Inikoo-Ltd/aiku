@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import IrisSidebar from '@/Components/IrisSidebar.vue'
 import { getStyles } from "@/Composables/styles";
-import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 import { inject, ref, onMounted } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
-import OverlayBadge from 'primevue/overlaybadge';
 import { faBaby, faShoppingCart as falShoppingCart, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
 import {
     faBackpack,
@@ -32,13 +30,11 @@ import {
     faClock
 } from "@far";
 import { faLambda } from "@fad";
-import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { computed } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
-import { trans } from 'laravel-vue-i18n'
 
 // Add icons to the library
 library.add(
@@ -111,7 +107,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
                 </IrisSidebar>
 
                 <!-- Search Bar -->
-                <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id"
+                <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id && screenType === 'mobile'"
                     id="luigi_mobile"
                     :style="{
                         ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
@@ -121,7 +117,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
             </div>
 
             <!-- Section: Logo -->
-            <div class="xcol-span-2 flex justify-end items-center w-full" :class="!isLoggedIn ?  layout.retina?.type == 'b2b' ? 'justify-end' :'justify-center' : 'justify-end'">
+            <div class="xcol-span-2 flex items-center w-full" :class="layout.retina?.type == 'b2b' ? 'justify-start' : 'justify-center'">
                 <component :is="LinkIris" :href="'/'" class="block h-fit max-h-[50px] w-full max-w-32">
                     <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" alt="logo"
                         class="w-full h-auto object-contain" />
@@ -140,7 +136,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
 
                 <!-- Logged In -->
                 <template v-else>
-                    <OverlayBadge v-if="layout.retina?.type == 'b2b'"  :value="layout?.iris_variables?.cart_count" size="small">
+                    <div v-if="layout.retina?.type == 'b2b'" class="relative inline-flex">
                         <LinkIris href="/app/basket" class="px-1">
                             <FontAwesomeIcon
                                 icon="fal fa-shopping-cart"
@@ -150,7 +146,11 @@ const getStylesRemoveFontSize = (properties, screenType) => {
                                 class="text-3xl"
                             />
                         </LinkIris>
-                    </OverlayBadge>
+                        <span
+                            v-if="layout?.iris_variables?.cart_count"
+                            class="absolute -top-1 -right-0.5 min-w-[1rem] h-4 px-1 rounded-full bg-gray-700 text-white text-[10px] leading-none flex items-center justify-center"
+                        >{{ layout?.iris_variables?.cart_count }}</span>
+                    </div>
 
                     <LinkIris href="/app/dashboard" class="px-1">
                         <FontAwesomeIcon

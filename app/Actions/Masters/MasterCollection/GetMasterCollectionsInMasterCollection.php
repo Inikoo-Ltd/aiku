@@ -165,7 +165,7 @@ class GetMasterCollectionsInMasterCollection extends GrpAction
                 ],
                 MasterCollectionsTabsEnum::INDEX->value => $this->tab == MasterCollectionsTabsEnum::INDEX->value ?
                     fn () => MasterCollectionsResource::collection($masterCollections)
-                    : Inertia::lazy(fn () => MasterCollectionsResource::collection($masterCollections)),
+                    : Inertia::optional(fn () => MasterCollectionsResource::collection($masterCollections)),
             ]
         )
         ->table($this->tableStructure($this->parent, MasterCollectionsTabsEnum::INDEX->value));

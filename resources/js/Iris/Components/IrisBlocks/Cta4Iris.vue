@@ -9,6 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
+import { ctaImageBoxCss } from "@/Iris/Composables/useCtaImageBoxCss"
 import { FieldValue } from "@/types/webpageTypes"
 import { inject, computed } from 'vue'
 import { faCube, faLink, faImage } from "@fal"
@@ -39,10 +40,17 @@ const valueForField = computed(() => {
 
 const isImageRight = computed(() => valueForField.value === 'Image-right')
 
+const blockDomId = computed(() => props.fieldValue?.id ? props.fieldValue.id : 'cta4' + props.indexBlock)
+const imageBoxCss = computed(() => ctaImageBoxCss(blockDomId.value, props.fieldValue?.image?.properties?.dimension))
+const imageBoxStyle = computed(() => {
+	const { height, width, ...rest } = getStyles(props.fieldValue?.image?.properties, props.screenType) || {}
+	return rest
+})
 </script>
 
 <template>
-	<div  :id="fieldValue?.id ? fieldValue?.id  : 'cta4'+indexBlock"  component="cta4"  class="w-full">
+	<div :id="blockDomId" component="cta4" class="w-full">
+		<component :is="'style'" v-if="imageBoxCss">{{ imageBoxCss }}</component>
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType),
@@ -54,17 +62,18 @@ const isImageRight = computed(() => valueForField.value === 'Image-right')
 					:href="fieldValue?.image?.link?.href" 
 					:target="fieldValue?.image?.link?.target"
 					:type="fieldValue?.image?.link?.type" 
-					class="relative cursor-pointer overflow-hidden w-full" 
-					:class="[ !fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]', isImageRight ? 'order-2' : 'order-1']" 
-					:style="getStyles(fieldValue.image.properties, screenType)"
+					class="relative cursor-pointer overflow-hidden w-full cta-image-slot"
+					:class="[ !fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]', isImageRight ? 'order-2' : 'order-1']"
+					:style="imageBoxStyle"
 				>
 					<template #default="{ isLoading } = { isLoading: false }">
 						<Image :src="fieldValue.image.source" :imageCover="true"
 							:alt="fieldValue.image.alt || 'Image preview'"
 							class="w-full h-full object-cover md:absolute md:inset-0"
 							:imgAttributes="fieldValue.image.attributes"
-							:height="getStyles(fieldValue?.image?.properties, screenType, false)?.height"
-							:width="getStyles(fieldValue?.image?.properties, screenType, false)?.width"
+							:height="getStyles(fieldValue?.image?.properties, 'desktop', false)?.height"
+							:width="getStyles(fieldValue?.image?.properties, 'desktop', false)?.width"
+							:preload="Number(indexBlock) <= 2"
 							/>
 
 						<div

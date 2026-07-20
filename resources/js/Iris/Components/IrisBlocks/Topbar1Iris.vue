@@ -136,11 +136,11 @@ const goToBundle = () => {
 </script>
 
 <template>
-    <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4 md:sticky top-0 z-50"
+    <div id="top_bar_1_iris" class="py-[10px] px-4 flex flex-col md:flex-row md:justify-between gap-x-4 md:sticky top-0 z-50"
         :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenTypeInject),
+        ...getStyles(model?.container?.properties, screenTypeInject),
         margin: 0,
-        ...getStyles(model?.container?.properties, screenTypeInject)
     }">
         <!-- layout?.app?.webpage_layout?.container?.properties   // TODO: should exist in Retina -->
 
@@ -206,6 +206,11 @@ const goToBundle = () => {
                 class="text-center flex items-center"
                 v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
             />
+            <!-- Reserve the greeting row while the first-hit data is still on the wire,
+                 so the bar doesn't grow when "Hello, name" arrives -->
+            <div v-else-if="layout.iris?.is_logged_in" class="invisible text-center md:text-left" aria-hidden="true">
+                <span>{{ trans("Hello") }}!</span>
+            </div>
         </div>
 
         <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">

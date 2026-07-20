@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -92,6 +93,7 @@ class ShowIrisWebpage
             'allow_review_reaction'             => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
             'allow_review_reply_reaction'       => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
             'minimum_reviews_to_show'           => Arr::get($webpage->shop->settings, 'reviews.minimum_reviews_to_show', 0),
+            'webpage_reviews_count'             => $this->getApprovedReviewsCount($webpage),
             'show_staff_who_reply'              => Arr::get($webpage->shop->settings, 'reviews.show_staff_who_reply', false),
             'is_different_when_logged_in'       => $webpage->is_different_when_logged_in,
         ];
@@ -99,10 +101,21 @@ class ShowIrisWebpage
         return array_merge($baseWebpageData, [
             'status'     => 'ok',
             'webpage_id' => $webpageID,
-            'web_blocks' => $webBlocks,
+            'web_blocks' => RefreshGrpAssetUrls::run($webBlocks),
         ]);
     }
 
+
+    private function getApprovedReviewsCount(Webpage $webpage): ?int
+    {
+        $model = $webpage->model ?? $webpage->shop;
+
+        if ($model instanceof Product || $model instanceof ProductCategory) {
+            return (int) $model->reviewStats?->number_reviews_approved;
+        }
+
+        return null;
+    }
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {

@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\Web;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -47,6 +48,10 @@ class RepairMissingFixedWebBlocksInProductsWebpages
             print "Product is not main product, skipping\n";
 
             // Delete Webpage
+            /*  $redirect = $product->family?->webpage?->id ?? $product->subDepartment?->webpage?->id ?? $product->department?->webpage?->id ?? $webpage->website->storefront_id;
+             DeleteWebpage::make()->action($webpage, false, $redirect ? [
+                 'redirects' => $redirect
+             ] : []); */
             return;
         }
 

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
@@ -76,6 +77,16 @@ class CustomersResource extends JsonResource
             'balance'                         => $this->balance,
             'tags'                            => $this->whenLoaded('tags', fn () => TagsResource::collection($this->tags)->toArray(request())),
             'is_vip'                          => $this->is_vip,
+            'upcoming_products'               => $this->whenLoaded('upcomingTransactions', fn () => $this->upcomingTransactions
+                ->filter(fn ($upcomingTransaction) => $upcomingTransaction->product)
+                ->unique('product_id')
+                ->map(fn ($upcomingTransaction) => [
+                    'code'         => $upcomingTransaction->product->code,
+                    'name'         => $upcomingTransaction->product->name,
+                    'out_of_stock' => in_array($upcomingTransaction->product->status, [ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::NOT_FOR_SALE], true),
+                    'status_label' => ProductStatusEnum::labels()[$upcomingTransaction->product->status->value] ?? $upcomingTransaction->product->status->value,
+                ])
+                ->values()),
         ];
 
         if ($this->organisation_name) {

@@ -10,6 +10,7 @@ import { trans } from "laravel-vue-i18n"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 
 library.add( faPencil, faTrashAlt, faFileInvoice, faPlus, faEnvelope, faGoogle )
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
     action: Action

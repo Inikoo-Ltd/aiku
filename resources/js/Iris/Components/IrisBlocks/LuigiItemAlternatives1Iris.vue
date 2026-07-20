@@ -112,7 +112,12 @@ const fetchRecommenders = async () => {
                     "recommender_client_identifier": "item_detail_alternatives",
                     "size": 25,
                     "user_id": userId ?? null,  // Customer ID or Cookie _lb
-                    "recommendation_context": {},
+                    "recommendation_context": {
+                        "availability": {
+                            "values": ["1"],
+                            "operator": "or"
+                        }
+                    },
                     // "hit_fields": ["url", "title"]
                 }
             ],
@@ -200,14 +205,15 @@ onMounted(() => {
         width: 'auto'
     }">
     
-            <!-- Title -->
-            <div class="px-3 py-6 pb-2">
-                <div class="text-2xl md:text-3xl font-semibold">
-                    <div>
-                        <p style="text-align: center">{{ trans("You may also like") }}</p>
-                    </div>
+        <!-- Title -->
+        <div v-if="!isFetched || (isFetched && listProducts?.length)" class="px-3 py-6 pb-2">
+            <div class="text-2xl md:text-3xl font-semibold">
+                <div>
+                    <p style="text-align: center">{{ trans("You may also like") }}</p>
                 </div>
             </div>
+        </div>
+        
         <div v-if="isLoadingFetch" class="py-4 px-3 md:px-12 grid gap-x-3" :style="{ gridTemplateColumns: `repeat(${slidesPerView ? slidesPerView : 4}, minmax(0, 1fr))` }">
             <div v-for="xx in (slidesPerView ? slidesPerView : 4)" :key="xx" class="flex flex-col md:p-3 rounded bg-white">
                 <div class="mb-3 flex justify-center">

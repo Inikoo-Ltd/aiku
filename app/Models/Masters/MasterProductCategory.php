@@ -32,6 +32,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
+use App\Models\Traits\HasSearch;
 
 /**
  * @property int $id
@@ -138,6 +139,7 @@ use Spatie\Translatable\HasTranslations;
  */
 class MasterProductCategory extends Model implements Auditable, HasMedia
 {
+    use HasSearch;
     use HasSlug;
     use SoftDeletes;
     use HasHistory;
@@ -344,6 +346,22 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function tradeUnitFamily(): BelongsTo
     {
         return $this->belongsTo(TradeUnitFamily::class, 'trade_unit_family_id', 'id');
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'             => (string)$this->id,
+            'group_id'       => $this->group_id,
+            'master_shop_id' => $this->master_shop_id,
+            'type'           => $this->type->value,
+            'code'           => $this->code,
+            'name'           => (string)$this->name,
+            'description'    => (string)$this->description,
+            'state'          => $this->status ? 'active' : 'inactive',
+            'created_at'     => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
 }

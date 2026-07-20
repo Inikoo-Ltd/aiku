@@ -98,7 +98,7 @@ class ShowDispatchedEmail extends OrgAction
 
                 DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value => $this->tab == DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value ?
                     fn () => EmailTrackingEventResource::collection(IndexEmailTrackingEvents::run($dispatchedEmail, DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value))
-                    : Inertia::lazy(fn () => EmailTrackingEventResource::collection(IndexEmailTrackingEvents::run($dispatchedEmail, DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value))),
+                    : Inertia::optional(fn () => EmailTrackingEventResource::collection(IndexEmailTrackingEvents::run($dispatchedEmail, DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value))),
 
             ]
         )->table(IndexEmailTrackingEvents::make()->tableStructure($dispatchedEmail, DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS->value));

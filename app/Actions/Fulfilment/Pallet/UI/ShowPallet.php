@@ -379,19 +379,19 @@ class ShowPallet extends OrgAction
                 'list_stored_items' => $storedItemsList,
 
                 PalletTabsEnum::SHOWCASE->value => $this->tab == PalletTabsEnum::SHOWCASE->value ?
-                    fn () => PalletResource::make($pallet) : Inertia::lazy(fn () => PalletResource::make($pallet)),
+                    fn () => PalletResource::make($pallet) : Inertia::optional(fn () => PalletResource::make($pallet)),
 
                 PalletTabsEnum::STORED_ITEMS->value => $this->tab == PalletTabsEnum::STORED_ITEMS->value ?
                     fn () => PalletStoredItemsResource::collection(IndexPalletStoredItems::run($pallet, PalletTabsEnum::STORED_ITEMS->value))
-                    : Inertia::lazy(fn () => PalletStoredItemsResource::collection(IndexPalletStoredItems::run($pallet, PalletTabsEnum::STORED_ITEMS->value))),
+                    : Inertia::optional(fn () => PalletStoredItemsResource::collection(IndexPalletStoredItems::run($pallet, PalletTabsEnum::STORED_ITEMS->value))),
 
                 PalletTabsEnum::MOVEMENTS->value => $this->tab == PalletTabsEnum::MOVEMENTS->value ?
                     fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))
-                    : Inertia::lazy(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))),
+                    : Inertia::optional(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))),
 
                 PalletTabsEnum::HISTORY->value => $this->tab == PalletTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($this->pallet))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($this->pallet)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($this->pallet)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: PalletTabsEnum::HISTORY->value))

@@ -297,6 +297,7 @@ class UpdateProduct extends OrgAction
 
         $fieldsUsedInWebpages = array_merge(
             $fieldsUsedInLuigi,
+            ['rrp', 'units', 'unit'],
             $this->getDangerousGoodsFieldNames(),
             $this->getProductInformationFieldNames()
         );

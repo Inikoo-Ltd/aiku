@@ -15,6 +15,8 @@ use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\Shipper\UI\IndexCouriersInShop;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
+use App\Actions\Ordering\CheckoutAbandonment\UI\IndexCheckoutAbandonments;
+use App\Actions\Ordering\Invoice\UI\IndexInvoices;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Ordering\Order\PdfProformaInvoice;
 use App\Actions\Ordering\Order\UI\EditOrder;
@@ -40,6 +42,8 @@ Route::post('/backlog/waiting_items/{deliveryNoteItem}/set-as-not-pick', SetWait
 
 
 Route::get('/orders/', IndexOrders::class)->name('orders.index');
+Route::get('/invoices/', IndexInvoices::class)->name('invoices.index');
+Route::get('/checkout-abandonments', IndexCheckoutAbandonments::class)->name('checkout_abandonments.index');
 
 
 Route::get('/orders/delivery_notes', IndexDeliveryNotesInOrdering::class)->name('delivery-notes.index');

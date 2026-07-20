@@ -29,13 +29,12 @@ const componentMap: Record<string, Component> = {
     collection: TableIrisCollection,
 }
 
-console.log("data", props.data)
 const activeComponent = computed(() => componentMap[props.tabs.current] ?? null)
 </script>
 
 <template>
     <div class="max-w-7xl mx-auto my-8">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="bg-white rounded-xl lg:border border-gray-200 shadow-sm ">
             <CatalogueTabs :navigation="tabs.navigation" />
             <div class="p-3">
                 <component v-if="activeComponent" :is="activeComponent" :data="data" :tab="tabs.current" />

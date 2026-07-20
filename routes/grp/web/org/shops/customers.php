@@ -33,9 +33,11 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInCustomerSalesChannels;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
+use App\Actions\Ordering\CheckoutAbandonment\UI\IndexCheckoutAbandonments;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Ordering\Order\UI\IndexOrdersInCustomerSalesChannel;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Ordering\UpcomingTransaction\UI\IndexUpcomingTransactions;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', IndexCustomers::class)->name('index');
@@ -69,6 +71,10 @@ Route::prefix('{customer}')->as('show')->group(function () {
         Route::get('/{invoice}', [ShowInvoice::class, 'inCustomerInShop'])->name('show');
     });
 
+    Route::prefix('upcoming-transactions')->name('.upcoming_transactions.')->group(function () {
+        Route::get('', IndexUpcomingTransactions::class)->name('index')->withoutScopedBindings();
+    });
+
     Route::prefix('/orders')->as('.orders')->group(function () {
         Route::get('', [IndexOrders::class, 'inCustomer'])->name('.index');
 
@@ -83,6 +89,8 @@ Route::prefix('{customer}')->as('show')->group(function () {
             Route::get('/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerInShop'])->name('.delivery-note.show');
         });
     });
+
+    Route::get('/checkout-abandonments', [IndexCheckoutAbandonments::class, 'inCustomer'])->name('.checkout_abandonments.index');
 
     Route::prefix('/channels')->as('.customer_sales_channels')->group(function () {
         Route::get('', IndexCustomerSalesChannels::class)->name('.index');

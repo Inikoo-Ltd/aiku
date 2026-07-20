@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_waiting_crm
  * @property mixed $notes
  * @property mixed $shop_slug
+ * @property mixed $shop_type
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
@@ -117,6 +118,16 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             $quantityToPickFractionalDS = [0, [$quantityToPick * $this->packed_in, $this->packed_in]];
         }
 
+        $waitingWarehouseFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_warehouse ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_warehouse ?? 0) == ($this->quantity_waiting_warehouse ?? 0) && $packedIn > 1) {
+            $waitingWarehouseFractionalDS = [0, [($this->quantity_waiting_warehouse ?? 0) * $packedIn, $packedIn]];
+        }
+
+        $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_crm ?? 0) == ($this->quantity_waiting_crm ?? 0) && $packedIn > 1) {
+            $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
+        }
+
         return [
             'id'                             => $this->id,
             'is_picked'                      => $isPicked,
@@ -126,13 +137,16 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'quantity_to_pick'               => $quantityToPick,
             'quantity_to_pick_fractional'    => $quantityToPickFractional,
             'quantity_to_pick_fractional_ds' => $quantityToPickFractionalDS,
+            'packed_in'                      => $packedIn,
             'quantity_picked_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked ?? 0)), $packedIn),
             'quantity_picked'                => $this->quantity_picked,
             'quantity_not_picked'            => $this->quantity_not_picked,
             'quantity_packed'                => $this->quantity_packed,
             'quantity_dispatched'            => $this->quantity_dispatched,
             'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
+            'quantity_waiting_warehouse_fractional_ds' => $waitingWarehouseFractionalDS,
             'quantity_waiting_crm'           => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds' => $waitingCrmFractionalDS,
             'org_stock_id'                   => $this->org_stock_id,
             'org_stock_code'                 => $this->org_stock_code,
             'org_stock_slug'                 => $this->org_stock_slug,
@@ -160,6 +174,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'packed_in_message'              => $packedInMessage,
             'notes'                          => $this->notes,
             'shop_slug'                      => $this->shop_slug,
+            'delivery_note_shop_type'        => $this->shop_type,
             'un_numbers'                     => @json_decode($this->un_numbers) ?? null,
             'upsert_picking_route'           => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',

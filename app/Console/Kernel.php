@@ -9,6 +9,7 @@
 namespace App\Console;
 
 use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
+use App\Actions\Accounting\Payment\CheckoutCom\SweepStuckCheckoutComPaymentApiPoints;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
@@ -18,6 +19,7 @@ use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
+use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
@@ -81,6 +83,15 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'OfferUpdateStatusFromDates',
                 type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(SweepStuckCheckoutComPaymentApiPoints::makeJob())->everyThirtyMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SweepStuckCheckoutComPaymentApiPoints',
+                ),
+                name: 'SweepStuckCheckoutComPaymentApiPoints',
+                type: 'job',
                 scheduledAt: now()->format('H:i')
             );
 
@@ -256,33 +267,6 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('fetch:stock_locations aw')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockLocationsAW',
-                ),
-                name: 'FetchAuroraStockLocationsAW',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('fetch:stock_locations sk')->dailyAt('02:45')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockLocationsSK',
-                ),
-                name: 'FetchAuroraStockLocationsSK',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('fetch:stock_locations es')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockLocationsES',
-                ),
-                name: 'FetchAuroraStockLocationsES',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
                 $schedule->command('fetch:stock_locations aroma')->dailyAt('3:15')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'FetchAuroraStockLocationsAroma',
                 ),
@@ -293,7 +277,7 @@ class Kernel extends ConsoleKernel
 
 
             $this->logSchedule(
-                $schedule->command('fetch:stock_movements -N -D 2')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->command('fetch:stock_movements -N -D 2')->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'FetchAuroraStockMovements',
                 ),
                 name: 'FetchAuroraStockMovements',
@@ -500,6 +484,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunBasketLowStockEmailBulkRuns',
                 ),
                 name: 'RunBasketLowStockEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunCheckoutAbandonmentScan::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunCheckoutAbandonmentScan',
+                ),
+                name: 'RunCheckoutAbandonmentScan',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

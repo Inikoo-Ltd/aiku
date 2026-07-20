@@ -431,6 +431,14 @@ class GetGroupNavigation
                         ]
                     ],
                     [
+                        'label' => __('Search analytics'),
+                        'icon'  => ['fal', 'fa-search'],
+                        'root'  => 'grp.sysadmin.search_logs.',
+                        'route' => [
+                            'name' => 'grp.sysadmin.search_logs.index',
+                        ]
+                    ],
+                    [
                         'label' => __('System Settings'),
                         'icon'  => ['fal', 'fa-cog'],
                         'root'  => 'grp.sysadmin.settings.',
@@ -438,6 +446,14 @@ class GetGroupNavigation
                             'name' => 'grp.sysadmin.settings.edit',
                         ]
                     ],
+                    [
+                        'label' => __('Changelogs'),
+                        'icon'  => ['fal', 'fa-history'],
+                        'root'  => 'grp.sysadmin.changelogs.index',
+                        'route' => [
+                            'name' => 'grp.sysadmin.changelogs.index',
+                        ]
+                    ]
                 ]
             ]
         ];

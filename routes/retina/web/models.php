@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Payment\PastPay\PayOrderWithPastpay;
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
@@ -74,7 +75,6 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSal
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaEbayCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderWithPastpay;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalanceAfterSubmitted;
 use App\Actions\Retina\Dropshipping\Orders\RemoveRetinaOrderVoucher;
@@ -83,7 +83,6 @@ use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrderVoucher;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
-use App\Actions\Retina\Dropshipping\Orders\SuccessOrderWithPastpay;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateOrderGrGift;
@@ -92,6 +91,7 @@ use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\BulkUnlinkRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCategory;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCategoryToAllChannels;
@@ -110,6 +110,9 @@ use App\Actions\Retina\Ebay\MatchRetinaPortfolioToCurrentEbayProduct;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
+use App\Actions\Retina\Ecom\Review\ReactRetinaReview;
+use App\Actions\Retina\Ecom\Review\StoreRetinaReview;
+use App\Actions\Retina\Ecom\Review\UpdateRetinaReview;
 use App\Actions\Retina\Fulfilment\Dropshipping\Channel\Manual\StoreRetinaFulfilmentManualPlatform;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\StoreRetinaFulfilmentCustomerClient;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\StoreRetinaFulfilmentCustomerClientWithOrder;
@@ -180,14 +183,10 @@ use App\Actions\Retina\Woo\MatchRetinaBulkNewProductToCurrentWooCommerce;
 use App\Actions\Retina\Woo\MatchRetinaPortfolioToCurrentWooProduct;
 use App\Actions\Retina\Woo\StoreRetinaNewProductToCurrentWoo;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Retina\Ecom\Review\ReactRetinaReview;
-use App\Actions\Retina\Ecom\Review\StoreRetinaReview;
-use App\Actions\Retina\Ecom\Review\UpdateRetinaReview;
 
 Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place_order_pay_by_bank');
 Route::post('place-order-pay-by-cash-on-delivery', PlaceOrderPayByCashOnDelivery::class)->name('place_order_pay_by_cash_on_delivery');
 Route::post('orders/{order}/pay-by-pastpay', PayOrderWithPastpay::class)->name('place_order_pay_by_pastpay');
-Route::post('orders/{order}/success-pay-by-pastpay', SuccessOrderWithPastpay::class)->name('success_order_pay_by_pastpay');
 
 Route::post('top-up-payment-api-point', StoreTopUpPaymentApiPoint::class)->name('top_up_payment_api_point.store');
 
@@ -376,6 +375,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     });
 
     Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink')->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/bulk-unlink-only', BulkUnlinkRetinaPortfolio::class)->name('bulk.unlink_only')->whereNumber('customerSalesChannel');
 
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings()->whereNumber('shopifyUser');
 

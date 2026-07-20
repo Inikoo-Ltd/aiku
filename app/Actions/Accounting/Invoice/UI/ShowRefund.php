@@ -354,15 +354,15 @@ class ShowRefund extends OrgAction
                 [
                     RefundInProcessTabsEnum::ITEMS->value => $this->tab == RefundInProcessTabsEnum::ITEMS->value ?
                         fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value), $refund->is_tax_only)
-                        : Inertia::lazy(fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value), $refund->is_tax_only)),
+                        : Inertia::optional(fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS->value), $refund->is_tax_only)),
 
                     RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value => $this->tab == RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value ?
                         fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value), $refund->is_tax_only)
-                        : Inertia::lazy(fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value), $refund->is_tax_only)),
+                        : Inertia::optional(fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value), $refund->is_tax_only)),
 
                     RefundInProcessTabsEnum::HISTORY->value => $this->tab == RefundInProcessTabsEnum::HISTORY->value ?
                         fn () => HistoryResource::collection(IndexHistory::run($refund))
-                        : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($refund))),
+                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund))),
 
 
                 ]
@@ -375,16 +375,16 @@ class ShowRefund extends OrgAction
                 [
                     RefundTabsEnum::ITEMS->value => $this->tab == RefundTabsEnum::ITEMS->value ?
                         fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))
-                        : Inertia::lazy(fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))),
+                        : Inertia::optional(fn () => RefundTransactionsResource::collection(IndexRefundTransactions::run($refund, RefundTabsEnum::ITEMS->value))),
 
 
                     RefundTabsEnum::PAYMENTS->value => $this->tab == RefundTabsEnum::PAYMENTS->value ?
                         fn () => PaymentsResource::collection(IndexPayments::run($refund))
-                        : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
+                        : Inertia::optional(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
 
                     RefundTabsEnum::HISTORY->value => $this->tab == RefundTabsEnum::HISTORY->value ?
                         fn () => HistoryResource::collection(IndexHistory::run($refund))
-                        : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($refund))),
+                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund))),
 
                     'invoiceExportOptions'          => $exportInvoiceOptions
                 ]

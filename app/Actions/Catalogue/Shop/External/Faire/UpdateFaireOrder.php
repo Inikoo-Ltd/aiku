@@ -91,53 +91,7 @@ class UpdateFaireOrder extends OrgAction
                         modelData: Arr::except($transactionData, 'historical_asset')
                     );
 
-                    /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
-                    $deliveryNote = $order->deliveryNotes()->whereNotIn('state', [
-                        DeliveryNoteStateEnum::CANCELLED,
-                        DeliveryNoteStateEnum::DISPATCHED,
-                        DeliveryNoteStateEnum::FINALISED,
-                    ])->where('type', DeliveryNoteTypeEnum::ORDER)->first();
-                    if ($deliveryNote) {
-                        $transactionData = [
-                            'state'           => TransactionStateEnum::IN_WAREHOUSE,
-                            'status'          => TransactionStatusEnum::PROCESSING,
-                            'in_warehouse_at' => now()
-                        ];
-                        if ($transaction->in_warehouse_at == null) {
-                            data_set($transactionData, 'in_warehouse_at', now());
-                        }
-                        $transaction->update($transactionData);
-
-                        $product = Product::find($transaction->model_id);
-
-
-                        foreach ($product->orgStocks as $orgStock) {
-                            $quantity             = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
-                            $deliveryNoteItemData = [
-                                'org_stock_id'               => $orgStock->id,
-                                'transaction_id'             => $transaction->id,
-                                'quantity_required'          => $quantity,
-                                'original_quantity_required' => $quantity,
-                            ];
-
-                            StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
-                        }
-
-                        $oldState = $deliveryNote->state;
-
-                        if (in_array($deliveryNote->state, [
-                            DeliveryNoteStateEnum::PICKED,
-                            DeliveryNoteStateEnum::PACKING,
-                            DeliveryNoteStateEnum::PACKED,
-                        ])) {
-                            $deliveryNote->update([
-                                'state' => DeliveryNoteStateEnum::HANDLING,
-                            ]);
-
-                            $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-                            $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
-                        }
-                    }
+                    $this->createDeliveryNoteItem($order, $transaction);
                 }
 
                 continue;
@@ -165,20 +119,26 @@ class UpdateFaireOrder extends OrgAction
             $grpExchange = GetCurrencyExchange::run($shop->currency, $shop->group->currency);
 
 
+            $quantity = $item['quantity'] / $product->units;
+
             $dataToUpdate = [
                 'historic_asset_id' => $product->current_historic_asset_id,
                 'gross_amount'      => $netAmount,
                 'net_amount'        => $netAmount,
                 'grp_net_amount'    => $netAmount * $grpExchange,
                 'org_net_amount'    => $netAmount * $orgExchange,
+                'quantity_ordered'  => $quantity,
             ];
-            $quantity     = $item['quantity'] / $product->units;
+
+
             if ($order->state == OrderStateEnum::DISPATCHED) {
                 $dataToUpdate['quantity_dispatched'] = $quantity;
             }
 
 
             $transaction->update($dataToUpdate);
+
+            $this->updateDeliveryNoteItem($order, $transaction);
 
             $invoiceTransaction = InvoiceTransaction::where('transaction_id', $transaction->id)->first();
 
@@ -234,6 +194,14 @@ class UpdateFaireOrder extends OrgAction
 
 
         CalculateOrderTotalAmounts::run($order);
+
+        $faireTaxAmount = $this->getFaireTaxAmount($orderFaireData, $shop);
+        $order->refresh();
+        $order->update([
+            'tax_amount'   => $faireTaxAmount,
+            'total_amount' => $order->net_amount + $faireTaxAmount,
+        ]);
+
         $invoice = $order->invoices()->first();
         if ($invoice) {
             $order->update([
@@ -242,7 +210,32 @@ class UpdateFaireOrder extends OrgAction
 
 
             CalculateInvoiceTotals::run($invoice);
+            $invoice->refresh();
+            $invoice->update([
+                'tax_amount'   => $faireTaxAmount,
+                'total_amount' => $invoice->net_amount + $faireTaxAmount,
+            ]);
         }
+    }
+
+    public function getFaireTaxAmount(array $orderFaireData, Shop $shop): float
+    {
+        $tax      = 0;
+        $exchange = 1;
+
+        $currencyCode = Arr::get($orderFaireData, 'payout_costs.taxes.0.value.currency');
+        if ($currencyCode && $currencyCode != $shop->currency->code) {
+            $currency = Currency::where('code', $currencyCode)->first();
+            if ($currency) {
+                $exchange = GetCurrencyExchange::run($currency, $shop->currency);
+            }
+        }
+
+        foreach (Arr::get($orderFaireData, 'payout_costs.taxes', []) as $taxData) {
+            $tax += Arr::get($taxData, 'value.amount_minor', 0) / 100;
+        }
+
+        return round($tax * $exchange, 2);
     }
 
     public string $commandSignature = 'faire:update_order {order?}';
@@ -308,6 +301,127 @@ class UpdateFaireOrder extends OrgAction
         return GetFaireOrdersInShop::make()->processFaireOrderItem($item, $shop, $transactionCommissionsFactor);
     }
 
+    public function createDeliveryNoteItem(Order $order, Transaction $transaction): void
+    {
+        /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
+        $deliveryNote = $order->deliveryNotes()->whereNotIn('state', [
+            DeliveryNoteStateEnum::CANCELLED,
+            DeliveryNoteStateEnum::DISPATCHED,
+            DeliveryNoteStateEnum::FINALISED,
+        ])->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+        if ($deliveryNote) {
+            $transactionData = [
+                'state'           => TransactionStateEnum::IN_WAREHOUSE,
+                'status'          => TransactionStatusEnum::PROCESSING,
+                'in_warehouse_at' => now()
+            ];
+            if ($transaction->in_warehouse_at == null) {
+                data_set($transactionData, 'in_warehouse_at', now());
+            }
+            $transaction->update($transactionData);
+
+            $product = Product::find($transaction->model_id);
+
+
+            foreach ($product->orgStocks as $orgStock) {
+                $quantity             = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+                $deliveryNoteItemData = [
+                    'org_stock_id'               => $orgStock->id,
+                    'transaction_id'             => $transaction->id,
+                    'quantity_required'          => $quantity,
+                    'original_quantity_required' => $quantity,
+                ];
+
+                StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
+            }
+
+            $oldState = $deliveryNote->state;
+
+            if (in_array($deliveryNote->state, [
+                DeliveryNoteStateEnum::PICKED,
+                DeliveryNoteStateEnum::PACKING,
+                DeliveryNoteStateEnum::PACKED,
+            ])) {
+                $deliveryNote->update([
+                    'state' => DeliveryNoteStateEnum::HANDLING,
+                ]);
+
+                $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+                $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+            }
+        }
+    }
+
+    public function updateDeliveryNoteItem(Order $order, Transaction $transaction): void
+    {
+        /** @var \App\Models\Dispatching\DeliveryNote $deliveryNote */
+        $deliveryNote = $order->deliveryNotes()->whereNotIn('state', [
+            DeliveryNoteStateEnum::CANCELLED,
+            DeliveryNoteStateEnum::DISPATCHED,
+            DeliveryNoteStateEnum::FINALISED,
+            DeliveryNoteStateEnum::PACKED,
+            DeliveryNoteStateEnum::PACKING,
+            DeliveryNoteStateEnum::PICKED,
+            DeliveryNoteStateEnum::HANDLING_BLOCKED
+        ])->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+        if ($deliveryNote) {
+            $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->where('transaction_id', $transaction->id)->first();
+            if (!$deliveryNoteItem) {
+                $this->createDeliveryNoteItem($order, $transaction);
+
+                return;
+            }
+
+
+            $product = Product::find($transaction->model_id);
+
+
+            foreach ($product->orgStocks as $orgStock) {
+                $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->where('org_stock_id', $orgStock->id)->where('transaction_id', $transaction->id)->first();
+                $quantity         = $orgStock->pivot->quantity * ($transaction->quantity_ordered + $transaction->quantity_bonus);
+
+                if (!$deliveryNoteItem) {
+                    $deliveryNoteItemData = [
+                        'org_stock_id'               => $orgStock->id,
+                        'transaction_id'             => $transaction->id,
+                        'quantity_required'          => $quantity,
+                        'original_quantity_required' => $quantity,
+                    ];
+
+                    StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
+                } else {
+                    $deliveryNoteItem->update([
+                        'quantity_required' => $quantity,
+                    ]);
+
+                    $toPick = $quantity - $deliveryNoteItem->quantity_picked;
+                    if ($toPick > 0) {
+                        $deliveryNoteItem->update([
+                            'state'      => DeliveryNoteStateEnum::HANDLING->value,
+                            'is_handled' => false,
+                        ]);
+                    }
+                }
+            }
+
+
+            $oldState = $deliveryNote->state;
+
+            if (in_array($deliveryNote->state, [
+                DeliveryNoteStateEnum::PICKED,
+                DeliveryNoteStateEnum::PACKING,
+                DeliveryNoteStateEnum::PACKED,
+            ])) {
+                $deliveryNote->update([
+                    'state' => DeliveryNoteStateEnum::HANDLING,
+                ]);
+
+                $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+                $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+            }
+        }
+    }
+
 
     /**
      * @throws \Throwable
@@ -318,4 +432,6 @@ class UpdateFaireOrder extends OrgAction
 
         $this->handle($order);
     }
+
+
 }

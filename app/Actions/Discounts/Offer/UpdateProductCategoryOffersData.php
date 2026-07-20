@@ -70,6 +70,17 @@ class UpdateProductCategoryOffersData
                     'percentage_off' => $percentageOff
                 ];
 
+                if ($offerAllowance->type == OfferAllowanceType::GIFT) {
+                    $giftProduct = Product::find(Arr::get($offerAllowance->data, 'product_id'));
+
+                    $allowanceData['product_id']   = Arr::get($offerAllowance->data, 'product_id');
+                    $allowanceData['product_code'] = $giftProduct?->code;
+                    $allowanceData['product_name'] = $giftProduct?->name;
+                    $allowanceData['quantity']     = Arr::get($offerAllowance->data, 'quantity', 1);
+                } elseif ($offerAllowance->type == OfferAllowanceType::SHIPPING) {
+                    $allowanceData['min_order_amount'] = Arr::get($offer->trigger_data, 'min_order_amount', Arr::get($offer->trigger_data, 'item_amount'));
+                }
+
                 $allowances[] = $allowanceData;
             }
         }
@@ -211,12 +222,12 @@ class UpdateProductCategoryOffersData
 
     protected function getAllowanceLabel(OfferAllowance $offerAllowance): string
     {
-        $label = '';
-        if ($offerAllowance->type == OfferAllowanceType::PERCENTAGE_OFF) {
-            $label = percentage($offerAllowance->data['percentage_off'], 1);
-        }
-
-        return $label;
+        return match ($offerAllowance->type) {
+            OfferAllowanceType::PERCENTAGE_OFF => percentage($offerAllowance->data['percentage_off'], 1),
+            OfferAllowanceType::GIFT => __('Free gift'),
+            OfferAllowanceType::SHIPPING => __('Discounted shipping'),
+            default => '',
+        };
     }
 
     protected function getTriggerModel(Offer $offer): Product|ProductCategory|Collection|Shop|null

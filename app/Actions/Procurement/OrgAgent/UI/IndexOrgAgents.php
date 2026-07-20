@@ -141,18 +141,18 @@ class IndexOrgAgents extends OrgAction
                         'title' => __('Website'),
                         'icon'  => 'fal fa-people-arrows'
                     ],
-                    'actions' => [
-                        $this->canEdit && $request->route()->getName() == 'grp.org.procurement.org_agents.index' ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New Agent'),
-                            'label'   => __('Agent'),
-                            'route'   => [
-                                'name'       => 'grp.org.procurement.org_agents.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : false,
-                    ]
+                    // 'actions' => [
+                    //     $this->canEdit && $request->route()->getName() == 'grp.org.procurement.org_agents.index' ? [
+                    //         'type'    => 'button',
+                    //         'style'   => 'create',
+                    //         'tooltip' => __('New Agent'),
+                    //         'label'   => __('Agent'),
+                    //         'route'   => [
+                    //             'name'       => 'grp.org.procurement.org_agents.create',
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ]
+                    //     ] : false,
+                    // ]
                 ],
                 'data'        => OrgAgentsResource::collection($agents),
             ]

@@ -205,7 +205,7 @@ library.add(
 									<!-- Left -->
 									<div class="col-span-3">
 										<div class="flex items-center flex-wrap gap-1 leading-tight">
-											<Link :href="route('grp.helpers.redirect_org_stock', pick.org_stock_id)"
+											<Link :href="route('grp.majordomo.redirect_org_stock', pick.org_stock_id)"
 												class="primaryLink font-medium">
 												{{ pick.org_stock_code }}
 											</Link>

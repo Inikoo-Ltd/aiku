@@ -5,20 +5,26 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, computed } from "vue"
+import { inject, ref, computed, onMounted } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
+import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import { faExclamationTriangle } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { StocksManagementTS } from "@/types/Inventory/StocksManagement"
 import Image from "@common/Components/Image.vue"
-library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
+import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
+import SalesAnalyticsCompact from "@/Components/Product/SalesAnalyticsCompact.vue"
+import Icon from "@/Components/Icon.vue"
+import JsBarcode from "jsbarcode"
+import { ctrans } from "@/Composables/useTrans"
+import { trans } from "laravel-vue-i18n"
+library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
 
-const props = defineProps<{
+const props = defineProps < {
     data: {
         trade_units: {
             brand: {}
@@ -44,7 +50,32 @@ const props = defineProps<{
         stocks_management: StocksManagementTS
         currency_code: string
         is_quantity_excess: boolean
+        barcodes?: {
+            level: string
+            label: string
+            number: string
+            quantity: number
+            weight: number
+            dimensions: {
+                h?: number
+                l?: number
+                w?: number
+                type?: string
+                units?: string
+            }
+            packs: number | null
+        }[]
+        label_route?: {
+            name: string
+            parameters: Record<string, string>
+        }
     }
+    reasons?: {
+        increase: [],
+        decrease: [],
+        transfer: [],
+    }
+    org_stock_id: number
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -58,6 +89,31 @@ const displayedStats = computed(() => {
     return showAllStats.value ? filtered : filtered.slice(0, 6)
 })
 
+const formatWeight = (weight: number | null | undefined): string | null => {
+    if (weight == null) return null
+    if (weight >= 1000) {
+        return `${(weight / 1000).toLocaleString(locale.language.code, { maximumFractionDigits: 2 })} kg`
+    }
+    return `${weight.toLocaleString(locale.language.code, { maximumFractionDigits: 2 })} g`
+}
+
+const formatDimensions = (dimensions: { h?: number; l?: number; w?: number; units?: string } | null | undefined): string | null => {
+    if (!dimensions) return null
+    const sides = [dimensions.l, dimensions.w, dimensions.h].filter((value) => value != null)
+    if (!sides.length) return null
+    const units = dimensions.units ? ` ${dimensions.units}` : ""
+    return `${sides.join(" × ")}${units}`
+}
+
+const stockCostStats = computed(() => {
+    const stockCost = props.data.stocks_management?.stock_cost
+    return [
+        { title: ctrans("Future delivered cost"), value: stockCost?.current_supplier_sku_cost || 0 },
+        { title: ctrans("SKU value"), value: stockCost?.sku_value || 0 },
+        { title: ctrans("Total stock value"), value: stockCost?.total_stock_value || 0 },
+    ]
+})
+
 // watch(images, (newVal) => {
 //     if (!newVal?.length || selectedImage.value > newVal.length - 1) {
 //         selectedImage.value = 0
@@ -65,7 +121,17 @@ const displayedStats = computed(() => {
 // }, { immediate: true })
 
 
-console.log(props)
+onMounted(() => {
+    props.data.barcodes?.forEach((barcode) => {
+        JsBarcode("#barcode-" + barcode.level, barcode.number, {
+            format: barcode.level === "unit" ? "EAN13" : "CODE128",
+            lineColor: "#000",
+            width: 2,
+            height: 50,
+            displayValue: true,
+        })
+    })
+})
 
 </script>
 
@@ -74,60 +140,40 @@ console.log(props)
     <div class="grid md:grid-cols-4 gap-6 p-6">
         <!-- Section: Trade Units -->
         <div class="md:col-span-2">
-            <div class="border rounded-lg overflow-hidden">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-gray-100 text-gray-600">
-                        <tr>
-                            <th class="px-3 py-2 text-left">Image</th>
-                            <th class="px-3 py-2 text-left">Name</th>
-                        </tr>
-                    </thead>
-
-                    <tbody class="divide-y">
-                        <tr v-for="tradeUnit in data?.trade_units || []" :key="tradeUnit.id" class="hover:bg-gray-50">
-                            <td class="px-3 py-2">
-                                <Image v-if="tradeUnit.images?.[0]?.images" :src="tradeUnit.images[0].images"
-                                    class="w-16 h-16 object-cover rounded" />
-                            </td>
-                            <td class="px-3 py-2">
-                                {{ tradeUnit.name }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Header: Unit label + Product name -->
+            <div class="flex items-center gap-2 border-b pb-3 mb-4">
+                <ProductUnitLabel v-if="data?.trade_units?.[0]?.units"
+                    :units="data.trade_units[0].units"
+                    :unit="data.trade_units[0].unit" />
+                <span class="align-middle text-xl font-semibold text-gray-800">
+                    {{ data?.trade_units?.[0]?.name }}
+                </span>
             </div>
 
-            <!-- Card: Stock Summary -->
-            <div class="border rounded mt-4 p-4 bg-white">
-                <!-- Stock Value Section -->
-                <div class="space-y-2 pr-10">
-                    <div class="grid grid-cols-5 gap-x-3 items-center">
+            <!-- Body: Image + Stock Summary -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Image -->
+                <div class="sm:col-span-1">
+                    <Image v-if="data?.trade_units?.[0]?.images?.[0]?.images"
+                        :src="data.trade_units[0].images[0].images"
+                        class="w-full h-52 flex items-center justify-center" />
+                </div>
 
-                        <div class="col-span-2 xtext-right">
-                            {{ ctrans("Future delivered cost") }}
-                        </div>
-                        <div class="col-span-1 text-right">
-                            {{ ctrans("SKU value") }}
-                        </div>
-
-                        <div class="col-span-2 text-right">
-                            {{ ctrans("Total stock value") }}
+                <!-- Card: Stock Summary + Sales Analytics -->
+                <div class="sm:col-span-2 flex flex-col gap-4 self-start">
+                    <div class="flex flex-wrap gap-3">
+                        <div v-for="stat in stockCostStats" :key="stat.title"
+                            class="flex-1 min-w-max rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
+                            <div class="text-xs font-medium uppercase tracking-wide text-gray-400 whitespace-nowrap">
+                                {{ stat.title }}
+                            </div>
+                            <div class="mt-1.5 text-2xl font-bold text-gray-800 whitespace-nowrap">
+                                {{ locale.currencyFormat(data.currency_code, stat.value) }}
+                            </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-5 gap-x-3 items-center">
-
-                        <div class="col-span-2 xtext-right text-2xl font-semibold">
-                            {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.current_supplier_sku_cost || 0) }}
-                        </div>
-                        <div class="col-span-1 text-right text-2xl font-semibold">
-                            {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.sku_value || 0) }}
-                        </div>
-
-                        <div class="col-span-2 text-right text-2xl font-semibold">
-                            {{ locale.currencyFormat(data.currency_code, data.stocks_management?.stock_cost?.total_stock_value || 0) }}
-                        </div>
-                    </div>
+                    <SalesAnalyticsCompact v-if="data.sales_data" :salesData="data.sales_data" />
                 </div>
             </div>
         </div>
@@ -139,7 +185,49 @@ console.log(props)
                 :data
                 :stocks_management="data.stocks_management"
                 :trade_units="data.trade_units"
+                :reasons
+                :org_stock_id
             />
+
+            <!-- Barcodes -->
+            <div v-if="data.barcodes?.length" class="mt-6 flex flex-col gap-3">
+                <div v-for="barcode in data.barcodes" :key="barcode.level"
+                    class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                    <div class="w-8 shrink-0 text-center text-lg text-gray-500">
+                        <Icon :data="{ icon: 'fal fa-stop-circle' }" v-tooltip="trans(barcode.label)" />
+                    </div>
+
+                    <svg :id="'barcode-' + barcode.level" class="h-14"></svg>
+
+                    <div class="flex flex-col gap-1.5 text-sm">
+                        <span v-if="formatWeight(barcode.weight)"
+                            v-tooltip="ctrans('Weight')"
+                            class="inline-flex items-center gap-2 text-gray-700">
+                            <Icon :data="{ icon: 'fal fa-weight-hanging' }" class="w-4 shrink-0 text-gray-400" />
+                            <span class="font-medium tabular-nums">{{ formatWeight(barcode.weight) }}</span>
+                        </span>
+
+                        <span v-if="formatDimensions(barcode.dimensions)"
+                            v-tooltip="ctrans('Dimensions (L × W × H)')"
+                            class="inline-flex items-center gap-2 text-gray-700">
+                            <Icon :data="{ icon: 'fal fa-ruler-combined' }" class="w-4 shrink-0 text-gray-400" />
+                            <span class="font-medium tabular-nums">{{ formatDimensions(barcode.dimensions) }}</span>
+                            <span v-if="barcode.dimensions?.type"
+                                class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
+                                {{ barcode.dimensions.type }}
+                            </span>
+                        </span>
+                    </div>
+
+                    <a v-if="data.label_route"
+                        :href="route(data.label_route.name, { ...data.label_route.parameters, level: barcode.level })"
+                        target="_blank"
+                        v-tooltip="ctrans('Open PDF label')"
+                        class="ml-auto text-3xl text-gray-400 transition hover:text-red-500">
+                        <Icon :data="{ icon: 'fal fa-file-pdf' }" />
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </template>

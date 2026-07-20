@@ -18,6 +18,7 @@ use App\Models\Inventory\LocationOrgStock;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpsertPickingFromWaitingWarehouse extends OrgAction
@@ -34,6 +35,27 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
     public function handle(DeliveryNoteItem $deliveryNoteItem, $user, array $modelData): ?bool
     {
         DB::transaction(function () use ($deliveryNoteItem, $user, $modelData) {
+            $locationOrgStock  = LocationOrgStock::find(Arr::get($modelData, 'location_org_stock_id'));
+            $requestedQuantity = (float) Arr::get($modelData, 'quantity', 0);
+
+            $alreadyPickedInLocation = 0.0;
+            if ($pickingID = Arr::get($modelData, 'picking_id')) {
+                $alreadyPickedInLocation = (float) (Picking::where('id', $pickingID)
+                    ->where('location_id', $locationOrgStock?->location_id)
+                    ->value('quantity') ?? 0);
+            }
+
+            $availableInLocation = (float) ($locationOrgStock?->quantity ?? 0) + $alreadyPickedInLocation;
+
+            if ($requestedQuantity > $availableInLocation) {
+                throw ValidationException::withMessages([
+                    'quantity' => __('Not enough stock in this location: :available available, :requested requested.', [
+                        'available' => $availableInLocation,
+                        'requested' => $requestedQuantity,
+                    ]),
+                ]);
+            }
+
             $waitingWarehouseQuantity = $deliveryNoteItem->quantity_required
                 - Arr::get($modelData, 'quantity', 0)
                 - $deliveryNoteItem->quantity_waiting_crm
@@ -51,8 +73,6 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
 
 
             data_set($modelData, 'picker_user_id', $user->id);
-            $locationOrgStock = LocationOrgStock::find(Arr::pull($modelData, 'location_org_stock_id'));
-
 
             $pickingID = Arr::pull($modelData, 'picking_id');
             $picking   = null;
@@ -66,13 +86,13 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
                 ];
                 UpdatePicking::run($picking, $modelData);
             } else {
-                StorePicking::run($deliveryNoteItem, $locationOrgStock, $modelData);
+                StorePicking::make()->action($deliveryNoteItem, $user, $modelData);
             }
 
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
 
-            // To fix concurrent issue discount not applied after picking up from Waiting (reported by Erika)
-            $this->calculateTransactionDiscountTotal($deliveryNoteItem->transaction);
+            // To fix concurrent issue, discounts aren't applied after picking up from Waiting (reported by Erika)
+            $this->calculateTransactionDiscountTotal($deliveryNoteItem);
         });
 
         return true;

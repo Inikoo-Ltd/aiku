@@ -32,7 +32,8 @@ class GetWebsiteWorkshopFamilyDescriptionWebBlock
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            'family'    => WorkshopFamiliesResource::collection($website
+            'family'    => WorkshopFamiliesResource::collection(
+                $website
                 ->shop
                 ->productCategories()
                 ->where('type', ProductCategoryTypeEnum::FAMILY)

@@ -113,15 +113,15 @@ class ShowMarketplaceSupplier extends InertiaAction
 
                 MarketplaceSupplierTabsEnum::SHOWCASE->value => $this->tab == MarketplaceSupplierTabsEnum::SHOWCASE->value ?
                     fn () => GetMarketplaceSupplierShowcase::run($supplier)
-                    : Inertia::lazy(fn () => GetMarketplaceSupplierShowcase::run($supplier)),
+                    : Inertia::optional(fn () => GetMarketplaceSupplierShowcase::run($supplier)),
 
                 MarketplaceSupplierTabsEnum::SUPPLIER_PRODUCTS->value => $this->tab == MarketplaceSupplierTabsEnum::SUPPLIER_PRODUCTS->value ?
                     fn () => MarketplaceSupplierProductResource::collection(IndexMarketplaceSupplierProducts::run($supplier))
-                    : Inertia::lazy(fn () => MarketplaceSupplierProductResource::collection(IndexMarketplaceSupplierProducts::run($supplier))),
+                    : Inertia::optional(fn () => MarketplaceSupplierProductResource::collection(IndexMarketplaceSupplierProducts::run($supplier))),
 
                 MarketplaceSupplierTabsEnum::SHOWCASE->value => $this->tab == MarketplaceSupplierTabsEnum::SHOWCASE->value ?
                     fn () => MarketplaceSupplierResource::make($supplier)->getArray()
-                    : Inertia::lazy(fn () => MarketplaceSupplierResource::make($supplier)->getArray()),
+                    : Inertia::optional(fn () => MarketplaceSupplierResource::make($supplier)->getArray()),
 
             ]
         )->table(IndexMarketplaceSupplierProducts::make()->tableStructure());

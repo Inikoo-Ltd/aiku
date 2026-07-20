@@ -150,12 +150,12 @@ class ShowClockingMachine extends OrgAction
                 ],
                 ClockingMachineTabsEnum::SHOWCASE->value => $this->tab == ClockingMachineTabsEnum::SHOWCASE->value ?
                     fn () => GetClockingMachineShowcase::run($clockingMachine)
-                    : Inertia::lazy(fn () => GetClockingMachineShowcase::run($clockingMachine)),
+                    : Inertia::optional(fn () => GetClockingMachineShowcase::run($clockingMachine)),
 
                 ClockingMachineTabsEnum::SCAN_QR_CODE->value =>
                 $this->tab == ClockingMachineTabsEnum::SCAN_QR_CODE->value
                     ? fn () => GetClockingMachineShowcase::run($clockingMachine)
-                    : Inertia::lazy(fn () => GetClockingMachineShowcase::run($clockingMachine)),
+                    : Inertia::optional(fn () => GetClockingMachineShowcase::run($clockingMachine)),
 
                 ClockingMachineTabsEnum::CLOCKING_POLICIES->value =>
                 $this->tab == ClockingMachineTabsEnum::CLOCKING_POLICIES->value
@@ -168,7 +168,7 @@ class ShowClockingMachine extends OrgAction
                         'organisation_options'       => $this->getOrganisationOptions(),
                         'current_organisation_id'    => $this->organisation->id,
                     ])
-                    : Inertia::lazy(fn () => ClockingMachineCoordinatePolicyResource::collection(
+                    : Inertia::optional(fn () => ClockingMachineCoordinatePolicyResource::collection(
                         IndexClockingMachineCoordinatePolicies::run($clockingMachine, ClockingMachineTabsEnum::CLOCKING_POLICIES->value)
                     )->additional([
                         'can_edit_clocking_policies' => $this->canEdit,
@@ -182,13 +182,13 @@ class ShowClockingMachine extends OrgAction
                     fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))->additional([
                         'can_edit_clockings' => $this->canEdit,
                     ])
-                    : Inertia::lazy(fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))->additional([
+                    : Inertia::optional(fn () => ClockingsResource::collection(IndexClockings::run($clockingMachine, ClockingMachineTabsEnum::CLOCKINGS->value))->additional([
                         'can_edit_clockings' => $this->canEdit,
                     ])),
 
                 ClockingMachineTabsEnum::HISTORY->value => $this->tab == ClockingMachineTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($clockingMachine))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($clockingMachine)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($clockingMachine)))
 
             ]
         )->table(IndexClockings::make()->tableStructure($clockingMachine, prefix: ClockingMachineTabsEnum::CLOCKINGS->value))

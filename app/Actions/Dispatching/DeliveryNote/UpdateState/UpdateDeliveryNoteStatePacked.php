@@ -56,7 +56,12 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
                 StorePacking::make()->action($item, $this->user, []);
             }
 
-            if (count($deliveryNote->parcels) == 0) {
+            // Lock only the 'parcels' (handle concurrency)
+            $currentParcels = DeliveryNote::whereKey($deliveryNote->id)
+                ->lockForUpdate()
+                ->value('parcels') ?? [];
+
+            if (count($currentParcels) == 0) {
                 $defaultParcel = [
                     [
                         'weight'     => $deliveryNote->effective_weight / 1000,

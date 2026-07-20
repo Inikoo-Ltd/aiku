@@ -28,6 +28,11 @@ const reviewsData = ref({ data: [] as any[], meta: { current_page: 0, last_page:
 const reviewSummary = ref<any>(null)
 const isFetchingMoreReviews = ref(false)
 const minimum_reviews_to_show = inject<number>("minimum_reviews_to_show", 0)
+const webpage_reviews_count = inject<number | null>("webpage_reviews_count", null)
+const mayHaveReviewsToShow = computed(() =>
+    webpage_reviews_count === null
+    || (webpage_reviews_count > 0 && webpage_reviews_count >= minimum_reviews_to_show)
+)
 const allow_review_reaction = inject<number>("allow_review_reaction", 0)
 const allow_review_reply_reaction = inject<number>("allow_review_reply_reaction", 0)
 const show_staff_who_reply = inject<boolean>("show_staff_who_reply", false)
@@ -78,7 +83,9 @@ const updateWindowWidth = () => {
 onMounted(() => {
     updateWindowWidth() // get actual width after hydration
     window.addEventListener("resize", updateWindowWidth)
-    fetchMoreReviews()
+    if (mayHaveReviewsToShow.value) {
+        fetchMoreReviews()
+    }
 })
 
 onBeforeUnmount(() => {
@@ -255,7 +262,7 @@ const reviewLink = computed(() => {
 
 <template>
     <div class="editor-class overflow-hidden"
-         v-if="isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length">
+         v-if="mayHaveReviewsToShow && (isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length)">
         <div v-if="isInitialLoading"
              class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary skeleton -->
@@ -325,13 +332,13 @@ const reviewLink = computed(() => {
             <!-- Reviews -->
             <div class="relative lg:col-span-6">
                 <!-- Previous -->
-                <button @click="prev" :disabled="current === 0"
+                <button @click="prev" :disabled="current === 0" :aria-label="ctrans('Previous')"
                         class="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:-left-5">
                     <FontAwesomeIcon :icon="faChevronLeft" class="text-[10px] text-gray-600" />
                 </button>
 
                 <!-- Next -->
-                <button @click="next" :disabled="isNextDisabled"
+                <button @click="next" :disabled="isNextDisabled" :aria-label="ctrans('Next')"
                         class="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:right-3">
                     <FontAwesomeIcon v-if="isFetchingMoreReviews" :icon="faChevronRight"
                                      class="text-[10px] text-gray-600 animate-pulse" />
@@ -351,17 +358,17 @@ const reviewLink = computed(() => {
                             {{ displayMessage(review) }}
                         </p>
 
-                        <div class="flex justify-between mt-auto text-[11px] text-gray-400 w-full">
+                        <div class="flex justify-between mt-auto text-[11px] text-gray-500 w-full">
                             <div class="flex items-center w-fit">
-                                <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location[1] != layout?.iris?.shop?.location[1]" />
+                                <AddressLocation :data="review['customer_location']" :use_flag="review?.customer_location?.[1] != layout?.iris?.shop?.location?.[1]" />
                             </div>
                             <div v-if="hasTranslation(review)" @click.stop="toggleTranslation(review)"
-                                 class="text-gray-400 hover:text-gray-700 cursor-pointer">
+                                 class="text-gray-500 hover:text-gray-700 cursor-pointer">
                                 {{ showOriginal[review.id] ? ctrans("See translation") : ctrans("See original") }}
                             </div>
                         </div>
                         <div class="flex items-center justify-between">
-                            <div class="text-[11px] text-gray-400">
+                            <div class="text-[11px] text-gray-500">
                                 {{ useFormatTime(review.date) }}
                             </div>
 
@@ -418,7 +425,7 @@ const reviewLink = computed(() => {
                             {{ selectedReview.name }}
                         </div>
 
-                        <span class="text-xs text-gray-400">
+                        <span class="text-xs text-gray-500">
                             •
                         </span>
 
@@ -439,7 +446,7 @@ const reviewLink = computed(() => {
                 </div>
 
                 <button @click="reviewModalVisible = false"
-                        class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100">
+                        class="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100">
                     <FontAwesomeIcon :icon="faTimes" class="text-xs" />
                 </button>
 
@@ -451,7 +458,7 @@ const reviewLink = computed(() => {
                 {{ displayMessage(selectedReview) }}
             </p>
             <div v-if="hasMessageTranslation(selectedReview)" @click="toggleTranslation(selectedReview)"
-                 class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
+                 class="mt-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer">
                 {{ showOriginal[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
             </div>
             <div v-if="selectedReview.web_images?.length" class="flex gap-3">
@@ -496,7 +503,7 @@ const reviewLink = computed(() => {
                     {{
                         show_staff_who_reply
                             ? selectedReview.reply_by
-                            : layout.iris.shop.name
+                            : layout?.iris?.shop?.name
                     }}
                 </div>
 
@@ -504,7 +511,7 @@ const reviewLink = computed(() => {
                     {{ displayReply(selectedReview) }}
                 </p>
                 <div v-if="hasReplyTranslation(selectedReview)" @click="toggleReplyTranslation(selectedReview)"
-                     class="mt-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer">
+                     class="mt-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer">
                     {{ showOriginalReply[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
                 </div>
                 <div class="flex items-center w-full justify-end gap-2"

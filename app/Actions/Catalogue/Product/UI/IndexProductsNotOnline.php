@@ -124,9 +124,9 @@ class IndexProductsNotOnline extends OrgAction
             'webpage_state',
             'available_qty',
         ])
-        ->allowedFilters([$globalSearch])
-        ->withPaginator($prefix, tableName: request()->route()->getName())
-        ->withQueryString();
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
     public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null): Closure
@@ -161,9 +161,9 @@ class IndexProductsNotOnline extends OrgAction
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'webpage_state', label: ['fal', 'fa-browser'], type: 'icon', canBeHidden: false, sortable: true, searchable: false, tooltip: 'Webpage State')
+                ->column(key: 'webpage_state', label: ['fal', 'fa-browser'], tooltip: 'Webpage State', canBeHidden: false, sortable: true, type: 'icon')
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'available_quantity', label: __('Available Qty'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'available_quantity', label: __('Available Qty'), canBeHidden: false, sortable: true)
                 ->defaultSort('code');
         };
     }
@@ -185,28 +185,28 @@ class IndexProductsNotOnline extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Products',
             [
-                'breadcrumbs'                  => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                        => $title,
-                'pageHead'                     => [
-                    'title'      => $title,
+                'title'       => $title,
+                'pageHead'    => [
+                    'title'       => $title,
                     'is_negative' => true,
-                    'model'      => null,
-                    'icon'       => $icon,
-                    'afterTitle' => null,
-                    'iconRight'  => null,
+                    'model'       => null,
+                    'icon'        => $icon,
+                    'afterTitle'  => null,
+                    'iconRight'   => null,
                 ],
-                'data'                         => ProductsResource::collection($products),
-                'tabs'                         => [
+                'data'        => ProductsResource::collection($products),
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
 
                 ProductsTabsEnum::INDEX->value => $this->tab == ProductsTabsEnum::INDEX->value ?
                     fn () => ProductsResource::collection($products)
-                    : Inertia::lazy(fn () => ProductsResource::collection($products)),
+                    : Inertia::optional(fn () => ProductsResource::collection($products)),
             ]
         )->table($this->tableStructure(shop: $shop, prefix: ProductsTabsEnum::INDEX->value));
     }

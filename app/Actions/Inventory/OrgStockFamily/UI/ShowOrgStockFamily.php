@@ -55,18 +55,18 @@ class ShowOrgStockFamily extends OrgAction
         return [
             [
                 'isAnchor' => true,
-                'label'    => __('SKU Family'),
+                'label'    => __('SKO Family'),
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
                     'parameters' => $routeParameters,
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-boxes-alt'],
-                    'tooltip' => __('SKU Family'),
+                    'tooltip' => __('SKO Family'),
                 ],
             ],
             [
-                'label'    => __('SKUs'),
+                'label'    => __('SKOs'),
                 'number'   => $orgStockFamily->stats->number_org_stocks ?? 0,
                 'route'    => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
@@ -74,7 +74,7 @@ class ShowOrgStockFamily extends OrgAction
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-box'],
-                    'tooltip' => __('SKUs'),
+                    'tooltip' => __('SKOs'),
                 ],
             ],
         ];
@@ -85,7 +85,7 @@ class ShowOrgStockFamily extends OrgAction
         return Inertia::render(
             'Org/Inventory/OrgStockFamily',
             [
-                'title'       => __('stock family'),
+                'title'       => __('stock family') . ' ' . $orgStockFamily->code,
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($orgStockFamily, $request),
@@ -110,19 +110,19 @@ class ShowOrgStockFamily extends OrgAction
 
                 OrgStockFamilyTabsEnum::SHOWCASE->value => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)
-                    : Inertia::lazy(fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)),
+                    : Inertia::optional(fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)),
 
                 OrgStockFamilyTabsEnum::SALES->value => $this->tab == OrgStockFamilyTabsEnum::SALES->value ?
                     fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))
-                    : Inertia::lazy(fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))),
+                    : Inertia::optional(fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))),
 
                 OrgStockFamilyTabsEnum::HISTORY->value => $this->tab == OrgStockFamilyTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))),
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgStockFamily->stockFamily))),
 
                 'salesData' => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)
-                    : Inertia::lazy(fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)),
+                    : Inertia::optional(fn () => GetOrgStockFamilyTimeSeriesData::run($orgStockFamily)),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: OrgStockFamilyTabsEnum::HISTORY->value))
          ->table(IndexOrgStockFamilyTimeSeries::make()->tableStructure(prefix: OrgStockFamilyTabsEnum::SALES->value));
@@ -149,7 +149,7 @@ class ShowOrgStockFamily extends OrgAction
                                 'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.index',
                                 'parameters' => Arr::except($routeParameters, ['orgStockFamily']),
                             ],
-                            'label' => __('SKUs families'),
+                            'label' => __('SKOs families'),
                             'icon'  => 'fal fa-bars',
                         ],
                         'model' => [
