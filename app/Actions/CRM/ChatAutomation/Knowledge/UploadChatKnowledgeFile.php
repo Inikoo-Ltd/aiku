@@ -50,7 +50,7 @@ class UploadChatKnowledgeFile extends OrgAction
             ->toMediaCollection('knowledge_file');
 
         if ($isReadable) {
-            EmbedChatKnowledgeSource::dispatch($source);
+            EmbedChatKnowledgeSource::dispatchSync($source);
         }
 
         return $source;

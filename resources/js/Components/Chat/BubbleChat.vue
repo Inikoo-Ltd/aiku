@@ -153,6 +153,26 @@ const displayText = computed(() => {
     return activeMessage.value.original?.text || props.message.message_text
 })
 
+const videoEmbeds = computed<string[]>(() => {
+    const text = displayText.value || ""
+    const embeds: string[] = []
+    const seen = new Set<string>()
+
+    const youtube = /(?:youtube\.com\/(?:watch\?[^\s]*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/g
+    for (const match of text.matchAll(youtube)) {
+        const url = `https://www.youtube.com/embed/${match[1]}`
+        if (!seen.has(url)) { seen.add(url); embeds.push(url) }
+    }
+
+    const vimeo = /vimeo\.com\/(\d+)/g
+    for (const match of text.matchAll(vimeo)) {
+        const url = `https://player.vimeo.com/video/${match[1]}`
+        if (!seen.has(url)) { seen.add(url); embeds.push(url) }
+    }
+
+    return embeds
+})
+
 const canTranslate = computed(() =>
     props.viewerType === "agent" &&
     (
@@ -237,6 +257,14 @@ watch(selectedLanguage, async (val) => {
             <p class="whitespace-pre-wrap break-words">
                 {{ displayText }}
             </p>
+
+            <div v-for="embed in videoEmbeds" :key="embed"
+                class="mt-2 w-full max-w-xs aspect-video rounded-lg overflow-hidden bg-black">
+                <iframe :src="embed" class="w-full h-full" frameborder="0" loading="lazy"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen></iframe>
+            </div>
             <div v-if="
                 message?.is_offline_message &&
                 !(props.message.sender_type === 'guest' && props.viewerType === 'user')

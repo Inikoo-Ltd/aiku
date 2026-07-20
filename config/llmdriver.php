@@ -12,7 +12,7 @@ return [
     'driver' => env('LLM_DRIVER', 'ollama'),
 
     'chunking' => [
-        'default_size' => env('CHUNK_SIZE', 600),
+        'default_size' => env('CHUNK_SIZE', 1000),
     ],
     'embedding_sizes' => [
         'mock' => 3072,

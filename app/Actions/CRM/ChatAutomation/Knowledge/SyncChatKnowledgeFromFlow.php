@@ -84,7 +84,7 @@ class SyncChatKnowledgeFromFlow
             ]
         );
 
-        EmbedChatKnowledgeSource::dispatch($record);
+        EmbedChatKnowledgeSource::dispatchSync($record);
     }
 
     private function syncManagedSource(ChatAutomation $chatAutomation, string $nodeId, string $sourceId, array $source): void

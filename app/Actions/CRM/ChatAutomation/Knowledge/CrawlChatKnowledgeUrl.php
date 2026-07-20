@@ -20,9 +20,11 @@ class CrawlChatKnowledgeUrl
     public function handle(ChatKnowledgeSource $source, string $url, bool $crawl, int $maxPages): void
     {
         try {
-            $text = $crawl
-                ? $this->crawl($url, max(1, min($maxPages, 200)))
-                : $this->fetchSingle($url);
+            $text = match (true) {
+                $this->isVideoUrl($url) => $this->fetchVideoContent($source, $url),
+                $crawl                  => $this->crawl($url, max(1, min($maxPages, 200))),
+                default                 => $this->fetchSingle($url),
+            };
 
             $text = trim($text);
 
@@ -55,6 +57,64 @@ class CrawlChatKnowledgeUrl
         $html = Http::timeout(20)->get($url)->body();
 
         return $this->htmlToText($html, $url);
+    }
+
+    private function isVideoUrl(string $url): bool
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return str_contains($host, 'youtube.com')
+            || str_contains($host, 'youtu.be')
+            || str_contains($host, 'vimeo.com');
+    }
+
+    /**
+     * A video page has no crawlable prose, so instead of scraping HTML we pull its
+     * oEmbed metadata (title + channel, no API key needed) and keep the watch link.
+     * This makes the video findable by name and lets the assistant share it back.
+     */
+    private function fetchVideoContent(ChatKnowledgeSource $source, string $url): string
+    {
+        $host     = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $endpoint = str_contains($host, 'vimeo')
+            ? 'https://vimeo.com/api/oembed.json'
+            : 'https://www.youtube.com/oembed';
+
+        $lines = [];
+
+        try {
+            $response = Http::timeout(15)->acceptJson()->get($endpoint, ['url' => $url, 'format' => 'json']);
+
+            if ($response->successful()) {
+                $data    = $response->json();
+                $title   = trim((string) ($data['title'] ?? ''));
+                $author  = trim((string) ($data['author_name'] ?? ''));
+
+                if ($title !== '') {
+                    $lines[] = $title;
+                }
+                if ($author !== '') {
+                    $lines[] = 'Video by '.$author;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Chat knowledge video metadata fetch failed', [
+                'chat_knowledge_source_id' => $source->id,
+                'url'                      => $url,
+                'error'                    => $e->getMessage(),
+            ]);
+        }
+
+        if ($lines === []) {
+            $title = trim((string) $source->title);
+            if ($title !== '') {
+                $lines[] = $title;
+            }
+        }
+
+        $lines[] = 'Watch the video here: '.$url;
+
+        return trim(implode("\n", $lines));
     }
 
     private function crawl(string $startUrl, int $maxPages): string

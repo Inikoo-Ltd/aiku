@@ -30,7 +30,7 @@ class FetchChatKnowledgeUrl extends OrgAction
             ]
         );
 
-        CrawlChatKnowledgeUrl::dispatch($source, $url, $crawl, $maxPages);
+        CrawlChatKnowledgeUrl::dispatchSync($source, $url, $crawl, $maxPages);
 
         return $source;
     }

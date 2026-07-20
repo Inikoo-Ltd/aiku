@@ -31,17 +31,19 @@ class EmbedChatKnowledgeSource
         try {
             $sections = $this->splitIntoChunks($content, (int) config('llmdriver.chunking.default_size', 600));
             $metadata = $this->sourceMetadata($source);
+            $heading  = (string) ($metadata['source_name'] ?? '');
 
             foreach ($sections as $sectionNumber => $sectionContent) {
-                $embedding = GenerateChatEmbedding::run($sectionContent);
+                $chunkContent = $this->withSourceHeading($heading, $sectionContent);
+                $embedding    = GenerateChatEmbedding::run($chunkContent);
 
                 ChatKnowledgeChunk::create([
                     'chat_automation_id'       => $source->chat_automation_id,
                     'chat_knowledge_source_id' => $source->id,
                     'knowledge_node_id'        => $source->knowledge_node_id,
-                    'guid'                     => md5($sectionContent),
+                    'guid'                     => md5($chunkContent),
                     'section_number'           => $sectionNumber,
-                    'content'                  => $sectionContent,
+                    'content'                  => $chunkContent,
                     'metadata'                 => $metadata,
                     $embedding['column']       => $embedding['vector'],
                 ]);
@@ -81,6 +83,27 @@ class EmbedChatKnowledgeSource
         }
 
         return $metadata;
+    }
+
+    /**
+     * Prepend the source title to each chunk so the title itself becomes searchable by
+     * both vector and keyword retrieval. Without this, a source whose body text is thin
+     * (e.g. a YouTube link) is only findable by its URL, so asking for it by name — like
+     * "eBay video" — never matches. A bare URL title is skipped as it adds no keywords.
+     */
+    private function withSourceHeading(string $heading, string $content): string
+    {
+        $heading = trim($heading);
+
+        if ($heading === '' || str_starts_with($heading, 'http://') || str_starts_with($heading, 'https://')) {
+            return $content;
+        }
+
+        if (mb_stripos($content, $heading) === 0) {
+            return $content;
+        }
+
+        return $heading."\n\n".$content;
     }
 
     /**

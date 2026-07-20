@@ -22,7 +22,7 @@ class AnswerChatWithRag
      *
      * @param  array<string, mixed>  $aiNodeData
      * @param  array<int, array{role: string, text: string}>  $history
-     * @return array{answered: bool, text: string, chunk_ids: array<int, int>}
+     * @return array{answered: bool, needs_clarification: bool, text: string, chunk_ids: array<int, int>}
      */
     public function handle(ChatAutomation $chatAutomation, array $aiNodeData, string $question, array $history = []): array
     {
@@ -36,7 +36,7 @@ class AnswerChatWithRag
         if ($this->isConversational($question)) {
             $answer = $this->composeConversationalAnswer($persona, $question, $history);
             if ($answer !== null && trim($answer) !== '') {
-                return ['answered' => true, 'text' => $this->stripMarkdown($answer), 'chunk_ids' => []];
+                return ['answered' => true, 'needs_clarification' => false, 'text' => $this->stripMarkdown($answer), 'chunk_ids' => []];
             }
         }
 
@@ -57,19 +57,29 @@ class AnswerChatWithRag
         $answer = $this->composeAnswer($persona, $context, $question, $history, $answered);
 
         if ($answer === null || trim($answer) === '') {
-            return ['answered' => false, 'text' => $fallback, 'chunk_ids' => []];
+            return ['answered' => false, 'needs_clarification' => false, 'text' => $fallback, 'chunk_ids' => []];
         }
 
-        [$noInfo, $answer] = $this->detachNoInfoMarker($answer);
+        [$noInfo, $answer]  = $this->detachNoInfoMarker($answer);
+        [$clarify, $answer] = $this->detachClarifyMarker($answer);
 
         $answer = $this->stripMarkdown($answer);
+
+        if ($clarify && !$noInfo) {
+            return [
+                'answered'            => true,
+                'needs_clarification' => true,
+                'text'                => trim($answer) !== '' ? $answer : __('Could you give me a little more detail so I can help you better?'),
+                'chunk_ids'           => [],
+            ];
+        }
 
         if ($noInfo || ($answered && $this->isFallback($answer, $fallback))) {
             $answered = false;
         }
 
         if (trim($answer) === '') {
-            return ['answered' => false, 'text' => $fallback, 'chunk_ids' => []];
+            return ['answered' => false, 'needs_clarification' => false, 'text' => $fallback, 'chunk_ids' => []];
         }
 
         if ($answered) {
@@ -77,9 +87,10 @@ class AnswerChatWithRag
         }
 
         return [
-            'answered'  => $answered,
-            'text'      => $answer,
-            'chunk_ids' => $answered ? $confident->pluck('id')->all() : [],
+            'answered'            => $answered,
+            'needs_clarification' => false,
+            'text'                => $answer,
+            'chunk_ids'           => $answered ? $confident->pluck('id')->all() : [],
         ];
     }
 
@@ -94,6 +105,21 @@ class AnswerChatWithRag
     private function detachNoInfoMarker(string $answer): array
     {
         $cleaned = preg_replace('/\[+\s*NOINFO\s*\]+/i', '', $answer) ?? $answer;
+
+        return [$cleaned !== $answer, trim($cleaned)];
+    }
+
+    /**
+     * When the customer's message is related to the knowledge but too vague to answer
+     * safely, the model asks a clarifying question tagged with [[CLARIFY]]. We strip the
+     * token and flag the turn so the flow keeps the AI engaged (rather than deflecting)
+     * and waits for the customer to add the missing detail.
+     *
+     * @return array{0: bool, 1: string}
+     */
+    private function detachClarifyMarker(string $answer): array
+    {
+        $cleaned = preg_replace('/\[+\s*CLARIFY\s*\]+/i', '', $answer) ?? $answer;
 
         return [$cleaned !== $answer, trim($cleaned)];
     }
@@ -349,7 +375,8 @@ class AnswerChatWithRag
             ? [
                 'Answer ONLY using the KNOWLEDGE below. Do not invent facts, numbers, prices, steps, links, or images that are not in the KNOWLEDGE.',
                 'The KNOWLEDGE is retrieved by similarity and usually contains several blocks about DIFFERENT topics; most of them may be unrelated to the question. Judge relevance by MEANING, not exact wording: a block answers the question even when the customer used different words, synonyms, shorthand, or made typos (for example "how do you handle damaged" matches "How do you handle damaged or faulty items?"). If at least one block genuinely answers the question, use it to answer fully and simply ignore the unrelated blocks.',
-                'Only when NONE of the blocks actually answers the question should you begin your reply with the exact token [[NOINFO]] and then, in the customer\'s language, say you do not have information about that specific topic yet. Never adapt or rename steps from a genuinely different subject to fake an answer, and never share a link that is not about the question.',
+                'If the KNOWLEDGE contains related material but the customer\'s message is too vague or ambiguous to know which specific thing they mean (for example they say only "how much is it?", "the delivery", or "it does not work" and several blocks could apply), do NOT guess and do NOT deflect. Instead begin your reply with the exact token [[CLARIFY]] and then ask ONE short, friendly clarifying question in the customer\'s language that narrows it down to the specific topic or option you need. Ask for the missing detail only; do not answer yet.',
+                'Only when NONE of the blocks relate to the question at all should you begin your reply with the exact token [[NOINFO]] and then, in the customer\'s language, say you do not have information about that specific topic yet. Never adapt or rename steps from a genuinely different subject to fake an answer, and never share a link that is not about the question.',
                 'Match the shape of your answer to what the customer actually asked. If they only want a link, reply with one short sentence plus the exact link. If it is a quick factual question, answer to the point in one or two sentences. But when they ask how to do something, or ask for step-by-step, give the full ordered steps from the KNOWLEDGE, do not hold back or deflect them to a link instead.',
                 'When your answer is based on a KNOWLEDGE block that starts with "SOURCE_URL:", always include that exact URL in your reply so the customer can click through for more detail. Never invent or alter a URL, and only use a SOURCE_URL that is relevant to the question.',
                 'KNOWLEDGE may include images written as "[Image: description - URL]" or as plain image URLs. The chat renders an image automatically whenever you include its URL, so to SHOW an image you simply put its exact image URL on its own line at the right place in your answer. Never say you cannot show or send images, and never replace an available image URL with a link to the article. When the customer asks for steps with images, place the relevant image URL on its own line right after the step it illustrates. Never invent or alter an image URL.',
