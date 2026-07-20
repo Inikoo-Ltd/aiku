@@ -848,6 +848,11 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(ShippingCountry::class);
     }
 
+    public function preferredShippings(): HasMany
+    {
+        return $this->hasMany(PreferredShipping::class);
+    }
+
     public function emailTemplates(): HasMany
     {
         return $this->hasMany(EmailTemplate::class);

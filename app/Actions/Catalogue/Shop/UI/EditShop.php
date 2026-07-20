@@ -27,6 +27,7 @@ use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\Shipper;
 use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
 use App\Support\Forms\SesConfigurationBlueprint;
@@ -389,6 +390,33 @@ class EditShop extends OrgAction
                             'type'  => 'toggle',
                             'label' => __('Marketing opt-in set as checked'),
                             'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_default', false),
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Preferred Shipping'),
+                    'icon'   => 'fal fa-truck',
+                    'fields' => [
+                        'preferred_shipping' => [
+                            'type'         => 'preferred_shipping',
+                            'label'        => __('Preferred Shipping'),
+                            'noSaveButton' => true,
+                            'value'   => $shop->preferredShippings()->with(['shipper', 'country'])->get()->map(fn ($preferredShipping) => [
+                                'id'            => $preferredShipping->id,
+                                'shipper_id'    => $preferredShipping->shipper_id,
+                                'shipper_name'  => $preferredShipping->shipper?->name,
+                                'country_id'    => $preferredShipping->country_id,
+                                'country_name'  => $preferredShipping->country?->name,
+                                'postcode'      => $preferredShipping->postcode,
+                            ])->all(),
+                            'options' => [
+                                'shippers'  => Shipper::where('organisation_id', $shop->organisation_id)->where('status', true)->orderBy('name')->get(['id', 'name']),
+                                'countries' => GetCountriesOptions::run(),
+                            ],
+                            'storeRoute' => [
+                                'name'       => 'grp.models.preferred_shipping.store',
+                                'parameters' => ['shop' => $shop->id],
+                            ],
                         ],
                     ],
                 ],
