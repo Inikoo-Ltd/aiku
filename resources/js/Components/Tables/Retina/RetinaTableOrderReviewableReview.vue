@@ -18,6 +18,7 @@ import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { GridProducts } from "@/Components/Product"
 
 library.add(faStar, falStar)
 
@@ -117,7 +118,7 @@ const saveReview = async () => {
 <template>
    <PageHeading :data="data.pageHead"> </PageHeading>
    
-    <Table :resource="data" :name="tab" :key="tab" class="mt-5 pt-5">
+    <Table :resource="data" :name="tab" :key="tab" class="mt-5 pt-5 hidden md:block">
         <template #cell(image)="{ item }">
             <div class="flex relative w-8 aspect-square overflow-hidden">
                 <Image :src="item.image?.thumbnail" class="w-full h-full object-contain" />
@@ -161,6 +162,37 @@ const saveReview = async () => {
             </div>
         </template>
     </Table>
+
+    <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 md:hidden" :name="tab"
+        :gridClass="'grid grid-cols-1'">
+        <template #card="{ item }">
+            <div class="rounded-xl border border-gray-200 bg-white p-3">
+                <div class="flex items-start gap-3">
+                    <div class="min-w-0 flex-1">
+                        <span class="inline-block rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                            {{ tab === 'product_reviews' ? item.asset_code : item.family_code }}
+                        </span>
+
+                        <p class="mt-1 line-clamp-2 text-sm text-gray-700 px-1">
+                            {{ tab === 'product_reviews' ? item.asset_name : item.family_name }}
+                        </p>
+
+                        <div v-if="item.quantity_ordered !== null" class="mt-1 text-sm font-medium px-1">
+                          Qty order :  {{ item.quantity_ordered }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3  flex justify-end border-t border-gray-100 pt-3">
+                    <div class="cursor-pointer rating" @click="openDialog(item)">
+                        <Rating v-if="item.review.review_id" v-model="item.review_rating" :disabled="true" />
+                        <Button v-else size="xs"
+                            :label="ctrans('Rate this :type', { type: tab === 'product_reviews' ? 'product' : 'family' })" />
+                    </div>
+                </div>
+            </div>
+        </template>
+    </GridProducts>
 
     <Dialog v-model:visible="isOpenDialog" modal :header="`${ctrans('Rate this :type', {
         type: tab === 'product_reviews' ? 'product' : 'family',

@@ -224,8 +224,8 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
                    @update:tab="handleTabUpdate" :review_settings />
 
 
-    <div class="flex justify-end px-6 gap-x-4">
-        <div class="grid grid-cols-3 gap-x-4 w-full">
+    <div class="flex justify-end px-4 sm:px-6 gap-x-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-x-4 gap-y-4 w-full ">
             <!-- Input text: notes from staff -->
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
