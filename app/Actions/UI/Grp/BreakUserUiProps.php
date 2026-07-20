@@ -8,7 +8,6 @@
 
 namespace App\Actions\UI\Grp;
 
-use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
@@ -29,11 +28,10 @@ class BreakUserUiProps implements ShouldBeUnique
         return $user->id;
     }
 
-    public function handle(User $user, ?Command $command = null): void
+    public function handle(User $user): void
     {
         setPermissionsTeamId($user->group_id);
-        $cacheKeyPrefix = 'grp-first-load-props:'.$user->id.':';
-        ClearCacheByWildcard::run($cacheKeyPrefix.'*', $command);
+        Cache::tags('grp-first-load-props:'.$user->id)->flush();
 
         $language = $user->language;
         $this->reCache($user, $language);
@@ -54,7 +52,7 @@ class BreakUserUiProps implements ShouldBeUnique
 
         try {
             $shouldCacheLayout
-                ? Cache::put($cacheKey, $compute(), $ttl)
+                ? Cache::tags('grp-first-load-props:'.$user->id)->put($cacheKey, $compute(), $ttl)
                 : $compute();
         } catch (Throwable $e) {
             Sentry::captureException($e);
@@ -78,7 +76,7 @@ class BreakUserUiProps implements ShouldBeUnique
         if ($command->argument('user')) {
             $user = User::where('slug', $command->argument('user'))->firstOrFail();
             $command->info('Recaching UI props for user: '.$user->slug);
-            $this->handle($user, $command);
+            $this->handle($user);
 
             return 0;
         }

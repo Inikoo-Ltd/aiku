@@ -849,9 +849,7 @@ test('UI index ordering invoices by payment status', function () {
     $this->user->givePermissionTo(
         Permission::where('name', "orders.{$this->shop->id}.view")->firstOrFail()
     );
-    Cache::forget(
-        "auth-user:{$this->user->id};can:orders.{$this->shop->id}.view|accounting.{$this->organisation->id}.view"
-    );
+    Cache::tags('auth-user:'.$this->user->id)->flush();
     actingAs($this->user->fresh());
 
     $orderingNavigation = GetShopNavigation::run($this->shop, $this->user->fresh());

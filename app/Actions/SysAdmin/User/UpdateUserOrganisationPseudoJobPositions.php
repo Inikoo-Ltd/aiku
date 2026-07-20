@@ -37,13 +37,7 @@ class UpdateUserOrganisationPseudoJobPositions extends OrgAction
         $jobPositions = $this->reorganisePositionsSlugsToIds($jobPositions);
 
         SyncUserPseudoOrganisationJobPositions::run($user, $organisation, $jobPositions);
-        CleanUserCaches::run(
-            $user,
-            [
-                'auth-user:'.$user->id.';*',
-                'grp-first-load-props:'.$user->id.':*'
-            ]
-        );
+        CleanUserCaches::run($user);
         BreakUserUiProps::run($user);
 
         return $user;

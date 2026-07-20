@@ -1667,7 +1667,10 @@ test('changing group permissions leaves the cached ui props in sync with the men
     $code = JobPosition::where('group_id', $admin->group_id)->where('scope', 'group')->value('code');
 
     $cachedNavigation = function (User $target) {
-        return data_get(Cache::get('grp-first-load-props:'.$target->id.':'.$target->language->code), 'layout.navigation.grp');
+        return data_get(
+            Cache::tags('grp-first-load-props:'.$target->id)->get('grp-first-load-props:'.$target->id.':'.$target->language->code),
+            'layout.navigation.grp'
+        );
     };
     $freshNavigation = function (User $target) {
         setPermissionsTeamId($target->group_id);
