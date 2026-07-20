@@ -7,6 +7,9 @@ use App\Actions\Chat\ChatSession\GetChatVisitorsByCountry;
 use App\Actions\Chat\ChatSession\UI\ShowChatConversations;
 use App\Actions\Chat\ChatSession\UI\ShowChatDashboard;
 use App\Actions\Chat\ChatSession\UI\ShowOrgChatConversation;
+use App\Actions\CRM\ChatAutomation\UI\ShowChatAutomations;
+use App\Actions\CRM\ChatAutomation\UI\CreateChatAutomation;
+use App\Actions\CRM\ChatAutomation\UI\EditChatAutomation;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowChatDashboard::class)->name('dashboard');
@@ -16,3 +19,7 @@ Route::get('/dashboard-visitors', GetChatDashboardVisitors::class)->name('dashbo
 Route::get('/conversations', ShowChatConversations::class)->name('conversations.show');
 Route::get('/conversations/export', ExportChatConversations::class)->name('conversations.export');
 Route::get('/conversations/{chatSession}', ShowOrgChatConversation::class)->name('conversations.detail');
+
+Route::get('/automations', ShowChatAutomations::class)->name('automations.show');
+Route::get('/automations/create', CreateChatAutomation::class)->name('automations.create');
+Route::get('/automations/{chatAutomation}/edit', EditChatAutomation::class)->name('automations.edit');

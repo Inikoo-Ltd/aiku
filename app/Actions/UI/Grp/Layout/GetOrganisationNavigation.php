@@ -238,6 +238,15 @@ class GetOrganisationNavigation
                             'parameters' => [$organisation->slug],
                         ],
                     ],
+                    [
+                        'label'   => __('Automations'),
+                        'icon'    => ['fal', 'fa-robot'],
+                        'root'    => 'grp.org.chat.automations.show',
+                        'route'   => [
+                            'name'       => 'grp.org.chat.automations.show',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
                 ],
             ],
         ];

@@ -25,6 +25,41 @@ class ProcessChatMessageSideEffects
     {
         $this->updateSessionTimestamps($chatSession, $senderType);
         $this->logMessageEvent($chatSession, $senderType, $senderId, $chatMessage);
+        $this->fireOfflineAutomations($chatSession, $senderType);
+    }
+
+    private function fireOfflineAutomations(ChatSession $chatSession, string $senderType): void
+    {
+        $isVisitorMessage = \in_array($senderType, [
+            ChatSenderTypeEnum::GUEST->value,
+            ChatSenderTypeEnum::USER->value,
+        ]);
+
+        if (! $isVisitorMessage) {
+            return;
+        }
+
+        try {
+            $website = $chatSession->shop?->website;
+            if (! $website) {
+                return;
+            }
+
+            $config = \App\Actions\HumanResources\WorkSchedule\GetChatConfig::run($website);
+            if (($config['is_online'] ?? false) === true) {
+                return;
+            }
+
+            \App\Actions\CRM\ChatAutomation\ResolveChatAutomations::run(
+                $chatSession,
+                \App\Enums\CRM\Livechat\ChatAutomationTriggerEnum::OFFLINE
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Offline automation failed', [
+                'chat_session_id' => $chatSession->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
     }
 
     private function updateSessionTimestamps(ChatSession $chatSession, string $senderType): void
