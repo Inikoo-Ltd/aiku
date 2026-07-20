@@ -287,7 +287,7 @@ const visitSearchPage = () => {
             @show="() => { isPopoverVisible = true; showDropdown = true }"
             @hide="() => { isPopoverVisible = false; showDropdown = false }"
         >
-            <div class="h-[70vh] max-h-[700px] w-full overflow-hidden">
+            <div class="h-[70vh] max-h-[550px] w-full overflow-hidden">
                 <SearchResultCatalogue
                     v-model:open="showDropdown"
                     :results="internalResults"

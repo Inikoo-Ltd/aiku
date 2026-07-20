@@ -49,7 +49,9 @@ class SearchIrisCatalogue extends IrisAction
             ->get()
             ->keyBy('id');
 
-        return array_map(static function (array $item) use ($models, $largeImage) {
+        $showPrice = auth()->check();
+
+        return array_map(static function (array $item) use ($models, $largeImage, $showPrice) {
             $model = $models->get($item['id']);
 
             $image = $largeImage
@@ -58,6 +60,10 @@ class SearchIrisCatalogue extends IrisAction
 
             $item['url']   = $model?->webpage?->getCanonicalUrl() ?: null;
             $item['image'] = $image ?: $item['image'] ?? null;
+
+            if ($largeImage && $showPrice) {
+                $item['price'] = $model?->price;
+            }
 
             return $item;
         }, $items);
