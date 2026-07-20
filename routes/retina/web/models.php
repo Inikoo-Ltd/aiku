@@ -7,7 +7,6 @@
  */
 
 use App\Actions\Accounting\Payment\PastPay\PayOrderWithPastpay;
-use App\Actions\Accounting\Payment\PastPay\SuccessOrderWithPastpay;
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
@@ -188,7 +187,6 @@ use Illuminate\Support\Facades\Route;
 Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place_order_pay_by_bank');
 Route::post('place-order-pay-by-cash-on-delivery', PlaceOrderPayByCashOnDelivery::class)->name('place_order_pay_by_cash_on_delivery');
 Route::post('orders/{order}/pay-by-pastpay', PayOrderWithPastpay::class)->name('place_order_pay_by_pastpay');
-Route::post('orders/{order}/success-pay-by-pastpay', SuccessOrderWithPastpay::class)->name('success_order_pay_by_pastpay');
 
 Route::post('top-up-payment-api-point', StoreTopUpPaymentApiPoint::class)->name('top_up_payment_api_point.store');
 
