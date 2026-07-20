@@ -22,7 +22,6 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -41,7 +40,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
     {
         DB::transaction(function () use ($currentLocationStock, $targetLocation, $modelData) {
             $quantity = Arr::pull($modelData, 'quantity');
-            
+
             $reason = Arr::pull($modelData, 'reason', null);
             $note   = Arr::pull($modelData, 'note', null);
             // Source
@@ -94,7 +93,7 @@ class MoveOrgStockToOtherLocation extends OrgAction
         if ($reason) {
             data_set($storedData, 'reason', $reason);
         }
-        
+
         if ($note) {
             data_set($storedData, 'note', $note);
         }

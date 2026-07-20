@@ -54,7 +54,7 @@ class CloneProductImagesFromMasterProduct implements ShouldBeUnique
             }
 
             $this->syncProductImages($masterProduct, $product);
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             Sentry::captureException($exception);
         }
 

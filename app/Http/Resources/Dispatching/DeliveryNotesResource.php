@@ -151,6 +151,7 @@ class DeliveryNotesResource extends JsonResource
                 ],
                 'method'     => 'patch'
             ],
+            'is_collection'               => (bool) $this->collection_address_id,
         ];
     }
 }

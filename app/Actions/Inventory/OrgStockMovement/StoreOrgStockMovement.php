@@ -152,7 +152,7 @@ class StoreOrgStockMovement extends OrgAction
             'reason'            => ['sometimes', 'nullable', Rule::enum(OrgStockMovementReasonEnum::class)],
             'note'              => ['sometimes', 'nullable', 'string'],
         ];
-        
+
         if (!$this->strict) {
             $rules['note']               = ['sometimes', 'nullable', 'string', 'max:1024'];
             $rules['fetched_at']         = ['sometimes', 'date'];

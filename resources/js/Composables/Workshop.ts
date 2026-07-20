@@ -6,17 +6,25 @@
 */
 
 import { usePage } from "@inertiajs/vue3"
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
 
 
 // Method: format currency
 const formatCurrency = (amount: number) => {
-    if (!usePage()?.props?.iris) {
+    const layout = useIrisLayoutStore()
+    const currencyCode = layout.iris?.currency?.code || usePage()?.props?.iris?.currency?.code
+
+    if (!currencyCode) {
         return amount
     }
 
-    return new Intl.NumberFormat(usePage()?.props?.iris?.website_i18n?.current_language?.code || 'en-US', {
+    const languageCode = layout.iris?.website_i18n?.current_language?.code
+        || usePage()?.props?.iris?.website_i18n?.current_language?.code
+        || 'en-US'
+
+    return new Intl.NumberFormat(languageCode, {
         style: "currency",
-        currency: usePage()?.props?.iris?.currency?.code || '',
+        currency: currencyCode,
     }).format(amount || 0)
 }
 

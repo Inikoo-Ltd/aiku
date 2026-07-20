@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
@@ -84,12 +86,20 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
                 $dataToUpdate[$field] = true;
             } // For non-boolean fields, if we have values, concatenate them with comma separators
             elseif (!empty($values)) {
-                $dataToUpdate[$field] = implode(', ', array_unique($values));
+                if ($field == 'origin_country_id') {
+                    $dataToUpdate[$field] = $values[0];
+                } else {
+                    $dataToUpdate[$field] = implode(', ', array_unique($values));
+                }
             }
         }
 
         if (!empty($dataToUpdate)) {
-            $product->updateQuietly($dataToUpdate);
+            $product->update($dataToUpdate);
+
+            if ($product->wasChanged() && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
+                BreakWebpageCache::dispatch($product->webpage);
+            }
         }
     }
 

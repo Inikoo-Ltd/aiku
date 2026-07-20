@@ -38,7 +38,7 @@ class StoreProductToTiktok extends RetinaAction
         /** @var TiktokUser $tiktokUser */
         $tiktokUser = $portfolio->customerSalesChannel->user;
 
-        if(! $tiktokUser) {
+        if (! $tiktokUser) {
             throw new \Exception('No authenticated TikTok channel found.');
         }
 

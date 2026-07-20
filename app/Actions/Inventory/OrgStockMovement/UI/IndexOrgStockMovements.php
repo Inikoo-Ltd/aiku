@@ -203,10 +203,10 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->column(key: 'type', label: __('Type'), sortable: true);
-                
+
             $table
                 ->column(key: 'reason', label: 'Reason', align: 'left', searchable: true, sortable: true);
-                
+
             if (!($parent instanceof Location)) {
                 $table->column(key: 'location_code', label: __('Location'));
             }

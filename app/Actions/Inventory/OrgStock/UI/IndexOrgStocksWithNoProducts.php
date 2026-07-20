@@ -288,7 +288,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                 ) as on_the_way_po_count"
             );
             $selects[] = DB::raw(
-                    "(
+                "(
                     SELECT
                         CASE
                             WHEN SUM(it.quantity) > 0 THEN
