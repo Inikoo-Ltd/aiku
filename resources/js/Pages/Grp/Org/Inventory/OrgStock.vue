@@ -93,6 +93,12 @@ const props = defineProps<{
     master: {}
     masterRoute: routeType | null
     history?: {}
+    reasons: {
+        increase: [],
+        decrease: [],
+        transfer: [],
+    }
+    org_stock_id: number
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -173,6 +179,8 @@ const component = computed(() => {
                             :stocks_management="stocksManagement"
                             :trade_units="showcase.trade_units"
                             :data="{ is_quantity_excess: showcase.is_quantity_excess, currency_code: showcase.currency_code }"
+                            :reasons
+                            :org_stock_id
                         />
                     </PopoverPanel>
                 </Transition>
@@ -189,5 +197,5 @@ const component = computed(() => {
         </Message>
     </div> -->
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :reasons :org_stock_id></component>
 </template>

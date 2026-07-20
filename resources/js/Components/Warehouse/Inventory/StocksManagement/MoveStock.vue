@@ -6,12 +6,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLongArrowRight } from "@fal"
 import { faInfoCircle, faForklift, faTimes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { InputNumber } from 'primevue'
+import { InputNumber, Textarea } from 'primevue'
 import { ref, computed, onMounted } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import {formatDistanceStrict} from 'date-fns/formatDistanceStrict'
 import { notify } from '@kyvg/vue3-notification'
+import Multiselect from '@vueform/multiselect'
 library.add(faLongArrowRight, faInfoCircle, faForklift, faTimes)
 
 const props = defineProps<{
@@ -25,6 +26,11 @@ const props = defineProps<{
     replenishment_data: Record<number, {
         replenishment_stock?: number
     }>
+    reasons?: {
+        increase: [],
+        decrease: [],
+        transfer: [],
+    }
 }>()
 
 const emits = defineEmits(['close'])
@@ -53,12 +59,16 @@ const form = useForm({
     moveStock: null
 })
 
+const selectedReason = ref('')
+const note = ref('')
+
 const isSource = (location: any) => moveStock.value.from?.id === location.id
 const isTarget = (location: any) => moveStock.value.to?.id === location.id
 
 const canSave = computed(() => {
     return !!moveStock.value.from
         && !!moveStock.value.to
+        && !!selectedReason.value
         && Number(moveStock.value.quantity) >= 1
         && Number(moveStock.value.quantity) <= Number(moveStock.value.from?.stock ?? 0)
 })
@@ -211,13 +221,15 @@ const getStockChangeIndicator = (warehouse: { id: any }) => {
 const isLoadingSubmit = ref(false);
 
 const submitCheckStock = () => {
-    if (!moveStock.value.from?.id || !moveStock.value.to?.id) return;
+    if (!canSave.value) return;
 
     router.patch(route('grp.models.location_org_stock.move', {
         locationOrgStock: moveStock.value.from.id,
         targetLocationOrgStock: moveStock.value.to.id
     }), {
-        quantity: moveStock.value.quantity
+        quantity: moveStock.value.quantity,
+        reason: selectedReason.value,
+        note: note.value
     }, {
         preserveScroll: true,
         onStart: () => {
@@ -262,6 +274,7 @@ const applyReplenishment = (location: any) => {
 
 onMounted(() => {
     const locations = form.stockCheck
+    selectedReason.value = Object.keys(props.reasons?.transfer ?? [])?.[0] ?? '';
 
     if (locations.length === 2) {
         const [loc1, loc2] = locations
@@ -283,9 +296,16 @@ onMounted(() => {
 
     syncForm()
 })
-
 </script>
+<!-- <style scoped lang="scss">
+    .child-text-sm {
+        font-size: 0.75rem;
 
+        > * {
+            font-size: 0.75rem;
+        }
+    }
+</style> -->
 <template>
     <div class="space-y-4">
         <!-- Section: Move summary + instructions -->
@@ -306,7 +326,7 @@ onMounted(() => {
                     :class="moveStock.from ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'"
                 >
                     <div
-                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition"
+                        class="font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-x-1.5 transition w-32"
                         :class="moveStock.from ? 'text-green-600' : 'text-green-500'"
                     >
                         <FontAwesomeIcon icon="fas fa-forklift" fixed-width />
@@ -366,7 +386,6 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-
             <!-- <div class="text-yellow-600 text-xs text-center mt-2 h-[16px]">
                 <span v-if="!moveStock.from">
                     <FontAwesomeIcon :icon="faInfoCircle" />
@@ -381,6 +400,43 @@ onMounted(() => {
                     {{ trans('Enter the quantity to move from the source') }}
                 </span>
             </div> -->
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+            <div class="min-w-0">
+                <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {{ ctrans('Transfer reason') }}
+                    <span class="text-red-500">*</span>
+                </label>
+                <Multiselect
+                    v-model="selectedReason"
+                    :options="reasons?.transfer ?? []"
+                    :placeholder="ctrans('Select your reason')"
+                    :canClear="false"
+                    :mode="'single'"
+                    :closeOnSelect="true"
+                    :canDeselect="false"
+                    :hideSelected="false"
+                    :searchable="true"
+                    :filter-results="false"
+                    :classes="{ container: selectedReason ? 'multiselect' : 'multiselect !border-red-300' }"
+                />
+                <div v-if="!selectedReason" class="mt-1 text-xs h-4" :class="selectedReason ? 'invisible' : 'text-red-500'">
+                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
+                    {{ ctrans('Select a reason before saving') }}
+                </div>
+            </div>
+
+            <div class="min-w-0">
+                <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {{ ctrans('Note') }}
+                    <span class="font-normal normal-case tracking-normal text-gray-400 italic">
+                        {{ ctrans('optional') }}
+                    </span>
+                </label>
+                <Textarea v-model.trim="note" rows="1" :autoResize="true"
+                :placeholder="ctrans('Add more details about this move')" class="w-full rounded-xl" />
+            </div>
         </div>
 
         <template v-if="form.stockCheck.length > 0">

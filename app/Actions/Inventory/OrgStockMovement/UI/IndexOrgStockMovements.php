@@ -154,6 +154,8 @@ class IndexOrgStockMovements extends OrgAction
                 'delivery_notes.id as delivery_note_id',
                 'delivery_notes.reference as delivery_note_reference',
                 'org_stock_movements.is_migration_point',
+                'org_stock_movements.reason',
+                'org_stock_movements.note',
             ])
             ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')
@@ -161,7 +163,7 @@ class IndexOrgStockMovements extends OrgAction
             ->leftJoin('locations', 'locations.id', 'org_stock_movements.location_id')
             ->leftJoin('org_stocks', 'org_stocks.id', 'org_stock_movements.org_stock_id')
             ->with('user')
-            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name', 'user'])
+            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name', 'user', 'reason'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -201,6 +203,10 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->column(key: 'type', label: __('Type'), sortable: true);
+                
+            $table
+                ->column(key: 'reason', label: 'Reason', align: 'left', searchable: true, sortable: true);
+                
             if (!($parent instanceof Location)) {
                 $table->column(key: 'location_code', label: __('Location'));
             }
@@ -212,6 +218,7 @@ class IndexOrgStockMovements extends OrgAction
             } else {
                 $table->column(key: 'running_quantity_location', label: __('Running Quantity'), align: 'right');
             }
+
         };
     }
 

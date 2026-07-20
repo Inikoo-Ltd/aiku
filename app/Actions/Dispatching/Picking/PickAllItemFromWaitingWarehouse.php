@@ -60,11 +60,10 @@ class PickAllItemFromWaitingWarehouse extends OrgAction
                 ]
             );
 
-
             AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
 
             // To fix concurrent issue, discounts aren't applied after picking up from Waiting (reported by Erika)
-            $this->calculateTransactionDiscountTotal($deliveryNoteItem->transaction);
+            $this->calculateTransactionDiscountTotal($deliveryNoteItem);
 
             return $picking;
         });
