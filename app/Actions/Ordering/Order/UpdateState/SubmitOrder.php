@@ -168,7 +168,7 @@ class SubmitOrder extends OrgAction
                     continue;
                 }
 
-                $isGift = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
+                $isFollowOn = $upComingTransaction->type === UpcomingTransactionTypeEnum::FOLLOW_ON;
 
                 $transaction = StoreTransaction::make()->action(
                     order: $order,
@@ -176,8 +176,8 @@ class SubmitOrder extends OrgAction
                     modelData: [
                         'quantity_ordered' => 0,
                         'quantity_bonus'   => $upComingTransaction->quantity,
-                        'is_gift'          => $isGift,
-                        'is_follow_on'     => true
+                        'is_gift'          => true,
+                        'is_follow_on'     => $isFollowOn
                     ],
                     strict: false,
                     forceHydrators: true
