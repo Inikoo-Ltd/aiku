@@ -257,7 +257,7 @@ class GetOrganisationNavigation
 
         $navigation = $this->getSettingsNavs($user, $organisation, $navigation);
 
-        if(isset($navigation['setting'])) {
+        if (isset($navigation['setting'])) {
             $navigation['setting']['topMenu']['subSections'][] = [
                 'label'   => __('Changelogs'),
                 'icon'    => ['fal', 'fa-history'],
