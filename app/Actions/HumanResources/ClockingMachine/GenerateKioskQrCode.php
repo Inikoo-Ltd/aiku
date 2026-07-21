@@ -26,7 +26,7 @@ class GenerateKioskQrCode
         try {
             return response()->json([
                 'success' => true,
-                'data'    => GenerateClockingMachineQrCode::make()->handle($clockingMachine),
+                'data'    => GenerateClockingMachineQrCode::make()->handle($clockingMachine, []),
             ]);
         } catch (Exception $e) {
             return response()->json([

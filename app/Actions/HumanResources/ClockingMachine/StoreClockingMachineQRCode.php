@@ -24,16 +24,22 @@ class StoreClockingMachineQRCode extends OrgAction
             $modelData['label'] = static::generateLabel();
         }
 
-        do {
-            $hash = static::generateHash();
-        } while (ClockingMachineQRCode::where('hash', $hash)->exists());
-
-        $modelData['hash'] = $hash;
+        $modelData['hash']   = static::freshHash();
+        $modelData['active'] = true;
 
         /** @var ClockingMachineQRCode $clockingMachineQrCode */
         $clockingMachineQrCode = $clockingMachine->clockingMachineQrCodes()->create($modelData);
 
         return $clockingMachineQrCode;
+    }
+
+    public static function freshHash(): string
+    {
+        do {
+            $hash = static::generateHash();
+        } while (ClockingMachineQRCode::where('hash', $hash)->exists());
+
+        return $hash;
     }
 
     protected static function generateHash(): string

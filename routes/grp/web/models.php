@@ -278,7 +278,10 @@ use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachine\SetClockingMachineKioskToken;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\RegenerateClockingMachineQRCodeHash;
+use App\Actions\HumanResources\ClockingMachine\ToggleClockingMachineQRCodeActive;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachineQRCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMachineCoordinatePolicy;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\StoreClockingMachineCoordinatePolicy;
@@ -495,6 +498,12 @@ Route::prefix('clocking-machine-coordinate-policy')->name('clocking-machine-coor
 Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine-coordinate-policy-rule.')->group(function () {
     Route::patch('{policyRule:id}', UpdateClockingMachineCoordinatePolicyRule::class)->name('update');
     Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
+});
+
+Route::prefix('clocking-machine-qr-code')->name('clocking_machine_qr_code.')->group(function () {
+    Route::patch('{clockingMachineQRCode:id}', UpdateClockingMachineQRCode::class)->name('update');
+    Route::patch('{clockingMachineQRCode:id}/toggle-active', ToggleClockingMachineQRCodeActive::class)->name('toggle_active');
+    Route::patch('{clockingMachineQRCode:id}/regenerate-hash', RegenerateClockingMachineQRCodeHash::class)->name('hash.regenerate');
 });
 
 

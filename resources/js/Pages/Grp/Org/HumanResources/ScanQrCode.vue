@@ -2,7 +2,8 @@
 import QrcodeVue from "qrcode.vue"
 import jsPDF from "jspdf"
 import { ref, nextTick } from "vue"
-import { faExpand, faCompress, faDownload, faQrcode } from '@fortawesome/free-solid-svg-icons'
+import { faExpand, faCompress, faDownload, faQrcode, faPencil, faToggleOn, faToggleOff } from '@fortawesome/free-solid-svg-icons'
+import { Link, router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -14,18 +15,40 @@ defineProps<{
     tab?: string
 }>()
 
+type RouteData = {
+    name: string
+    parameters: Record<string, string | number>
+}
+
 type QrCodeRow = {
     id: number
     label: string | null
     hash: string
     qr_value: string
+    active: boolean
     number_clockings: number
     last_used_at: string | null
     created_at: string | null
+    edit_route: RouteData
+    toggle_active_route: RouteData
 }
 
 const selectedQrCode = ref<QrCodeRow | null>(null)
 const isQrModalOpen = ref(false)
+const togglingId = ref<number | null>(null)
+
+const toggleActive = (qrCode: QrCodeRow) => {
+    togglingId.value = qrCode.id
+
+    router.patch(
+        route(qrCode.toggle_active_route.name, qrCode.toggle_active_route.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => (togglingId.value = null),
+        }
+    )
+}
 const qrContainer = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
 
@@ -137,6 +160,21 @@ const downloadQrCode = () => {
             <template #cell(created_at)="{ item }">
                 <div class="text-gray-500">
                     {{ item.created_at ? useFormatTime(item.created_at, { formatTime: "hms" }) : "-" }}
+                </div>
+            </template>
+
+            <template #cell(actions)="{ item }">
+                <div class="flex items-center gap-2">
+                    <Link :href="route(item.edit_route.name, item.edit_route.parameters)">
+                        <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="trans('Edit')" />
+                    </Link>
+                    <Button
+                        type="tertiary"
+                        size="xs"
+                        :icon="item.active ? faToggleOn : faToggleOff"
+                        :tooltip="item.active ? trans('Deactivate') : trans('Activate')"
+                        :loading="togglingId === item.id"
+                        @click="toggleActive(item)" />
                 </div>
             </template>
         </Table>

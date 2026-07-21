@@ -10,7 +10,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $clocking_machine_id
  * @property string|null $label
  * @property string $hash
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property bool $active
+ * @property \Illuminate\Support\Carbon|null $deactivated_at
+ * @property int $number_clockings
+ * @property int $number_different_staff
+ * @property \Illuminate\Support\Carbon|null $last_used_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\HumanResources\ClockingMachine|null $clockingMachine
@@ -26,7 +30,9 @@ class ClockingMachineQRCode extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'expires_at' => 'datetime',
+        'active'         => 'boolean',
+        'deactivated_at' => 'datetime',
+        'last_used_at'   => 'datetime',
     ];
 
     public function clockingMachine(): BelongsTo

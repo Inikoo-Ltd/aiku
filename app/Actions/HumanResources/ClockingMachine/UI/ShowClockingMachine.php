@@ -37,10 +37,10 @@ class ShowClockingMachine extends OrgAction
     private function getAvailableTabs(ClockingMachine $clockingMachine): array
     {
         $tabs = [
-            ClockingMachineTabsEnum::SHOWCASE->value,
-            ClockingMachineTabsEnum::CLOCKINGS->value,
+            ClockingMachineTabsEnum::SCAN_QR_CODE->value,
             ClockingMachineTabsEnum::HISTORY->value,
             ClockingMachineTabsEnum::DATA->value,
+            ClockingMachineTabsEnum::CLOCKINGS->value,
         ];
 
 
@@ -150,9 +150,7 @@ class ShowClockingMachine extends OrgAction
                     'navigation' => $navigationData
                 ],
                 'generateQrCode'                         => $this->getGenerateQrCodeData($clockingMachine),
-                ClockingMachineTabsEnum::SHOWCASE->value => $this->tab == ClockingMachineTabsEnum::SHOWCASE->value ?
-                    fn () => GetClockingMachineShowcase::run($clockingMachine)
-                    : Inertia::optional(fn () => GetClockingMachineShowcase::run($clockingMachine)),
+
 
                 ClockingMachineTabsEnum::SCAN_QR_CODE->value =>
                 $this->tab == ClockingMachineTabsEnum::SCAN_QR_CODE->value

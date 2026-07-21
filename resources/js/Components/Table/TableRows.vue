@@ -38,6 +38,13 @@ const props = defineProps<{
             {{ useFormatTime(item[column.key], { formatTime: 'hms' }) }}
         </span>
     </template>
+    <template v-else-if="column.type === 'badge'">
+        <span v-if="item[column.key]"
+            :class="item[column.key].class"
+            class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset">
+            {{ item[column.key].label }}
+        </span>
+    </template>
     <template v-else-if="column.type === 'icon'">
         <Icon v-if="item[column.key]?.icon || item[column.key]?.text || item[column.key]?.svg"
             :data="item[column.key]" />
