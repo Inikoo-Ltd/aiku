@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<{
     isLoadingRemindBackInStock: boolean
     screenType: string
     hideLogin?:boolean
+    routeGettransactionProductData?:routeType
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -48,6 +49,9 @@ const props = withDefaults(defineProps<{
     },
     updateBasketQuantityRoute: {
         name: 'iris.models.transaction.update',
+    },
+     routeGettransactionProductData: {
+        name: 'iris.json.basket_transaction_product_data'
     },
 })
 
@@ -273,7 +277,7 @@ defineExpose({
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
-                        :buttonStyle="buttonStyle" />
+                        :buttonStyle="buttonStyle"  :routeGettransactionProductData/>
                     <button
                         v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
@@ -296,23 +300,6 @@ defineExpose({
             </component>
 
             <div class="mt-2">
-                <!-- <div class="flex w-full items-center gap-2">
-                     Product Code 
-                    <div  class="text-xs">
-                        {{ product?.code }}
-                    </div>
-                    Stock / Coming Soon 
-                    <div v-if="layout?.iris?.is_logged_in" class="flex items-center text-xs text-gray-600">
-                        <LabelComingSoon v-if="product.is_coming_soon" :product="product" class="text-center" />
-                        <div v-else v-tooltip="trans('Available product stocks')"
-                            class="flex items-center gap-1 py-1 font-medium leading-snug"
-                            :class="product.stock > 0 ? 'xbg-green-50 xtext-green-700' : 'bg-red-50 text-red-600'">
-                            <FontAwesomeIcon :icon="faCircle" fixed-width class="shrink-0 xtext-[6px]"
-                                :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
-                        </div>
-                    </div>
-                </div> -->
-
                 <!-- Title -->
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
                     :type="typeOfLink" :id="product?.url?.id" @start="() => idxSlideLoading = true"

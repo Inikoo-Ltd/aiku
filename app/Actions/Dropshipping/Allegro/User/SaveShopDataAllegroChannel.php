@@ -15,6 +15,7 @@ use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Sentry;
 
 class SaveShopDataAllegroChannel
 {
@@ -38,9 +39,20 @@ class SaveShopDataAllegroChannel
                 data_set($data, 'marketplace_id', Arr::get($userInfo, 'baseMarketplace.id'));
 
                 if (! Arr::get($allegroUser->settings, 'shipping.id')) {
-                    $shipping = ProcessShippingRates::run($allegroUser);
+                    $shippingRates = $allegroUser->getShippingRates();
 
-                    data_set($data, 'shipping_id', Arr::get($shipping, 'id'));
+                    if(Arr::get($shippingRates, 'shippingRates.0.id')) {
+                        $shipping = Arr::get($shippingRates, 'shippingRates.0');
+                    } else {
+                        $shipping = ProcessShippingRates::run($allegroUser);
+                    }
+
+                    $shippingId = Arr::get($shipping, 'id');
+                    if(blank($shippingId)) {
+                        Sentry::captureMessage('Shipping rates not found');
+                    }
+
+                    data_set($data, 'shipping_id', $shippingId);
                 }
 
                 if (! Arr::get($allegroUser->settings, 'policy.return_id')) {
@@ -54,53 +66,62 @@ class SaveShopDataAllegroChannel
                                 'post_code'    => $shop->address->postal_code
                             ]
                         ]);
-                    } catch (\Exception $e) {
-                        $return = [];
-                    }
 
-                    data_set($data, 'return_id', Arr::get($return, 'id'));
+                        data_set($data, 'return_id', Arr::get($return, 'id'));
+                    } catch (\Exception $e) {
+                        Sentry::captureException($e);
+                    }
                 }
 
                 if (Arr::get($data, 'responsible_producer_id') === null) {
-                    $responsibleProducer = $allegroUser->createResponsibleProducer([
-                        'name' => trim($shop->name . '-' . rand(1000, 9999)),
-                        'producerData' => [
-                            'tradeName' => $shop->name,
-                            'address' => [
-                                'street' => $shop->address->address_line_1,
-                                'city' => $shop->address->locality,
-                                'countryCode' => $shop->country->code,
-                                'postalCode' => $shop->address->postal_code,
-                            ],
-                            'contact' => [
-                                'email' => $shop->email,
-                                'phoneNumber' => '441142729165'
+                    try {
+                        $responsibleProducer = $allegroUser->createResponsibleProducer([
+                            'name' => trim($shop->name . '-' . rand(1000, 9999)),
+                            'producerData' => [
+                                'tradeName' => $shop->name,
+                                'address' => [
+                                    'street' => $shop->address->address_line_1,
+                                    'city' => $shop->address->locality,
+                                    'countryCode' => $shop->country->code,
+                                    'postalCode' => $shop->address->postal_code,
+                                ],
+                                'contact' => [
+                                    'email' => $shop->email,
+                                    'phoneNumber' => '441142729165'
+                                ]
                             ]
-                        ]
-                    ]);
+                        ]);
 
-                    data_set($data, 'responsible_producer_id', Arr::get($responsibleProducer, 'id'));
+                        data_set($data, 'responsible_producer_id', Arr::get($responsibleProducer, 'id'));
+                    } catch (\Exception $e) {
+                        Sentry::captureException($e);
+                    }
                 }
 
                 if (Arr::get($data, 'responsible_person_id') === null) {
-                    $responsiblePerson = $allegroUser->createResponsiblePerson([
-                        'name' => trim($shop->name . '-' . rand(1000, 9999)),
-                        'personalData' => [
-                            'name' => $shop->name,
-                            'address' => [
-                                'street' => 'CTPark Trnava',
-                                'city' => 'Zavar',
-                                'countryCode' => 'SK',
-                                'postalCode' => '919 26',
-                            ],
-                            'contact' => [
-                                'email' => $shop->email,
-                                'phoneNumber' => '441142729165'
+                    try {
+                        $responsiblePerson = $allegroUser->createResponsiblePerson([
+                            'name' => trim($shop->name . '-' . rand(1000, 9999)),
+                            'personalData' => [
+                                'name' => $shop->name,
+                                'address' => [
+                                    'street' => 'CTPark Trnava',
+                                    'city' => 'Zavar',
+                                    'countryCode' => 'SK',
+                                    'postalCode' => '919 26',
+                                ],
+                                'contact' => [
+                                    'email' => $shop->email,
+                                    'phoneNumber' => '441142729165'
+                                ]
                             ]
-                        ]
-                    ]);
+                        ]);
 
-                    data_set($data, 'responsible_person_id', Arr::get($responsiblePerson, 'id'));
+                        data_set($data, 'responsible_person_id', Arr::get($responsiblePerson, 'id'));
+                    } catch (\Exception $e) {
+                        Sentry::captureException($e);
+                    }
+
                 }
 
                 $allegroUser = $this->update($allegroUser, [
@@ -122,6 +143,8 @@ class SaveShopDataAllegroChannel
                 UpdateCustomerSalesChannel::run($allegroUser->customerSalesChannel, [
                     'name' => Arr::get($data, 'company_name')
                 ]);
+            } else {
+                Sentry::captureMessage('User info not found');
             }
 
             return $allegroUser->refresh();

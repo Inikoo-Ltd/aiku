@@ -22,6 +22,7 @@ use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -31,24 +32,7 @@ class GetWebpagesInCollection extends OrgAction
 
     private mixed $bucket;
 
-    public function inShop(Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->scope  = $shop;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($shop->website);
-    }
-    public function inShopActive(Shop $shop, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'live';
-        $this->scope  = $shop;
-        $this->initialisationFromShop($shop, $request);
-
-        return $this->handle($shop->website);
-    }
-
-    public function handle(Website $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Website $parent, $prefix = null, $bucket = null, ?array $modelData = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
@@ -81,6 +65,10 @@ class GetWebpagesInCollection extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         } elseif ($this->bucket == 'storefront') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
+        }
+        
+        if (Arr::has($modelData, 'excluded_list')) {
+            $queryBuilder->whereNotIn('webpages.id', data_get($modelData, 'excluded_list.*.id', []));
         }
 
         if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
@@ -126,5 +114,40 @@ class GetWebpagesInCollection extends OrgAction
     public function jsonResponse(LengthAwarePaginator $webpages): AnonymousResourceCollection
     {
         return WebpagesResource::collection($webpages);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'excluded_list'         => ['sometimes', 'array'],
+            'excluded_list.*.id'    => ['sometimes', 'required_with:excluded_list'],
+        ];
+    }
+
+    public function inShop(Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'all';
+        $this->scope  = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop->website);
+    }
+
+    public function inShopActive(Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'live';
+        $this->scope  = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop->website);
+    }
+
+    public function inShopActiveWithExclusion(Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'live';
+        $this->scope  = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop->website, modelData: $this->validatedData);
     }
 }

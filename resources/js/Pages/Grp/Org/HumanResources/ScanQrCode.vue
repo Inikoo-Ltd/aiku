@@ -15,18 +15,49 @@ const props = defineProps<{
         name: string,
         type: string,
         device_name: string,
-        device_uuid: string
+        device_uuid: string,
+        kiosk_token?: string | null,
+        kiosk_url?: string | null
     },
 }>()
+
+const kioskUrl = ref<string | null>(props.data.kiosk_url ?? null)
+const isSettingKioskToken = ref(false)
+const kioskCopied = ref(false)
+
+const setKioskToken = async (revoke: boolean) => {
+    if (revoke && !window.confirm(trans("Revoke the kiosk link? Any tablet using it will stop working."))) {
+        return
+    }
+
+    isSettingKioskToken.value = true
+    try {
+        const res = await axios.post(
+            route('grp.models.clocking-machine.kiosk_token.set', { clockingMachine: props.data.slug }),
+            { revoke }
+        )
+        kioskUrl.value = res.data.kiosk_url ?? null
+        kioskCopied.value = false
+    } finally {
+        isSettingKioskToken.value = false
+    }
+}
+
+const copyKioskUrl = async () => {
+    if (!kioskUrl.value) return
+    await navigator.clipboard.writeText(kioskUrl.value)
+    kioskCopied.value = true
+    setTimeout(() => (kioskCopied.value = false), 2000)
+}
 
 const qrContainer = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
 const isGenerating = ref(false)
-const qrData = ref<any>(null)
+const qrData = ref<string | null>(null)
+const qrLabel = ref<string | null>(null)
 const countdown = ref(0)
 const expiresAt = ref<Date | null>(null)
 
-let qrRefreshTimer: any = null
 let countdownTimer: any = null
 
 const hasQR = computed(() => !!qrData.value)
@@ -55,19 +86,27 @@ const startCountdown = (seconds: number) => {
 }
 
 const fetchQR = async () => {
+    if (isGenerating.value || hasQR.value) {
+        return
+    }
+
     isGenerating.value = true
     try {
         const res = await axios.get(route('grp.models.clocking-machine.qr.generate', {
             clockingMachine: props.data.slug
         }))
         if (res.data.success) {
-            qrData.value = res.data.data.qr_code
-            qrKey.value++
-            startCountdown(res.data.data.duration_seconds)
-            expiresAt.value = new Date(Date.now() + (res.data.data.duration_seconds * 1000))
+            const { label, hash, expires_at } = res.data.data
 
-            clearTimeout(qrRefreshTimer)
-            qrRefreshTimer = setTimeout(fetchQR, res.data.data.duration_seconds * 1000)
+            qrLabel.value = label ?? null
+            qrData.value = [label, hash].filter(Boolean).join(':')
+            qrKey.value++
+
+            expiresAt.value = expires_at ? new Date(expires_at) : null
+
+            if (expiresAt.value) {
+                startCountdown(Math.max(0, Math.round((expiresAt.value.getTime() - Date.now()) / 1000)))
+            }
         }
     } finally {
         isGenerating.value = false
@@ -75,10 +114,10 @@ const fetchQR = async () => {
 }
 
 const stopQR = () => {
-    clearTimeout(qrRefreshTimer)
     clearInterval(countdownTimer)
 
     qrData.value = null
+    qrLabel.value = null
     countdown.value = 0
     expiresAt.value = null
 }
@@ -125,7 +164,9 @@ const downloadQrCode = async () => {
 
     const title = trans("Employee Scan")
     const subtitle = trans("Scan QR to clock in or out")
-    const expiredAtText = `${trans("Expired at")}: ${formattedExpiredAt.value}`
+    const footerText = expiresAt.value
+        ? `${trans("Expires at")}: ${formattedExpiredAt.value}`
+        : (qrLabel.value ?? "")
     const qrSize = qrCanvas.width
     const canvasPadding = 48
     const textTopHeight = 120
@@ -159,7 +200,7 @@ const downloadQrCode = async () => {
 
     context.fillStyle = "#374151"
     context.font = "24px sans-serif"
-    context.fillText(expiredAtText, canvasWidth / 2, qrY + qrSize + 52)
+    context.fillText(footerText, canvasWidth / 2, qrY + qrSize + 52)
 
     const downloadLink = document.createElement("a")
     downloadLink.href = exportCanvas.toDataURL("image/png")
@@ -198,20 +239,70 @@ onUnmounted(() => stopQR())
                         <LoadingIcon class="text-4xl text-gray-600" />
                     </div>
 
-                    <QrcodeVue :value="qrData" :size="isFullscreen ? 600 : 440" level="H" />
+                    <QrcodeVue :key="qrKey" :value="qrData ?? ''" :size="isFullscreen ? 600 : 440" level="H" />
                 </div>
 
-                <div class="mt-4 text-md font-semibold">
-                    {{ trans("Expires in") }} <span class="font-semibold text-gray-700">{{ formattedCountdown }}</span>
-                </div>
-                <div class="text-sm text-gray-500">
-                    {{ trans("Expired at") }}: {{ formattedExpiredAt }}
-                </div>
+                <!-- <div v-if="qrLabel" class="mt-4 text-md font-semibold text-gray-700">
+                    {{ qrLabel }}
+                </div> -->
+
+                <template v-if="expiresAt">
+                    <div class="mt-2 text-md font-semibold">
+                        {{ trans("Expires in") }} <span class="font-semibold text-gray-700">{{ formattedCountdown }}</span>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        {{ trans("Expires at") }}: {{ formattedExpiredAt }}
+                    </div>
+                </template>
             </div>
 
             <div v-if="hasQR" class="flex justify-center gap-2">
                 <Button :label="trans('Download QR Code')" @click="downloadQrCode" type="tertiary" :icon="faDownload" />
                 <Button :label="trans('Stop QR Code')" @click="stopQR" type="cancel" :icon="faStop" />
+            </div>
+
+            <!-- Kiosk mode: login free URL for a wall tablet -->
+            <div class="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5 text-left">
+                <h3 class="text-base font-semibold text-gray-800">{{ trans("Kiosk mode") }}</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ trans("Open this link on the tablet to show the QR code without logging in. Keep it secret: anyone with the link can display a valid QR code.") }}
+                </p>
+
+                <div v-if="kioskUrl" class="mt-4 space-y-3">
+                    <div class="flex items-center gap-2">
+                        <input
+                            :value="kioskUrl"
+                            readonly
+                            class="w-full rounded-md border-gray-300 bg-white text-sm text-gray-700 shadow-sm" />
+                        <Button
+                            :label="trans(kioskCopied ? 'Copied' : 'Copy')"
+                            @click="copyKioskUrl"
+                            type="tertiary" />
+                    </div>
+                    <div class="flex gap-2">
+                        <Button
+                            :label="trans('Regenerate link')"
+                            :loading="isSettingKioskToken"
+                            :disabled="isSettingKioskToken"
+                            @click="setKioskToken(false)"
+                            type="secondary" />
+                        <Button
+                            :label="trans('Revoke link')"
+                            :loading="isSettingKioskToken"
+                            :disabled="isSettingKioskToken"
+                            @click="setKioskToken(true)"
+                            type="cancel" />
+                    </div>
+                </div>
+
+                <div v-else class="mt-4">
+                    <Button
+                        :label="trans('Generate kiosk link')"
+                        :loading="isSettingKioskToken"
+                        :disabled="isSettingKioskToken"
+                        @click="setKioskToken(false)"
+                        type="primary" />
+                </div>
             </div>
         </div>
     </div>

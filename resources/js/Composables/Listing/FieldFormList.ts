@@ -74,6 +74,7 @@ import InputJsonByForm from '@/Components/Forms/Fields/InputJsonByForm.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
 import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
+import PasskeysManager from '@/Components/Forms/Fields/PasskeysManager.vue'
 import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
@@ -92,7 +93,7 @@ import InputFaqMaster from '@/Components/Forms/Fields/InputFaqMaster.vue'
 import InputFaqShop from '@/Components/Forms/Fields/InputFaqShop.vue'
 import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
 import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
-
+import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -116,6 +117,7 @@ export const componentsList: { [key: string]: Component } = {
     'textEditor': TextEditor,
     'toggle': Toggle,
     'toggle2fa': ToggleState2FA,
+    'passkeys': PasskeysManager,
     'jobPosition': JobPosition,
     'senderEmail': SenderEmail,
     'employeePosition': EmployeePosition,
@@ -186,6 +188,7 @@ export const componentsList: { [key: string]: Component } = {
     'faq-shop' : InputFaqShop,
     'tags': TagsInput,
     'banned-countries': BannedCountries,
+	field_group: FieldGroup,
 }
 
 export const getComponent = (componentName: string) => {

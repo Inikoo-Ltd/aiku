@@ -56,6 +56,16 @@ class StoreProductToAllegro extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
+            $marketplaceId = Arr::get($allegroUser->data, 'marketplace_id');
+
+            $offerLanguage = match ($marketplaceId) {
+                'allegro-pl' => 'pl-PL',
+                'allegro-cz' => 'cs-CZ',
+                'allegro-sk' => 'sk-SK',
+                'allegro-hu' => 'hu-HU',
+                default => 'en-US',
+            };
+
             $productSearch = [];
             if ($product->barcode) {
                 $productSearch = $allegroUser->getProductByEan($product->barcode);
@@ -78,7 +88,8 @@ class StoreProductToAllegro extends RetinaAction
             try {
                 $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
                     'category_id' => $categoryId,
-                    'parameters' => $getParameters
+                    'parameters' => $getParameters,
+                    'language' => $offerLanguage
                 ]);
 
                 $allegroProductId = Arr::get($proposedProduct, 'id');
@@ -98,7 +109,7 @@ class StoreProductToAllegro extends RetinaAction
             }
 
             if (!$allegroProductId) {
-                throw new \Exception('Failed to propose product to Allegro: no product ID returned.');
+                throw new \Exception(Arr::get($proposedProduct, 'message', 'Failed to propose product to Allegro: no product ID returned.'));
             }
 
             $availableQuantity = $product->available_quantity;
@@ -107,12 +118,16 @@ class StoreProductToAllegro extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
-            if (Arr::get($allegroUser->data, 'marketplace_id') === 'allegro-pl') {
-                $targetCurrency = Currency::where('code', 'PLN')->first();
-                $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
-                $customerPrice = $portfolio->customer_price * $plnPriceExchange;
+            $targetCurrency = match ($marketplaceId) {
+                'allegro-pl' => Currency::where('code', 'PLN')->first(),
+                'allegro-hu' => Currency::where('code', 'HUF')->first(),
+                default => $shop->currency
+            };
+
+            if ($targetCurrency !== $shop->currency) {
+                $priceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
+                $customerPrice = $portfolio->customer_price * $priceExchange;
             } else {
-                $targetCurrency = $shop->currency;
                 $customerPrice = $portfolio->customer_price;
             }
 
@@ -173,7 +188,7 @@ class StoreProductToAllegro extends RetinaAction
                 'external' => [
                     'id' => (string) $portfolio->id
                 ],
-                'language' => 'en-US',
+                'language' => $offerLanguage,
                 'description' => [
                     'sections' => [
                         [
@@ -188,13 +203,24 @@ class StoreProductToAllegro extends RetinaAction
                 ]
             ];
 
-            $allegroOffer = $allegroUser->createOffer($offerData);
-            $allegroUser->publishOffers(Str::uuid(), [Arr::get($allegroOffer, 'id')]);
+            $allegroOffer   = $allegroUser->createOffer($offerData);
+            $allegroOfferId = Arr::get($allegroOffer, 'id');
+
+            if (!$allegroOfferId) {
+                throw new \Exception(Arr::get($allegroOffer, 'message', 'Failed to create Allegro offer: no offer ID returned.'));
+            }
 
             UpdatePortfolio::run($portfolio, [
-                'platform_product_id'         => Arr::get($allegroOffer, 'id'),
-                'platform_product_variant_id' => Arr::get($allegroOffer, 'id')
+                'platform_product_id'         => $allegroOfferId,
+                'platform_product_variant_id' => $allegroOfferId,
+                'errors_response'             => null
             ]);
+
+            $publishResponse = $allegroUser->publishOffers(Str::uuid(), [$allegroOfferId]);
+
+            if ($publishError = Arr::get($publishResponse, 'message')) {
+                throw new \Exception($publishError);
+            }
 
             CheckAllegroPortfolio::run($portfolio);
 
@@ -212,19 +238,17 @@ class StoreProductToAllegro extends RetinaAction
             }
 
             return $portfolio;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
+            ]);
+
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [
                     'message' => $e->getMessage()
                 ]
             ]);
-
-            if ($logs) {
-                UpdatePlatformPortfolioLog::dispatch($logs, [
-                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $e->getMessage()
-                ]);
-            }
 
             return $portfolio;
         }

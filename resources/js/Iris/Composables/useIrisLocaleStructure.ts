@@ -8,6 +8,7 @@
 
 
 import { Language } from '@/types/Locale'
+import { usePage } from '@inertiajs/vue3'
 
 export const irisLocaleStructure = {
     locale_iso: 'en-GB',
@@ -43,7 +44,7 @@ export const irisLocaleStructure = {
 		}
 
         try {
-            return new Intl.NumberFormat(irisLocaleStructure.language.code, {
+            return new Intl.NumberFormat(usePage()?.props?.iris?.website_i18n?.current_language?.code ||irisLocaleStructure.language.code, {
                 style: "currency",
                 currency: currencyCode,
                 currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.

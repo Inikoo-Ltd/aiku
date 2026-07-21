@@ -16,8 +16,10 @@ use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\ShippingZone\HydrateShippingZones;
+use App\Actions\Billables\ShippingZone\DeleteShippingZone;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\DeleteShippingZoneSchema;
 use App\Actions\Billables\ShippingZoneSchema\HydrateShippingZoneSchemas;
 use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
@@ -27,6 +29,7 @@ use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
+use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
@@ -65,7 +68,9 @@ use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\UI\Grp\Layout\GetShopNavigation;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
@@ -107,9 +112,11 @@ use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Models\SysAdmin\Permission;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
@@ -836,6 +843,66 @@ test('UI index ordering purges', function () {
     });
 });
 
+test('UI index ordering invoices by payment status', function () {
+    $this->withoutExceptionHandling();
+
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $this->user->givePermissionTo(
+        Permission::where('name', "orders.{$this->shop->id}.view")->firstOrFail()
+    );
+    Cache::tags('auth-user:'.$this->user->id)->flush();
+    actingAs($this->user->fresh());
+
+    $orderingNavigation = GetShopNavigation::run($this->shop, $this->user->fresh());
+    expect(collect(data_get($orderingNavigation, 'ordering.topMenu.subSections'))->pluck('route.name')->all())
+        ->toContain('grp.org.shops.show.ordering.invoices.index');
+
+    StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+    $paidInvoice = StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+    $paidInvoice->updateQuietly([
+        'pay_status' => InvoicePayStatusEnum::PAID,
+    ]);
+
+    $invoiceQuery = Invoice::query()
+        ->where('shop_id', $this->shop->id)
+        ->where('type', InvoiceTypeEnum::INVOICE)
+        ->whereNot('in_process', true);
+
+    $allInvoicesCount    = (clone $invoiceQuery)->count();
+    $paidInvoicesCount   = (clone $invoiceQuery)->where('pay_status', InvoicePayStatusEnum::PAID)->count();
+    $unpaidInvoicesCount = (clone $invoiceQuery)->where('pay_status', InvoicePayStatusEnum::UNPAID)->count();
+
+    $routeParameters = [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+    ];
+
+    get(route('grp.org.shops.show.ordering.invoices.index', $routeParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Ordering/Invoices')
+            ->where('title', 'Invoices')
+            ->where('tabs.current', 'all')
+            ->has('tabs.navigation', 3)
+            ->where('all.meta.total', $allInvoicesCount)
+            ->where('pageHead.subNavigation.1.route.name', 'grp.org.shops.show.ordering.invoices.index')
+            ->has('breadcrumbs', 3));
+
+    get(route('grp.org.shops.show.ordering.invoices.index', [
+        ...$routeParameters,
+        'tab' => 'paid',
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('tabs.current', 'paid')
+        ->where('paid.meta.total', $paidInvoicesCount));
+
+    get(route('grp.org.shops.show.ordering.invoices.index', [
+        ...$routeParameters,
+        'tab' => 'unpaid',
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('tabs.current', 'unpaid')
+        ->where('unpaid.meta.total', $unpaidInvoicesCount));
+});
+
 test('UI create ordering purge', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.ordering.purges.create', [$this->organisation->slug, $this->shop]));
@@ -1050,6 +1117,30 @@ test('update shipping zone schema', function ($shippingZoneSchema) {
     $this->assertModelExists($shippingZoneSchema);
 })->depends('create shipping zone schema');
 
+test('delete shipping zone schema action removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    DeleteShippingZoneSchema::make()->action($shippingZoneSchema);
+
+    expect(ShippingZoneSchema::query()->whereKey($shippingZoneSchema->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone schema command removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    $this->artisan('delete:shipping_zone_schema '.$shippingZoneSchema->slug)
+        ->expectsOutput('Shipping zone schema '.$shippingZoneSchema->name.' deleted')
+        ->assertSuccessful();
+
+    expect(ShippingZoneSchema::query()->whereKey($shippingZoneSchema->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone schema command reports a missing schema', function () {
+    $this->artisan('delete:shipping_zone_schema missing-shipping-zone-schema')
+        ->expectsOutput('Shipping zone schema not found')
+        ->assertFailed();
+});
+
 test('create shipping zone', function ($shippingZoneSchema) {
     $shippingZone = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
     $this->assertModelExists($shippingZoneSchema);
@@ -1061,6 +1152,34 @@ test('update shipping zone', function ($shippingZone) {
     $shippingZone = UpdateShippingZone::make()->action($shippingZone, ShippingZone::factory()->definition());
     $this->assertModelExists($shippingZone);
 })->depends('create shipping zone');
+
+test('delete shipping zone action removes zone and dependants', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    DeleteShippingZone::make()->action($shippingZone);
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse()
+        ->and($shippingZone->stats()->exists())->toBeFalse()
+        ->and($shippingZone->asset?->trashed())->toBeTrue();
+});
+
+test('delete shipping zone command removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    $this->artisan('delete:shipping_zone '.$shippingZone->slug)
+        ->expectsOutput('Shipping zone '.$shippingZone->name.' deleted')
+        ->assertSuccessful();
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone command reports a missing zone', function () {
+    $this->artisan('delete:shipping_zone missing-shipping-zone')
+        ->expectsOutput('Shipping zone not found')
+        ->assertFailed();
+});
 
 
 test('shipping zone schemas hydrators', function () {

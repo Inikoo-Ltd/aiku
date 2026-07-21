@@ -22,7 +22,6 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -41,20 +40,21 @@ class MoveOrgStockToOtherLocation extends OrgAction
     {
         DB::transaction(function () use ($currentLocationStock, $targetLocation, $modelData) {
             $quantity = Arr::pull($modelData, 'quantity');
-            
-            $reason = Arr::pull($modelData, 'reason', null);
-            $note   = Arr::pull($modelData, 'note', null);
+
+            // Removed reason and note on move due to Tomas Request
+            // $reason = Arr::pull($modelData, 'reason', null);
+            // $note   = Arr::pull($modelData, 'note', null);
             // Source
             $this->processStockMovement($currentLocationStock, [
                 'quantity'              => $currentLocationStock->quantity - $quantity,
-                'reason'                => $reason,
-                'note'                  => $note,
+                // 'reason'                => $reason,
+                // 'note'                  => $note,
             ]);
             // Destination
             $this->processStockMovement($targetLocation, [
                 'quantity'  => $targetLocation->quantity + $quantity,
-                'reason'                => $reason,
-                'note'                  => $note,
+                // 'reason'                => $reason,
+                // 'note'                  => $note,
             ]);
 
             RepairOrgStockMissingLocationIds::dispatch($currentLocationStock->org_stock_id)->delay(2);
@@ -88,16 +88,16 @@ class MoveOrgStockToOtherLocation extends OrgAction
             'user_id'          => $this->user?->id,
         ];
 
-        $reason = Arr::pull($modelData, 'reason', null);
-        $note   = Arr::pull($modelData, 'note', null);
+        // $reason = Arr::pull($modelData, 'reason', null);
+        // $note   = Arr::pull($modelData, 'note', null);
 
-        if ($reason) {
-            data_set($storedData, 'reason', $reason);
-        }
-        
-        if ($note) {
-            data_set($storedData, 'note', $note);
-        }
+        // if ($reason) {
+        //     data_set($storedData, 'reason', $reason);
+        // }
+
+        // if ($note) {
+        //     data_set($storedData, 'note', $note);
+        // }
 
         StoreOrgStockMovement::make()->action(
             $locationOrgStock->orgStock,

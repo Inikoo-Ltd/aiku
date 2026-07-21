@@ -186,7 +186,7 @@ class StoreEbayProduct extends RetinaAction
 
             $availableQuantity = $product->available_quantity;
 
-            if($availableQuantity < 1) {
+            if ($availableQuantity < 1) {
                 $availableQuantity = 1;
             }
 
@@ -307,7 +307,12 @@ class StoreEbayProduct extends RetinaAction
             }
 
             return $portfolio;
-        } catch (\Exception) {
+        } catch (\Exception $e) {
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
+            ]);
+
             return $portfolio;
 
         }

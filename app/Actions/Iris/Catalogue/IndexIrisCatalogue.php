@@ -271,8 +271,8 @@ class IndexIrisCatalogue extends IrisAction
                 $table
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'gross_weight', label: __('Weight'), canBeHidden: false, align: 'right')
-                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: 'price', label: __('Price'), type: 'currency', canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'rrp', label: __('RRP'), type: 'currency', canBeHidden: false, sortable: true, searchable: true, align: 'right');
             }
 
             $columns = match ($scope) {

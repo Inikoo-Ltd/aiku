@@ -67,12 +67,22 @@ const bestOffer = computed(() => {
 
 const titleRef = ref<HTMLElement | null>(null)
 const titleState = ref<'single' | 'double' | 'truncated'>('single')
-const descriptionRef = ref<HTMLElement | null>(null)
-const imageRef = ref<HTMLElement | null>(null)
+const descriptionContentRef = ref<HTMLElement | null>(null)
 const expanded = ref(false)
 const showReadMore = ref(false)
-const maxDescriptionHeight = ref(0)
 let resizeObserver: ResizeObserver | null = null
+
+const COLLAPSED_HEIGHTS = [
+  { minWidth: 1536, height: 255 },
+  { minWidth: 1024, height: 195 },
+  { minWidth: 0, height: 265 },
+]
+
+const getCollapsedHeight = (): number => {
+  const width = window.innerWidth
+
+  return COLLAPSED_HEIGHTS.find((entry) => width >= entry.minWidth)!.height
+}
 
 const titleStyles = computed(() => ({
   fontSize: titleState.value === 'single' ? '36px' : '25px',
@@ -130,23 +140,15 @@ const updateTitleSize = () => {
 const calculateDescriptionHeight = async () => {
   await nextTick()
 
-  if (!imageRef.value || !descriptionRef.value) return
+  if (!descriptionContentRef.value) return
 
-  const availableHeight = imageRef.value.offsetHeight - 125
-  const shouldShowReadMore =
-    descriptionRef.value.scrollHeight > availableHeight
+  showReadMore.value =
+    descriptionContentRef.value.scrollHeight > getCollapsedHeight()
+}
 
-  if (maxDescriptionHeight.value !== availableHeight) {
-    maxDescriptionHeight.value = availableHeight
-  }
-
-  if (showReadMore.value !== shouldShowReadMore) {
-    showReadMore.value = shouldShowReadMore
-  }
-
-  if (!shouldShowReadMore && expanded.value) {
-    expanded.value = false
-  }
+const onWindowResize = () => {
+  updateTitleSize()
+  calculateDescriptionHeight()
 }
 
 onMounted(() => {
@@ -154,21 +156,14 @@ onMounted(() => {
   calculateDescriptionHeight()
 
   resizeObserver = new ResizeObserver(() => {
-    updateTitleSize()
     calculateDescriptionHeight()
   })
 
-  if (titleRef.value) {
-    resizeObserver.observe(titleRef.value)
+  if (descriptionContentRef.value) {
+    resizeObserver.observe(descriptionContentRef.value)
   }
 
-  if (imageRef.value) {
-    resizeObserver.observe(imageRef.value)
-  }
-
- /*  if (descriptionRef.value) {
-    resizeObserver.observe(descriptionRef.value)
-  } */
+  window.addEventListener('resize', onWindowResize)
 })
 
 onUnmounted(() => {
@@ -176,6 +171,8 @@ onUnmounted(() => {
     resizeObserver.disconnect()
     resizeObserver = null
   }
+
+  window.removeEventListener('resize', onWindowResize)
 })
 
 watch(
@@ -206,102 +203,57 @@ const contentClass = computed(() =>
       width: 'auto'
     }">
       <div :class="contentClass">
-        <!-- IMAGE SECTION -->
-        <div class="flex shrink-0 items-start justify-center gap-[6px]">
-          <!-- IMAGE 1 -->
-          <template v-if="hasImage(0)">
-            <Image :src="images[0].original" :srcset="images[0].srcset"
-              sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
-              :imageCover="true" :alt="images[0]?.alt || 'family image'"
-              class="
-                h-[280px]
-                w-[220px]
-                object-cover
-                sm:w-[290px]
-                lg:h-[320px]
-                lg:w-[340px]
-                2xl:h-[380px]
-                2xl:w-[420px]
-              " />
-          </template>
-
-          <div v-else  class="
-              flex items-center justify-center
+        <!-- ============================================================= -->
+        <!-- NEW IMAGE SECTION                                             -->
+        <!-- 1 image  -> only large image                                 -->
+        <!-- 2 images -> large + small top-right                          -->
+        <!-- 3 images -> large + small top-right + small bottom-right     -->
+        <!-- ============================================================= -->
+        <div v-if="hasImage(0)" class="flex shrink-0 items-start justify-center gap-[6px]">
+          <!-- IMAGE 1 (large) -->
+          <Image :src="images[0].original" :srcset="images[0].srcset"
+            sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
+            :imageCover="true" :alt="images[0]?.alt || 'family image'"
+            class="
               h-[280px]
               w-[220px]
-              border border-gray-200
-              bg-gray-100
+              object-cover
               sm:w-[290px]
               lg:h-[320px]
               lg:w-[340px]
               2xl:h-[380px]
               2xl:w-[420px]
-            ">
-            <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
-          </div>
+            " />
 
-          <div ref="imageRef"  class="flex flex-col gap-[6px]">
-            <!-- IMAGE 2 -->
-            <template v-if="hasImage(1)">
-              <Image :src="images[1].original" :srcset="images[1].srcset"
-                  sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
-                  :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
-                  h-[137px]
-                  w-[105px]
-                  object-cover
-                  sm:w-[140px]
-                  lg:h-[157px]
-                  lg:w-[160px]
-                  2xl:h-[187px]
-                  2xl:w-[200px]
-                " />
-            </template>
-
-            <div v-else class="
-                flex items-center justify-center
+          <!-- Right column only when there is a 2nd image -->
+          <div v-if="hasImage(1)" class="flex flex-col gap-[6px]">
+            <!-- IMAGE 2 (small, top-right) -->
+            <Image :src="images[1].original" :srcset="images[1].srcset"
+                sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+                :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
                 h-[137px]
                 w-[105px]
-                border border-gray-200
-                bg-gray-100
+                object-cover
                 sm:w-[140px]
                 lg:h-[157px]
                 lg:w-[160px]
                 2xl:h-[187px]
                 2xl:w-[200px]
-              ">
-              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
-            </div>
+              " />
 
-            <!-- IMAGE 3 -->
-            <template v-if="hasImage(2)">
-              <Image :src="images[2].original" :srcset="images[2].srcset"
-                  sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
-                  :imageCover="true" :alt="images[2]?.alt || 'family image'" class="
-                  h-[137px]
-                  w-[105px]
-                  object-cover
-                  sm:w-[140px]
-                  lg:h-[157px]
-                  lg:w-[160px]
-                  2xl:h-[187px]
-                  2xl:w-[200px]
-                " />
-            </template>
-
-            <div v-else class="
-                flex items-center justify-center
+            <!-- IMAGE 3 (small, bottom-right) only when there is a 3rd image -->
+            <Image v-if="hasImage(2)" :src="images[2].original" :srcset="images[2].srcset"
+                sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+                :imageCover="true" :alt="images[2]?.alt || 'family image'" class="
                 h-[137px]
                 w-[105px]
-                border border-gray-200
-                bg-gray-100
+                object-cover
                 sm:w-[140px]
                 lg:h-[157px]
                 lg:w-[160px]
                 2xl:h-[187px]
                 2xl:w-[200px]
-              ">
-              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
-            </div>
+              " />
           </div>
         </div>
 
@@ -355,7 +307,7 @@ const contentClass = computed(() =>
     2xl:space-y-2
     2xl:text-[19px]
     overflow-hidden
-  " ref="descriptionRef" :class="!expanded ? 'max-h-[265px] lg:max-h-[195px] 2xl:max-h-[255px]' : ''">
+  " ref="descriptionRef" :class="!expanded ? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]' : ''">
             <div v-html="cleanedDescription"></div>
 
             <!-- Fade overlay -->
@@ -388,6 +340,8 @@ const contentClass = computed(() =>
       gap-4
       flex-wrap
       2xl:pt-8
+      justify-center
+      lg:justify-start
     ">
             <a v-if="fieldValue.family.description_extra || layout?.iris?.is_logged_in" href="#family-2-extra-description" class="shrink-0">
               <button class="

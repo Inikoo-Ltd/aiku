@@ -8,17 +8,17 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Traits\WithRecalculateOrdersInBasket;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RecalculateShopOrderDiscountsInBasket implements ShouldBeUnique
 {
     use AsAction;
+    use WithRecalculateOrdersInBasket;
 
     public function getJobUniqueId(int $shopId): string
     {
@@ -31,15 +31,8 @@ class RecalculateShopOrderDiscountsInBasket implements ShouldBeUnique
         if (!$shop) {
             return;
         }
-        /** @var Order $order */
-        foreach ($shop->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
-            if ($order->updated_by_customer_at && $order->updated_by_customer_at->isAfter(Carbon::now()->subHours(3))) {
-                CalculateOrderDiscounts::dispatch($order);
-            } else {
-                $randomDelay = rand(300, 7200);
-                CalculateOrderDiscounts::dispatch($order)->delay($randomDelay)->onQueue('hydrators-slave-low-priority');
-            }
-        }
+
+        $this->recalculateOrdersInBasket($shop->orders()->where('state', OrderStateEnum::CREATING)->get());
     }
 
     public function getCommandSignature(): string
@@ -50,7 +43,7 @@ class RecalculateShopOrderDiscountsInBasket implements ShouldBeUnique
     public function asCommand(Command $command): void
     {
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
-        $this->handle($this->$shop->id);
+        $this->handle($shop->id);
     }
 
 }

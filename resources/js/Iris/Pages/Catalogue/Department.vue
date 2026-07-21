@@ -97,12 +97,11 @@ const componentProps = computed(() => {
     <Head :title="capitalize(title)" />
 
     <div class="max-w-7xl mx-auto my-8">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="bg-white rounded-xl border-none lg:border border-gray-200 shadow-sm">
             <CatalogueTabs />
 
             <PageHeading :data="pageHead" />
             <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-
             <div
                 v-if="mini_breadcrumbs && mini_breadcrumbs.length"
                 class="bg-white px-4 py-2 w-full border-gray-200 border-b overflow-x-auto"

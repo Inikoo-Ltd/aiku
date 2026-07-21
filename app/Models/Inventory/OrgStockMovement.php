@@ -57,6 +57,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $note
  * @property bool $is_migration_point
  * @property string|null $migration_source_id
+ * @property OrgStockMovementReasonEnum|null $reason
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock

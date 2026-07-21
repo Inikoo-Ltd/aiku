@@ -16,6 +16,9 @@ trait WithCalculateTransactionDiscount
     {
         $transaction = $deliveryNoteItem->transaction;
 
+        // INI-1811: Guard, is follow on products must always be 0 
+        if ($transaction->is_follow_on) return;
+
         // Recalculate the transaction totals (Data below)
         $packedData = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNoteItem->deliveryNote);
 
@@ -34,12 +37,13 @@ trait WithCalculateTransactionDiscount
 
         // Reupdate based on Curent Discount Factor
         if ($transaction->current_discount_factor) {
-            $discountedAmount = round((float) $transaction->gross_amount * $transaction->current_discount_factor, 2);
+            $percentageOff      = 1 - $transaction->current_discount_factor;
+            $discountedAmount   = round(bcmul($transaction->gross_amount, $percentageOff, 6), 2); // Had to use this. Round gets messed up sometimes due to Float pointer (HELP-2732)
 
             DB::table('transactions')->where('id', $transaction->id)
                 ->update(
                     [
-                        'net_amount'              => $discountedAmount,
+                        'net_amount'              => (float) $transaction->gross_amount - $discountedAmount,
                     ]
                 );
         }

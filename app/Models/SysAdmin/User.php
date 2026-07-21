@@ -35,6 +35,8 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Laravel\Passkeys\Contracts\PasskeyUser;
+use Laravel\Passkeys\PasskeyAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -103,6 +105,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Language $language
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Passkeys\Passkey> $passkeys
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \App\Models\SysAdmin\UserHasPseudoJobPositions|null $pivot
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JobPosition> $pseudoJobPositions
@@ -130,7 +133,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
  * @mixin \Eloquent
  */
-class User extends Authenticatable implements HasMedia, Auditable
+class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
 {
     use HasEmail;
     use HasRoles;
@@ -139,6 +142,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     use HasImage;
     use HasApiTokens;
     use HasSearch;
+    use PasskeyAuthenticatable;
 
     protected $guarded = [
     ];
@@ -166,6 +170,16 @@ class User extends Authenticatable implements HasMedia, Auditable
         'sources'   => '{}',
         'bookmarks' => '{}'
     ];
+
+    public function getPasskeyUsername(): string
+    {
+        return $this->username;
+    }
+
+    public function getPasskeyDisplayName(): string
+    {
+        return $this->contact_name ?? $this->username;
+    }
 
     public function searchIndexShouldBeUpdated(): bool
     {

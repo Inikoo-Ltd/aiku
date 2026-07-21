@@ -835,14 +835,14 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
             </span>
 
             <template v-if="state === 'handling'">
-                <div v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2 mt-1.5">
+                <!-- <div v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2 mt-1.5">
 
                     <ButtonWithLink v-if="!item.is_handled" type="negative"
                         :label="locale.number(item.quantity_to_pick)"  v-tooltip="ctrans('Set as not picked')" icon="fal fa-debug"
                         size="xs" :routeTarget="item.not_picking_route" :bindToLink="{
                             preserveScroll: true,
                         }" />
-                </div>
+                </div> -->
 
                 <!-- <div v-else-if="Number(item.quantity_not_picked > 0)" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
                     <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />

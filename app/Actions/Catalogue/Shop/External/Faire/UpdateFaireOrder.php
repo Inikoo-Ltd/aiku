@@ -194,6 +194,14 @@ class UpdateFaireOrder extends OrgAction
 
 
         CalculateOrderTotalAmounts::run($order);
+
+        $faireTaxAmount = $this->getFaireTaxAmount($orderFaireData, $shop);
+        $order->refresh();
+        $order->update([
+            'tax_amount'   => $faireTaxAmount,
+            'total_amount' => $order->net_amount + $faireTaxAmount,
+        ]);
+
         $invoice = $order->invoices()->first();
         if ($invoice) {
             $order->update([
@@ -202,7 +210,32 @@ class UpdateFaireOrder extends OrgAction
 
 
             CalculateInvoiceTotals::run($invoice);
+            $invoice->refresh();
+            $invoice->update([
+                'tax_amount'   => $faireTaxAmount,
+                'total_amount' => $invoice->net_amount + $faireTaxAmount,
+            ]);
         }
+    }
+
+    public function getFaireTaxAmount(array $orderFaireData, Shop $shop): float
+    {
+        $tax      = 0;
+        $exchange = 1;
+
+        $currencyCode = Arr::get($orderFaireData, 'payout_costs.taxes.0.value.currency');
+        if ($currencyCode && $currencyCode != $shop->currency->code) {
+            $currency = Currency::where('code', $currencyCode)->first();
+            if ($currency) {
+                $exchange = GetCurrencyExchange::run($currency, $shop->currency);
+            }
+        }
+
+        foreach (Arr::get($orderFaireData, 'payout_costs.taxes', []) as $taxData) {
+            $tax += Arr::get($taxData, 'value.amount_minor', 0) / 100;
+        }
+
+        return round($tax * $exchange, 2);
     }
 
     public string $commandSignature = 'faire:update_order {order?}';

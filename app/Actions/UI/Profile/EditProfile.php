@@ -88,6 +88,21 @@ class EditProfile
                                 ],
                             ],
                         ]
+                    ],
+                    [
+                        "label"   => __("Passkeys"),
+                        "icon"    => "fal fa-fingerprint",
+                        "current" => true,
+                        "fields"  => [
+                            "passkeys" => [
+                                "type"         => "passkeys",
+                                "label"        => __("Passkeys"),
+                                "noSaveButton" => true,
+                                "value"        => $user->passkeys()
+                                    ->get(['id', 'name', 'last_used_at', 'created_at'])
+                                    ->toArray(),
+                            ],
+                        ]
                     ]
                 ],
                 "args"      => [

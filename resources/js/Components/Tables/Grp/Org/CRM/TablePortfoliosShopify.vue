@@ -309,7 +309,7 @@ onMounted(() => {
         @onChecked="(item) => onChangeCheked(true, item)" 
         @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)"
-        checkboxKey='id' 
+        checkboxKey='id'
         :isChecked="(item) => selectedProducts.includes(item.id)"
         :disabledCheckbox="(item)=>onDisableCheckbox(item)"
     >

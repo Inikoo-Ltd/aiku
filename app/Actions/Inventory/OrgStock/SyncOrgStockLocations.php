@@ -28,7 +28,7 @@ class SyncOrgStockLocations extends OrgAction
     public function handle(OrgStock $orgStock, array $modelData): array
     {
 
-        if($orgStock->organisation->is_aiku_stock_control){
+        if ($orgStock->organisation->is_aiku_stock_control) {
             return [];
         }
 

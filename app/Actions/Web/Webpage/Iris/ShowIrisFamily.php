@@ -36,11 +36,15 @@ class ShowIrisFamily extends IrisAction
                 'pageHead'        => [
                     'title'     => $family->name,
                     'model'     => __('Family'),
+                    'afterTitle'    => [
+                        'label' => $family->code,
+                        'tooltip' => __('Family Code'),
+                    ],
                     'icon'      => [
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('Family'),
                     ],
-                    'iconRight' => $family->state->stateIcon()[$family->state->value],
+                   /*  'iconRight' => $family->state->stateIcon()[$family->state->value], */
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
