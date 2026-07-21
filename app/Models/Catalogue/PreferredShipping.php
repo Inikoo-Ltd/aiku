@@ -81,4 +81,23 @@ class PreferredShipping extends Model implements Auditable
         'important',
     ];
 
+    public static function findShipperIdForAddress(int $shopId, ?int $countryId, ?string $postalCode): ?int
+    {
+        if (!$countryId) {
+            return null;
+        }
+
+        $postalCode = strtoupper($postalCode ?? '');
+
+        return static::query()
+            ->where('shop_id', $shopId)
+            ->where('country_id', $countryId)
+            ->get()
+            ->first(
+                fn (PreferredShipping $preferredShipping) => !$preferredShipping->postcode
+                || str_starts_with($postalCode, strtoupper($preferredShipping->postcode))
+            )
+            ?->shipper_id;
+    }
+
 }

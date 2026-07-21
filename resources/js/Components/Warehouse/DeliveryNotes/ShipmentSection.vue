@@ -53,6 +53,7 @@ const props = withDefaults(defineProps<{
 		fetch_route: routeType
 		delete_route: routeType
 	}
+	preferred_shipper_id?: number | null
 	address: {
 		delivery: Address
 		options: AddressOptions
@@ -382,17 +383,8 @@ function handleShipmentClick(shipment: number) {
 const selectedShipment = ref("create_label")
 
 const preferredShipper = computed(() => {
-	const countryId = props.address?.delivery?.country_id
-	const postalCode = (props.address?.delivery?.postal_code || "").toUpperCase()
-	if (!countryId) return null
-
-	return optionShippingList.value.find((shipment) =>
-		(shipment.preferred_shippings || []).some((preferred) => {
-			if (preferred.country_id !== countryId) return false
-			if (!preferred.postcode) return true
-			return postalCode.startsWith(preferred.postcode.toUpperCase())
-		})
-	) || null
+	if (!props.preferred_shipper_id) return null
+	return optionShippingList.value.find((shipment) => shipment.id === props.preferred_shipper_id) || null
 })
 
 // Section: Shipment Error

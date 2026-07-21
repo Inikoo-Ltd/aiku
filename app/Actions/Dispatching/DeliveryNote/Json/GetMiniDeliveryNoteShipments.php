@@ -13,6 +13,7 @@ use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Dispatching\ShipmentsResource;
+use App\Models\Catalogue\PreferredShipping;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -91,6 +92,11 @@ class GetMiniDeliveryNoteShipments extends OrgAction
                         ]
                     ],
                 ],
+                'preferred_shipper_id' => PreferredShipping::findShipperIdForAddress(
+                    $deliveryNote->shop_id,
+                    $deliveryNote->deliveryAddress?->country_id ?? $deliveryNote->delivery_country_id,
+                    $deliveryNote->deliveryAddress?->postal_code
+                ),
             ]
         ];
     }
