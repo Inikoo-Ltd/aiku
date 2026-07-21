@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Allegro\Product;
 
+use App\Actions\Dropshipping\Allegro\Traits\WithAllegroMarketplace;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
@@ -33,6 +34,7 @@ class StoreProductToAllegro extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithAllegroMarketplace;
 
     public function handle(Portfolio $portfolio): Portfolio
     {
@@ -58,13 +60,7 @@ class StoreProductToAllegro extends RetinaAction
 
             $marketplaceId = Arr::get($allegroUser->data, 'marketplace_id');
 
-            $offerLanguage = match ($marketplaceId) {
-                'allegro-pl' => 'pl-PL',
-                'allegro-cz' => 'cs-CZ',
-                'allegro-sk' => 'sk-SK',
-                'allegro-hu' => 'hu-HU',
-                default => 'en-US',
-            };
+            $offerLanguage = $this->getAllegroOfferLanguage($marketplaceId);
 
             $productSearch = [];
             if ($product->barcode) {
@@ -118,17 +114,22 @@ class StoreProductToAllegro extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
-            $targetCurrency = match ($marketplaceId) {
-                'allegro-pl' => Currency::where('code', 'PLN')->first(),
-                'allegro-hu' => Currency::where('code', 'HUF')->first(),
-                default => $shop->currency
-            };
+            $marketplaceCurrencyCode = $this->getAllegroCurrencyCode($marketplaceId);
 
-            if ($targetCurrency !== $shop->currency) {
+            $targetCurrency = $marketplaceCurrencyCode
+                ? Currency::where('code', $marketplaceCurrencyCode)->first() ?? $shop->currency
+                : $shop->currency;
+
+            $customerPrice = $portfolio->customer_price;
+
+            if ($targetCurrency->code !== $shop->currency->code) {
                 $priceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
-                $customerPrice = $portfolio->customer_price * $priceExchange;
-            } else {
-                $customerPrice = $portfolio->customer_price;
+
+                if (!$priceExchange) {
+                    throw new \Exception("Unable to get the {$shop->currency->code} to {$targetCurrency->code} exchange rate.");
+                }
+
+                $customerPrice = $customerPrice * $priceExchange;
             }
 
             $responsibleProducerId = Arr::get($allegroUser->data, 'responsible_producer_id');
@@ -162,7 +163,7 @@ class StoreProductToAllegro extends RetinaAction
                 'sellingMode' => [
                     'format' => 'BUY_NOW',
                     'price'  => [
-                        'amount'   => number_format((float) $customerPrice, 2, '.', ''),
+                        'amount'   => $this->formatAllegroPrice($customerPrice, $marketplaceId),
                         'currency' => $targetCurrency->code
                     ]
                 ],
