@@ -8,19 +8,15 @@
 
 namespace App\Actions\SysAdmin\UI\Auth;
 
-use App\Actions\Chat\Agent\UpdateAgent;
 use App\Actions\SysAdmin\User\AuthoriseUserWithLegacyPassword;
 use App\Actions\SysAdmin\User\LogUserFailLogin;
-use App\Actions\SysAdmin\User\LogUserLogin;
 use App\Actions\Traits\WithLogin;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
-use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
@@ -89,46 +85,7 @@ class Login
         /** @var User $user */
         $user = auth($this->gate)->user();
 
-        app()->instance('group', $user->group);
-
-        $geoLocation = [
-            $request->header('CF-IPCountry') ?? 'XX',
-            $request->header('CF-Region'),
-            $request->header('CF-IPCity'),
-            $request->header('CF-IPLongitude'),
-            $request->header('CF-IPLatitude'),
-        ];
-
-        LogUserLogin::dispatch(
-            user: $user,
-            ip: request()->ip(),
-            userAgent: $request->header('User-Agent'),
-            datetime: now(),
-            geoLocation: $geoLocation
-        )->delay(now()->addSeconds(5));
-
-        if ($user) {
-            UpdateAgent::make()->setOnline($user->id);
-        }
-
-        $request->session()->regenerate();
-        Session::put('reloadLayout', '1');
-
-
-        $language = $user->language;
-        if ($language) {
-            app()->setLocale($language->code);
-        }
-        \Sentry\traceMetrics()->count('aiku.login.ok', 1, ['user' => $user->slug]);
-
-        if ($user->authorisedOrganisations->count() === 1) {
-            /** @var Organisation $organisation */
-            $organisation = $user->authorisedOrganisations()->first();
-
-            return redirect()->intended(route('grp.org.dashboard.show', $organisation->slug));
-        }
-
-        return redirect()->intended('/dashboard');
+        return ProcessSuccessfulLogin::run($user, $request);
     }
 
 

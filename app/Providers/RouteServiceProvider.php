@@ -42,6 +42,11 @@ class RouteServiceProvider extends ServiceProvider
 
         Route::middleware(['grp'])
             ->domain('app.'.config('app.domain'))
+            ->name('grp.kiosk.')
+            ->group(base_path('routes/grp/web/kiosk.php'));
+
+        Route::middleware(['grp'])
+            ->domain('app.'.config('app.domain'))
             ->name('grp.')
             ->group(base_path('routes/grp/web/app.php'));
 
@@ -109,6 +114,10 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('maya', function (Request $request) {
             return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('kiosk', function (Request $request) {
+            return Limit::perMinute(600)->by($request->ip());
         });
     }
 }

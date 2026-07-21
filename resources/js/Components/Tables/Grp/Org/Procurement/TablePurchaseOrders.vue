@@ -17,11 +17,7 @@ defineProps<{
   tab?: string
 }>();
 
-const locale = useLocaleStore();
-
 function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
-
-  console.log(route().current());
   switch (route().current()) {
     case "grp.org.procurement.purchase_orders.index":
       return route(
@@ -45,11 +41,10 @@ function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
       return route(
         "grp.org.procurement.purchase_orders.show",
         [route().params["organisation"], purchaseOrder.slug]);
-   case "grp.org.procurement.org_suppliers.show.purchase_orders.index":
-       return route(
-           "grp.org.procurement.org_suppliers.show.purchase-orders.show",
-           [route().params["organisation"], route().params["orgSupplier"], purchaseOrder.slug]
-       );
+    case "grp.org.procurement.org_suppliers.show.purchase_orders.index":
+      return route(
+        "grp.org.procurement.org_suppliers.show.purchase-orders.show",
+        [route().params["organisation"], route().params["orgSupplier"], purchaseOrder.slug]);
     default:
       return "";
   }
@@ -100,11 +95,9 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
       return "";
   }
 }
-
 </script>
 
 <template>
-
   <Table :resource="data" :name="tab" class="mt-5">
     <template #cell(reference)="{ item: purchaseOrder }">
       <Link :href="PurchaseOrderRoute(purchaseOrder)" class="primaryLink">
@@ -113,9 +106,7 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
     </template>
 
     <template #cell(parent_name)="{ item: purchaseOrder }">
-      <Link
-        :href="purchaseOrder.parent_type === 'OrgSupplier' ? SupplierRoute(purchaseOrder) : AgentRoute(purchaseOrder)"
-        class="secondaryLink">
+      <Link :href="purchaseOrder.parent_type === 'OrgSupplier' ? SupplierRoute(purchaseOrder) : AgentRoute(purchaseOrder)" class="secondaryLink">
         {{ purchaseOrder.parent_name }}
       </Link>
     </template>
@@ -124,14 +115,13 @@ function AgentRoute(purchaseOrder: PurchaseOrder) {
       <Icon :data="purchaseOrder.state_icon" />
     </template>
 
-
     <template #cell(org_total_cost)="{ item: purchaseOrder }">
       {{ useLocaleStore().currencyFormat(purchaseOrder.org_currency_code, purchaseOrder.org_total_cost) }}
     </template>
 
     <template #cell(date)="{ item: purchaseOrder }">
       <div>
-        {{ useFormatTime(purchaseOrder["date"], { localeCode: locale.language.code, formatTime: "aiku" }) }}
+        {{ useFormatTime(purchaseOrder.date, { formatTime: "EEE, do MMM yy, HH:mm" }) }}
       </div>
     </template>
 

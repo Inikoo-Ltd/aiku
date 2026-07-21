@@ -108,17 +108,6 @@ class ShowFamily extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ]
             ] : false,
-            $this->canDelete ? [
-                'type'  => 'button',
-                'style' => 'delete',
-                'route' => [
-                    'name'       => 'grp.models.product_category.delete',
-                    'method'     => 'delete',
-                    'parameters' => [
-                        'productCategory' => $family->id
-                    ]
-                ]
-            ] : false
         ]);
     }
 

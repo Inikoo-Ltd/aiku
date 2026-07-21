@@ -8,10 +8,10 @@
 
 namespace App\Actions\SysAdmin;
 
-use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,20 +22,14 @@ class CleanUserCaches
     public string $commandSignature = 'users:clean_cache {--i|id=} {--u|username=}';
 
 
-    public function handle(User $user, ?array $patterns = null): void
+    public function handle(User $user): void
     {
-        if ($patterns === null) {
-            $patterns = ['auth-user:'.$user->id.';*'];
-        }
-
-        foreach ($patterns as $pattern) {
-            ClearCacheByWildcard::run($pattern);
-        }
+        Cache::tags('auth-user:'.$user->id)->flush();
     }
 
     public function clearPermissionsCache(User $user): void
     {
-        $this->handle($user, ['auth-user:'.$user->id.';*']);
+        $this->handle($user);
     }
 
 
@@ -65,9 +59,7 @@ class CleanUserCaches
                     $user = new User();
                     $instance = $user->withTrashed()->find($modelId->id);
 
-                    $patterns = ['auth-user:'.$instance->id.';*'];
-
-                    $this->handle($instance, $patterns);
+                    $this->handle($instance);
                     $bar->advance();
                 }
             }

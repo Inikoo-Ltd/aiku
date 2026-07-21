@@ -12,9 +12,12 @@ use App\Extensions\CaseInsensitiveEloquentUserProvider;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\SysAdmin\User;
+use App\Actions\SysAdmin\UI\Auth\ProcessSuccessfulLogin;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
+use Laravel\Passkeys\Passkeys;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -22,6 +25,14 @@ class AuthServiceProvider extends ServiceProvider
         // 'App\Models\Model' => 'App\Policies\ModelPolicy',
     ];
 
+
+    public function register(): void
+    {
+        Passkeys::useUserModel(User::class);
+        Passkeys::ignoreRoutes();
+        Passkeys::authorizeLoginUsing(fn ($request, User $user) => $user->status);
+        $this->app->bind(PasskeyLoginResponse::class, ProcessSuccessfulLogin::class);
+    }
 
     public function boot(): void
     {

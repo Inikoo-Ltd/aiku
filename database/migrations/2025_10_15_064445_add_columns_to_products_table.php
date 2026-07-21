@@ -18,7 +18,7 @@ return new class () extends Migration {
                 $table->string('ufi_number')->nullable();
             }
             if (!Schema::hasColumn('products', 'scpn_number')) {
-                $table->string('scpn_number')->nullable();
+                $table->text('scpn_number')->nullable();
             }
         });
     }

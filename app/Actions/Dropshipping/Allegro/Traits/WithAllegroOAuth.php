@@ -303,6 +303,12 @@ trait WithAllegroOAuth
             return [];
         }
 
+        if(Arr::get($result, 'message')) {
+            return [
+                'message' => Arr::get($result, 'message')
+            ];
+        }
+
         $accessTokenExpiresAt = now()->addSeconds($result['expires_in'])->timestamp;
         $refreshTokenExpiresAt = isset($result['refresh_token'])
             ? now()->addDays(90)->timestamp

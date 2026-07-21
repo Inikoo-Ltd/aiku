@@ -19,21 +19,13 @@ trait HasRoles
 
     public function authTo(string|array $permission): bool
     {
-        if (is_array($permission)) {
-            return Cache::remember(
-                'auth-user:'.$this->id.';can:'.implode('|', $permission),
-                604800,
-                function () use ($permission) {
-                    return $this->hasAnyPermission($permission);
-                }
-            );
-        }
-
-        return Cache::remember(
-            'auth-user:'.$this->id.';can:'.$permission,
+        return Cache::tags('auth-user:'.$this->id)->remember(
+            'can:'.(is_array($permission) ? implode('|', $permission) : $permission),
             604800,
             function () use ($permission) {
-                return $this->hasPermissionTo($permission);
+                return is_array($permission)
+                    ? $this->hasAnyPermission($permission)
+                    : $this->hasPermissionTo($permission);
             }
         );
     }
