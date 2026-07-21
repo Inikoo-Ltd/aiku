@@ -24,12 +24,44 @@ class RepairMasterAssetHydratePrices
             return;
         };
 
-        $masterAsset->updateQuietly([
-            'master_prices' => $baseProduct->price ? $currenciesRate->map(fn ($ratio) => formatPrice($ratio, $baseProduct->price)) : '{}',
-            'master_rrps'   => $baseProduct->rrp ? $currenciesRate->map(fn ($ratio) => formatPrice($ratio, $baseProduct->rrp)) : '{}',
-        ]);
+        $hasPrice = false;
+        $hasRRP   = false;
 
-        $command?->info("Master Asset: [{$masterAsset->code}] => Master Prices & RRP Set up from $baseProduct->slug");
+        $updateData = [];
+
+        if ($baseProduct->price) {
+            $updateData['master_prices']    = $currenciesRate->map(
+                fn ($ratio) => [
+                    'value'         => formatPrice($ratio, $baseProduct->price),
+                    'independent'   => false
+                ]
+            );
+            $hasPrice = true;
+        }
+
+        if ($baseProduct->rrp) {
+            $updateData['master_rrps']    = $currenciesRate->map(
+                fn ($ratio) => [
+                    'value'         => formatPrice($ratio, $baseProduct->rrp),
+                    'independent'   => false
+                ]
+            );
+            $hasRRP   = true;
+        }
+
+        $masterAsset->updateQuietly($updateData);
+
+        $setUpText = '';
+
+        if ($command && $hasPrice) {
+            $setUpText = '| Master Price hydrated |';
+        }
+
+        if ($command && $hasRRP) {
+            $setUpText .= '| Master RRP hydrated |';
+        }
+
+        $command?->info("Master Asset: [{$masterAsset->code}] => $setUpText from $baseProduct->slug");
     }
 
     // Shop as base, master_shop as target
