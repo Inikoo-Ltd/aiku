@@ -22,6 +22,10 @@ const props = defineProps<{
     reloadOnly?: string
 }>()
 
+const emit = defineEmits<{
+    generated: [qrCode: Record<string, any>]
+}>()
+
 const isModalOpen = ref(false)
 const isSubmitting = ref(false)
 const label = ref('')
@@ -40,9 +44,11 @@ const submit = async () => {
     isSubmitting.value = true
 
     try {
-        await axios.post(route(props.route.name, props.route.parameters), {
+        const { data } = await axios.post(route(props.route.name, props.route.parameters), {
             label: label.value.trim() || null,
         })
+
+        emit('generated', data.data)
 
         notify({
             title: trans('Success'),

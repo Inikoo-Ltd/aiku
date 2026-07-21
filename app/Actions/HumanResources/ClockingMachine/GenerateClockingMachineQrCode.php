@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Actions\OrgAction;
+use App\Http\Resources\HumanResources\ClockingMachineQRCodeResource;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\ClockingMachineQRCode;
 use Lorisleiva\Actions\ActionRequest;
@@ -17,7 +18,6 @@ use Illuminate\Http\JsonResponse;
 
 class GenerateClockingMachineQrCode extends OrgAction
 {
-
     public function handle(ClockingMachine $clockingMachine, array $modelData): ClockingMachineQRCode
     {
         /** @var ClockingMachineQRCode $clockingMachineQRCode */
@@ -44,7 +44,7 @@ class GenerateClockingMachineQrCode extends OrgAction
 
             return response()->json([
                 'success' => true,
-                'data'    => $clockingMachineQRCode
+                'data'    => new ClockingMachineQRCodeResource($clockingMachineQRCode)
             ]);
         } catch (Exception $e) {
             return response()->json([

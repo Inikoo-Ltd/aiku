@@ -57,6 +57,8 @@ const openQrCode = (qrCode: QrCodeRow) => {
     isQrModalOpen.value = true
 }
 
+defineExpose({ openQrCode })
+
 const closeQrCode = async () => {
     if (document.fullscreenElement) {
         await document.exitFullscreen()
