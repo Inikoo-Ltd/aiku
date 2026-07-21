@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrder extends OrgAction
@@ -23,12 +24,26 @@ class UpdatePurchaseOrder extends OrgAction
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
 
-
-
     private PurchaseOrder $purchaseOrder;
+
+    private const DATA_FIELDS = [
+        'delivery_type',
+        'incoterm',
+        'port_of_export',
+        'port_of_import',
+        'delivery_address',
+        'payment_terms',
+        'terms_and_conditions',
+    ];
 
     public function handle(PurchaseOrder $purchaseOrder, array $modelData): PurchaseOrder
     {
+        foreach (self::DATA_FIELDS as $field) {
+            if (array_key_exists($field, $modelData)) {
+                $modelData['data'][$field] = Arr::pull($modelData, $field);
+            }
+        }
+
         return $this->update($purchaseOrder, $modelData, ['data']);
     }
 
@@ -49,7 +64,14 @@ class UpdatePurchaseOrder extends OrgAction
                 'required',
                 $this->strict ? 'alpha_dash' : 'string',
             ],
-            'notes' => ['sometimes', 'string']
+            'notes' => ['sometimes', 'string'],
+            'delivery_type'        => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
+            'incoterm'             => ['sometimes', 'nullable', 'string'],
+            'port_of_export'       => ['sometimes', 'nullable', 'string'],
+            'port_of_import'       => ['sometimes', 'nullable', 'string'],
+            'delivery_address'     => ['sometimes', 'nullable', 'string'],
+            'payment_terms'        => ['sometimes', 'nullable', 'string'],
+            'terms_and_conditions' => ['sometimes', 'nullable', 'string'],
         ];
 
         if ($this->strict) {

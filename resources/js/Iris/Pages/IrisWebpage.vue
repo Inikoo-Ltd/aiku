@@ -143,9 +143,8 @@ console.log('props',props)
 
             <!-- REVIEW -->
             <div 
-                v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)">
+                v-if="webpage_data.model_type != 'Product' && (review?.enabled ?? true)">
                 <div>
-                 <!--    <ReviewByStore :code="'review-by-store'" /> -->
                      <ReviewsIris :webpage_id="webpage_id" />
                 </div>
             </div>

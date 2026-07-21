@@ -8,7 +8,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faCheck, faExclamationTriangle } from "@fal"
+import { faTimes, faCheck, faExclamationTriangle, faMapMarkerAlt, faSyncAlt, faCamera } from "@fal"
 import { Dialog } from "primevue"
 import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -24,7 +24,7 @@ const pageProps = defineProps<{
 	timezone?: string
 }>()
 
-library.add(faTimes, faCheck, faExclamationTriangle)
+library.add(faTimes, faCheck, faExclamationTriangle, faMapMarkerAlt, faSyncAlt, faCamera)
 
 interface DetectedCode {
 	rawValue: string
@@ -48,6 +48,7 @@ interface LateClockInResult {
 const lat = ref<number | null>(null)
 const lng = ref<number | null>(null)
 const mapZoom = ref(15)
+const isDetectingLocation = ref(false)
 
 const cameraOn = ref(false)
 const loading = ref(false)
@@ -218,13 +219,17 @@ const detectMyLocation = () => {
 		return
 	}
 
+	isDetectingLocation.value = true
+
 	navigator.geolocation.getCurrentPosition(
 		(pos) => {
 			lat.value = pos.coords.latitude
 			lng.value = pos.coords.longitude
+			isDetectingLocation.value = false
 		},
 		(err) => {
 			errorMsg.value = getGeolocationErrorMessage(err)
+			isDetectingLocation.value = false
 		},
 		{
 			enableHighAccuracy: true,
@@ -486,8 +491,10 @@ const trackFunction = () => ({
 
 <template>
 	<div class="relative z-0">
-		<div v-if="!cameraOn" class="max-w-lg mx-auto p-6">
-			<h2 class="text-2xl font-bold mb-6">{{ trans("Employee Clocking") }}</h2>
+		<div v-if="!cameraOn" class="max-w-lg mx-auto p-4 sm:p-6 sm:pb-6">
+			<h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
+				{{ trans("Employee Clocking") }}
+			</h2>
 
 			<div
 				v-if="pageProps?.clockingStatus"
@@ -562,35 +569,73 @@ const trackFunction = () => ({
 				</div>
 			</div>
 
-			<div class="mb-6">
-				<p class="text-sm font-semibold text-gray-500 mb-2">
-					{{ trans("Detect Location") }}
-				</p>
-				<Button
-					label="Detect My Location"
-					type="secondary"
-					@click="detectMyLocation"
-					full />
+			<div
+				class="mb-6 rounded-xl border"
+				:class="hasLocation ? 'border-green-200 bg-green-50/60' : 'border-gray-200 bg-white'">
+				<div class="flex items-center gap-3 p-4">
+					<div
+						class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center"
+						:class="hasLocation ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'">
+						<FontAwesomeIcon :icon="faMapMarkerAlt" class="text-lg" />
+					</div>
+					<div class="min-w-0 flex-1">
+						<p
+							class="text-sm font-semibold"
+							:class="hasLocation ? 'text-green-800' : 'text-gray-700'">
+							{{ hasLocation ? trans("Location detected") : trans("Location not detected") }}
+						</p>
+						<p class="text-xs text-gray-500 truncate">
+							{{
+								hasLocation
+									? `${lat?.toFixed(6)}, ${lng?.toFixed(6)}`
+									: trans("Required before you can scan")
+							}}
+						</p>
+					</div>
+				</div>
 
-				<div v-if="hasLocation" class="mt-3 h-48 rounded-xl overflow-hidden border shadow">
-					<LMap :zoom="mapZoom" :center="[lat, lng]" style="height: 100%">
-						<LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-						<LMarker :lat-lng="[lat, lng]">
-							<LTooltip>
-								Lat: {{ lat?.toFixed(6) }}<br />Lng: {{ lng?.toFixed(6) }}
-							</LTooltip>
-						</LMarker>
-					</LMap>
+				<div v-if="hasLocation" class="px-4">
+					<div class="h-40 sm:h-48 rounded-lg overflow-hidden border border-gray-200">
+						<LMap :zoom="mapZoom" :center="[lat, lng]" style="height: 100%">
+							<LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+							<LMarker :lat-lng="[lat, lng]">
+								<LTooltip>
+									Lat: {{ lat?.toFixed(6) }}<br />Lng: {{ lng?.toFixed(6) }}
+								</LTooltip>
+							</LMarker>
+						</LMap>
+					</div>
+				</div>
+
+				<div class="p-4 sm:flex justify-center w-full">
+					<Button
+						:label="hasLocation ? trans('Update location') : trans('Detect my location')"
+						:icon="hasLocation ? faSyncAlt : faMapMarkerAlt"
+						:loading="isDetectingLocation"
+						:disabled="isDetectingLocation"
+						type="secondary"
+						size="l"
+						class="min-h-[44px] sm:min-h-[50px] w-full"
+						@click="detectMyLocation"
+						full />
 				</div>
 			</div>
 
 			<!-- OPEN CAMERA -->
-			<Button
-				label="Open Camera"
-				type="primary"
-				@click="startCamera"
-				:disabled="!canOpenCamera"
-				full />
+			<div>
+				<p v-if="!canOpenCamera" class="mb-2 text-center text-xs text-gray-500">
+					{{ trans("Detect your location first to enable scanning") }}
+				</p>
+				<Button
+					:label="trans('Open camera')"
+					:icon="faCamera"
+					type="primary"
+					size="l"
+					class="min-h-[44px] sm:min-h-[50px]"
+					@click="startCamera"
+					:disabled="!canOpenCamera"
+					full />
+			</div>
 		</div>
 		<Teleport to="body">
 			<div v-if="cameraOn" class="fixed inset-0 bg-black z-[9999] flex flex-col">
@@ -769,7 +814,9 @@ const trackFunction = () => ({
 			</div>
 		</Dialog>
 
-		<div v-if="errorMsg" class="text-red-500 text-sm mt-2 text-center">{{ errorMsg }}</div>
+		<div v-if="errorMsg" class="text-red-500 text-sm mt-2 text-center px-4">
+			{{ errorMsg }}
+		</div>
 	</div>
 </template>
 <style scoped>

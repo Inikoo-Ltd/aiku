@@ -500,6 +500,7 @@ function dataForNewQueryString() {
     const sort = queryBuilderData.value.sort
     const perPage = queryBuilderData.value.perPage;
     const elementFilter = queryBuilderData.value.elementFilter
+    const additionalElementFilter = queryBuilderData.value.additionalElementFilter
     const period = queryBuilderData.value.periodFilter
     const radioFilter = queryBuilderData.value.radioFilter
     const dateInterval = queryBuilderData.value.dateInterval
@@ -523,6 +524,9 @@ function dataForNewQueryString() {
     if (elementFilter) {
         queryData.elements = elementFilter // elements[state] = working
     }
+    if (additionalElementFilter) {
+        queryData.additionalElements = additionalElementFilter
+    }
     if (period) {
         queryData.period = period // period[type]=year&period[date]=2024
     }
@@ -538,21 +542,39 @@ function generateNewQueryString() {
     const queryStringData = qs.parse(location.search.substring(1))
     const prefix = props.name === 'default' ? '' : props.name + '_'
 
+    const externalFilters = queryStringData[prefix + 'filter'] || {}
+    const managedKeys = [
+        ...map(queryBuilderProps.value.searchInputs, 'key'), 
+        ...map(queryBuilderProps.value.filters, 'key'),
+    ]
+
+    forEach(managedKeys, (k : any) => { delete externalFilters[k] }) 
     // To exclude 'filter', 'columns', 'cursor', and 'sort' that received from the URL
-    forEach(['filter', 'columns', 'cursor', 'sort'], (key) => {
+    forEach(['columns', 'cursor', 'sort'], (key) => {
         delete queryStringData[prefix + key];
     });
 
     // To exclude page number from pagination
     delete queryStringData[pageName.value];
 
-    forEach(dataForNewQueryString(), (value, key) => {
+    const newData = dataForNewQueryString()
+    forEach(newData, (value, key) => {
         if (key === 'page') {
             queryStringData[pageName.value] = value;
+        } else if (key === 'filter') {
+            queryStringData[prefix + 'filter'] = {
+                ...externalFilters,
+                ...value,
+            };
         } else {
             queryStringData[prefix + key] = value;
         }
     });
+
+    if(!newData.filter && Object.keys(externalFilters).length) {
+        queryStringData[prefix + 'filter'] = externalFilters
+    }
+
     let query = qs.stringify(queryStringData, {
 
         encodeValuesOnly: true,
@@ -724,7 +746,6 @@ const onClickSelectAll = (state: boolean) => {
      emits('onCheckedAll', {data : props.resource.data, allChecked : compIsAllChecked.value})
 }
 
-
 // Check props.isCheckbox to improve performance
 const compIsAllChecked = props.isCheckBox
   ? computed(() => {
@@ -735,7 +756,6 @@ const compIsAllChecked = props.isCheckBox
         })
     })
   : false
-
 
 watch(selectRow, () => {
     emits('onSelectRow', selectRow)
@@ -937,10 +957,21 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                 <!-- Wrapper -->
 
                 <!-- Filter: Checkbox element -->
-                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-gray-300" :class="{
+                    'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
+                }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
                         @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                        :tableName="props.name" />
+                        :tableName="props.name" 
+                    />
+                </div>
+
+                <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
+                    <TableElements :elements="queryBuilderProps.additionalElementGroups"
+                        @checkboxChanged="(data) => queryBuilderData.additionalElementFilter = data"
+                        :tableName="props.name"
+                        :isAdditional="true" 
+                    />
                 </div>
 
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4 table-query-builder">

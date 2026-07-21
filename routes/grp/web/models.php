@@ -23,6 +23,7 @@ use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
@@ -280,7 +281,10 @@ use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachine\SetClockingMachineKioskToken;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\RegenerateClockingMachineQRCodeHash;
+use App\Actions\HumanResources\ClockingMachine\ToggleClockingMachineQRCodeActive;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachineQRCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMachineCoordinatePolicy;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\StoreClockingMachineCoordinatePolicy;
@@ -426,6 +430,7 @@ use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
+use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
@@ -496,6 +501,17 @@ Route::prefix('clocking-machine-coordinate-policy')->name('clocking-machine-coor
 Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine-coordinate-policy-rule.')->group(function () {
     Route::patch('{policyRule:id}', UpdateClockingMachineCoordinatePolicyRule::class)->name('update');
     Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
+});
+
+Route::prefix('clocking-machine-qr-code')->name('clocking_machine_qr_code.')->group(function () {
+    Route::patch('{clockingMachineQRCode:id}', UpdateClockingMachineQRCode::class)->name('update');
+    Route::patch('{clockingMachineQRCode:id}/toggle-active', ToggleClockingMachineQRCodeActive::class)->name('toggle_active');
+    Route::patch('{clockingMachineQRCode:id}/regenerate-hash', RegenerateClockingMachineQRCodeHash::class)->name('hash.regenerate');
+});
+
+
+Route::prefix('shipping-zone-schema')->name('shipping_zone_schema.')->group(function () {
+    Route::patch('{shippingZoneSchema:id}', UpdateShippingZoneSchema::class)->name('update');
 });
 
 Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
@@ -1058,6 +1074,8 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
 });
 
+Route::patch('website/{website:id}/bulk-offline-webpages', SetWebpageOfflineBulk::class)->name('webpage.set_offline_bulk');
+
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::patch('', UpdateRedirect::class)->name('update');
     Route::delete('', DeleteRedirect::class)->name('delete');
@@ -1331,7 +1349,7 @@ Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDel
 Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
 
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
-    Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
+    Route::post('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
     Route::post('{clockingMachine}/kiosk-token', SetClockingMachineKioskToken::class)->name('kiosk_token.set');
     Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
     Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');

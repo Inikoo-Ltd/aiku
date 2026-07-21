@@ -15,6 +15,7 @@ use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\Web\WebpagesResource;
@@ -236,6 +237,29 @@ class IndexWebpages extends OrgAction
         ];
     }
 
+    protected function getSubTypeElementGroups(Organisation|Website|Webpage $parent): array
+    {
+        return [
+            'type' => [
+                'label'    => __('Webpage Type'),
+                'elements' => array_merge_recursive(
+                    WebpageSubTypeEnum::catalogueLabels(),
+                    WebpageSubTypeEnum::catalogueCount()
+                ),
+                'engine' => function ($query, $elements) {
+                    $query->where(function ($q) use ($elements) {
+                        if (count($elements) != count(WebpageSubTypeEnum::catalogueLabels())) {
+                            $q->whereIn('webpages.sub_type', $elements)
+                                ->where('webpages.type', WebpageTypeEnum::CATALOGUE);
+                        }
+                    });
+                }
+
+            ],
+
+        ];
+    }
+
 
     public function handle(Group|Organisation|Website|Webpage $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
@@ -245,8 +269,9 @@ class IndexWebpages extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereWith('webpages.code', $value)
-                    ->orWhereWith('webpages.url', $value);
+                $value = strip_tags($value);
+                $query->whereAnyWordStartWith('webpages.code', $value)
+                    ->orWhereAnyWordStartWith('webpages.url', $value);
             });
         });
 
@@ -259,6 +284,15 @@ class IndexWebpages extends OrgAction
         if (!($parent instanceof Group)) {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
+
+            foreach ($this->getSubTypeElementGroups($parent) as $key => $elementGroup) {
+                $queryBuilder->whereAdditionalElementGroup(
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
                     engine: $elementGroup['engine'],
@@ -361,6 +395,14 @@ class IndexWebpages extends OrgAction
                         elements: $elementGroup['elements']
                     );
                 }
+
+                foreach ($this->getSubTypeElementGroups($parent) as $key => $elementGroup) {
+                    $table->additionalElementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
+                }
             }
 
 
@@ -406,14 +448,6 @@ class IndexWebpages extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $webpages, ActionRequest $request): Response
     {
-        $subNavigation = [];
-
-
-        if ($this->parent instanceof Website) {
-            $subNavigation = $this->getWebpageNavigation($this->parent);
-        }
-
-
         $routeName = $request->route()->getName();
 
         $routeCreate = null;
@@ -423,17 +457,38 @@ class IndexWebpages extends OrgAction
             $routeCreate = 'grp.org.shops.show.web.webpages.create';
         }
 
+        $subNavigation = [];
+        $website = null;
+
+        if ($this->parent instanceof Website) {
+            $website = $this->parent;
+            $subNavigation = $this->getWebpageNavigation($this->parent);
+        } elseif ($this->parent instanceof Webpage) {
+            $website = $this->parent->website;
+        }
+
+        $allowBulkOffline = $this->canEdit && ($this->parent instanceof Website || $this->parent instanceof Webpage);
+
         $actions = [];
 
         if ($routeCreate) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('webpage'),
+                'label' => __('Webpage'),
                 'route' => [
                     'name'       => $routeCreate,
                     'parameters' => array_values($request->route()->originalParameters())
                 ],
+            ];
+        }
+
+        if ($allowBulkOffline) {
+            $actions[] = [
+                'key'   => 'bulk-offline',
+                'type'  => 'button',
+                'style' => 'create',
+                'label' => __('Bulk Offline'),
             ];
         }
 
@@ -457,7 +512,22 @@ class IndexWebpages extends OrgAction
                     'actions'       => $actions,
                 ],
                 'data'        => WebpagesResource::collection($webpages),
-
+                'routes_list'                  => [
+                    'bulk_offline'        => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.webpage.set_offline_bulk',
+                        'parameters' => [
+                            'website'   => $website?->id
+                        ]
+                    ],
+                    'fetch_live_webpages' => [
+                        'method'     => 'post',
+                        'name'       => 'grp.json.active_webpages.with_exclusion.index',
+                        'parameters' => [
+                            'shop' => $this->shop->slug,
+                        ]
+                    ],
+                ],
             ]
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
     }
