@@ -15,6 +15,7 @@ use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Sentry;
 
 class SaveShopDataAllegroChannel
 {
@@ -46,7 +47,12 @@ class SaveShopDataAllegroChannel
                         $shipping = ProcessShippingRates::run($allegroUser);
                     }
 
-                    data_set($data, 'shipping_id', Arr::get($shipping, 'id'));
+                    $shippingId = Arr::get($shipping, 'id');
+                    if(blank($shippingId)) {
+                        Sentry::captureMessage('Shipping rates not found');
+                    }
+
+                    data_set($data, 'shipping_id', $shippingId);
                 }
 
                 if (! Arr::get($allegroUser->settings, 'policy.return_id')) {
