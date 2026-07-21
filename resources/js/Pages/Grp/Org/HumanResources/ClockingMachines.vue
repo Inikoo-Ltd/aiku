@@ -5,22 +5,39 @@
   -->
 
 <script setup lang="ts">
-import {Head} from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TableClockingMachines from "@/Components/Tables/Grp/Org/HumanResources/TableClockingMachines.vue";
+import ModalCreateClockingMachine from "@/Components/HumanResources/ModalCreateClockingMachine.vue";
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading";
 
-const props = defineProps <{
+defineProps<{
     pageHead: PageHeadingTypes
     title: string
     data: object
+    createClockingMachine?: {
+        route: {
+            name: string
+            parameters: Record<string, string | number>
+        }
+        workplaces: {
+            value: number
+            label: string
+        }[]
+    }
 }>()
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+        <template v-if="createClockingMachine" #otherBefore>
+            <ModalCreateClockingMachine
+                :route="createClockingMachine.route"
+                :workplaces="createClockingMachine.workplaces"
+            />
+        </template>
+    </PageHeading>
     <TableClockingMachines :data="data" />
 </template>
-
