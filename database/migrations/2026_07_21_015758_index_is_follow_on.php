@@ -24,8 +24,10 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropIndex('is_follow_on');
-        });
+        if (Schema::hasIndex('transactions', 'transactions_is_follow_on_index')) {
+            Schema::table('transactions', function (Blueprint $table) {
+                $table->dropIndex(['is_follow_on']);
+            });
+        }
     }
 };

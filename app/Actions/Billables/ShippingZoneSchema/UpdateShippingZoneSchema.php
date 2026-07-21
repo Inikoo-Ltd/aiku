@@ -23,7 +23,6 @@ class UpdateShippingZoneSchema extends OrgAction
     use WithActionUpdate;
 
 
-    private ShippingZoneSchema $shippingZoneSchema;
 
     public function handle(ShippingZoneSchema $shippingZoneSchema, array $modelData): ShippingZoneSchema
     {
@@ -59,7 +58,6 @@ class UpdateShippingZoneSchema extends OrgAction
             ShippingZoneSchema::disableAuditing();
         }
         $this->strict             = $strict;
-        $this->shippingZoneSchema = $shippingZoneSchema;
         $this->hydratorsDelay     = $hydratorsDelay;
         $this->initialisationFromShop($shippingZoneSchema->shop, $modelData);
 
@@ -69,7 +67,6 @@ class UpdateShippingZoneSchema extends OrgAction
 
     public function asController(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZoneSchema
     {
-        $this->shippingZoneSchema = $shippingZoneSchema;
         $this->initialisationFromShop($shippingZoneSchema->shop, $request);
 
         return $this->handle($shippingZoneSchema, $this->validatedData);
