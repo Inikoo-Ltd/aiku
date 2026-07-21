@@ -6,6 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\HumanResources\ClockingMachine\UI\RedirectClockingMachineQrScan;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\Web\Webpage\BanVarnishWebpage;
@@ -181,6 +182,8 @@ Route::middleware(
     Route::prefix("clocking-employees")
         ->name("clocking_employees.")
         ->group(__DIR__."/clocking_employees.php");
+
+    Route::get('clocking-scan/{hash}', RedirectClockingMachineQrScan::class)->name('clocking_scan');
 
     Route::prefix("platforms")
         ->name("platforms.")
