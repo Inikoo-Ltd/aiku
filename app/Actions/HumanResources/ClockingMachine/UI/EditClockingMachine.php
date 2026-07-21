@@ -10,6 +10,7 @@ namespace App\Actions\HumanResources\ClockingMachine\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineStatusEnum;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Workplace;
@@ -17,7 +18,6 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 
 class EditClockingMachine extends OrgAction
 {
@@ -61,11 +61,20 @@ class EditClockingMachine extends OrgAction
                         'label' => __('Name'),
                         'value' => $clockingMachine->name,
                     ],
-                    'type' => [
+                    'status' => [
                         'type'    => 'select',
-                        'options' => Options::forEnum(ClockingMachineTypeEnum::class),
-                        'label'   => __('Type'),
-                        'value'   => $clockingMachine->type,
+                        'options' => [
+                            [
+                                'value' => ClockingMachineStatusEnum::CONNECTED->value,
+                                'label' => __('Connected'),
+                            ],
+                            [
+                                'value' => ClockingMachineStatusEnum::DISCONNECTED->value,
+                                'label' => __('Disconnected'),
+                            ],
+                        ],
+                        'label'   => __('Status'),
+                        'value'   => $clockingMachine->status?->value,
                     ],
                 ],
             ],

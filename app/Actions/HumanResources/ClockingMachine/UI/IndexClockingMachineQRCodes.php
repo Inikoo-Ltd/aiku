@@ -1,6 +1,12 @@
 <?php
 
 /*
+ * @Author: andiferdiawan (https://github.com/andiferdiawan)
+ * @Created: YYYY-MM-DD HH:mm:ss
+ * @Copyright: Copyright (c) 2026, andiferdiawan
+ */
+
+/*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 21 Jul 2026 09:10:36 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
@@ -70,10 +76,10 @@ class IndexClockingMachineQRCodes extends OrgAction
                 ->column(key: 'label', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'hash', label: __('Hash'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'active_badge', label: __('Active'), canBeHidden: false, sortable: true, type: 'badge')
-                ->column(key: 'deactivated_at', label: __('Deactivated at'), sortable: true)
                 ->column(key: 'number_clockings', label: __('Clockings'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_different_staff', label: __('Staff'), canBeHidden: false, sortable: true)
                 ->column(key: 'last_used_at', label: __('Last used'), sortable: true)
+                ->column(key: 'deactivated_at', label: __('Deactivated at'), sortable: true)
                 ->column(key: 'created_at', label: __('Created at'), sortable: true)
                 ->column(key: 'actions', label: __('Actions'), canBeHidden: false)
                 ->defaultSort('-created_at');

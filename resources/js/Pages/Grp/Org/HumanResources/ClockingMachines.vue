@@ -9,13 +9,26 @@ import { Head } from '@inertiajs/vue3';
 import PageHeading from '@/Components/Headings/PageHeading.vue';
 import TableClockingMachines from "@/Components/Tables/Grp/Org/HumanResources/TableClockingMachines.vue";
 import ModalCreateClockingMachine from "@/Components/HumanResources/ModalCreateClockingMachine.vue";
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
+import { computed, ref } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading";
+import type { Navigation } from "@/types/Tabs"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPlug, faUnlink } from '@fal'
 
-defineProps<{
+library.add(faPlug, faUnlink)
+
+const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    data: object
+    tabs: {
+        current: string
+        navigation: Navigation
+    }
+    connected?: object
+    disconnected?: object
     createClockingMachine?: {
         route: {
             name: string
@@ -27,6 +40,11 @@ defineProps<{
         }[]
     }
 }>()
+
+const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const currentData = computed(() => props[currentTab.value as keyof typeof props])
 </script>
 
 <template>
@@ -39,5 +57,8 @@ defineProps<{
             />
         </template>
     </PageHeading>
-    <TableClockingMachines :data="data" />
+
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+
+    <TableClockingMachines :data="currentData" :tab="currentTab" />
 </template>

@@ -26,6 +26,7 @@ type QrCodeRow = {
     hash: string
     qr_value: string
     active: boolean
+    deactivated_at: string | null
     number_clockings: number
     last_used_at: string | null
     created_at: string | null
@@ -151,6 +152,12 @@ const downloadQrCode = () => {
 
             <template #cell(hash)="{ item }">
                 <span class="font-mono text-gray-600">{{ item.hash }}</span>
+            </template>
+
+            <template #cell(deactivated_at)="{ item }">
+                <div class="text-gray-500">
+                    {{ item.deactivated_at ? useFormatTime(item.deactivated_at, { formatTime: "hms" }) : "-" }}
+                </div>
             </template>
 
             <template #cell(last_used_at)="{ item }">

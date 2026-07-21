@@ -14,6 +14,8 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineStatusEnum;
+use App\Enums\UI\HumanResources\ClockingMachinesTabsEnum;
 use App\Http\Resources\HumanResources\ClockingMachinesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\HumanResources\ClockingMachine;
@@ -37,7 +39,7 @@ class IndexClockingMachines extends OrgAction
 
     private Organisation|Workplace|Group $parent;
 
-    public function handle(Workplace|Organisation|Group $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Workplace|Organisation|Group $parent, $prefix = null, ?ClockingMachineStatusEnum $status = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->whereStartWith('clocking_machines.name', $value);
@@ -48,6 +50,10 @@ class IndexClockingMachines extends OrgAction
         }
 
         $query = QueryBuilder::for(ClockingMachine::class);
+
+        if ($status) {
+            $query->where('clocking_machines.status', $status->value);
+        }
 
         if ($parent instanceof Organisation) {
             $query->where('clocking_machines.organisation_id', $parent->id);
@@ -91,8 +97,12 @@ class IndexClockingMachines extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                        'title'       => __('no clocking machines'),
-                        'description' => __('Get started by creating a new clocking machine.'),
+                        'title'       => $prefix === ClockingMachinesTabsEnum::DISCONNECTED->value
+                            ? __('no disconnected clocking machines')
+                            : __('no connected clocking machines'),
+                        'description' => $prefix === ClockingMachinesTabsEnum::DISCONNECTED->value
+                            ? __('Every clocking machine is currently connected.')
+                            : __('Get started by creating a new clocking machine.'),
                         'count'       => class_basename($parent == 'Organisation') ? $parent->humanResourcesStats->number_clocking_machines : $parent->stats->number_clocking_machines,
                     ]
                 )
@@ -104,6 +114,10 @@ class IndexClockingMachines extends OrgAction
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
             }
 
+            if ($this->canEdit) {
+                $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
+            }
+
             $table->defaultSort('name');
         };
     }
@@ -111,25 +125,32 @@ class IndexClockingMachines extends OrgAction
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(ClockingMachinesTabsEnum::values());
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, $this->tab, $this->tabStatus());
     }
 
     public function asController(Organisation $organisation, Workplace $workplace, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $workplace;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(ClockingMachinesTabsEnum::values());
 
-        return $this->handle($workplace);
+        return $this->handle($workplace, $this->tab, $this->tabStatus());
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup(group(), $request)->withTab(ClockingMachinesTabsEnum::values());
 
-        return $this->handle(group());
+        return $this->handle(group(), $this->tab, $this->tabStatus());
+    }
+
+    private function tabStatus(): ClockingMachineStatusEnum
+    {
+        return $this->tab === ClockingMachinesTabsEnum::DISCONNECTED->value
+            ? ClockingMachineStatusEnum::DISCONNECTED
+            : ClockingMachineStatusEnum::CONNECTED;
     }
 
     public function jsonResponse(LengthAwarePaginator $clockingMachine): AnonymousResourceCollection
@@ -190,10 +211,28 @@ class IndexClockingMachines extends OrgAction
                     'subNavigation' => $this->parent instanceof Workplace ? $this->getWorkplaceSubNavigation($this->parent) : null
                 ],
                 'createClockingMachine' => $this->getCreateClockingMachineData(),
-                'data'                  => ClockingMachinesResource::collection($clockingMachines)
+                'tabs'                  => [
+                    'current'    => $this->tab,
+                    'navigation' => ClockingMachinesTabsEnum::navigation()
+                ],
 
+                ClockingMachinesTabsEnum::CONNECTED->value => $this->tab == ClockingMachinesTabsEnum::CONNECTED->value
+                    ? fn () => ClockingMachinesResource::collection($clockingMachines)
+                    : Inertia::optional(fn () => ClockingMachinesResource::collection(
+                        $this->handle($this->parent, ClockingMachinesTabsEnum::CONNECTED->value, ClockingMachineStatusEnum::CONNECTED)
+                    )),
+
+                ClockingMachinesTabsEnum::DISCONNECTED->value => $this->tab == ClockingMachinesTabsEnum::DISCONNECTED->value
+                    ? fn () => ClockingMachinesResource::collection($clockingMachines)
+                    : Inertia::optional(fn () => ClockingMachinesResource::collection(
+                        $this->handle($this->parent, ClockingMachinesTabsEnum::DISCONNECTED->value, ClockingMachineStatusEnum::DISCONNECTED)
+                    )),
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table(
+            $this->tableStructure($this->parent, prefix: ClockingMachinesTabsEnum::CONNECTED->value)
+        )->table(
+            $this->tableStructure($this->parent, prefix: ClockingMachinesTabsEnum::DISCONNECTED->value)
+        );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
