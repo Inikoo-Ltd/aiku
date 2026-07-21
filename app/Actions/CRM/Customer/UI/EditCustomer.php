@@ -16,8 +16,8 @@ use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
-use App\Models\Catalogue\PreferredShipping;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\Shipper;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -109,18 +109,17 @@ class EditCustomer extends OrgAction
                     'label' => 'UKIMS',
                     'value' => $customer->ukims
                 ],
-                'preferred_shipping_id'    => [
+                'shipper_id'               => [
                     'type'        => 'select',
                     'label'       => __('Preferred shipping'),
                     'placeholder' => __('Select preferred shipping'),
-                    'value'       => $customer->preferred_shipping_id,
-                    'options'     => PreferredShipping::where('shop_id', $customer->shop_id)
-                        ->with('shipper')
-                        ->get()
-                        ->map(fn (PreferredShipping $preferredShipping) => [
-                            'value' => $preferredShipping->id,
-                            'label' => $preferredShipping->shipper?->name,
-                        ])->values()->all(),
+                    'value'       => $customer->shipper_id,
+                    'options'     => Shipper::whereHas('preferredShippings', function ($query) use ($customer) {
+                        $query->where('shop_id', $customer->shop_id);
+                    })->get()->map(fn (Shipper $shipper) => [
+                        'value' => $shipper->id,
+                        'label' => $shipper->name,
+                    ])->values()->all(),
                     'searchable'  => true,
                 ],
                 'is_re'                    => [

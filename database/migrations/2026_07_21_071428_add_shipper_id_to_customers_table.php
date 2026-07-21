@@ -14,7 +14,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('customers', function (Blueprint $table) {
-            $table->unsignedInteger('shipper_id')->nullable()->index();
+            $table->unsignedSmallInteger('shipper_id')->nullable()->index();
             $table->foreign('shipper_id')->references('id')->on('shippers')->nullOnDelete();
         });
     }

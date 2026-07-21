@@ -48,6 +48,7 @@ use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -332,11 +333,18 @@ class UpdateCustomer extends OrgAction
             'delivery_address_id'                                   => ['sometimes', 'integer'],
             'timezone_id'                                           => ['sometimes', 'nullable', 'exists:timezones,id'],
             'language_id'                                           => ['sometimes', 'nullable', 'exists:languages,id'],
-            'preferred_shipping_id'                                 => [
+            'shipper_id'                                             => [
                 'sometimes',
                 'nullable',
                 'integer',
-                Rule::exists('preferred_shippings', 'id')->where('shop_id', $this->shop->id),
+                Rule::exists('shippers', 'id')->where(function ($query) {
+                    $query->whereExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('preferred_shippings')
+                            ->whereColumn('preferred_shippings.shipper_id', 'shippers.id')
+                            ->where('preferred_shippings.shop_id', $this->shop->id);
+                    });
+                }),
             ],
             'balance'                                               => ['sometimes', 'nullable'],
             'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
