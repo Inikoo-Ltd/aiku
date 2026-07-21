@@ -105,6 +105,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Language $language
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Passkeys\Passkey> $passkeys
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \App\Models\SysAdmin\UserHasPseudoJobPositions|null $pivot
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JobPosition> $pseudoJobPositions

@@ -59,7 +59,8 @@ class IndexInvoices extends OrgAction
     private string $bucket = '';
 
 
-    public function handle(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, ?string $prefix = null, ?string $bucket = null): LengthAwarePaginator {
+    public function handle(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, ?string $prefix = null, ?string $bucket = null): LengthAwarePaginator
+    {
         if ($bucket !== null) {
             $this->bucket = $bucket;
         }

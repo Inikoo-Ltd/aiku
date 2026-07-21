@@ -1,4 +1,5 @@
 <?php
+
 /** @noinspection PhpUnused */
 
 /*
@@ -186,7 +187,7 @@ class GetTradeUnitsCountryOriginFromAurora
                         $this->handle($tradeUnit, $command, $command->option('dry-run'));
                     }
                     $processed++;
-                  //  $bar->advance();
+                    //  $bar->advance();
                 }
             }, 'id');
 
