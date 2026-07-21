@@ -37,6 +37,13 @@ class StoreProductCategoryDiscount extends OrgAction
     {
         $productCategory = ProductCategory::find(Arr::pull($modelData, 'product_category_id'));
 
+        $targetCategory = $productCategory;
+        if ($targetCategoryId = Arr::pull($modelData, 'target_product_category_id')) {
+            if ($targetCategoryId != $productCategory->id) {
+                $targetCategory = ProductCategory::find($targetCategoryId);
+            }
+        }
+
         $percentageOff = Arr::pull($modelData, 'percentage_off');
         $itemQuantity  = (int)Arr::pull($modelData, 'trigger_data_item_quantity');
         $itemAmount    = (float)Arr::pull($modelData, 'trigger_data_item_amount');
@@ -95,7 +102,7 @@ class StoreProductCategoryDiscount extends OrgAction
             );
         }
 
-        $targetType = match ($productCategory->type) {
+        $targetType = match ($targetCategory->type) {
             ProductCategoryTypeEnum::DEPARTMENT => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
             ProductCategoryTypeEnum::SUB_DEPARTMENT => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
             default => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY->value
@@ -108,12 +115,12 @@ class StoreProductCategoryDiscount extends OrgAction
                 [
                     'class'       => OfferAllowanceClass::DISCOUNT->value,
                     'target_type' => $targetType,
-                    'target_id'   => $productCategory->id,
+                    'target_id'   => $targetCategory->id,
                     'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
                     'data'        => [
                         'percentage_off' => $percentageOff,
-                        'category_type'  => $productCategory->type,
-                        'category_id'    => $productCategory->id
+                        'category_type'  => $targetCategory->type,
+                        'category_id'    => $targetCategory->id
                     ]
                 ]
             ]
@@ -168,6 +175,7 @@ class StoreProductCategoryDiscount extends OrgAction
             'end_at'                     => ['nullable', 'required_if:duration,interval', 'date'],
             'percentage_off'             => ['required', 'numeric', 'gt:0', 'lt:100'],
             'product_category_id'        => ['required', 'integer', 'exists:product_categories,id'],
+            'target_product_category_id' => ['sometimes', 'nullable', 'integer', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
         ];
     }
 

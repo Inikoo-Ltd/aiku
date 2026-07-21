@@ -297,6 +297,7 @@ class StoreInvoice extends OrgAction
             'total_amount'              => ['required', 'numeric'],
             'gross_amount'              => ['required', 'numeric'],
             'rental_amount'             => ['sometimes', 'required', 'numeric'],
+            'amount_off'                => ['sometimes', 'numeric', 'min:0'],
             'goods_amount'              => ['sometimes', 'required', 'numeric'],
             'insurance_amount'          => ['sometimes', 'required', 'numeric'],
             'shipping_amount'           => ['sometimes', 'required', 'numeric'],

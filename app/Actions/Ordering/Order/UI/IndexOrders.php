@@ -427,7 +427,7 @@ class IndexOrders extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions
                 ],
-                'data'           => OrderResource::collection($orders),
+                'data'           => OrdersResource::collection($orders),
                 'submitRoute'    => $customerId ? [
                     'name'       => 'grp.models.customer.submitted_order.store',
                     'parameters' => [

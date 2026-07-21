@@ -37,6 +37,7 @@ class CalculateOrderShipping
         $discount                           = false;
         $insertTransactionHasOfferAllowance = false;
         $offerId                            = null;
+        $shippingOfferData                  = [];
         $shopOffersData                     = $order->shop->offers_data;
 
         if (Arr::get($shopOffersData, 'discounted_shipping.active')) {
@@ -44,7 +45,21 @@ class CalculateOrderShipping
             if ($minAmount <= $order->gross_amount) {
                 $discount = true;
 
-                $offerId = Arr::get($shopOffersData, 'discounted_shipping.id');
+                $shippingOfferData = Arr::get($shopOffersData, 'discounted_shipping', []);
+                $offerId           = Arr::get($shopOffersData, 'discounted_shipping.id');
+                if ($order->discounted_shipping_offer_id != $offerId) {
+                    $insertTransactionHasOfferAllowance = true;
+                }
+            }
+        }
+
+        if (!$discount) {
+            $scopedOfferData = $this->matchScopedShippingOffer($order, $shopOffersData);
+            if ($scopedOfferData) {
+                $discount = true;
+
+                $shippingOfferData = $scopedOfferData;
+                $offerId           = Arr::get($scopedOfferData, 'id');
                 if ($order->discounted_shipping_offer_id != $offerId) {
                     $insertTransactionHasOfferAllowance = true;
                 }
@@ -59,7 +74,8 @@ class CalculateOrderShipping
                 if ($minAmount <= $order->gross_amount) {
                     $discount = true;
 
-                    $offerId = Arr::get($voucherOfferData, 'id');
+                    $shippingOfferData = $voucherOfferData;
+                    $offerId           = Arr::get($voucherOfferData, 'id');
                     if ($order->discounted_shipping_offer_id != $offerId) {
                         $insertTransactionHasOfferAllowance = true;
                     }
@@ -161,7 +177,7 @@ class CalculateOrderShipping
                     'discounted_shipping_offer_id' => $offerId,
                 ]);
                 if ($insertTransactionHasOfferAllowance) {
-                    $this->saveTransactionOfferAllowances($order, $shippingTransaction, $shopOffersData);
+                    $this->saveTransactionOfferAllowances($order, $shippingTransaction, $shippingOfferData);
                 }
             }
 
@@ -277,16 +293,60 @@ class CalculateOrderShipping
         return $helperZone->match($helperAddress);
     }
 
-    public function saveTransactionOfferAllowances(Order $order, Transaction $shippingTransaction, array $shopOffersData): void
+    public function matchScopedShippingOffer(Order $order, array $shopOffersData): ?array
+    {
+        foreach (Arr::get($shopOffersData, 'discounted_shipping_scoped', []) as $scopedOfferData) {
+            $scopeAmount = $this->getScopeAmount($order, Arr::get($scopedOfferData, 'target_type'), Arr::get($scopedOfferData, 'target_id'));
+            if ($scopeAmount > 0 && $scopeAmount >= Arr::get($scopedOfferData, 'min_amount', 0)) {
+                return $scopedOfferData;
+            }
+        }
+
+        return null;
+    }
+
+    private function getScopeAmount(Order $order, ?string $targetType, $targetId): float
+    {
+        if (!$targetId) {
+            return 0.0;
+        }
+
+        return match ($targetType) {
+            'department' => (float)Arr::get($order->categories_data, "department.$targetId.net_amount", 0),
+            'sub_department' => (float)Arr::get($order->categories_data, "sub_department.$targetId.net_amount", 0),
+            'family' => (float)Arr::get($order->categories_data, "family.$targetId.net_amount", 0),
+            'product' => (float)DB::table('transactions')
+                ->where('order_id', $order->id)
+                ->where('model_type', 'Product')
+                ->where('model_id', $targetId)
+                ->whereNull('deleted_at')
+                ->sum('net_amount'),
+            'collection' => (float)DB::table('transactions')
+                ->where('order_id', $order->id)
+                ->where('model_type', 'Product')
+                ->whereNull('deleted_at')
+                ->whereIn(
+                    'model_id',
+                    DB::table('collection_has_models')
+                        ->where('collection_id', $targetId)
+                        ->where('model_type', 'Product')
+                        ->pluck('model_id')
+                )
+                ->sum('net_amount'),
+            default => 0.0,
+        };
+    }
+
+    public function saveTransactionOfferAllowances(Order $order, Transaction $shippingTransaction, array $shippingOfferData): void
     {
         DB::table('transaction_has_offer_allowances')->insert([
             'order_id'           => $order->id,
             'transaction_id'     => $shippingTransaction->id,
-            'offer_id'           => Arr::get($shopOffersData, 'discounted_shipping.id'),
+            'offer_id'           => Arr::get($shippingOfferData, 'id'),
             'model_type'         => $shippingTransaction->model_type,
             'model_id'           => $shippingTransaction->model_id,
-            'offer_campaign_id'  => Arr::get($shopOffersData, 'discounted_shipping.offer_campaign_id'),
-            'offer_allowance_id' => Arr::get($shopOffersData, 'discounted_shipping.offer_allowance_id'),
+            'offer_campaign_id'  => Arr::get($shippingOfferData, 'offer_campaign_id'),
+            'offer_allowance_id' => Arr::get($shippingOfferData, 'offer_allowance_id'),
             'created_at'         => now(),
             'updated_at'         => now(),
             'data'               => '{}'

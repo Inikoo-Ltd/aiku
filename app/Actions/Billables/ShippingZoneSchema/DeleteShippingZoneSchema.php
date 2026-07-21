@@ -8,6 +8,7 @@
 
 namespace App\Actions\Billables\ShippingZoneSchema;
 
+use App\Actions\Billables\ShippingZone\DeleteShippingZone;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateShippingZoneSchemas;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShippingZoneSchemas;
@@ -27,6 +28,9 @@ class DeleteShippingZoneSchema extends OrgAction
     {
         $shop = $shippingZoneSchema->shop;
         $shippingZoneSchema->stats()->delete();
+        foreach ($shippingZoneSchema->shippingZones as $shippingZone) {
+            DeleteShippingZone::dispatch($shippingZone);
+        }
 
         $shippingZoneSchema->delete();
 

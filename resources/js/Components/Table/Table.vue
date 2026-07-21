@@ -618,8 +618,15 @@ const visit = (url?: string) => {
             },
             onSuccess() {
                 if ('queryBuilderProps' in usePage().props) {
-                    queryBuilderData.value.cursor = queryBuilderProps.value.cursor;
-                    queryBuilderData.value.page = queryBuilderProps.value.page;
+                    const newCursor = queryBuilderProps.value.cursor;
+                    const newPage   = queryBuilderProps.value.page;
+            
+                    if (queryBuilderData.value.cursor !== newCursor || queryBuilderData.value.page !== newPage) {
+                        skipNextDebouncedVisit = true;
+                    }
+                
+                    queryBuilderData.value.cursor = newCursor;
+                    queryBuilderData.value.page   = newPage;
                 }
 
                 if (props.preserveScroll === 'table-top') {
@@ -628,7 +635,6 @@ const visit = (url?: string) => {
                         tableFieldset.value.getBoundingClientRect().top +
                         window.pageYOffset +
                         offset;
-
                     window.scrollTo({top});
                 }
 
