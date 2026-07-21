@@ -53,20 +53,26 @@ class EditInvoice extends OrgAction
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
+
+        $title=_('Edit invoice');
+        if($invoice->type==InvoiceTypeEnum::REFUND){
+            $title=_('Edit refund');
+        }
+
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit invoice'),
+                'title'       => $title,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'     => __('Edit invoice'),
+                    'title'     =>$title,
                     'container' => [
                         'icon'    => ['fal', 'fa-user'],
-                        'tooltip' => __('Edit Invoice'),
+                        'tooltip' => $title,
                         'label'   => Str::possessive($invoice->reference)
                     ],
                     'actions'   => [
@@ -128,7 +134,7 @@ class EditInvoice extends OrgAction
                             'label'   => __('Date'),
                             'icon'    => 'fa-light fa-calendar',
                             'fields'  => [
-                                'reference' => [
+                                'date' => [
                                     'type'  => 'date',
                                     'label' => __('Date'),
                                     'value' => $invoice->date
