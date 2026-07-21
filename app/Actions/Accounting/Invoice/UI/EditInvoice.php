@@ -124,6 +124,18 @@ class EditInvoice extends OrgAction
                             ],
                         ],
                         [
+                            'title'   => __('Date'),
+                            'label'   => __('Date'),
+                            'icon'    => 'fa-light fa-calendar',
+                            'fields'  => [
+                                'reference' => [
+                                    'type'  => 'date',
+                                    'label' => __('Date'),
+                                    'value' => $invoice->date
+                                ],
+                            ],
+                        ],
+                        [
                             'title'   => __('Tax number'),
                             'label'   => __('Tax number'),
                             'icon'    => 'fa-light fa-user',
