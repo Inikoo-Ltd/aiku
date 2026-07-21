@@ -38,7 +38,13 @@ class SaveShopDataAllegroChannel
                 data_set($data, 'marketplace_id', Arr::get($userInfo, 'baseMarketplace.id'));
 
                 if (! Arr::get($allegroUser->settings, 'shipping.id')) {
-                    $shipping = ProcessShippingRates::run($allegroUser);
+                    $shippingRates = $allegroUser->getShippingRates();
+
+                    if(Arr::get($shippingRates, 'shippingRates.0.id')) {
+                        $shipping = Arr::get($shippingRates, 'shippingRates.0');
+                    } else {
+                        $shipping = ProcessShippingRates::run($allegroUser);
+                    }
 
                     data_set($data, 'shipping_id', Arr::get($shipping, 'id'));
                 }
