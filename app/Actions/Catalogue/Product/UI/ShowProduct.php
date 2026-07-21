@@ -62,6 +62,14 @@ class ShowProduct extends OrgAction
 
     public function handle(Product $product): Product
     {
+        if (!$this->parent instanceof Group && !$this->parent instanceof Organisation && !$this->parent instanceof Fulfilment) {
+            $shop =  $this->parent instanceof Shop ? $this->parent : $this->parent?->shop;
+
+            if ($shop->id != $product->shop_id) {
+                abort(404, 'Product not found under this shop');
+            }
+        }
+
         return $product;
     }
 
