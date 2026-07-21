@@ -128,12 +128,10 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'options'     => PreferredShipping::where('shop_id', $customer->shop_id)
                                             ->with('shipper')
                                             ->get()
-                                            ->mapWithKeys(fn (PreferredShipping $preferredShipping) => [
-                                                $preferredShipping->id => [
-                                                    'id'    => $preferredShipping->id,
-                                                    'label' => $preferredShipping->shipper?->name,
-                                                ]
-                                            ])->all(),
+                                            ->map(fn (PreferredShipping $preferredShipping) => [
+                                                'value' => $preferredShipping->id,
+                                                'label' => $preferredShipping->shipper?->name,
+                                            ])->values()->all(),
                                         'searchable'  => true,
                                     ],
                                     'tax_number'       => [

@@ -401,6 +401,7 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-truck',
                     'fields' => [
                         'preferred_shipping' => [
+                            'full'     => true,
                             'type'    => 'preferred_shipping',
                             'label'   => __('Preferred Shipping'),
                             'value'   => $preferredShippingRows->map(fn ($preferredShipping) => [

@@ -71,8 +71,8 @@ const removeRow = (index: number) => {
 
 <template>
     <div>
-        <DataTable :value="rows" dataKey="id" class="text-sm">
-            <Column :header="trans('Shipper')" style="min-width: 12rem">
+        <DataTable :value="rows" dataKey="id" class="text-sm" removableSort>
+            <Column field="shipper_name" :header="trans('Shipper')" style="min-width: 10rem">
                 <template #body="{ data }">
                     <Select
                         v-model="data.shipper_id"
@@ -86,7 +86,7 @@ const removeRow = (index: number) => {
                 </template>
             </Column>
 
-            <Column :header="trans('Country')" style="min-width: 12rem">
+            <Column field="country_name" :header="trans('Country')" style="min-width: 10rem">
                 <template #body="{ data }">
                     <Select
                         v-model="data.country_id"
@@ -101,7 +101,7 @@ const removeRow = (index: number) => {
                 </template>
             </Column>
 
-            <Column :header="trans('Postcode')" style="min-width: 10rem">
+            <Column field="postcode" :header="trans('Postcode')" style="min-width: 8rem">
                 <template #body="{ data }">
                     <InputText v-model="data.postcode" :placeholder="trans('Any')" class="w-full font-mono" />
                 </template>

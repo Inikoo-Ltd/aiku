@@ -117,12 +117,10 @@ class EditCustomer extends OrgAction
                     'options'     => PreferredShipping::where('shop_id', $customer->shop_id)
                         ->with('shipper')
                         ->get()
-                        ->mapWithKeys(fn (PreferredShipping $preferredShipping) => [
-                            $preferredShipping->id => [
-                                'id'    => $preferredShipping->id,
-                                'label' => $preferredShipping->shipper?->name,
-                            ]
-                        ])->all(),
+                        ->map(fn (PreferredShipping $preferredShipping) => [
+                            'value' => $preferredShipping->id,
+                            'label' => $preferredShipping->shipper?->name,
+                        ])->values()->all(),
                     'searchable'  => true,
                 ],
                 'is_re'                    => [
