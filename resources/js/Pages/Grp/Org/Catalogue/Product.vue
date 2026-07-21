@@ -341,23 +341,23 @@ const saveProductReview = async () => {
                 </ButtonReindexWebpage>
             </div>
 
-            <ModalCreateGiftOffers
-                v-if="currentTab === 'offers'"
-                v-tooltip="'Create New Offer'"
-                :shop_data="props.shop_data"
-                :product_id="props.product_id"
-                 />
-
-            <div
-                v-if="currentTab === 'offers'"
-                class="relative inline-flex"
-            >
-                <ModalCreateStepDiscountProduct
+            <template v-if="currentTab === 'offers'">
+                <ModalCreateGiftOffers
                     v-tooltip="'Create New Offer'"
                     :shop_data="props.shop_data"
                     :product_id="props.product_id"
-                />
-            </div>
+                    />
+
+                <div                    
+                    class="relative inline-flex"
+                >
+                    <ModalCreateStepDiscountProduct
+                        v-tooltip="'Create New Offer'"
+                        :shop_data="props.shop_data"
+                        :product_id="props.product_id"
+                    />
+                </div>
+            </template>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
