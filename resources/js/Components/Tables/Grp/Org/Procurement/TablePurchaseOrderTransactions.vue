@@ -5,59 +5,272 @@
   -->
 
 <script setup lang="ts">
-import {Link} from '@inertiajs/vue3';
-import Table from '@/Components/Table/Table.vue';
-import {PurchaseOrder} from "@/types/purchase-order";
+import { computed, ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import { trans } from 'laravel-vue-i18n'
+import axios from 'axios'
+import Table from '@/Components/Table/Table.vue'
+import Image from '@common/Components/Image.vue'
+import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { useLocaleStore } from '@/Stores/locale'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faBox } from '@fal'
+import { faExclamationCircle } from '@fas'
+
+library.add(faBox, faExclamationCircle)
 
 const props = defineProps<{
     data: object
     tab?: string
-    currency?: {}
+    state?: string
 }>()
 
+const locale = useLocaleStore()
 
-function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
-    switch (route().current()) {
-        case 'grp.org.procurement.purchase_orders.index':
-            return route(
-                'grp.org.procurement.purchase_orders.show',
-                [purchaseOrder.slug]);
-        case 'grp.org.procurement.agents.show':
-            return route(
-                'grp.org.procurement.purchase_orders.show',
-                [purchaseOrder.slug]);
+type Level = 'cartons' | 'skos' | 'units'
+
+const isInProcess = computed(() => props.state === 'in_process')
+
+const levels = computed(() => [
+    { key: 'cartons' as Level, tab: trans('Ordering Cartons'), description: trans('Carton description'), quantity: trans('Cartons'), cost: trans('Carton cost') },
+    { key: 'skos' as Level, tab: trans('Ordering SKOs'), description: trans('SKO description'), quantity: trans('SKOs'), cost: trans('SKO cost') },
+    { key: 'units' as Level, tab: trans('Ordering Units'), description: trans('Unit description'), quantity: trans('Units'), cost: trans('Unit cost') },
+])
+
+const currentLevel = ref<Level>('cartons')
+
+const level = computed(() => levels.value.find(l => l.key === currentLevel.value) ?? levels.value[0])
+
+function unitsPerLevel(item: any) {
+    if (currentLevel.value === 'cartons') {
+        return Number(item.units_per_carton) || 1
+    }
+    if (currentLevel.value === 'skos') {
+        return Number(item.units_per_pack) || 1
+    }
+
+    return 1
+}
+
+function skosPerCarton(item: any) {
+    const pack = Number(item.units_per_pack) || 1
+    const carton = Number(item.units_per_carton) || 1
+
+    return carton / pack
+}
+
+function formatQuantity(value: number) {
+    return locale.number(Math.round(value * 1000) / 1000)
+}
+
+function quantityAtLevel(item: any) {
+    return Number(item.quantity_ordered) / unitsPerLevel(item)
+}
+
+function levelCost(item: any) {
+    return Number(item.unit_cost) * unitsPerLevel(item)
+}
+
+function quantityBreakdown(item: any) {
+    const units = Number(item.quantity_ordered)
+    const pack = Number(item.units_per_pack) || 1
+    const carton = Number(item.units_per_carton) || 1
+
+    return `${formatQuantity(units)}u. | ${formatQuantity(units / pack)}sko. | ${formatQuantity(units / carton)}C.`
+}
+
+function amount(item: any) {
+    const net = locale.currencyFormat(item.net_currency ?? 'EUR', item.net_amount ?? 0)
+
+    if (item.org_net_amount === null || item.org_currency === item.net_currency) {
+        return `${net}`
+    }
+
+    return `${net} (${locale.currencyFormat(item.org_currency ?? 'EUR', item.org_net_amount)})`
+}
+
+const savingId = ref<number | null>(null)
+
+async function onSaveQuantity(item: any, form: any) {
+    const quantityOrdered = Number(form.quantity) * unitsPerLevel(item)
+
+    savingId.value = item.id
+    try {
+        await axios.patch(
+            route(item.updateRoute.name, item.updateRoute.parameters),
+            { quantity_ordered: quantityOrdered }
+        )
+        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } finally {
+        savingId.value = null
     }
 }
 
+function supplierProductRoute(item: { slug?: string }) {
+    if (!item.slug) {
+        return ''
+    }
+
+    return route('grp.supply-chain.supplier_products.show', [item.slug])
+}
+
+function orgStockRoute(item: { org_stock_id?: number }) {
+    if (!item.org_stock_id) {
+        return ''
+    }
+
+    return route('grp.majordomo.redirect_org_stock', [item.org_stock_id])
+}
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template #cell(reference)="{ item: purchaseOrderTransaction }">
-            <Link :href="PurchaseOrderRoute(purchaseOrderTransaction)">
-                {{ purchaseOrderTransaction['reference'] }}
-            </Link>
+        <template v-if="isInProcess" #add-on-button-in-before>
+            <div class="flex items-end gap-1">
+                <button
+                    v-for="item in levels"
+                    :key="item.key"
+                    type="button"
+                    class="px-3 py-1.5 text-sm border-b-2 transition"
+                    :class="item.key === currentLevel
+                        ? 'border-indigo-500 text-indigo-600 font-medium'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    @click="currentLevel = item.key"
+                >
+                    {{ item.tab }}
+                </button>
+            </div>
         </template>
-        <template #cell(name)="{ item: purchaseOrderTransaction }">
-            {{ purchaseOrderTransaction['name'] }}
+
+        <template #header(description)="{ header }">
+            <th class="font-normal px-6 w-auto text-left">
+                {{ isInProcess ? level.description : header.label }}
+            </th>
         </template>
-        <template #cell(unit_price)="{ item: purchaseOrderTransaction }">
-            {{ purchaseOrderTransaction['unit_price'] }}
+
+        <template #header(quantity)="{ header }">
+            <th class="font-normal px-6 w-auto" :class="isInProcess ? 'text-right' : 'text-left'">
+                {{ isInProcess ? level.quantity : header.label }}
+            </th>
         </template>
-        <template #cell(unit_quantity)="{ item: purchaseOrderTransaction }">
-            {{ purchaseOrderTransaction['unit_quantity'] }}
+
+        <template #cell(code)="{ item }">
+            <div class="flex items-center gap-1.5">
+                <Link
+                    v-if="supplierProductRoute(item)"
+                    v-tooltip="trans('Supplier product code')"
+                    :href="supplierProductRoute(item)"
+                    class="primaryLink"
+                >
+                    {{ item.code }}
+                </Link>
+                <span v-else>{{ item.code }}</span>
+
+                <Link
+                    v-if="orgStockRoute(item)"
+                    v-tooltip="trans('Part reference is same as supplier product code')"
+                    :href="orgStockRoute(item)"
+                    class="text-gray-400 hover:text-gray-600"
+                >
+                    <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
+                </Link>
+            </div>
         </template>
-        <template #cell(unit_cost)="{ item: purchaseOrderTransaction }">
-            {{ purchaseOrderTransaction['unit_cost'] }}
+
+        <template #cell(image_thumbnail)="{ item }">
+            <div class="flex">
+                <Image :src="item['image_thumbnail']" imageCover class="aspect-square overflow-hidden" />
+            </div>
         </template>
-        <template #cell(total_cost)="{ item: purchaseOrderTransaction }">
-            {{  useLocaleStore().currencyFormat(props.currency?.code, purchaseOrderTransaction['total_cost']) }}
+
+        <template #cell(description)="{ item }">
+            <div class="space-y-0.5">
+                <div>
+                    <span v-if="isInProcess && currentLevel !== 'units'" class="font-medium">
+                        {{ formatQuantity(unitsPerLevel(item)) }}x
+                    </span>
+                    {{ item.name }}
+                </div>
+                <div v-if="isInProcess" class="text-xs text-gray-500">
+                    {{ level.cost }}: {{ locale.currencyFormat(item.net_currency ?? 'EUR', levelCost(item)) }}
+                </div>
+                <div class="text-xs text-gray-500">
+                    {{ trans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
+                    {{ trans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
+                </div>
+            </div>
         </template>
-        <template #cell(status)="{ item: purchaseOrderTransaction }">
-            {{ purchaseOrderTransaction['status'] }}
+
+        <template #cell(subtotals)="{ item }">
+            <div class="space-y-0.5">
+                <div class="text-gray-500">{{ quantityBreakdown(item) }}</div>
+                <div class="flex items-center gap-1.5">
+                    <span>{{ amount(item) }}</span>
+                    <span v-if="item.weight !== null" class="text-gray-500">
+                        {{ locale.number(item.weight) }}Kg
+                    </span>
+                    <FontAwesomeIcon
+                        v-else
+                        v-tooltip="trans('Unknown weight')"
+                        icon="fas fa-exclamation-circle"
+                        class="text-orange-500"
+                        aria-hidden="true"
+                    />
+                </div>
+            </div>
+        </template>
+
+        <template #cell(quantity)="{ item }">
+            <div v-if="isInProcess" class="flex justify-end">
+                <NumberWithButtonSave
+                    :key="`${item.id}-${currentLevel}`"
+                    :modelValue="quantityAtLevel(item)"
+                    :min="0"
+                    :isLoading="savingId === item.id"
+                    @onSave="(form) => onSaveQuantity(item, form)"
+                />
+            </div>
+            <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
+        </template>
+
+        <template #cell(weight)="{ item }">
+            <span v-if="item.weight !== null">{{ locale.number(item.weight) }}Kg</span>
+            <FontAwesomeIcon
+                v-else
+                v-tooltip="trans('Unknown weight')"
+                icon="fas fa-exclamation-circle"
+                class="text-orange-500"
+                aria-hidden="true"
+            />
+        </template>
+
+        <template #cell(volume)="{ item }">
+            <span v-if="item.volume !== null">{{ locale.number(item.volume) }} m³</span>
+            <FontAwesomeIcon
+                v-else
+                v-tooltip="trans('Unknown CBM')"
+                icon="fas fa-exclamation-circle"
+                class="text-orange-500"
+                aria-hidden="true"
+            />
+        </template>
+
+        <template #cell(amount)="{ item }">
+            {{ amount(item) }}
+        </template>
+
+        <template #cell(state)="{ item }">
+            <div class="flex items-center gap-1.5">
+                <FontAwesomeIcon
+                    v-tooltip="item.state_icon?.tooltip"
+                    :icon="item.state_icon?.icon"
+                    :class="item.state_icon?.class"
+                    aria-hidden="true"
+                    fixed-width
+                />
+                <span>{{ item.state_label }}</span>
+            </div>
         </template>
     </Table>
 </template>
-
-
