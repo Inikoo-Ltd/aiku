@@ -59,6 +59,7 @@
         "@headlessui/vue": "^1.7.14",
         "@inertiajs/vue3": "^2.0.2",
         "@kyvg/vue3-notification": "^3.1.2",
+        "@laravel/passkeys": "^0.2.0",
         "@mailupinc/bee-plugin": "^2.3.0",
         "@newrelic/browser-agent": "^1.313.1",
         "@primevue/themes": "^4.0.4",

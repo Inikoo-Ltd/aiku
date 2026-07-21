@@ -74,6 +74,7 @@ import InputJsonByForm from '@/Components/Forms/Fields/InputJsonByForm.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
 import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
+import PasskeysManager from '@/Components/Forms/Fields/PasskeysManager.vue'
 import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
@@ -116,6 +117,7 @@ export const componentsList: { [key: string]: Component } = {
     'textEditor': TextEditor,
     'toggle': Toggle,
     'toggle2fa': ToggleState2FA,
+    'passkeys': PasskeysManager,
     'jobPosition': JobPosition,
     'senderEmail': SenderEmail,
     'employeePosition': EmployeePosition,
