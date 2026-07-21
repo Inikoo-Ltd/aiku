@@ -306,6 +306,7 @@ test('pastpay invoice uses payment account shop footer and finalizes with base64
         ->and($finalizePayload['invoicePdf'])->toBe('data:application/pdf;base64,'.base64_encode('PDFBYTES'))
         ->and($finalizePayload['invoiceNo'])->toBe($invoice->reference)
         ->and($finalizePayload['totalPrice']['amount'])->toBe((float) $invoice->total_amount)
+        ->and($finalizePayload['dueDate'])->toBe($invoice->date->copy()->addDays(30)->toDateString())
         ->and(isset($finalizePayload['termDays']))->toBeFalse();
 });
 
