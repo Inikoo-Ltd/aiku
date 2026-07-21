@@ -94,18 +94,6 @@ class IndexClockingMachines extends OrgAction
                         'title'       => __('no clocking machines'),
                         'description' => __('Get started by creating a new clocking machine.'),
                         'count'       => class_basename($parent == 'Organisation') ? $parent->humanResourcesStats->number_clocking_machines : $parent->stats->number_clocking_machines,
-
-                        'action' => [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('New clocking machine'),
-                            'label'   => __('clocking machine'),
-                            'route'   => [
-                                'name'       => 'grp.org.hr.workplaces.show.clocking_machines.create',
-                                'parameters' => request()->route()->originalParameters()
-                            ]
-                        ]
-
                     ]
                 )
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
@@ -149,54 +137,60 @@ class IndexClockingMachines extends OrgAction
         return ClockingMachinesResource::collection($clockingMachine);
     }
 
-    public function htmlResponse(LengthAwarePaginator $clockingMachines, ActionRequest $request): Response
+    /**
+     * @return array{route: array{name: string, parameters: array}, workplaces: array<int, array{value: int, label: string}>}|null
+     */
+    private function getCreateClockingMachineData(): ?array
     {
-        $actions = null;
-        if ($this->canEdit) {
-            $actions = [
-                match ($request->route()->getName()) {
-                    'grp.org.hr.workplaces.show.clocking_machines.index' => [
-                        'type'  => 'button',
-                        'style' => 'create',
-                        'label' => __('Clocking machine'),
-                        'route' => [
-                            'name'       => 'grp.org.hr.workplaces.show.clocking_machines.create',
-                            'parameters' => $request->route()->originalParameters()
-                        ]
-                    ],
-                    default => [
-                        'type'  => 'button',
-                        'style' => 'create',
-                        'label' => __('Clocking machine'),
-                        'route' => [
-                            'name'       => 'grp.org.hr.clocking_machines.create',
-                            'parameters' => [$this->organisation->slug]
-                        ]
-                    ]
-                }
+        if (!$this->canEdit || $this->parent instanceof Group) {
+            return null;
+        }
+
+        if ($this->parent instanceof Workplace) {
+            return [
+                'route'      => [
+                    'name'       => 'grp.models.workplace.clocking_machine.store',
+                    'parameters' => ['workplace' => $this->parent->id]
+                ],
+                'workplaces' => [
+                    ['value' => $this->parent->id, 'label' => $this->parent->name]
+                ]
             ];
         }
 
+        return [
+            'route'      => [
+                'name'       => 'grp.models.org.clocking-machine.store',
+                'parameters' => ['organisation' => $this->parent->id]
+            ],
+            'workplaces' => $this->parent->workplaces()->get()->map(fn (Workplace $workplace) => [
+                'value' => $workplace->id,
+                'label' => $workplace->name
+            ])->all()
+        ];
+    }
 
+    public function htmlResponse(LengthAwarePaginator $clockingMachines, ActionRequest $request): Response
+    {
         return Inertia::render(
             'Org/HumanResources/ClockingMachines',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'breadcrumbs'           => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Clocking machines'),
-                'pageHead'    => [
+                'title'                 => __('Clocking machines'),
+                'pageHead'              => [
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-chess-clock'],
                             'title' => __('Clocking machines')
                         ],
                     'title'         => __('Clocking machines'),
-                    'actions'       => $actions,
                     'subNavigation' => $this->parent instanceof Workplace ? $this->getWorkplaceSubNavigation($this->parent) : null
                 ],
-                'data'        => ClockingMachinesResource::collection($clockingMachines)
+                'createClockingMachine' => $this->getCreateClockingMachineData(),
+                'data'                  => ClockingMachinesResource::collection($clockingMachines)
 
             ]
         )->table($this->tableStructure($this->parent));
