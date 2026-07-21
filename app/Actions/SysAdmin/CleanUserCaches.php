@@ -25,6 +25,7 @@ class CleanUserCaches
     public function handle(User $user): void
     {
         Cache::tags('auth-user:'.$user->id)->flush();
+        Cache::tags('grp-first-load-props:'.$user->id)->flush();
     }
 
     public function clearPermissionsCache(User $user): void

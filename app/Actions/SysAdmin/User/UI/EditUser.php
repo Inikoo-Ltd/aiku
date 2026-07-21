@@ -85,7 +85,7 @@ class EditUser extends OrgAction
                         "fields"  => [
                             "status" => [
                                 "type"        => "toggle",
-                                "label"       => __("can login"),
+                                "label"       => __("Can login"),
                                 "value"       => $user->status,
                             ],
                         ],
@@ -98,19 +98,19 @@ class EditUser extends OrgAction
                         "fields"  => [
                             "username" => [
                                 "type"        => "input",
-                                "label"       => __("username"),
+                                "label"       => __("Username"),
                                 "placeholder" => "username",
                                 "value"       => $user->username ?? '',
                             ],
                             "email"    => [
                                 "type"        => "input",
-                                "label"       => __("email"),
+                                "label"       => __("Email"),
                                 "placeholder" => __("example@mail.com"),
                                 "value"       => $user->email ?? '',
                             ],
                             "password" => [
                                 "type"        => "password",
-                                "label"       => __("password"),
+                                "label"       => __("Password"),
                                 "placeholder" => "********",
                                 "value"       => '',
                             ],

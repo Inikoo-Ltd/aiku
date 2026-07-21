@@ -19,6 +19,8 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\Media\HydrateMedia;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Actions\Maintenance\Appearance\ResetModelColours;
 use App\Actions\Maintenance\SysAdmin\RepairUsersAdminsAuth;
 use App\Actions\SysAdmin\Admin\StoreAdmin;
@@ -77,6 +79,7 @@ use Illuminate\Support\Carbon;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
@@ -1666,6 +1669,9 @@ test('changing group permissions leaves the cached ui props in sync with the men
 
     $code = JobPosition::where('group_id', $admin->group_id)->where('scope', 'group')->value('code');
 
+    $admin->assignRole('group-admin');
+    CleanUserCaches::run($admin);
+
     $cachedNavigation = function (User $target) {
         return data_get(
             Cache::tags('grp-first-load-props:'.$target->id)->get('grp-first-load-props:'.$target->id.':'.$target->language->code),
@@ -1693,13 +1699,52 @@ test('changing group permissions leaves the cached ui props in sync with the men
     $editPermissionsOf($victim, []);
     expect($cachedNavigation($victim))->toEqual($freshNavigation($victim));
 
-    // Self-edit must hold too.
-    $editPermissionsOf($admin, [$code]);
+    // Self-edit must hold too. Runs via action() because self-revoking the
+    // sysadmin position makes a follow-up HTTP call legitimately unauthorized.
+    app()->instance('group', $admin->group);
+    setPermissionsTeamId($admin->group_id);
+    UpdateUserGroupPseudoJobPositions::make()->action($admin, ['permissions' => [$code]]);
     expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
 
-    $editPermissionsOf($admin, []);
+    UpdateUserGroupPseudoJobPositions::make()->action($admin, ['permissions' => []]);
     expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
 })->depends('SetUserAuthorisedModels command');
+
+test('employee job position edit flushes menu cache even if recache job never runs', function (Employee $employee) {
+    config()->set('ui.cache.layout', true);
+    $user = $employee->getUser();
+    setPermissionsTeamId($user->group_id);
+
+    Queue::fake();
+
+    $menuCacheKey = 'grp-first-load-props:'.$user->id.':'.$user->language->code;
+    Cache::tags('grp-first-load-props:'.$user->id)->put($menuCacheKey, ['layout' => 'stale'], 3600);
+    Cache::tags('auth-user:'.$user->id)->put('can:probe', true, 3600);
+
+    $jobPosition = $employee->organisation->jobPositions()->where('code', 'hr-m')->firstOrFail();
+    SyncEmployeeJobPositions::run($employee, [$jobPosition->id => []]);
+
+    expect(Cache::tags('grp-first-load-props:'.$user->id)->get($menuCacheKey))->toBeNull()
+        ->and(Cache::tags('auth-user:'.$user->id)->get('can:probe'))->toBeNull();
+
+    BreakUserUiProps::assertPushed();
+})->depends('employee job position in another organisation');
+
+test('recache is immune to relations loaded under the wrong permissions team', function (Employee $employee) {
+    config()->set('ui.cache.layout', true);
+    $user = $employee->getUser();
+
+    setPermissionsTeamId(999999);
+    $user->load('roles');
+    expect($user->roles->count())->toBe(0);
+
+    BreakUserUiProps::run($user);
+
+    setPermissionsTeamId($user->group_id);
+    $cached = Cache::tags('grp-first-load-props:'.$user->id)->get('grp-first-load-props:'.$user->id.':'.$user->language->code);
+    $fresh  = GetGroupNavigation::run(User::find($user->id));
+    expect(data_get($cached, 'layout.navigation.grp'))->toEqual($fresh);
+})->depends('employee job position in another organisation');
 
 
 test('GetSectionRoute resolves section codes for all scopes', function (Group $group, Organisation $organisation, Shop $shop) {
