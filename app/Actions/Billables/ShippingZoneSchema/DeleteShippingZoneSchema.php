@@ -26,6 +26,7 @@ class DeleteShippingZoneSchema extends OrgAction
     public function handle(ShippingZoneSchema $shippingZoneSchema): void
     {
         $shop = $shippingZoneSchema->shop;
+        $shippingZoneSchema->stats()->delete();
 
         $shippingZoneSchema->delete();
 
