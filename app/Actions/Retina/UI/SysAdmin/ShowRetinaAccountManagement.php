@@ -14,6 +14,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
+use App\Models\Catalogue\PreferredShipping;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
@@ -118,6 +119,22 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'type'  => 'input',
                                         'label' => 'UKIMS',
                                         'value' => $customer->ukims
+                                    ],
+                                    'preferred_shipping_id'    => [
+                                        'type'        => 'select',
+                                        'label'       => __('Preferred shipping'),
+                                        'placeholder' => __('Select preferred shipping'),
+                                        'value'       => $customer->preferred_shipping_id,
+                                        'options'     => PreferredShipping::where('shop_id', $customer->shop_id)
+                                            ->with('shipper')
+                                            ->get()
+                                            ->mapWithKeys(fn (PreferredShipping $preferredShipping) => [
+                                                $preferredShipping->id => [
+                                                    'id'    => $preferredShipping->id,
+                                                    'label' => $preferredShipping->shipper?->name,
+                                                ]
+                                            ])->all(),
+                                        'searchable'  => true,
                                     ],
                                     'tax_number'       => [
                                         'type'          => 'tax_number',

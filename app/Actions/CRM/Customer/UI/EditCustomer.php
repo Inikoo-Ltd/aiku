@@ -16,6 +16,7 @@ use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
+use App\Models\Catalogue\PreferredShipping;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
@@ -107,6 +108,22 @@ class EditCustomer extends OrgAction
                     'type'  => 'input',
                     'label' => 'UKIMS',
                     'value' => $customer->ukims
+                ],
+                'preferred_shipping_id'    => [
+                    'type'        => 'select',
+                    'label'       => __('Preferred shipping'),
+                    'placeholder' => __('Select preferred shipping'),
+                    'value'       => $customer->preferred_shipping_id,
+                    'options'     => PreferredShipping::where('shop_id', $customer->shop_id)
+                        ->with('shipper')
+                        ->get()
+                        ->mapWithKeys(fn (PreferredShipping $preferredShipping) => [
+                            $preferredShipping->id => [
+                                'id'    => $preferredShipping->id,
+                                'label' => $preferredShipping->shipper?->name,
+                            ]
+                        ])->all(),
+                    'searchable'  => true,
                 ],
                 'is_re'                    => [
                     'type'   => 'toggle',

@@ -332,6 +332,12 @@ class UpdateCustomer extends OrgAction
             'delivery_address_id'                                   => ['sometimes', 'integer'],
             'timezone_id'                                           => ['sometimes', 'nullable', 'exists:timezones,id'],
             'language_id'                                           => ['sometimes', 'nullable', 'exists:languages,id'],
+            'preferred_shipping_id'                                 => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('preferred_shippings', 'id')->where('shop_id', $this->shop->id),
+            ],
             'balance'                                               => ['sometimes', 'nullable'],
             'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],

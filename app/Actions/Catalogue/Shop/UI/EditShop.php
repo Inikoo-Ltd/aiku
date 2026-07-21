@@ -101,6 +101,9 @@ class EditShop extends OrgAction
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
+        $preferredShippingRows = $shop->preferredShippings()->with(['shipper', 'country'])->get();
+        $usedShipperIds        = $preferredShippingRows->pluck('shipper_id')->filter()->all();
+
         $allowedBlueprintLabels = [
             __('Faire Settings'),
             __('Shopify Keys'),
@@ -398,10 +401,9 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-truck',
                     'fields' => [
                         'preferred_shipping' => [
-                            'type'         => 'preferred_shipping',
-                            'label'        => __('Preferred Shipping'),
-                            'noSaveButton' => true,
-                            'value'   => $shop->preferredShippings()->with(['shipper', 'country'])->get()->map(fn ($preferredShipping) => [
+                            'type'    => 'preferred_shipping',
+                            'label'   => __('Preferred Shipping'),
+                            'value'   => $preferredShippingRows->map(fn ($preferredShipping) => [
                                 'id'            => $preferredShipping->id,
                                 'shipper_id'    => $preferredShipping->shipper_id,
                                 'shipper_name'  => $preferredShipping->shipper?->name,
@@ -410,12 +412,13 @@ class EditShop extends OrgAction
                                 'postcode'      => $preferredShipping->postcode,
                             ])->all(),
                             'options' => [
-                                'shippers'  => Shipper::where('organisation_id', $shop->organisation_id)->where('status', true)->orderBy('name')->get(['id', 'name']),
+                                'shippers'  => Shipper::where('organisation_id', $shop->organisation_id)
+                                    ->where(function ($query) use ($usedShipperIds) {
+                                        $query->where('status', true)->orWhereIn('id', $usedShipperIds);
+                                    })
+                                    ->orderBy('name')
+                                    ->get(['id', 'name']),
                                 'countries' => GetCountriesOptions::run(),
-                            ],
-                            'storeRoute' => [
-                                'name'       => 'grp.models.preferred_shipping.store',
-                                'parameters' => ['shop' => $shop->id],
                             ],
                         ],
                     ],

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePreferredShippings;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
@@ -155,26 +156,51 @@ class UpdateShop extends OrgAction
             }
         }
 
+        $preferredShippingsUpdated = false;
+        if (Arr::has($modelData, 'preferred_shipping')) {
+            $preferredShippingRows = Arr::pull($modelData, 'preferred_shipping');
+
+            $keptIds = [];
+            foreach ($preferredShippingRows as $row) {
+                $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode']);
+
+                if (Arr::get($row, 'id')) {
+                    $shop->preferredShippings()->whereKey($row['id'])->update($rowData);
+                    $keptIds[] = $row['id'];
+                } else {
+                    data_set($rowData, 'group_id', $shop->group_id);
+                    data_set($rowData, 'organisation_id', $shop->organisation_id);
+
+                    $preferredShipping = $shop->preferredShippings()->create($rowData);
+                    $keptIds[]         = $preferredShipping->id;
+                }
+            }
+
+            $shop->preferredShippings()->whereNotIn('id', $keptIds)->delete();
+
+            $preferredShippingsUpdated = true;
+        }
+
         $sesFailoverAuditOld = [];
         $sesFailoverAuditNew = [];
 
         foreach ([
-                    'access_id' => 'aws_ses_failover_access_id', 
-                    'access_key' => 'aws_ses_failover_access_key', 
+                    'access_id' => 'aws_ses_failover_access_id',
+                    'access_key' => 'aws_ses_failover_access_key',
                     'region' => 'aws_ses_failover_region'
                 ] as $field => $auditKey) {
-            if(!Arr::exists($modelData, $field)) {
+            if (!Arr::exists($modelData, $field)) {
                 continue;
             }
 
             $oldValue = Arr::get($shop->settings ?? [], "email.provider.failover.$field");
             $newValue = Arr::get($modelData, $field);
 
-            if($oldValue === $newValue) {
+            if ($oldValue === $newValue) {
                 continue;
             }
 
-            if($field === 'region') {
+            if ($field === 'region') {
                 $sesFailoverAuditOld[$auditKey] = $oldValue;
                 $sesFailoverAuditNew[$auditKey] = $newValue;
 
@@ -186,22 +212,22 @@ class UpdateShop extends OrgAction
         }
 
         foreach ([
-                    'customer_notification_access_id' => 'aws_ses_customer_notification_access_id', 
-                    'customer_notification_access_key' => 'aws_ses_customer_notification_access_key', 
+                    'customer_notification_access_id' => 'aws_ses_customer_notification_access_id',
+                    'customer_notification_access_key' => 'aws_ses_customer_notification_access_key',
                     'customer_notification_region' => 'aws_ses_customer_notification_region'
                 ] as $field => $auditKey) {
-            if(!Arr::exists($modelData, $field)) {
+            if (!Arr::exists($modelData, $field)) {
                 continue;
             }
 
             $oldValue = Arr::get($shop->settings ?? [], "email.provider.customer_notification.$field");
             $newValue = Arr::get($modelData, $field);
 
-            if($oldValue === $newValue) {
+            if ($oldValue === $newValue) {
                 continue;
             }
 
-            if($field === 'region') {
+            if ($field === 'region') {
                 $sesFailoverAuditOld[$auditKey] = $oldValue;
                 $sesFailoverAuditNew[$auditKey] = $newValue;
 
@@ -526,6 +552,10 @@ class UpdateShop extends OrgAction
         $changes = $shop->getChanges();
         $shop->refresh();
 
+        if ($preferredShippingsUpdated) {
+            ShopHydratePreferredShippings::dispatch($shop)->delay($this->hydratorsDelay);
+        }
+
         if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
@@ -846,6 +876,11 @@ class UpdateShop extends OrgAction
             'banned_countries.banned_list.*.billing'                  => ['required', 'boolean'],
             'banned_countries.banned_list.*.delivery'                 => ['required', 'boolean'],
             'banned_countries.banned_list.*.ip_block'                 => ['required', 'boolean'],
+            'preferred_shipping'                                      => ['sometimes', 'array'],
+            'preferred_shipping.*.id'                                 => ['sometimes', 'nullable', 'integer', Rule::exists('preferred_shippings', 'id')->where('shop_id', $this->shop->id)],
+            'preferred_shipping.*.shipper_id'                         => ['required', 'integer', Rule::exists('shippers', 'id')->where('organisation_id', $this->shop->organisation_id)],
+            'preferred_shipping.*.country_id'                         => ['sometimes', 'nullable', 'integer', Rule::exists('countries', 'id')->where('status', true)],
+            'preferred_shipping.*.postcode'                           => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

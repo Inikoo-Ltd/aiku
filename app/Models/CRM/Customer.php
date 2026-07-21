@@ -20,6 +20,7 @@ use App\Models\Accounting\Payment;
 use App\Models\Accounting\TopUp;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 use App\Models\Catalogue\Asset;
+use App\Models\Catalogue\PreferredShipping;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\BackInStockReminder;
@@ -140,6 +141,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $contact_name_components
  * @property string|null $traffic_sources
  * @property int|null $master_shop_id
+ * @property int|null $preferred_shipping_id
  * @property bool $is_re recargo de equivalencia
  * @property string|null $post_source_id
  * @property bool $is_credit_customer Sage credit customer flag
@@ -187,6 +189,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Payment> $payments
  * @property-read Collection<int, \App\Models\CRM\PollReply> $pollReplies
  * @property-read Collection<int, Portfolio> $portfolios
+ * @property-read PreferredShipping|null $preferredShipping
  * @property-read Collection<int, Asset> $products
  * @property-read Collection<int, \App\Models\CRM\Prospect> $prospects
  * @property-read Collection<int, ReturnDeliveryNote> $returnDeliveryNotes
@@ -495,6 +498,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function deliveryAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'delivery_address_id');
+    }
+
+    public function preferredShipping(): BelongsTo
+    {
+        return $this->belongsTo(PreferredShipping::class);
     }
 
     public function portfolios(): HasMany
