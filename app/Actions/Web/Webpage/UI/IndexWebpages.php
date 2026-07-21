@@ -270,8 +270,8 @@ class IndexWebpages extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $value = strip_tags($value);
-                $query->whereAnyWordWith('webpages.code', $value)
-                    ->orAnyWordWhereWith('webpages.url', $value);
+                $query->whereAnyWordStartWith('webpages.code', $value)
+                    ->orWhereAnyWordStartWith('webpages.url', $value);
             });
         });
 
