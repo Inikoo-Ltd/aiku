@@ -19,7 +19,12 @@ return new class () extends Migration {
             $table->foreign('clocking_machine_id')->references('id')->on('clocking_machines')->cascadeOnDelete();
             $table->string('label')->nullable()->index();
             $table->string('hash', 8)->unique();
-            $table->dateTimeTz('expires_at')->index()->nullable();
+            $table->boolean('active')->default(true);
+            $table->dateTimeTz('deactivated_at')->index()->nullable();
+            $table->unsignedInteger('number_clockings')->default(0);
+            $table->unsignedInteger('number_different_staff')->default(0);
+            $table->dateTimeTz('last_used_at')->index()->nullable();
+
             $table->timestampsTz();
         });
     }

@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 21 Jul 2026 12:30:32 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\HumanResources\ClockingMachine;
 
@@ -27,6 +32,7 @@ class StoreClockingMachineQRCode extends OrgAction
 
         /** @var ClockingMachineQRCode $clockingMachineQrCode */
         $clockingMachineQrCode = $clockingMachine->clockingMachineQrCodes()->create($modelData);
+
         return $clockingMachineQrCode;
     }
 
@@ -35,31 +41,11 @@ class StoreClockingMachineQRCode extends OrgAction
         return hash('crc32b', Str::random(32));
     }
 
-    protected static function generateLabel(): string
-    {
-        $adjectives = [
-            'agile', 'amber', 'ancient', 'bold', 'brave', 'bright', 'calm', 'clever', 'cobalt', 'cosmic',
-            'crimson', 'curious', 'daring', 'dawn', 'eager', 'electric', 'ember', 'fierce', 'gentle', 'golden',
-            'grand', 'hidden', 'indigo', 'jade', 'jolly', 'keen', 'kind', 'lucky', 'lunar', 'mellow',
-            'mighty', 'misty', 'noble', 'northern', 'oceanic', 'peaceful', 'quiet', 'rapid', 'rosy', 'royal',
-            'ruby', 'serene', 'silver', 'solar', 'stellar', 'swift', 'timeless', 'uncanny', 'velvet', 'wild',
-        ];
-        $nouns = [
-            'arch', 'bay', 'bridge', 'brook', 'canyon', 'castle', 'cedar', 'coast', 'comet', 'creek',
-            'dawn', 'delta', 'falcon', 'field', 'forest', 'garden', 'glacier', 'grove', 'harbor', 'hill',
-            'island', 'lake', 'lighthouse', 'maple', 'meadow', 'moon', 'mountain', 'oasis', 'ocean', 'orchard',
-            'peak', 'pine', 'prairie', 'raven', 'reef', 'ridge', 'river', 'shore', 'sky', 'spring',
-            'star', 'stone', 'summit', 'thunder', 'valley', 'waterfall', 'wave', 'willow', 'wind', 'woodland',
-        ];
-
-        return $adjectives[array_rand($adjectives)].'-'.$nouns[array_rand($nouns)];
-    }
 
     public function rules(): array
     {
         return [
-            'label'      => ['sometimes','nullable', 'string', 'max:255'],
-            'expires_at' => ['required', 'date', 'after:now'],
+            'label' => ['sometimes', 'nullable', 'string', 'max:64']
         ];
     }
 
@@ -69,4 +55,115 @@ class StoreClockingMachineQRCode extends OrgAction
 
         return $this->handle($clockingMachine, $this->validatedData);
     }
+
+    protected static function generateLabel(): string
+    {
+        $adjectives = [
+            'agile',
+            'amber',
+            'ancient',
+            'bold',
+            'brave',
+            'bright',
+            'calm',
+            'clever',
+            'cobalt',
+            'cosmic',
+            'crimson',
+            'curious',
+            'daring',
+            'dawn',
+            'eager',
+            'electric',
+            'ember',
+            'fierce',
+            'gentle',
+            'golden',
+            'grand',
+            'hidden',
+            'indigo',
+            'jade',
+            'jolly',
+            'keen',
+            'kind',
+            'lucky',
+            'lunar',
+            'mellow',
+            'mighty',
+            'misty',
+            'noble',
+            'northern',
+            'oceanic',
+            'peaceful',
+            'quiet',
+            'rapid',
+            'rosy',
+            'royal',
+            'ruby',
+            'serene',
+            'silver',
+            'solar',
+            'stellar',
+            'swift',
+            'timeless',
+            'uncanny',
+            'velvet',
+            'wild',
+        ];
+        $nouns      = [
+            'arch',
+            'bay',
+            'bridge',
+            'brook',
+            'canyon',
+            'castle',
+            'cedar',
+            'coast',
+            'comet',
+            'creek',
+            'dawn',
+            'delta',
+            'falcon',
+            'field',
+            'forest',
+            'garden',
+            'glacier',
+            'grove',
+            'harbor',
+            'hill',
+            'island',
+            'lake',
+            'lighthouse',
+            'maple',
+            'meadow',
+            'moon',
+            'mountain',
+            'oasis',
+            'ocean',
+            'orchard',
+            'peak',
+            'pine',
+            'prairie',
+            'raven',
+            'reef',
+            'ridge',
+            'river',
+            'shore',
+            'sky',
+            'spring',
+            'star',
+            'stone',
+            'summit',
+            'thunder',
+            'valley',
+            'waterfall',
+            'wave',
+            'willow',
+            'wind',
+            'woodland',
+        ];
+
+        return $adjectives[array_rand($adjectives)].'-'.$nouns[array_rand($nouns)];
+    }
+
 }
