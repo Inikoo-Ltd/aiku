@@ -14,16 +14,16 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('customers', function (Blueprint $table) {
-            $table->unsignedInteger('preferred_shipping_id')->nullable()->index();
-            $table->foreign('preferred_shipping_id')->references('id')->on('preferred_shippings')->nullOnDelete();
+            $table->unsignedInteger('shipper_id')->nullable()->index();
+            $table->foreign('shipper_id')->references('id')->on('shippers')->nullOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('customers', function (Blueprint $table) {
-            $table->dropForeign(['preferred_shipping_id']);
-            $table->dropColumn('preferred_shipping_id');
+            $table->dropForeign(['shipper_id']);
+            $table->dropColumn('shipper_id');
         });
     }
 };
