@@ -115,7 +115,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        if (Arr::has($modelData, 'master_rrp')) {
+        if (Arr::has($modelData, 'master_rrps')) {
             $eurRRP = data_get($modelData, 'master_rrps.EUR.value');
             if ($eurRRP) {
                 data_set($modelData, 'rrp', $eurRRP);
