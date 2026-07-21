@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import QrcodeVue from "qrcode.vue"
+import jsPDF from "jspdf"
 import { ref, nextTick } from "vue"
 import { faExpand, faCompress, faDownload, faQrcode } from '@fortawesome/free-solid-svg-icons'
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -70,48 +71,48 @@ const downloadQrCode = () => {
         return
     }
 
-    const title = trans("Employee Scan")
-    const subtitle = trans("Scan QR to clock in or out")
-    const footerText = selectedQrCode.value.label ?? selectedQrCode.value.hash
-    const qrSize = qrCanvas.width
-    const canvasPadding = 48
-    const textTopHeight = 120
-    const textBottomHeight = 80
-    const canvasWidth = Math.max(900, qrSize + (canvasPadding * 2))
-    const canvasHeight = textTopHeight + qrSize + textBottomHeight + (canvasPadding * 2)
-    const exportCanvas = document.createElement("canvas")
-    exportCanvas.width = canvasWidth
-    exportCanvas.height = canvasHeight
-    const context = exportCanvas.getContext("2d")
+    const upscaledQr = document.createElement("canvas")
+    upscaledQr.width = 1200
+    upscaledQr.height = 1200
+    const upscaleContext = upscaledQr.getContext("2d")
 
-    if (!context) {
+    if (!upscaleContext) {
         return
     }
 
-    context.fillStyle = "#ffffff"
-    context.fillRect(0, 0, canvasWidth, canvasHeight)
+    upscaleContext.fillStyle = "#ffffff"
+    upscaleContext.fillRect(0, 0, upscaledQr.width, upscaledQr.height)
+    upscaleContext.imageSmoothingEnabled = false
+    upscaleContext.drawImage(qrCanvas, 0, 0, upscaledQr.width, upscaledQr.height)
 
-    context.textAlign = "center"
-    context.fillStyle = "#111827"
-    context.font = "bold 38px sans-serif"
-    context.fillText(title, canvasWidth / 2, canvasPadding + 34)
+    const title = trans("Employee Scan")
+    const subtitle = trans("Scan QR to clock in or out")
+    const footerText = selectedQrCode.value.label ?? selectedQrCode.value.hash
 
-    context.fillStyle = "#6b7280"
-    context.font = "26px sans-serif"
-    context.fillText(subtitle, canvasWidth / 2, canvasPadding + 78)
+    const pdf = new jsPDF("p", "mm", "a4")
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const centerX = pageWidth / 2
+    const qrSizeMm = 120
+    const qrY = 70
 
-    const qrX = (canvasWidth - qrSize) / 2
-    const qrY = textTopHeight + canvasPadding
-    context.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize)
+    pdf.setFont("helvetica", "bold")
+    pdf.setFontSize(22)
+    pdf.setTextColor(17, 24, 39)
+    pdf.text(title, centerX, 40, { align: "center" })
 
-    context.fillStyle = "#374151"
-    context.font = "24px sans-serif"
-    context.fillText(footerText, canvasWidth / 2, qrY + qrSize + 52)
+    pdf.setFont("helvetica", "normal")
+    pdf.setFontSize(13)
+    pdf.setTextColor(107, 114, 128)
+    pdf.text(subtitle, centerX, 52, { align: "center" })
 
-    const downloadLink = document.createElement("a")
-    downloadLink.href = exportCanvas.toDataURL("image/png")
-    downloadLink.download = `employee-scan-${selectedQrCode.value.hash}.png`
-    downloadLink.click()
+    pdf.addImage(upscaledQr.toDataURL("image/png"), "PNG", centerX - (qrSizeMm / 2), qrY, qrSizeMm, qrSizeMm)
+
+    pdf.setFont("helvetica", "bold")
+    pdf.setFontSize(15)
+    pdf.setTextColor(55, 65, 81)
+    pdf.text(footerText, centerX, qrY + qrSizeMm + 15, { align: "center" })
+
+    pdf.save(`employee-scan-${selectedQrCode.value.hash}.pdf`)
 }
 </script>
 
@@ -162,7 +163,7 @@ const downloadQrCode = () => {
                 </div>
 
                 <div class="flex justify-center gap-2">
-                    <Button :label="trans('Download QR Code')" @click="downloadQrCode" type="tertiary"
+                    <Button :label="trans('Download QR Code (PDF)')" @click="downloadQrCode" type="tertiary"
                         :icon="faDownload" />
                     <Button type="cancel" @click="closeQrCode" />
                 </div>

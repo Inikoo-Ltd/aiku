@@ -10,6 +10,7 @@ import { faQrcode } from '@fal'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 library.add(faQrcode)
 
@@ -81,13 +82,15 @@ const submit = async () => {
 
                 <div class="space-y-2">
                     <label for="clocking_machine_qr_code_label" class="font-medium">
+                        <FontAwesomeIcon icon="fas fa-asterisk"
+                                class="font-light text-xs text-red-400 align-middle" />
                         {{ trans('Label') }}:
                     </label>
 
                     <PureInput
                         id="clocking_machine_qr_code_label"
                         v-model="label"
-                        :placeholder="trans('Leave empty to generate a label automatically')"
+                        :placeholder="trans('Input a label for the QR code')"
                         @keydown.enter="!isSubmitting && submit()"
                     />
                 </div>
@@ -99,7 +102,7 @@ const submit = async () => {
                         full
                         icon="fal fa-qrcode"
                         :label="isSubmitting ? trans('Loading') : trans('Generate')"
-                        :disabled="isSubmitting"
+                        :disabled="isSubmitting || label.trim().length == 0"
                         :loading="isSubmitting"
                         @click="submit"
                     />
