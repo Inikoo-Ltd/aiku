@@ -53,7 +53,8 @@ const copyKioskUrl = async () => {
 const qrContainer = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
 const isGenerating = ref(false)
-const qrData = ref<any>(null)
+const qrData = ref<string | null>(null)
+const qrLabel = ref<string | null>(null)
 const countdown = ref(0)
 const expiresAt = ref<Date | null>(null)
 
@@ -95,10 +96,17 @@ const fetchQR = async () => {
             clockingMachine: props.data.slug
         }))
         if (res.data.success) {
-            qrData.value = res.data.data.qr_code
+            const { label, hash, expires_at } = res.data.data
+
+            qrLabel.value = label ?? null
+            qrData.value = [label, hash].filter(Boolean).join(':')
             qrKey.value++
-            startCountdown(res.data.data.duration_seconds)
-            expiresAt.value = new Date(Date.now() + (res.data.data.duration_seconds * 1000))
+
+            expiresAt.value = expires_at ? new Date(expires_at) : null
+
+            if (expiresAt.value) {
+                startCountdown(Math.max(0, Math.round((expiresAt.value.getTime() - Date.now()) / 1000)))
+            }
         }
     } finally {
         isGenerating.value = false
@@ -109,6 +117,7 @@ const stopQR = () => {
     clearInterval(countdownTimer)
 
     qrData.value = null
+    qrLabel.value = null
     countdown.value = 0
     expiresAt.value = null
 }
@@ -155,7 +164,9 @@ const downloadQrCode = async () => {
 
     const title = trans("Employee Scan")
     const subtitle = trans("Scan QR to clock in or out")
-    const expiredAtText = `${trans("Expires at")}: ${formattedExpiredAt.value}`
+    const footerText = expiresAt.value
+        ? `${trans("Expires at")}: ${formattedExpiredAt.value}`
+        : (qrLabel.value ?? "")
     const qrSize = qrCanvas.width
     const canvasPadding = 48
     const textTopHeight = 120
@@ -189,7 +200,7 @@ const downloadQrCode = async () => {
 
     context.fillStyle = "#374151"
     context.font = "24px sans-serif"
-    context.fillText(expiredAtText, canvasWidth / 2, qrY + qrSize + 52)
+    context.fillText(footerText, canvasWidth / 2, qrY + qrSize + 52)
 
     const downloadLink = document.createElement("a")
     downloadLink.href = exportCanvas.toDataURL("image/png")
@@ -228,15 +239,21 @@ onUnmounted(() => stopQR())
                         <LoadingIcon class="text-4xl text-gray-600" />
                     </div>
 
-                    <QrcodeVue :value="qrData" :size="isFullscreen ? 600 : 440" level="H" />
+                    <QrcodeVue :key="qrKey" :value="qrData ?? ''" :size="isFullscreen ? 600 : 440" level="H" />
                 </div>
 
-                <div class="mt-4 text-md font-semibold">
-                    {{ trans("Expires in") }} <span class="font-semibold text-gray-700">{{ formattedCountdown }}</span>
-                </div>
-                <div class="text-sm text-gray-500">
-                    {{ trans("Expires at") }}: {{ formattedExpiredAt }}
-                </div>
+                <!-- <div v-if="qrLabel" class="mt-4 text-md font-semibold text-gray-700">
+                    {{ qrLabel }}
+                </div> -->
+
+                <template v-if="expiresAt">
+                    <div class="mt-2 text-md font-semibold">
+                        {{ trans("Expires in") }} <span class="font-semibold text-gray-700">{{ formattedCountdown }}</span>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        {{ trans("Expires at") }}: {{ formattedExpiredAt }}
+                    </div>
+                </template>
             </div>
 
             <div v-if="hasQR" class="flex justify-center gap-2">
