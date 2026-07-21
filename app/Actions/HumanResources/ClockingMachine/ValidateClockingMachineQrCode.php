@@ -163,15 +163,19 @@ class ValidateClockingMachineQrCode
     }
 
     /**
-     * The scanned payload is the resource's qr_value, "{label}:{hash}", falling back to a bare hash.
-     *
-     * The hash never contains a colon while a label may, so the trailing segment is the hash.
+     * Pull the hash out of whatever the scanner reports.
      */
     protected static function extractHash(string $qrCodeToken): string
     {
-        $segments = explode(':', trim($qrCodeToken));
+        $token = trim($qrCodeToken);
+        $token = strtok($token, '?#') ?: $token;
 
-        return trim(end($segments));
+        $segments = array_values(array_filter(
+            preg_split('#[:/]+#', $token) ?: [],
+            static fn (string $segment): bool => trim($segment) !== ''
+        ));
+
+        return $segments === [] ? '' : trim((string) end($segments));
     }
 
     private function updateQrCodeUsage(ClockingMachineQRCode $clockingMachineQRCode, Carbon $clockedInAt): void

@@ -18,7 +18,7 @@ class ClockingMachineQRCodeResource extends JsonResource
             'id'                     => $this->id,
             'label'                  => $this->label,
             'hash'                   => $this->hash,
-            'qr_value'               => implode(':', array_filter([$this->label, $this->hash])),
+            'qr_value'               => route('grp.clocking_scan', ['hash' => $this->hash]),
             'active'                 => (bool) $this->active,
             'active_badge'           => $this->active ? [
                 'label' => __('Active'),
