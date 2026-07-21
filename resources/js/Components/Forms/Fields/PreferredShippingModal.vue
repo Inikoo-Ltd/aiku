@@ -4,7 +4,7 @@ import { trans } from "laravel-vue-i18n"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import InputText from "primevue/inputtext"
-import { Select } from "primevue"
+import { Select, Checkbox } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlus, faTrashAlt } from "@fal"
 
@@ -15,6 +15,7 @@ interface PreferredShippingRow {
     country_id: number | null
     country_name: string | null
     postcode: string | null
+    important: boolean
 }
 
 const props = defineProps<{
@@ -48,6 +49,7 @@ watch(
             shipper_id: row.shipper_id,
             country_id: row.country_id,
             postcode: row.postcode,
+            important: row.important,
         }))
     },
     { deep: true }
@@ -61,31 +63,24 @@ const addRow = () => {
         country_id: null,
         country_name: null,
         postcode: "",
+        important: false,
     })
 }
 
 const removeRow = (index: number) => {
     rows.splice(index, 1)
 }
+
+const setImportant = (index: number, value: boolean) => {
+    rows.forEach((row: PreferredShippingRow, i: number) => {
+        row.important = i === index ? value : false
+    })
+}
 </script>
 
 <template>
     <div>
         <DataTable :value="rows" dataKey="id" class="text-sm" removableSort>
-            <Column field="shipper_name" :header="trans('Shipper')" style="min-width: 10rem">
-                <template #body="{ data }">
-                    <Select
-                        v-model="data.shipper_id"
-                        filter
-                        :options="shipperOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        :placeholder="trans('Select shipper')"
-                        class="w-full"
-                    />
-                </template>
-            </Column>
-
             <Column field="country_name" :header="trans('Country')" style="min-width: 10rem">
                 <template #body="{ data }">
                     <Select
@@ -104,6 +99,30 @@ const removeRow = (index: number) => {
             <Column field="postcode" :header="trans('Postcode')" style="min-width: 8rem">
                 <template #body="{ data }">
                     <InputText v-model="data.postcode" :placeholder="trans('Any')" class="w-full font-mono" />
+                </template>
+            </Column>
+
+            <Column field="shipper_name" :header="trans('Shipper')" style="min-width: 10rem">
+                <template #body="{ data }">
+                    <Select
+                        v-model="data.shipper_id"
+                        filter
+                        :options="shipperOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        :placeholder="trans('Select shipper')"
+                        class="w-full"
+                    />
+                </template>
+            </Column>
+
+            <Column field="important" :header="trans('Important')" style="width: 6rem">
+                <template #body="{ data, index }">
+                    <Checkbox
+                        :modelValue="data.important"
+                        :binary="true"
+                        @update:modelValue="(value) => setImportant(index, value)"
+                    />
                 </template>
             </Column>
 

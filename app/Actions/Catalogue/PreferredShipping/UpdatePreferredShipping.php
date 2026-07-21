@@ -41,6 +41,7 @@ class UpdatePreferredShipping extends OrgAction
                 Rule::exists('countries', 'id')->where('status', true),
             ],
             'postcode' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'important' => ['sometimes', 'boolean'],
         ];
     }
 

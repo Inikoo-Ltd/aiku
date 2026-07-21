@@ -24,6 +24,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $country_id
  * @property string|null $postcode
  * @property int $shipper_id
+ * @property bool $important
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
@@ -66,10 +67,18 @@ class PreferredShipping extends Model implements Auditable
         ];
     }
 
+    protected function casts(): array
+    {
+        return [
+            'important' => 'boolean',
+        ];
+    }
+
     protected array $auditInclude = [
         'country_id',
         'postcode',
         'shipper_id',
+        'important',
     ];
 
 }

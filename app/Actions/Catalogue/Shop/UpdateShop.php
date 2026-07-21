@@ -162,7 +162,7 @@ class UpdateShop extends OrgAction
 
             $keptIds = [];
             foreach ($preferredShippingRows as $row) {
-                $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode']);
+                $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode', 'important']);
 
                 if (Arr::get($row, 'id')) {
                     $shop->preferredShippings()->whereKey($row['id'])->update($rowData);
@@ -881,6 +881,7 @@ class UpdateShop extends OrgAction
             'preferred_shipping.*.shipper_id'                         => ['required', 'integer', Rule::exists('shippers', 'id')->where('organisation_id', $this->shop->organisation_id)],
             'preferred_shipping.*.country_id'                         => ['sometimes', 'nullable', 'integer', Rule::exists('countries', 'id')->where('status', true)],
             'preferred_shipping.*.postcode'                           => ['sometimes', 'nullable', 'string', 'max:255'],
+            'preferred_shipping.*.important'                          => ['sometimes', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

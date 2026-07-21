@@ -30,6 +30,8 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('shipper_id')->index();
             $table->foreign('shipper_id')->references('id')->on('shippers')->cascadeOnDelete();
 
+            $table->boolean('important')->default(false);
+
             $table->timestampsTz();
 
             // $table->unique(['shop_id', 'country_id', 'postcode']);

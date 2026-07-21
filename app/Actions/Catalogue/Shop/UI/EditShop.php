@@ -411,6 +411,7 @@ class EditShop extends OrgAction
                                 'country_id'    => $preferredShipping->country_id,
                                 'country_name'  => $preferredShipping->country?->name,
                                 'postcode'      => $preferredShipping->postcode,
+                                'important'     => $preferredShipping->important,
                             ])->all(),
                             'options' => [
                                 'shippers'  => Shipper::where('organisation_id', $shop->organisation_id)
