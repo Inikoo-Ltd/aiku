@@ -31,10 +31,18 @@ class GetIrisReviews extends IrisAction
 
         if ($model instanceof Product) {
             $reviews = GetIrisProductReviews::run($model);
+            $model = $model;
         } elseif ($model instanceof ProductCategory) {
             $reviews = GetIrisProductCategoryReviews::run($model);
+            $model = $model;
+            
+            if ($reviews->isEmpty()) {
+                $reviews = GetIrisShopReviews::run($webpage->shop);
+                $model = $webpage->shop;
+            }
         } else {
             $reviews = GetIrisShopReviews::run($webpage->shop);
+            $model = $webpage->shop;
         }
 
         $avgReview = $this->getBaseQuery($model)->avg('rating_main');
