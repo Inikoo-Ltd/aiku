@@ -86,6 +86,7 @@ const props = defineProps<{
     mismatch_detected?: boolean
     related_products? : object
     related_product_category? : object
+    currencies_data : any
     vol_gr_reward?: {
         show_gr_vol: boolean
         gr_vol_discount_quantity?: number
@@ -210,6 +211,7 @@ const showDialog = ref(false);
         :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
         :price_rrp_warning_ratio="price_rrp_warning_ratio"
+        :currencies_data
     />
 
 

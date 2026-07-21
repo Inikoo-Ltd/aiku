@@ -44,6 +44,8 @@ import Image from "@common/Components/Image.vue";
 import { faPencil, faImage } from "@fal";
 import { faBoxUp } from "@fas";
 import Toggle from "./Pure/Toggle.vue";
+import PureMultiplePriceCurrencyTable from "./Pure/PureMultiplePriceCurrencyTable.vue";
+
 
 library.add(
     faShapes, faBoxUp,
@@ -70,6 +72,7 @@ const props = defineProps<{
     masterProductCategoryId: number
     is_dropship: boolean
     price_rrp_warning_ratio : number
+    currencies_data? :any
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
@@ -93,9 +96,7 @@ const form = useForm({
     name: "",
     unit: '',
    /*  units: null, */
-    trade_units: [
-
-    ],
+    trade_units: [],
     is_for_sale : true,
     is_minion_variant: false,
     image: null,
@@ -105,6 +106,8 @@ const form = useForm({
     description_extra: "",
     gross_weight: 0,
     net_weight: 0,
+    master_prices : null,
+    master_rrps : null,
     marketing_dimensions: {
         h: 0,
         l: 0,
@@ -218,6 +221,22 @@ const ListSelectorChange = (value) => {
 function roundDown2(num: number) {
     return Math.floor(num * 100) / 100;
 }
+
+const unitsPerOuter = computed(() => {
+    const tradeUnits = form.trade_units as any[]
+
+    return tradeUnits.length == 1 ? parseInt(tradeUnits[0].quantity) : 1
+})
+
+const priceByCurrency = computed(() => {
+    const prices = (form.master_prices ?? {}) as Record<string, { value: number | null }>
+
+    return Object.entries(prices).reduce((costs, [code, price]) => {
+        costs[code] = price?.value ?? null
+
+        return costs
+    }, {} as Record<string, number | null>)
+})
 
 const submitForm = async (redirect = true) => {
     form.processing = true
@@ -518,13 +537,22 @@ const successEditTradeUnit = (data) => {
 
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
-                        <div :class="'col-span-2'">
+                        <div :class="'col-span-1'">
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Code')}}</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
                             <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.code.join(", ") }}
+                            </small>
+                        </div>
+                         <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Name')}}</label>
+                            <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
+                                class="w-full" />
+                            <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.name.join(", ") }}
                             </small>
                         </div>
                         <div class="flex gap-16">
@@ -547,7 +575,6 @@ const successEditTradeUnit = (data) => {
                                 </small>
                             </div>
                             <div>
-
                                 <label class="block text-xs font-medium text-gray-600 mb-1">
                                     {{trans('Is For Sale')}} 
                                     <FontAwesomeIcon
@@ -564,20 +591,7 @@ const successEditTradeUnit = (data) => {
                                     {{ form.errors.is_for_sale.join(", ") }}
                                 </small>
                             </div>
-
-
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Name')}}</label>
-                            <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
-                                class="w-full" />
-                            <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
-                                {{ form.errors.name.join(", ") }}
-                            </small>
-                        </div>
-
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit label')}}</label>
                             <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
@@ -644,6 +658,8 @@ const successEditTradeUnit = (data) => {
                             </small>
                         </div>
 
+                       
+
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Description')}}</label>
                             <SideEditorInputHTML :rows="4" v-model="form.description"
@@ -665,6 +681,43 @@ const successEditTradeUnit = (data) => {
                                 {{ form.errors.description_extra.join(", ") }}
                             </small>
                         </div>
+                        <div>
+                          <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Price')}}</label> -->
+                            <PureMultiplePriceCurrencyTable
+                                v-model="form.master_prices"
+                                :currencies="currencies_data"
+                                label="Price"
+                                color="blue"
+                                editOn="outer"
+                                :unitsPerOuter="unitsPerOuter"
+                                marginLabel="Margin"
+                            />
+                            <small v-if="form.errors.master_prices"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.master_prices.join(", ") }}
+                            </small>
+                        </div>
+
+                        <div>
+                          <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('RRP')}}</label> -->
+                            <PureMultiplePriceCurrencyTable
+                                v-model="form.master_rrps"
+                                :currencies="currencies_data"
+                                label="RRP"
+                                color="purple"
+                                editOn="unit"
+                                :unitsPerOuter="unitsPerOuter"
+                                :costs="priceByCurrency"
+                                marginLabel="Margin"
+                            />
+                            <small v-if="form.errors.master_rrps"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.master_rrps.join(", ") }}
+                            </small>
+                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -691,7 +744,7 @@ const successEditTradeUnit = (data) => {
         <template #footer>
             <div class="flex justify-end gap-3 border-t pt-3">
                 <Button label="Cancel" type="negative" class="!px-5" @click="emits('update:showDialog', false)" />
-                <Button type="create" :label="'save & create another one'" :loading="loading == 'create'"
+                <Button type="create" :label="'Save & Create Another One'" :loading="loading == 'create'"
                     :disabled="form.trade_units.length < 1" class="!px-6" @click="submitForm(false)" />
                 <Button type="save" :loading="loading == 'save'" :disabled="form.trade_units.length < 1" class="!px-6"
                     @click="submitForm" />

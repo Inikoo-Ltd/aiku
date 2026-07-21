@@ -158,9 +158,7 @@ class EditMasterProduct extends GrpAction
             ->get();
 
         $baseEuro   = Currency::where('code', 'EUR')->first();
-
         $currencies = Currency::whereIn('id', $shopCurrencies)->get();
-
         $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseEuro) {
             $ratioEuro  = GetCurrencyExchange::run($baseEuro, $currency);
 

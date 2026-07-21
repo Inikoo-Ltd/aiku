@@ -279,7 +279,8 @@ function roundDown2(num: number) {
 
                     <!-- PRICE BLOCK -->
                     <td class="px-3 py-2 bg-blue-50 border-l-2 border-blue-400">
-                        <InputNumber v-model="item.product.price" mode="currency"
+                        {{ locale.currencyFormat(item.product?.shop_currency ?? currency, item.product?.price ) }}
+                        <!-- <InputNumber v-model="item.product.price" mode="currency"
                             :disabled="!item.product.create_in_shop"
                             :currency="item?.product?.shop_currency ?? currency" :step="0.25" :showButtons="true"
                             inputClass="w-full" :min="0.01" @input="emits('change', modelValue)" />
@@ -292,7 +293,7 @@ function roundDown2(num: number) {
                             class="text-xxs text-yellow-500">
                             Price should be at least {{ (item.product.org_cost * (1 + price_rrp_warning_ratio /
                                 100)).toFixed(2) }} ({{ price_rrp_warning_ratio }}% above cost).
-                        </span>
+                        </span> -->
                     </td>
 
                     <td class="px-3 py-2 text-right bg-blue-50">
@@ -319,7 +320,8 @@ function roundDown2(num: number) {
                     </td>
 
                     <td class="px-3 py-2 text-right bg-purple-50">
-                        <div class="flex justify-end gap-2 text-xs">
+                          {{ locale.currencyFormat(item.product?.shop_currency ?? currency, item.product.rrp ) }}
+                       <!--  <div class="flex justify-end gap-2 text-xs">
                             <div class="w-32" v-if="item.product?.useCustomRrp">
                                 <InputNumber v-model="item.product.rrp" mode="currency"
                                     :disabled="!item.product.create_in_shop"
@@ -342,7 +344,7 @@ function roundDown2(num: number) {
                             </button>
                         </div>
                         <span v-if="form?.errors[`shop_products.${item.id}.rrp`]" class="text-xs text-red-500">{{
-                            form?.errors[`shop_products.${item.id}.rrp`] }}</span>
+                            form?.errors[`shop_products.${item.id}.rrp`] }}</span> -->
                     </td>
 
                     <td class="px-3 py-2 text-right bg-purple-50 border-r-2 border-purple-400">

@@ -1,0 +1,267 @@
+<script setup lang='ts'>
+import { computed, ref, watch } from 'vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faChevronDown } from '@fal'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import PriceCurrencyTableRow from '@/Components/Pure/Supports/PriceCurrencyTableRow.vue'
+library.add(faChevronDown)
+
+interface CurrencyRate {
+    currency: string
+    currency_symbol?: string
+    currency_id: number
+    ratio_gbp: number | null
+    ratio_eur: number | null
+}
+
+interface CurrencyPrice {
+    value: number | null
+    independent: boolean
+}
+
+const props = withDefaults(defineProps<{
+    modelValue: Record<string, CurrencyPrice> | null
+    currencies: Record<string, CurrencyRate>
+    label?: string
+    color?: 'blue' | 'purple' | 'green' | 'amber' | 'gray'
+    editOn?: 'outer' | 'unit'
+    outerLabel?: string
+    unitLabel?: string
+    marginLabel?: string
+    showUnit?: boolean
+    showMargin?: boolean
+    costs?: Record<string, number | null>
+    unitsPerOuter?: number
+    readonly?: boolean
+    visibleCurrencyCodes?: string[]
+}>(), {
+    label: 'Price',
+    color: 'blue',
+    editOn: 'outer',
+    showUnit: true,
+    showMargin: true,
+    unitsPerOuter: 1,
+    visibleCurrencyCodes: () => ['GBP', 'EUR']
+})
+
+const emits = defineEmits<{
+    (e: 'update:modelValue', value: Record<string, CurrencyPrice>): void
+}>()
+
+const palette = {
+    blue: { header: 'bg-blue-100 text-blue-700 border-blue-400', cell: 'bg-blue-50', edge: 'border-blue-400' },
+    purple: { header: 'bg-purple-100 text-purple-700 border-purple-400', cell: 'bg-purple-50', edge: 'border-purple-400' },
+    green: { header: 'bg-green-100 text-green-700 border-green-400', cell: 'bg-green-50', edge: 'border-green-400' },
+    amber: { header: 'bg-amber-100 text-amber-700 border-amber-400', cell: 'bg-amber-50', edge: 'border-amber-400' },
+    gray: { header: 'bg-gray-100 text-gray-700 border-gray-400', cell: 'bg-gray-50', edge: 'border-gray-400' }
+}
+
+const colors = computed(() => palette[props.color])
+
+const columns = computed(() => {
+    const list: { kind: 'outer' | 'unit' | 'margin', label: string }[] = [
+        { kind: 'outer', label: props.outerLabel ?? `Outer ${props.label}` }
+    ]
+
+    if (props.showUnit || props.editOn === 'unit') {
+        list.push({ kind: 'unit', label: props.unitLabel ?? `${props.label} / Unit` })
+    }
+
+    if (props.showMargin) {
+        list.push({ kind: 'margin', label: props.marginLabel ?? `${props.label} Margin` })
+    }
+
+    return list
+})
+
+const currencyList = computed(
+    () => Object.values(props.currencies ?? {}).map(rate => ({
+        code: rate.currency,
+        symbol: rate.currency_symbol,
+        ratio_gbp: rate.ratio_gbp,
+        ratio_eur: rate.ratio_eur
+    }))
+)
+
+const baseCurrencyCode = ref('EUR')
+
+const visibleCurrencies = computed(
+    () => currencyList.value.filter(currency => props.visibleCurrencyCodes.includes(currency.code))
+)
+
+const baseCurrency = computed(
+    () => currencyList.value.find(currency => currency.code === baseCurrencyCode.value)
+)
+
+const derivedVisibleCurrencies = computed(
+    () => visibleCurrencies.value.filter(currency => currency.code !== baseCurrencyCode.value)
+)
+
+const hiddenCurrencies = computed(
+    () => currencyList.value.filter(currency => !props.visibleCurrencyCodes.includes(currency.code))
+)
+
+const buildPrices = (): Record<string, CurrencyPrice> => {
+    return currencyList.value.reduce((prices, currency) => {
+        const existing = props.modelValue?.[currency.code]
+
+        prices[currency.code] = {
+            value: existing?.value ?? null,
+            independent: existing?.independent ?? false
+        }
+
+        return prices
+    }, {} as Record<string, CurrencyPrice>)
+}
+
+const prices = ref<Record<string, CurrencyPrice>>(buildPrices())
+
+watch(() => props.currencies, () => {
+    prices.value = buildPrices()
+})
+
+const getRatio = (currency: { ratio_gbp: number | null, ratio_eur: number | null }) => {
+    return currency.ratio_eur
+}
+
+const recalculateDerivedPrices = () => {
+    const basePrice = prices.value[baseCurrencyCode.value]?.value
+
+    currencyList.value.forEach(currency => {
+        const entry = prices.value[currency.code]
+        const ratio = getRatio(currency)
+
+        if (!entry || entry.independent || currency.code === baseCurrencyCode.value) {
+            return
+        }
+
+        entry.value = basePrice == null || ratio == null
+            ? null
+            : Math.round(basePrice * ratio * 100) / 100
+    })
+}
+
+const onUpdate = () => {
+    recalculateDerivedPrices()
+    emits('update:modelValue', prices.value)
+}
+
+watch(baseCurrencyCode, onUpdate)
+
+const showHiddenCurrencies = ref(false)
+
+const filledHiddenCurrenciesCount = computed(
+    () => hiddenCurrencies.value.filter(currency => prices.value[currency.code]?.independent).length
+)
+</script>
+
+<template>
+    <div class="overflow-x-auto rounded-md border border-gray-200">
+        <table class="w-full border-collapse text-xs">
+            <colgroup>
+                <col class="w-28" />
+                <col v-for="column in columns" :key="column.kind" :class="column.kind === 'margin' ? 'w-20' : ''" />
+            </colgroup>
+
+            <thead>
+                <tr class="text-[11px] font-semibold uppercase tracking-wide">
+                    <th
+                        :colspan="columns.length + 1"
+                        class="border border-l-2 px-3 py-2 text-center"
+                        :class="colors.header"
+                    >
+                        {{ ctrans(label) }}
+                    </th>
+                </tr>
+
+                <tr class="text-[11px] font-medium uppercase tracking-wide text-gray-600">
+                    <th class="border border-l-2 px-3 py-2 text-left" :class="colors.header">
+                        {{ ctrans('Currency') }}
+                    </th>
+                    <th
+                        v-for="(column, index) in columns"
+                        :key="column.kind"
+                        class="border px-3 py-2 text-right"
+                        :class="[colors.header, index === 0 ? 'border-l-2' : '']"
+                    >
+                        {{ ctrans(column.label) }}
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <PriceCurrencyTableRow
+                    v-if="baseCurrency"
+                    v-model="prices[baseCurrency.code]"
+                    :currency="baseCurrency"
+                    :columns="columns"
+                    :editOn="editOn"
+                    :cellClass="colors.cell"
+                    :edgeClass="colors.edge"
+                    :unitsPerOuter="unitsPerOuter"
+                    :cost="costs?.[baseCurrency.code]"
+                    :readonly="readonly"
+                    isBase
+                    @change="onUpdate"
+                />
+
+                <PriceCurrencyTableRow
+                    v-for="currency in derivedVisibleCurrencies"
+                    :key="currency.code"
+                    v-model="prices[currency.code]"
+                    :currency="currency"
+                    :columns="columns"
+                    :editOn="editOn"
+                    :cellClass="colors.cell"
+                    :edgeClass="colors.edge"
+                    :unitsPerOuter="unitsPerOuter"
+                    :cost="costs?.[currency.code]"
+                    :readonly="readonly"
+                    @change="onUpdate"
+                />
+
+                <PriceCurrencyTableRow
+                    v-for="currency in (showHiddenCurrencies ? hiddenCurrencies : [])"
+                    :key="currency.code"
+                    v-model="prices[currency.code]"
+                    :currency="currency"
+                    :columns="columns"
+                    :editOn="editOn"
+                    :cellClass="colors.cell"
+                    :edgeClass="colors.edge"
+                    :unitsPerOuter="unitsPerOuter"
+                    :cost="costs?.[currency.code]"
+                    :readonly="readonly"
+                    @change="onUpdate"
+                />
+
+                <tr v-if="hiddenCurrencies.length" class="border-t border-gray-200 bg-gray-50/50">
+                    <td :colspan="columns.length + 1" class="border-l-2 px-3 py-2" :class="colors.edge">
+                        <button
+                            type="button"
+                            class="flex items-center gap-x-2 text-xs text-gray-500 transition-colors hover:text-gray-700"
+                            :aria-expanded="showHiddenCurrencies"
+                            @click="showHiddenCurrencies = !showHiddenCurrencies"
+                        >
+                            <FontAwesomeIcon
+                                :icon="faChevronDown"
+                                class="text-xs transition-transform duration-200"
+                                :class="{ '-rotate-90': !showHiddenCurrencies }"
+                                fixed-width
+                                aria-hidden="true"
+                            />
+                            {{ showHiddenCurrencies ? ctrans('Hide other currencies') : ctrans('Other currencies') }}
+                            <span class="text-gray-400">({{ hiddenCurrencies.length }})</span>
+                            <span
+                                v-if="filledHiddenCurrenciesCount"
+                                class="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-600 ring-1 ring-green-200"
+                            >
+                                {{ filledHiddenCurrenciesCount }} {{ ctrans('independent') }}
+                            </span>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</template>
