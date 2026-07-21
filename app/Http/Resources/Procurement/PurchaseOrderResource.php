@@ -25,21 +25,19 @@ class PurchaseOrderResource extends JsonResource
 {
     public function toArray($request): array
     {
-
         /** @var PurchaseOrder $purchaseOrder */
         $purchaseOrder = $this;
 
-
         return [
-            'id'         => $purchaseOrder->id,
-            'number'     => $purchaseOrder->reference,
-            'slug'       => $purchaseOrder->slug,
-            'date'       => $purchaseOrder->date,
-            'state'         => $purchaseOrder->state->value,
-            'state_label'   => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
-            'state_icon'    => $purchaseOrder->state->stateIcon()[$purchaseOrder->state->value],
-            'created_at' => $purchaseOrder->created_at,
-            'updated_at' => $purchaseOrder->updated_at,
+            'id'          => $purchaseOrder->id,
+            'number'      => $purchaseOrder->reference,
+            'slug'        => $purchaseOrder->slug,
+            'date'        => $purchaseOrder->date,
+            'state'       => $purchaseOrder->state->value,
+            'state_label' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
+            'state_icon'  => $purchaseOrder->state->stateIcon()[$purchaseOrder->state->value],
+            'created_at'  => $purchaseOrder->created_at,
+            'updated_at'  => $purchaseOrder->updated_at,
         ];
     }
 }

@@ -3,10 +3,11 @@
   -  Created: Thu, 15 Sept 2022 16:07:20 Malaysia Time, Kuala Lumpur, Malaysia
   -  Copyright (c) 2022, Raul A Perusquia Flores
   -->
+
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import type { Component } from "vue"
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
@@ -19,6 +20,7 @@ import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import PurchaseOrderData from "@/Components/Procurement/PurchaseOrderData.vue"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
@@ -34,29 +36,51 @@ import { PalletDelivery } from "@/types/Pallet"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote } from "@fal"
-import { faPencil } from "@fas"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox } from "@fal"
+import { faArrowCircleLeft, faArrowCircleRight, faExclamationCircle, faPencil, faShare } from "@fas"
 import { faPlus } from "@far"
 
-library.add(faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faPencil, faPlus)
+library.add(
+	faIdCardAlt,
+	faEnvelope,
+	faPhone,
+	faWeight,
+	faStickyNote,
+	faShip,
+	faBox,
+	faHandHoldingBox,
+	faShare,
+	faArrowCircleRight,
+	faArrowCircleLeft,
+	faExclamationCircle,
+	faPencil,
+	faPlus,
+)
 
-const props = defineProps<{
-	title: string
-	pageHead: PageHeadingTypes
+const props = defineProps < {
+    title: string
+    pageHead: PageHeadingTypes
+    data: {
+        state: string
+    }
 	routes: {
 		updatePurchaseOrderRoute: routeType
 		products_list: routeType
 	}
 	box_stats: {
-		orderer: {
-			data: {
-				code: string
-				company_name: string
-				contact_name: string
-				email: string
+		first_block: {
+			orderer: {
+                slug: string
+				type: string
 				name: string
-			}
-			type: string
+            }
+            delivery: {
+    			type: string | null
+    			incoterm: string | null
+    			port_of_export: string | null
+    			port_of_import: string | null
+    			delivery_address: string | null
+    		}
 		}
 		mid_block: {
 			gross_weight: string
@@ -70,18 +94,15 @@ const props = defineProps<{
 		[key: string]: TSTimeline
 	}
 	currency: {}
-	data?: {
-		data: PalletDelivery
-	}
 	tabs: {
 		current: string
 		navigation: {}
 	}
-	showcase: {}
-	transactions?: {}
+	showcase?: {}
+	items?: {}
 	history?: {}
-	attachments?: {}
-	attachmentRoutes?: {}
+	// attachments?: {}
+	// attachmentRoutes?: {}
 }>()
 
 const fallbackBgColor = "#f9fafb"
@@ -96,13 +117,33 @@ const noteModalValue = ref(props.box_stats.mid_block.notes || "")
 
 const component = computed(() => {
 	const components: Component = {
+		showcase: PurchaseOrderData,
+		items: TablePurchaseOrderTransactions,
+		// products: TableProductList,
 		history: TableHistories,
-		transactions: TablePurchaseOrderTransactions,
-		attachments: TableAttachments,
-		products: TableProductList,
+		// attachments: TableAttachments,
 	}
 
 	return components[currentTab.value]
+})
+
+const ordererRoute = computed<string>(() => {
+	const orderer = props.box_stats.first_block.orderer
+    const slug = orderer.slug
+    const type = orderer.type
+
+	if (!slug || !type) return ""
+
+	const organisation = route().params["organisation"]
+
+	switch (type) {
+		case "Agent":
+			return route("grp.org.procurement.org_agents.show", [organisation, slug])
+		case "Supplier":
+			return route("grp.org.procurement.org_suppliers.show", [organisation, slug])
+		default:
+			return ""
+	}
 })
 
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -121,14 +162,12 @@ const onSubmitNote = async () => {
 	isSubmitNoteLoading.value = true
 
 	try {
-		await axios.patch(
-			route(
-				props.routes.updatePurchaseOrderRoute.name,
-				props.routes.updatePurchaseOrderRoute.parameters
-			),
-			{ notes: noteModalValue.value },
-			{ headers: { "Content-Type": "application/json" } }
-		)
+        await axios.patch(
+            route(props.routes.updatePurchaseOrderRoute.name, props.routes.updatePurchaseOrderRoute.parameters),
+            { notes: noteModalValue.value },
+            { headers: { "Content-Type": "application/json" } },
+        )
+
 		props.box_stats.mid_block.notes = noteModalValue.value
 	} catch (error) {
 		notify({
@@ -145,113 +184,132 @@ const onSubmitNote = async () => {
 
 <template>
 	<Head :title="capitalize(title)" />
-	<PageHeading :data="pageHead" v-if="currentTab != 'products'">
-		<template #button-add-products="{ action }" >
+
+	<PageHeading :data="pageHead">
+	    <!-- Todo: Replace with tab All supplier's products -->
+		<template #button-add-products="{ action }">
 			<div class="relative">
 				<Button
-					:style="action.style"
-					:label="action.label"
-					:icon="action.icon"
-					@click="() => openModal(action)"
 					:key="`ActionButton${action.label}${action.style}`"
+					:label="action.label"
 					:tooltip="action.tooltip"
+					:icon="action.icon"
+					:style="action.style"
+					@click="() => openModal(action)"
 				/>
 			</div>
 		</template>
 	</PageHeading>
 
-	<!-- Section: Timeline -->
-	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
+	<!-- Purchase Order Timeline -->
+	<div v-if="timelines" class="py-2 border-b border-gray-300">
 		<Timeline
 			:options="timelines"
-			:state="props.data?.data?.state"
+			:state="props.data.state"
 			:slidesPerView="6"
 			:format-time="'MMMM d yyyy, HH:mm'"
 		/>
 	</div>
 
-	<div v-if="currentTab != 'products'" class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
-		<BoxStatPallet class="py-2 px-3" icon="fal fa-user">
-			<!-- Field: Reference Number -->
-			<div v-if="box_stats?.orderer.data.code" class="pl-1 flex items-center w-fit flex-none gap-x-2">
-				<dt class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-user"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true"
-					/>
-				</dt>
-				<dd class="text-sm text-gray-500">{{ box_stats?.orderer.data.code }}</dd>
-			</div>
+	<!-- Todo: Add Stock Delivery Timeline -->
 
-			<!-- Field: Contact name -->
-			<div
-				v-if="box_stats?.orderer.data.name"
-				v-tooltip="trans('Contact name')"
-				class="pl-1 flex items-center w-full flex-none gap-x-2">
-				<dt class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-id-card-alt"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true"
-					/>
-				</dt>
-				<dd class="text-sm text-gray-500">{{ box_stats?.orderer.data.name }}</dd>
-			</div>
+	<div class="grid grid-cols-2 lg:grid-cols-4 text-gray-500 divide-x divide-gray-300 border-b border-gray-300">
+	    <!-- First Block -->
+		<BoxStatPallet class="p-4">
+			<div class="flex flex-col gap-4">
+				<!-- Supplier -->
+				<div v-if="box_stats.first_block.orderer.name" class="flex items-center gap-2">
+					<dt>
+						<FontAwesomeIcon
+							v-tooltip="trans(box_stats.first_block.orderer.type)"
+							icon="fal fa-hand-holding-box"
+							aria-hidden="true"
+							fixed-width
+						/>
+					</dt>
+					<dd>
+						<Link v-if="ordererRoute" :href="ordererRoute" class="primaryLink">
+							{{ box_stats.first_block.orderer.name }}
+						</Link>
+						<span v-else>{{ box_stats.first_block.orderer.name }}</span>
+					</dd>
+				</div>
 
-			<!-- Field: Company name -->
-			<div
-				v-if="box_stats?.orderer.data.company_name"
-				v-tooltip="trans('Company name')"
-				class="pl-1 flex items-center w-full flex-none gap-x-2">
-				<dt class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-building"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true" />
-				</dt>
-				<dd class="text-sm text-gray-500">{{ box_stats?.orderer.data.company_name }}</dd>
-			</div>
+				<!-- Delivery terms -->
+				<div v-if="box_stats.first_block.delivery.type === 'container'">
+					<div class="flex items-center gap-2">
+						<dt>
+							<FontAwesomeIcon
+								v-tooltip="trans('Incoterm')"
+								icon="fas fa-share"
+								aria-hidden="true"
+								fixed-width
+							/>
+						</dt>
+						<dd v-if="box_stats.first_block.delivery.incoterm">{{ box_stats.first_block.delivery.incoterm }}</dd>
+						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
+		                    <FontAwesomeIcon
+    							icon="fas fa-exclamation-circle"
+    							aria-hidden="true"
+    							fixed-width
+    						/>
+						    <span>{{ trans("Incoterm not set") }}</span>
+						</dd>
+					</div>
 
-			<!-- Field: Email -->
-			<div
-				v-if="box_stats?.orderer.data.email"
-				class="pl-1 flex items-center w-full flex-none gap-x-2">
-				<dt v-tooltip="trans('Email')" class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-envelope"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true" />
-				</dt>
-				<a
-					:href="`mailto:${box_stats?.orderer.data.email}`"
-					v-tooltip="'Click to send email'"
-					class="text-sm text-gray-500 hover:text-gray-700 truncate"
-					>{{ box_stats?.orderer.data.email }}</a
-				>
-			</div>
+					<div class="flex items-center gap-2">
+						<dt>
+							<FontAwesomeIcon
+								v-tooltip="trans('Port of export')"
+								icon="fas fa-arrow-circle-right"
+								aria-hidden="true"
+								fixed-width
+							/>
+						</dt>
+						<dd v-if="box_stats.first_block.delivery.port_of_export">{{ box_stats.first_block.delivery.port_of_export }}</dd>
+						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
+                            <FontAwesomeIcon
+     							icon="fas fa-exclamation-circle"
+     							aria-hidden="true"
+     							fixed-width
+      						/>
+                            <span>{{ trans("Port of export not set") }}</span>
+						</dd>
+					</div>
 
-			<!-- Field: Phone -->
-			<div
-				v-if="box_stats?.orderer.data.contact_name"
-				class="pl-1 flex items-center w-full flex-none gap-x-2">
-				<dt v-tooltip="trans('Phone')" class="flex-none">
-					<FontAwesomeIcon
-						icon="fal fa-phone"
-						class="text-gray-400"
-						fixed-width
-						aria-hidden="true" />
-				</dt>
-				<a
-					:href="`tel:${box_stats?.orderer.data.contact_name}`"
-					v-tooltip="'Click to make a phone call'"
-					class="text-sm text-gray-500 hover:text-gray-700"
-					>{{ box_stats?.orderer.data.contact_name }}</a
-				>
+					<div class="flex items-center gap-2">
+						<dt>
+							<FontAwesomeIcon
+								v-tooltip="trans('Port of import')"
+								icon="fas fa-arrow-circle-left"
+								aria-hidden="true"
+								fixed-width />
+						</dt>
+						<dd v-if="box_stats.first_block.delivery.port_of_import">{{ box_stats.first_block.delivery.port_of_import }}</dd>
+						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
+                            <FontAwesomeIcon
+     							icon="fas fa-exclamation-circle"
+     							aria-hidden="true"
+     							fixed-width
+      						/>
+                            <span>{{ trans("Port of import not set") }}</span>
+						</dd>
+					</div>
+				</div>
+
+				<!-- Deliver to -->
+				<div class="pt-2 text-sm">
+					<div class="text-gray-400">{{ trans("Deliver to") }}:</div>
+					<div v-if="box_stats.first_block.delivery.delivery_address" class="whitespace-pre-line">{{ box_stats.first_block.delivery.delivery_address }}</div>
+					<div v-else class="flex items-center gap-1 text-red-500 italic">
+                        <FontAwesomeIcon
+ 							icon="fas fa-exclamation-circle"
+ 							aria-hidden="true"
+ 							fixed-width
+  						/>
+                        <span>{{ trans("Delivery address not set") }}</span>
+					</div>
+				</div>
 			</div>
 		</BoxStatPallet>
 
@@ -353,15 +411,16 @@ const onSubmitNote = async () => {
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:updateRoute="routes.updateOrderRoute"
-			:state="data?.data?.state"
-			:detachRoute="attachmentRoutes?.detachRoute"
-			:fetchRoute="routes.products_list"
-			:modalOpen="isModalUploadOpen"
-			:action="currentAction"
-			@update:tab="handleTabUpdate" />
+			:state="data?.state"
+			xdetachRoute="attachmentRoutes?.detachRoute"
+			xfetchRoute="routes.products_list"
+			xmodalOpen="isModalUploadOpen"
+			xaction="currentAction"
+			@update:tab="handleTabUpdate"
+		/>
 	</div>
 
-	<ModalProductList v-model="isModalUploadOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  @update:tab="handleTabUpdate" :typeModel="'purchase_order'" />
+	<!-- <ModalProductList v-model="isModalUploadOpen" :fetchRoute="routes.products_list" :action="currentAction" :current="currentTab"  @update:tab="handleTabUpdate" :typeModel="'purchase_order'" /> -->
 
 	<Modal :isOpen="isModalOpen" @onClose="closeModal">
 		<div class="min-h-72 max-h-96 px-2 overflow-auto">
