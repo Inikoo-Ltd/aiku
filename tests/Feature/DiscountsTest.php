@@ -761,6 +761,18 @@ test('create first order bonus', function () {
         ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.10);
 });
 
+test('check amount and order number with empty trigger data', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+
+    $offerData = (object)['trigger_data' => '{}'];
+
+    list($passAmount, $passOrderNumber, $metadata) = CalculateOrderDiscounts::make()->checkAmountAndOrderNumber($order, $offerData);
+
+    expect($passAmount)->toBeTrue()
+        ->and($passOrderNumber)->toBeFalse()
+        ->and($metadata)->toBe([]);
+});
+
 test('update offer allowance signature', function () {
     $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();

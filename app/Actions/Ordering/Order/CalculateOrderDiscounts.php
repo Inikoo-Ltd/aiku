@@ -543,8 +543,9 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $metadata        = [];
 
         $triggerData = json_decode($offerData->trigger_data, true);
+        $orderNumber = Arr::get($triggerData, 'order_number');
 
-        if ($order->gross_amount >= $triggerData['min_amount']) {
+        if ($order->gross_amount >= Arr::get($triggerData, 'min_amount', 0)) {
             $passAmount = true;
         }
 
@@ -554,12 +555,12 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 OrderStateEnum::CREATING->value,
             ])->count();
 
-        if ($numberOrders == ($triggerData['order_number'] - 1)) {
+        if ($orderNumber !== null && $numberOrders == ($orderNumber - 1)) {
             $passOrderNumber = true;
 
             $metadata = [
                 'current' => $order->gross_amount,
-                'target'  => $triggerData['min_amount'],
+                'target'  => Arr::get($triggerData, 'min_amount', 0),
             ];
         }
 
