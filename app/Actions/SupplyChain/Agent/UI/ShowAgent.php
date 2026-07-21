@@ -52,7 +52,7 @@ class ShowAgent extends GrpAction
 
     public function htmlResponse(Agent $agent, ActionRequest $request): Response
     {
-// dd($agent);
+        // dd($agent);
         return Inertia::render(
             'SupplyChain/Agent',
             [

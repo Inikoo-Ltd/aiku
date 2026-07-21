@@ -303,7 +303,7 @@ trait WithAllegroOAuth
             return [];
         }
 
-        if(Arr::get($result, 'message')) {
+        if (Arr::get($result, 'message')) {
             return [
                 'message' => Arr::get($result, 'message')
             ];
