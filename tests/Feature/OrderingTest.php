@@ -16,6 +16,7 @@ use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\ShippingZone\HydrateShippingZones;
+use App\Actions\Billables\ShippingZone\DeleteShippingZone;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\DeleteShippingZoneSchema;
@@ -1151,6 +1152,34 @@ test('update shipping zone', function ($shippingZone) {
     $shippingZone = UpdateShippingZone::make()->action($shippingZone, ShippingZone::factory()->definition());
     $this->assertModelExists($shippingZone);
 })->depends('create shipping zone');
+
+test('delete shipping zone action removes zone and dependants', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    DeleteShippingZone::make()->action($shippingZone);
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse()
+        ->and($shippingZone->stats()->exists())->toBeFalse()
+        ->and($shippingZone->asset?->trashed())->toBeTrue();
+});
+
+test('delete shipping zone command removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    $this->artisan('delete:shipping_zone '.$shippingZone->slug)
+        ->expectsOutput('Shipping zone '.$shippingZone->name.' deleted')
+        ->assertSuccessful();
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone command reports a missing zone', function () {
+    $this->artisan('delete:shipping_zone missing-shipping-zone')
+        ->expectsOutput('Shipping zone not found')
+        ->assertFailed();
+});
 
 
 test('shipping zone schemas hydrators', function () {
