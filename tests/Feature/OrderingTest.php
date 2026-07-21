@@ -18,6 +18,7 @@ use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\ShippingZone\HydrateShippingZones;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\DeleteShippingZoneSchema;
 use App\Actions\Billables\ShippingZoneSchema\HydrateShippingZoneSchemas;
 use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
@@ -1114,6 +1115,30 @@ test('update shipping zone schema', function ($shippingZoneSchema) {
     $shippingZoneSchema = UpdateShippingZoneSchema::make()->action($shippingZoneSchema, ShippingZoneSchema::factory()->definition());
     $this->assertModelExists($shippingZoneSchema);
 })->depends('create shipping zone schema');
+
+test('delete shipping zone schema action removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    DeleteShippingZoneSchema::make()->action($shippingZoneSchema);
+
+    expect(ShippingZoneSchema::query()->whereKey($shippingZoneSchema->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone schema command removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    $this->artisan('delete:shipping_zone_schema '.$shippingZoneSchema->slug)
+        ->expectsOutput('Shipping zone schema '.$shippingZoneSchema->name.' deleted')
+        ->assertSuccessful();
+
+    expect(ShippingZoneSchema::query()->whereKey($shippingZoneSchema->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone schema command reports a missing schema', function () {
+    $this->artisan('delete:shipping_zone_schema missing-shipping-zone-schema')
+        ->expectsOutput('Shipping zone schema not found')
+        ->assertFailed();
+});
 
 test('create shipping zone', function ($shippingZoneSchema) {
     $shippingZone = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());

@@ -57,7 +57,6 @@ const qrData = ref<any>(null)
 const countdown = ref(0)
 const expiresAt = ref<Date | null>(null)
 
-let qrRefreshTimer: any = null
 let countdownTimer: any = null
 
 const hasQR = computed(() => !!qrData.value)
@@ -86,6 +85,10 @@ const startCountdown = (seconds: number) => {
 }
 
 const fetchQR = async () => {
+    if (isGenerating.value || hasQR.value) {
+        return
+    }
+
     isGenerating.value = true
     try {
         const res = await axios.get(route('grp.models.clocking-machine.qr.generate', {
@@ -96,9 +99,6 @@ const fetchQR = async () => {
             qrKey.value++
             startCountdown(res.data.data.duration_seconds)
             expiresAt.value = new Date(Date.now() + (res.data.data.duration_seconds * 1000))
-
-            clearTimeout(qrRefreshTimer)
-            qrRefreshTimer = setTimeout(fetchQR, res.data.data.duration_seconds * 1000)
         }
     } finally {
         isGenerating.value = false
@@ -106,7 +106,6 @@ const fetchQR = async () => {
 }
 
 const stopQR = () => {
-    clearTimeout(qrRefreshTimer)
     clearInterval(countdownTimer)
 
     qrData.value = null
