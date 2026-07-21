@@ -104,9 +104,10 @@ const enableLoop = computed(() => totalSlides.value > 1)
       <SwiperSlide v-for="(image, index) in props.images" :key="`img-${index}`"
         class="flex justify-center items-center">
         <div
-          class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
+          class=" w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
           @click="openImageModal(index)">
-          <Image :src="image.source" :alt="image.alt" class="w-full h-full object-cover" />
+          <Image :src="image.source" :alt="image.alt" class="w-full h-full flex items-center justify-center"
+            :style="{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
         </div>
       </SwiperSlide>
 
@@ -129,7 +130,9 @@ const enableLoop = computed(() => totalSlides.value > 1)
       <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
         class="cursor-pointer rounded overflow-hidden border border-gray-300">
         <div class="aspect-square w-full">
-          <Image :src="image.source" :alt="image.alt || `Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
+          <Image :src="image.source" :alt="image.alt || `Thumbnail ${index + 1}`"
+            class="w-full h-full flex items-center justify-center"
+            :style="{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
         </div>
       </SwiperSlide>
 

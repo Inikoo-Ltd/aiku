@@ -46,7 +46,7 @@ class GetFirstLoadProps
 
         try {
             $props = $shouldCacheLayout
-                ? Cache::remember($cacheKey, $ttl, $compute)
+                ? Cache::tags('grp-first-load-props:'.($user?->id ?? 'guest'))->remember($cacheKey, $ttl, $compute)
                 : $compute();
         } catch (Throwable $e) {
             Sentry::captureException($e);

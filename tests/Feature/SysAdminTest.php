@@ -74,10 +74,14 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
+use Illuminate\Http\Request;
+use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 
@@ -836,6 +840,75 @@ test('can login', function (Guest $guest) {
     expect($user->stats->number_logins)->toBe(1);
 })->depends('create guest');
 
+test('guest can fetch passkey login options', function () {
+    $response = $this->getJson(route('grp.passkey.login-options'));
+    $response->assertOk();
+    $response->assertJsonStructure(['options' => ['challenge']]);
+});
+
+test('passkey registration options require authentication', function () {
+    $response = $this->getJson(route('grp.passkey.registration-options'));
+    $response->assertUnauthorized();
+});
+
+test('user can fetch passkey registration options', function (Guest $guest) {
+    actingAs($guest->getUser());
+    $response = $this->getJson(route('grp.passkey.registration-options'));
+    $response->assertOk();
+    $response->assertJsonStructure(['options' => ['challenge', 'user']]);
+})->depends('create guest');
+
+test('passkey login marks 2fa as passed', function (Guest $guest) {
+    actingAs($guest->getUser());
+
+    $request = Request::create(route('grp.passkey.login'), 'POST');
+    $request->setLaravelSession(app('session.store'));
+
+    app(PasskeyLoginResponse::class)->toResponse($request);
+
+    expect($request->session()->get('google2fa.auth_passed'))->toBeTrue();
+})->depends('create guest');
+
+test('passkey enrollment satisfies 2fa requirement', function (Guest $guest) {
+    $user = $guest->getUser();
+    $user->update(['is_two_factor_required' => true]);
+    app()->instance('group', $guest->group);
+    setPermissionsTeamId($guest->group->id);
+    actingAs($user);
+
+    $response = $this->get(route('grp.dashboard.show'));
+    $response->assertRedirect(route('grp.login.require2fa'));
+
+    $passkey = $user->passkeys()->create([
+        'name'          => 'Test device',
+        'credential_id' => 'test-credential-id',
+        'credential'    => [],
+    ]);
+
+    $response = $this->get(route('grp.dashboard.show'));
+    $response->assertOk();
+
+    $passkey->delete();
+    $user->update(['is_two_factor_required' => false]);
+})->depends('create guest');
+
+test('inactive user can not login with passkey', function (Guest $guest) {
+    $user = $guest->getUser();
+    $passkey = $user->passkeys()->create([
+        'name'          => 'Test device',
+        'credential_id' => 'test-credential-id-status',
+        'credential'    => [],
+    ]);
+
+    expect(\Laravel\Passkeys\Passkeys::allowsLogin(request(), $passkey))->toBeTrue();
+
+    $user->update(['status' => false]);
+    expect(\Laravel\Passkeys\Passkeys::allowsLogin(request(), $passkey->refresh()))->toBeFalse();
+
+    $user->update(['status' => true]);
+    $passkey->delete();
+})->depends('create guest');
+
 
 test('Hydrate group', function (Group $group) {
     HydrateGroup::run($group);
@@ -1584,6 +1657,48 @@ test('update user group pseudo job positions', function (User $user) {
 
     UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
     expect($groupPseudoCount())->toBe(0);
+})->depends('SetUserAuthorisedModels command');
+
+test('changing group permissions leaves the cached ui props in sync with the menu', function (User $admin) {
+    $this->withoutExceptionHandling();
+    config()->set('ui.cache.layout', true);
+    setPermissionsTeamId($admin->group_id);
+
+    $code = JobPosition::where('group_id', $admin->group_id)->where('scope', 'group')->value('code');
+
+    $cachedNavigation = function (User $target) {
+        return data_get(
+            Cache::tags('grp-first-load-props:'.$target->id)->get('grp-first-load-props:'.$target->id.':'.$target->language->code),
+            'layout.navigation.grp'
+        );
+    };
+    $freshNavigation = function (User $target) {
+        setPermissionsTeamId($target->group_id);
+
+        return GetGroupNavigation::run(User::find($target->id));
+    };
+
+    $editPermissionsOf = function (User $target, array $permissions) use ($admin) {
+        actingAs($admin);
+        patch(route('grp.models.user.group_permissions.update', [$target]), ['permissions' => $permissions]);
+    };
+
+    // Production shape: an admin edits somebody else, who is signed in elsewhere.
+    $victim = User::where('group_id', $admin->group_id)->where('id', '!=', $admin->id)->firstOrFail();
+
+    $editPermissionsOf($victim, [$code]);
+    expect($cachedNavigation($victim))->not->toBeNull()
+        ->and($cachedNavigation($victim))->toEqual($freshNavigation($victim));
+
+    $editPermissionsOf($victim, []);
+    expect($cachedNavigation($victim))->toEqual($freshNavigation($victim));
+
+    // Self-edit must hold too.
+    $editPermissionsOf($admin, [$code]);
+    expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
+
+    $editPermissionsOf($admin, []);
+    expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
 })->depends('SetUserAuthorisedModels command');
 
 
