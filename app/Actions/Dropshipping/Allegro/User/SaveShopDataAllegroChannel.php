@@ -143,6 +143,8 @@ class SaveShopDataAllegroChannel
                 UpdateCustomerSalesChannel::run($allegroUser->customerSalesChannel, [
                     'name' => Arr::get($data, 'company_name')
                 ]);
+            } else {
+                Sentry::captureMessage('User info not found');
             }
 
             return $allegroUser->refresh();

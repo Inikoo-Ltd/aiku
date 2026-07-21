@@ -118,12 +118,16 @@ class StoreProductToAllegro extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
-            if ($marketplaceId === 'allegro-pl') {
-                $targetCurrency = Currency::where('code', 'PLN')->first();
-                $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
-                $customerPrice = $portfolio->customer_price * $plnPriceExchange;
+            $targetCurrency = match ($marketplaceId) {
+                'allegro-pl' => Currency::where('code', 'PLN')->first(),
+                'allegro-hu' => Currency::where('code', 'HUF')->first(),
+                default => $shop->currency
+            };
+
+            if ($targetCurrency !== $shop->currency) {
+                $priceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
+                $customerPrice = $portfolio->customer_price * $priceExchange;
             } else {
-                $targetCurrency = $shop->currency;
                 $customerPrice = $portfolio->customer_price;
             }
 
