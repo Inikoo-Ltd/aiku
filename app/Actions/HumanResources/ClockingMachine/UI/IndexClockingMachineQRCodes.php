@@ -46,7 +46,7 @@ class IndexClockingMachineQRCodes extends OrgAction
         return QueryBuilder::for(ClockingMachineQRCode::class)
             ->with('clockingMachine.organisation')
             ->where('clocking_machine_qr_codes.clocking_machine_id', $clockingMachine->id)
-            ->defaultSort('-created_at')
+            ->defaultSort('-active', '-created_at')
             ->allowedSorts([
                 'label',
                 'hash',
