@@ -17,6 +17,13 @@ if (!function_exists('group')) {
     }
 }
 
+if (!function_exists('formatPrice')) {
+    function formatPrice(int|float $num1, int|float $num2)
+    {
+        return trimDecimalZeros(number_format($num1 * $num2, 2, '.', ''));
+    }
+}
+
 if (!function_exists('escapeSQLSearch')) {
     function escapeSQLSearch(string $value): string
     {

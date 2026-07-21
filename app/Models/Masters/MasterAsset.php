@@ -230,13 +230,17 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'web_images'              => 'array',
         'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
+        'master_prices'           => 'array',
+        'master_rrps'           => 'array',
     ];
 
     protected $attributes = [
-        'data'         => '{}',
-        'offers_data'  => '{}',
-        'web_images'   => '{}',
-        'tax_category' => '{}',
+        'data'          => '{}',
+        'offers_data'   => '{}',
+        'web_images'    => '{}',
+        'tax_category'  => '{}',
+        'master_prices' => '{}',
+        'master_rrps'   => '{}'
     ];
 
     public function generateTags(): array
