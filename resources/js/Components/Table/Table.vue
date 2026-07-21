@@ -542,21 +542,39 @@ function generateNewQueryString() {
     const queryStringData = qs.parse(location.search.substring(1))
     const prefix = props.name === 'default' ? '' : props.name + '_'
 
+    const externalFilters = queryStringData[prefix + 'filter'] || {}
+    const managedKeys = [
+        ...map(queryBuilderProps.value.searchInputs, 'key'), 
+        ...map(queryBuilderProps.value.filters, 'key'),
+    ]
+
+    forEach(managedKeys, (k : any) => { delete externalFilters[k] }) 
     // To exclude 'filter', 'columns', 'cursor', and 'sort' that received from the URL
-    forEach(['filter', 'columns', 'cursor', 'sort'], (key) => {
+    forEach(['columns', 'cursor', 'sort'], (key) => {
         delete queryStringData[prefix + key];
     });
 
     // To exclude page number from pagination
     delete queryStringData[pageName.value];
 
-    forEach(dataForNewQueryString(), (value, key) => {
+    const newData = dataForNewQueryString()
+    forEach(newData, (value, key) => {
         if (key === 'page') {
             queryStringData[pageName.value] = value;
+        } else if (key === 'filter') {
+            queryStringData[prefix + 'filter'] = {
+                ...externalFilters,
+                ...value,
+            };
         } else {
             queryStringData[prefix + key] = value;
         }
     });
+
+    if(!newData.filter && Object.keys(externalFilters).length) {
+        queryStringData[prefix + 'filter'] = externalFilters
+    }
+
     let query = qs.stringify(queryStringData, {
 
         encodeValuesOnly: true,
