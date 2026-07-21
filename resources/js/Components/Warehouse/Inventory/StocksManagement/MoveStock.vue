@@ -68,7 +68,7 @@ const isTarget = (location: any) => moveStock.value.to?.id === location.id
 const canSave = computed(() => {
     return !!moveStock.value.from
         && !!moveStock.value.to
-        && !!selectedReason.value
+        // && !!selectedReason.value
         && Number(moveStock.value.quantity) >= 1
         && Number(moveStock.value.quantity) <= Number(moveStock.value.from?.stock ?? 0)
 })
@@ -228,8 +228,8 @@ const submitCheckStock = () => {
         targetLocationOrgStock: moveStock.value.to.id
     }), {
         quantity: moveStock.value.quantity,
-        reason: selectedReason.value,
-        note: note.value
+        // reason: selectedReason.value,
+        // note: note.value
     }, {
         preserveScroll: true,
         onStart: () => {
@@ -274,7 +274,7 @@ const applyReplenishment = (location: any) => {
 
 onMounted(() => {
     const locations = form.stockCheck
-    selectedReason.value = Object.keys(props.reasons?.transfer ?? [])?.[0] ?? '';
+    // selectedReason.value = Object.keys(props.reasons?.transfer ?? [])?.[0] ?? '';
 
     if (locations.length === 2) {
         const [loc1, loc2] = locations
@@ -402,7 +402,8 @@ onMounted(() => {
             </div> -->
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+        <!-- Disabled due to Tomas request -->
+        <!-- <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
             <div class="min-w-0">
                 <label class="block mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
                     {{ ctrans('Transfer reason') }}
@@ -437,7 +438,7 @@ onMounted(() => {
                 <Textarea v-model.trim="note" rows="1" :autoResize="true"
                 :placeholder="ctrans('Add more details about this move')" class="w-full rounded-xl" />
             </div>
-        </div>
+        </div> -->
 
         <template v-if="form.stockCheck.length > 0">
             <div v-for="(form, idx) in form.stockCheck" :key="form.id"
