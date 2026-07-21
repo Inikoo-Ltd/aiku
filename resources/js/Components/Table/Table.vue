@@ -728,7 +728,6 @@ const onClickSelectAll = (state: boolean) => {
      emits('onCheckedAll', {data : props.resource.data, allChecked : compIsAllChecked.value})
 }
 
-
 // Check props.isCheckbox to improve performance
 const compIsAllChecked = props.isCheckBox
   ? computed(() => {
