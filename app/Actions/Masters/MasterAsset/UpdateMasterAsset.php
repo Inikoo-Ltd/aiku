@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -43,7 +44,6 @@ class UpdateMasterAsset extends OrgAction
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
     use WithMasterAssetTradeUnits;
-
 
     private MasterAsset $masterAsset;
 
@@ -209,6 +209,10 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if ($masterAsset->wasChanged(['master_prices', 'master_rrps'])) {
+            MasterAssetHydrateMasterPricesRRPtoChild::run($masterAsset);
+        }
+
         if ($masterAsset->wasChanged(['price', 'rrp', 'status'])) {
             MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
 
@@ -330,7 +334,7 @@ class UpdateMasterAsset extends OrgAction
             'master_prices'                => ['sometimes', 'array'],
             'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
             'master_prices.*.independent'  => ['sometimes', 'boolean'],
-            // Master RRPs
+            // Master RRPs | This is per unit btw
             'master_rrps'                   => ['sometimes', 'array'],
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],

@@ -301,14 +301,14 @@ class EditMasterProduct extends GrpAction
                 'fields' => [
                     'master_prices'            => [
                         'type'          => 'multiple_price_currency',
-                        'label'         => __('Price').'/'.__('outer'),
+                        'label'         => __('Price').' / '.__('Outer'),
                         'required'      => true,
                         'currencies'    => $currenciesRate,
                         'value'         => $masterProduct->master_prices
                     ],
                     'master_rrps'            => [
                         'type'          => 'multiple_price_currency',
-                        'label'         => __('RRP').'/'.__('outer'),
+                        'label'         => __('RRP').' / '.__('Unit'),
                         'required'      => true,
                         'currencies'    => $currenciesRate,
                         'value'         => $masterProduct->master_rrps
