@@ -1331,7 +1331,7 @@ Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDel
 Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
 
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
-    Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
+    Route::post('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
     Route::post('{clockingMachine}/kiosk-token', SetClockingMachineKioskToken::class)->name('kiosk_token.set');
     Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
     Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
