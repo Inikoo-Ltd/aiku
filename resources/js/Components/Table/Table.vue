@@ -739,7 +739,6 @@ const compIsAllChecked = props.isCheckBox
     })
   : false
 
-
 watch(selectRow, () => {
     emits('onSelectRow', selectRow)
 }, {deep: true})
