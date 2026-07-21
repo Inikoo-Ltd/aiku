@@ -39,7 +39,8 @@ class GetShippers extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Shipper::class);
         $queryBuilder->where('organisation_id', $organisation->id)
-            ->where('status', true);
+            ->where('status', true)
+            ->with('preferredShippings');
 
         return $queryBuilder
             ->defaultSort('code')

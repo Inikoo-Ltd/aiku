@@ -114,9 +114,9 @@ class EditCustomer extends OrgAction
                     'label'       => __('Preferred shipping'),
                     'placeholder' => __('Select preferred shipping'),
                     'value'       => $customer->shipper_id,
-                    'options'     => Shipper::whereHas('preferredShippings', function ($query) use ($customer) {
-                        $query->where('shop_id', $customer->shop_id);
-                    })->get()->map(fn (Shipper $shipper) => [
+                    'options'     => Shipper::where('organisation_id', $this->organisation->id)
+                        ->where('status', true)
+                        ->get()->map(fn (Shipper $shipper) => [
                         'value' => $shipper->id,
                         'label' => $shipper->name,
                     ])->values()->all(),
