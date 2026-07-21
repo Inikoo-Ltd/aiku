@@ -138,6 +138,14 @@ class ClockingMachine extends Authenticatable implements Auditable
         return $this->hasMany(ClockingMachineQRCode::class);
     }
 
+    public function activeQrCode(): ?ClockingMachineQRCode
+    {
+        return $this->clockingMachineQrCodes()
+            ->where('active', true)
+            ->orderByDesc('id')
+            ->first();
+    }
+
     public function stats(): HasOne
     {
         return $this->hasOne(ClockingMachineStats::class);

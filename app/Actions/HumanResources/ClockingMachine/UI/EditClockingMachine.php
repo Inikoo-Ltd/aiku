@@ -80,21 +80,6 @@ class EditClockingMachine extends OrgAction
                         'label' => __('Enable QR Code'),
                         'value' => (bool) data_get($clockingMachine->config, 'qr.enable', false),
                     ],
-                    'config.qr.expiry_duration' => [
-                        'type'  => 'clocking_machine_qr_expiry',
-                        'label' => __('Expiry Configuration'),
-                        'value' => data_get($clockingMachine->config, 'qr.expiry_duration', 60),
-                        'configuration_field' => 'config.qr.expiry_configuration',
-                        'hasOther' => [
-                            'name' => 'config.qr.expiry_configuration',
-                            'value' => data_get($clockingMachine->config, 'qr.expiry_configuration'),
-                        ],
-                    ],
-                    'config.qr.allow_multiple_scans' => [
-                        'type'  => 'toggle',
-                        'label' => __('Allow Multiple Scans'),
-                        'value' => (bool) data_get($clockingMachine->config, 'qr.allow_multiple_scans', false),
-                    ],
                     'config.qr.allow_coordinates' => [
                         'type'  => 'toggle',
                         'label' => __('Allow Coordinates Matching'),
