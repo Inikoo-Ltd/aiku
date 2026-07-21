@@ -11,65 +11,37 @@ namespace App\Actions\HumanResources\ClockingMachine;
 use App\Actions\OrgAction;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\ClockingMachineQRCode;
-use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Exception;
 use Illuminate\Http\JsonResponse;
 
 class GenerateClockingMachineQrCode extends OrgAction
 {
-    use AsAction;
 
-    /**
-     * Generate a dynamic, encrypted QR code for the clocking machine.
-     * The QR code is NOT stored in the database.
-     * It contains an encrypted payload with a timestamp for validation upon scanning.
-     *
-     * @throws \Exception
-     */
-    public function handle(ClockingMachine $clockingMachine): ClockingMachineQRCode
+    public function handle(ClockingMachine $clockingMachine, array $modelData): ClockingMachineQRCode
     {
-
-        $config = $clockingMachine->config['qr'] ?? [];
-        $expiryDuration = (int) ($config['expiry_duration'] ?? 60);
-
-
         /** @var ClockingMachineQRCode $clockingMachineQRCode */
-        $clockingMachineQRCode=StoreClockingMachineQRCode::run($clockingMachine,[
-            'expires_at'=>Carbon::now()->addMinutes($expiryDuration)
-        ]);
+        $clockingMachineQRCode = StoreClockingMachineQRCode::run($clockingMachine, $modelData);
 
         return $clockingMachineQRCode;
     }
 
-//        if (!($config['enable'] ?? false)) {
-//            throw new Exception(__('QR Code clocking is not enabled for this machine.'));
-//        }
-//
-//
-//
-//        $payload = [
-//            'mid'   => $clockingMachine->id,
-//            'ts'    => Carbon::now()->timestamp,
-//            'nonce' => Str::random(12)
-//        ];
-//
-//        $qrCodeToken = encrypt(json_encode($payload));
-//
-//        $expiresAt = Carbon::now()->addSeconds($expiryDuration);
-//
-//        return [
-//            'qr_code'          => $qrCodeToken,
-//            'expires_at'       => $expiresAt->toIso8601String(),
-//            'duration_seconds' => $expiryDuration
-//        ];
-//    }
+
+    public function rules(): array
+    {
+        return [
+            'label' => ['sometimes', 'nullable', 'string', 'max:64']
+        ];
+    }
 
     public function asController(ClockingMachine $clockingMachine, ActionRequest $request): JsonResponse
     {
+        $this->initialisation($clockingMachine->organisation, $request);
+
+
         try {
-            $clockingMachineQRCode = $this->handle($clockingMachine);
+            $clockingMachineQRCode = $this->handle($clockingMachine, $this->validatedData);
+
             return response()->json([
                 'success' => true,
                 'data'    => $clockingMachineQRCode
