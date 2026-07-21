@@ -116,8 +116,8 @@ onUnmounted(() => stopQR())
 <template>
 	<Head :title="title" />
 
-	<div class="w-full max-w-[820px] px-4">
-		<div class="rounded-2xl bg-white p-8 shadow-xl text-center space-y-6">
+	<div class="w-full max-w-[820px] px-3 sm:px-4">
+		<div class="rounded-2xl bg-white p-4 sm:p-8 shadow-xl text-center space-y-4 sm:space-y-6">
 			<div>
 				<h1 class="text-2xl font-bold text-gray-800">{{ trans("Employee Scan") }}</h1>
 				<p class="text-sm text-gray-500">{{ trans("Scan QR to clock in or out") }}</p>
@@ -141,7 +141,7 @@ onUnmounted(() => stopQR())
 			<div
 				v-else
 				ref="qrContainer"
-				class="relative flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 shadow-md">
+				class="relative flex w-full flex-col items-center rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-md">
 				<Button
 					@click="toggleFullscreen"
 					type="secondary"
@@ -150,15 +150,20 @@ onUnmounted(() => stopQR())
 					:tooltip="trans('Toggle Fullscreen')" />
 
 				<div
-					class="relative flex items-center justify-center"
-					:style="{ width: isFullscreen ? '600px' : '440px', height: isFullscreen ? '600px' : '440px' }">
+					class="relative flex aspect-square w-full items-center justify-center"
+					:class="isFullscreen ? 'max-w-[min(90vh,600px)]' : 'max-w-[440px]'">
 					<div
 						v-if="isGenerating"
 						class="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/70">
 						<LoadingIcon class="text-4xl text-gray-600" />
 					</div>
 
-					<QrcodeVue :value="qrData" :size="isFullscreen ? 600 : 440" level="H" />
+					<QrcodeVue
+						:value="qrData"
+						:size="600"
+						level="H"
+						render-as="svg"
+						class="h-full w-full" />
 				</div>
 
 				<div class="mt-4 text-md font-semibold">
