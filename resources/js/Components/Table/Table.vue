@@ -500,6 +500,7 @@ function dataForNewQueryString() {
     const sort = queryBuilderData.value.sort
     const perPage = queryBuilderData.value.perPage;
     const elementFilter = queryBuilderData.value.elementFilter
+    const additionalElementFilter = queryBuilderData.value.additionalElementFilter
     const period = queryBuilderData.value.periodFilter
     const radioFilter = queryBuilderData.value.radioFilter
     const dateInterval = queryBuilderData.value.dateInterval
@@ -522,6 +523,9 @@ function dataForNewQueryString() {
     }
     if (elementFilter) {
         queryData.elements = elementFilter // elements[state] = working
+    }
+    if (additionalElementFilter) {
+        queryData.additionalElements = additionalElementFilter
     }
     if (period) {
         queryData.period = period // period[type]=year&period[date]=2024
@@ -724,7 +728,6 @@ const onClickSelectAll = (state: boolean) => {
      emits('onCheckedAll', {data : props.resource.data, allChecked : compIsAllChecked.value})
 }
 
-
 // Check props.isCheckbox to improve performance
 const compIsAllChecked = props.isCheckBox
   ? computed(() => {
@@ -735,7 +738,6 @@ const compIsAllChecked = props.isCheckBox
         })
     })
   : false
-
 
 watch(selectRow, () => {
     emits('onSelectRow', selectRow)
@@ -937,10 +939,21 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                 <!-- Wrapper -->
 
                 <!-- Filter: Checkbox element -->
-                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-gray-300" :class="{
+                    'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
+                }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
                         @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                        :tableName="props.name" />
+                        :tableName="props.name" 
+                    />
+                </div>
+
+                <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
+                    <TableElements :elements="queryBuilderProps.additionalElementGroups"
+                        @checkboxChanged="(data) => queryBuilderData.additionalElementFilter = data"
+                        :tableName="props.name"
+                        :isAdditional="true" 
+                    />
                 </div>
 
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4 table-query-builder">

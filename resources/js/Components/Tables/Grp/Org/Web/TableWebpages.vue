@@ -14,6 +14,7 @@ import {
 } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from '@/Components/Icon.vue';
+import { ref } from 'vue';
 
 library.add(
     faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam
@@ -215,11 +216,55 @@ function productsRoute(webpage: Webpage) {
     }
 }
 
+const selectedWebpages = defineModel<object[]>('selectedWebpages');
+
+const onChangeChecked = (checked: boolean, selectedItem: object) => {
+    if (!selectedWebpages.value) return
+
+    if (checked) {
+        if (!selectedWebpages.value.some(item => item.id == selectedItem.id)) {
+            selectedWebpages.value.push({
+                id: selectedItem.id,
+                code: selectedItem.code,
+                title: selectedItem.title,
+            })
+        }
+    } else {
+        selectedWebpages.value = selectedWebpages.value.filter(item => item.id != selectedItem.id)
+    }
+}
+
+const onCheckedAll = ({ data, allChecked }) => {
+    if (!selectedWebpages.value) return
+
+    if (allChecked) {
+        const items = data.map(row => {
+            return {
+                    id: row.id,
+                    code: row.code,
+                    title: row.title
+            }
+        })
+        selectedWebpages.value = Array.from(new Set([...selectedWebpages.value, ...items]))
+    } else {
+        selectedWebpages.value = [];
+    }
+}
+
 </script>
 
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table 
+        :resource="data"
+        :isCheckBox="true"
+        @onChecked="(item) => onChangeChecked(true, item)" 
+        @onUnchecked="(item) => onChangeChecked(false, item)"
+        @onCheckedAll="(data) => onCheckedAll(data)"
+        checkboxKey='id'
+        :name="tab" 
+        class="mt-5"
+    >
         <!-- Column: Code -->
         <template #cell(code)="{ item: webpage }">
             <Link v-if="!!webpageRoute(webpage)" :href="webpageRoute(webpage)" class="primaryLink">

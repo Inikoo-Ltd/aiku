@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { Link, router } from '@inertiajs/vue3'
 
@@ -13,6 +13,7 @@ import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { notify } from '@kyvg/vue3-notification'
+import { watch } from 'vue'
 library.add(faTimes, faExclamationTriangle, faAsterisk)
 
 const props = defineProps<{
@@ -29,23 +30,44 @@ const props = defineProps<{
     message?: {
         placeholder?: string
     }
+    body?: {}
+    modalClass?: string
+    dialogClass?: string
+    disableIconWarn?: boolean
+    allowOverflow?: boolean
     iconClass?: string
     iconContainerClass?: string
     hideCancel?: boolean
+    successMessage?: string
 }>()
 
 const emits = defineEmits<{
     (e: 'onNo'): void
     (e: 'onYes'): void
+    (e: 'modalClosedAction'): void
+    (e: 'finishedProcess'): void
 }>()
 
 const isOpenModal = ref(false)
 const isLoadingdelete = ref(false)
+
+const showSuccessMessage = () => {
+    emits('finishedProcess');
+    
+    if (!props.successMessage) return;
+    
+    notify({
+        title: trans("Success!"),
+        text: props.successMessage,
+        type: "success",
+    })
+}
+
 const onClickYesButton = () => {
     if (!props.routeYes?.name) return
 
     const selectedMethod = props.routeYes?.method || 'delete'
-    const body = selectedMethod !== 'delete' ? {
+    const body = selectedMethod !== 'delete' ? props.body ?? {
         [props.keyMessage || 'delete_comment']: messageDelete.value
     } : undefined
 
@@ -66,6 +88,7 @@ const onClickYesButton = () => {
                     },
                     onSuccess: () => {
                         isOpenModal.value = false
+                        showSuccessMessage();
                     },
                     onFinish: () => {
                         if (props.isFullLoading) {
@@ -94,6 +117,7 @@ const onClickYesButton = () => {
                     },
                     onSuccess: () => {
                         isOpenModal.value = false
+                        showSuccessMessage()
                     },
                     onFinish: () => {
                         if (props.isFullLoading) {
@@ -108,6 +132,13 @@ const onClickYesButton = () => {
 }
 
 const messageDelete = ref('')
+
+watch(isOpenModal, (val) => {
+    if (!val) {
+        emits('modalClosedAction')
+    }
+})
+
 </script>
 
 <template>
@@ -118,7 +149,10 @@ const messageDelete = ref('')
         </slot>
 
         <TransitionRoot as="template" :show="isOpenModal">
-            <Dialog class="relative z-[21]" @close="isOpenModal = false">
+            <Dialog 
+                class="relative z-[21]"
+                @close="isOpenModal = false"
+            >
                 <TransitionChild as="template" enter="ease-out duration-150" enter-from="opacity-0" enter-to="opacity-100"
                     leave="ease-in duration-100" leave-from="opacity-100" leave-to="opacity-0">
                     <div class="z-10 fixed inset-0 bg-gray-500/75 transition-opacity" />
@@ -130,8 +164,13 @@ const messageDelete = ref('')
                             enter-to="opacity-100 translate-y-0 sm:scale-100" leave="ease-in duration-100"
                             leave-from="opacity-100 translate-y-0 sm:scale-100"
                             leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
-                            <DialogPanel
-                                class="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                            <DialogPanel 
+                                class="relative transform rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6" 
+                                :class="{
+                                    'overflow-hidden': !allowOverflow,
+                                    modalClass
+                                }"
+                            >
                                 <div class="absolute top-0 right-0 hidden pt-4 pr-4 sm:block">
                                     <button type="button"
                                         class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-hidden"
@@ -141,20 +180,25 @@ const messageDelete = ref('')
                                     </button>
                                 </div>
 
-                                <div class="sm:flex sm:items-start">
-                                    <div
-                                        class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 border border-amber-300 sm:mx-0 sm:size-10" :class="iconContainerClass">
+                                <div :class="dialogClass ?? 'sm:flex sm:items-start'">
+                                    <div v-if="!disableIconWarn" class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 border border-amber-300 sm:mx-0 sm:size-10" :class="iconContainerClass">
                                         <FontAwesomeIcon icon='fal fa-exclamation-triangle' class='text-amber-600' :class="iconClass" fixed-width aria-hidden='true' />
                                     </div>
-                                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                    <div 
+                                        class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left" 
+                                    >
                                         <DialogTitle as="h3" class="text-base font-semibold">
-                                            {{ title || trans("Are you sure?") }}
+                                            <slot name="title">
+                                                {{ title || trans("Are you sure?") }}
+                                            </slot>
                                         </DialogTitle>
-                                        <div class="mt-2">
-                                            <p class="text-sm text-gray-500">
-                                                {{ description || trans("The data will be permanently 😥 .This action cannot be undone.")}}
-                                            </p>
-                                        </div>
+                                        <slot name="description">
+                                            <div class="mt-2">
+                                                <p class="text-sm text-gray-500">
+                                                    {{ description || trans("The data will be permanently 😥 .This action cannot be undone.")}}
+                                                </p>
+                                            </div>
+                                        </slot>
                                       
                                         <div v-if="props.isWithMessage" class="mt-4">
                                             <label for="" class="flex items-start text-sm text-gray-500 leading-none mb-1">

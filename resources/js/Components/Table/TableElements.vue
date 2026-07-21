@@ -36,6 +36,7 @@ const props = defineProps<{
 	employeesRouteNames?: string[]
 	exclusiveFilters?: string[]
 	inPopover?: boolean
+	isAdditional?: boolean
 }>()
 // console.log('element', props.elements)
 const emits = defineEmits<{
@@ -172,7 +173,8 @@ const onDoubleClickCheckbox = (elementName: string, scope: string) => {
 }
 
 onMounted(() => {
-	const prefix = props.tableName === "default" ? "elements" : props.tableName + "_" + "elements"
+	const elementText = props.isAdditional ? 'additionalElements' : 'elements';
+	const prefix = props.tableName === "default" ? elementText : props.tableName + "_" + elementText
 	const searchParams = new URLSearchParams(window.location.search)
 	const stateParam = searchParams.get(`${prefix}[${selectedGroup.value}]`)
 

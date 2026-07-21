@@ -100,10 +100,10 @@ const props = defineProps({
 		required: false,
 	},
 	label: {
-		type: String,
-		default: true,
+		type: [String, Number, Object, Boolean],
+		default: '',
 		required: false,
-	},
+	}
 })
 
 // console.log(props);

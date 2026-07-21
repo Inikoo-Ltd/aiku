@@ -90,6 +90,7 @@ class IndexRedirects extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
+                $value = strip_tags($value);
                 $query->whereAnyWordStartWith('redirects.from_path', $value)
                     ->orWhereStartWith('webpages.title', $value);
             });
