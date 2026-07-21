@@ -10,6 +10,8 @@
 namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use Illuminate\Support\Facades\Redirect;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
@@ -52,9 +54,31 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     }
 
 
-    public function asController(Order $order, ActionRequest $request): array
+    public function asController(Order $order, ActionRequest $request): array|\Illuminate\Http\RedirectResponse
     {
         $this->initialisation($request);
+
+        /** An order that already left the basket must never show a payment form again: a stale
+         * tab or revisited URL would let the customer charge their card for a paid order */
+        if ($order->state != OrderStateEnum::CREATING) {
+            $notification = [
+                'status'  => 'success',
+                'title'   => __('Order already submitted'),
+                'message' => __('This order has already been submitted and cannot be paid again.'),
+            ];
+
+            if ($order->customerSalesChannel) {
+                return Redirect::route(
+                    'retina.dropshipping.customer_sales_channels.orders.show',
+                    [
+                        'customerSalesChannel' => $order->customerSalesChannel->slug,
+                        'order'                => $order->slug
+                    ]
+                )->with('notification', $notification);
+            }
+
+            return Redirect::route('retina.dashboard.show')->with('notification', $notification);
+        }
 
         return $this->handle($order, $this->customer);
     }

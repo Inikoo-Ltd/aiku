@@ -161,16 +161,26 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
 
             $order->refresh();
 
-            if ($order->state == OrderStateEnum::CREATING) {
-                $order = SubmitOrder::run($order);
-            } elseif ($order->state == OrderStateEnum::CANCELLED) {
-                Sentry::captureMessage(
-                    'Captured checkout.com payment '.$payment->reference.' recorded on cancelled order '.$order->id.' — refund may be needed'
-                );
-            }
-
             return $order;
         });
+
+        /** Submit runs AFTER the payment transaction commits: a submit failure must never roll
+         * back the payment record — that 422s the webhook, checkout.com retries for hours and
+         * the customer retries paying. Failed submit = paid order in basket + Sentry alert. */
+        if ($order->state == OrderStateEnum::CREATING) {
+            try {
+                $order = SubmitOrder::run($order);
+            } catch (\Throwable $e) {
+                Sentry::captureException($e);
+                Sentry::captureMessage(
+                    'Checkout.com payment recorded but order '.$order->id.' failed to submit — paid order left in basket, needs attention'
+                );
+            }
+        } elseif ($order->state == OrderStateEnum::CANCELLED) {
+            Sentry::captureMessage(
+                'Captured checkout.com payment recorded on cancelled order '.$order->id.' — refund may be needed'
+            );
+        }
 
         return [
             'status'   => 'success',
