@@ -23,6 +23,7 @@ use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
@@ -494,6 +495,11 @@ Route::prefix('clocking-machine-coordinate-policy')->name('clocking-machine-coor
 Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine-coordinate-policy-rule.')->group(function () {
     Route::patch('{policyRule:id}', UpdateClockingMachineCoordinatePolicyRule::class)->name('update');
     Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
+});
+
+
+Route::prefix('shipping-zone-schema')->name('shipping_zone_schema.')->group(function () {
+    Route::patch('{shippingZoneSchema:id}', UpdateShippingZoneSchema::class)->name('update');
 });
 
 Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
