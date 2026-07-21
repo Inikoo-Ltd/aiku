@@ -28,6 +28,7 @@ import Pin from '@/Components/Forms/Fields/Pin.vue'
 import GeneratePassword from '@/Components/Forms/Fields/GeneratePassword.vue'
 import TaxNumber from '@/Components/Forms/Fields/TaxNumber.vue'
 import EditorHtml from '@/Components/Forms/Fields/EditorHtml.vue'
+import EditorV2Field from '@/Components/Forms/Fields/EditorV2Field.vue'
 import StructureDataWebsite from '@/Components/Forms/Fields/StructureDataWebsite.vue'
 import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll.vue'
 import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
@@ -142,6 +143,7 @@ export const componentsList: { [key: string]: Component } = {
     'pin': Pin,
     'tax_number': TaxNumber,
     'editor': EditorHtml,
+    'editor_v2': EditorV2Field,
     'structure_data_website': StructureDataWebsite,
     'poll_type_select': PollTypeSelect,
     'toggle_state_webpage': ToggleStateWebpage,

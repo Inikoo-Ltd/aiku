@@ -19,6 +19,7 @@ import TableClockings from "@/Components/Tables/Grp/Org/HumanResources/TableCloc
 import TableClockingPolicies from "@/Components/Tables/Grp/Org/HumanResources/TableClockingPolicies.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ScanQrCode from "./ScanQrCode.vue";
+import ModalGenerateClockingMachineQrCode from "@/Components/HumanResources/ModalGenerateClockingMachineQrCode.vue";
 import { capitalize } from "@/Composables/capitalize"
 import { faCheckCircle } from '@fas';
 import { PageHeadingTypes } from "@/types/PageHeading";
@@ -60,6 +61,12 @@ const props = defineProps<{
     showcase?: Record<string, any>;
     scan_qr_code?: Record<string, any>;
     clocking_policies?: Record<string, any>;
+    generateQrCode?: {
+        route: {
+            name: string
+            parameters: Record<string, string | number>
+        }
+    };
 }>()
 
 let currentTab = ref(props.tabs.current);
@@ -82,14 +89,19 @@ const currentData = computed(() => {
     const key = currentTab.value;
     return (props as Record<string, any>)[key];
 });
-
-console.log("props clocing machine", props);
 </script>
 
 <template>
 
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+        <template v-if="generateQrCode && currentTab === 'scan_qr_code'" #otherBefore>
+            <ModalGenerateClockingMachineQrCode
+                :route="generateQrCode.route"
+                reload-only="scan_qr_code"
+            />
+        </template>
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="currentData" :tab="currentTab"></component>
 </template>

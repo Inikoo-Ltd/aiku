@@ -205,7 +205,7 @@ class IndexShippingZoneSchemas extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Shippings'),
+                        'label' => __('Shipping schemas'),
                         'icon'  => 'fal fa-bars'
                     ],
                     'suffix' => $suffix

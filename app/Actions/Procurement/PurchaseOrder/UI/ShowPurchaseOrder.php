@@ -256,6 +256,13 @@ class ShowPurchaseOrder extends OrgAction
                     ] : false,
                     'actions' => $actions,
                 ],
+                'data'        => PurchaseOrderResource::make($purchaseOrder),
+                'currency'    => CurrencyResource::make($purchaseOrder->currency)->toArray(request()),
+                'timelines'   => $this->getTimeline($purchaseOrder),
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => PurchaseOrderTabsEnum::navigation(),
+                ],
                 'routes'      => [
                     'updatePurchaseOrderRoute' => [
                         'method'     => 'patch',
@@ -267,9 +274,15 @@ class ShowPurchaseOrder extends OrgAction
                     'products_list' => $productListRoute,
                 ],
                 'box_stats'   => [
-                    'orderer'       => [
-                        'type' => $purchaseOrder->parent_type,
-                        'data' => $orderer,
+                    'first_block'   => [
+                        'orderer'  => $orderer,
+                        'delivery' => [
+                            'type'             => Arr::get($purchaseOrder->data, 'delivery_type'),
+                            'incoterm'         => Arr::get($purchaseOrder->data, 'incoterm'),
+                            'port_of_export'   => Arr::get($purchaseOrder->data, 'port_of_export'),
+                            'port_of_import'   => Arr::get($purchaseOrder->data, 'port_of_import'),
+                            'delivery_address' => Arr::get($purchaseOrder->data, 'delivery_address'),
+                        ],
                     ],
                     'mid_block'     => [
                         'gross_weight'   => $purchaseOrder->gross_weight,
@@ -319,37 +332,31 @@ class ShowPurchaseOrder extends OrgAction
                         'currency' => CurrencyResource::make($purchaseOrder->currency),
                     ],
                 ],
-                'timelines'   => $this->getTimeline($purchaseOrder),
-                'currency'    => CurrencyResource::make($purchaseOrder->currency)->toArray(request()),
-                'data'        => PurchaseOrderResource::make($purchaseOrder),
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => PurchaseOrderTabsEnum::navigation(),
-                ],
 
-                // PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
-                //     fn () => new PurchaseOrderResource(($purchaseOrder))
-                //     : Inertia::optional(fn () => new PurchaseOrderResource(($purchaseOrder))),
+                PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
+                    fn () => GetPurchaseOrderData::run($purchaseOrder)
+                    : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
 
-                PurchaseOrderTabsEnum::TRANSACTIONS->value => $this->tab == PurchaseOrderTabsEnum::TRANSACTIONS->value ?
+                PurchaseOrderTabsEnum::ITEMS->value => $this->tab == PurchaseOrderTabsEnum::ITEMS->value ?
                     fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))
                     : Inertia::optional(fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))),
 
-                PurchaseOrderTabsEnum::PRODUCTS->value => $this->tab == PurchaseOrderTabsEnum::PRODUCTS->value ?
-                    fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))
-                    : Inertia::optional(fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))),
+                // PurchaseOrderTabsEnum::PRODUCTS->value => $this->tab == PurchaseOrderTabsEnum::PRODUCTS->value ?
+                //     fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))
+                //     : Inertia::optional(fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))),
 
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder))),
 
-                PurchaseOrderTabsEnum::ATTACHMENTS->value => $this->tab == PurchaseOrderTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
-                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder)))
+                // PurchaseOrderTabsEnum::ATTACHMENTS->value => $this->tab == PurchaseOrderTabsEnum::ATTACHMENTS->value ?
+                //     fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
+                //     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder)))
             ]
-        )->table(IndexPurchaseOrderTransactions::make()->tableStructure(prefix: PurchaseOrderTabsEnum::TRANSACTIONS->value))
-            ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))
+        )->table(IndexPurchaseOrderTransactions::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ITEMS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
+
+            // ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))
     }
 
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource
