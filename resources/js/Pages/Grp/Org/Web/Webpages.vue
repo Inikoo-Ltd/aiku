@@ -162,6 +162,9 @@ const processingBulkDelete = ref(false)
                 :routeYes="routes_list.bulk_offline"
                 @finishedProcess="() => {
                     key = ulid();
+                    selectedWebpages = [];
+                    processingBulkDelete = false;
+                    redirectUrl = null;
                 }"
                 @modalClosedAction="() => {
                     redirectUrl = null; 
