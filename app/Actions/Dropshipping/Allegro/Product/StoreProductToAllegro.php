@@ -56,6 +56,16 @@ class StoreProductToAllegro extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
+            $marketplaceId = Arr::get($allegroUser->data, 'marketplace_id');
+
+            $offerLanguage = match ($marketplaceId) {
+                'allegro-pl' => 'pl-PL',
+                'allegro-cz' => 'cs-CZ',
+                'allegro-sk' => 'sk-SK',
+                'allegro-hu' => 'hu-HU',
+                default => 'en-US',
+            };
+
             $productSearch = [];
             if ($product->barcode) {
                 $productSearch = $allegroUser->getProductByEan($product->barcode);
@@ -78,7 +88,8 @@ class StoreProductToAllegro extends RetinaAction
             try {
                 $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
                     'category_id' => $categoryId,
-                    'parameters' => $getParameters
+                    'parameters' => $getParameters,
+                    'language' => $offerLanguage
                 ]);
 
                 $allegroProductId = Arr::get($proposedProduct, 'id');
@@ -107,7 +118,7 @@ class StoreProductToAllegro extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
-            if (Arr::get($allegroUser->data, 'marketplace_id') === 'allegro-pl') {
+            if ($marketplaceId === 'allegro-pl') {
                 $targetCurrency = Currency::where('code', 'PLN')->first();
                 $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
                 $customerPrice = $portfolio->customer_price * $plnPriceExchange;
@@ -173,7 +184,7 @@ class StoreProductToAllegro extends RetinaAction
                 'external' => [
                     'id' => (string) $portfolio->id
                 ],
-                'language' => 'en-US',
+                'language' => $offerLanguage,
                 'description' => [
                     'sections' => [
                         [
