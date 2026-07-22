@@ -31,8 +31,15 @@ class GetMasterProductShowcase
     {
         $tradeUnits = $masterAsset->tradeUnits;
         $tradeUnits->loadMissing(['ingredients']);
+
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $masterAsset->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
+
         $properties = [
-            'country_of_origin' => NaturalLanguage::make()->country($masterAsset->country_of_origin),
+            'countries_of_origin' => $countriesOrigin,
             'ingredients'       => $masterAsset->marketing_ingredients,
             'tariff_code'       => $masterAsset->tariff_code,
             'duty_rate'         => $masterAsset->duty_rate,

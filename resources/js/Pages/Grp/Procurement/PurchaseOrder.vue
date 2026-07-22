@@ -5,9 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import type { Component } from "vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -16,6 +16,8 @@ import Timeline from "@/Components/Utils/Timeline.vue"
 import PurchaseOrderData from "@/Components/Procurement/PurchaseOrderData.vue"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import ModalProductList from "@/Components/Utils/ModalProductList.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
@@ -94,9 +96,19 @@ const props = defineProps < {
             is_weight_partial: boolean
             is_volume_partial: boolean
 		}
+        third_block: {
+            currency: string | null
+            org_currency: string | null
+            org_exchange: number | string | null
+            items: number | string
+            extra: number | string
+            total: number | string
+            org_items: number | string
+        }
 	}
 	showcase?: {}
 	items?: {}
+	products?: {}
 	history?: {}
 }>()
 
@@ -123,12 +135,81 @@ const metrics = computed(() => {
 	]
 })
 
+const orgPerOrder = computed(() => {
+	const { items, org_items, org_exchange } = props.box_stats.third_block
+	const poItems = Number(items)
+	const orgItems = Number(org_items)
+
+	if (poItems) {
+		return orgItems / poItems
+	}
+
+	return Number(org_exchange) || null
+})
+
+const costBlocks = computed(() => {
+	const { currency, org_currency, items, extra, total, org_items } = props.box_stats.third_block
+
+	const money = (code: string | null, amount: number) => locale.currencyFormat(code ?? "", amount)
+
+	const supplierBlock = {
+		key: "supplier",
+		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
+		rows: [
+			{ label: trans("Items"), value: money(currency, Number(items)) },
+			{ label: trans("Extra costs"), value: money(currency, Number(extra)) },
+			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
+		],
+	}
+
+	const sameCurrency = !org_currency || org_currency === currency
+	const orgCurrency = org_currency || currency
+	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
+	const orgItems = sameCurrency ? Number(items) : Number(org_items)
+	const orgExtra = Number(extra) * rate
+
+	const orderPerOrg = rate ? 1 / rate : null
+	const rateLabel = sameCurrency
+		? `${trans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
+		: orderPerOrg === null
+			? ""
+			: `1 ${orgCurrency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
+
+	return [
+		supplierBlock,
+		{
+			key: "org",
+			title: rateLabel,
+			rows: [
+				{ label: trans("Items"), value: money(orgCurrency, orgItems) },
+				{ label: trans("Extra costs"), value: money(orgCurrency, orgExtra) },
+				{ label: trans("Total"), value: money(orgCurrency, orgItems + orgExtra), isTotal: true },
+			],
+		},
+	]
+})
+
 const currentTab = ref(props.tabs.current)
+
+const isModalProductListOpen = ref(false)
+const currentAction = ref<any>(null)
+
+const openProductListModal = (action: any) => {
+	currentAction.value = action
+	isModalProductListOpen.value = true
+}
+
+watch(isModalProductListOpen, (isOpen, wasOpen) => {
+	if (wasOpen && !isOpen) {
+		router.reload({ only: [currentTab.value, "items", "products", "box_stats"] })
+	}
+})
 
 const component = computed(() => {
 	const components: Component = {
 		showcase: PurchaseOrderData,
 		items: TablePurchaseOrderTransactions,
+		products: TablePurchaseOrderTransactions,
 		history: TableHistories,
 	}
 
@@ -159,7 +240,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 <template>
 	<Head :title="capitalize(title)" />
-	<PageHeading :data="pageHead" />
+	<PageHeading :data="pageHead">
+		<template #button-add-product="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				@click="() => openProductListModal(action)"
+			/>
+		</template>
+	</PageHeading>
 
 	<!-- Purchase Order Timeline -->
 	<div v-if="timelines" class="py-2 border-b border-gray-300">
@@ -332,16 +423,30 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             </div>
 		</BoxStatPallet>
 
-		<BoxStatPallet class="p-4">
+		<BoxStatPallet v-for="block in costBlocks" :key="block.key" class="p-4">
+			<div class="flex justify-center text-center">
+				{{ block.title }}
+			</div>
 
+			<hr class="my-1 border-t border-gray-300" />
+
+			<div class="mt-2 space-y-1 text-sm">
+				<div
+					v-for="row in block.rows"
+					:key="row.label"
+					class="flex items-center justify-between gap-4"
+					:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
+				>
+					<span>{{ row.label }}</span>
+					<span>{{ row.value }}</span>
+				</div>
+			</div>
 		</BoxStatPallet>
 
-		<BoxStatPallet class="p-4">
-
-		</BoxStatPallet>
+		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
 	</div>
 
-	<Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
 		<component
@@ -353,4 +458,14 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			@update:tab="handleTabUpdate"
 		/>
 	</div>
+
+	<ModalProductList
+		v-if="routes.products_list?.name"
+		v-model="isModalProductListOpen"
+		:fetchRoute="routes.products_list"
+		:action="currentAction"
+		:current="currentTab"
+		v-model:currentTab="currentTab"
+		:typeModel="'purchase_order'"
+	/>
 </template>

@@ -8,6 +8,7 @@
 import { computed, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
+import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
 import Image from '@common/Components/Image.vue'
@@ -15,10 +16,14 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox } from '@fal'
-import { faExclamationCircle } from '@fas'
+import { faBox, faPallet, faStopCircle, faTrashAlt } from '@fal'
+import { faExclamationCircle, faSpinner } from '@fas'
+import ConfirmPopup from 'primevue/confirmpopup'
+import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faExclamationCircle)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner)
+
+const confirm = useConfirm()
 
 const props = defineProps<{
     data: object
@@ -33,9 +38,9 @@ type Level = 'cartons' | 'skos' | 'units'
 const isInProcess = computed(() => props.state === 'in_process')
 
 const levels = computed(() => [
-    { key: 'cartons' as Level, tab: trans('Ordering Cartons'), description: trans('Carton description'), quantity: trans('Cartons'), cost: trans('Carton cost') },
-    { key: 'skos' as Level, tab: trans('Ordering SKOs'), description: trans('SKO description'), quantity: trans('SKOs'), cost: trans('SKO cost') },
-    { key: 'units' as Level, tab: trans('Ordering Units'), description: trans('Unit description'), quantity: trans('Units'), cost: trans('Unit cost') },
+    { key: 'cartons' as Level, icon: 'fal fa-pallet', tab: trans('Ordering Cartons'), description: trans('Carton description'), quantity: trans('Cartons'), cost: trans('Carton cost') },
+    { key: 'skos' as Level, icon: 'fal fa-box', tab: trans('Ordering SKOs'), description: trans('SKO description'), quantity: trans('SKOs'), cost: trans('SKO cost') },
+    { key: 'units' as Level, icon: 'fal fa-stop-circle', tab: trans('Ordering Units'), description: trans('Unit description'), quantity: trans('Units'), cost: trans('Unit cost') },
 ])
 
 const currentLevel = ref<Level>('cartons')
@@ -72,6 +77,18 @@ function levelCost(item: any) {
     return Number(item.unit_cost) * unitsPerLevel(item)
 }
 
+function levelCostLabel(item: any) {
+    const supplier = locale.currencyFormat(item.net_currency ?? 'EUR', levelCost(item))
+
+    if (!item.org_currency || item.org_currency === item.net_currency) {
+        return supplier
+    }
+
+    const orgCost = levelCost(item) * (Number(item.org_exchange) || 1)
+
+    return `${supplier} (${locale.currencyFormat(item.org_currency, orgCost)})`
+}
+
 function quantityBreakdown(item: any) {
     const units = Number(item.quantity_ordered)
     const pack = Number(item.units_per_pack) || 1
@@ -94,16 +111,62 @@ const savingId = ref<number | null>(null)
 
 async function onSaveQuantity(item: any, form: any) {
     const quantityOrdered = Number(form.quantity) * unitsPerLevel(item)
+    const saveRoute = item.saveRoute ?? item.updateRoute
+    const method = String(saveRoute?.method ?? 'patch').toLowerCase()
 
     savingId.value = item.id
     try {
-        await axios.patch(
-            route(item.updateRoute.name, item.updateRoute.parameters),
+        await axios[method](
+            route(saveRoute.name, saveRoute.parameters),
             { quantity_ordered: quantityOrdered }
         )
+        form.defaults()
+        notify({ title: trans('Success'), text: trans('Quantity updated'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to update quantity'),
+            type: 'error',
+        })
     } finally {
         savingId.value = null
+    }
+}
+
+const deletingId = ref<number | null>(null)
+
+function confirmDeleteItem(event: MouseEvent, item: any) {
+    if (!item.deleteRoute) {
+        return
+    }
+
+    confirm.require({
+        target: event.currentTarget as HTMLElement,
+        message: trans('Remove this product from the purchase order?'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: trans('Delete'),
+        rejectLabel: trans('Cancel'),
+        acceptClass: 'p-button-danger',
+        rejectClass: 'p-button-text',
+        accept: () => onDeleteItem(item),
+    })
+}
+
+async function onDeleteItem(item: any) {
+    deletingId.value = item.id
+    try {
+        await axios.delete(route(item.deleteRoute.name, item.deleteRoute.parameters))
+        notify({ title: trans('Success'), text: trans('Item removed'), type: 'success' })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to remove item'),
+            type: 'error',
+        })
+    } finally {
+        deletingId.value = null
     }
 }
 
@@ -126,18 +189,19 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template v-if="isInProcess" #add-on-button-in-before>
-            <div class="flex items-end gap-1">
+        <template v-if="isInProcess" #before-table>
+            <div class="flex items-end gap-1 border-b border-gray-200 px-3 sm:px-4">
                 <button
                     v-for="item in levels"
                     :key="item.key"
                     type="button"
-                    class="px-3 py-1.5 text-sm border-b-2 transition"
+                    class="px-3 py-1.5 text-sm border-b-2 -mb-px transition"
                     :class="item.key === currentLevel
                         ? 'border-indigo-500 text-indigo-600 font-medium'
                         : 'border-transparent text-gray-500 hover:text-gray-700'"
                     @click="currentLevel = item.key"
                 >
+                    <FontAwesomeIcon :icon="item.icon" aria-hidden="true" fixed-width />
                     {{ item.tab }}
                 </button>
             </div>
@@ -180,7 +244,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
         <template #cell(image_thumbnail)="{ item }">
             <div class="flex">
-                <Image :src="item['image_thumbnail']" imageCover class="aspect-square overflow-hidden" />
+                <Image :src="item['image_thumbnail']" imageCover class="w-20 aspect-square overflow-hidden" />
             </div>
         </template>
 
@@ -193,7 +257,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     {{ item.name }}
                 </div>
                 <div v-if="isInProcess" class="text-xs text-gray-500">
-                    {{ level.cost }}: {{ locale.currencyFormat(item.net_currency ?? 'EUR', levelCost(item)) }}
+                    {{ level.cost }}: {{ levelCostLabel(item) }}
                 </div>
                 <div class="text-xs text-gray-500">
                     {{ trans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
@@ -222,7 +286,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(quantity)="{ item }">
-            <div v-if="isInProcess" class="flex justify-end">
+            <div v-if="isInProcess" class="flex justify-end items-center gap-2">
                 <NumberWithButtonSave
                     :key="`${item.id}-${currentLevel}`"
                     :modelValue="quantityAtLevel(item)"
@@ -230,6 +294,21 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     :isLoading="savingId === item.id"
                     @onSave="(form) => onSaveQuantity(item, form)"
                 />
+                <button
+                    v-if="item.deleteRoute"
+                    v-tooltip="trans('Remove')"
+                    type="button"
+                    class="flex items-center justify-center text-gray-400 hover:text-red-500 disabled:text-gray-300"
+                    :disabled="deletingId === item.id"
+                    @click="confirmDeleteItem($event, item)"
+                >
+                    <FontAwesomeIcon
+                        :icon="deletingId === item.id ? 'fas fa-spinner' : 'fal fa-trash-alt'"
+                        :spin="deletingId === item.id"
+                        aria-hidden="true"
+                        fixed-width
+                    />
+                </button>
             </div>
             <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
         </template>
@@ -273,4 +352,6 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             </div>
         </template>
     </Table>
+
+    <ConfirmPopup />
 </template>

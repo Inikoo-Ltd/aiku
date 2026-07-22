@@ -191,10 +191,18 @@
                     {{ __('Payment State') }}: <b>{{ $invoice->pay_status->labels()[$invoice->pay_status->value] }}</b>
                 </div>
                 @endif
+                
                 <div>
                     {{ __('Customer') }}: <b>{{ $invoice->customer['name'] }}</b>
                     ({{ $invoice->customer['reference'] }})
                 </div>
+
+                @if($invoice->customer['contact_name'] && $invoice->customer['contact_name'] !== $invoice->customer['name'])
+                    <div>
+                        <span class="address_label">{{ __('Contact Name') }}:</span> <span
+                                class="address_value">{{ $invoice->customer['contact_name'] }}</span>
+                    </div>
+                @endif
 
                     @if($invoice->customer['email'])
                 <div>

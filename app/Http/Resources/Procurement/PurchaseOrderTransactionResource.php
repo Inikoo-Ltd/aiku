@@ -38,6 +38,7 @@ class PurchaseOrderTransactionResource extends JsonResource
             'net_currency'     => $supplierProduct?->currency?->code,
             'org_net_amount'   => $transaction->org_net_amount,
             'org_currency'     => $transaction->organisation?->currency?->code,
+            'org_exchange'     => $transaction->org_exchange,
 
             'weight'           => $transaction->weight === null ? null : (float) $transaction->weight,
             'volume'           => $transaction->volume === null ? null : (float) $transaction->volume,
@@ -53,6 +54,14 @@ class PurchaseOrderTransactionResource extends JsonResource
                     'purchaseOrderTransaction' => $transaction->id,
                 ],
                 'method'     => 'patch',
+            ],
+            'deleteRoute'      => [
+                'name'       => 'grp.models.purchase-order.transaction.delete',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'delete',
             ],
         ];
     }

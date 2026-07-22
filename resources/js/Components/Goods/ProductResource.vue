@@ -90,7 +90,7 @@ const props = withDefaults(
             private: {}[]
         }
         properties?: {
-            country_of_origin?: { code: string; name: string }
+            countries_of_origin?: { code: string; name: string }[]
             tariff_code?: string
             duty_rate?: string
         }
@@ -243,13 +243,18 @@ const getIcon = (type?: string) => {
                         </div>
 
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
+                            <dt class="text-gray-500">{{ ctrans("Countries of origin") }} <span v-if="properties?.countries_of_origin?.length > 0">({{ properties?.countries_of_origin?.length }})</span></dt>
                             <dd class="font-medium">
-                                <div v-if="properties?.country_of_origin.code">
-                                    <img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
-                                        :src="'/flags/' + properties?.country_of_origin.code.toLowerCase() + '.png'"
-                                        loading="lazy" />
-                                    <span class="ml-2">{{ properties.country_of_origin.name }}</span>
+                                <template v-if="properties?.countries_of_origin?.length">
+                                    <div v-for="country in properties?.countries_of_origin" :key="country.code" class="text-right">
+                                        <img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+                                            :src="'/flags/' + country.code.toLowerCase() + '.png'"
+                                            loading="lazy" />
+                                        <span class="ml-2">{{ country.name }}</span>
+                                    </div>
+                                </template>
+                                <div v-else class="opacity-40 font-normal italic text-xs">
+                                    {{ ctrans("No countries of origin") }}
                                 </div>
 
                             </dd>

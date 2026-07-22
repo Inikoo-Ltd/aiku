@@ -7,12 +7,16 @@
 export interface Family {
 	id: number
 	slug: string
+	organisation_slug?: string | null
 	shop_slug: string
 	shop_code: string
 	shop_name: string
 	department_slug: string
 	department_code: string
 	department_name: string
+	sub_department_slug?: string | null
+	sub_department_code?: string | null
+	sub_department_name?: string | null
 	state: string
 	code: string
 	name: string

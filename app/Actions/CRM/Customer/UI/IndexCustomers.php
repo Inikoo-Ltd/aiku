@@ -38,6 +38,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -233,18 +234,34 @@ class IndexCustomers extends OrgAction
 
     public function handle(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, $prefix = null): LengthAwarePaginator
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
-            $query->where(function ($query) use ($value, $parent) {
-                $value = $this->normalizeSearchableText($value);
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $normalized = $this->normalizeSearchableText($value);
 
                 // Ignore if search token is less than 2 words
                 $searchTokens = array_values(array_filter(
-                    explode(' ', trim($value)),
+                    explode(' ', trim($normalized)),
                     fn ($t) => strlen($t) >= 2
                 ));
 
-                foreach ($searchTokens as $searchToken) {
-                    $query->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+                $query->where(function ($textQuery) use ($searchTokens) {
+                    foreach ($searchTokens as $searchToken) {
+                        $textQuery->where('searchable_text', 'ILIKE', "% {$searchToken}%");
+                    }
+                });
+
+                $postalCode = str_replace(' ', '', trim($normalized));
+
+                if (strlen($postalCode) >= 2) {
+                    $query->orWhereExists(function ($existsQuery) use ($postalCode) {
+                        $existsQuery->select(DB::raw(1))
+                            ->from('addresses')
+                            ->whereColumn('addresses.id', 'customers.address_id')
+                            ->whereRaw(
+                                "regexp_replace(lower(addresses.postal_code), '[^a-z0-9]', '', 'g') LIKE ?",
+                                ["{$postalCode}%"]
+                            );
+                    });
                 }
             });
         });

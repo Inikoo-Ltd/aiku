@@ -1439,7 +1439,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     <span v-if="salesChannel" v-tooltip="trans('This order is from :salesChannel', { salesChannel: salesChannel.name})" class="font-normal text-sm opacity-70">({{ salesChannel.name }} <FontAwesomeIcon :icon="salesChannel.icon" class="" fixed-width aria-hidden="true" />)</span>
                 </div>
 
-                <div class="space-y-0.5 pl-1">
+                <div class="space-y-1 pl-1">
 
                     <!-- Field: Client -->
                     <div v-if="box_stats?.customer_client" class="pl-1 xpb-2 flex items-center w-full gap-x-2">
@@ -1465,13 +1465,13 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         <Link as="a"
                             :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
                             class="text-sm text-gray-500 cursor-pointer primaryLink">
-                            {{ box_stats?.customer.name }} ({{ box_stats?.customer.reference }})
+                            {{ box_stats?.customer.name }} (#{{ box_stats?.customer.reference }})
                         </Link>
                     </div>
 
 
                     <!-- Field: Contact name -->
-                    <dl v-else-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full gap-x-2">
+                    <dl v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Contact name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
                                 aria-hidden="true" />

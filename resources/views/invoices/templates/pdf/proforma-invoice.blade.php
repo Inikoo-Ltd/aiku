@@ -161,10 +161,18 @@
                         <b>{{ $order->pay_status->labels()[$order->pay_status->value] }}</b>
                     </div>
                 @endif
+                
                 <div>
                     {{ __('Customer') }}: <b>{{ $order->customer['name'] }}</b>
                     ({{ $order->customer['reference'] }})
                 </div>
+
+                @if($order->customer['contact_name'] && $order->customer['contact_name'] !== $order->customer['name'])
+                    <div>
+                        <span class="address_label">{{ __('Contact Name') }}:</span> <span
+                                class="address_value">{{ $order->customer['contact_name'] }}</span>
+                    </div>
+                @endif
 
                 <div>
                     <span class="address_label">{{ __('Email') }}:</span> <span

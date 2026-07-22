@@ -75,7 +75,8 @@ const maxDescriptionHeight = ref(0)
 let resizeObserver: ResizeObserver | null = null
 
 const titleStyles = computed(() => ({
-  fontSize: titleState.value === 'single' ? '36px' : '25px',
+  fontSize: titleState.value === 'single' ? '32px' : '25px',
+  lineHeight: '1',
 }))
 
 const measureLines = (el: HTMLElement, fontSize: string): number => {
@@ -114,7 +115,7 @@ const updateTitleSize = () => {
   }
 
   requestAnimationFrame(() => {
-    const linesAt36 = measureLines(el, '36px')
+    const linesAt36 = measureLines(el, '32px')
 
     if (linesAt36 <= 1) {
       titleState.value = 'single'
@@ -298,15 +299,18 @@ const contentClass = computed(() =>
       lg:flex-row
       lg:items-start
       lg:justify-between
+      mb-2
     ">
-            <div class="min-w-0 flex-1">
+            <div class="min-w-16 flex-1">
               <h1 ref="titleRef" :style="titleStyles" :class="[
-                'font-bold leading-[1.15] break-words',
+                'font-bold break-words',
                 titleState === 'truncated' ? 'title--truncated' : ''
               ]">
                 {{ modelValue.family?.name }}
               </h1>
             </div>
+
+            <!-- SPACE FOR DISCOUNT -->
           </div>
 
           <!-- Description fills remaining space -->
@@ -318,8 +322,6 @@ const contentClass = computed(() =>
     text-[14px]
     leading-[1.6]
     text-[#1d2430]
-    sm:text-[15px]
-    lg:text-[16px]
     overflow-hidden
   " ref="descriptionRef" :style="!expanded && showReadMore
     ? { maxHeight: `${maxDescriptionHeight - 110}px` }
