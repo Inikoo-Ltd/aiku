@@ -17,6 +17,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
+use App\Models\Helpers\Currency;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Reviews\MasterAssetReviewStat;
@@ -286,6 +287,16 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
+    }
+
+    public function getPricefromCurrency(Currency $currency): int
+    {
+        return data_get($this->master_prices, "{$currency->code}.value", 0);
+    }
+
+    public function getRRPfromCurrency(Currency $currency): int
+    {
+        return data_get($this->master_rrps, "{$currency->code}.value", 0);
     }
 
     public function assets(): HasMany
