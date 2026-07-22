@@ -8,11 +8,13 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
+import SettingChat from "@/Components/Chat/SettingChat.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Image from "@common/Components/Image.vue"
+import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
-import { faChevronUp, faChevronDown } from "@fal"
+import { faChevronUp, faChevronDown, faCog } from "@fal"
 import {
     Contact,
     SessionAPI,
@@ -72,6 +74,17 @@ const selectedItemStyle = {
 }
 
 const sidePanelVisible = ref(false)
+
+const chatSettingVisible = ref(false)
+const settingInitialTab = ref<"general" | "jira">("general")
+const openChatSettings = () => {
+    settingInitialTab.value = "general"
+    chatSettingVisible.value = true
+}
+const onOpenJiraSettings = () => {
+    settingInitialTab.value = "jira"
+    chatSettingVisible.value = true
+}
 
 const formatTime = (timestamp: number) => {
     const d = new Date(timestamp)
@@ -264,9 +277,6 @@ const onTransferAgentSuccess = async () => {
     await reloadContacts()
 }
 
-const onOpenJiraSettings = () => {
-    // Jira credentials are configured from the mini-chat widget settings (right sidebar).
-}
 
 watch([activeTab, viewMode], async () => {
     selectedSession.value = null
@@ -335,7 +345,11 @@ const onChatListEvent = (e: any) => {
         selectedSession.value = {
             ...open,
             status: s.status ?? open.status,
-            assigned_agent: { user_id: s.assigned_user_id, name: s.assigned_agent_name ?? "Agent" },
+            assigned_agent: {
+                id: (open as any)?.assigned_agent?.id,
+                user_id: s.assigned_user_id,
+                name: s.assigned_agent_name ?? "Agent",
+            } as any,
         } as SessionAPI
     } else if (s.status && s.status !== open.status) {
         selectedSession.value = { ...open, status: s.status } as SessionAPI
@@ -390,7 +404,20 @@ onUnmounted(() => {
 
 <template>
     <Head :title="title" />
-    <PageHeading :data="pageHead" />
+
+    <PageHeading :data="pageHead">
+        <template #other>
+            <button type="button" v-tooltip="trans('Chat settings')" @click="openChatSettings"
+                class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
+                <FontAwesomeIcon :icon="faCog" class="text-base" />
+            </button>
+        </template>
+    </PageHeading>
+
+    <Dialog v-model:visible="chatSettingVisible" modal :header="trans('Chat Settings')"
+        :style="{ width: '90vw', maxWidth: '560px' }" :breakpoints="{ '640px': '95vw' }">
+        <SettingChat :initial-tab="settingInitialTab" @close="chatSettingVisible = false" />
+    </Dialog>
 
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
         <!-- LEFT: inbox + conversation list -->
