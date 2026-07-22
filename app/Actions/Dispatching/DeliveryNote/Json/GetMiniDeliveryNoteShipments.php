@@ -8,12 +8,12 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\Json;
 
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Dispatching\ShipmentsResource;
-use App\Models\Catalogue\PreferredShipping;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,6 +22,7 @@ class GetMiniDeliveryNoteShipments extends OrgAction
 {
     use AsAction;
     use GetPlatformLogo;
+    use WithPreferredShipperResolver;
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
@@ -92,10 +93,11 @@ class GetMiniDeliveryNoteShipments extends OrgAction
                         ]
                     ],
                 ],
-                'preferred_shipper_id' => PreferredShipping::findShipperIdForAddress(
+                'preferred_shipper_id' => $this->findShipperIdForAddress(
                     $deliveryNote->shop_id,
                     $deliveryNote->deliveryAddress?->country_id ?? $deliveryNote->delivery_country_id,
-                    $deliveryNote->deliveryAddress?->postal_code
+                    $deliveryNote->deliveryAddress?->postal_code,
+                    $deliveryNote->customer_id
                 ),
             ]
         ];

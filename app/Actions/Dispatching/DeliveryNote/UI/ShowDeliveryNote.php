@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
@@ -41,7 +42,6 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Ordering\PickersResource;
 use App\Http\Resources\Procurement\ReturnDeliveryNoteResource;
-use App\Models\Catalogue\PreferredShipping;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
@@ -64,6 +64,7 @@ class ShowDeliveryNote extends OrgAction
     use WithInertia;
     use GetPlatformLogo;
     use WithOrderForbiddenCountryCheck;
+    use WithPreferredShipperResolver;
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
@@ -738,10 +739,11 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
-            'preferred_shipper_id'         => PreferredShipping::findShipperIdForAddress(
+            'preferred_shipper_id'         => $this->findShipperIdForAddress(
                 $deliveryNote->shop_id,
                 $deliveryNote->deliveryAddress?->country_id ?? $deliveryNote->delivery_country_id,
-                $deliveryNote->deliveryAddress?->postal_code
+                $deliveryNote->deliveryAddress?->postal_code,
+                $deliveryNote->customer_id
             ),
             'shop_type'                    => $deliveryNote->shop->type,
             'shipping_fields'              => [
