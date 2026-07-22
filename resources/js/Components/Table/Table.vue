@@ -1123,6 +1123,8 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
 
             </div>
 
+            <slot name="before-table" />
+
             <!-- <pre>{{ compResourceData }}</pre> -->
 
             <!-- The Main Table -->

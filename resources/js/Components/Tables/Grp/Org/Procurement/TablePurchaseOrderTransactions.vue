@@ -15,10 +15,10 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox } from '@fal'
+import { faBox, faPallet, faStopCircle } from '@fal'
 import { faExclamationCircle } from '@fas'
 
-library.add(faBox, faExclamationCircle)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle)
 
 const props = defineProps<{
     data: object
@@ -33,9 +33,9 @@ type Level = 'cartons' | 'skos' | 'units'
 const isInProcess = computed(() => props.state === 'in_process')
 
 const levels = computed(() => [
-    { key: 'cartons' as Level, tab: trans('Ordering Cartons'), description: trans('Carton description'), quantity: trans('Cartons'), cost: trans('Carton cost') },
-    { key: 'skos' as Level, tab: trans('Ordering SKOs'), description: trans('SKO description'), quantity: trans('SKOs'), cost: trans('SKO cost') },
-    { key: 'units' as Level, tab: trans('Ordering Units'), description: trans('Unit description'), quantity: trans('Units'), cost: trans('Unit cost') },
+    { key: 'cartons' as Level, icon: 'fal fa-pallet', tab: trans('Ordering Cartons'), description: trans('Carton description'), quantity: trans('Cartons'), cost: trans('Carton cost') },
+    { key: 'skos' as Level, icon: 'fal fa-box', tab: trans('Ordering SKOs'), description: trans('SKO description'), quantity: trans('SKOs'), cost: trans('SKO cost') },
+    { key: 'units' as Level, icon: 'fal fa-stop-circle', tab: trans('Ordering Units'), description: trans('Unit description'), quantity: trans('Units'), cost: trans('Unit cost') },
 ])
 
 const currentLevel = ref<Level>('cartons')
@@ -70,6 +70,18 @@ function quantityAtLevel(item: any) {
 
 function levelCost(item: any) {
     return Number(item.unit_cost) * unitsPerLevel(item)
+}
+
+function levelCostLabel(item: any) {
+    const supplier = locale.currencyFormat(item.net_currency ?? 'EUR', levelCost(item))
+
+    if (!item.org_currency || item.org_currency === item.net_currency) {
+        return supplier
+    }
+
+    const orgCost = levelCost(item) * (Number(item.org_exchange) || 1)
+
+    return `${supplier} (${locale.currencyFormat(item.org_currency, orgCost)})`
 }
 
 function quantityBreakdown(item: any) {
@@ -126,18 +138,19 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-        <template v-if="isInProcess" #add-on-button-in-before>
-            <div class="flex items-end gap-1">
+        <template v-if="isInProcess" #before-table>
+            <div class="flex items-end gap-1 border-b border-gray-200 px-3 sm:px-4">
                 <button
                     v-for="item in levels"
                     :key="item.key"
                     type="button"
-                    class="px-3 py-1.5 text-sm border-b-2 transition"
+                    class="px-3 py-1.5 text-sm border-b-2 -mb-px transition"
                     :class="item.key === currentLevel
                         ? 'border-indigo-500 text-indigo-600 font-medium'
                         : 'border-transparent text-gray-500 hover:text-gray-700'"
                     @click="currentLevel = item.key"
                 >
+                    <FontAwesomeIcon :icon="item.icon" aria-hidden="true" fixed-width />
                     {{ item.tab }}
                 </button>
             </div>
@@ -193,7 +206,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     {{ item.name }}
                 </div>
                 <div v-if="isInProcess" class="text-xs text-gray-500">
-                    {{ level.cost }}: {{ locale.currencyFormat(item.net_currency ?? 'EUR', levelCost(item)) }}
+                    {{ level.cost }}: {{ levelCostLabel(item) }}
                 </div>
                 <div class="text-xs text-gray-500">
                     {{ trans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,

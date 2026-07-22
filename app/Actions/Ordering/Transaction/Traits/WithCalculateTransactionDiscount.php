@@ -32,9 +32,6 @@ trait WithCalculateTransactionDiscount
 
         $transaction->update($transactionData);
 
-        // Check if transaction have valid offer after picked is changed
-        CalculateOrderDiscounts::run($transaction->order);
-
         // Reupdate based on Curent Discount Factor
         if ($transaction->current_discount_factor) {
             $percentageOff      = 1 - $transaction->current_discount_factor;
