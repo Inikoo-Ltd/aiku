@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
@@ -19,12 +18,9 @@ use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransa
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\PurchaseOrderTabsEnum;
-use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
-use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
-use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\Models\Procurement\OrgAgent;
@@ -281,46 +277,13 @@ class ShowPurchaseOrder extends OrgAction
                         'is_weight_partial' => Arr::get($weightAndVolume, 'is_weight_partial'),
                         'is_volume_partial' => Arr::get($weightAndVolume, 'is_volume_partial'),
                     ],
-                    'order_summary' => [
-                        [
-                            [
-                                'label'       => 'Transactions',
-                                'quantity'    => $purchaseOrder->purchaseOrderTransactions()->count(),
-                                'price_base'  => 'Multiple',
-                                'price_total' => $purchaseOrder->cost_items,
-                            ],
-                        ],
-                        [
-                            [
-                                'label'       => 'Extra',
-                                'information' => '',
-                                'price_total' => $purchaseOrder->cost_extra,
-                            ],
-                            [
-                                'label'       => 'Shipping',
-                                'information' => '',
-                                'price_total' => $purchaseOrder->cost_shipping,
-                            ],
-                        ],
-                        [
-                            [
-                                'label'       => 'Duties',
-                                'information' => '',
-                                'price_total' => $purchaseOrder->cost_duties,
-                            ],
-                            [
-                                'label'       => 'Tax',
-                                'information' => '',
-                                'price_total' => $purchaseOrder->cost_tax,
-                            ],
-                        ],
-                        [
-                            [
-                                'label'       => 'Total',
-                                'price_total' => $purchaseOrder->cost_total,
-                            ],
-                        ],
-                        'currency' => CurrencyResource::make($purchaseOrder->currency),
+                    'third_block' => [
+                        'currency'     => $purchaseOrder->currency?->code,
+                        'org_currency' => $purchaseOrder->organisation?->currency?->code,
+                        'org_exchange' => $purchaseOrder->org_exchange,
+                        'items'        => $purchaseOrder->cost_items,
+                        'extra'        => $purchaseOrder->cost_extra + $purchaseOrder->cost_shipping + $purchaseOrder->cost_duties + $purchaseOrder->cost_tax,
+                        'total'        => $purchaseOrder->cost_total,
                     ],
                 ],
 

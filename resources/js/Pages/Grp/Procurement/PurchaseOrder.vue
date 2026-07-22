@@ -94,6 +94,14 @@ const props = defineProps < {
             is_weight_partial: boolean
             is_volume_partial: boolean
 		}
+        third_block: {
+            currency: string | null
+            org_currency: string | null
+            org_exchange: number | string | null
+            items: number | string
+            extra: number | string
+            total: number | string
+        }
 	}
 	showcase?: {}
 	items?: {}
@@ -119,6 +127,47 @@ const metrics = computed(() => {
 			showMark: volume === null || is_volume_partial,
 			text: volume === null ? trans("Unknown CBM") : `${locale.number(volume)} m³`,
 			tooltip: volume === null ? trans("No item has CBM data") : trans("Some items have unknown CBM"),
+		},
+	]
+})
+
+const exchangeRate = computed(() => {
+	const { org_exchange } = props.box_stats.third_block
+	const rate = Number(org_exchange)
+
+	return rate ? 1 / rate : null
+})
+
+const costBlocks = computed(() => {
+	const { currency, org_currency, org_exchange, items, extra, total } = props.box_stats.third_block
+	const rate = Number(org_exchange) || 1
+
+	const buildRows = (code: string | null, factor: number) => [
+		{ label: trans("Items"), value: locale.currencyFormat(code ?? "", Number(items) * factor) },
+		{ label: trans("Extra costs"), value: locale.currencyFormat(code ?? "", Number(extra) * factor) },
+		{ label: trans("Total"), value: locale.currencyFormat(code ?? "", Number(total) * factor), isTotal: true },
+	]
+
+	const supplierBlock = {
+		key: "supplier",
+		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
+		rows: buildRows(currency, 1),
+	}
+
+	if (!org_currency || org_currency === currency) {
+		return [supplierBlock]
+	}
+
+	const rateLabel = exchangeRate.value === null
+		? ""
+		: `1 ${org_currency} = ${exchangeRate.value.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
+
+	return [
+		supplierBlock,
+		{
+			key: "org",
+			title: rateLabel,
+			rows: buildRows(org_currency, rate),
 		},
 	]
 })
@@ -332,13 +381,27 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             </div>
 		</BoxStatPallet>
 
-		<BoxStatPallet class="p-4">
+		<BoxStatPallet v-for="block in costBlocks" :key="block.key" class="p-4">
+			<div class="flex justify-center text-center">
+				{{ block.title }}
+			</div>
 
+			<hr class="my-1 border-t border-gray-300" />
+
+			<div class="mt-2 space-y-1 text-sm">
+				<div
+					v-for="row in block.rows"
+					:key="row.label"
+					class="flex items-center justify-between gap-4"
+					:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
+				>
+					<span>{{ row.label }}</span>
+					<span>{{ row.value }}</span>
+				</div>
+			</div>
 		</BoxStatPallet>
 
-		<BoxStatPallet class="p-4">
-
-		</BoxStatPallet>
+		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
 	</div>
 
 	<Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
