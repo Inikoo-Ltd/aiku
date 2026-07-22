@@ -37,7 +37,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\PasskeyAuthenticatable;
-use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
@@ -140,7 +139,6 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     use WithPushNotifications;
     use IsUserable;
     use HasImage;
-    use HasApiTokens;
     use HasSearch;
     use PasskeyAuthenticatable;
 

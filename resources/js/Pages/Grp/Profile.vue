@@ -17,6 +17,7 @@ import ProfileTimesheets from "@/Components/Profile/ProfileTimesheets.vue"
 import ProfileVisitLogs from "@/Components/Profile/ProfileVisitLogs.vue"
 import ProfileTodo from "@/Components/Profile/ProfileTodo.vue"
 import ProfileNotifications from "@/Components/Profile/ProfileNotifications.vue"
+import ProfileApiTokens from "@/Components/Profile/ProfileApiTokens.vue"
 import EditProfile from "@/Pages/Grp/EditProfile.vue"
 import SettingProfile from "@/Pages/Grp/SettingProfile.vue"
 
@@ -28,12 +29,12 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faIdCard, faClipboardListCheck, faRabbitFast, faSlidersV } from '@fal'
+import { faIdCard, faClipboardListCheck, faRabbitFast, faSlidersV, faKey } from '@fal'
 import { faInfoCircle } from '@fas'
 import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { useLogoutAuth } from '@/Composables/useAppMethod'
-library.add(faIdCard, faClipboardListCheck, faRabbitFast, faSlidersV, faSpinnerThird, faInfoCircle)
+library.add(faIdCard, faClipboardListCheck, faRabbitFast, faSlidersV, faKey, faSpinnerThird, faInfoCircle)
 
 
 
@@ -76,6 +77,7 @@ const component = computed(() => {
         todo: ProfileTodo,
         notifications: ProfileNotifications,
         kpi: ProfileKPIs,
+        api_tokens: ProfileApiTokens,
         visit_logs: ProfileVisitLogs,
         timesheets: ProfileTimesheets,
         dashboard: ProfileShowcase,
@@ -119,6 +121,9 @@ const fetchTabData = async (tabSlug: string) => {
             break
         case 'kpi':
             routeName = 'grp.profile.kpis.index'
+            break
+        case 'api_tokens':
+            routeName = 'grp.profile.api-tokens.index'
             break
 		case 'visit_logs':
             routeName = 'grp.profile.visit-logs.index'

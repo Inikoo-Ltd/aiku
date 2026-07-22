@@ -1,0 +1,105 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 22 Jul 2026 00:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+use App\Actions\Ordering\Order\StoreOrder;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Mcp\Servers\AikuServer;
+use App\Mcp\Tools\ShopSalesTool;
+use App\Models\Helpers\Address;
+use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Guest;
+use App\Actions\SysAdmin\Guest\StoreGuest;
+
+beforeEach(function () {
+    list(
+        $this->organisation,
+        $this->user,
+        $this->shop
+    ) = createShop();
+
+    $this->group = $this->organisation->group;
+    $this->customer = createCustomer($this->shop);
+
+    app()->instance('group', $this->group);
+    setPermissionsTeamId($this->group->id);
+});
+
+test('user without orders permission is denied', function () {
+    $guest = StoreGuest::make()->action(
+        $this->group,
+        array_merge(
+            Guest::factory()->definition(),
+            ['positions' => []]
+        )
+    );
+
+    $response = AikuServer::actingAs($guest->getUser())->tool(ShopSalesTool::class, [
+        'shop' => $this->shop->slug,
+        'from' => '2026-01-01',
+        'to'   => '2026-12-31',
+    ]);
+
+    $response->assertHasErrors(['Shop not found or permission denied.']);
+});
+
+test('admin user gets shop sales', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $numberOrdersBefore = countableOrders($this->shop, '2026-06-01', '2026-06-30');
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->update([
+        'state'      => OrderStateEnum::SUBMITTED,
+        'net_amount' => 150.50,
+        'date'       => '2026-06-15',
+    ]);
+
+    $response = AikuServer::actingAs($this->user)->tool(ShopSalesTool::class, [
+        'shop' => $this->shop->slug,
+        'from' => '2026-06-01',
+        'to'   => '2026-06-30',
+    ]);
+
+    $response->assertOk()
+        ->assertSee('"number_orders":'.($numberOrdersBefore + 1));
+});
+
+test('creating-state orders are excluded from sales', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $numberOrdersBefore = countableOrders($this->shop, '2026-03-01', '2026-03-31');
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->update(['date' => '2026-03-15']);
+
+    $response = AikuServer::actingAs($this->user)->tool(ShopSalesTool::class, [
+        'shop' => $this->shop->slug,
+        'from' => '2026-03-01',
+        'to'   => '2026-03-31',
+    ]);
+
+    $response->assertOk()->assertSee('"number_orders":'.$numberOrdersBefore);
+});
+
+function countableOrders($shop, string $from, string $to): int
+{
+    return Order::where('shop_id', $shop->id)
+        ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
+        ->whereBetween('date', [$from.' 00:00:00', $to.' 23:59:59'])
+        ->count();
+}
