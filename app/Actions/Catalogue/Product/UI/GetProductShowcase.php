@@ -36,12 +36,22 @@ class GetProductShowcase
         }
 
 
+        $countryOrigins = [];
+        $countryOrigin  = null;
+        $countries      = array_filter(array_map('trim', explode(',', $product->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countryOrigins[] = NaturalLanguage::make()->country($country);
+            $countryOrigin    = NaturalLanguage::make()->country($country);
+        }
+
+
         $properties = [
-            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
-            'ingredients'       => $product->marketing_ingredients,
-            'tariff_code'       => $product->tariff_code,
-            'duty_rate'         => $product->duty_rate,
-            'hts_us'            => $product->hts_us,
+            'country_of_origin'  => $countryOrigin,
+            'country_of_origins' => $countryOrigins,
+            'ingredients'        => $product->marketing_ingredients,
+            'tariff_code'        => $product->tariff_code,
+            'duty_rate'          => $product->duty_rate,
+            'hts_us'             => $product->hts_us,
         ];
 
         $gpsr = [
@@ -84,21 +94,21 @@ class GetProductShowcase
 
 
         return [
-            'product'             => ProductResource::make($product),
-            'is_external'         => $product->shop->type == ShopTypeEnum::EXTERNAL,
-            'properties'          => $properties,
-            'gpsr'                => $gpsr,
-            'parts'               => // todo: delete this asap use org_stocks
+            'product'                      => ProductResource::make($product),
+            'is_external'                  => $product->shop->type == ShopTypeEnum::EXTERNAL,
+            'properties'                   => $properties,
+            'gpsr'                         => $gpsr,
+            'parts'                        => // todo: delete this asap use org_stocks
                 OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-            'org_stocks'          => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-            'stats'               => $product->stats,
-            'images'              => $this->getImagesData($product, true),
-            'brand'               => $product->brand(),
-            'tags'                => TagsResource::collection($product->tags)->toArray(request()),
-            'main_image'          => $product->imageSources(),
-            'attachment_box'      => $this->getAttachmentData($product),
-            'webpage_url'         => $webpageUrl,
-            'availability_status' => [
+            'org_stocks'                   => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+            'stats'                        => $product->stats,
+            'images'                       => $this->getImagesData($product, true),
+            'brand'                        => $product->brand(),
+            'tags'                         => TagsResource::collection($product->tags)->toArray(request()),
+            'main_image'                   => $product->imageSources(),
+            'attachment_box'               => $this->getAttachmentData($product),
+            'webpage_url'                  => $webpageUrl,
+            'availability_status'          => [
                 'is_for_sale'        => $product->is_for_sale,
                 'from_master'        => $product->not_for_sale_from_master,
                 'from_trade_unit'    => $product->not_for_sale_from_trade_unit,
