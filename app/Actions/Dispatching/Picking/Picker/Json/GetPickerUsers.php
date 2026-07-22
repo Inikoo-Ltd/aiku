@@ -41,7 +41,7 @@ class GetPickerUsers extends OrgAction
                 ->leftJoin('employee_has_job_positions', 'employee_has_job_positions.employee_id', '=', 'employees.id')
                 ->leftJoin('job_positions', 'employee_has_job_positions.job_position_id', '=', 'job_positions.id')
                 ->where('job_positions.organisation_id', $organisation->id)
-                ->where('job_positions.name', 'Picker')
+                ->whereIn('job_positions.name', ['Picker', 'Exception Picker', 'Dispatching supervisor'])
                 ->join('user_has_models', function ($join) {
                     $join->on('user_has_models.model_id', '=', 'employees.id')
                         ->where('user_has_models.model_type', '=', 'Employee');
@@ -50,6 +50,7 @@ class GetPickerUsers extends OrgAction
 
 
         $queryBuilder
+            ->distinct()
             ->defaultSort('employees.id')
             ->select([
                 'employees.id as employee_id',

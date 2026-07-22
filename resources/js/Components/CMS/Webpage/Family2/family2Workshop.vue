@@ -299,14 +299,16 @@ const contentClass = computed(() =>
       lg:items-start
       lg:justify-between
     ">
-            <div class="min-w-0 flex-1">
+            <div class="min-w-16 flex-1">
               <h1 ref="titleRef" :style="titleStyles" :class="[
-                'font-bold leading-[1.15] break-words',
+                'font-bold break-words',
                 titleState === 'truncated' ? 'title--truncated' : ''
               ]">
                 {{ modelValue.family?.name }}
               </h1>
             </div>
+
+            <!-- SPACE FOR DISCOUNT -->
           </div>
 
           <!-- Description fills remaining space -->
