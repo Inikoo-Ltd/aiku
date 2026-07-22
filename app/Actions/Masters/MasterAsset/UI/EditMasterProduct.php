@@ -303,7 +303,8 @@ class EditMasterProduct extends GrpAction
                         'required'      => true,
                         'currencies'    => $currenciesRate,
                         'value'         => $masterProduct->master_prices,
-                        'masterAsset'  => $masterProduct->id
+                        'masterAsset'   => $masterProduct->id,
+                        'type_input'          => 'price'
                     ],
                     'master_rrps'            => [
                         'type'          => 'multiple_price_currency',
@@ -311,7 +312,8 @@ class EditMasterProduct extends GrpAction
                         'required'      => true,
                         'currencies'    => $currenciesRate,
                         'value'         => $masterProduct->master_rrps,
-                        'masterAsset'  => $masterProduct->id
+                        'masterAsset'   => $masterProduct->id,
+                        'type_input'          => 'rrp'
                     ],
                 ]
             ],

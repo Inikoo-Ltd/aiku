@@ -1,12 +1,14 @@
 <script setup lang='ts'>
 import { computed, onMounted, ref, watch } from 'vue'
-import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
+import { Disclosure, DisclosureButton, DisclosurePanel, Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronDown } from '@fal'
+import { faChevronDown, faExclamationTriangle, faSave as falSave , faStarfighter} from '@fal'
+import { faSave as fadSave, faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PriceCurrencyRow from '@/Components/Pure/Supports/PriceCurrencyRow.vue'
+import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import axios from 'axios'
-library.add(faChevronDown)
+library.add(faChevronDown, faExclamationTriangle, falSave, fadSave, faSpinnerThird)
 
 interface CurrencyRate {
     currency: string
@@ -21,12 +23,21 @@ interface CurrencyPrice {
     independent: boolean
 }
 
+interface PriceRebel {
+    id: number
+    shop_id: number
+    shop_code: string
+    currency_code: string
+    value: number | null
+}
+
 const props = withDefaults(defineProps<{
     modelValue: Record<string, CurrencyPrice> | null
     currencies: Record<string, CurrencyRate>
     readonly?: boolean
     visibleCurrencyCodes?: string[]
     masterAsset: number | string
+    type_input : string
 }>(), {
     visibleCurrencyCodes: () => ['GBP', 'EUR']
 })
@@ -113,23 +124,62 @@ const filledHiddenCurrenciesCount = computed(
     () => hiddenCurrencies.value.filter(currency => prices.value[currency.code]?.independent).length
 )
 
+const priceRebels = ref<Record<string, PriceRebel>>({})
+
+const priceRebelsList = computed(() => Object.values(priceRebels.value))
+
+const savingRebelIds = ref<Record<number, boolean>>({})
+
+const originalRebelValues = ref<Record<number, number | null>>({})
+
+const isRebelEdited = (rebel: PriceRebel) => {
+    return rebel.value !== originalRebelValues.value[rebel.shop_id]
+}
 
 onMounted(async () => {
-    const { data } = await axios.post(
-        route('grp.json.master_products.get_price_rebels', {
-            masterAsset: props.masterAsset
-        }),
-        {
-            type: 'price'
-        }
-    )
-
-    console.log(data)
+    try {
+        const { data } = await axios.post(
+            route('grp.json.master_products.get_price_rebels', {
+                masterAsset: props.masterAsset
+            }),
+            {
+                type: props.type_input
+            }
+        )
+        priceRebels.value = data ?? {}
+        originalRebelValues.value = Object.values(priceRebels.value).reduce(
+            (values, rebel) => {
+                values[rebel.shop_id] = rebel.value
+                return values
+            },
+            {} as Record<number, number | null>
+        )
+    } catch (error) {
+        priceRebels.value = {}
+        originalRebelValues.value = {}
+    }
 })
+
+const saveRebel = async (rebel: PriceRebel) => {
+    savingRebelIds.value[rebel.shop_id] = true
+
+    try {
+        await axios.patch(
+            route('grp.models.product.update', {
+                product : rebel.id
+            }),
+            {
+                [ props.type_input ]: rebel.value
+            }
+        )
+        originalRebelValues.value[rebel.shop_id] = rebel.value
+    } finally {
+        savingRebelIds.value[rebel.shop_id] = false
+    }
+}
 </script>
 
 <template>
-    {{ masterAsset }}
     <div>
         <div v-if="baseCurrency" class="relative py-1 pl-8">
             <span class="absolute bottom-0 left-3 top-1/2 w-px bg-gray-200" aria-hidden="true" />
@@ -223,5 +273,66 @@ onMounted(async () => {
                 </div>
             </DisclosurePanel>
         </Disclosure>
+
+        <Popover v-if="priceRebelsList.length" as="div" class="relative mt-2 pl-8">
+            <PopoverButton
+                class="flex w-fit items-center gap-x-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-700 hover:bg-amber-100"
+            >
+                <FontAwesomeIcon :icon="faStarfighter" class="text-xs" fixed-width aria-hidden="true" />
+                <span>
+                    {{ priceRebelsList.length }} {{ ctrans('shops not following master price') }}
+                </span>
+            </PopoverButton>
+
+            <transition name="headlessui">
+                <PopoverPanel class="absolute left-8 z-10 mt-1 w-72 rounded-md border border-gray-200 bg-white shadow-lg">
+                    <div class="border-b border-gray-100 px-3 py-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+                        {{ ctrans('Price rebels') }}
+                    </div>
+                    <ul class="max-h-64 divide-y divide-gray-100 overflow-y-auto">
+                        <li
+                            v-for="rebel in priceRebelsList"
+                            :key="rebel.shop_id"
+                            class="flex items-center justify-between gap-x-3 px-3 py-2 text-sm"
+                        >
+                            <span class="font-medium text-gray-700">{{ rebel.shop_code }}</span>
+                            <div class="flex items-center gap-x-1.5">
+                                <div class="w-28">
+                                    <PureInputNumber
+                                        v-model.number="rebel.value"
+                                        :prefix="rebel.currency_symbol"
+                                        :readonly="readonly"
+                                        :disabled="savingRebelIds[rebel.shop_id]"
+                                    />
+                                </div>
+                                <button
+                                    v-if="!readonly"
+                                    type="button"
+                                    class="align-bottom text-center disabled:cursor-not-allowed"
+                                    :disabled="savingRebelIds[rebel.shop_id] || !isRebelEdited(rebel)"
+                                    @click="saveRebel(rebel)"
+                                >
+                                    <FontAwesomeIcon
+                                        v-if="savingRebelIds[rebel.shop_id]"
+                                        icon="fad fa-spinner-third"
+                                        class="animate-spin text-lg"
+                                        fixed-width
+                                        aria-hidden="true"
+                                    />
+                                    <FontAwesomeIcon
+                                        v-else
+                                        icon="fad fa-save"
+                                        class="text-lg"
+                                        :class="{ 'text-gray-300': !isRebelEdited(rebel) }"
+                                        :style="isRebelEdited(rebel) ? { '--fa-secondary-color': 'rgb(0, 255, 4)' } : undefined"
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            </div>
+                        </li>
+                    </ul>
+                </PopoverPanel>
+            </transition>
+        </Popover>
     </div>
 </template>

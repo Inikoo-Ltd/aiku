@@ -37,6 +37,7 @@ class GetPriceRebelProducts extends GrpAction
                             'shop_code'         => $shop->code,
                             'currency_code'     => $product->currency?->code ?? $shop->currency->code,
                             'value'             => $getPrice ? $product->price : $product->rrp,
+                            'currency_symbol'   => $product->currency?->symbol ?? $shop->currency->symbol,
                         ]
                     ];
                 }

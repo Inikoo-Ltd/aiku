@@ -403,9 +403,9 @@ const onSelectFamily = (option: any) => {
                 </Column>
 
                 <!-- Column: Price -->
-                <Column v-if="selectedColumns.includes('master_price')" field="price" header="Price" sortable style="min-width: 8rem">
+                <Column v-if="selectedColumns.includes('master_price')" field="price" header="Price" sortable style="min-width: 18rem">
                     <template #body="slotProps">
-                        <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_price" :currencies="currencies" />
+                        <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_price" :masterAsset="slotProps.data.id" :type_input="'price'" :currencies="currencies" />
                        <!--  <InputNumber
                             v-model="slotProps.data.price"
                             @input="(e) => slotProps.data.price = e?.value ?? 0"
@@ -421,9 +421,9 @@ const onSelectFamily = (option: any) => {
                 </Column>
                 
                 <!-- Column: RRP -->
-                <Column v-if="selectedColumns.includes('master_rrp')" field="rrp" header="RRP" sortable style="min-width: 8rem">
+                <Column v-if="selectedColumns.includes('master_rrp')" field="rrp" header="RRP" sortable style="min-width: 18rem">
                     <template #body="slotProps">
-                         <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_rrp" :currencies="currencies" />
+                         <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_rrp" :masterAsset="slotProps.data.id" :type_input="'rrp'" :currencies="currencies" />
                        <!--  <InputNumber
                             v-model="slotProps.data.rrp"
                             @input="(e) => slotProps.data.rrp = e?.value ?? 0"
