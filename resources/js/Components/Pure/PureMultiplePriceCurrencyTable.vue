@@ -1,3 +1,8 @@
+<!--
+  - Shared multi-currency price table implementation.
+  - Do not use directly: use MasterPriceCurrencyTable or MasterRrpCurrencyTable instead.
+-->
+
 <script setup lang='ts'>
 import { computed, ref, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -28,19 +33,26 @@ const props = withDefaults(defineProps<{
     outerLabel?: string
     unitLabel?: string
     marginLabel?: string
+    costLabel?: string
     showUnit?: boolean
     showMargin?: boolean
+    showCost?: boolean
     costs?: Record<string, number | null>
     unitsPerOuter?: number
     readonly?: boolean
     visibleCurrencyCodes?: string[]
+    autoFromCost?: boolean
+    autoMultiplier?: number
 }>(), {
     label: 'Price',
     color: 'blue',
     editOn: 'outer',
     showUnit: true,
     showMargin: true,
+    showCost: false,
     unitsPerOuter: 1,
+    autoFromCost: false,
+    autoMultiplier: 2.4,
     visibleCurrencyCodes: () => ['GBP', 'EUR']
 })
 
@@ -59,9 +71,13 @@ const palette = {
 const colors = computed(() => palette[props.color])
 
 const columns = computed(() => {
-    const list: { kind: 'outer' | 'unit' | 'margin', label: string }[] = [
-        { kind: 'outer', label: props.outerLabel ?? `Outer ${props.label}` }
-    ]
+    const list: { kind: 'cost' | 'outer' | 'unit' | 'margin', label: string }[] = []
+
+    if (props.showCost) {
+        list.push({ kind: 'cost', label: props.costLabel ?? 'Cost' })
+    }
+
+    list.push({ kind: 'outer', label: props.outerLabel ?? `Outer ${props.label}` })
 
     if (props.showUnit || props.editOn === 'unit') {
         list.push({ kind: 'unit', label: props.unitLabel ?? `${props.label} / Unit` })
@@ -104,9 +120,10 @@ const hiddenCurrencies = computed(
 const buildPrices = (): Record<string, CurrencyPrice> => {
     return currencyList.value.reduce((prices, currency) => {
         const existing = props.modelValue?.[currency.code]
+        const rawValue = existing?.value as number | string | null | undefined
 
         prices[currency.code] = {
-            value: existing?.value ?? null,
+            value: rawValue == null || rawValue === '' ? null : Number(rawValue),
             independent: existing?.independent ?? false
         }
 
@@ -118,6 +135,10 @@ const prices = ref<Record<string, CurrencyPrice>>(buildPrices())
 
 watch(() => props.currencies, () => {
     prices.value = buildPrices()
+
+    if (props.autoFromCost) {
+        recalculateDerivedPrices()
+    }
 })
 
 const getRatio = (currency: { ratio_gbp: number | null, ratio_eur: number | null }) => {
@@ -125,6 +146,23 @@ const getRatio = (currency: { ratio_gbp: number | null, ratio_eur: number | null
 }
 
 const recalculateDerivedPrices = () => {
+    if (props.autoFromCost) {
+        currencyList.value.forEach(currency => {
+            const entry = prices.value[currency.code]
+            const cost = props.costs?.[currency.code]
+
+            if (!entry || entry.independent) {
+                return
+            }
+
+            entry.value = cost == null
+                ? null
+                : Math.round(cost * props.autoMultiplier * 100) / 100
+        })
+
+        return
+    }
+
     const basePrice = prices.value[baseCurrencyCode.value]?.value
 
     currencyList.value.forEach(currency => {
@@ -141,18 +179,64 @@ const recalculateDerivedPrices = () => {
     })
 }
 
+const emitUpdate = () => {
+    const snapshot = Object.entries(prices.value).reduce((acc, [code, entry]) => {
+        acc[code] = { value: entry.value, independent: entry.independent }
+
+        return acc
+    }, {} as Record<string, CurrencyPrice>)
+
+    emits('update:modelValue', snapshot)
+}
+
 const onUpdate = () => {
     recalculateDerivedPrices()
-    emits('update:modelValue', prices.value)
+    emitUpdate()
 }
 
 watch(baseCurrencyCode, onUpdate)
+
+watch(() => props.costs, () => {
+    if (!props.autoFromCost) {
+        return
+    }
+
+    recalculateDerivedPrices()
+    emitUpdate()
+}, { deep: true })
 
 const showHiddenCurrencies = ref(false)
 
 const filledHiddenCurrenciesCount = computed(
     () => hiddenCurrencies.value.filter(currency => prices.value[currency.code]?.independent).length
 )
+
+type CurrencyListItem = {
+    code: string
+    symbol?: string
+    ratio_gbp: number | null
+    ratio_eur: number | null
+}
+
+const rows = computed(() => {
+    const list: { currency: CurrencyListItem, isBase: boolean }[] = []
+
+    if (props.autoFromCost) {
+        visibleCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
+    } else {
+        if (baseCurrency.value) {
+            list.push({ currency: baseCurrency.value, isBase: true })
+        }
+
+        derivedVisibleCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
+    }
+
+    if (showHiddenCurrencies.value) {
+        hiddenCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
+    }
+
+    return list
+})
 </script>
 
 <template>
@@ -191,49 +275,25 @@ const filledHiddenCurrenciesCount = computed(
 
             <tbody>
                 <PriceCurrencyTableRow
-                    v-if="baseCurrency"
-                    v-model="prices[baseCurrency.code]"
-                    :currency="baseCurrency"
+                    v-for="row in rows"
+                    :key="row.currency.code"
+                    v-model="prices[row.currency.code]"
+                    :currency="row.currency"
                     :columns="columns"
                     :editOn="editOn"
                     :cellClass="colors.cell"
                     :edgeClass="colors.edge"
                     :unitsPerOuter="unitsPerOuter"
-                    :cost="costs?.[baseCurrency.code]"
+                    :cost="costs?.[row.currency.code]"
                     :readonly="readonly"
-                    isBase
+                    :isBase="row.isBase"
+                    :autoMode="autoFromCost"
                     @change="onUpdate"
-                />
-
-                <PriceCurrencyTableRow
-                    v-for="currency in derivedVisibleCurrencies"
-                    :key="currency.code"
-                    v-model="prices[currency.code]"
-                    :currency="currency"
-                    :columns="columns"
-                    :editOn="editOn"
-                    :cellClass="colors.cell"
-                    :edgeClass="colors.edge"
-                    :unitsPerOuter="unitsPerOuter"
-                    :cost="costs?.[currency.code]"
-                    :readonly="readonly"
-                    @change="onUpdate"
-                />
-
-                <PriceCurrencyTableRow
-                    v-for="currency in (showHiddenCurrencies ? hiddenCurrencies : [])"
-                    :key="currency.code"
-                    v-model="prices[currency.code]"
-                    :currency="currency"
-                    :columns="columns"
-                    :editOn="editOn"
-                    :cellClass="colors.cell"
-                    :edgeClass="colors.edge"
-                    :unitsPerOuter="unitsPerOuter"
-                    :cost="costs?.[currency.code]"
-                    :readonly="readonly"
-                    @change="onUpdate"
-                />
+                >
+                    <template #cost-suffix="slotProps">
+                        <slot name="cost-suffix" v-bind="slotProps" />
+                    </template>
+                </PriceCurrencyTableRow>
 
                 <tr v-if="hiddenCurrencies.length" class="border-t border-gray-200 bg-gray-50/50">
                     <td :colspan="columns.length + 1" class="border-l-2 px-3 py-2" :class="colors.edge">

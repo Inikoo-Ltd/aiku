@@ -32,7 +32,9 @@ interface ProductItem {
     currency?: string;
     product?: {
         org_cost?: number;
+        shop_cost?: number;
         org_currency?: string;
+        shop_currency?: string;
         stock?: number;
         price?: number;
         rrp?: number;
@@ -68,7 +70,7 @@ const locale = inject("locale", {});
 // helper to calculate profit margin %
 function getMargin(item: ProductItem) {
     const p = Number(item.product?.price);
-    const cost = Number(item.product?.org_cost);
+    const cost = Number(item.product?.shop_cost);
 
     if (isNaN(p) || p === 0) return 0;
     if (isNaN(cost) || cost === 0) return 100;
@@ -82,7 +84,7 @@ function getRrpMargin(item: ProductItem) {
         ? Number(item.product?.rrp * (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1))
         : Math.round(Number(item.product?.price) * 2.4);
 
-    const cost = Number(item.product?.org_cost);
+    const cost = Number(item.product?.price);
 
     if (isNaN(rrp) || rrp === 0) return 0;
     if (isNaN(cost) || cost === 0) return 100;
@@ -133,6 +135,39 @@ modelValue.value.data.forEach((item) => {
         );
     }
 });
+
+// hydrate each shop's price & rrp from the master prices/rrps, matched by currency code
+const applyMasterPricing = () => {
+    const masterPrices = (props.form.master_prices ?? {}) as Record<string, { value: number | null }>;
+    const masterRrps = (props.form.master_rrps ?? {}) as Record<string, { value: number | null }>;
+
+    modelValue.value.data.forEach((item) => {
+        if (!item.product) {
+            return;
+        }
+
+        const currencyCode = item.product.shop_currency ?? props.currency;
+        const masterPrice = masterPrices[currencyCode]?.value;
+        const masterRrp = masterRrps[currencyCode]?.value;
+
+        if (masterPrice != null) {
+            item.product.price = masterPrice;
+        }
+
+        if (masterRrp != null) {
+            item.product.useCustomRrp = true;
+            item.product.rrp = masterRrp;
+        }
+    });
+
+    emits("change", modelValue.value);
+};
+
+watch(
+    () => [props.form.master_prices, props.form.master_rrps],
+    applyMasterPricing,
+    { deep: true, immediate: true }
+);
 
 
 function roundDown2(num: number) {

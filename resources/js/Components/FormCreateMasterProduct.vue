@@ -44,7 +44,8 @@ import Image from "@common/Components/Image.vue";
 import { faPencil, faImage } from "@fal";
 import { faBoxUp } from "@fas";
 import Toggle from "./Pure/Toggle.vue";
-import PureMultiplePriceCurrencyTable from "./Pure/PureMultiplePriceCurrencyTable.vue";
+import MasterPriceCurrencyTable from "./Pure/MasterPriceCurrencyTable.vue";
+import MasterRrpCurrencyTable from "./Pure/MasterRrpCurrencyTable.vue";
 
 
 library.add(
@@ -72,14 +73,13 @@ const props = defineProps<{
     masterProductCategoryId: number
     is_dropship: boolean
     price_rrp_warning_ratio : number
-    currencies_data? :any
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
 const tableData = ref(cloneDeep(props.shopsData));
 const detailsVisible = ref(true);
 const tableVisible = ref(true);
-const isFull = ref(true); // <-- state untuk toggle full screen
+const isFull = ref(true);
 let abortController: AbortController | null = null
 let debounceTimer: any = null
 const key = ref(ulid())
@@ -89,6 +89,9 @@ const loading = ref(null)
 const modalTradeUnit = ref(false)
 const dataTradeUnitEdit = ref(null)
 const listSelectorRef = ref<InstanceType<typeof ListSelector> | null>(null)
+const currencies_data = ref({})
+const org_data = ref(null)
+const avg_org_cost = ref(0)
 
 // Inertia form
 const form = useForm({
@@ -162,6 +165,7 @@ const getTableData = (data) => {
                 item.quantity = item.ds_quantity;
             }
         }
+
         try {
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
@@ -185,12 +189,18 @@ const getTableData = (data) => {
             }
 
             // Section: Modify pick_fractional from response to form.trade_units
-            for (const trade_unit of response.data.trade_units) {
+           /*  for (const trade_unit of response.data.trade_units) {
                 const target = form.trade_units.find((item) => item.id === trade_unit.id)
                 if (target) {
                     target.pick_fractional = trade_unit.pick_fractional
                 }
-            }
+            } */
+
+            currencies_data.value = response.data.currencies
+            form.master_prices = response.data.master_prices
+            form.master_rrps = response.data.master_rrps
+            org_data.value = response.data.org_data
+            avg_org_cost.value = response.data.avg_org_cost
             
         } catch (error: any) {
             if (!(axios.isCancel(error) || error.name === "CanceledError")) {
@@ -201,7 +211,6 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
-    console.log('selector:', value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code
@@ -211,7 +220,6 @@ const ListSelectorChange = (value) => {
         form.net_weight = value[0].net_weight
         form.description = value[0].description
         form.description_extra = value[0].description_extra
-       /*  form.units = value.length > 1 ? 1 : (value[0]?.quantity * value[0]?.units) || 1 */
         form.gross_weight = value[0]?.gross_weight || 0
         form.marketing_dimensions = value[0]?.dimensions || null     
     }
@@ -683,14 +691,12 @@ const successEditTradeUnit = (data) => {
                         </div>
                         <div>
                           <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Price')}}</label> -->
-                            <PureMultiplePriceCurrencyTable
+                            <MasterPriceCurrencyTable
                                 v-model="form.master_prices"
                                 :currencies="currencies_data"
-                                label="Price"
-                                color="blue"
-                                editOn="outer"
                                 :unitsPerOuter="unitsPerOuter"
-                                marginLabel="Margin"
+                                :org_data="org_data"
+                                :avg_org_cost="avg_org_cost"
                             />
                             <small v-if="form.errors.master_prices"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -701,15 +707,11 @@ const successEditTradeUnit = (data) => {
 
                         <div>
                           <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('RRP')}}</label> -->
-                            <PureMultiplePriceCurrencyTable
+                            <MasterRrpCurrencyTable
                                 v-model="form.master_rrps"
                                 :currencies="currencies_data"
-                                label="RRP"
-                                color="purple"
-                                editOn="unit"
                                 :unitsPerOuter="unitsPerOuter"
                                 :costs="priceByCurrency"
-                                marginLabel="Margin"
                             />
                             <small v-if="form.errors.master_rrps"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">

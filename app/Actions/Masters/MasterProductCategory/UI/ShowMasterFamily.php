@@ -317,7 +317,6 @@ class ShowMasterFamily extends GrpAction
                         'parameters' => array_merge($request->route()->originalParameters(), ['tab' => 'missing_gr']),
                     ] : null,
                 ],
-                "currencies_data" => $currenciesRate,
                 ...$tabs,
             ]
         )

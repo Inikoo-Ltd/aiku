@@ -1,10 +1,11 @@
 <script setup lang='ts'>
-import { computed } from 'vue'
+import { computed, inject} from 'vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink, faUnlink } from '@fal'
+import { faRobot, faPencil } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faLink, faUnlink)
+library.add(faLink, faUnlink, faRobot, faPencil)
 
 interface CurrencyPrice {
     value: number | null
@@ -12,7 +13,7 @@ interface CurrencyPrice {
 }
 
 interface PriceColumn {
-    kind: 'outer' | 'unit' | 'margin'
+    kind: 'cost' | 'outer' | 'unit' | 'margin'
     label: string
 }
 
@@ -20,6 +21,8 @@ const props = withDefaults(defineProps<{
     currency: {
         code: string
         symbol?: string
+        ratio_gbp?: number | null
+        ratio_eur?: number | null
     }
     columns: PriceColumn[]
     editOn: 'outer' | 'unit'
@@ -29,10 +32,12 @@ const props = withDefaults(defineProps<{
     cost?: number | null
     readonly?: boolean
     isBase?: boolean
+    autoMode?: boolean
 }>(), {
     unitsPerOuter: 1
 })
 
+const locale = inject("locale", {});
 const model = defineModel<CurrencyPrice>({ required: true })
 
 const emits = defineEmits<{
@@ -57,18 +62,20 @@ const editableValue = computed({
 })
 
 const margin = computed(() => {
-    if (model.value.value == null || model.value.value === 0 || props.cost == null) {
-        return null
+    const price = model.value.value
+
+    if (price == null || price === 0) {
+        return 0
     }
 
-    return Math.round(((model.value.value - props.cost) / model.value.value) * 100)
+    if (props.cost == null || props.cost === 0) {
+        return 100
+    }
+
+    return Math.round(((price - props.cost) / price) * 100)
 })
 
 const marginClass = computed(() => {
-    if (margin.value === null) {
-        return 'text-gray-400'
-    }
-
     if (margin.value <= 0) {
         return 'text-red-600'
     }
@@ -83,8 +90,14 @@ const derivedValue = (kind: 'outer' | 'unit') => {
         return '—'
     }
 
-    return `${props.currency.symbol ?? ''}${value.toFixed(2)}`
+    return  locale.currencyFormat(props.currency.code, value ) 
 }
+
+const costDisplay = computed(
+    () => props.cost == null
+        ? '—'
+        : locale.currencyFormat(props.currency.code, props.cost ) 
+)
 
 const toggleIndependent = () => {
     if (props.readonly) {
@@ -117,9 +130,14 @@ const toggleIndependent = () => {
             class="px-3 py-2 align-middle"
             :class="[cellClass, index === 0 ? `border-l-2 ${edgeClass}` : '']"
         >
-            <div v-if="column.kind === 'margin'" class="text-right tabular-nums">
+            <div v-if="column.kind === 'cost'" class="flex items-center justify-end gap-1.5 tabular-nums text-gray-600">
+                <span>{{ costDisplay }}</span>
+                <slot name="cost-suffix" :currency="currency" :cost="cost" />
+            </div>
+
+            <div v-else-if="column.kind === 'margin'" class="text-right tabular-nums">
                 <span class="font-medium" :class="marginClass">
-                    {{ margin === null ? '—' : `${margin}%` }}
+                    {{ `${margin}%` }}
                 </span>
             </div>
 
@@ -127,7 +145,7 @@ const toggleIndependent = () => {
                 <div class="min-w-0 flex-1">
                     <PureInputNumber
                         v-model="editableValue"
-                        :prefix="currency.symbol"
+                        :prefix="locale.currencySymbolNarrow(currency.code) ?? currency.symbol"
                         :readonly="readonly"
                         :disabled="!isBase && !model.independent"
                         :minValue="0"
@@ -136,13 +154,15 @@ const toggleIndependent = () => {
                     />
                 </div>
                 <button
-                    v-tooltip="isBase ? undefined : (model.independent ? ctrans('Independent price') : ctrans('Linked to exchange rate'))"
+                    v-tooltip="isBase ? undefined : (autoMode
+                        ? (model.independent ? ctrans('Custom RRP (click for auto)') : ctrans('Auto RRP (click to edit)'))
+                        : (model.independent ? ctrans('Independent price') : ctrans('Linked to exchange rate')))"
                     type="button"
                     :disabled="readonly || isBase"
                     :tabindex="isBase ? -1 : undefined"
                     :aria-hidden="isBase"
                     :aria-pressed="model.independent"
-                    :aria-label="ctrans('Independent price')"
+                    :aria-label="autoMode ? ctrans('Custom RRP') : ctrans('Independent price')"
                     class="shrink-0 rounded p-1.5 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                     :class="[
                         isBase ? 'invisible' : '',
@@ -150,7 +170,11 @@ const toggleIndependent = () => {
                     ]"
                     @click="toggleIndependent"
                 >
-                    <FontAwesomeIcon :icon="model.independent ? faUnlink : faLink" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon
+                        :icon="autoMode ? (model.independent ? faRobot : faPencil) : (model.independent ? faUnlink : faLink)"
+                        fixed-width
+                        aria-hidden="true"
+                    />
                 </button>
             </div>
 

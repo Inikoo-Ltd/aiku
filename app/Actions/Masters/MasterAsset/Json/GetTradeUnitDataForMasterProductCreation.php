@@ -74,14 +74,20 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         foreach ($openOrganisations as $organisation) {
             $organisationData[$organisation->id] = $this->getOrgStockData($organisation, $tradeUnits);
 
-            $grpCosts[$organisation->code] = data_get($organisationData, "{$organisation->id}.grp_cost");
+            $grpCost  = data_get($organisationData, "{$organisation->id}.grp_cost");
+            $baseCost = $grpCost > 0
+                ? formatPrice($grpCost, GetCurrencyExchange::run(group()->currency, $baseCurrency))
+                : null;
+
+            $organisationData[$organisation->id]['base_cost'] = $baseCost;
+
+            if ($baseCost !== null) {
+                $grpCosts[$organisation->code] = $baseCost;
+            }
         }
 
         if (count($grpCosts)) {
-            // In GRP Currency (GBP) average
-            $avgCostGBP = array_reduce($grpCosts, fn ($carry, $item) => $carry += $item) / count($grpCosts);
-            // In EUR Currency | Base 
-            $avgCost = formatPrice($avgCostGBP, GetCurrencyExchange::run(group()->currency, $baseCurrency)); 
+            $avgCost = array_reduce($grpCosts, fn ($carry, $item) => $carry += $item) / count($grpCosts);
         }
 
         $currencies = Currency::whereIn('id', $openShopsQuery->pluck('currency_id'))->get()->keyBy('id');
@@ -140,6 +146,8 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         data_set($finalData, 'total_units', $totalUnit);
         data_set($finalData, 'master_prices', $masterPrices);
         data_set($finalData, 'master_rrps', $masterRrps);
+        data_set($finalData, 'org_data', $organisationData);
+        data_set($finalData, 'avg_org_cost', $avgCost);
 
         return $finalData;
     }
@@ -204,6 +212,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
 
         return [
+            'org_code'               => $organisation->code,
             'stock'                  => $stock,
             'org_currency'           => $organisation->currency->code,
             'grp_currency'           => $organisation->group->currency->code,
