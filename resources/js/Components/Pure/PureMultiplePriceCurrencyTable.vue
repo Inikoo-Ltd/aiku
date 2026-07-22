@@ -146,24 +146,17 @@ const getRatio = (currency: { ratio_gbp: number | null, ratio_eur: number | null
 }
 
 const recalculateDerivedPrices = () => {
-    if (props.autoFromCost) {
-        currencyList.value.forEach(currency => {
-            const entry = prices.value[currency.code]
-            const cost = props.costs?.[currency.code]
+    const baseEntry = prices.value[baseCurrencyCode.value]
 
-            if (!entry || entry.independent) {
-                return
-            }
+    if (props.autoFromCost && baseEntry && !baseEntry.independent) {
+        const baseCost = props.costs?.[baseCurrencyCode.value]
 
-            entry.value = cost == null
-                ? null
-                : Math.round(cost * props.autoMultiplier * 100) / 100
-        })
-
-        return
+        baseEntry.value = baseCost == null
+            ? null
+            : Math.round(baseCost * props.autoMultiplier * 100) / 100
     }
 
-    const basePrice = prices.value[baseCurrencyCode.value]?.value
+    const basePrice = baseEntry?.value
 
     currencyList.value.forEach(currency => {
         const entry = prices.value[currency.code]
@@ -221,15 +214,11 @@ type CurrencyListItem = {
 const rows = computed(() => {
     const list: { currency: CurrencyListItem, isBase: boolean }[] = []
 
-    if (props.autoFromCost) {
-        visibleCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
-    } else {
-        if (baseCurrency.value) {
-            list.push({ currency: baseCurrency.value, isBase: true })
-        }
-
-        derivedVisibleCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
+    if (baseCurrency.value) {
+        list.push({ currency: baseCurrency.value, isBase: true })
     }
+
+    derivedVisibleCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
 
     if (showHiddenCurrencies.value) {
         hiddenCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
@@ -251,7 +240,7 @@ const rows = computed(() => {
                 <tr class="text-[11px] font-semibold uppercase tracking-wide">
                     <th
                         :colspan="columns.length + 1"
-                        class="border border-l-2 px-3 py-2 text-center"
+                        class="border border-l-2 border-r-2 px-3 py-2 text-center"
                         :class="colors.header"
                     >
                         {{ ctrans(label) }}
@@ -266,7 +255,7 @@ const rows = computed(() => {
                         v-for="(column, index) in columns"
                         :key="column.kind"
                         class="border px-3 py-2 text-right"
-                        :class="[colors.header, index === 0 ? 'border-l-2' : '']"
+                        :class="[colors.header, index === 0 ? 'border-l-2' : '', index === columns.length - 1 ? 'border-r-2' : '']"
                     >
                         {{ ctrans(column.label) }}
                     </th>
@@ -296,7 +285,7 @@ const rows = computed(() => {
                 </PriceCurrencyTableRow>
 
                 <tr v-if="hiddenCurrencies.length" class="border-t border-gray-200 bg-gray-50/50">
-                    <td :colspan="columns.length + 1" class="border-l-2 px-3 py-2" :class="colors.edge">
+                    <td :colspan="columns.length + 1" class="border-l-2 border-r-2 px-3 py-2" :class="colors.edge">
                         <button
                             type="button"
                             class="flex items-center gap-x-2 text-xs text-gray-500 transition-colors hover:text-gray-700"

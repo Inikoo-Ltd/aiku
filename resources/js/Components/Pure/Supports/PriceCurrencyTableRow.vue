@@ -46,6 +46,16 @@ const emits = defineEmits<{
 
 const units = computed(() => props.unitsPerOuter || 1)
 
+const showToggle = computed(() => props.autoMode ? true : !props.isBase)
+
+const useRobotIcon = computed(() => !!props.autoMode && !!props.isBase)
+
+const inputDisabled = computed(
+    () => props.autoMode
+        ? !model.value.independent
+        : (!props.isBase && !model.value.independent)
+)
+
 const unitValue = computed(
     () => model.value.value == null
         ? null
@@ -128,7 +138,11 @@ const toggleIndependent = () => {
             v-for="(column, index) in columns"
             :key="column.kind"
             class="px-3 py-2 align-middle"
-            :class="[cellClass, index === 0 ? `border-l-2 ${edgeClass}` : '']"
+            :class="[
+                cellClass,
+                index === 0 ? `border-l-2 ${edgeClass}` : '',
+                index === columns.length - 1 ? `border-r-2 ${edgeClass}` : ''
+            ]"
         >
             <div v-if="column.kind === 'cost'" class="flex items-center justify-end gap-1.5 tabular-nums text-gray-600">
                 <span>{{ costDisplay }}</span>
@@ -147,31 +161,31 @@ const toggleIndependent = () => {
                         v-model="editableValue"
                         :prefix="locale.currencySymbolNarrow(currency.code) ?? currency.symbol"
                         :readonly="readonly"
-                        :disabled="!isBase && !model.independent"
+                        :disabled="inputDisabled"
                         :minValue="0"
                         :required="isBase"
                         @update:modelValue="emits('change')"
                     />
                 </div>
                 <button
-                    v-tooltip="isBase ? undefined : (autoMode
+                    v-tooltip="!showToggle ? undefined : (useRobotIcon
                         ? (model.independent ? ctrans('Custom RRP (click for auto)') : ctrans('Auto RRP (click to edit)'))
                         : (model.independent ? ctrans('Independent price') : ctrans('Linked to exchange rate')))"
                     type="button"
-                    :disabled="readonly || isBase"
-                    :tabindex="isBase ? -1 : undefined"
-                    :aria-hidden="isBase"
+                    :disabled="readonly || !showToggle"
+                    :tabindex="showToggle ? undefined : -1"
+                    :aria-hidden="!showToggle"
                     :aria-pressed="model.independent"
-                    :aria-label="autoMode ? ctrans('Custom RRP') : ctrans('Independent price')"
+                    :aria-label="useRobotIcon ? ctrans('Custom RRP') : ctrans('Independent price')"
                     class="shrink-0 rounded p-1.5 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                     :class="[
-                        isBase ? 'invisible' : '',
+                        showToggle ? '' : 'invisible',
                         model.independent ? 'text-green-500' : 'text-gray-300 hover:text-gray-500'
                     ]"
                     @click="toggleIndependent"
                 >
                     <FontAwesomeIcon
-                        :icon="autoMode ? (model.independent ? faRobot : faPencil) : (model.independent ? faUnlink : faLink)"
+                        :icon="useRobotIcon ? (model.independent ? faRobot : faPencil) : (model.independent ? faUnlink : faLink)"
                         fixed-width
                         aria-hidden="true"
                     />
