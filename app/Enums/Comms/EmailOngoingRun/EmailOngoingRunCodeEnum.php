@@ -64,4 +64,6 @@ enum EmailOngoingRunCodeEnum: string
     case INVOICE_PAID = 'invoice_paid';
     case WEB_USER_REGISTRATION = 'web_user_registration';
     case NEW_REVIEW = 'new_review';
+
+    case PROSPECT_CONVERTION_1 = 'prospect_convertion_1';
 }

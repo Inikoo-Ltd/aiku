@@ -92,7 +92,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             OutboxCodeEnum::REVIEW_REMINDER,
-            OutboxCodeEnum::INVOICE_PAID
+            OutboxCodeEnum::INVOICE_PAID,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
@@ -120,7 +121,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::NEW_REVIEW
             => OutboxTypeEnum::USER_NOTIFICATION,
-            OutboxCodeEnum::BASKET_PUSH, OutboxCodeEnum::NEW_CUSTOMER_PUSH, OutboxCodeEnum::PROSPECT_CONVERTION_1
+            OutboxCodeEnum::BASKET_PUSH, OutboxCodeEnum::NEW_CUSTOMER_PUSH
             => OutboxTypeEnum::PUSH,
         };
     }
