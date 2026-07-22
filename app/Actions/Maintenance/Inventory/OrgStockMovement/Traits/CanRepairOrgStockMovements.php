@@ -8,6 +8,7 @@
 
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement\Traits;
 
+use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
@@ -188,6 +189,25 @@ trait CanRepairOrgStockMovements
             ->first();
 
         if ($lastAssociationMovement?->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
+            return;
+        }
+
+        $latestFutureAssociationMovement = DB::table('org_stock_movements')
+            ->select('type')
+            ->where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+            ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE->value, OrgStockMovementTypeEnum::DISASSOCIATE->value])
+            ->where('date', '>', $purchase->date->format('Y-m-d H:i:s.u'))
+            ->orderByDesc('date')
+            ->orderByDesc('source_id')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($latestFutureAssociationMovement?->type != OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+            StoreLocationOrgStock::make()->action($orgStock, $location, []);
+            $command?->warn("Added missing location stock for purchase {$purchase->id}");
+
             return;
         }
 
