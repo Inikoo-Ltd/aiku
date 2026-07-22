@@ -269,9 +269,9 @@ const contentClass = computed(() =>
       lg:items-start
       lg:justify-between
     ">
-            <div class="min-w-0 flex-1">
+            <div class="min-w-16 flex-1">
               <h1 ref="titleRef" :style="titleStyles" :class="[
-                'font-bold leading-[1.15] break-words',
+                'font-bold break-words',
                 titleState === 'truncated' ? 'title--truncated' : ''
               ]">
                 {{ fieldValue.family?.name }}
@@ -279,7 +279,7 @@ const contentClass = computed(() =>
             </div>
 
             <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
-              class="flex gap-x-1 gap-y-1 md:gap-y-2 offer">
+              class="flex gap-x-1 gap-y-1 offer flex-wrap lg:justify-end">
               <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type == 'Category Quantity Ordered Order Interval'
                 ? 'active-inactive-gr-v2'
                 : 'max_discount_2'
@@ -414,7 +414,7 @@ const contentClass = computed(() =>
 @media (min-width: 1280px) {
   .editor-class h1 {
     font-size: 1.8rem;
-    line-height: 1.5rem;
+    /* line-height: 1.5rem; */
     /* lg */
   }
 }
