@@ -51,15 +51,18 @@ class RepairLocationOrgStockPurchasesPostMigration implements ShouldBeUnique
         $purchases = OrgStockMovement::where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
             ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+            ->where('date', '>', '2026-07-10 03:00:00')
             ->orderBy('date')
             ->get();
 
         /** @var OrgStockMovement $purchase */
         foreach ($purchases as $purchase) {
             $location = $purchase->location;
-            $this->fixForAuditsInPairs($location, $orgStock, $command);
-            $this->fixForPurchaseAndAssociatePairs($location, $orgStock, $command);
-            $this->fixForPostPurchaseAssociates($location, $orgStock, $command);
+            if($location) {
+                $this->fixForAuditsInPairs($location, $orgStock, $command);
+                $this->fixForPurchaseAndAssociatePairs($location, $orgStock, $command);
+                $this->fixForPostPurchaseAssociates($location, $orgStock, $command);
+            }
         }
 
 

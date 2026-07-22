@@ -162,6 +162,7 @@ trait CanRepairOrgStockMovements
         $purchases = OrgStockMovement::where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
             ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+            ->where('date', '>', '2026-07-10 03:00:00')
             ->orderBy('date')
             ->get();
 
