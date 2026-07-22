@@ -109,7 +109,7 @@ const stockCostStats = computed(() => {
     const stockCost = props.data.stocks_management?.stock_cost
     return [
         { title: ctrans("Future delivered cost"), value: stockCost?.current_supplier_sku_cost || 0 },
-        { title: ctrans("SKU value"), value: stockCost?.sku_value || 0 },
+        { title: ctrans("SKO value"), value: stockCost?.sku_value || 0 },
         { title: ctrans("Total stock value"), value: stockCost?.total_stock_value || 0 },
     ]
 })

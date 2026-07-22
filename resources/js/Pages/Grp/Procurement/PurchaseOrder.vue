@@ -18,6 +18,9 @@ import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurem
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
+import { notify } from "@kyvg/vue3-notification"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
@@ -205,6 +208,32 @@ watch(isModalProductListOpen, (isOpen, wasOpen) => {
 	}
 })
 
+const confirm = useConfirm()
+const deleteLoading = ref(false)
+
+const confirmDeletePurchaseOrder = (action: any) => {
+	confirm.require({
+		message: trans("Are you sure you want to delete this purchase order? This action cannot be undone."),
+		header: trans("Delete purchase order"),
+		icon: "pi pi-exclamation-triangle",
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Delete"), severity: "danger" },
+		accept: () => {
+			router.delete(route(action.route.name, action.route.parameters), {
+				onStart: () => { deleteLoading.value = true },
+				onFinish: () => { deleteLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to delete purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
 const component = computed(() => {
 	const components: Component = {
 		showcase: PurchaseOrderData,
@@ -248,6 +277,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:icon="action.icon"
 				:tooltip="action.tooltip"
 				@click="() => openProductListModal(action)"
+			/>
+		</template>
+
+		<template #button-delete-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="deleteLoading"
+				@click="() => confirmDeletePurchaseOrder(action)"
 			/>
 		</template>
 	</PageHeading>
@@ -468,4 +508,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		v-model:currentTab="currentTab"
 		:typeModel="'purchase_order'"
 	/>
+
+	<ConfirmDialog />
 </template>

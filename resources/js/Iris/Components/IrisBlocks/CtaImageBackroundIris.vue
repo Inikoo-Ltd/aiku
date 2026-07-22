@@ -20,7 +20,7 @@ const layout: any = inject("layout", {})
 
 <template>
 	  <div  :id="fieldValue?.id ? fieldValue?.id  : 'cta-image-background'+indexBlock"  component="cta-image-background" >
-		<div class="relative grid rounded-lg  shadow-lg" :style="{
+		<div class="relative grid rounded-lg shadow-lg" :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(fieldValue.container?.properties, screenType)
 		}">
@@ -43,20 +43,25 @@ const layout: any = inject("layout", {})
 			<!-- Text + button overlay -->
 			<div :style="getStyles(fieldValue.container.properties?.block, screenType)"
 				class="relative z-10 w-full p-6 sm:flex sm:flex-col sm:items-start lg:w-96">
-				<div class="text-center lg:text-left text-gray-700 pr-3 mb-4 w-full">
+				<div class="text-center md:text-left text-gray-700 pr-3 mb-4 w-full">
 					<div v-html="fieldValue.text" />
 				</div>
-
 
 				<div v-if="fieldValue?.button?.show" class="flex w-full" :style="getStyles(fieldValue.button?.box?.container?.properties, screenType)">
 					<LinkIris typeof="button" :href="fieldValue?.button?.link?.href"
 						:canonical_url="fieldValue?.button?.link?.canonical_url" :target="fieldValue?.button?.link?.target"
-						:type="fieldValue?.button?.link?.type" >
+						:type="fieldValue?.button?.link?.type" class="w-full">
 						<template #default>
-							<Button :injectStyle="{
-								...getStyles(fieldValue?.button?.container?.properties, screenType),
-								width: 'fit-content !important'
-							}" :label="fieldValue?.button?.text" />
+							<Button
+								:injectStyle="{
+									...getStyles(fieldValue?.button?.container?.properties, screenType),
+								}"
+								class="w-full text-center md:!w-fit"
+							>
+								<template #label>
+									<span class="text-center w-full">{{ fieldValue?.button?.text }}</span>
+								</template>
+							</Button>
 						</template>
 					</LinkIris>
 				</div>
