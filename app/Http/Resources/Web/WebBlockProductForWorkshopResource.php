@@ -35,8 +35,14 @@ class WebBlockProductForWorkshopResource extends JsonResource
         /** @var Product $product */
         $product = $this->resource;
 
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $product->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
+
         $specifications = [
-            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
+            'countries_of_origin' => $countriesOrigin,
             'ingredients'       => $product->marketing_ingredients,
             'gross_weight'      => $product->gross_weight,
             'barcode'           => $product->barcode,
