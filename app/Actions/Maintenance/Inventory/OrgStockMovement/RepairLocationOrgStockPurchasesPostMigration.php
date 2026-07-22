@@ -114,11 +114,19 @@ class RepairLocationOrgStockPurchasesPostMigration implements ShouldBeUnique
             $orgStocks->where('organisation_id', $organisation->id);
         }
 
+        $orgStocks->whereHas('orgStockMovements', function ($query) {
+            $query->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
+                ->where('date', '>', '2026-07-10 03:00:00');
+        });
+
         $async = (bool)$command->option('async');
 
         $orgStocks
             ->chunkById(250, function ($orgStockChunk) use ($command, $async) {
                 foreach ($orgStockChunk as $orgStock) {
+                    
+                    
+                    
                     if ($async) {
                         RepairLocationOrgStockPurchasesPostMigration::dispatch($orgStock->id);
                     } else {
