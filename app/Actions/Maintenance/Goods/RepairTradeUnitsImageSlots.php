@@ -65,10 +65,9 @@ class RepairTradeUnitsImageSlots
             }
         }
 
-        // Untagged images (no sub_scope, not already in any slot) -> next empty Art slot.
         $orphans = $tradeUnit->images
             ->filter(fn($media) => blank($media->pivot->sub_scope) && ! isset($usedMediaIds[(int) $media->id]))
-            ->sortBy('id');
+            ->sortBy([['created_at', 'desc'], ['id', 'desc']]);
 
         foreach ($orphans as $orphan) {
             $target = null;
@@ -87,6 +86,13 @@ class RepairTradeUnitsImageSlots
             $usedMediaIds[(int) $orphan->id] = true;
         }
 
+        $artImagesInSlots = 0;
+        foreach (self::ART_COLUMNS as $column) {
+            if (! blank($tradeUnit->getAttribute($column)) || isset($modelData[$column])) {
+                $artImagesInSlots++;
+            }
+        }
+
         if (! $dryRun) {
             if (! empty($modelData)) {
                 UpdateTradeUnitImages::run($tradeUnit, $modelData, false);
@@ -98,9 +104,10 @@ class RepairTradeUnitsImageSlots
         }
 
         return [
-            'trade_unit_id' => $tradeUnit->id,
-            'fixed'         => count($modelData),
-            'columns'       => array_keys($modelData),
+            'trade_unit_id'         => $tradeUnit->id,
+            'fixed'                 => count($modelData),
+            'columns'               => array_keys($modelData),
+            'art_images_in_slots'    => $artImagesInSlots,
         ];
     }
 
@@ -142,7 +149,8 @@ class RepairTradeUnitsImageSlots
             $result = $this->handle($tradeUnit, $dryRun, forcePropagate: true);
             $command->info(($dryRun ? '[DRY RUN] ' : '') . "Trade Unit {$tradeUnit->id}: fixed {$result['fixed']} slot(s)" .
                 ($result['fixed'] > 0 ? ' [' . implode(', ', $result['columns']) . ']' : '') .
-                ($dryRun ? '' : ' — propagated to dependants'));
+                ($dryRun ? '' : ' — propagated to dependants') .
+                ($result['art_images_in_slots'] > 0 ? " — {$result['art_images_in_slots']} image(s) didn't overflow" : ''));
 
             return Command::SUCCESS;
         }
