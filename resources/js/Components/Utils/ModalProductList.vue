@@ -189,7 +189,41 @@ const refreshSingleProduct = async (productData: any) => {
 }
 
 const isXxLoading = ref<number | null>(null)
+
+const onSubmitPurchaseOrderProduct = async (product: any) => {
+	const row = product.data
+	isXxLoading.value = row.id
+
+	try {
+		if (Number(row.quantity_ordered) > 0 && row.saveRoute) {
+			const method = String(row.saveRoute.method ?? 'post').toLowerCase()
+			await axios[method](route(row.saveRoute.name, row.saveRoute.parameters), {
+				quantity_ordered: row.quantity_ordered,
+			})
+			await refreshSingleProduct(row)
+			notify({ title: trans('Success'), text: trans('Quantity updated'), type: 'success' })
+		} else if (Number(row.quantity_ordered) === 0 && row.deleteRoute) {
+			await axios.delete(route(row.deleteRoute.name, row.deleteRoute.parameters))
+			await refreshSingleProduct(row)
+			notify({ title: trans('Success'), text: trans('Product successfully deleted.'), type: 'success' })
+		}
+	} catch (error: any) {
+		notify({
+			title: trans('Something went wrong'),
+			text: error?.response?.data?.message || trans('Failed to add or update the quantity'),
+			type: 'error',
+		})
+	} finally {
+		isXxLoading.value = null
+	}
+}
+
 const onSubmitAddProducts = async (data: any, product: any) => {
+	if (props.typeModel === "purchase_order") {
+		await onSubmitPurchaseOrderProduct(product)
+		return
+	}
+
 	const productId = product.data.purchase_order_id
 	const orderId = product.data.order_id
 	isXxLoading.value = product.data.id
