@@ -14,7 +14,6 @@ use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
-use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
@@ -53,78 +52,44 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             ];
         }
 
-        $totalUnit = 1;
-        if (count($tradeUnits) == 1) {
-            $totalUnit = array_first($tradeUnits)['quantity'];
-        }
-
         $masterShop = $masterProductCategory->masterShop;
-        
-        $openShopsQuery = $masterShop->shops()->where('state', ShopStateENUM::OPEN);
 
-        $baseCurrency      = Currency::where('code', 'EUR')->first();
+        $openShops = $masterShop->shops()->where('state', ShopStateEnum::OPEN)->get();
 
-        $openOrganisations = Organisation::whereIn('id', $openShopsQuery->pluck('organisation_id'))->get();
-        
-        $organisationData  = [];
-        $grpCosts          = [];
-        $avgCost           = 0;
-        $totalAvailGrpCost = 0;
-
-        foreach ($openOrganisations as $organisation) {
-            $organisationData[$organisation->id] = $this->getOrgStockData($organisation, $tradeUnits);
-
-            $grpCosts[$organisation->code] = data_get($organisationData, "{$organisation->id}.grp_cost");
+        $organisationsData = [];
+        /** @var Shop $shop */
+        foreach ($openShops as $shop) {
+            $organisationsData[$shop->organisation_id]['org_stocks_data'] =
+                $this->getOrgStockData($shop->organisation, $tradeUnits);
         }
 
-        if (count($grpCosts)) {
-            // In GRP Currency (GBP) average
-            $avgCostGBP = array_reduce($grpCosts, fn ($carry, $item) => $carry += $item) / count($grpCosts);
-            // In EUR Currency | Base 
-            $avgCost = formatPrice($avgCostGBP, GetCurrencyExchange::run(group()->currency, $baseCurrency)); 
-        }
-
-        $currencies = Currency::whereIn('id', $openShopsQuery->pluck('currency_id'))->get()->keyBy('id');
-        $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseCurrency) {
-            $ratioEuro  = GetCurrencyExchange::run($baseCurrency, $currency);
-
-            return [
-                $currency->code => [
-                    'ratio_eur'         => $ratioEuro,
-                    'currency'          => $currency->code,
-                    'currency_symbol'   => $currency->symbol,
-                    'currency_id'       => $currency->id,
-                ]
-            ];
-        });
-
-        $masterPrices = $currenciesRate->map(fn ($ratio) => [
-            'value'         => formatPrice(data_get($ratio, 'ratio_eur', 1), $avgCost),
-            'independent'   => false
-        ]);
-        $masterRrps   = $currenciesRate->map(fn ($ratio) => [
-            'value'         => formatPrice(data_get($ratio, 'ratio_eur', 1), round(($avgCost / $totalUnit) * 2.4, 2)),
-            'independent'   => false
-        ]);
 
         $finalData = [];
 
-        foreach($openShopsQuery->get() as $shop) {
-            $orgStocksData = $organisationData[$shop->organisation_id];
-            $shopCurrencyCode = $shop->currency->code;
+        /** @var Shop $shop */
+        foreach ($openShops as $shop) {
+            $orgStocksData = $organisationsData[$shop->organisation_id]['org_stocks_data'];
 
-            if (!$avgCost) {
+            // TODO MasterLevel Price RRP (Raul)
+            // TODO Update logic to check for Shop settings (follow master price or not)
+
+            if ($orgStocksData['org_cost'] === null) {
                 $shopCost       = null;
+                $warehouseValue = null;
                 $price          = null;
                 $rrp            = null;
             } else {
-                $shopCost       = $masterPrices->get($shopCurrencyCode)['value'];
-                $price          = round($shopCost * $shop->cost_price_ratio, 2);
-                $rrp            = round($price * 2.4, 2);
+                $shopCost       = round($orgStocksData['org_cost'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
+                $warehouseValue = round($orgStocksData['org_value_in_warehouse'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
+
+                $price = round($shopCost * $shop->cost_price_ratio, 2);
+                $rrp   = round($price * 2.4, 2);
             }
 
-            $orgStocksData['shop_currency']        = $shopCurrencyCode;
+
+            $orgStocksData['shop_currency']        = $shop->currency->code;
             $orgStocksData['shop_cost']            = $shopCost;
+            $orgStocksData['shop_warehouse_value'] = $warehouseValue;
             $orgStocksData['id']                   = $shop->id;
             $orgStocksData['price']                = $price ?? 0.01;
             $orgStocksData['rrp']                  = $rrp ?? 0.01;
@@ -133,13 +98,23 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
                 ? round((($orgStocksData['price'] - $orgStocksData['shop_cost']) / $orgStocksData['price']) * 100, 2)
                 : null;
 
-            $finalData['shops'][] = $orgStocksData;
+            $finalData['shops'][] =
+                $orgStocksData;
         }
 
-        data_set($finalData, 'currencies', $currenciesRate);
-        data_set($finalData, 'total_units', $totalUnit);
-        data_set($finalData, 'master_prices', $masterPrices);
-        data_set($finalData, 'master_rrps', $masterRrps);
+        foreach ($tradeUnits as $tradeUnit) {
+            $packedIn = DB::table('model_has_trade_units')
+                ->select('quantity')
+                ->where('model_has_trade_units.model_type', 'Stock')
+                ->where('model_has_trade_units.trade_unit_id', $tradeUnit['id'])
+                ->first();
+
+            $finalData['trade_units'][] = [
+                'id'              => $tradeUnit['id'],
+                'images'          => $tradeUnit['images'],
+                'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit['quantity'] / $packedIn->quantity)), $packedIn->quantity),
+            ];
+        }
 
         return $finalData;
     }
