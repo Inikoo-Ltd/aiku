@@ -201,6 +201,17 @@ class ShowSupplierProduct extends InertiaAction
 
                 ]
             ],
+            'grp.supply-chain.supplier_products.show' => [
+                'label' => $supplierProduct->code,
+                'route' => [
+                    'name'       => $routeName,
+                    'parameters' => [
+                        'supplierProduct' => $supplierProduct->slug
+                    ]
+
+                ]
+            ],
+            default => null,
         };
     }
 }
