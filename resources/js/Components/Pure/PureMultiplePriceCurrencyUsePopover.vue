@@ -1,11 +1,10 @@
 <script setup lang='ts'>
-import { computed, onMounted, ref, watch } from 'vue'
-import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
+import { computed, ref, watch } from 'vue'
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronDown } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PriceCurrencyRow from '@/Components/Pure/Supports/PriceCurrencyRow.vue'
-import axios from 'axios'
 library.add(faChevronDown)
 
 interface CurrencyRate {
@@ -26,7 +25,6 @@ const props = withDefaults(defineProps<{
     currencies: Record<string, CurrencyRate>
     readonly?: boolean
     visibleCurrencyCodes?: string[]
-    masterAsset: number | string
 }>(), {
     visibleCurrencyCodes: () => ['GBP', 'EUR']
 })
@@ -112,24 +110,9 @@ watch(baseCurrencyCode, onUpdate)
 const filledHiddenCurrenciesCount = computed(
     () => hiddenCurrencies.value.filter(currency => prices.value[currency.code]?.independent).length
 )
-
-
-onMounted(async () => {
-    const { data } = await axios.post(
-        route('grp.json.master_products.get_price_rebels', {
-            masterAsset: props.masterAsset
-        }),
-        {
-            type: 'price'
-        }
-    )
-
-    console.log(data)
-})
 </script>
 
 <template>
-    {{ masterAsset }}
     <div>
         <div v-if="baseCurrency" class="relative py-1 pl-8">
             <span class="absolute bottom-0 left-3 top-1/2 w-px bg-gray-200" aria-hidden="true" />
@@ -169,12 +152,12 @@ onMounted(async () => {
             />
         </div>
 
-        <Disclosure v-if="hiddenCurrencies.length" as="div" v-slot="{ open }">
+        <Popover v-if="hiddenCurrencies.length" as="div" class="relative" v-slot="{ open }">
             <div class="relative py-1 pl-8">
                 <span class="absolute inset-y-0 left-3 w-px bg-gray-200" aria-hidden="true" />
 
 
-                <DisclosureButton class="flex w-full items-center gap-x-2 py-1 text-sm text-gray-500 hover:text-gray-700">
+                <PopoverButton class="flex w-full items-center gap-x-2 py-1 text-sm text-gray-500 hover:text-gray-700">
                     <FontAwesomeIcon
                         :icon="faChevronDown"
                         class="text-xs transition-transform duration-200"
@@ -190,38 +173,40 @@ onMounted(async () => {
                     >
                         {{ filledHiddenCurrenciesCount }} {{ ctrans('independent') }}
                     </span>
-                </DisclosureButton>
+                </PopoverButton>
             </div>
 
-            <DisclosurePanel>
-                <div
-                    v-for="(currency, index) in hiddenCurrencies"
-                    :key="currency.code"
-                    class="relative py-1 pl-8"
-                >
-                    <span
-                        class="absolute left-3 top-0 w-px bg-gray-200"
-                        :class="index === hiddenCurrencies.length - 1 ? 'h-1/2' : 'bottom-0'"
-                        aria-hidden="true"
-                    />
-                    <template v-if="!prices[currency.code].independent">
-                        <span class="absolute left-3 top-1/2 h-px w-3 bg-gray-200" aria-hidden="true" />
+            <transition name="headlessui">
+                <PopoverPanel class="absolute left-0 z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
+                    <div
+                        v-for="(currency, index) in hiddenCurrencies"
+                        :key="currency.code"
+                        class="relative py-1 pl-8"
+                    >
                         <span
-                            class="absolute left-[1.25rem] top-1/2 h-0 w-0 -translate-y-1/2 border-y-[3px] border-l-[4px] border-y-transparent border-l-gray-300"
+                            class="absolute left-3 top-0 w-px bg-gray-200"
+                            :class="index === hiddenCurrencies.length - 1 ? 'h-1/2' : 'bottom-0'"
                             aria-hidden="true"
                         />
-                    </template>
+                        <template v-if="!prices[currency.code].independent">
+                            <span class="absolute left-3 top-1/2 h-px w-3 bg-gray-200" aria-hidden="true" />
+                            <span
+                                class="absolute left-[1.25rem] top-1/2 h-0 w-0 -translate-y-1/2 border-y-[3px] border-l-[4px] border-y-transparent border-l-gray-300"
+                                aria-hidden="true"
+                            />
+                        </template>
 
-                    <PriceCurrencyRow
-                        v-model="prices[currency.code]"
-                        :currency="currency"
-                        :readonly="readonly"
-                        :disabled="!prices[currency.code].independent"
-                        showIndependent
-                        @change="onUpdate"
-                    />
-                </div>
-            </DisclosurePanel>
-        </Disclosure>
+                        <PriceCurrencyRow
+                            v-model="prices[currency.code]"
+                            :currency="currency"
+                            :readonly="readonly"
+                            :disabled="!prices[currency.code].independent"
+                            showIndependent
+                            @change="onUpdate"
+                        />
+                    </div>
+                </PopoverPanel>
+            </transition>
+        </Popover>
     </div>
 </template>

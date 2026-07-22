@@ -37,6 +37,7 @@ defineProps<{
             :readonly="fieldData?.readonly"
             :visibleCurrencyCodes="fieldData?.visibleCurrencyCodes"
             v-model="form[fieldName]"
+            v-bind="fieldData"
         />
         <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
             {{ form.errors[fieldName] }}

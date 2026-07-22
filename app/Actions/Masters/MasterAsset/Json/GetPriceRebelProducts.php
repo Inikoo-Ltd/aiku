@@ -26,22 +26,23 @@ class GetPriceRebelProducts extends GrpAction
             ->mapWithKeys(function ($product) use ($getPrice) {
                 $shop = $product->shop;
                 if (
-                    data_get($shop->settings, 'catalog.follow_master_pricing', true) ||
-                    !$product->family->not_follow_master_prices ||
-                    !$product->not_follow_master_prices
+                    !data_get($shop->settings, 'catalog.follow_master_pricing', true) ||
+                    $product->family->not_follow_master_prices ||
+                    $product->not_follow_master_prices
                 ) {
-                    return [];
+                    return [
+                        $shop->id => [
+                            'id'                => $product->id,
+                            'shop_id'           => $shop->id,
+                            'shop_code'         => $shop->code,
+                            'currency_code'     => $product->currency?->code ?? $shop->currency->code,
+                            'value'             => $getPrice ? $product->price : $product->rrp,
+                        ]
+                    ];
                 }
+                
+                return [];
 
-                return [
-                    $shop->id => [
-                        'id'                => $product->id,
-                        'shop_id'           => $shop->id,
-                        'shop_code'         => $shop->code,
-                        'currency_code'     => $product->currency?->code ?? $shop->currency->code,
-                        'value'             => $getPrice ? $product->price : $product->rrp,
-                    ]
-                ];
             })
             ->toArray();
     }

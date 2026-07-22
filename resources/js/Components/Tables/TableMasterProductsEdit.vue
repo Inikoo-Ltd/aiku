@@ -22,6 +22,7 @@ import { router } from '@inertiajs/vue3'
 import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue'
 import PureInput from '../Pure/PureInput.vue'
 import { RouteParams } from 'ziggy-js'
+import PureMultiplePriceCurrencyUsePopover from '../Pure/PureMultiplePriceCurrencyUsePopover.vue'
 
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
@@ -30,6 +31,10 @@ library.add(faSearch, faColumns)
 // onMounted(() => {
 //     ProductService.getProducts().then((data) => (products.value = data))
 // })
+
+const props = defineProps<{
+    currencies? : any
+}>()
 
 const layout = inject('layout', layoutStructure)
 
@@ -128,7 +133,7 @@ const rowClass = (xxx: any) => {
 
 
 // Section: multiselect columns selector
-const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', /* 'price', 'rrp', */ 'units', 'unit', 'gross_weight', 'family_id', ])
+const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'master_price', 'master_rrp', 'units', 'unit', 'gross_weight', 'family_id', ])
 const groupedColumnList = ref([
     {
         label: 'General',
@@ -139,13 +144,13 @@ const groupedColumnList = ref([
             { label: 'Is For Sale?', value: 'is_for_sale' }
         ]
     },
-   /*  {
+    {
         label: 'Pricing',
         items: [
-            { label: 'Price', value: 'price' },
-            { label: 'RRP', value: 'rrp' },
+            { label: 'Price', value: 'master_price' },
+            { label: 'RRP', value: 'master_rrp' },
         ]
-    }, */
+    },
     {
         label: 'Uniting',
         items: [
@@ -398,9 +403,10 @@ const onSelectFamily = (option: any) => {
                 </Column>
 
                 <!-- Column: Price -->
-                <Column v-if="selectedColumns.includes('price')" field="price" header="Price" sortable style="min-width: 8rem">
+                <Column v-if="selectedColumns.includes('master_price')" field="price" header="Price" sortable style="min-width: 8rem">
                     <template #body="slotProps">
-                        <InputNumber
+                        <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_price" :currencies="currencies" />
+                       <!--  <InputNumber
                             v-model="slotProps.data.price"
                             @input="(e) => slotProps.data.price = e?.value ?? 0"
                             mode="currency"
@@ -410,14 +416,15 @@ const onSelectFamily = (option: any) => {
                             locale="en-US"
                             :min="0"
                             fluid
-                        />
+                        /> -->
                     </template>
                 </Column>
                 
                 <!-- Column: RRP -->
-                <Column v-if="selectedColumns.includes('rrp')" field="rrp" header="RRP" sortable style="min-width: 8rem">
+                <Column v-if="selectedColumns.includes('master_rrp')" field="rrp" header="RRP" sortable style="min-width: 8rem">
                     <template #body="slotProps">
-                        <InputNumber
+                         <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_rrp" :currencies="currencies" />
+                       <!--  <InputNumber
                             v-model="slotProps.data.rrp"
                             @input="(e) => slotProps.data.rrp = e?.value ?? 0"
                             mode="currency"
@@ -427,7 +434,7 @@ const onSelectFamily = (option: any) => {
                             locale="en-US"
                             :min="0"
                             fluid
-                        />
+                        /> -->
                     </template>
                 </Column>
                 

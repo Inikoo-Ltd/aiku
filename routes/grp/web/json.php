@@ -294,7 +294,7 @@ Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::
 
 Route::get('get-pick-fractional', GetPickFractional::class)->name('product.get-pick-fractional')->withoutScopedBindings();
 
-Route::get('{masterAsset:id}/get-price-rebels', GetPriceRebelProducts::class)->name('master_products.get_price_rebels')->withoutScopedBindings();
+Route::post('{masterAsset:id}/get-price-rebels', GetPriceRebelProducts::class)->name('master_products.get_price_rebels')->withoutScopedBindings();
 
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
 
