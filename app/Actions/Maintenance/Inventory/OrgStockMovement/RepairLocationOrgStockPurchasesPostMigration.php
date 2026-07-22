@@ -14,7 +14,10 @@ use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Maintenance\Inventory\OrgStockMovement\Traits\CanRepairOrgStockMovements;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockMovement;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -44,9 +47,16 @@ class RepairLocationOrgStockPurchasesPostMigration implements ShouldBeUnique
             return;
         }
 
-        foreach (
-            $orgStock->locations as $location
-        ) {
+
+        $purchases = OrgStockMovement::where('org_stock_id', $orgStock->id)
+            ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+            ->orderBy('date')
+            ->get();
+
+        /** @var OrgStockMovement $purchase */
+        foreach ($purchases as $purchase) {
+            $location = $purchase->location;
             $this->fixForAuditsInPairs($location, $orgStock, $command);
             $this->fixForPurchaseAndAssociatePairs($location, $orgStock, $command);
             $this->fixForPostPurchaseAssociates($location, $orgStock, $command);
