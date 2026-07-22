@@ -159,22 +159,22 @@ class UpdateShop extends OrgAction
         $sesFailoverAuditNew = [];
 
         foreach ([
-                    'access_id' => 'aws_ses_failover_access_id', 
-                    'access_key' => 'aws_ses_failover_access_key', 
+                    'access_id' => 'aws_ses_failover_access_id',
+                    'access_key' => 'aws_ses_failover_access_key',
                     'region' => 'aws_ses_failover_region'
                 ] as $field => $auditKey) {
-            if(!Arr::exists($modelData, $field)) {
+            if (!Arr::exists($modelData, $field)) {
                 continue;
             }
 
             $oldValue = Arr::get($shop->settings ?? [], "email.provider.failover.$field");
             $newValue = Arr::get($modelData, $field);
 
-            if($oldValue === $newValue) {
+            if ($oldValue === $newValue) {
                 continue;
             }
 
-            if($field === 'region') {
+            if ($field === 'region') {
                 $sesFailoverAuditOld[$auditKey] = $oldValue;
                 $sesFailoverAuditNew[$auditKey] = $newValue;
 
@@ -186,22 +186,22 @@ class UpdateShop extends OrgAction
         }
 
         foreach ([
-                    'customer_notification_access_id' => 'aws_ses_customer_notification_access_id', 
-                    'customer_notification_access_key' => 'aws_ses_customer_notification_access_key', 
+                    'customer_notification_access_id' => 'aws_ses_customer_notification_access_id',
+                    'customer_notification_access_key' => 'aws_ses_customer_notification_access_key',
                     'customer_notification_region' => 'aws_ses_customer_notification_region'
                 ] as $field => $auditKey) {
-            if(!Arr::exists($modelData, $field)) {
+            if (!Arr::exists($modelData, $field)) {
                 continue;
             }
 
             $oldValue = Arr::get($shop->settings ?? [], "email.provider.customer_notification.$field");
             $newValue = Arr::get($modelData, $field);
 
-            if($oldValue === $newValue) {
+            if ($oldValue === $newValue) {
                 continue;
             }
 
-            if($field === 'region') {
+            if ($field === 'region') {
                 $sesFailoverAuditOld[$auditKey] = $oldValue;
                 $sesFailoverAuditNew[$auditKey] = $newValue;
 

@@ -219,8 +219,6 @@ const submitStepDiscount = () => {
         start_at: formatDate(startDate.value),
         end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
     }
-    console.log("payload", payload)
-    return
     axios.post(
         route('grp.models.step_discount.store', {
             shop: props.shop_data.id,

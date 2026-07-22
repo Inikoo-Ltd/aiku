@@ -19,6 +19,7 @@ use App\Enums\UI\HumanResources\ClockingMachineTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\HumanResources\ClockingMachineResource;
 use App\Http\Resources\HumanResources\ClockingMachineCoordinatePolicyResource;
+use App\Http\Resources\HumanResources\ClockingMachineQRCodeResource;
 use App\Http\Resources\HumanResources\ClockingsResource;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
@@ -36,16 +37,17 @@ class ShowClockingMachine extends OrgAction
     private function getAvailableTabs(ClockingMachine $clockingMachine): array
     {
         $tabs = [
-            ClockingMachineTabsEnum::SHOWCASE->value,
             ClockingMachineTabsEnum::CLOCKINGS->value,
             ClockingMachineTabsEnum::HISTORY->value,
             ClockingMachineTabsEnum::DATA->value,
         ];
 
-
         if ($clockingMachine->type === ClockingMachineTypeEnum::QR_CODE->value) {
-            array_splice($tabs, 1, 0, ClockingMachineTabsEnum::SCAN_QR_CODE->value);
-            array_splice($tabs, 2, 0, ClockingMachineTabsEnum::CLOCKING_POLICIES->value);
+            array_unshift(
+                $tabs,
+                ClockingMachineTabsEnum::SCAN_QR_CODE->value,
+                ClockingMachineTabsEnum::CLOCKING_POLICIES->value
+            );
         }
 
         return $tabs;
@@ -148,14 +150,17 @@ class ShowClockingMachine extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigationData
                 ],
-                ClockingMachineTabsEnum::SHOWCASE->value => $this->tab == ClockingMachineTabsEnum::SHOWCASE->value ?
-                    fn () => GetClockingMachineShowcase::run($clockingMachine)
-                    : Inertia::optional(fn () => GetClockingMachineShowcase::run($clockingMachine)),
+                'generateQrCode'                         => $this->getGenerateQrCodeData($clockingMachine),
+
 
                 ClockingMachineTabsEnum::SCAN_QR_CODE->value =>
                 $this->tab == ClockingMachineTabsEnum::SCAN_QR_CODE->value
-                    ? fn () => GetClockingMachineShowcase::run($clockingMachine)
-                    : Inertia::optional(fn () => GetClockingMachineShowcase::run($clockingMachine)),
+                    ? fn () => ClockingMachineQRCodeResource::collection(
+                        IndexClockingMachineQRCodes::run($clockingMachine, ClockingMachineTabsEnum::SCAN_QR_CODE->value)
+                    )
+                    : Inertia::optional(fn () => ClockingMachineQRCodeResource::collection(
+                        IndexClockingMachineQRCodes::run($clockingMachine, ClockingMachineTabsEnum::SCAN_QR_CODE->value)
+                    )),
 
                 ClockingMachineTabsEnum::CLOCKING_POLICIES->value =>
                 $this->tab == ClockingMachineTabsEnum::CLOCKING_POLICIES->value
@@ -218,6 +223,7 @@ class ShowClockingMachine extends OrgAction
                     ],
                 ],
             ], prefix: ClockingMachineTabsEnum::CLOCKING_POLICIES->value))
+            ->table(IndexClockingMachineQRCodes::make()->tableStructure(prefix: ClockingMachineTabsEnum::SCAN_QR_CODE->value))
             ->table(IndexHistory::make()->tableStructure('hst'));
     }
 
@@ -337,6 +343,25 @@ class ShowClockingMachine extends OrgAction
                 ]
             ]
         };
+    }
+
+    /**
+     * @return array{route: array{name: string, parameters: array<string, string>}}|null
+     */
+    private function getGenerateQrCodeData(ClockingMachine $clockingMachine): ?array
+    {
+        if ($clockingMachine->type !== ClockingMachineTypeEnum::QR_CODE->value || !$this->canEdit) {
+            return null;
+        }
+
+        return [
+            'route' => [
+                'name'       => 'grp.models.clocking-machine.qr.generate',
+                'parameters' => [
+                    'clockingMachine' => $clockingMachine->slug,
+                ],
+            ],
+        ];
     }
 
     private function getEmployeeOptions(): array

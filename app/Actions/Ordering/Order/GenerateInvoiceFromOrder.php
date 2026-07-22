@@ -83,6 +83,7 @@ class GenerateInvoiceFromOrder extends OrgAction
                 'charges_amount'            => $order->charges_amount,
                 'shipping_amount'           => $order->shipping_amount,
                 'insurance_amount'          => $order->insurance_amount,
+                'amount_off'                => $order->amount_off,
                 'tax_amount'                => Arr::get($updatedData, 'tax_amount', $order->tax_amount),
                 'customer_sales_channel_id' => $order->customer_sales_channel_id,
                 'platform_id'               => $order->platform_id,
@@ -193,7 +194,7 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $tax = $order->taxCategory->rate;
 
-        $netAmount = $itemsNet + $order->shipping_amount + $order->charges_amount;
+        $netAmount = $itemsNet + $order->shipping_amount + $order->charges_amount - $order->amount_off;
 
         $taxAmount   = $netAmount * $tax;
         $totalAmount = $netAmount + $taxAmount;

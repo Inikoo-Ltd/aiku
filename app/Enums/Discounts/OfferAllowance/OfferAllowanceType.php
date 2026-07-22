@@ -11,6 +11,8 @@ namespace App\Enums\Discounts\OfferAllowance;
 enum OfferAllowanceType: string
 {
     case PERCENTAGE_OFF = 'percentage_off';
+    case AMOUNT_OFF = 'amount_off';
+    case FREE_ITEMS = 'free_items';
     case GIFT = 'gift';
     case MIXED = 'mixed';
     case SHIPPING = 'shipping';
@@ -20,6 +22,8 @@ enum OfferAllowanceType: string
     {
         return match ($this) {
             OfferAllowanceType::PERCENTAGE_OFF => __('Percentage Off'),
+            OfferAllowanceType::AMOUNT_OFF => __('Amount Off'),
+            OfferAllowanceType::FREE_ITEMS => __('Free Items'),
             OfferAllowanceType::GIFT => __('Gift'),
             OfferAllowanceType::UNKNOWN => __('Unknown'),
             OfferAllowanceType::MIXED => __('Mixed'),
@@ -31,6 +35,8 @@ enum OfferAllowanceType: string
     {
         return match ($this) {
             OfferAllowanceType::PERCENTAGE_OFF => 'off',
+            OfferAllowanceType::AMOUNT_OFF => 'amount_off',
+            OfferAllowanceType::FREE_ITEMS => 'free',
             OfferAllowanceType::UNKNOWN => 'au',
             OfferAllowanceType::GIFT => 'gift',
             OfferAllowanceType::MIXED => 'mixed',

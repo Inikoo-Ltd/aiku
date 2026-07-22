@@ -8,37 +8,53 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property \App\Models\SupplyChain\SupplierProduct $supplierProduct
- * @property string $data
- * @property float $unit_quantity
- * @property float $unit_price
- * @property string $created_at
- * @property string $updated_at
- */
 class PurchaseOrderTransactionResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var PurchaseOrderTransaction $transaction */
+        $transaction = $this->resource;
+
+        $supplierProduct = $transaction->supplierProduct;
+        $tradeUnit       = $transaction->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+
         return [
-            'code'              => $this->supplierProduct?->code,
-            'name'              => $this->supplierProduct?->name,
-            'supplier'          => $this->supplierProduct?->supplier?->name,
-            'quantity_ordered'  => intval($this->quantity_ordered),
-            'unit_cost'         => ($this->supplierProduct?->cost ?? 0),
-            'total_cost'        => (($this->supplierProduct?->cost ?? 0) * $this->quantity_ordered),
-            'state'             => $this->supplierProduct?->state,
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
-            'updateRoute'       => [
-                'name' => 'grp.models.purchase-order.transaction.update',
+            'id'               => $transaction->id,
+            'slug'             => $supplierProduct?->slug,
+            'code'             => $supplierProduct?->code,
+            'name'             => $supplierProduct?->name,
+            'org_stock_id'     => $transaction->org_stock_id,
+            'image_thumbnail'  => $tradeUnit?->imageSources(64, 64),
+
+            'unit_cost'        => $supplierProduct?->cost,
+            'units_per_pack'   => $supplierProduct?->units_per_pack,
+            'units_per_carton' => $supplierProduct?->units_per_carton,
+            'quantity_ordered' => $transaction->quantity_ordered,
+
+            'net_amount'       => $transaction->net_amount,
+            'net_currency'     => $supplierProduct?->currency?->code,
+            'org_net_amount'   => $transaction->org_net_amount,
+            'org_currency'     => $transaction->organisation?->currency?->code,
+            'org_exchange'     => $transaction->org_exchange,
+
+            'weight'           => $transaction->weight === null ? null : (float) $transaction->weight,
+            'volume'           => $transaction->volume === null ? null : (float) $transaction->volume,
+
+            'state'            => $transaction->state->value,
+            'state_label'      => $transaction->state->labels()[$transaction->state->value],
+            'state_icon'       => $transaction->state->stateIcon()[$transaction->state->value],
+
+            'updateRoute'      => [
+                'name'       => 'grp.models.purchase-order.transaction.update',
                 'parameters' => [
-                    'purchaseOrder' => $this->purchaseOrder?->id,
-                    'purchaseOrderTransaction' => $this->id
-                ]
-            ]
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'patch',
+            ],
         ];
     }
 }

@@ -45,10 +45,13 @@ class SettleRetinaOrderWithBalance extends RetinaAction
             ];
         }
 
-        $amountToPay = $order->total_amount - $order->payment_amount;
+        /** Round to cents: raw float subtraction of the DB decimals yields values like
+         * 0.039999999999999 which StorePayment's decimal:0,2 rule rejects, rolling back
+         * the whole payment transaction */
+        $amountToPay = round($order->total_amount - $order->payment_amount, 2);
 
         if ($customer->balance < $amountToPay) {
-            $amount = $customer->balance;
+            $amount = round((float)$customer->balance, 2);
         } else {
             $amount = $amountToPay;
         }
@@ -68,7 +71,7 @@ class SettleRetinaOrderWithBalance extends RetinaAction
             ]);
 
             $order = UpdateOrder::make()->action(order: $order, modelData: [
-                'payment_amount' => $order->payments->sum('amount')
+                'payment_amount' => round($order->payments->sum('amount'), 2)
             ], strict: false);
 
             $creditTransactionData = [

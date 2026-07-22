@@ -1,70 +1,81 @@
 <script setup lang="ts">
 import QrcodeVue from "qrcode.vue"
-import { computed, ref, onUnmounted } from "vue"
-import { faExpand, faCompress, faStop, faDownload } from '@fortawesome/free-solid-svg-icons'
-import axios from "axios";
-import Button from "@/Components/Elements/Buttons/Button.vue";
-import { trans } from "laravel-vue-i18n";
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import jsPDF from "jspdf"
+import { ref, nextTick } from "vue"
+import { faExpand, faCompress, faDownload, faQrcode, faPencil, faToggleOn, faToggleOff } from '@fortawesome/free-solid-svg-icons'
+import { Link, router } from "@inertiajs/vue3"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import Table from "@/Components/Table/Table.vue"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import { trans } from "laravel-vue-i18n"
 
-const props = defineProps<{
-    data: {
-        slug: string,
-        qr_code: string,
-        status: string,
-        name: string,
-        type: string,
-        device_name: string,
-        device_uuid: string,
-        kiosk_token?: string | null,
-        kiosk_url?: string | null
-    },
+defineProps<{
+    data: any,
+    tab?: string
 }>()
 
-const kioskUrl = ref<string | null>(props.data.kiosk_url ?? null)
-const isSettingKioskToken = ref(false)
-const kioskCopied = ref(false)
-
-const setKioskToken = async (revoke: boolean) => {
-    if (revoke && !window.confirm(trans("Revoke the kiosk link? Any tablet using it will stop working."))) {
-        return
-    }
-
-    isSettingKioskToken.value = true
-    try {
-        const res = await axios.post(
-            route('grp.models.clocking-machine.kiosk_token.set', { clockingMachine: props.data.slug }),
-            { revoke }
-        )
-        kioskUrl.value = res.data.kiosk_url ?? null
-        kioskCopied.value = false
-    } finally {
-        isSettingKioskToken.value = false
-    }
+type RouteData = {
+    name: string
+    parameters: Record<string, string | number>
 }
 
-const copyKioskUrl = async () => {
-    if (!kioskUrl.value) return
-    await navigator.clipboard.writeText(kioskUrl.value)
-    kioskCopied.value = true
-    setTimeout(() => (kioskCopied.value = false), 2000)
+type QrCodeRow = {
+    id: number
+    label: string | null
+    hash: string
+    qr_value: string
+    active: boolean
+    deactivated_at: string | null
+    number_clockings: number
+    last_used_at: string | null
+    created_at: string | null
+    edit_route: RouteData
+    toggle_active_route: RouteData
 }
 
+const selectedQrCode = ref<QrCodeRow | null>(null)
+const isQrModalOpen = ref(false)
+const togglingId = ref<number | null>(null)
+
+const toggleActive = (qrCode: QrCodeRow) => {
+    togglingId.value = qrCode.id
+
+    router.patch(
+        route(qrCode.toggle_active_route.name, qrCode.toggle_active_route.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => (togglingId.value = null),
+        }
+    )
+}
 const qrContainer = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
-const isGenerating = ref(false)
-const qrData = ref<any>(null)
-const countdown = ref(0)
-const expiresAt = ref<Date | null>(null)
 
-let qrRefreshTimer: any = null
-let countdownTimer: any = null
+const openQrCode = (qrCode: QrCodeRow) => {
+    selectedQrCode.value = qrCode
+    isQrModalOpen.value = true
+}
 
-const hasQR = computed(() => !!qrData.value)
-const qrKey = ref(0)
+defineExpose({ openQrCode })
+
+const closeQrCode = async () => {
+    if (document.fullscreenElement) {
+        await document.exitFullscreen()
+    }
+
+    isFullscreen.value = false
+    isQrModalOpen.value = false
+    selectedQrCode.value = null
+}
 
 const toggleFullscreen = async () => {
-    if (!qrContainer.value) return
+    await nextTick()
+
+    if (!qrContainer.value) {
+        return
+    }
 
     if (!document.fullscreenElement) {
         await qrContainer.value.requestFullscreen()
@@ -75,76 +86,8 @@ const toggleFullscreen = async () => {
     }
 }
 
-const startCountdown = (seconds: number) => {
-    countdown.value = seconds
-    clearInterval(countdownTimer)
-
-    countdownTimer = setInterval(() => {
-        countdown.value--
-        if (countdown.value <= 0) clearInterval(countdownTimer)
-    }, 1000)
-}
-
-const fetchQR = async () => {
-    isGenerating.value = true
-    try {
-        const res = await axios.get(route('grp.models.clocking-machine.qr.generate', {
-            clockingMachine: props.data.slug
-        }))
-        if (res.data.success) {
-            qrData.value = res.data.data.qr_code
-            qrKey.value++
-            startCountdown(res.data.data.duration_seconds)
-            expiresAt.value = new Date(Date.now() + (res.data.data.duration_seconds * 1000))
-
-            clearTimeout(qrRefreshTimer)
-            qrRefreshTimer = setTimeout(fetchQR, res.data.data.duration_seconds * 1000)
-        }
-    } finally {
-        isGenerating.value = false
-    }
-}
-
-const stopQR = () => {
-    clearTimeout(qrRefreshTimer)
-    clearInterval(countdownTimer)
-
-    qrData.value = null
-    countdown.value = 0
-    expiresAt.value = null
-}
-
-const formattedCountdown = computed(() => {
-    const total = countdown.value
-
-    const hours = Math.floor(total / 3600)
-    const minutes = Math.floor((total % 3600) / 60)
-    const seconds = total % 60
-
-    if (hours > 0) {
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-    }
-
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-})
-
-const formattedExpiredAt = computed(() => {
-    if (!expiresAt.value) {
-        return "-"
-    }
-
-    return new Intl.DateTimeFormat(undefined, {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-    }).format(expiresAt.value)
-})
-
-const downloadQrCode = async () => {
-    if (!qrContainer.value || !hasQR.value) {
+const downloadQrCode = () => {
+    if (!qrContainer.value || !selectedQrCode.value) {
         return
     }
 
@@ -154,143 +97,128 @@ const downloadQrCode = async () => {
         return
     }
 
-    const title = trans("Employee Scan")
-    const subtitle = trans("Scan QR to clock in or out")
-    const expiredAtText = `${trans("Expires at")}: ${formattedExpiredAt.value}`
-    const qrSize = qrCanvas.width
-    const canvasPadding = 48
-    const textTopHeight = 120
-    const textBottomHeight = 80
-    const canvasWidth = Math.max(900, qrSize + (canvasPadding * 2))
-    const canvasHeight = textTopHeight + qrSize + textBottomHeight + (canvasPadding * 2)
-    const exportCanvas = document.createElement("canvas")
-    exportCanvas.width = canvasWidth
-    exportCanvas.height = canvasHeight
-    const context = exportCanvas.getContext("2d")
+    const upscaledQr = document.createElement("canvas")
+    upscaledQr.width = 1200
+    upscaledQr.height = 1200
+    const upscaleContext = upscaledQr.getContext("2d")
 
-    if (!context) {
+    if (!upscaleContext) {
         return
     }
 
-    context.fillStyle = "#ffffff"
-    context.fillRect(0, 0, canvasWidth, canvasHeight)
+    upscaleContext.fillStyle = "#ffffff"
+    upscaleContext.fillRect(0, 0, upscaledQr.width, upscaledQr.height)
+    upscaleContext.imageSmoothingEnabled = false
+    upscaleContext.drawImage(qrCanvas, 0, 0, upscaledQr.width, upscaledQr.height)
 
-    context.textAlign = "center"
-    context.fillStyle = "#111827"
-    context.font = "bold 38px sans-serif"
-    context.fillText(title, canvasWidth / 2, canvasPadding + 34)
+    const title = trans("Employee Scan")
+    const subtitle = trans("Scan QR to clock in or out")
+    const footerText = selectedQrCode.value.label ?? selectedQrCode.value.hash
 
-    context.fillStyle = "#6b7280"
-    context.font = "26px sans-serif"
-    context.fillText(subtitle, canvasWidth / 2, canvasPadding + 78)
+    const pdf = new jsPDF("p", "mm", "a4")
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const centerX = pageWidth / 2
+    const qrSizeMm = 120
+    const qrY = 70
 
-    const qrX = (canvasWidth - qrSize) / 2
-    const qrY = textTopHeight + canvasPadding
-    context.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize)
+    pdf.setFont("helvetica", "bold")
+    pdf.setFontSize(22)
+    pdf.setTextColor(17, 24, 39)
+    pdf.text(title, centerX, 40, { align: "center" })
 
-    context.fillStyle = "#374151"
-    context.font = "24px sans-serif"
-    context.fillText(expiredAtText, canvasWidth / 2, qrY + qrSize + 52)
+    pdf.setFont("helvetica", "normal")
+    pdf.setFontSize(13)
+    pdf.setTextColor(107, 114, 128)
+    pdf.text(subtitle, centerX, 52, { align: "center" })
 
-    const downloadLink = document.createElement("a")
-    downloadLink.href = exportCanvas.toDataURL("image/png")
-    downloadLink.download = `employee-scan-${props.data.slug}.png`
-    downloadLink.click()
+    pdf.addImage(upscaledQr.toDataURL("image/png"), "PNG", centerX - (qrSizeMm / 2), qrY, qrSizeMm, qrSizeMm)
+
+    pdf.setFont("helvetica", "bold")
+    pdf.setFontSize(15)
+    pdf.setTextColor(55, 65, 81)
+    pdf.text(footerText, centerX, qrY + qrSizeMm + 15, { align: "center" })
+
+    pdf.save(`employee-scan-${selectedQrCode.value.hash}.pdf`)
 }
-
-onUnmounted(() => stopQR())
 </script>
 
 <template>
-    <div class="flex items-center justify-center py-12">
-        <div class="rounded-xl w-full max-w-[760px] text-center space-y-6">
+    <div>
+        <Table :resource="data" :name="tab" class="mt-5">
+            <template #cell(label)="{ item }">
+                <Button type="transparent" size="xs" :icon="faQrcode"
+                    :label="item.label ?? item.hash" @click="openQrCode(item)" />
+            </template>
 
-            <div>
-                <h2 class="text-xl font-semibold text-gray-800">{{ trans("Employee Scan") }}</h2>
-                <p class="text-sm text-gray-500">{{ trans("Scan QR to clock in or out") }}</p>
-            </div>
+            <template #cell(hash)="{ item }">
+                <span class="font-mono text-gray-600">{{ item.hash }}</span>
+            </template>
 
-            <Button :label="trans(isGenerating ? 'Generating...' : 'Generate QR Code')" :loading="isGenerating"
-                :disabled="isGenerating" @click="fetchQR" type="primary" icon="fal fa-qrcode" v-if="!hasQR" />
-
-            <!-- QR DISPLAY -->
-            <div v-else ref="qrContainer"
-                class="relative flex flex-col items-center p-6 rounded-xl bg-white border border-gray-200 shadow-md">
-
-                <Button @click="toggleFullscreen" type="secondary"
-                    class="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
-                    :icon="isFullscreen ? faCompress : faExpand" :tooltip="trans('Toggle Fullscreen')" />
-
-                <div class="relative flex items-center justify-center"
-                    :style="{ width: isFullscreen ? '600px' : '440px', height: isFullscreen ? '600px' : '440px' }">
-
-                    <div v-if="isGenerating"
-                        class="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-10">
-                        <LoadingIcon class="text-4xl text-gray-600" />
-                    </div>
-
-                    <QrcodeVue :value="qrData" :size="isFullscreen ? 600 : 440" level="H" />
+            <template #cell(deactivated_at)="{ item }">
+                <div class="text-gray-500">
+                    {{ item.deactivated_at ? useFormatTime(item.deactivated_at, { formatTime: "hms" }) : "-" }}
                 </div>
+            </template>
 
-                <div class="mt-4 text-md font-semibold">
-                    {{ trans("Expires in") }} <span class="font-semibold text-gray-700">{{ formattedCountdown }}</span>
+            <template #cell(last_used_at)="{ item }">
+                <div class="text-gray-500">
+                    {{ item.last_used_at ? useFormatTime(item.last_used_at, { formatTime: "hms" }) : "-" }}
                 </div>
-                <div class="text-sm text-gray-500">
-                    {{ trans("Expires at") }}: {{ formattedExpiredAt }}
+            </template>
+
+            <template #cell(created_at)="{ item }">
+                <div class="text-gray-500">
+                    {{ item.created_at ? useFormatTime(item.created_at, { formatTime: "hms" }) : "-" }}
                 </div>
-            </div>
+            </template>
 
-            <div v-if="hasQR" class="flex justify-center gap-2">
-                <Button :label="trans('Download QR Code')" @click="downloadQrCode" type="tertiary" :icon="faDownload" />
-                <Button :label="trans('Stop QR Code')" @click="stopQR" type="cancel" :icon="faStop" />
-            </div>
-
-            <!-- Kiosk mode: login free URL for a wall tablet -->
-            <div class="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5 text-left">
-                <h3 class="text-base font-semibold text-gray-800">{{ trans("Kiosk mode") }}</h3>
-                <p class="mt-1 text-sm text-gray-500">
-                    {{ trans("Open this link on the tablet to show the QR code without logging in. Keep it secret: anyone with the link can display a valid QR code.") }}
-                </p>
-
-                <div v-if="kioskUrl" class="mt-4 space-y-3">
-                    <div class="flex items-center gap-2">
-                        <input
-                            :value="kioskUrl"
-                            readonly
-                            class="w-full rounded-md border-gray-300 bg-white text-sm text-gray-700 shadow-sm" />
-                        <Button
-                            :label="trans(kioskCopied ? 'Copied' : 'Copy')"
-                            @click="copyKioskUrl"
-                            type="tertiary" />
-                    </div>
-                    <div class="flex gap-2">
-                        <Button
-                            :label="trans('Regenerate link')"
-                            :loading="isSettingKioskToken"
-                            :disabled="isSettingKioskToken"
-                            @click="setKioskToken(false)"
-                            type="secondary" />
-                        <Button
-                            :label="trans('Revoke link')"
-                            :loading="isSettingKioskToken"
-                            :disabled="isSettingKioskToken"
-                            @click="setKioskToken(true)"
-                            type="cancel" />
-                    </div>
-                </div>
-
-                <div v-else class="mt-4">
+            <template #cell(actions)="{ item }">
+                <div class="flex items-center gap-2">
+                    <Link :href="route(item.edit_route.name, item.edit_route.parameters)">
+                        <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="trans('Edit')" />
+                    </Link>
                     <Button
-                        :label="trans('Generate kiosk link')"
-                        :loading="isSettingKioskToken"
-                        :disabled="isSettingKioskToken"
-                        @click="setKioskToken(false)"
-                        type="primary" />
+                        type="tertiary"
+                        size="xs"
+                        :icon="item.active ? faToggleOn : faToggleOff"
+                        :tooltip="item.active ? trans('Deactivate') : trans('Activate')"
+                        :loading="togglingId === item.id"
+                        @click="toggleActive(item)" />
+                </div>
+            </template>
+        </Table>
+
+        <Modal :isOpen="isQrModalOpen" width="w-full max-w-2xl" @onClose="closeQrCode">
+            <div v-if="selectedQrCode" class="text-center space-y-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800">{{ trans("Employee Scan") }}</h2>
+                    <p class="text-sm text-gray-500">{{ trans("Scan QR to clock in or out") }}</p>
+                </div>
+
+                <div ref="qrContainer"
+                    class="relative flex flex-col items-center p-6 rounded-xl bg-white border border-gray-200 shadow-md">
+
+                    <Button @click="toggleFullscreen" type="secondary"
+                        class="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
+                        :icon="isFullscreen ? faCompress : faExpand" :tooltip="trans('Toggle Fullscreen')" />
+
+                    <QrcodeVue :value="selectedQrCode.qr_value" :size="isFullscreen ? 600 : 380" level="H" />
+
+                    <div class="mt-4 text-md font-semibold text-gray-700">
+                        {{ selectedQrCode.label ?? selectedQrCode.hash }}
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-2">
+                    <Button :label="trans('Download QR Code (PDF)')" @click="downloadQrCode" type="tertiary"
+                        :icon="faDownload" />
+                    <Button type="cancel" @click="closeQrCode" />
                 </div>
             </div>
-        </div>
+        </Modal>
     </div>
 </template>
+
 <style scoped>
 :fullscreen {
     display: flex;

@@ -5,7 +5,7 @@ import { faBullhorn, faCameraRetro, faCube, faFolder, faMedal, faMoneyBillWave, 
 import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, inject, ref } from "vue"
+import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
@@ -92,8 +92,6 @@ const props = defineProps<{
     related_product_category?: object,
 
 }>()
-
-const layout = inject("layout", {})
 
 const currentTab = ref(props.tabs.current)
 
@@ -188,15 +186,12 @@ const showDialog = ref(false)
                     :product_category_id="props.product_category_id"
                     v-tooltip="'Create New Offer'"
                 />
-                <div v-if="layout?.app?.environment == 'local'" class="relative inline-flex">
+                <div class="relative inline-flex">
                     <ModalCreateMixAndMatchOffer
                         :shop_data="props.shop_data"
                         :product_category_id="props.product_category_id"
                         v-tooltip="'Create Mix & Match Offer'"
                     />
-                    <span class="pointer-events-none absolute -top-2 -right-1.5 z-10 rounded bg-red-500 px-1 py-px text-[10px] font-bold leading-none text-white shadow">
-                        {{ trans('Local') }}
-                    </span>
                 </div>
             </template>
           <!--   <ModalCreateCategoryReviews

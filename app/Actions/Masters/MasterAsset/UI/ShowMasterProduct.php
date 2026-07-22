@@ -50,6 +50,14 @@ class ShowMasterProduct extends GrpAction
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
+        if (!$this->parent instanceof Group) {
+            $masterShop =  $this->parent instanceof MasterShop ? $this->parent : $this->parent?->masterShop;
+
+            if ($masterShop->id != $masterAsset->master_shop_id) {
+                abort(404, 'Master Product not found under this shop');
+            }
+        }
+
         return $masterAsset;
     }
 

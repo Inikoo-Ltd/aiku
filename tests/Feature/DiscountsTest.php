@@ -21,12 +21,15 @@ use App\Actions\Discounts\Offer\Hydrators\OfferTimeSeriesHydrateNumberRecords;
 use App\Actions\Discounts\Offer\ProcessOfferTimeSeriesRecords;
 use App\Actions\Discounts\Offer\Search\ReindexOfferSearch;
 use App\Actions\Discounts\Offer\SetOfferAsPermanent;
+use App\Actions\Discounts\Offer\StoreBuyXGetCheapestFree;
 use App\Actions\Discounts\Offer\StoreCustomerOffers;
 use App\Actions\Discounts\Offer\StoreDiscountShipping;
 use App\Actions\Discounts\Offer\StoreFirstOrderBonus;
 use App\Actions\Discounts\Offer\StoreGiftsOffers;
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
+use App\Actions\Discounts\Offer\StoreProductDiscount;
+use App\Actions\Discounts\Offer\StoreProductStepDiscount;
 use App\Actions\Discounts\Offer\StoreShopOffer;
 use App\Actions\Discounts\Offer\StoreVoucherOffers;
 use App\Actions\Discounts\Offer\SuspendOffer;
@@ -51,13 +54,23 @@ use App\Actions\Discounts\OfferCampaign\StoreProductOffers;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
 use App\Actions\Discounts\TransactionHasOfferAllowance\StoreTransactionHasOfferAllowance;
 use App\Actions\Discounts\TransactionHasOfferAllowance\UpdateTransactionHasOfferAllowance;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
+use App\Actions\Catalogue\Collection\AttachModelToCollection;
+use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Ordering\Order\AddVoucherToOrder;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
+use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
@@ -71,8 +84,10 @@ use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Analytics\AikuScopedSection;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
@@ -83,6 +98,7 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -453,7 +469,7 @@ test('store and update transaction has offer allowance', function () {
     $offerAllowance = StoreOfferAllowance::make()->action($offer, $allowanceData);
 
     $order       = StoreOrder::make()->action($customer, []);
-    $product     = $shop->products()->first();
+    $product     = $this->product;
     $transaction = StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
 
     $transactionHasOfferAllowance = StoreTransactionHasOfferAllowance::make()->action($transaction, $offerAllowance, [
@@ -743,6 +759,18 @@ test('create first order bonus', function () {
     expect($offer)->toBeInstanceOf(Offer::class)
         ->and($offer->trigger_data['min_amount'])->toBe(100)
         ->and($offer->offerAllowances->first()->data['percentage_off'])->toBe(0.10);
+});
+
+test('check amount and order number with empty trigger data', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+
+    $offerData = (object)['trigger_data' => '{}'];
+
+    list($passAmount, $passOrderNumber, $metadata) = CalculateOrderDiscounts::make()->checkAmountAndOrderNumber($order, $offerData);
+
+    expect($passAmount)->toBeTrue()
+        ->and($passOrderNumber)->toBeFalse()
+        ->and($metadata)->toBe([]);
 });
 
 test('update offer allowance signature', function () {
@@ -1131,7 +1159,7 @@ describe('calculate order discounts', function () {
 
         expect($order)->toBeInstanceOf(Order::class);
 
-        $product = $shop->products()->first();
+        $product = $this->product;
 
         expect($product)->toBeInstanceOf(Product::class)
             ->and((float)$product->price)->toBe(100.0);
@@ -1154,14 +1182,14 @@ describe('calculate order discounts', function () {
 
 
     test('CalculateOrderDiscounts: Category Ordered trigger', function () {
-        $order = Order::first();
+        $order = Order::latest('id')->first();
 
         $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
 
         expect((float)$transaction->net_amount)->toBe(180.0);
 
 
-        $product = $this->shop->products()->first();
+        $product = $this->product;
 
         $categoryDiscount = StoreProductCategoryDiscount::make()->action(
             $product->family,
@@ -1188,14 +1216,14 @@ describe('calculate order discounts', function () {
         }
         expect(Offer::where('status', true)->count())->toBe(0);
 
-        $order = Order::first();
+        $order = Order::latest('id')->first();
 
         $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
         expect((float)$transaction->net_amount)->toBe(200.0);
     })->todo();
 
     test('CalculateOrderDiscounts: Category Ordered trigger item quantity', function () {
-        $product = $this->shop->products()->first();
+        $product = $this->product;
 
         $categoryDiscount = StoreProductCategoryDiscount::make()->action(
             $product->family,
@@ -1216,7 +1244,7 @@ describe('calculate order discounts', function () {
             ->and($categoryDiscount->trigger_type)->toBe('ProductCategory')
             ->and($categoryDiscount->type)->toBe('Category Quantity Ordered');
 
-        $order = Order::first();
+        $order = Order::latest('id')->first();
 
         $transaction = Transaction::where('order_id', $order->id)->first();
         expect((float)$transaction->net_amount)->toBe(80.0);
@@ -1231,7 +1259,7 @@ describe('calculate order discounts', function () {
     });
 
     test('CalculateOrderDiscounts: Vol/GR', function () {
-        $product = $this->shop->products()->first();
+        $product = $this->product;
 
         $VolGRDiscount = StoreVolumeGRDiscount::make()->action(
             $product->family,
@@ -1247,7 +1275,7 @@ describe('calculate order discounts', function () {
             ->and($VolGRDiscount->trigger_type)->toBe('ProductCategory')
             ->and($VolGRDiscount->type)->toBe('Category Quantity Ordered Order Interval');
 
-        $order = Order::first();
+        $order = Order::latest('id')->first();
 
         $transaction = Transaction::where('order_id', $order->id)->first();
 
@@ -1268,7 +1296,7 @@ describe('calculate order discounts', function () {
     });
 
     test('UpdateTransaction applies current discount factor to net amount before discounts are recalculated', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
 
         expect((float)$transaction->current_discount_factor)->toBe(0.4);
@@ -1285,12 +1313,12 @@ describe('calculate order discounts', function () {
     });
 
     test('the highest active offer percentage wins and is recorded consistently', function () {
-        $order = Order::first();
+        $order = Order::latest('id')->first();
         CalculateOrderDiscounts::run($order);
         $order->refresh();
 
         $transaction   = Transaction::where('order_id', $order->id)->first();
-        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->first();
+        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->orderBy('id')->first();
 
         expect((float)$transaction->gross_amount)->toBe(300.0)
             ->and((float)$transaction->net_amount)->toBe(120.0)
@@ -1306,9 +1334,9 @@ describe('calculate order discounts', function () {
     });
 
     test('suspending the winning offer falls back to next best: Vol/GR interval sub-trigger', function () {
-        $order         = Order::first();
+        $order         = Order::latest('id')->first();
         $transaction   = Transaction::where('order_id', $order->id)->first();
-        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->first();
+        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->orderBy('id')->first();
         $volGrOffer    = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Quantity Ordered Order Interval')->first();
 
         DB::table('customers')->where('id', $order->customer_id)->update(['last_invoiced_at' => now()->subDays(5)]);
@@ -1324,7 +1352,7 @@ describe('calculate order discounts', function () {
     });
 
     test('Vol/GR quantity sub-trigger and first order bonus application', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
         $fobOffer    = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
         $volGrOffer  = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Quantity Ordered Order Interval')->first();
@@ -1354,7 +1382,7 @@ describe('calculate order discounts', function () {
     });
 
     test('Vol/GR amnesty sub-trigger', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
         $fobOffer    = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
         $volGrOffer  = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Quantity Ordered Order Interval')->first();
@@ -1388,8 +1416,520 @@ describe('calculate order discounts', function () {
             ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($fobOffer->id);
     });
 
+    test('CalculateOrderDiscounts: buy X get cheapest free family offer', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((int)$transaction->quantity_ordered)->toBe(3);
+
+        $offer = StoreBuyXGetCheapestFree::make()->action(
+            $this->product->family,
+            [
+                'trigger_data_item_quantity' => 3,
+                'free_quantity'              => 1,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        $offer->refresh();
+
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and($offer->status)->toBeTrue()
+            ->and($offer->type)->toBe('Category For Every Quantity Ordered')
+            ->and($offer->offerAllowances->first()->target_type)->toBe(OfferAllowanceTargetTypeEnum::CHEAPEST_PRODUCTS_IN_PRODUCT_CATEGORY)
+            ->and($offer->offerAllowances->first()->type)->toBe(OfferAllowanceType::FREE_ITEMS);
+
+        CalculateOrderDiscounts::run($order);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(200.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($offer->id)
+            ->and(Arr::get($transaction->offers_data, 'o.t'))->toBe('free_items')
+            ->and(Arr::get($transaction->offers_data, 'o.nf'))->toBe(1)
+            ->and((float)Arr::get($transaction->offers_data, 'o.f'))->toBe(100.0);
+
+        $pivot = DB::table('transaction_has_offer_allowances')->where('transaction_id', $transaction->id)->where('offer_id', $offer->id)->first();
+        expect($pivot)->not->toBeNull()
+            ->and((int)$pivot->number_of_free_items)->toBe(1)
+            ->and((float)$pivot->free_items_value)->toBe(100.0);
+
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 2]);
+        $transaction->refresh();
+        $order->refresh();
+        expect((float)$transaction->net_amount)->toBe(180.0)
+            ->and(Arr::get($order->offer_meters, "$offer->allowance_signature.metadata.current"))->toBe(2)
+            ->and(Arr::get($order->offer_meters, "$offer->allowance_signature.metadata.target"))->toBe(3);
+
+        SuspendOffer::run($offer);
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 3]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('CalculateOrderDiscounts: buy X get cheapest free product offer', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((int)$transaction->quantity_ordered)->toBe(3);
+
+        $offer = StoreBuyXGetCheapestFree::make()->actionForProduct(
+            $this->product,
+            [
+                'trigger_data_item_quantity' => 3,
+                'free_quantity'              => 1,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        $offer->refresh();
+
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and($offer->status)->toBeTrue()
+            ->and($offer->trigger_type)->toBe('Product')
+            ->and($offer->type)->toBe('Product For Every Quantity Ordered')
+            ->and($offer->offerAllowances->first()->target_type)->toBe(OfferAllowanceTargetTypeEnum::PRODUCT)
+            ->and($offer->offerAllowances->first()->type)->toBe(OfferAllowanceType::FREE_ITEMS);
+
+        CalculateOrderDiscounts::run($order);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(200.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($offer->id)
+            ->and(Arr::get($transaction->offers_data, 'o.nf'))->toBe(1)
+            ->and((float)Arr::get($transaction->offers_data, 'o.f'))->toBe(100.0);
+
+        SuspendOffer::run($offer);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('CalculateOrderDiscounts: product percentage discount quantity and amount triggers', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((int)$transaction->quantity_ordered)->toBe(3);
+
+        $offer = StoreProductDiscount::make()->action(
+            $this->product,
+            [
+                'type'                       => 'quantity',
+                'trigger_data_item_quantity' => 3,
+                'percentage_off'             => 0.20,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        $offer->refresh();
+
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and($offer->status)->toBeTrue()
+            ->and($offer->trigger_type)->toBe('Product')
+            ->and($offer->type)->toBe('Product Quantity Ordered')
+            ->and($offer->offerAllowances->first()->target_type)->toBe(OfferAllowanceTargetTypeEnum::PRODUCT)
+            ->and($offer->offerAllowances->first()->type)->toBe(OfferAllowanceType::PERCENTAGE_OFF);
+
+        CalculateOrderDiscounts::run($order);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(240.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($offer->id);
+
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 2]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(180.0);
+
+        SuspendOffer::run($offer);
+
+        $amountOffer = StoreProductDiscount::make()->action(
+            $this->product,
+            [
+                'type'                     => 'amount',
+                'trigger_data_item_amount' => 250,
+                'percentage_off'           => 0.20,
+                'duration'                 => 'interval',
+                'start_at'                 => now(),
+                'end_at'                   => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        expect($amountOffer->refresh()->type)->toBe('Product Amount Ordered');
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(180.0);
+
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 3]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(240.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($amountOffer->id);
+
+        SuspendOffer::run($amountOffer);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('CalculateOrderDiscounts: product step discount', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((int)$transaction->quantity_ordered)->toBe(3);
+
+        $offer = StoreProductStepDiscount::make()->action(
+            $this->product,
+            [
+                'steps'    => [
+                    ['min_quantity' => 5, 'percentage_off' => 0.25],
+                    ['min_quantity' => 1, 'percentage_off' => 0.15],
+                ],
+                'duration' => 'interval',
+                'start_at' => now(),
+                'end_at'   => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        $offer->refresh();
+
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and($offer->status)->toBeTrue()
+            ->and($offer->trigger_type)->toBe('Product')
+            ->and($offer->type)->toBe('Product Quantity Ordered')
+            ->and($offer->allowance_signature)->toBe('product:'.$this->product->id.':percentage_off:1-0.15,5-0.25')
+            ->and(Arr::get($offer->offerAllowances->first()->data, 'steps.0.min_quantity'))->toBe(1);
+
+        CalculateOrderDiscounts::run($order);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(255.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($offer->id);
+
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 5]);
+        $transaction->refresh();
+        expect((float)$transaction->gross_amount)->toBe(500.0)
+            ->and((float)$transaction->net_amount)->toBe(375.0);
+
+        SuspendOffer::run($offer);
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 3]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('SubmitOrder gift offers: buy X of product get different product free', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((int)$transaction->quantity_ordered)->toBe(3);
+
+        $giftProductData = array_merge(
+            Product::factory()->definition(),
+            [
+                'code'        => 'GIFT-PROD',
+                'price'       => 50,
+                'trade_units' => [
+                    [
+                        'id'       => $this->tradeUnit[0]->id ?? $this->tradeUnit->id,
+                        'quantity' => 1
+                    ]
+                ],
+            ]
+        );
+        $giftProduct     = StoreProduct::make()->action($this->product->family, $giftProductData);
+
+        $offer = StoreBuyXGetCheapestFree::make()->actionForProduct(
+            $this->product,
+            [
+                'trigger_data_item_quantity' => 3,
+                'free_quantity'              => 1,
+                'free_product_id'            => $giftProduct->id,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        $offer->refresh();
+
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and($offer->status)->toBeTrue()
+            ->and($offer->type)->toBe('Gift')
+            ->and($offer->trigger_type)->toBe('Product')
+            ->and($offer->trigger_id)->toBe($this->product->id)
+            ->and($offer->offerAllowances->first()->type)->toBe(OfferAllowanceType::GIFT);
+
+        SubmitOrder::make()->processGiftOffers($order);
+
+        $giftTransaction = Transaction::where('order_id', $order->id)->where('is_gift', true)->where('model_id', $giftProduct->id)->first();
+        expect($giftTransaction)->not->toBeNull()
+            ->and((float)$giftTransaction->quantity_bonus)->toBe(1.0)
+            ->and(Arr::get($giftTransaction->offers_data, 'o.o'))->toBe($offer->id);
+
+        $giftTransaction->forceDelete();
+        SuspendOffer::run($offer);
+    });
+
+    test('CalculateOrderDiscounts: mix and match cheapest free across different family products', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((int)$transaction->quantity_ordered)->toBe(3);
+
+        $cheapProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->first();
+        expect($cheapProduct)->not->toBeNull()
+            ->and($cheapProduct->family_id)->toBe($this->product->family_id);
+
+        $cheapTransaction = StoreTransaction::make()->action(
+            $order,
+            $cheapProduct->currentHistoricProduct,
+            ['quantity_ordered' => 1]
+        );
+
+        $offer = StoreBuyXGetCheapestFree::make()->action(
+            $this->product->family,
+            [
+                'trigger_data_item_quantity' => 2,
+                'free_quantity'              => 1,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        expect($offer)->toBeInstanceOf(Offer::class);
+
+        CalculateOrderDiscounts::run($order->refresh());
+
+        $transaction->refresh();
+        $cheapTransaction->refresh();
+
+        expect((float)$cheapTransaction->gross_amount)->toBe(50.0)
+            ->and((float)$cheapTransaction->net_amount)->toBe(0.0)
+            ->and(Arr::get($cheapTransaction->offers_data, 'o.nf'))->toBe(1)
+            ->and((float)Arr::get($cheapTransaction->offers_data, 'o.f'))->toBe(50.0)
+            ->and((float)$transaction->net_amount)->toBe(200.0)
+            ->and(Arr::get($transaction->offers_data, 'o.nf'))->toBe(1)
+            ->and((float)Arr::get($transaction->offers_data, 'o.f'))->toBe(100.0);
+
+        SuspendOffer::run($offer);
+        DeleteTransaction::run($cheapTransaction->refresh());
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('sub-department offers: percentage, quantity, amount, voucher and shipping scopes', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->orderBy('id')->first();
+
+        $subDepartmentData = ProductCategory::factory()->definition();
+        data_set($subDepartmentData, 'code', 'SDEP-T');
+        data_set($subDepartmentData, 'type', ProductCategoryTypeEnum::SUB_DEPARTMENT->value);
+        $subDepartment = StoreProductCategory::make()->action($department, $subDepartmentData);
+
+        $subFamilyData = ProductCategory::factory()->definition();
+        data_set($subFamilyData, 'code', 'SDEP-FAM');
+        data_set($subFamilyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $subFamily = StoreProductCategory::make()->action($subDepartment, $subFamilyData);
+
+        $subProductData = array_merge(
+            Product::factory()->definition(),
+            [
+                'code'        => 'SDEP-PROD',
+                'price'       => 60,
+                'trade_units' => [
+                    [
+                        'id'       => $this->tradeUnit[0]->id ?? $this->tradeUnit->id,
+                        'quantity' => 1
+                    ]
+                ],
+            ]
+        );
+        $subProduct = StoreProduct::make()->action($subFamily, $subProductData);
+        expect($subProduct->sub_department_id)->toBe($subDepartment->id);
+
+        $subTransaction = StoreTransaction::make()->action($order, $subProduct->currentHistoricProduct, ['quantity_ordered' => 2]);
+        $subTransaction->refresh();
+        expect($subTransaction->sub_department_id)->toBe($subDepartment->id)
+            ->and((float)$subTransaction->gross_amount)->toBe(120.0);
+
+        $subDepartmentOffer = StoreProductCategoryDiscount::make()->action($subDepartment, [
+            'type'                       => 'quantity',
+            'trigger_data_item_quantity' => 1,
+            'percentage_off'             => 0.25,
+            'duration'                   => 'permanent',
+            'start_at'                   => now(),
+        ]);
+        expect($subDepartmentOffer->refresh()->type)->toBe('Subdepartment Ordered');
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        $subTransaction->refresh();
+        expect((float)$subTransaction->net_amount)->toBe(90.0)
+            ->and(Arr::get($subTransaction->offers_data, 'o.o'))->toBe($subDepartmentOffer->id)
+            ->and((float)$transaction->net_amount)->toBe(270.0);
+
+        $subDepartmentOffer->update(['type' => 'Subdepartment Quantity Ordered', 'trigger_data' => ['item_quantity' => 5]]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $subTransaction->refresh();
+        expect((float)$subTransaction->net_amount)->toBe(108.0);
+
+        $subDepartmentOffer->update(['type' => 'Subdepartment Amount Ordered', 'trigger_data' => ['item_amount' => 100]]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $subTransaction->refresh();
+        expect((float)$subTransaction->net_amount)->toBe(90.0);
+
+        SuspendOffer::run($subDepartmentOffer);
+
+        $subDepartmentVoucher = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'SUBDEP30',
+            'name'               => 'Sub-department voucher',
+            'offer_amount'       => 100,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'percentage_off'     => 30,
+            'target_type'        => 'sub_department',
+            'target_id'          => $subDepartment->id,
+            'allowance_type'     => 'percentage_off',
+        ]);
+        AddVoucherToOrder::run($order, ['voucher' => 'SUBDEP30']);
+        $transaction->refresh();
+        $subTransaction->refresh();
+        expect((float)$subTransaction->net_amount)->toBe(84.0)
+            ->and(Arr::get($subTransaction->offers_data, 'o.o'))->toBe($subDepartmentVoucher->id)
+            ->and((float)$transaction->net_amount)->toBe(270.0);
+        RemoveVoucherFromOrder::run($order);
+        SuspendOffer::run($subDepartmentVoucher);
+
+        $shippingOffer = StoreDiscountShipping::make()->handle($this->shop, [
+            'name'             => 'Sub-department shipping',
+            'min_order_amount' => 100,
+            'target_type'      => 'sub_department',
+            'target_id'        => $subDepartment->id,
+            'start_at'         => now()->toDateTimeString(),
+            'end_at'           => now()->addDays(7)->toDateTimeString(),
+        ]);
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+        expect(Arr::get(CalculateOrderShipping::make()->matchScopedShippingOffer($order->refresh(), $this->shop->offers_data), 'id'))->toBe($shippingOffer->id);
+        SuspendOffer::run($shippingOffer);
+        ShopHydrateOffersData::run($this->shop->id);
+
+        SuspendOffer::run($subDepartmentOffer);
+        DeleteTransaction::run($subTransaction->refresh());
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('department and product voucher targets', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->orderBy('id')->first();
+
+        $departmentVoucher = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'DEP30',
+            'name'               => 'Department voucher',
+            'offer_amount'       => 0,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'percentage_off'     => 30,
+            'target_type'        => 'department',
+            'target_id'          => $department->id,
+            'allowance_type'     => 'percentage_off',
+        ]);
+        AddVoucherToOrder::run($order, ['voucher' => 'DEP30']);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(210.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($departmentVoucher->id);
+        RemoveVoucherFromOrder::run($order);
+        SuspendOffer::run($departmentVoucher);
+
+        $productVoucher = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'PROD50',
+            'name'               => 'Product voucher',
+            'offer_amount'       => 0,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'percentage_off'     => 50,
+            'target_type'        => 'product',
+            'target_id'          => $this->product->id,
+            'allowance_type'     => 'percentage_off',
+        ]);
+        AddVoucherToOrder::run($order, ['voucher' => 'PROD50']);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(150.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($productVoucher->id);
+        RemoveVoucherFromOrder::run($order);
+        SuspendOffer::run($productVoucher);
+
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('multiple competing offers on the same transaction: best discount wins', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((int)$transaction->quantity_ordered)->toBe(3);
+
+        $familyOffer = StoreProductCategoryDiscount::make()->action($this->product->family, [
+            'type'                       => 'quantity',
+            'trigger_data_item_quantity' => 1,
+            'percentage_off'             => 0.20,
+            'duration'                   => 'permanent',
+            'start_at'                   => now(),
+        ]);
+
+        $stepOffer = StoreProductStepDiscount::make()->action($this->product, [
+            'steps'    => [
+                ['min_quantity' => 1, 'percentage_off' => 0.15],
+                ['min_quantity' => 5, 'percentage_off' => 0.40],
+            ],
+            'duration' => 'permanent',
+            'start_at' => now(),
+        ]);
+
+        $freeOffer = StoreBuyXGetCheapestFree::make()->actionForProduct($this->product, [
+            'trigger_data_item_quantity' => 3,
+            'free_quantity'              => 1,
+            'duration'                   => 'permanent',
+            'start_at'                   => now(),
+        ]);
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(200.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($freeOffer->id);
+
+        SuspendOffer::run($freeOffer);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(240.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($familyOffer->id);
+
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 5]);
+        $transaction->refresh();
+        expect((float)$transaction->gross_amount)->toBe(500.0)
+            ->and((float)$transaction->net_amount)->toBe(300.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($stepOffer->id);
+
+        SuspendOffer::run($stepOffer);
+        SuspendOffer::run($familyOffer);
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 3]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
     test('customer exclusive offers: amount threshold and any order', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
 
         $customerOffer = StoreCustomerOffers::run($this->shop, [
@@ -1424,7 +1964,7 @@ describe('calculate order discounts', function () {
     });
 
     test('voucher offers apply only while attached to the order', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
 
         $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
@@ -1470,8 +2010,383 @@ describe('calculate order discounts', function () {
         SuspendOffer::run($voucherOffer);
     });
 
+    test('cross family discount: spend on one family discounts another family', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+
+        $familyBData = ProductCategory::factory()->definition();
+        data_set($familyBData, 'code', 'XFAM-B');
+        data_set($familyBData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $familyB = StoreProductCategory::make()->action($department, $familyBData);
+
+        $productBData = array_merge(
+            Product::factory()->definition(),
+            [
+                'code'        => 'XFAM-PROD',
+                'price'       => 40,
+                'trade_units' => [
+                    [
+                        'id'       => $this->tradeUnit[0]->id ?? $this->tradeUnit->id,
+                        'quantity' => 1
+                    ]
+                ],
+            ]
+        );
+        $productB     = StoreProduct::make()->action($familyB, $productBData);
+        $transactionB = StoreTransaction::make()->action($order, $productB->currentHistoricProduct, ['quantity_ordered' => 1]);
+
+        $crossOffer = StoreProductCategoryDiscount::make()->action(
+            $this->product->family,
+            [
+                'type'                       => 'quantity',
+                'trigger_data_item_quantity' => 1,
+                'percentage_off'             => 0.50,
+                'target_product_category_id' => $familyB->id,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+        $crossOffer->refresh();
+
+        $allowance = $crossOffer->offerAllowances->first();
+        expect($crossOffer->trigger_id)->toBe($this->product->family_id)
+            ->and($allowance->target_id)->toBe($familyB->id)
+            ->and(Arr::get($allowance->data, 'category_id'))->toBe($familyB->id);
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        $transactionB->refresh();
+
+        expect((float)$transactionB->gross_amount)->toBe(40.0)
+            ->and((float)$transactionB->net_amount)->toBe(20.0)
+            ->and(Arr::get($transactionB->offers_data, 'o.o'))->toBe($crossOffer->id)
+            ->and((float)$transaction->net_amount)->toBe(270.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->not->toBe($crossOffer->id);
+
+        SuspendOffer::run($crossOffer);
+        DeleteTransaction::run($transactionB->refresh());
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
+    test('scoped vouchers: family target with scope minimum spend', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'FAM20',
+            'name'               => 'Family voucher',
+            'offer_amount'       => 250,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'percentage_off'     => 20,
+            'target_type'        => 'family',
+            'target_id'          => $this->product->family_id,
+            'allowance_type'     => 'percentage_off',
+        ]);
+        $voucherOffer->refresh();
+
+        $allowance = $voucherOffer->offerAllowances->first();
+        expect($allowance->target_type)->toBe(OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_PRODUCT_CATEGORY)
+            ->and(Arr::get($allowance->data, 'category_id'))->toBe($this->product->family_id)
+            ->and((float)Arr::get($allowance->data, 'item_amount'))->toBe(250.0);
+
+        AddVoucherToOrder::run($order, ['voucher' => 'FAM20']);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(240.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($voucherOffer->id);
+
+        $allowanceData                = $allowance->data;
+        $allowanceData['item_amount'] = 5000;
+        $allowance->update(['data' => $allowanceData]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        RemoveVoucherFromOrder::run($order);
+        SuspendOffer::run($voucherOffer);
+    });
+
+    test('scoped vouchers: collection target', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $collection = StoreCollection::make()->action($this->shop, [
+            'code' => 'VCOL',
+            'name' => 'Voucher Collection',
+        ]);
+        AttachModelToCollection::run($collection, $this->product);
+
+        $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'COL15',
+            'name'               => 'Collection voucher',
+            'offer_amount'       => 0,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'percentage_off'     => 15,
+            'target_type'        => 'collection',
+            'target_id'          => $collection->id,
+            'allowance_type'     => 'percentage_off',
+        ]);
+        $voucherOffer->refresh();
+
+        expect($voucherOffer->offerAllowances->first()->target_type)->toBe(OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION)
+            ->and(Arr::get($voucherOffer->offerAllowances->first()->data, 'collection_id'))->toBe($collection->id);
+
+        AddVoucherToOrder::run($order, ['voucher' => 'COL15']);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(255.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($voucherOffer->id);
+
+        RemoveVoucherFromOrder::run($order);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        SuspendOffer::run($voucherOffer);
+    });
+
+    test('scoped discounted shipping offers', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $offer = StoreDiscountShipping::make()->handle($this->shop, [
+            'name'             => 'Family free shipping',
+            'min_order_amount' => 250,
+            'target_type'      => 'family',
+            'target_id'        => $this->product->family_id,
+            'start_at'         => now()->toDateTimeString(),
+            'end_at'           => now()->addDays(7)->toDateTimeString(),
+        ]);
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and(Arr::get($offer->trigger_data, 'target_type'))->toBe('family')
+            ->and(Arr::get($offer->trigger_data, 'target_id'))->toBe($this->product->family_id);
+
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+
+        $scopedData = Arr::get($this->shop->offers_data, 'discounted_shipping_scoped');
+        expect($scopedData)->toHaveKey($offer->id)
+            ->and(Arr::get($this->shop->offers_data, 'discounted_shipping.id'))->not->toBe($offer->id);
+
+        $order->refresh();
+        $matched = CalculateOrderShipping::make()->matchScopedShippingOffer($order, $this->shop->offers_data);
+        expect(Arr::get($matched, 'id'))->toBe($offer->id)
+            ->and(Arr::get($matched, 'offer_allowance_id'))->not->toBeNull();
+
+        $offer->update(['trigger_data' => ['min_order_amount' => 5000, 'target_type' => 'family', 'target_id' => $this->product->family_id]]);
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+        expect(CalculateOrderShipping::make()->matchScopedShippingOffer($order, $this->shop->offers_data))->toBeNull();
+
+        $offer->update(['trigger_data' => ['min_order_amount' => 250, 'target_type' => 'product', 'target_id' => $this->product->id]]);
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+        expect(Arr::get(CalculateOrderShipping::make()->matchScopedShippingOffer($order, $this->shop->offers_data), 'id'))->toBe($offer->id);
+
+        $collection = Collection::where('shop_id', $this->shop->id)->where('code', 'VCOL')->first();
+        expect($collection)->not->toBeNull();
+        $offer->update(['trigger_data' => ['min_order_amount' => 250, 'target_type' => 'collection', 'target_id' => $collection->id]]);
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+        expect(Arr::get(CalculateOrderShipping::make()->matchScopedShippingOffer($order, $this->shop->offers_data), 'id'))->toBe($offer->id);
+
+        SuspendOffer::run($offer);
+        ShopHydrateOffersData::run($this->shop->id);
+        $this->shop->refresh();
+        expect(Arr::get($this->shop->offers_data, 'discounted_shipping_scoped'))->toBe([]);
+    });
+
+    test('amount off vouchers: 30% cap validation, order totals and tax base', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((float)$order->refresh()->amount_off)->toBe(0.0);
+
+        expect(fn () => StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'CASH40',
+            'name'               => 'Too big amount off',
+            'offer_amount'       => 100,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'amount_off'         => 40,
+            'target_type'        => 'shop',
+            'target_id'          => $this->shop->id,
+            'allowance_type'     => 'amount_off',
+        ]))->toThrow(ValidationException::class);
+
+        expect(fn () => StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'CASH25',
+            'name'               => 'No min purchase',
+            'offer_amount'       => 0,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'amount_off'         => 25,
+            'target_type'        => 'shop',
+            'target_id'          => $this->shop->id,
+            'allowance_type'     => 'amount_off',
+        ]))->toThrow(ValidationException::class);
+
+        $voucherOffer = StoreVoucherOffers::make()->action($this->shop, [
+            'voucher'            => 'CASH25',
+            'name'               => '25 off',
+            'offer_amount'       => 100,
+            'can_customer_reuse' => true,
+            'start_at'           => now()->subDay(),
+            'end_at'             => now()->addDay(),
+            'amount_off'         => 25,
+            'target_type'        => 'shop',
+            'target_id'          => $this->shop->id,
+            'allowance_type'     => 'amount_off',
+        ]);
+        $voucherOffer->refresh();
+
+        expect($voucherOffer->offerAllowances->first()->type)->toBe(OfferAllowanceType::AMOUNT_OFF)
+            ->and((float)Arr::get($voucherOffer->offerAllowances->first()->data, 'amount_off'))->toBe(25.0);
+
+        AddVoucherToOrder::run($order, ['voucher' => 'CASH25']);
+        $order->refresh();
+        $transaction->refresh();
+
+        $taxRate = $order->taxCategory->rate;
+        expect((float)$order->amount_off)->toBe(25.0)
+            ->and((float)$transaction->net_amount)->toBe(270.0)
+            ->and((float)$order->net_amount)->toBe(245.0)
+            ->and((float)$order->tax_amount)->toEqualWithDelta(245.0 * $taxRate, 0.01)
+            ->and((float)$order->total_amount)->toEqualWithDelta(245.0 * (1 + $taxRate), 0.01);
+
+        RemoveVoucherFromOrder::run($order);
+        $order->refresh();
+        expect((float)$order->amount_off)->toBe(0.0)
+            ->and((float)$order->net_amount)->toBe(270.0);
+
+        SuspendOffer::run($voucherOffer);
+    });
+
+    test('CalculateOrderShipping end to end: zone schema, scoped discount and revert', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+
+        $schema = StoreShippingZoneSchema::make()->action($this->shop, ['name' => 'Normal shipping']);
+        $zone   = StoreShippingZone::make()->action($schema, [
+            'code'        => 'ZONE-ALL',
+            'name'        => 'Whole world',
+            'status'      => true,
+            'price'       => [
+                'type'  => 'Step Order Items Net Amount',
+                'steps' => [
+                    ['from' => 0, 'to' => 500, 'price' => 10],
+                    ['from' => 500, 'to' => 'INF', 'price' => 0],
+                ],
+            ],
+            'position'    => 1,
+            'is_failover' => false,
+        ]);
+
+        $discountSchema = StoreShippingZoneSchema::make()->action($this->shop, ['name' => 'Discounted shipping']);
+        $discountZone   = StoreShippingZone::make()->action($discountSchema, [
+            'code'        => 'ZONE-FREE',
+            'name'        => 'Whole world free',
+            'status'      => true,
+            'price'       => [
+                'type'  => 'Step Order Items Net Amount',
+                'steps' => [
+                    ['from' => 0, 'to' => 'INF', 'price' => 0],
+                ],
+            ],
+            'position'    => 1,
+            'is_failover' => false,
+        ]);
+
+        $this->shop->update([
+            'shipping_zone_schema_id'          => $schema->id,
+            'discount_shipping_zone_schema_id' => $discountSchema->id,
+        ]);
+
+        $order->update(['shipping_engine' => OrderShippingEngineEnum::AUTO]);
+        OrderHydrateTransactions::run($order);
+        $order = $order->refresh();
+        expect($order->stats->number_item_transactions)->toBeGreaterThan(0);
+        CalculateOrderShipping::run($order);
+        $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
+        $order->refresh();
+        expect($shippingTransaction)->not->toBeNull()
+            ->and((float)$shippingTransaction->net_amount)->toBe(10.0)
+            ->and($order->shipping_zone_id)->toBe($zone->id)
+            ->and($order->shipping_zone_schema_id)->toBe($schema->id)
+            ->and((float)$order->shipping_amount)->toBe(10.0);
+
+        $shippingOffer = StoreDiscountShipping::make()->handle($this->shop, [
+            'code'             => 'sh-e2e-family',
+            'name'             => 'Family shipping discount',
+            'min_order_amount' => 250,
+            'target_type'      => 'family',
+            'target_id'        => $this->product->family_id,
+            'start_at'         => now()->toDateTimeString(),
+            'end_at'           => now()->addDays(7)->toDateTimeString(),
+        ]);
+        ShopHydrateOffersData::run($this->shop->id);
+
+        $order = $order->fresh();
+        CalculateOrderShipping::run($order);
+        $shippingTransaction->refresh();
+        $order->refresh();
+        expect((float)$shippingTransaction->net_amount)->toBe(0.0)
+            ->and($order->shipping_zone_id)->toBe($discountZone->id)
+            ->and($order->discounted_shipping_offer_id)->toBe($shippingOffer->id);
+
+        $pivot = DB::table('transaction_has_offer_allowances')
+            ->where('transaction_id', $shippingTransaction->id)
+            ->where('offer_id', $shippingOffer->id)
+            ->first();
+        expect($pivot)->not->toBeNull()
+            ->and($pivot->offer_allowance_id)->not->toBeNull();
+
+        SuspendOffer::run($shippingOffer);
+        ShopHydrateOffersData::run($this->shop->id);
+
+        $order = $order->fresh();
+        CalculateOrderShipping::run($order);
+        $shippingTransaction->refresh();
+        $order->refresh();
+        expect((float)$shippingTransaction->net_amount)->toBe(10.0)
+            ->and($order->shipping_zone_id)->toBe($zone->id)
+            ->and($order->discounted_shipping_offer_id)->toBeNull()
+            ->and(
+                DB::table('transaction_has_offer_allowances')
+                    ->where('order_id', $order->id)
+                    ->where('model_type', 'ShippingZone')
+                    ->count()
+            )->toBe(0);
+
+        DB::table('transactions')->where('id', $shippingTransaction->id)->delete();
+        $this->shop->update([
+            'shipping_zone_schema_id'          => null,
+            'discount_shipping_zone_schema_id' => null,
+        ]);
+        $order = $order->fresh();
+        CalculateOrderTotalAmounts::run(order: $order, calculateShipping: false, calculateDiscounts: false);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
     test('shop wide offers: amount threshold and unconditional', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
 
         $shopOffer = StoreShopOffer::run($this->shop, [
@@ -1504,7 +2419,7 @@ describe('calculate order discounts', function () {
     });
 
     test('department offers: quantity, unconditional and amount thresholds', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
         $department  = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
 
@@ -1543,9 +2458,9 @@ describe('calculate order discounts', function () {
     });
 
     test('category amount ordered threshold', function () {
-        $order         = Order::first();
+        $order         = Order::latest('id')->first();
         $transaction   = Transaction::where('order_id', $order->id)->first();
-        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->first();
+        $categoryOffer = Offer::where('shop_id', $order->shop_id)->where('type', 'Category Ordered')->orderBy('id')->first();
 
         ActivateOffer::run($categoryOffer);
         $categoryOffer->update(['type' => 'Category Amount Ordered', 'trigger_data' => ['item_amount' => 100]]);
@@ -1564,7 +2479,7 @@ describe('calculate order discounts', function () {
     });
 
     test('discretionary discounts interact with regular offers', function () {
-        $order                  = Order::first();
+        $order                  = Order::latest('id')->first();
         $transaction            = Transaction::where('order_id', $order->id)->first();
         $discretionaryAllowance = OfferAllowance::where('shop_id', $order->shop_id)->where('is_discretionary', true)->first();
 
@@ -1632,7 +2547,7 @@ describe('calculate order discounts', function () {
     });
 
     test('gift offers create meters without discounting', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
 
         $giftOffer = StoreGiftsOffers::run($this->shop, [
@@ -1659,7 +2574,7 @@ describe('calculate order discounts', function () {
     });
 
     test('cancelled orders are not recalculated and recalculation heals corrupted amounts', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
 
         DB::table('transactions')->where('id', $transaction->id)->update(['net_amount' => 999]);
@@ -1676,7 +2591,7 @@ describe('calculate order discounts', function () {
     });
 
     test('submitted orders keep their submitted discount when current discount is worse', function () {
-        $order       = Order::first();
+        $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
         $fobOffer    = Offer::where('shop_id', $order->shop_id)->where('type', 'Amount AND Order Number')->first();
 

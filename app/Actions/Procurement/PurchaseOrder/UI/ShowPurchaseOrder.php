@@ -9,21 +9,18 @@
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
+use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\PurchaseOrderTabsEnum;
-use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
-use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
-use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\Models\Procurement\OrgAgent;
@@ -38,6 +35,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowPurchaseOrder extends OrgAction
 {
+    use WithPurchaseOrderWeightAndVolume;
+
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
@@ -93,6 +92,7 @@ class ShowPurchaseOrder extends OrgAction
 
         $orderer = [];
         $productListRoute = [];
+        $weightAndVolume = $this->getPurchaseOrderWeightAndVolume($purchaseOrder);
         $actions = [];
 
         if ($purchaseOrder->parent instanceof OrgAgent) {
@@ -120,20 +120,6 @@ class ShowPurchaseOrder extends OrgAction
         if ($this->canEdit) {
             $actions = match ($purchaseOrder->state) {
                 PurchaseOrderStateEnum::IN_PROCESS => [
-                    [
-                        'label'   => __('Add Products'),
-                        'tooltip' => __('Add Products'),
-                        'icon'    => 'fal fa-plus',
-                        'type'    => 'button',
-                        'style'   => 'secondary',
-                        'key'     => 'add-products',
-                        'route'   => [
-                            'name'       => 'grp.models.purchase-order.transaction.store',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
                     ($purchaseOrder->purchaseOrderTransactions()->count() > 0) ?
                     [
                         'label'   => __('Submit'),
@@ -256,6 +242,12 @@ class ShowPurchaseOrder extends OrgAction
                     ] : false,
                     'actions' => $actions,
                 ],
+                'data'        => PurchaseOrderResource::make($purchaseOrder),
+                'timelines'   => $this->getTimeline($purchaseOrder),
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => PurchaseOrderTabsEnum::navigation(),
+                ],
                 'routes'      => [
                     'updatePurchaseOrderRoute' => [
                         'method'     => 'patch',
@@ -267,88 +259,48 @@ class ShowPurchaseOrder extends OrgAction
                     'products_list' => $productListRoute,
                 ],
                 'box_stats'   => [
-                    'orderer'       => [
-                        'type' => $purchaseOrder->parent_type,
-                        'data' => $orderer,
+                    'first_block'   => [
+                        'orderer'  => $orderer,
+                        'delivery' => [
+                            'type'             => Arr::get($purchaseOrder->data, 'delivery_type'),
+                            'incoterm'         => Arr::get($purchaseOrder->data, 'incoterm'),
+                            'port_of_export'   => Arr::get($purchaseOrder->data, 'port_of_export'),
+                            'port_of_import'   => Arr::get($purchaseOrder->data, 'port_of_import'),
+                            'delivery_address' => Arr::get($purchaseOrder->data, 'delivery_address'),
+                        ],
                     ],
-                    'mid_block'     => [
-                        'gross_weight'   => $purchaseOrder->gross_weight,
-                        'net_weight'     => $purchaseOrder->net_weight,
-                        'notes'          => $purchaseOrder->notes,
-                        'delivery_state' => $purchaseOrder->delivery_state,
+                    'second_block'     => [
+                        'state' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
+                        'total_items' => $purchaseOrder->number_purchase_order_transactions,
+                        'weight' => Arr::get($weightAndVolume, 'gross_weight'),
+                        'volume' => Arr::get($weightAndVolume, 'volume'),
+                        'is_weight_partial' => Arr::get($weightAndVolume, 'is_weight_partial'),
+                        'is_volume_partial' => Arr::get($weightAndVolume, 'is_volume_partial'),
                     ],
-                    'order_summary' => [
-                        [
-                            [
-                                'label'       => 'Transactions',
-                                'quantity'    => $purchaseOrder->purchaseOrderTransactions()->count(),
-                                'price_base'  => 'Multiple',
-                                'price_total' => $purchaseOrder->cost_items,
-                            ],
-                        ],
-                        [
-                            [
-                                'label'       => 'Extra',
-                                'information' => '',
-                                'price_total' => $purchaseOrder->cost_extra,
-                            ],
-                            [
-                                'label'       => 'Shipping',
-                                'information' => '',
-                                'price_total' => $purchaseOrder->cost_shipping,
-                            ],
-                        ],
-                        [
-                            [
-                                'label'       => 'Duties',
-                                'information' => '',
-                                'price_total' => $purchaseOrder->cost_duties,
-                            ],
-                            [
-                                'label'       => 'Tax',
-                                'information' => '',
-                                'price_total' => $purchaseOrder->cost_tax,
-                            ],
-                        ],
-                        [
-                            [
-                                'label'       => 'Total',
-                                'price_total' => $purchaseOrder->cost_total,
-                            ],
-                        ],
-                        'currency' => CurrencyResource::make($purchaseOrder->currency),
+                    'third_block' => [
+                        'currency'     => $purchaseOrder->currency?->code,
+                        'org_currency' => $purchaseOrder->organisation?->currency?->code,
+                        'org_exchange' => $purchaseOrder->org_exchange,
+                        'items'        => $purchaseOrder->cost_items,
+                        'extra'        => $purchaseOrder->cost_extra + $purchaseOrder->cost_shipping + $purchaseOrder->cost_duties + $purchaseOrder->cost_tax,
+                        'total'        => $purchaseOrder->cost_total,
+                        'org_items'    => $purchaseOrder->purchaseOrderTransactions()->sum('org_net_amount'),
                     ],
                 ],
-                'timelines'   => $this->getTimeline($purchaseOrder),
-                'currency'    => CurrencyResource::make($purchaseOrder->currency)->toArray(request()),
-                'data'        => PurchaseOrderResource::make($purchaseOrder),
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => PurchaseOrderTabsEnum::navigation(),
-                ],
 
-                // PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
-                //     fn () => new PurchaseOrderResource(($purchaseOrder))
-                //     : Inertia::optional(fn () => new PurchaseOrderResource(($purchaseOrder))),
+                PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
+                    fn () => GetPurchaseOrderData::run($purchaseOrder)
+                    : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
 
-                PurchaseOrderTabsEnum::TRANSACTIONS->value => $this->tab == PurchaseOrderTabsEnum::TRANSACTIONS->value ?
-                    fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))
-                    : Inertia::optional(fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))),
-
-                PurchaseOrderTabsEnum::PRODUCTS->value => $this->tab == PurchaseOrderTabsEnum::PRODUCTS->value ?
-                    fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))
-                    : Inertia::optional(fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))),
+                PurchaseOrderTabsEnum::ITEMS->value => $this->tab == PurchaseOrderTabsEnum::ITEMS->value ?
+                    fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))
+                    : Inertia::optional(fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))),
 
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder))),
-
-                PurchaseOrderTabsEnum::ATTACHMENTS->value => $this->tab == PurchaseOrderTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
-                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder)))
+                    fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexPurchaseOrderTransactions::make()->tableStructure(prefix: PurchaseOrderTabsEnum::TRANSACTIONS->value))
-            ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))
+        )->table(IndexPurchaseOrderTransactions::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::ITEMS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
     }
 

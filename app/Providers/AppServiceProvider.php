@@ -98,6 +98,12 @@ class AppServiceProvider extends ServiceProvider
             return str_contains($request->url, '10.0.0.');
         });
 
+        if ($this->app->runningUnitTests()) {
+            // ponytail: single PDO in tests; a real second connection self-deadlocks when
+            // sync-queued hydrators run inside an open transaction holding the same row locks
+            DB::extend('aiku_no_sticky', fn () => DB::connection('aiku'));
+        }
+
         ParallelTesting::setUpTestCase(function ($token, $testCase) {
             $databaseName = env('DB_DATABASE_TEST', 'aiku_test')."_".$token;
 

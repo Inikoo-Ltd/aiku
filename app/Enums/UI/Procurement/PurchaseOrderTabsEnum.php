@@ -16,41 +16,39 @@ enum PurchaseOrderTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    // case SHOWCASE            = 'showcase';
-    case TRANSACTIONS        = 'transactions';
-    case HISTORY             = 'history';
-    case ATTACHMENTS         = 'attachments';
-    case PRODUCTS            = 'products';
-
+    case SHOWCASE     = 'showcase';
+    case ITEMS        = 'items';
+    // case PRODUCTS     = 'products';
+    case HISTORY      = 'history';
+    // case ATTACHMENTS  = 'attachments';
 
     public function blueprint(): array
     {
         return match ($this) {
-
-            PurchaseOrderTabsEnum::TRANSACTIONS  => [
-                'title' => __('Transactions'),
+            PurchaseOrderTabsEnum::SHOWCASE => [
+                'title' => __('Data'),
+                'icon'  => 'fal fa-database',
+            ],
+            PurchaseOrderTabsEnum::ITEMS    => [
+                'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
-            PurchaseOrderTabsEnum::PRODUCTS  => [
-                'title' => __('Products'),
-                'icon'  => 'fal fa-box-usd',
-            ],
-            // PurchaseOrderTabsEnum::SHOWCASE => [
-            //     'title' => __('Purchase orders'),
-            //     'icon'  => 'fal fa-info-circle',
+            // PurchaseOrderTabsEnum::PRODUCTS => [
+            //     'title' => __('Products'),
+            //     'icon'  => 'fal fa-box-usd',
             // ],
-            PurchaseOrderTabsEnum::HISTORY     => [
+            PurchaseOrderTabsEnum::HISTORY  => [
                 'title' => __('History'),
-                'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
+                'icon'  => 'fal fa-clock',
                 'align' => 'right',
             ],
-            PurchaseOrderTabsEnum::ATTACHMENTS => [
-                'align' => 'right',
-                'title' => __('Attachments'),
-                'icon'  => 'fal fa-paperclip',
-                'type'  => 'icon'
-            ],
+            // PurchaseOrderTabsEnum::ATTACHMENTS => [
+            //     'title' => __('Attachments'),
+            //     'type'  => 'icon',
+            //     'icon'  => 'fal fa-paperclip',
+            //     'align' => 'right',
+            // ],
         };
     }
 }

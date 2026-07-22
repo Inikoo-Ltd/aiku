@@ -64,6 +64,16 @@ class StorePayment extends OrgAction
         return $payment;
     }
 
+    public function prepareForValidation(): void
+    {
+        /** Normalise float arithmetic dirt (e.g. 0.039999999999999 from decimal subtraction)
+         * to cents once at the money boundary, so the decimal:0,2 rule only rejects
+         * genuinely malformed amounts */
+        if (is_numeric($this->get('amount'))) {
+            $this->set('amount', round((float)$this->get('amount'), 2));
+        }
+    }
+
     public function rules(): array
     {
         $rules = [
