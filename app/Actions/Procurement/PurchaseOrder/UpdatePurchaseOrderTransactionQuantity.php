@@ -9,7 +9,7 @@
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -17,17 +17,22 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrderTransactionQuantity extends OrgAction
 {
-    use WithActionUpdate;
-
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData): PurchaseOrderTransaction
     {
-        $updatedItem = $this->update($purchaseOrderTransaction, $modelData);
+        $purchaseOrderTransaction = UpdatePurchaseOrderTransaction::make()->action($purchaseOrderTransaction, $modelData);
 
-        if ($updatedItem->unit_quantity == 0) {
-            DeletePurchaseOrderTransaction::run($updatedItem);
+        if ((float) $purchaseOrderTransaction->quantity_ordered <= 0) {
+            DeletePurchaseOrderTransaction::run($purchaseOrderTransaction);
         }
 
         return $purchaseOrderTransaction;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'quantity_ordered' => ['required', 'numeric', 'min:0'],
+        ];
     }
 
     public function action(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData): PurchaseOrderTransaction
