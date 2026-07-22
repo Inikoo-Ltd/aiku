@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Events\AppVersionWebsocketEvent;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\DevOps\AppDeployment;
@@ -8,6 +9,7 @@ use App\Models\DevOps\WebsiteHealthLog;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 
 beforeAll(function () {
@@ -232,6 +234,39 @@ it('skips change log generation when commits are not resolvable', function () {
 
     expect($deployment->refresh()->change_log)->toBeNull();
     Http::assertNothingSent();
+});
+
+it('records the deployment even when change log generation fails', function () {
+    \App\Actions\DevOps\AppDeployment\GenerateAppDeploymentChangeLog::shouldRun()
+        ->andThrow(new \RuntimeException('boom'));
+
+    $this->artisan('deploy:record-deployment', ['--commit' => 'resilient123'])
+        ->assertSuccessful();
+
+    $this->assertDatabaseHas('app_deployments', [
+        'commit_hash' => 'resilient123',
+    ]);
+});
+
+it('broadcasts the latest deployment info to refresh vue', function () {
+    $deployment = AppDeployment::create([
+        'commit_hash'      => 'wsdummy123',
+        'semantic_version' => 'v9.9.9',
+        'change_log'       => 'We made the app better!',
+        'committers'       => [['name' => 'Raul Perusquia', 'email' => 'raul@inikoo.com', 'github_username' => null, 'avatar' => null]],
+    ]);
+
+    Event::fake([AppVersionWebsocketEvent::class]);
+
+    $this->artisan('deploy:refresh_vue')
+        ->expectsOutput('Refresh vue.')
+        ->assertSuccessful();
+
+    Event::assertDispatched(AppVersionWebsocketEvent::class, function (AppVersionWebsocketEvent $event) use ($deployment) {
+        return $event->appDeployment?->id === $deployment->id
+            && $event->broadcastWith()['deployment']['semantic_version'] === 'v9.9.9'
+            && $event->broadcastWith()['deployment']['change_log'] === 'We made the app better!';
+    });
 });
 
 it('can record a deployment without a commit hash', function () {
