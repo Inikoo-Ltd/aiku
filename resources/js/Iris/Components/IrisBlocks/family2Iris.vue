@@ -85,7 +85,7 @@ const getCollapsedHeight = (): number => {
 }
 
 const titleStyles = computed(() => ({
-  fontSize: titleState.value === 'single' ? '36px' : '25px',
+  fontSize: titleState.value === 'single' ? '32px' : '25px',
 }))
 
 const measureLines = (el: HTMLElement, fontSize: string): number => {
@@ -124,7 +124,7 @@ const updateTitleSize = () => {
   }
 
   requestAnimationFrame(() => {
-    const linesAt36 = measureLines(el, '36px')
+    const linesAt36 = measureLines(el, '32px')
 
     if (linesAt36 <= 1) {
       titleState.value = 'single'
@@ -268,6 +268,7 @@ const contentClass = computed(() =>
       lg:flex-row
       lg:items-start
       lg:justify-between
+      mb-2
     ">
             <div class="min-w-16 flex-1">
               <h1 ref="titleRef" :style="titleStyles" :class="[
@@ -302,10 +303,10 @@ const contentClass = computed(() =>
     text-[14px]
     leading-[1.6]
     text-[#1d2430]
-    sm:text-[15px]
-    lg:text-[16px]
+    sm:text-[14px]
+    lg:text-[14px]
     2xl:space-y-2
-    2xl:text-[19px]
+    2xl:text-[16px]
     overflow-hidden
   " ref="descriptionRef" :class="!expanded ? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]' : ''">
             <div v-html="cleanedDescription"></div>
