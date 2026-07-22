@@ -191,6 +191,49 @@ it('can record a deployment via artisan command', function () {
     ]);
 });
 
+it('generates an AI change log and saves committers between deployments', function () {
+    $previousHash = trim(exec('git rev-parse HEAD~2'));
+    $currentHash  = trim(exec('git rev-parse HEAD'));
+
+    AppDeployment::create(['commit_hash' => $previousHash]);
+    $deployment = AppDeployment::create(['commit_hash' => $currentHash]);
+
+    Config::set('askbot-laravel.openai_api_key', 'test-key');
+    Http::fake([
+        'https://api.openai.com/*' => Http::response([
+            'choices' => [['message' => ['content' => 'We made the app better!']]],
+        ]),
+        'https://api.github.com/*' => Http::response([
+            'author' => ['login' => 'octocat', 'avatar_url' => 'https://avatars.githubusercontent.com/u/1'],
+        ]),
+    ]);
+
+    \App\Actions\DevOps\AppDeployment\GenerateAppDeploymentChangeLog::run($deployment);
+
+    $deployment->refresh();
+    expect($deployment->change_log)->toBe('We made the app better!')
+        ->and($deployment->committers)->not->toBeEmpty()
+        ->and($deployment->committers[0]['avatar'])->toBe('https://avatars.githubusercontent.com/u/1');
+
+    $this->assertDatabaseHas('committers', [
+        'email'           => $deployment->committers[0]['email'],
+        'github_username' => 'octocat',
+        'avatar'          => 'https://avatars.githubusercontent.com/u/1',
+    ]);
+});
+
+it('skips change log generation when commits are not resolvable', function () {
+    AppDeployment::create(['commit_hash' => 'previousdummy']);
+    $deployment = AppDeployment::create(['commit_hash' => 'notarealhash']);
+
+    Http::fake();
+
+    \App\Actions\DevOps\AppDeployment\GenerateAppDeploymentChangeLog::run($deployment);
+
+    expect($deployment->refresh()->change_log)->toBeNull();
+    Http::assertNothingSent();
+});
+
 it('can record a deployment without a commit hash', function () {
     $this->artisan('deploy:record-deployment')
         ->expectsOutput('Deployment recorded successfully.')
