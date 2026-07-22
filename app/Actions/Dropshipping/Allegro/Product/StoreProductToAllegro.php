@@ -144,7 +144,7 @@ class StoreProductToAllegro extends RetinaAction
                             'id' => $allegroProductId
                         ],
                         'quantity' => [
-                            'value' => $product->units
+                            'value' => (int) $product->units
                         ],
                         'responsibleProducer' => [
                             'id' => $responsibleProducerId
