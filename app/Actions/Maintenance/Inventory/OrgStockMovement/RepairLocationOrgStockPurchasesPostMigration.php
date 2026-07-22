@@ -54,6 +54,7 @@ class RepairLocationOrgStockPurchasesPostMigration implements ShouldBeUnique
 
 
         $this->fixForPrePurchaseAssociates($orgStock, $command);
+        $orgStock->refresh();
 
         foreach (
             $orgStock->locations as $location
