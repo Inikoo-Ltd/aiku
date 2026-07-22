@@ -41,8 +41,21 @@ const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
 }>()
 
+function redirectProductCategoryRoute(family: Family) {
+    return route('grp.majordomo.redirect_product_category', [family.id])
+}
+
+function familyInShopRoute(family: Family) {
+    if (!family.organisation_slug || !family.shop_slug) {
+        return redirectProductCategoryRoute(family)
+    }
+
+    return route(
+        'grp.org.shops.show.catalogue.families.show',
+        [family.organisation_slug, family.shop_slug, family.slug])
+}
+
 function familyRoute(family: Family) {
-    console.log('familyRoute', route().current())
     switch (route().current()) {
         case "grp.shops.show":
         case "grp.org.shops.show.catalogue.families.index":
@@ -56,9 +69,11 @@ function familyRoute(family: Family) {
                 "grp.org.shops.show.catalogue.departments.show.families.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).department, family.slug])
         case 'grp.org.shops.index':
-            return route(
-                "grp.org.shops.show.catalogue.families.show",
-                [(route().params as RouteParams).organisation, family.shop_slug, family.slug])
+            return family.shop_slug
+                ? route(
+                    "grp.org.shops.show.catalogue.families.show",
+                    [(route().params as RouteParams).organisation, family.shop_slug, family.slug])
+                : redirectProductCategoryRoute(family)
         case "grp.org.shops.show.catalogue.dashboard":
             return route(
                 "grp.org.shops.show.catalogue.families.show",
@@ -80,40 +95,39 @@ function familyRoute(family: Family) {
                 "grp.masters.master_shops.show.master_families.show",
                 [(route().params as RouteParams).masterShop, family.slug])
         case 'grp.overview.catalogue.families.index':
-            return route(
-                'grp.org.shops.show.catalogue.families.show',
-                [family.organisation_slug, family.shop_slug, family.slug])
+            return familyInShopRoute(family)
         case 'grp.masters.master_shops.show.master_departments.show.master_families.show':
         case 'grp.masters.master_shops.show.master_families.show':
         case 'grp.masters.master_shops.show.master_sub_departments.master_families.show':
         case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show':
         case "grp.masters.master_shops.show.master_families.families":
         case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.families':
-            return route(
-                'grp.org.shops.show.catalogue.families.show',
-                [family.organisation_slug, family.shop_slug, family.slug])
+            return familyInShopRoute(family)
         default:
-            return route(
-                'grp.majordomo.redirect_product_category',
-                [family.id])
-
+            return redirectProductCategoryRoute(family)
     }
 }
 
 function shopRoute(family: Family) {
     switch (route().current()) {
         case 'grp.org.shops.index':
-            return route(
-                "grp.org.shops.show.catalogue.dashboard",
-                [(route().params as RouteParams).organisation, family.shop_slug])
+            return family.shop_slug
+                ? route(
+                    "grp.org.shops.show.catalogue.dashboard",
+                    [(route().params as RouteParams).organisation, family.shop_slug])
+                : undefined
         case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.families':
-            return route(
-              "grp.org.shops.show.catalogue.families.show",
-              [family.organisation_slug, family.shop_slug, family.slug])
+            return family.organisation_slug && family.shop_slug
+                ? route(
+                    "grp.org.shops.show.catalogue.families.show",
+                    [family.organisation_slug, family.shop_slug, family.slug])
+                : undefined
         default:
-            return route(
-                "grp.org.shops.show.catalogue.dashboard",
-                [family.organisation_slug, family.shop_slug])
+            return family.organisation_slug && family.shop_slug
+                ? route(
+                    "grp.org.shops.show.catalogue.dashboard",
+                    [family.organisation_slug, family.shop_slug])
+                : undefined
     }
 }
 function productRoute(family: Family) {
@@ -142,32 +156,30 @@ function departmentRoute(family: Family) {
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug])
         case 'grp.masters.master_shops.show.master_families.show':
         case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.families':
-            return route(
-                "grp.org.shops.show.catalogue.departments.show",
-                [family.organisation_slug, family.shop_slug, family.department_slug])
-
+            return family.organisation_slug && family.shop_slug
+                ? route(
+                    "grp.org.shops.show.catalogue.departments.show",
+                    [family.organisation_slug, family.shop_slug, family.department_slug])
+                : undefined
     }
 }
 
-function collectionRoute(organisation_slug: string, shop_slug: string, collection: { id: string, name: string, code?: string }) {
-    switch (route().current()) {
-        case 'xxxxxxxxx':
-            return route(
-                "grp.org.shops.show.catalogue.collections.show",
-                {
-                    organisation: (route().params as RouteParams).organisation,
-                    shop: shop_slug,
-                    collection: collection.slug
-                })
-        default:
-            return route(
-                "grp.org.shops.show.catalogue.collections.show",
-                {
-                    organisation: organisation_slug,
-                    shop: shop_slug,
-                    collection: collection.slug
-                })
+function collectionRoute(organisation_slug: string, shop_slug: string, collection: { id: string, name: string, slug: string, code?: string }) {
+    const organisation = route().current() === 'xxxxxxxxx'
+        ? (route().params as RouteParams).organisation
+        : organisation_slug
+
+    if (!organisation || !shop_slug || !collection.slug) {
+        return undefined
     }
+
+    return route(
+        "grp.org.shops.show.catalogue.collections.show",
+        {
+            organisation: organisation,
+            shop: shop_slug,
+            collection: collection.slug
+        })
 }
 
 function subDepartmentRoute(family: Family) {
@@ -188,14 +200,16 @@ function subDepartmentRoute(family: Family) {
             )
 
         case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.families':
-            return route(
-                'grp.org.shops.show.catalogue.sub_departments.show',
-                [
-                    family.organisation_slug,
-                    family.shop_slug,
-                    family.sub_department_slug
-                ]
-            )
+            return family.organisation_slug && family.shop_slug
+                ? route(
+                    'grp.org.shops.show.catalogue.sub_departments.show',
+                    [
+                        family.organisation_slug,
+                        family.shop_slug,
+                        family.sub_department_slug
+                    ]
+                )
+                : undefined
     }
 }
 function masterFamilyRoute(family: Family) {
@@ -238,7 +252,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckBox"
-        @onSelectRow="(item) => (console.log('qqqq', item), emits('selectedRow', item))">
+        @onSelectRow="(item) => emits('selectedRow', item)">
 
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center items-center w-8 aspect-square rounded-full overflow-hidden shadow">
@@ -264,9 +278,12 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(shop_code)="{ item: family }">
-            <Link :href="shopRoute(family)" class="secondaryLink">
+            <Link v-if="shopRoute(family)" :href="(shopRoute(family) as string)" class="secondaryLink">
             {{ family["shop_code"] }}
             </Link>
+            <div v-else>
+                {{ family["shop_code"] }}
+            </div>
         </template>
 
         <template #cell(gr_detail)="{ item: family }">
@@ -280,14 +297,18 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(current_products)="{ item: family }">
-            <Link :href="productRoute(family)" class="primaryLink">
+            <Link v-if="productRoute(family)" :href="(productRoute(family) as string)" class="primaryLink">
             {{ family["current_products"] }}
             </Link>
+            <div v-else>
+                {{ family["current_products"] }}
+            </div>
         </template>
 
         <!-- Column: Department code -->
         <template #cell(department_code)="{ item: family }">
-            <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
+            <Link v-if="family.department_slug && departmentRoute(family)" :href="(departmentRoute(family) as string)"
+                class="secondaryLink">
             {{ family["department_code"] }}
             </Link>
 
@@ -298,9 +319,13 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <!-- Column: Department name -->
         <template #cell(department_name)="{ item: family }">
-            <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
+            <Link v-if="family.department_slug && departmentRoute(family)" :href="(departmentRoute(family) as string)"
+                class="secondaryLink">
             {{ family["department_name"] }}
             </Link>
+            <div v-else>
+                {{ family["department_name"] }}
+            </div>
         </template>
 
         <!-- Column: Collections -->
@@ -308,11 +333,16 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <div class="flex flex-col gap-2">
                 <ul>
                     <li v-for="collect in family.collections" :key="collect.id" class="list-disc">
-                        <Link :href="collectionRoute(family.organisation_slug, family.shop_slug, collect)"
+                        <Link v-if="collectionRoute(family.organisation_slug, family.shop_slug, collect)"
+                            :href="(collectionRoute(family.organisation_slug, family.shop_slug, collect) as string)"
                             class="secondaryLink w-fit">
                         {{ collect.name }} <span v-if="collect.code" class="text-gray-400 italic">({{ collect.code
                             }})</span>
                         </Link>
+                        <span v-else>
+                            {{ collect.name }} <span v-if="collect.code" class="text-gray-400 italic">({{ collect.code
+                                }})</span>
+                        </span>
                     </li>
                 </ul>
             </div>
@@ -325,9 +355,11 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(sub_department_name)="{ item: family }">
-            <Link v-if="family.sub_department_slug" :href="subDepartmentRoute(family)" class="secondaryLink">
+            <Link v-if="family.sub_department_slug && subDepartmentRoute(family)"
+                :href="(subDepartmentRoute(family) as string)" class="secondaryLink">
             {{ family["sub_department_code"] }}
             </Link>
+            <span v-else-if="family.sub_department_code">{{ family["sub_department_code"] }}</span>
             <span v-else class="text-xs text-gray-400 italic">-</span>
         </template>
 
