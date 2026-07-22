@@ -86,6 +86,7 @@ const getCollapsedHeight = (): number => {
 
 const titleStyles = computed(() => ({
   fontSize: titleState.value === 'single' ? '32px' : '25px',
+  lineHeight: '1',
 }))
 
 const measureLines = (el: HTMLElement, fontSize: string): number => {
@@ -303,10 +304,7 @@ const contentClass = computed(() =>
     text-[14px]
     leading-[1.6]
     text-[#1d2430]
-    sm:text-[14px]
-    lg:text-[14px]
     2xl:space-y-2
-    2xl:text-[16px]
     overflow-hidden
   " ref="descriptionContentRef" :class="!expanded ? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]' : ''">
             <div v-html="cleanedDescription"></div>

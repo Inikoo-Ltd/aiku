@@ -10,9 +10,13 @@ const props = defineProps<{
             marketing_weight?: number
             barcode?: number
             origin?: string
+            unit?: string
+            cpnp?: string
             dimensions?: [number, number]
             ingredients?: Array<string>
+            countries_of_origin?: Array<{ code: string; name: string }>
         }
+        attachments?: Array<{ label: string; caption: string; url: string; mime_type: string }>
     }
 }>()
 
@@ -43,7 +47,7 @@ const groupedAttachments = computed(() => {
     ]
 
     // Group by label (scope)
-    const grouped = {}
+    const grouped: Record<string, typeof allFiles> = {}
     allFiles.forEach(file => {
         if (!grouped[file.label]) grouped[file.label] = []
         grouped[file.label].push(file)
@@ -94,15 +98,18 @@ const groupedAttachments = computed(() => {
             <div class="p-2 text-sm">{{ product?.specifications?.cpnp }}</div>
         </div>
 
-        <div v-if="product?.specifications?.country_of_origin?.code" class="grid grid-cols-2 border-b border-gray-300">
+        <!-- Section: countries_of_origin -->
+        <div v-if="product?.specifications?.countries_of_origin?.length" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Origin Country') }}</div>
-            <div class="p-2 flex items-center gap-2">
-                <img :src="'/flags/' + product.specifications.country_of_origin.code.toLowerCase() + '.png'"
-                    :alt="product.specifications.country_of_origin.name"
-                    :title="product.specifications.country_of_origin.name" class="h-4 w-auto inline-block" />
-                <span class="text-sm">
-                    {{ product.specifications.country_of_origin.name }}
-                </span>
+            <div class="p-2 flex flex-col gap-1">
+                <div v-for="country in product.specifications.countries_of_origin" :key="country.code"
+                    class="flex items-center gap-2">
+                    <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name" :title="country.name"
+                        class="h-4 w-auto inline-block" />
+                    <span class="text-sm">
+                        {{ country.name }}
+                    </span>
+                </div>
             </div>
         </div>
 
