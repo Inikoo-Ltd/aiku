@@ -208,7 +208,9 @@ trait CanRepairOrgStockMovements
             ->exists();
 
         if ($latestFutureAssociationMovement?->type != OrgStockMovementTypeEnum::DISASSOCIATE->value && !$locationOrgStockExists) {
-            StoreLocationOrgStock::make()->action($orgStock, $location, []);
+            StoreLocationOrgStock::make()->action($orgStock, $location, [
+                'date'             => Carbon::parse($purchase->date)->subMilliseconds(50)->format('Y-m-d H:i:s.u'),
+            ]);
             $command?->warn("Added missing location stock for purchase {$purchase->id}");
 
             return;
