@@ -8,6 +8,7 @@
 import { computed, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
+import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
 import Image from '@common/Components/Image.vue'
@@ -113,7 +114,15 @@ async function onSaveQuantity(item: any, form: any) {
             route(item.updateRoute.name, item.updateRoute.parameters),
             { quantity_ordered: quantityOrdered }
         )
+        form.defaults()
+        notify({ title: trans('Success'), text: trans('Quantity updated'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to update quantity'),
+            type: 'error',
+        })
     } finally {
         savingId.value = null
     }
