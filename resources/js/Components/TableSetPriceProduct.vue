@@ -288,11 +288,11 @@ function roundDown2(num: number) {
                         <div class="flex flex-col items-end gap-[2px]">
 
                             <!-- STOCK -->
-                            <div v-if="item.product?.stock" class="flex items-baseline gap-1">
+                          <!--   <div v-if="item.product?.stock" class="flex items-baseline gap-1">
                                 <span class="text-sm font-semibold text-gray-800">
                                     {{ item.product?.stock }}
                                 </span>
-                            </div>
+                            </div> -->
 
                             <!-- VALUE -->
                             <div v-if="item.product?.org_value_in_warehouse" v-tooltip="trans('Value in warehouse')"

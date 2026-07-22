@@ -234,11 +234,9 @@ defineExpose({ refreshModalData })
     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
         {{ form.errors.shop_products.join(", ") }}
     </small>
-    
-    <div class="pt-5 flex items-end w-full">
-        <Button :class="'ms-auto'" :disabled="disableClone" v-on:click="submitForm()" :loading="loading">
-            <FontAwesomeIcon :icon="faSave" />
-            {{ trans("Save") }}
+
+    <div class="sticky bottom-0 z-10 pt-4 pb-2 flex items-end w-full bg-white border-t border-gray-200">
+        <Button :class="'ms-auto'" type="save" :disabled="disableClone" v-on:click="submitForm()" :loading="loading" :label="trans('save')">
         </Button>
     </div>
 </template>
