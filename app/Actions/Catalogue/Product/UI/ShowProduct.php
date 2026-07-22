@@ -312,7 +312,7 @@ class ShowProduct extends OrgAction
                     'type'    => 'button',
                     'style'   => 'edit',
                     'icon'    => ["fal", "fa-external-link"],
-                    'tooltip' => "Open website in a new tab",
+                    'tooltip' => __("Open product in the website"),
                     'route'   => [
                         'url'       => $product->webpage?->canonical_url,
                         'openBlank' => true,
