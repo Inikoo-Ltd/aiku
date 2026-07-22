@@ -49,6 +49,7 @@ const props = defineProps<{
     message: Message
     viewerType: ViewerType
     agentName?: string | null
+    contactName?: string | null
 }>()
 
 const layout: any = inject("layout", {})
@@ -101,6 +102,17 @@ const readIcon = computed(() =>
 
 const agentDisplayName = computed(() => {
     return props.agentName ?? "Agent"
+})
+
+const showSenderLabel = computed(() =>
+    props.viewerType === "agent" && props.message.sender_type !== "system"
+)
+
+const senderLabel = computed(() => {
+    if (props.message.sender_type === "agent") {
+        return props.agentName ?? layout?.user?.contact_name ?? "Agent"
+    }
+    return props.contactName ?? "Customer"
 })
 
 const isFile = computed(() => props.message.message_type === "file")
@@ -231,8 +243,12 @@ watch(selectedLanguage, async (val) => {
             v-if="props.message.sender_type === 'agent' && props.viewerType === 'user'">
             {{ agentDisplayName }} (Agent)
         </div>
-        <div class="flex flex-col gap-0.5 text-sm leading-snug shadow-sm max-w-[78%] px-2.5 py-1.5 rounded-xl"
+        <div class="flex flex-col gap-0.5 text-sm leading-relaxed shadow-sm max-w-[70%] px-3.5 py-2.5 rounded-2xl"
             :class="bubbleClass">
+
+            <div v-if="showSenderLabel" class="text-[11px] font-semibold mb-0.5 opacity-70">
+                {{ senderLabel }}
+            </div>
 
             <p class="whitespace-pre-wrap break-words">
                 {{ displayText }}
@@ -338,7 +354,7 @@ watch(selectedLanguage, async (val) => {
 }
 
 .bubble-secondary {
-    @apply bg-gray-200 text-gray-800;
+    @apply bg-white text-gray-800 border border-gray-200;
     border-bottom-left-radius: 4px;
 }
 

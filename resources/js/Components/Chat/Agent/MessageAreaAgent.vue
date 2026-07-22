@@ -22,6 +22,7 @@ import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
+import { Select } from "primevue"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -51,6 +52,7 @@ const emit = defineEmits([
     "view-user-profile",
     "view-message-details",
     "transfer-agent-success",
+    "assign-self-success",
     "open-jira-settings",
 ])
 
@@ -73,11 +75,12 @@ const takeoverChat = async () => {
             {},
             { withCredentials: true }
         )
+        props.session.status = "active"
         if (props.session.assigned_agent) {
             props.session.assigned_agent.user_id = layout?.user?.id
             props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
         }
-        emit("transfer-agent-success")
+        emit("assign-self-success")
     } catch {
         notify({ title: trans("Error"), text: trans("Failed to take over chat"), type: "error" })
     } finally {
@@ -99,6 +102,30 @@ const onOpenJiraSettings = () => {
     emit("open-jira-settings")
 }
 
+const isAssigningSelf = ref(false)
+const assignSelf = async () => {
+    if (!props.session?.ulid || isAssigningSelf.value) return
+    isAssigningSelf.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.post(
+            route("grp.org.chat.agents.assign.self", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.session.status = "active"
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent.user_id = layout?.user?.id
+            props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
+        }
+        emit("assign-self-success")
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to assign chat"), type: "error" })
+    } finally {
+        isAssigningSelf.value = false
+    }
+}
+
 const isReopening = ref(false)
 const reopenChat = async () => {
     if (!props.session?.ulid || isReopening.value) return
@@ -115,6 +142,7 @@ const reopenChat = async () => {
             props.session.assigned_agent.user_id = layout?.user?.id
             props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
         }
+        emit("assign-self-success")
     } catch {
         notify({ title: trans("Error"), text: trans("Failed to reopen chat"), type: "error" })
     } finally {
@@ -159,6 +187,7 @@ const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
+const isWaiting = computed(() => chatSession.value?.status === "waiting")
 const menuRef = ref<HTMLElement | null>(null)
 
 const isTyping = ref(false)
@@ -533,6 +562,22 @@ const onViewMessageDetails = () => {
     emit("view-message-details")
 }
 
+const onViewUserProfile = () => {
+    isMenuOpen.value = false
+    emit("view-user-profile")
+}
+
+const statusBadgeClass = computed(() => {
+    const map: Record<string, string> = {
+        active:      "bg-green-100 text-green-700",
+        waiting:     "bg-yellow-100 text-yellow-700",
+        resolved:    "bg-blue-100 text-blue-700",
+        transferred: "bg-purple-100 text-purple-700",
+        closed:      "bg-gray-100 text-gray-600",
+    }
+    return map[chatSession.value?.status ?? ""] ?? "bg-gray-100 text-gray-600"
+})
+
 watch(
     () => chatSession.value?.ulid,
     async () => {
@@ -635,33 +680,59 @@ const handleClickOutside = (e: MouseEvent) => {
 <template>
     <div class="flex flex-col h-full bg-white overflow-hidden">
         <!-- Header -->
-        <header class="flex items-center gap-3 px-3 py-2 border-b bg-gray-50">
+        <header class="flex items-center gap-3 px-3 py-2 border-b">
             <button @click="$emit('back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
             </button>
 
-            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+            <button type="button" v-tooltip="trans('View profile')"
+                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500 hover:ring-2 hover:ring-gray-200 transition"
+                @click="onViewUserProfile">
                 <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
 
                 <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+            </button>
+
+            <div class="flex-1 min-w-0 cursor-pointer" @click="onViewMessageDetails">
+                <div class="text-sm font-semibold truncate primary-text hover:primary-text-hover transition-colors">
+                    {{ session?.guest_identifier || session?.contact_name }}
+                </div>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <span v-if="session?.status"
+                        class="text-[10px] font-medium capitalize rounded-full px-1.5 py-0.5"
+                        :class="statusBadgeClass">
+                        {{ session.status }}
+                    </span>
+                    <span v-if="session?.shop?.name" class="text-[11px] text-gray-400 truncate">
+                        {{ session.shop.name }}
+                    </span>
+                </div>
             </div>
 
-            <span
-                class="flex-1 text-sm font-semibold truncate cursor-pointer primary-text hover:primary-text-hover transition-colors"
-                @click="onViewMessageDetails">
-                {{ session?.guest_identifier || session?.contact_name }}
-            </span>
+            <ModalConfirmationDelete v-if="!isClosed" :routeDelete="{
+                name: 'grp.org.chat.agents.sessions.close',
+                parameters: [session?.organisation.id, session?.ulid],
+                method: 'patch',
+            }" :title="trans('Are you sure you want to end this chat?')"
+                :noLabel="trans('End chat')"
+                :noIcon="faTimesCircle"
+                :description="trans('This will close the chat session. The conversation history will be preserved.')"
+                @success="$emit('close-session')">
+                <template #default="{ changeModel }">
+                    <button @click="changeModel"
+                        class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
+                        :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
+                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
+                        {{ trans("End chat") }}
+                    </button>
+                </template>
+            </ModalConfirmationDelete>
 
-            <select v-if="languages.length" v-model="selectedLanguage" :disabled="isTranslating"
-                class="h-[20px] text-[10px] px-1.5 py-0 rounded border border-gray-300 bg-white text-gray-600 leading-none focus:outline-none focus:ring-0 disabled:opacity-50">
-                <option value="" disabled>
-                    Translate To..
-                </option>
-
-                <option v-for="lang in languages" :key="lang.id" :value="lang.code">
-                    {{ lang.native_name }}
-                </option>
-            </select>
+            <Select v-if="languages.length" v-model="selectedLanguage" :options="languages"
+                optionLabel="native_name" optionValue="code" :placeholder="trans('Translate To..')"
+                :disabled="isTranslating" size="small"
+                :pt="{ option: { style: 'font-size: 0.6875rem; padding-top: 0.35rem; padding-bottom: 0.35rem;' } }"
+                class="translate-select h-7 w-36 text-[11px]" />
 
             <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
 
@@ -672,22 +743,9 @@ const handleClickOutside = (e: MouseEvent) => {
 
                 <div v-if="isMenuOpen && !isClosed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
-                    <ModalConfirmationDelete :routeDelete="{
-                        name: 'grp.org.chat.agents.sessions.close',
-                        parameters: [session?.organisation.id, session?.ulid],
-                        method: 'patch',
-                    }" :title="trans('Are you sure you want to close this session?')"
-                        :noLabel="trans('Close Session')"
-                        :noIcon="faTimesCircle"
-                        :description="trans('This will close the chat session. The conversation history will be preserved.')"
-                        @success="$emit('close-session')">
-                        <template #default="{ changeModel }">
-                            <button @click="changeModel" class="menu-item text-red-600">
-                                <FontAwesomeIcon :icon="faTimesCircle" />
-                                {{ trans("Close Chat Session") }}
-                            </button>
-                        </template>
-                    </ModalConfirmationDelete>
+                    <button class="menu-item" @click="onViewUserProfile">
+                        <FontAwesomeIcon :icon="faUser" /> {{ trans("View Profile") }}
+                    </button>
 
                     <button class="menu-item" @click="onViewMessageDetails">
                         <FontAwesomeIcon :icon="faMessage" /> {{ trans("Message Details") }}
@@ -715,7 +773,7 @@ const handleClickOutside = (e: MouseEvent) => {
         </div>
 
         <!-- Messages -->
-        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
             <div class="flex justify-center" v-if="canLoadMore && nextCursor">
                 <button @click="getMessages(true)" :disabled="isLoadingMore" class="flex items-center gap-2 text-xs text-gray-600 px-4 py-1.5
                border rounded-full hover:bg-gray-100 disabled:opacity-50">
@@ -730,7 +788,9 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
                 <div v-for="msg in msgs" :key="msg.id" class="flex"
                     :class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-                    <BubbleChat :message="msg" viewerType="agent" />
+                    <BubbleChat :message="msg" viewerType="agent"
+                        :contactName="session?.contact_name || session?.guest_identifier"
+                        :agentName="session?.assigned_agent?.name" />
                 </div>
             </template>
         </div>
@@ -779,6 +839,23 @@ const handleClickOutside = (e: MouseEvent) => {
                     size="xs"
                     :label="trans('Reopen')"
                     :icon="faRotateRight"
+                />
+            </div>
+        </footer>
+
+        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
+        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('Assign this chat to yourself to start the conversation') }}
+                </div>
+                <Button
+                    @click="assignSelf"
+                    :loading="isAssigningSelf"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Assign to me')"
+                    :icon="['far', 'fa-user']"
                 />
             </div>
         </footer>
@@ -877,6 +954,21 @@ const handleClickOutside = (e: MouseEvent) => {
 
 .menu-item:hover {
     background: #f3f4f6;
+}
+
+.translate-select.p-select {
+    height: 1.75rem;
+    align-items: center;
+    border-radius: 0.375rem;
+}
+
+.translate-select :deep(.p-select-label) {
+    display: flex;
+    align-items: center;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 0.6875rem;
+    line-height: 1;
 }
 
 ::-webkit-scrollbar {

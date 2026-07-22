@@ -3,6 +3,7 @@
 
 use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\DownloadChatAttachment;
+use App\Actions\Chat\ChatSession\GetAgentChatNotifications;
 use App\Actions\Chat\ChatSession\GetAgentUnreadMessagesSummary;
 use App\Actions\Chat\ChatSession\GetChatActivity;
 use App\Actions\Chat\ChatSession\GetChatAgentByUserId;
@@ -64,6 +65,7 @@ Route::post('/sessions/{chatSession:ulid}/share-to-slack', [ShareChatSessionToSl
 Route::get('agents', GetChatAgents::class)->name('agents.index');
 Route::get('/agents/specializations', GetChatAgentSpecializations::class)->name('agent.specializations');
 Route::get('/users/{id}/unread-messages', GetAgentUnreadMessagesSummary::class)->name('user.unread-messages');
+Route::get('/users/{id}/agent-notifications', GetAgentChatNotifications::class)->name('agent.notifications');
 
 Route::post('/agents/store', StoreChatAgent::class, 'agents.store')
     ->name('agents.store');

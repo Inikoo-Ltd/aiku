@@ -10,6 +10,22 @@ export interface LastMessage {
 }
 
 // --------------------------
+// Shop / Organisation (inbox scope)
+// --------------------------
+export interface ChatInboxShop {
+	id: number
+	name: string
+	slug: string
+	domain?: string
+}
+
+export interface ChatInboxOrganisation {
+	id: number
+	name: string
+	slug: string
+}
+
+// --------------------------
 // Session data from API
 // --------------------------
 export interface SessionAPI {
@@ -21,6 +37,9 @@ export interface SessionAPI {
 	created_at: string
 	priority: string
 	customer: boolean
+	image?: string
+	shop?: ChatInboxShop | null
+	organisation?: ChatInboxOrganisation | null
 	last_message?: LastMessage
 	assigned_agent?: {
 		id: string
@@ -109,6 +128,19 @@ export interface Contact {
 		id: string
 		name: string
 	}
+	shop?: ChatInboxShop | null
+	organisation?: ChatInboxOrganisation | null
+}
+
+// --------------------------
+// Inbox grouping (one shop = one inbox)
+// --------------------------
+export interface ChatInboxGroup {
+	key: number | string
+	shopName: string
+	organisationName: string
+	unread: number
+	contacts: Contact[]
 }
 
 export interface ChatMessage {
