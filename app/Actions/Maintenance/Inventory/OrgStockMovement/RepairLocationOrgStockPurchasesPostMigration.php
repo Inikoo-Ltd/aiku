@@ -50,6 +50,8 @@ class RepairLocationOrgStockPurchasesPostMigration implements ShouldBeUnique
             $this->fixForAuditsInPairs($location, $orgStock, $command);
             $this->fixForPurchaseAndAssociatePairs($location, $orgStock, $command);
             $this->fixForPostPurchaseAssociates($location, $orgStock, $command);
+            $this->fixForPrePurchaseAssociates($location, $orgStock, $command);
+
 
             $locationOrgStock = $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
             $stockQuantity    = GetLocationOrgStockQuantity::run($orgStock, $location);

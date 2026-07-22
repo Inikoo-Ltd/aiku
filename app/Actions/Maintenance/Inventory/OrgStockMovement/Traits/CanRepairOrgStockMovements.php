@@ -8,12 +8,14 @@
 
 namespace App\Actions\Maintenance\Inventory\OrgStockMovement\Traits;
 
+use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 trait CanRepairOrgStockMovements
@@ -153,6 +155,49 @@ trait CanRepairOrgStockMovements
         return null;
     }
 
+    public function fixForPrePurchaseAssociates(Location $location, OrgStock $orgStock, ?Command $command = null): void
+    {
+        $purchases = OrgStockMovement::where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)
+            ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+            ->orderBy('date')
+            ->get();
+
+        foreach ($purchases as $purchase) {
+            $lastAssociationMovement = DB::table('org_stock_movements')
+                ->select('type')
+                ->where('location_id', $location->id)
+                ->where('org_stock_id', $orgStock->id)
+                ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+                ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE->value, OrgStockMovementTypeEnum::DISASSOCIATE->value])
+                ->where('date', '<', $purchase->date->format('Y-m-d H:i:s.u'))
+                ->orderByDesc('date')
+                ->orderByDesc('source_id')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($lastAssociationMovement?->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
+                continue;
+            }
+
+            StoreOrgStockMovement::make()->action(
+                $orgStock,
+                $location,
+                [
+                    'quantity'         => 0,
+                    'audited_quantity' => 0,
+                    'org_amount'       => 0,
+                    'date'             => Carbon::parse($purchase->date)->subMilliseconds(50)->format('Y-m-d H:i:s.u'),
+                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
+                    'fixed'            => true,
+                ]
+            );
+
+            $command?->warn("Added missing associate 50ms before purchase {$purchase->id}");
+        }
+    }
+
 
     public function fixForPostPurchaseAssociates(Location $location, OrgStock $orgStock, ?Command $command = null): void
     {
@@ -180,8 +225,23 @@ trait CanRepairOrgStockMovements
             ->orderByRaw('date,source_id,id')
             ->get();
 
+        $associateWasRemoved = false;
+
         foreach ($nextMovements as $movement) {
             if ($movement->type == OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+                if ($associateWasRemoved) {
+                    DB::table('org_stock_movements')->where('id', $movement->id)
+                        ->update(
+                            [
+                                'class'            => OrgStockMovementClassEnum::GARBAGE->value,
+                                'fixed'            => true,
+                                'audited_quantity' => 0,
+                                'quantity'         => 0,
+                            ]
+                        );
+                    $command?->warn("Transform disassociate to garbage   $movement->id ");
+                }
+
                 break;
             }
 
@@ -195,6 +255,7 @@ trait CanRepairOrgStockMovements
                             'quantity'         => 0,
                         ]
                     );
+                $associateWasRemoved = true;
                 $command?->warn("Transform associate to garbage   $movement->id ");
             }
         }
