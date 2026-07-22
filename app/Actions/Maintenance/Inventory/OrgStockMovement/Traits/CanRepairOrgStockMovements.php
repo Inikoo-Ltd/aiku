@@ -155,47 +155,56 @@ trait CanRepairOrgStockMovements
         return null;
     }
 
-    public function fixForPrePurchaseAssociates(Location $location, OrgStock $orgStock, ?Command $command = null): void
+
+
+
+    public function fixForPrePurchaseAssociates(OrgStock $orgStock, ?Command $command = null): void
     {
-        $purchases = OrgStockMovement::where('location_id', $location->id)
-            ->where('org_stock_id', $orgStock->id)
+        $purchases = OrgStockMovement::where('org_stock_id', $orgStock->id)
             ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
             ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
             ->orderBy('date')
             ->get();
 
+        /** @var OrgStockMovement $purchase */
         foreach ($purchases as $purchase) {
-            $lastAssociationMovement = DB::table('org_stock_movements')
-                ->select('type')
-                ->where('location_id', $location->id)
-                ->where('org_stock_id', $orgStock->id)
-                ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
-                ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE->value, OrgStockMovementTypeEnum::DISASSOCIATE->value])
-                ->where('date', '<', $purchase->date->format('Y-m-d H:i:s.u'))
-                ->orderByDesc('date')
-                ->orderByDesc('source_id')
-                ->orderByDesc('id')
-                ->first();
-
-            if ($lastAssociationMovement?->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
-                continue;
-            }
-
-            StoreOrgStockMovement::make()->action(
-                $orgStock,
-                $location,
-                [
-                    'quantity'         => 0,
-                    'audited_quantity' => 0,
-                    'org_amount'       => 0,
-                    'date'             => Carbon::parse($purchase->date)->subMilliseconds(50)->format('Y-m-d H:i:s.u'),
-                    'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
-                    'fixed'            => true,
-                ]
-            );
-
-            $command?->warn("Added missing associate 50ms before purchase {$purchase->id}");
+            $this->processPrePurchaseAssociate($purchase, $orgStock, $command);
         }
+    }
+
+    public function processPrePurchaseAssociate(OrgStockMovement $purchase, OrgStock $orgStock, ?Command $command = null): void
+    {
+        $location                = $purchase->location;
+        $lastAssociationMovement = DB::table('org_stock_movements')
+            ->select('type')
+            ->where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)
+            ->whereNotIn('class', [OrgStockMovementClassEnum::GARBAGE->value, OrgStockMovementClassEnum::INFO->value])
+            ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE->value, OrgStockMovementTypeEnum::DISASSOCIATE->value])
+            ->where('date', '<', $purchase->date->format('Y-m-d H:i:s.u'))
+            ->orderByDesc('date')
+            ->orderByDesc('source_id')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($lastAssociationMovement?->type == OrgStockMovementTypeEnum::ASSOCIATE->value) {
+            return;
+        }
+
+        StoreOrgStockMovement::make()->action(
+            $orgStock,
+            $location,
+            [
+                'quantity'         => 0,
+                'audited_quantity' => 0,
+                'org_amount'       => 0,
+                'date'             => Carbon::parse($purchase->date)->subMilliseconds(50)->format('Y-m-d H:i:s.u'),
+                'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
+                'fixed'            => true,
+            ]
+        );
+
+        $command?->warn("Added missing associate 50ms before purchase {$purchase->id}");
     }
 
 
