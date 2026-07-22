@@ -335,6 +335,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             is_cut_view: newVal
         },
         {
+            preserveScroll: true,
             onStart: () => {
                 set(proxyItem, 'is_transaction_loading', true)
 
