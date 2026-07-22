@@ -9,14 +9,19 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\PurchaseOrderTransaction;
 
 class CalculatePurchaseOrderTotalAmounts extends OrgAction
 {
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        $itemsNet = (float) $purchaseOrder->purchaseOrderTransactions()->sum('net_amount');
+        $itemsNet = $purchaseOrder->purchaseOrderTransactions()
+            ->with('supplierProduct.currency')
+            ->get()
+            ->sum(fn (PurchaseOrderTransaction $transaction) => $this->netAmountInOrderCurrency($purchaseOrder, $transaction));
 
         $extras = (float) $purchaseOrder->cost_extra
             + (float) $purchaseOrder->cost_shipping
@@ -27,5 +32,19 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
             'cost_items' => $itemsNet,
             'cost_total' => $itemsNet + $extras,
         ]);
+    }
+
+    private function netAmountInOrderCurrency(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $transaction): float
+    {
+        $netAmount       = (float) $transaction->net_amount;
+        $supplierProduct = $transaction->supplierProduct;
+
+        if (!$supplierProduct || $supplierProduct->currency_id === $purchaseOrder->currency_id) {
+            return $netAmount;
+        }
+
+        $rate = GetHistoricCurrencyExchange::run($supplierProduct->currency, $purchaseOrder->currency, $purchaseOrder->date);
+
+        return $netAmount * ($rate ?? 1);
     }
 }
