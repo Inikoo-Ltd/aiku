@@ -18,7 +18,7 @@ acl cache_warmer {
 }
 
 backend helio {
-    .host = "10.0.0.2";
+    .host = "{{VARNISH_HOST_HELIO}}";
     .port = "8080";
     .connect_timeout = 1s;
     .first_byte_timeout = 30s;
@@ -26,7 +26,7 @@ backend helio {
 }
 
 backend helio_in {
-    .host = "10.0.0.2";
+    .host = "{{VARNISH_HOST_HELIO}}";
     .port = "8080";
     .connect_timeout = 1s;
     .first_byte_timeout = 30s;
@@ -34,7 +34,7 @@ backend helio_in {
 }
 
 backend boro {
-    .host = "10.0.0.3";
+    .host = "{{VARNISH_HOST_BORO}}";
     .port = "8080";
     .connect_timeout = 1s;
     .first_byte_timeout = 30s;
@@ -43,7 +43,7 @@ backend boro {
 }
 
 backend boro_in {
-    .host = "10.0.0.3";
+    .host = "{{VARNISH_HOST_BORO}}";
     .port = "8080";
     .connect_timeout = 1s;
     .first_byte_timeout = 30s;

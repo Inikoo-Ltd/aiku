@@ -27,9 +27,12 @@ DRY_RUN="${DRY_RUN:-0}"
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
 
-# required secrets — fail early if unset
+# required values — fail early if unset
 : "${HAPROXY_STATS_USER:?set it in $ENV_FILE}"
 : "${HAPROXY_STATS_PASSWORD:?set it in $ENV_FILE}"
+: "${VARNISH_HOST_BORO:?set it in $ENV_FILE}"
+: "${VARNISH_HOST_HELIO:?set it in $ENV_FILE}"
+INSTALL_SCHEDULER="${INSTALL_SCHEDULER:-0}"
 
 # place <src> <dst> [mode]
 # Substitutes every {{VAR}} from the environment (dies on an unset placeholder,
@@ -67,6 +70,18 @@ done
 
 echo "varnish:"
 place "$DEVOPS/varnish/default.vcl" /etc/varnish/default.vcl
+
+echo "cron:"
+if [[ $INSTALL_SCHEDULER == 1 ]]; then
+  if [[ $DRY_RUN == 1 ]]; then
+    echo "  [dry-run] would install scheduler crontab for user aiku"
+  else
+    crontab -u aiku "$DEVOPS/cron/crontab"
+    echo "  -> scheduler crontab installed for aiku"
+  fi
+else
+  echo "  skipped (INSTALL_SCHEDULER=0 — scheduler runs on one host only)"
+fi
 
 if [[ $DRY_RUN == 1 ]]; then
   echo "dry-run complete — nothing written."
