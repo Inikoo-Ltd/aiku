@@ -129,3 +129,4 @@ laradumps.yaml
 /app_actions_dashboard.html
 
 /tests/Browser/Screenshots
+/devops/server.env
