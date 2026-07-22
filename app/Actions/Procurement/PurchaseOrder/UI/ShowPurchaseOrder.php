@@ -284,6 +284,7 @@ class ShowPurchaseOrder extends OrgAction
                         'items'        => $purchaseOrder->cost_items,
                         'extra'        => $purchaseOrder->cost_extra + $purchaseOrder->cost_shipping + $purchaseOrder->cost_duties + $purchaseOrder->cost_tax,
                         'total'        => $purchaseOrder->cost_total,
+                        'org_items'    => $purchaseOrder->purchaseOrderTransactions()->sum('org_net_amount'),
                     ],
                 ],
 

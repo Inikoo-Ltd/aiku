@@ -101,6 +101,7 @@ const props = defineProps < {
             items: number | string
             extra: number | string
             total: number | string
+            org_items: number | string
         }
 	}
 	showcase?: {}
@@ -131,43 +132,56 @@ const metrics = computed(() => {
 	]
 })
 
-const exchangeRate = computed(() => {
-	const { org_exchange } = props.box_stats.third_block
-	const rate = Number(org_exchange)
+const orgPerOrder = computed(() => {
+	const { items, org_items, org_exchange } = props.box_stats.third_block
+	const poItems = Number(items)
+	const orgItems = Number(org_items)
 
-	return rate ? 1 / rate : null
+	if (poItems) {
+		return orgItems / poItems
+	}
+
+	return Number(org_exchange) || null
 })
 
 const costBlocks = computed(() => {
-	const { currency, org_currency, org_exchange, items, extra, total } = props.box_stats.third_block
-	const rate = Number(org_exchange) || 1
+	const { currency, org_currency, items, extra, total, org_items } = props.box_stats.third_block
 
-	const buildRows = (code: string | null, factor: number) => [
-		{ label: trans("Items"), value: locale.currencyFormat(code ?? "", Number(items) * factor) },
-		{ label: trans("Extra costs"), value: locale.currencyFormat(code ?? "", Number(extra) * factor) },
-		{ label: trans("Total"), value: locale.currencyFormat(code ?? "", Number(total) * factor), isTotal: true },
-	]
+	const money = (code: string | null, amount: number) => locale.currencyFormat(code ?? "", amount)
 
 	const supplierBlock = {
 		key: "supplier",
 		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
-		rows: buildRows(currency, 1),
+		rows: [
+			{ label: trans("Items"), value: money(currency, Number(items)) },
+			{ label: trans("Extra costs"), value: money(currency, Number(extra)) },
+			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
+		],
 	}
 
 	if (!org_currency || org_currency === currency) {
 		return [supplierBlock]
 	}
 
-	const rateLabel = exchangeRate.value === null
+	const rate = orgPerOrder.value ?? 1
+	const orgItems = Number(org_items)
+	const orgExtra = Number(extra) * rate
+
+	const orderPerOrg = rate ? 1 / rate : null
+	const rateLabel = orderPerOrg === null
 		? ""
-		: `1 ${org_currency} = ${exchangeRate.value.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
+		: `1 ${org_currency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
 
 	return [
 		supplierBlock,
 		{
 			key: "org",
 			title: rateLabel,
-			rows: buildRows(org_currency, rate),
+			rows: [
+				{ label: trans("Items"), value: money(org_currency, orgItems) },
+				{ label: trans("Extra costs"), value: money(org_currency, orgExtra) },
+				{ label: trans("Total"), value: money(org_currency, orgItems + orgExtra), isTotal: true },
+			],
 		},
 	]
 })
