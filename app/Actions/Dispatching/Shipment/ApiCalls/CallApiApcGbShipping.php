@@ -72,6 +72,18 @@ class CallApiApcGbShipping extends OrgAction
 
         $parcels = $parent->parcels;
 
+        $ndErrors = $this->getNdViolations($parcels);
+        if (!empty($ndErrors)) {
+            return [
+                'status'    => 'fail',
+                'modelData' => [],
+                'errorData' => [
+                    'message' => implode(' ', $ndErrors),
+                    'parcels'  => implode(' ', $ndErrors),
+                ],
+            ];
+        }
+
         $shipTo   = Arr::get($parentResource, 'to_address');
         $address2 = Arr::get($shipTo, 'address_line_2');
 
@@ -312,5 +324,43 @@ class CallApiApcGbShipping extends OrgAction
         } while (empty($content) && $count < 3);
 
         return $content;
+    }
+
+    /**
+     * Cek parcel terhadap envelope APC "Standard Next Day Parcel" (ND).
+     *
+     * @return array<int, string> daftar pesan error (kosong = valid)
+     */
+    public function getNdViolations(array $parcels): array
+    {
+        $maxWeight  = 30;             // kg per item
+        $maxParcels = 20;            // item per consignment
+        $standard   = [120, 55, 50]; // longest, middle, shortest (cm)
+
+        $errors = [];
+
+        if (count($parcels) > $maxParcels) {
+            $errors[] = "Too many parcels for APC ND (max $maxParcels, got ".count($parcels).').';
+        }
+
+        foreach ($parcels as $index => $parcel) {
+            $number = $index + 1;
+
+            $weight = (float) Arr::get($parcel, 'weight', 0);
+            if ($weight > $maxWeight) {
+                $errors[] = "Parcel $number: weight {$weight}kg exceeds {$maxWeight}kg.";
+            }
+
+            $dims = array_map('floatval', Arr::get($parcel, 'dimensions', []));
+            rsort($dims); // descending: [longest, middle, shortest]
+
+        if (($dims[0] ?? 0) > $standard[0]
+              || ($dims[1] ?? 0) > $standard[1]
+              || ($dims[2] ?? 0) > $standard[2]) {
+              $errors[] = "Parcel $number: size ".implode('x', $dims)."cm exceeds APC ND max (120x55x50).";
+          }
+        }
+
+        return $errors;
     }
 }
