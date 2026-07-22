@@ -154,6 +154,21 @@ class ShowPurchaseOrder extends OrgAction
                             ],
                         ],
                     ] : [],
+                    [
+                        'label'   => __('Delete'),
+                        'tooltip' => __('Delete purchase order'),
+                        'type'    => 'button',
+                        'style'   => 'delete',
+                        'icon'    => 'fal fa-trash-alt',
+                        'key'     => 'delete_purchase_order',
+                        'route'   => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.purchase-order.delete',
+                            'parameters' => [
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
+                    ],
                 ],
                 PurchaseOrderStateEnum::SUBMITTED => [
                     [
@@ -326,7 +341,7 @@ class ShowPurchaseOrder extends OrgAction
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))),
             ]
         )->table(IndexPurchaseOrderTransactions::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::ITEMS->value))
-            ->table(IndexPurchaseOrderOrgSupplierProducts::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::PRODUCTS->value))
+            ->table(IndexPurchaseOrderOrgSupplierProducts::make()->tableStructure(prefix: PurchaseOrderTabsEnum::PRODUCTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
     }
 
