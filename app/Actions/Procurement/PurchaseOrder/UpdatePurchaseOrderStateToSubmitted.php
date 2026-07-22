@@ -9,9 +9,11 @@
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Validation\Validator;
@@ -24,28 +26,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
     use AsAction;
     use HasPurchaseOrderHydrators;
 
-
-    /**
-     * @var \App\Models\Procurement\PurchaseOrder
-     */
     private PurchaseOrder $purchaseOrder;
-
-    public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
-    {
-        $data = [
-            'state' => PurchaseOrderStateEnum::SUBMITTED
-        ];
-
-        $purchaseOrder->purchaseOrderTransactions()->update($data);
-
-        $data['submitted_at'] = now();
-
-        $purchaseOrder = $this->update($purchaseOrder, $data);
-
-        $this->purchaseOrderHydrate($purchaseOrder);
-
-        return $purchaseOrder;
-    }
 
     public function authorize(ActionRequest $request): bool
     {
@@ -58,11 +39,40 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!in_array($this->purchaseOrder->state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::CONFIRMED])) {
+        if ($this->purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS) {
             $validator->errors()->add('state', __('Purchase order can only be submitted if it is in process'));
+        }
+
+        if ($this->purchaseOrder->purchaseOrderTransactions()->count() === 0) {
+            $validator->errors()->add('transactions', __('Purchase order must have at least one item to be submitted'));
         }
     }
 
+    public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
+    {
+        $purchaseOrder->purchaseOrderTransactions()->update([
+            'state' => PurchaseOrderTransactionStateEnum::SUBMITTED,
+        ]);
+
+        $purchaseOrder = $this->update($purchaseOrder, [
+            'state'        => PurchaseOrderStateEnum::SUBMITTED,
+            'submitted_at' => now(),
+        ]);
+
+        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
+
+        $this->purchaseOrderHydrate($purchaseOrder);
+
+        return $purchaseOrder;
+    }
+
+    public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
+    {
+        $this->purchaseOrder = $purchaseOrder;
+        $this->initialisation($purchaseOrder->organisation, $request);
+
+        return $this->handle($purchaseOrder);
+    }
 
     public function action(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
@@ -70,12 +80,6 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, []);
 
-        return $this->handle($purchaseOrder);
-    }
-
-
-    public function asController(PurchaseOrder $purchaseOrder): PurchaseOrder
-    {
         return $this->handle($purchaseOrder);
     }
 

@@ -115,7 +115,7 @@ use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCat
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
 use App\Actions\Ordering\Order\GetChargesInOrder;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
-use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\SysAdmin\Group\Json\GetAllTradeUnitsInGroup;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
 use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
@@ -194,8 +194,8 @@ Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers:
 
 Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
-Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
-Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
+Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
+Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 

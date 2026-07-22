@@ -5,9 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import type { Component } from "vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -16,6 +16,11 @@ import Timeline from "@/Components/Utils/Timeline.vue"
 import PurchaseOrderData from "@/Components/Procurement/PurchaseOrderData.vue"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import ModalProductList from "@/Components/Utils/ModalProductList.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
+import { notify } from "@kyvg/vue3-notification"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
@@ -106,6 +111,7 @@ const props = defineProps < {
 	}
 	showcase?: {}
 	items?: {}
+	products?: {}
 	history?: {}
 }>()
 
@@ -188,10 +194,51 @@ const costBlocks = computed(() => {
 
 const currentTab = ref(props.tabs.current)
 
+const isModalProductListOpen = ref(false)
+const currentAction = ref<any>(null)
+
+const openProductListModal = (action: any) => {
+	currentAction.value = action
+	isModalProductListOpen.value = true
+}
+
+watch(isModalProductListOpen, (isOpen, wasOpen) => {
+	if (wasOpen && !isOpen) {
+		router.reload({ only: [currentTab.value, "items", "products", "box_stats"] })
+	}
+})
+
+const confirm = useConfirm()
+const deleteLoading = ref(false)
+
+const confirmDeletePurchaseOrder = (action: any) => {
+	confirm.require({
+		message: trans("Are you sure you want to delete this purchase order? This action cannot be undone."),
+		header: trans("Delete purchase order"),
+		icon: "pi pi-exclamation-triangle",
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Delete"), severity: "danger" },
+		accept: () => {
+			router.delete(route(action.route.name, action.route.parameters), {
+				onStart: () => { deleteLoading.value = true },
+				onFinish: () => { deleteLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to delete purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
 const component = computed(() => {
 	const components: Component = {
 		showcase: PurchaseOrderData,
 		items: TablePurchaseOrderTransactions,
+		products: TablePurchaseOrderTransactions,
 		history: TableHistories,
 	}
 
@@ -222,7 +269,28 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 <template>
 	<Head :title="capitalize(title)" />
-	<PageHeading :data="pageHead" />
+	<PageHeading :data="pageHead">
+		<template #button-add-product="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				@click="() => openProductListModal(action)"
+			/>
+		</template>
+
+		<template #button-delete-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="deleteLoading"
+				@click="() => confirmDeletePurchaseOrder(action)"
+			/>
+		</template>
+	</PageHeading>
 
 	<!-- Purchase Order Timeline -->
 	<div v-if="timelines" class="py-2 border-b border-gray-300">
@@ -418,7 +486,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
 	</div>
 
-	<Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
 		<component
@@ -430,4 +498,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			@update:tab="handleTabUpdate"
 		/>
 	</div>
+
+	<ModalProductList
+		v-if="routes.products_list?.name"
+		v-model="isModalProductListOpen"
+		:fetchRoute="routes.products_list"
+		:action="currentAction"
+		:current="currentTab"
+		v-model:currentTab="currentTab"
+		:typeModel="'purchase_order'"
+	/>
+
+	<ConfirmDialog />
 </template>

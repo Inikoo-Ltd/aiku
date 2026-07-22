@@ -169,15 +169,17 @@ class IndexOrgStockFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
         }
 
-        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'on_the_way_po_value', 'health_rank'];
+        $allowedSorts = ['code', 'name', 'number_current_org_stocks', 'stock_value', 'on_the_way_po_value', 'health_rank', 'sales_grp_currency_external'];
 
         if ($prefix === OrgStockFamiliesTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
             $allowedSorts[] = 'invoices';
         }
 
+        $defaultSort = $prefix === OrgStockFamiliesTabsEnum::SALES->value ? '-sales_grp_currency_external' : 'code';
+
         return $queryBuilder
-            ->defaultSort('code')
+            ->defaultSort($defaultSort)
             ->select($selects)
             ->leftJoin('organisations', 'org_stock_families.organisation_id', 'organisations.id')
             ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
@@ -214,12 +216,13 @@ class IndexOrgStockFamilies extends OrgAction
             if ($sales) {
                 $table->betweenDates(['date'])
                     ->column(key: 'stock_value', label: __('Stock Value'), canBeHidden: false, sortable: true, type: 'currency')
-                    ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency')
+                    // ->column(key: 'on_the_way_po_value', label: __("On the way (PO's)"), sortable: true, type: 'currency') // Todo: fix after Purchase Order
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
-                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon');
+                    ->column(key: 'health_rank', label: __('Health'), canBeHidden: false, sortable: true, type: 'icon')
+                    ->defaultSort('-sales_grp_currency_external');
             } else {
                 $table
                     ->column(key: 'number_current_org_stocks', label: __('SKOs'), canBeHidden: false, sortable: true)

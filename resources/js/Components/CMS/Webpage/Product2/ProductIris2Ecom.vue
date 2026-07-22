@@ -409,7 +409,7 @@ onMounted(() => {
 
                 <div v-if="fieldValue?.setting?.product_specs">
                     <div class="flex flex-wrap items-center gap-6 py-2 border bg-gray-50 p-4">
-                        <div class="font-bold text-xl">Product Specification</div>
+                        <div class="font-bold text-xl">{{ ctrans("Product Specification") }}</div>
 
                         <div class="w-full space-y-1">
 
@@ -458,14 +458,16 @@ onMounted(() => {
                             </div>
 
                             <!-- Origin Country -->
-                            <div v-if="product?.specifications?.country_of_origin?.code" class="grid grid-cols-2">
+                            <div v-if="product?.specifications?.countries_of_origin?.length" class="grid grid-cols-2">
                                 <div class="p-2 text-sm font-thin">{{ trans('Origin Country') }}</div>
 
-                                <div class="p-2 flex items-center gap-2 font-thin text-sm">
-                                    <img :src="'/flags/' + product.specifications.country_of_origin.code.toLowerCase() + '.png'"
-                                        :alt="product.specifications.country_of_origin.name"
-                                        :title="product.specifications.country_of_origin.name" class="h-4 w-auto" />
-                                    <span>{{ product.specifications.country_of_origin.name }}</span>
+                                <div class="p-2 flex flex-col gap-1 font-thin text-sm">
+                                    <div v-for="country in product.specifications.countries_of_origin" :key="country.code"
+                                        class="flex items-center gap-2">
+                                        <img :src="'/flags/' + country.code.toLowerCase() + '.png'"
+                                            :alt="country.name" :title="country.name" class="h-4 w-auto" />
+                                        <span>{{ country.name }}</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -695,14 +697,16 @@ onMounted(() => {
                             </div>
 
                             <!-- Origin Country -->
-                            <div v-if="product?.specifications?.country_of_origin?.code" class="grid grid-cols-2">
+                            <div v-if="product?.specifications?.countries_of_origin?.length" class="grid grid-cols-2">
                                 <div class="p-2 text-sm font-thin">{{ trans('Origin Country') }}</div>
 
-                                <div class="p-2 flex items-center gap-2 font-thin text-sm">
-                                    <img :src="'/flags/' + product.specifications.country_of_origin.code.toLowerCase() + '.png'"
-                                        :alt="product.specifications.country_of_origin.name"
-                                        :title="product.specifications.country_of_origin.name" class="h-4 w-auto" />
-                                    <span>{{ product.specifications.country_of_origin.name }}</span>
+                                <div class="p-2 flex flex-col gap-1 font-thin text-sm">
+                                    <div v-for="country in product.specifications.countries_of_origin" :key="country.code"
+                                        class="flex items-center gap-2">
+                                        <img :src="'/flags/' + country.code.toLowerCase() + '.png'"
+                                            :alt="country.name" :title="country.name" class="h-4 w-auto" />
+                                        <span>{{ country.name }}</span>
+                                    </div>
                                 </div>
                             </div>
 

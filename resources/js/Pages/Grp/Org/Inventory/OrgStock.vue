@@ -193,7 +193,7 @@ const component = computed(() => {
                 :icon="faExclamationCircle"
                 class="text-yellow-500 mr-1"
             />
-            {{ trans("Stock location changes for this Org SKU may be overwritten during Aurora imports.") }}
+            {{ trans("Stock location changes for this Org SKO may be overwritten during Aurora imports.") }}
         </Message>
     </div> -->
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />

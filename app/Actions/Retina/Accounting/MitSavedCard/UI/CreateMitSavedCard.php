@@ -69,7 +69,7 @@ class CreateMitSavedCard extends RetinaAction
         $paymentSessionRequest->metadata = [
             'origin'              => 'aiku',
             'operation'           => 'mit_save_card',
-            'mit_saved_card_ulid' => $mitSavedCard->ulid,
+            'mit_saved_card_ulid' => $mitSavedCard->ulid->toString(),
             'environment'         => app()->environment(),
             'server'              => config('app.server_name') ?? ''
         ];

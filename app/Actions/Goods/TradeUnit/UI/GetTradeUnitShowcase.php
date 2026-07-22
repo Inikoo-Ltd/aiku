@@ -111,8 +111,14 @@ class GetTradeUnitShowcase
             ],
         ];
 
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $tradeUnit->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
+
         $properties = [
-            'country_of_origin' => NaturalLanguage::make()->country($tradeUnit->country_of_origin),
+            'countries_of_origin' => $countriesOrigin,
             'ingredients'       => IngredientsResource::collection($tradeUnit->ingredients)->resolve(),
             'tariff_code'       => $tradeUnit->tariff_code,
             'duty_rate'         => $tradeUnit->duty_rate,

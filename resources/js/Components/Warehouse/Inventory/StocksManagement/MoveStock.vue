@@ -236,15 +236,15 @@ const submitCheckStock = () => {
             isLoadingSubmit.value = true;
         },
         onSuccess: () => {
-            notify({
-                title: trans("Success"),
-                text: trans('Moved :_qtyItem stocks from :_locationSource to :_locationDestination', {
-                    _qtyItem: moveStock.value.quantity.toString(),
-                    _locationSource: moveStock.value.from?.name ?? 'A',
-                    _locationDestination: moveStock.value.to?.name ?? 'B',
-                }),
-                type: "success",
-            })
+            // notify({
+            //     title: trans("Success"),
+            //     text: trans('Moved :_qtyItem stocks from :_locationSource to :_locationDestination', {
+            //         _qtyItem: moveStock.value.quantity.toString(),
+            //         _locationSource: moveStock.value.from?.name ?? 'A',
+            //         _locationDestination: moveStock.value.to?.name ?? 'B',
+            //     }),
+            //     type: "success",
+            // })
             emits('close');
         },
         onError: (errors) => {

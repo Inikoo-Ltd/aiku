@@ -37,17 +37,17 @@ class GetProductShowcase
 
 
         $countryOrigins = [];
-        $countryOrigin  = null;
+        // $countryOrigin  = null;
         $countries      = array_filter(array_map('trim', explode(',', $product->country_of_origin ?? '')));
         foreach ($countries as $country) {
             $countryOrigins[] = NaturalLanguage::make()->country($country);
-            $countryOrigin    = NaturalLanguage::make()->country($country);
+            // $countryOrigin    = NaturalLanguage::make()->country($country);
         }
 
 
         $properties = [
-            'country_of_origin'  => $countryOrigin,
-            'country_of_origins' => $countryOrigins,
+            // 'country_of_origin'  => $countryOrigin,
+            'countries_of_origin' => $countryOrigins,
             'ingredients'        => $product->marketing_ingredients,
             'tariff_code'        => $product->tariff_code,
             'duty_rate'          => $product->duty_rate,

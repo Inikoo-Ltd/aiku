@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection PhpUnused */
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 29 Jun 2026 22:48:45 Malaysia Time, Kuala Lumpur, Malaysia
@@ -11,6 +13,7 @@ namespace App\Actions\DevOps\AppDeployment;
 use App\Models\DevOps\AppDeployment;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Process\Process;
 
 class StoreAppDeployment
 {
@@ -31,12 +34,29 @@ class StoreAppDeployment
     {
         $commit = $command->option('commit');
 
-        AppDeployment::create([
-            'commit_hash' => $commit,
+        $appDeployment = AppDeployment::create([
+            'commit_hash'      => $commit,
+            'semantic_version' => $this->currentTag(base_path()),
         ]);
+
+        if ($commit) {
+            GenerateAppDeploymentChangeLog::dispatch($appDeployment);
+        }
 
         $command->info('Deployment recorded successfully'.($commit ? " for commit $commit" : '').'.');
 
         return 0;
+    }
+
+    private function currentTag(string $path): ?string
+    {
+        $process = new Process(['git', 'describe', '--tags', '--abbrev=0'], $path);
+        $process->run();
+
+        if (! $process->isSuccessful()) {
+            return null;
+        }
+
+        return trim($process->getOutput()) ?: null;
     }
 }

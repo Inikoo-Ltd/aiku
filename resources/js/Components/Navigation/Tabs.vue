@@ -37,7 +37,8 @@ import {
 	faSortShapesUpAlt,
 	faLightbulb,
 	faRepeat,
-	faListUl
+	faListUl,
+	faThList,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -74,7 +75,8 @@ library.add(
 	faUndo,
 	faPenAlt,
 	faLayerGroup,
-	faSortShapesUpAlt
+	faSortShapesUpAlt,
+	faThList,
 )
 
 const layoutStore = inject("layout", layoutStructure)
@@ -236,7 +238,7 @@ const tabIconClass = function (
 								{{ tab.title }}
 								<span
 									v-if="tabSlug === 'bundles'"
-									class="absolute -top-4 -right-12 text-[8px] px-1.5 py-[1px] rounded 
+									class="absolute -top-4 -right-12 text-[8px] px-1.5 py-[1px] rounded
 										bg-red-500 text-white font-semibold tracking-wide
 										whitespace-nowrap scale-90 origin-left impulse"
 								>

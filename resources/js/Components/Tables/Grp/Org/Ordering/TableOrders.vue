@@ -53,6 +53,7 @@ function orderRoute(order: Order) {
                 "grp.org.shops.show.ordering.orders.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug])
 
+        case "grp.org.shops.show.catalogue.products.all_products.show":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
             return route(

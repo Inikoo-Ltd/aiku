@@ -45,6 +45,11 @@ class ProductResource extends JsonResource
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $product->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
 
         return [
             'id'                            => $product->id,
@@ -80,6 +85,7 @@ class ProductResource extends JsonResource
             'scpn_number'                   => $product->scpn_number,
             'picking_factor'                => $pickingFactor,
             'country_of_origin'             => NaturalLanguage::make()->country($product->country_of_origin),
+            'countries_of_origin'             => $countriesOrigin,
             'tariff_code'                   => $product->tariff_code,
             'duty_rate'                     => $product->duty_rate,
             'hts_us'                        => $product->hts_us,
