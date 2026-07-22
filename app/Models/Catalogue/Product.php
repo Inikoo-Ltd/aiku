@@ -185,6 +185,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $is_bundle
  * @property bool|null $mismatch_with_master_detected
  * @property bool $not_follow_master_trade_units
+ * @property bool $not_follow_master_prices
  * @property int|null $index_under_family
  * @property bool $is_on_demand
  * @property-read Media|null $art1Image
@@ -299,7 +300,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_for_sale_from_master'      => 'boolean',
         'mismatch_with_master_detected' => 'boolean',
         'is_on_demand'                  => 'boolean',
-
+        'not_follow_master_prices'      => 'boolean',
     ];
 
     protected $attributes = [
@@ -369,6 +370,7 @@ class Product extends Model implements Auditable, HasMedia
         'auto_assign_status',
         'is_main',
         'is_on_demand',
+        'not_follow_master_prices',
     ];
 
     public function getRouteKeyName(): string

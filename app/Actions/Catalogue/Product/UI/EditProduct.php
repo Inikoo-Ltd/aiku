@@ -264,6 +264,52 @@ class EditProduct extends OrgAction
             }
         }
 
+        $pricingFields = [
+            'not_follow_master_prices'  => [
+                'type'      => 'toggle',
+                'label'     => __('Do not follow master prices'),
+                'value'     => $product->not_follow_master_prices,
+                'information' => __('Enabling this would allow product price to be editable and it will stop following master'),
+                'warningText' => __('Modifying this setting would cause the product to either diverge/follow master').'. '.__('Are you sure you want to do this?'),
+            ]
+        ];
+
+        if (!data_get($product->shop->settings, 'catalog.follow_master_pricing', true) || $product->family->not_follow_master_prices) {
+            $pricingFields = [];
+        }
+
+        if (
+            !data_get($product->shop->settings, 'catalog.follow_master_pricing', true) ||
+            $product->family->not_follow_master_prices ||
+            $product->not_follow_master_prices
+        ) {
+            $pricingFields = array_merge($pricingFields,
+                [
+                    'price'        => [
+                        'type'     => 'input_number',
+                        'label'    => __('Price').'/'.__('outer'),
+                        'required' => true,
+                        'bind'     => [
+                            'minFractionDigits' => 0,
+                            'maxFractionDigits' => 2,
+                        ],
+                        'value'    => $product->price,
+                    ],
+                    'rrp_per_unit' => [
+                        'type'     => 'input_number',
+                        'label'    => __('RRP').'/'.__('unit'),
+                        'required' => true,
+                        'bind'     => [
+                            'minFractionDigits' => 0,
+                            'maxFractionDigits' => 2,
+                        ],
+                        'value'    => ($product->rrp / trimDecimalZeros($product->units)),
+                        'min'      => 0.01
+                    ],
+                ]);
+        }
+
+
         $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 
         $nameFields = [
@@ -533,40 +579,20 @@ class EditProduct extends OrgAction
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
-                    'fields' => [
-                        'price'            => [
-                            'type'     => 'input_number',
-                            'label'    => __('Price').'/'.__('outer'),
-                            'required' => true,
-                            'bind'     => [
-                                'minFractionDigits' => 0,
-                                'maxFractionDigits' => 2,
-                            ],
-                            'value'    => $product->price,
-                        ],
-                        'rrp_per_unit'  => [
-                            'type'     => 'input_number',
-                            'label'    => __('RRP').'/'.__('unit'),
-                            'required' => true,
-                            'bind'     => [
-                                'minFractionDigits' => 0,
-                                'maxFractionDigits' => 2,
-                            ],
-                            'value'    => ($product->rrp / trimDecimalZeros($product->units)),
-                            'min'      => 0.01
-                        ],
-                        'cost_price_ratio' => [
-                            'type'        => 'input_number',
-                            'bind'        => [
-                                'maxFractionDigits' => 3
-                            ],
-                            'label'       => __('Pricing ratio'),
-                            'placeholder' => __('Cost price ratio'),
-                            'required'    => true,
-                            'value'       => $product->cost_price_ratio,
-                            'min'         => 0.01
-                        ],
-                    ]
+                    'fields' => $pricingFields
+                    // [    
+                    //     // 'cost_price_ratio' => [
+                    //     //     'type'        => 'input_number',
+                    //     //     'bind'        => [
+                    //     //         'maxFractionDigits' => 3
+                    //     //     ],
+                    //     //     'label'       => __('Pricing ratio'),
+                    //     //     'placeholder' => __('Cost price ratio'),
+                    //     //     'required'    => true,
+                    //     //     'value'       => $product->cost_price_ratio,
+                    //     //     'min'         => 0.01
+                    //     // ],
+                    // ]
                 ],
                 $product->is_single_trade_unit
                     ? []

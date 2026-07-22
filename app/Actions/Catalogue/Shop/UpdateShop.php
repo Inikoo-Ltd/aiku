@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
@@ -255,8 +256,12 @@ class UpdateShop extends OrgAction
         }
 
         if (Arr::has($modelData, 'follow_master_pricing')) {
-            $reHydrateChildPrices = true;
-            data_set($modelData, 'settings.catalog.follow_master_pricing', Arr::pull($modelData, 'follow_master_pricing'));
+            $followMasterPricing = Arr::pull($modelData, 'follow_master_pricing');
+            data_set($modelData, 'settings.catalog.follow_master_pricing', $followMasterPricing);
+
+            if ($followMasterPricing) {
+                $reHydrateChildPrices = true;
+            }
         }
 
         // Catalogue Indexing etc.
@@ -548,8 +553,7 @@ class UpdateShop extends OrgAction
         }
 
         if ($reHydrateChildPrices) {
-            // TODO MasterLevel Price RRP (Raul)
-            // TODO Rehydrate Child Prices according to their master counterpart prices & rrp here
+            ProductHydratePricesFromMaster::dispatch($shop);
         }
 
         if ($bannedCountriesUpdated) {

@@ -98,6 +98,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
+ * @property bool $not_follow_master_prices
  * @property HealthRankEnum|null $health_rank
  * @property string|null $desc_video_url
  * @property int|null $desc_art1
@@ -194,6 +195,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'last_fetched_at'               => 'datetime',
         'offers_data'                   => 'array',
         'mismatch_with_master_detected' => 'boolean',
+        'not_follow_master_prices'      => 'boolean',
     ];
 
     protected $attributes = [
@@ -230,6 +232,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'code',
         'name',
         'description',
+        'not_follow_master_prices',
     ];
 
     public function getRouteKeyName(): string

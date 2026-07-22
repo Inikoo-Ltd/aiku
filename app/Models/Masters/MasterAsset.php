@@ -289,12 +289,12 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
-    public function getPricefromCurrency(Currency $currency): int
+    public function getPricefromCurrency(Currency $currency): float
     {
         return data_get($this->master_prices, "{$currency->code}.value", 0);
     }
 
-    public function getRRPfromCurrency(Currency $currency): int
+    public function getRRPfromCurrency(Currency $currency): float
     {
         return data_get($this->master_rrps, "{$currency->code}.value", 0);
     }

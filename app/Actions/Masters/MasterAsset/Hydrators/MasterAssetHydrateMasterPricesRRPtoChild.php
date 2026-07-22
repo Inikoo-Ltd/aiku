@@ -3,6 +3,7 @@
 namespace App\Actions\Masters\MasterAsset\Hydrators;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -11,24 +12,38 @@ class MasterAssetHydrateMasterPricesRRPtoChild
 {
     use AsAction;
 
-    public function handle(MasterAsset $masterAsset)
+    public function handle(MasterAsset $masterAsset, ?Shop $shop = null)
     {
-        $masterPrices   = $masterAsset->master_prices;
-        $masterRRPs     = $masterAsset->master_rrps;
+        $currencies     = Currency::whereIn('id', $masterAsset->products->pluck('currency_id'))->get()->keyBy('id');
 
-        $currencies     = Currency::whereIn('id', $masterAsset->products->pluck('currency_id'))->pluck('code', 'id');
+        $products = $masterAsset
+            ->products()
+            ->with(['family','shop'])
+            ->when($shop, fn ($q) => $q->where('products.shop_id', $shop->id))
+            ->get();
 
-        foreach($masterAsset->products as $product) {
-            $currencyCode = $currencies->get($product->currency_id);
+        foreach($products as $product) {
+            $shopSettings = $product->shop->settings;
+
+            // Skip if shop setting is disabled / family not follow master prices / product not follow master prices
+            if (
+                !data_get($shopSettings, 'catalog.follow_master_pricing', true) ||
+                $product->family->not_follow_master_prices ||
+                $product->not_follow_master_prices
+            ) {
+                continue;
+            }
+
+            $currency = $currencies->get($product->currency_id);
 
             $dataToBeUpdated = [];
 
-            $price  = data_get($masterPrices, "{$currencyCode}.value", null);
+            $price  = $masterAsset->getPricefromCurrency($currency);
             if ($price) {
                 data_set($dataToBeUpdated, 'price', $price);
             }
 
-            $rrpPerUnit    = data_get($masterRRPs, "{$currencyCode}.value", null);
+            $rrpPerUnit  = $masterAsset->getRRPfromCurrency($currency);
             if ($rrpPerUnit) {
                 data_set($dataToBeUpdated, 'rrp_per_unit', $rrpPerUnit);
             }
