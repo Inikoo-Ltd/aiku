@@ -159,18 +159,18 @@ const costBlocks = computed(() => {
 		],
 	}
 
-	if (!org_currency || org_currency === currency) {
-		return [supplierBlock]
-	}
-
-	const rate = orgPerOrder.value ?? 1
-	const orgItems = Number(org_items)
+	const sameCurrency = !org_currency || org_currency === currency
+	const orgCurrency = org_currency || currency
+	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
+	const orgItems = sameCurrency ? Number(items) : Number(org_items)
 	const orgExtra = Number(extra) * rate
 
 	const orderPerOrg = rate ? 1 / rate : null
-	const rateLabel = orderPerOrg === null
-		? ""
-		: `1 ${org_currency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
+	const rateLabel = sameCurrency
+		? `${trans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
+		: orderPerOrg === null
+			? ""
+			: `1 ${orgCurrency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
 
 	return [
 		supplierBlock,
@@ -178,9 +178,9 @@ const costBlocks = computed(() => {
 			key: "org",
 			title: rateLabel,
 			rows: [
-				{ label: trans("Items"), value: money(org_currency, orgItems) },
-				{ label: trans("Extra costs"), value: money(org_currency, orgExtra) },
-				{ label: trans("Total"), value: money(org_currency, orgItems + orgExtra), isTotal: true },
+				{ label: trans("Items"), value: money(orgCurrency, orgItems) },
+				{ label: trans("Extra costs"), value: money(orgCurrency, orgExtra) },
+				{ label: trans("Total"), value: money(orgCurrency, orgItems + orgExtra), isTotal: true },
 			],
 		},
 	]
