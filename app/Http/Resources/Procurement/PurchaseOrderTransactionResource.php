@@ -55,6 +55,14 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'patch',
             ],
+            'deleteRoute'      => [
+                'name'       => 'grp.models.purchase-order.transaction.delete',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'delete',
+            ],
         ];
     }
 }

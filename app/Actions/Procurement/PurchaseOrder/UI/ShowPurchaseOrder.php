@@ -21,6 +21,7 @@ use App\Enums\UI\Procurement\PurchaseOrderTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
+use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\Models\Procurement\OrgAgent;
@@ -89,6 +90,9 @@ class ShowPurchaseOrder extends OrgAction
     public function htmlResponse(PurchaseOrder $purchaseOrder, ActionRequest $request): Response
     {
         $this->validateAttributes();
+
+        $showProductsTab = $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
+            && ($purchaseOrder->parent instanceof OrgAgent || $purchaseOrder->parent instanceof OrgSupplier);
 
         $orderer = [];
         $productListRoute = [];
@@ -246,7 +250,9 @@ class ShowPurchaseOrder extends OrgAction
                 'timelines'   => $this->getTimeline($purchaseOrder),
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => PurchaseOrderTabsEnum::navigation(),
+                    'navigation' => $showProductsTab
+                        ? PurchaseOrderTabsEnum::navigation()
+                        : PurchaseOrderTabsEnum::navigationExcept([PurchaseOrderTabsEnum::PRODUCTS]),
                 ],
                 'routes'      => [
                     'updatePurchaseOrderRoute' => [
@@ -296,11 +302,16 @@ class ShowPurchaseOrder extends OrgAction
                     fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))
                     : Inertia::optional(fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))),
 
+                PurchaseOrderTabsEnum::PRODUCTS->value => $showProductsTab && $this->tab == PurchaseOrderTabsEnum::PRODUCTS->value ?
+                    fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value))
+                    : Inertia::optional(fn () => $showProductsTab ? PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value)) : null),
+
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))),
             ]
         )->table(IndexPurchaseOrderTransactions::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::ITEMS->value))
+            ->table(IndexPurchaseOrderOrgSupplierProducts::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::PRODUCTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
     }
 

@@ -106,6 +106,7 @@ const props = defineProps < {
 	}
 	showcase?: {}
 	items?: {}
+	products?: {}
 	history?: {}
 }>()
 
@@ -192,6 +193,7 @@ const component = computed(() => {
 	const components: Component = {
 		showcase: PurchaseOrderData,
 		items: TablePurchaseOrderTransactions,
+		products: TablePurchaseOrderTransactions,
 		history: TableHistories,
 	}
 
@@ -418,7 +420,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
 	</div>
 
-	<Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
 		<component

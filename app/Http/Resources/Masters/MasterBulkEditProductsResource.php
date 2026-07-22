@@ -30,6 +30,11 @@ class MasterBulkEditProductsResource extends JsonResource
         $tradeUnits->loadMissing('ingredients');
 
 
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $masterProduct->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
 
         return [
             'id'                         => $masterProduct->id,
@@ -61,6 +66,7 @@ class MasterBulkEditProductsResource extends JsonResource
             'description_title_i8n'         => $masterProduct->getTranslations('description_title_i8n'),
             'description_extra_i8n'         => $masterProduct->getTranslations('description_extra_i8n'),
             'country_of_origin'             => NaturalLanguage::make()->country($masterProduct->tradeUnits()->first()?->country_of_origin),
+            'countries_of_origin'             => $countriesOrigin,
             'marketing_dimensions'          => NaturalLanguage::make()->dimensions($masterProduct->marketing_dimensions),
             'marketing_ingredients'         => $masterProduct->marketing_ingredients,
             'marketing_weight'              => NaturalLanguage::make()->weight($masterProduct->marketing_weight),

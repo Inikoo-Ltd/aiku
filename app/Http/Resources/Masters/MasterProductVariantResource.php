@@ -44,8 +44,14 @@ class MasterProductVariantResource extends JsonResource
             'manufacturer'               => $masterProduct->gpsr_manufacturer,
         ];
 
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $masterProduct->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
+
         $properties = [
-            'country_of_origin' => NaturalLanguage::make()->country($masterProduct->country_of_origin),
+            'countries_of_origin' => $countriesOrigin,
             'ingredients'       => $masterProduct->marketing_ingredients,
             'tariff_code'       => $masterProduct->tariff_code,
             'duty_rate'         => $masterProduct->duty_rate,

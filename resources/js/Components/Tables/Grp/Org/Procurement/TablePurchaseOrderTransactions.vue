@@ -16,10 +16,14 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle } from '@fal'
-import { faExclamationCircle } from '@fas'
+import { faBox, faPallet, faStopCircle, faTrashAlt } from '@fal'
+import { faExclamationCircle, faSpinner } from '@fas'
+import ConfirmPopup from 'primevue/confirmpopup'
+import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner)
+
+const confirm = useConfirm()
 
 const props = defineProps<{
     data: object
@@ -107,11 +111,13 @@ const savingId = ref<number | null>(null)
 
 async function onSaveQuantity(item: any, form: any) {
     const quantityOrdered = Number(form.quantity) * unitsPerLevel(item)
+    const saveRoute = item.saveRoute ?? item.updateRoute
+    const method = String(saveRoute?.method ?? 'patch').toLowerCase()
 
     savingId.value = item.id
     try {
-        await axios.patch(
-            route(item.updateRoute.name, item.updateRoute.parameters),
+        await axios[method](
+            route(saveRoute.name, saveRoute.parameters),
             { quantity_ordered: quantityOrdered }
         )
         form.defaults()
@@ -125,6 +131,42 @@ async function onSaveQuantity(item: any, form: any) {
         })
     } finally {
         savingId.value = null
+    }
+}
+
+const deletingId = ref<number | null>(null)
+
+function confirmDeleteItem(event: MouseEvent, item: any) {
+    if (!item.deleteRoute) {
+        return
+    }
+
+    confirm.require({
+        target: event.currentTarget as HTMLElement,
+        message: trans('Remove this product from the purchase order?'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: trans('Delete'),
+        rejectLabel: trans('Cancel'),
+        acceptClass: 'p-button-danger',
+        rejectClass: 'p-button-text',
+        accept: () => onDeleteItem(item),
+    })
+}
+
+async function onDeleteItem(item: any) {
+    deletingId.value = item.id
+    try {
+        await axios.delete(route(item.deleteRoute.name, item.deleteRoute.parameters))
+        notify({ title: trans('Success'), text: trans('Item removed'), type: 'success' })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to remove item'),
+            type: 'error',
+        })
+    } finally {
+        deletingId.value = null
     }
 }
 
@@ -202,7 +244,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
         <template #cell(image_thumbnail)="{ item }">
             <div class="flex">
-                <Image :src="item['image_thumbnail']" imageCover class="aspect-square overflow-hidden" />
+                <Image :src="item['image_thumbnail']" imageCover class="w-20 aspect-square overflow-hidden" />
             </div>
         </template>
 
@@ -244,7 +286,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(quantity)="{ item }">
-            <div v-if="isInProcess" class="flex justify-end">
+            <div v-if="isInProcess" class="flex justify-end items-center gap-2">
                 <NumberWithButtonSave
                     :key="`${item.id}-${currentLevel}`"
                     :modelValue="quantityAtLevel(item)"
@@ -252,6 +294,21 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     :isLoading="savingId === item.id"
                     @onSave="(form) => onSaveQuantity(item, form)"
                 />
+                <button
+                    v-if="item.deleteRoute"
+                    v-tooltip="trans('Remove')"
+                    type="button"
+                    class="flex items-center justify-center text-gray-400 hover:text-red-500 disabled:text-gray-300"
+                    :disabled="deletingId === item.id"
+                    @click="confirmDeleteItem($event, item)"
+                >
+                    <FontAwesomeIcon
+                        :icon="deletingId === item.id ? 'fas fa-spinner' : 'fal fa-trash-alt'"
+                        :spin="deletingId === item.id"
+                        aria-hidden="true"
+                        fixed-width
+                    />
+                </button>
             </div>
             <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
         </template>
@@ -295,4 +352,6 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             </div>
         </template>
     </Table>
+
+    <ConfirmPopup />
 </template>
