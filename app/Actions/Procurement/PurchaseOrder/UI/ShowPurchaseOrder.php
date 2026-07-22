@@ -124,6 +124,21 @@ class ShowPurchaseOrder extends OrgAction
         if ($this->canEdit) {
             $actions = match ($purchaseOrder->state) {
                 PurchaseOrderStateEnum::IN_PROCESS => [
+                    $showProductsTab ? [
+                        'label'   => __('Add product'),
+                        'tooltip' => __('Add product'),
+                        'type'    => 'button',
+                        'style'   => 'secondary',
+                        'icon'    => 'fal fa-plus',
+                        'key'     => 'add_product',
+                        'route'   => [
+                            'method'     => 'post',
+                            'name'       => 'grp.models.purchase-order.transaction.store',
+                            'parameters' => [
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
+                    ] : [],
                     ($purchaseOrder->purchaseOrderTransactions()->count() > 0) ?
                     [
                         'label'   => __('Submit'),

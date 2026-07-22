@@ -140,6 +140,20 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
+    public function inOrgAgent(OrgAgent $orgAgent, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($orgAgent->organisation, $request);
+
+        return $this->handle($orgAgent, $purchaseOrder);
+    }
+
+    public function inOrgSupplier(OrgSupplier $orgSupplier, PurchaseOrder $purchaseOrder, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($orgSupplier->organisation, $request);
+
+        return $this->handle($orgSupplier, $purchaseOrder);
+    }
+
     public function jsonResponse(LengthAwarePaginator $orgSupplierProducts): AnonymousResourceCollection
     {
         return PurchaseOrderOrgSupplierProductsResource::collection($orgSupplierProducts);
