@@ -40,6 +40,7 @@ enum EmailOngoingRunCodeEnum: string
     case REORDER_REMINDER = 'reorder_reminder';
     case REORDER_REMINDER_2ND = 'reorder_reminder_2nd';
     case REORDER_REMINDER_3RD = 'reorder_reminder_3rd';
+    case GOLD_REWARD_REMINDER_1 = 'gold_reward_reminder_1';
     case OOS_NOTIFICATION = 'oos_notification';
     case REVIEW_REMINDER = 'review_reminder';
 
