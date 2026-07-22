@@ -110,10 +110,10 @@ trait CanRepairOrgStockMovements
 
         $pairs = [];
         foreach ($movementsByDate as $date => $dateMovements) {
-            $hasPurchase    = false;
-            $hasAssociate   = false;
-            $purchaseId     = null;
-            $associateId    = null;
+            $hasPurchase  = false;
+            $hasAssociate = false;
+            $purchaseId   = null;
+            $associateId  = null;
 
             foreach ($dateMovements as $movement) {
                 if ($movement->type == OrgStockMovementTypeEnum::PURCHASE->value) {
@@ -155,8 +155,6 @@ trait CanRepairOrgStockMovements
 
         return null;
     }
-
-
 
 
     public function fixForPrePurchaseAssociates(OrgStock $orgStock, ?Command $command = null): void
@@ -204,7 +202,12 @@ trait CanRepairOrgStockMovements
             ->orderByDesc('id')
             ->first();
 
-        if ($latestFutureAssociationMovement?->type != OrgStockMovementTypeEnum::DISASSOCIATE->value) {
+        $locationOrgStockExists = DB::table('location_org_stocks')
+            ->where('location_id', $location->id)
+            ->where('org_stock_id', $orgStock->id)
+            ->exists();
+
+        if ($latestFutureAssociationMovement?->type != OrgStockMovementTypeEnum::DISASSOCIATE->value && !$locationOrgStockExists) {
             StoreLocationOrgStock::make()->action($orgStock, $location, []);
             $command?->warn("Added missing location stock for purchase {$purchase->id}");
 
