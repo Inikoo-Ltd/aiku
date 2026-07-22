@@ -80,11 +80,9 @@ function getMargin(item: ProductItem) {
 
 // helper for RRP margin
 function getRrpMargin(item: ProductItem) {
-    const rrp = item.product?.useCustomRrp
-        ? Number(item.product?.rrp * (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1))
-        : Math.round(Number(item.product?.price) * 2.4);
-
-    const cost = Number(item.product?.shop_cost);
+    const units = props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1;
+    const rrp = Number(item.product?.rrp) * units;
+    const cost = Number(item.product?.price);
 
     if (isNaN(rrp) || rrp === 0) return 0;
     if (isNaN(cost) || cost === 0) return 100;
