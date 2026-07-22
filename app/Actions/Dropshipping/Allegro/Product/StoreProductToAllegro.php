@@ -158,7 +158,7 @@ class StoreProductToAllegro extends RetinaAction
                         ]
                     ]
                 ],
-                'name' => Str::limit($portfolio->customer_product_name, 75),
+                'name' => Str::substr($portfolio->customer_product_name, 0, 75),
                 'category' => [
                     'id' => $categoryId
                 ],
