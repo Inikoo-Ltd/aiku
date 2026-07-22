@@ -24,7 +24,11 @@ class RunGoldRewardReminderEmailBulkRuns
     public function handle(): void
     {
         $queryOutbox = QueryBuilder::for(Outbox::class);
-        $queryOutbox->where('code', OutboxCodeEnum::GOLD_REWARD_REMINDER_1);
+        $queryOutbox->whereIn('code', [
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+        ]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->whereNotNull('shop_id');
         $queryOutbox->whereNotNull('days_after');
