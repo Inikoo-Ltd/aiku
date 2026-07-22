@@ -34,8 +34,8 @@ trait WithPreferredShipperResolver
         }
 
         return $rows->first(
-            fn (PreferredShipping $preferredShipping) => !$preferredShipping->postcode
-                || str_starts_with($postalCode, strtoupper($preferredShipping->postcode))
+            fn (PreferredShipping $preferredShipping) => (!$preferredShipping->country_id || $preferredShipping->country_id === $countryId)
+                && (!$preferredShipping->postcode || str_starts_with($postalCode, strtoupper($preferredShipping->postcode)))
         )?->shipper_id;
     }
 }

@@ -18,7 +18,6 @@ use App\Models\CRM\Customer;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Traits\SanitizeInputs;
@@ -83,14 +82,7 @@ class UpdateRetinaCustomer extends RetinaAction
                 'sometimes',
                 'nullable',
                 'integer',
-                Rule::exists('shippers', 'id')->where(function ($query) {
-                    $query->whereExists(function ($query) {
-                        $query->select(DB::raw(1))
-                            ->from('preferred_shippings')
-                            ->whereColumn('preferred_shippings.shipper_id', 'shippers.id')
-                            ->where('preferred_shippings.shop_id', $this->shop->id);
-                    });
-                }),
+                Rule::exists('shippers', 'id')->where('organisation_id', $this->shop->organisation_id),
             ],
             'is_gift_opted_out'            => ['sometimes', 'boolean'],
             'identity_document_number'     => ['sometimes', 'nullable', 'string'],

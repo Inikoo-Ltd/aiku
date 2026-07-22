@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Shop;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePreferredShippings;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
@@ -156,7 +155,6 @@ class UpdateShop extends OrgAction
             }
         }
 
-        $preferredShippingsUpdated = false;
         if (Arr::has($modelData, 'preferred_shipping')) {
             $preferredShippingRows = Arr::pull($modelData, 'preferred_shipping');
 
@@ -178,7 +176,6 @@ class UpdateShop extends OrgAction
 
             $shop->preferredShippings()->whereNotIn('id', $keptIds)->delete();
 
-            $preferredShippingsUpdated = true;
         }
 
         $sesFailoverAuditOld = [];
@@ -551,10 +548,6 @@ class UpdateShop extends OrgAction
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
         $shop->refresh();
-
-        if ($preferredShippingsUpdated) {
-            ShopHydratePreferredShippings::dispatch($shop)->delay($this->hydratorsDelay);
-        }
 
         if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);

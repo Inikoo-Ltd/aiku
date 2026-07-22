@@ -64,9 +64,6 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryTranslations;
 use App\Actions\Catalogue\ProductCategory\UploadImagesToProductCategory;
-use App\Actions\Catalogue\PreferredShipping\DeletePreferredShipping;
-use App\Actions\Catalogue\PreferredShipping\StorePreferredShipping;
-use App\Actions\Catalogue\PreferredShipping\UpdatePreferredShipping;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
@@ -1333,11 +1330,6 @@ Route::prefix('shipping-country/{shippingCountry:id}')->name('shipping_country.'
     Route::delete('delete', DeleteShippingCountry::class)->name('delete');
 });
 
-Route::post('/shop/{shop:id}/preferred-shipping/', StorePreferredShipping::class)->name('preferred_shipping.store');
-Route::prefix('preferred-shipping/{preferredShipping:id}')->name('preferred_shipping.')->group(function () {
-    Route::patch('update', UpdatePreferredShipping::class)->name('update');
-    Route::delete('delete', DeletePreferredShipping::class)->name('delete');
-});
 
 Route::post('master-product-category/{masterProductCategory:id}/master-variant', StoreMasterVariant::class)->name('master_variant.store');
 Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->name('master_variant.update');
