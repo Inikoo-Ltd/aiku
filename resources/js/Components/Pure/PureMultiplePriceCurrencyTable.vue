@@ -237,7 +237,7 @@ const rows = computed(() => {
             </colgroup>
 
             <thead>
-                <tr class="text-[11px] font-semibold uppercase tracking-wide">
+                <tr class="text-[8px] font-semibold uppercase tracking-wide">
                     <th
                         :colspan="columns.length + 1"
                         class="border border-l-2 border-r-2 px-3 py-2 text-center"
@@ -247,7 +247,7 @@ const rows = computed(() => {
                     </th>
                 </tr>
 
-                <tr class="text-[11px] font-medium uppercase tracking-wide text-gray-600">
+                <tr class="text-[8px] font-medium uppercase tracking-wide text-gray-600">
                     <th class="border border-l-2 px-3 py-2 text-left" :class="colors.header">
                         {{ ctrans('Currency') }}
                     </th>

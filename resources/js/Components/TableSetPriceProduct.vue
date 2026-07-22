@@ -84,7 +84,7 @@ function getRrpMargin(item: ProductItem) {
         ? Number(item.product?.rrp * (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1))
         : Math.round(Number(item.product?.price) * 2.4);
 
-    const cost = Number(item.product?.price);
+    const cost = Number(item.product?.shop_cost);
 
     if (isNaN(rrp) || rrp === 0) return 0;
     if (isNaN(cost) || cost === 0) return 100;
@@ -300,7 +300,7 @@ function roundDown2(num: number) {
                             <div v-if="item.product?.org_value_in_warehouse" v-tooltip="trans('Value in warehouse')"
                                 class="flex items-center gap-1 text-[11px] text-gray-500">
                                 <span class="font-medium text-gray-600">
-                                     {{ locale.currencyFormat(item.product?.shop_currency ?? currency,item.product?.org_value_in_warehouse) }}
+                                     {{ locale.currencyFormat(item.product?.shop_currency ?? currency,item.product?.org_value_in_warehouse_per_shop) }}
                                 </span>
                             </div>
 
@@ -337,6 +337,8 @@ function roundDown2(num: number) {
                     </td>
 
                     <td class="px-3 py-2 text-right bg-blue-50 border-r border-blue-400">
+                        <!--  {{ Number(item.product?.price) }}
+                         {{ Number(item.product?.org_cost)  }}  -->
                         <span :class="{
                             'text-green-600 font-medium': getMargin(item) > 0,
                             'text-red-600 font-medium': getMargin(item) < 0,
