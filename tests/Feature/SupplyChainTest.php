@@ -203,6 +203,17 @@ test('UI show suppliers product in supplier', function (SupplierProduct $supplie
     });
 })->depends('create supplier product independent supplier');
 
+test('UI show supplier product in supply chain', function (SupplierProduct $supplierProduct) {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.supplier_products.show', [
+        $supplierProduct->slug
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('SupplyChain/SupplierProduct');
+    });
+})->depends('create supplier product independent supplier');
+
 
 test('create trade unit', function () {
     $tradeUnit = StoreTradeUnit::make()->action(

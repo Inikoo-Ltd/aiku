@@ -89,6 +89,12 @@ const currentData = computed(() => {
     const key = currentTab.value;
     return (props as Record<string, any>)[key];
 });
+
+const tabComponent = ref<any>(null);
+
+const handleQrCodeGenerated = (qrCode: Record<string, any>) => {
+    tabComponent.value?.openQrCode?.(qrCode);
+};
 </script>
 
 <template>
@@ -99,9 +105,10 @@ const currentData = computed(() => {
             <ModalGenerateClockingMachineQrCode
                 :route="generateQrCode.route"
                 reload-only="scan_qr_code"
+                @generated="handleQrCodeGenerated"
             />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="currentData" :tab="currentTab"></component>
+    <component ref="tabComponent" :is="component" :data="currentData" :tab="currentTab"></component>
 </template>

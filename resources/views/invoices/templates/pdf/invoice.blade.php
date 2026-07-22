@@ -156,6 +156,11 @@
             <div>
                 {{ $dateLabel }}: <b>{{ $invoice->date?->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
             </div>
+            @if($invoice->is_pastpay && $invoice->date)
+                <div style="text-align: right">
+                    {{ __('Payment due date') }}: <b>{{ $invoice->date->copy()->addDays((int) data_get($invoice->order?->data, 'pastpay.termDays', 30))->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
+                </div>
+            @endif
             @if($invoice->tax_liability_at && data_get($invoice->organisation->settings, 'invoicing.show_tax_liability_date'))
                 <div style="text-align: right">
                     {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>

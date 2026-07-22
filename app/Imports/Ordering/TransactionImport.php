@@ -44,8 +44,17 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
 
         $validatedData = $row->only($fields)->all();
 
+        $productCode = $validatedData['code'] ?? null;
+        if (!$productCode) {
+            $this->setRecordAsFailed($uploadRecord, [
+                'Missing product code.'
+            ]);
+
+            return;
+        }
+
         $modelData = [
-            'quantity_ordered' => (int) $validatedData['quantity']
+            'quantity_ordered' => (int) ($validatedData['quantity'] ?? 0)
         ];
 
         data_set($modelData, 'data.bulk_import', [
@@ -114,7 +123,7 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
                 'max:64',
                 'string'
             ],
-            'quantity' => ['sometimes'],
+            'quantity' => ['required', 'numeric', 'gt:0'],
         ];
     }
 }

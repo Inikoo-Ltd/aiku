@@ -14,6 +14,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateClockingMachines;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateClockingMachines;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineStatusEnum;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Http\Resources\HumanResources\ClockingMachineResource;
 use App\Models\HumanResources\ClockingMachine;
@@ -93,6 +94,10 @@ class UpdateClockingMachine extends OrgAction
 
             ],
             'type' => ['sometimes', Rule::enum(ClockingMachineTypeEnum::class)],
+            'status' => ['sometimes', Rule::in([
+                ClockingMachineStatusEnum::CONNECTED->value,
+                ClockingMachineStatusEnum::DISCONNECTED->value,
+            ])],
             'config'                         => ['nullable', 'array'],
             'config.qr.enable'               => ['nullable', 'boolean'],
             'config.qr.refresh_interval'     => ['nullable', 'integer', 'min:1'],

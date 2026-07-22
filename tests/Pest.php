@@ -343,7 +343,7 @@ function createProduct(Shop $shop): array
     }
 
 
-    $product = $shop->products()->first();
+    $product = $shop->products()->orderBy('id')->first();
     if (!$product) {
         $productData = array_merge(
             Product::factory()->definition(),

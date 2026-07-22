@@ -16,6 +16,7 @@ use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\ShippingZone\HydrateShippingZones;
+use App\Actions\Billables\ShippingZone\DeleteShippingZone;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\DeleteShippingZoneSchema;
@@ -106,6 +107,9 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Adjustment;
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Imports\Ordering\TransactionImport;
+use App\Models\Helpers\Upload;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
@@ -1152,6 +1156,34 @@ test('update shipping zone', function ($shippingZone) {
     $this->assertModelExists($shippingZone);
 })->depends('create shipping zone');
 
+test('delete shipping zone action removes zone and dependants', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    DeleteShippingZone::make()->action($shippingZone);
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse()
+        ->and($shippingZone->stats()->exists())->toBeFalse()
+        ->and($shippingZone->asset?->trashed())->toBeTrue();
+});
+
+test('delete shipping zone command removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    $this->artisan('delete:shipping_zone '.$shippingZone->slug)
+        ->expectsOutput('Shipping zone '.$shippingZone->name.' deleted')
+        ->assertSuccessful();
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone command reports a missing zone', function () {
+    $this->artisan('delete:shipping_zone missing-shipping-zone')
+        ->expectsOutput('Shipping zone not found')
+        ->assertFailed();
+});
+
 
 test('shipping zone schemas hydrators', function () {
     $shippingZoneSchema = ShippingZoneSchema::first();
@@ -1647,4 +1679,39 @@ test('transactions resource adds bonus to ordered quantity for follow-on', funct
     expect((float)$array['quantity_ordered'])->toBe(6.0)
         ->and((float)$array['quantity_bonus'])->toBe(6.0)
         ->and($array['is_follow_on'])->toBeTrue();
+});
+
+test('transaction import marks rows with missing code or quantity as failed', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $upload = Upload::create([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'model'             => 'Transaction',
+        'parent_type'       => $order->getMorphClass(),
+        'parent_id'         => $order->id,
+        'original_filename' => 'test.xlsx',
+        'filename'          => 'test.xlsx',
+        'filesize'          => 0,
+        'number_rows'       => 0,
+        'number_success'    => 0,
+        'number_fails'      => 0,
+    ]);
+
+    $import = new TransactionImport($order, $upload);
+
+    $makeUploadRecord = fn () => $upload->records()->create([
+        'values' => [],
+        'status' => UploadRecordStatusEnum::PROCESSING,
+    ]);
+
+    $missingCodeRecord = $makeUploadRecord();
+    $import->storeModel(collect(['quantity' => 3]), $missingCodeRecord);
+    expect($missingCodeRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
+        ->and($missingCodeRecord->errors)->toContain('Missing product code.');
+
+    $missingQuantityRecord = $makeUploadRecord();
+    $import->storeModel(collect(['code' => $this->product->code]), $missingQuantityRecord);
+    expect($missingQuantityRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
+        ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
 });

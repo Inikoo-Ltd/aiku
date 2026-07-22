@@ -34,7 +34,9 @@ class PayOrderWithCustomerBalance extends OrgAction
      */
     public function handle(Order $order): array
     {
-        $toPayAmount = $order->total_amount - $order->payment_amount;
+        /** Round to cents: raw float subtraction of the DB decimals yields values like
+         * 0.039999999999999 which StorePayment's decimal:0,2 rule rejects */
+        $toPayAmount = round($order->total_amount - $order->payment_amount, 2);
 
         if ($toPayAmount <= 0) {
             return [
@@ -63,7 +65,7 @@ class PayOrderWithCustomerBalance extends OrgAction
         $customer = $order->customer;
 
 
-        $toPayAmount = min($toPayAmount, $balance);
+        $toPayAmount = round(min($toPayAmount, $balance), 2);
 
 
 

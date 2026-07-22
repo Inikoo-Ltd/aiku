@@ -638,7 +638,7 @@ const trackFunction = () => ({
 			</div>
 		</div>
 		<Teleport to="body">
-			<div v-if="cameraOn" class="fixed inset-0 bg-black z-[9999] flex flex-col">
+			<div v-if="cameraOn" class="fixed inset-0 bg-black z-[9999] flex flex-col overflow-hidden">
 				<div class="flex justify-between items-center text-white p-4">
 					<h3 class="font-semibold">{{ trans("Scan QR Code") }}</h3>
 					<Button
@@ -648,8 +648,8 @@ const trackFunction = () => ({
 						:icon="faTimes" />
 				</div>
 
-				<div class="flex-1 flex items-center justify-center relative">
-					<div class="w-full max-w-xl relative" style="aspect-ratio: 3/4">
+				<div class="flex-1 min-h-0 flex items-center justify-center relative overflow-hidden">
+					<div class="relative w-full max-w-xl max-h-full aspect-[3/4]">
 						<QrcodeStream
 							@detect="onDetect"
 							@error="onStreamError"
@@ -660,7 +660,7 @@ const trackFunction = () => ({
 						<!-- TARGET OVERLAY -->
 						<div
 							class="absolute inset-0 flex items-center justify-center pointer-events-none">
-							<div class="scanner-frame">
+							<div class="relative w-[70vw] max-w-[280px] aspect-[3/4]">
 								<!-- 4 CORNERS -->
 								<span class="corner tl"></span>
 								<span class="corner tr"></span>
@@ -689,7 +689,7 @@ const trackFunction = () => ({
 			v-model:visible="showLateAlertModal"
 			modal
 			:closable="false"
-			:style="{ width: '420px' }"
+			class="w-[95vw] max-w-[95vw] sm:w-[480px] sm:max-w-[480px]"
 			appendTo="body">
 			<div class="text-center space-y-4 py-4">
 				<div class="flex justify-center">
@@ -723,7 +723,7 @@ const trackFunction = () => ({
 			v-model:visible="showSuccessModal"
 			modal
 			:closable="false"
-			:style="{ width: '420px' }"
+			class="w-[95vw] max-w-[95vw] sm:w-[480px] sm:max-w-[480px]"
 			appendTo="body">
 			<div class="text-center space-y-4 py-4">
 				<!-- ICON -->
@@ -831,12 +831,6 @@ const trackFunction = () => ({
 
 .p-dialog {
 	z-index: 9999 !important;
-}
-
-.scanner-frame {
-	position: relative;
-	width: 280px;
-	height: 373px;
 }
 
 /* ===== CORNERS ===== */

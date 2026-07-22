@@ -23,6 +23,8 @@ class BreakUserUiProps implements ShouldBeUnique
 
     public string $jobQueue = 'urgent';
 
+    public int $uniqueFor = 60;
+
     public function getJobUniqueId(User $user): string
     {
         return $user->id;
@@ -31,6 +33,7 @@ class BreakUserUiProps implements ShouldBeUnique
     public function handle(User $user): void
     {
         setPermissionsTeamId($user->group_id);
+        $user->unsetRelations();
         Cache::tags('grp-first-load-props:'.$user->id)->flush();
 
         $language = $user->language;

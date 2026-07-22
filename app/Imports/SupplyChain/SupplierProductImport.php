@@ -44,13 +44,16 @@ class SupplierProductImport implements ToCollection, WithHeadingRow, SkipsOnFail
             $availability = false;
         }
 
+        $unitsPerSko   = (int) $validatedData['units_per_sko'] ?: 1;
+        $skosPerCarton = (int) $validatedData['skos_per_carton'] ?: 1;
+
         $modelData = [
             'code' => $validatedData['suppliers_product_code'],
             'name' => $validatedData['suppliers_unit_description'],
             'is_available' => $availability,
             'cost' => $validatedData['unit_cost'],
-            'units_per_pack' => $validatedData['units_per_sko'],
-            'units_per_carton' => $validatedData['skos_per_carton'],
+            'units_per_pack' => $unitsPerSko,
+            'units_per_carton' => $unitsPerSko * $skosPerCarton,
             'cbm' => $validatedData['carton_cbm'],
         ];
 

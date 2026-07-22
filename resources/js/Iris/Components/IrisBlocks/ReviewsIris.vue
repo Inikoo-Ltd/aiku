@@ -83,9 +83,9 @@ const updateWindowWidth = () => {
 onMounted(() => {
     updateWindowWidth() // get actual width after hydration
     window.addEventListener("resize", updateWindowWidth)
-    if (mayHaveReviewsToShow.value) {
+    // if (mayHaveReviewsToShow.value) {
         fetchMoreReviews()
-    }
+    // }
 })
 
 onBeforeUnmount(() => {
@@ -262,7 +262,7 @@ const reviewLink = computed(() => {
 
 <template>
     <div class="editor-class overflow-hidden"
-         v-if="mayHaveReviewsToShow && (isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length)">
+         v-if="(isInitialLoading || minimum_reviews_to_show <= totalReviews && visibleReviews.length)">
         <div v-if="isInitialLoading"
              class="rating grid grid-cols-1 divide-y divide-gray-200 lg:grid-cols-7 lg:divide-x lg:divide-y-0">
             <!-- Summary skeleton -->

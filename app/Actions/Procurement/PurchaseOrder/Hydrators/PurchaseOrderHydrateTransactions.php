@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\Hydrators;
 
+use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -17,14 +18,13 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class PurchaseOrderHydrateTransactions implements ShouldBeUnique
 {
     use AsAction;
+    use WithPurchaseOrderWeightAndVolume;
 
     public function handle(PurchaseOrder $purchaseOrder): void
     {
         $transactions = $purchaseOrder->purchaseOrderTransactions;
 
-        $stateCounts = $transactions
-            ->groupBy(fn ($transaction) => $transaction->state->value)
-            ->map->count();
+        $stateCounts = $transactions->groupBy(fn ($transaction) => $transaction->state->value)->map->count();
 
         $stats = [];
 
@@ -35,68 +35,19 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
         $settledCount = Arr::get($stateCounts, PurchaseOrderTransactionStateEnum::SETTLED->value, 0);
 
         $stats['number_purchase_order_transactions'] = $totalCount;
-
-        $stats['number_current_purchase_order_transactions'] =
-            $totalCount - $cancelledCount - $notReceivedCount;
-
-        $stats['number_open_purchase_order_transactions'] =
-            $totalCount - $inProcessCount - $settledCount - $cancelledCount - $notReceivedCount;
+        $stats['number_current_purchase_order_transactions'] = $totalCount - $cancelledCount - $notReceivedCount;
+        $stats['number_open_purchase_order_transactions'] = $totalCount - $inProcessCount - $settledCount - $cancelledCount - $notReceivedCount;
 
         foreach (PurchaseOrderTransactionStateEnum::cases() as $state) {
-            $stats['number_purchase_order_transactions_state_'.$state->snake()] =
-                Arr::get($stateCounts, $state->value, 0);
+            $stats['number_purchase_order_transactions_state_'.$state->snake()] = Arr::get($stateCounts, $state->value, 0);
         }
 
-        $stats['cost_items'] = $this->getTotalCostItem($purchaseOrder);
-        $stats['gross_weight'] = $this->getGrossWeight($purchaseOrder);
-        $stats['net_weight'] = $this->getNetWeight($purchaseOrder);
+        $weightAndVolume = $this->getPurchaseOrderWeightAndVolume($purchaseOrder);
+
+        $stats['cost_items'] = $purchaseOrder->purchaseOrderTransactions()->sum('net_amount');
+        $stats['gross_weight'] = Arr::get($weightAndVolume, 'gross_weight');
+        $stats['net_weight'] = Arr::get($weightAndVolume, 'net_weight');
 
         $purchaseOrder->update($stats);
-    }
-
-    public function getGrossWeight(PurchaseOrder $purchaseOrder): float
-    {
-        $grossWeight = 0;
-
-        foreach ($purchaseOrder->purchaseOrderTransactions as $item) {
-            if (! $item->supplierProduct) {
-                continue;
-            }
-            foreach ($item->supplierProduct['tradeUnits'] ?? [] as $tradeUnit) {
-                $grossWeight += ($item->supplierProduct['grossWeight'] ?? 0) * ($tradeUnit->pivot->package_quantity ?? 0);
-            }
-        }
-
-        return $grossWeight;
-    }
-
-    public function getNetWeight(PurchaseOrder $purchaseOrder): float
-    {
-        $netWeight = 0;
-
-        foreach ($purchaseOrder->purchaseOrderTransactions as $item) {
-            if (! $item->supplierProduct) {
-                continue;
-            }
-            foreach ($item->supplierProduct['tradeUnits'] ?? [] as $tradeUnit) {
-                $netWeight += ($item->supplierProduct['netWeight'] ?? 0) * ($tradeUnit->pivot->package_quantity ?? 0);
-            }
-        }
-
-        return $netWeight;
-    }
-
-    public function getTotalCostItem(PurchaseOrder $purchaseOrder): float
-    {
-        $costItems = 0;
-
-        foreach ($purchaseOrder->purchaseOrderTransactions as $item) {
-            if (! $item->supplierProduct) {
-                continue;
-            }
-            $costItems += ($item->unit_price ?? 0) * ($item->supplierProduct['cost'] ?? 0);
-        }
-
-        return $costItems;
     }
 }

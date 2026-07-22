@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
+use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -38,6 +39,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowPurchaseOrder extends OrgAction
 {
+    use WithPurchaseOrderWeightAndVolume;
+
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit   = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
@@ -93,6 +96,7 @@ class ShowPurchaseOrder extends OrgAction
 
         $orderer = [];
         $productListRoute = [];
+        $weightAndVolume = $this->getPurchaseOrderWeightAndVolume($purchaseOrder);
         $actions = [];
 
         if ($purchaseOrder->parent instanceof OrgAgent) {
@@ -120,20 +124,6 @@ class ShowPurchaseOrder extends OrgAction
         if ($this->canEdit) {
             $actions = match ($purchaseOrder->state) {
                 PurchaseOrderStateEnum::IN_PROCESS => [
-                    [
-                        'label'   => __('Add Products'),
-                        'tooltip' => __('Add Products'),
-                        'icon'    => 'fal fa-plus',
-                        'type'    => 'button',
-                        'style'   => 'secondary',
-                        'key'     => 'add-products',
-                        'route'   => [
-                            'name'       => 'grp.models.purchase-order.transaction.store',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
                     ($purchaseOrder->purchaseOrderTransactions()->count() > 0) ?
                     [
                         'label'   => __('Submit'),
@@ -257,7 +247,6 @@ class ShowPurchaseOrder extends OrgAction
                     'actions' => $actions,
                 ],
                 'data'        => PurchaseOrderResource::make($purchaseOrder),
-                'currency'    => CurrencyResource::make($purchaseOrder->currency)->toArray(request()),
                 'timelines'   => $this->getTimeline($purchaseOrder),
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -284,11 +273,13 @@ class ShowPurchaseOrder extends OrgAction
                             'delivery_address' => Arr::get($purchaseOrder->data, 'delivery_address'),
                         ],
                     ],
-                    'mid_block'     => [
-                        'gross_weight'   => $purchaseOrder->gross_weight,
-                        'net_weight'     => $purchaseOrder->net_weight,
-                        'notes'          => $purchaseOrder->notes,
-                        'delivery_state' => $purchaseOrder->delivery_state,
+                    'second_block'     => [
+                        'state' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
+                        'total_items' => $purchaseOrder->number_purchase_order_transactions,
+                        'weight' => Arr::get($weightAndVolume, 'gross_weight'),
+                        'volume' => Arr::get($weightAndVolume, 'volume'),
+                        'is_weight_partial' => Arr::get($weightAndVolume, 'is_weight_partial'),
+                        'is_volume_partial' => Arr::get($weightAndVolume, 'is_volume_partial'),
                     ],
                     'order_summary' => [
                         [
@@ -338,25 +329,15 @@ class ShowPurchaseOrder extends OrgAction
                     : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
 
                 PurchaseOrderTabsEnum::ITEMS->value => $this->tab == PurchaseOrderTabsEnum::ITEMS->value ?
-                    fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))
-                    : Inertia::optional(fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))),
-
-                // PurchaseOrderTabsEnum::PRODUCTS->value => $this->tab == PurchaseOrderTabsEnum::PRODUCTS->value ?
-                //     fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))
-                //     : Inertia::optional(fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))),
+                    fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))
+                    : Inertia::optional(fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))),
 
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder))),
-
-                // PurchaseOrderTabsEnum::ATTACHMENTS->value => $this->tab == PurchaseOrderTabsEnum::ATTACHMENTS->value ?
-                //     fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
-                //     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder)))
+                    fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexPurchaseOrderTransactions::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ITEMS->value))
+        )->table(IndexPurchaseOrderTransactions::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::ITEMS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
-
-            // ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))
     }
 
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource

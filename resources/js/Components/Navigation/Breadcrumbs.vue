@@ -193,9 +193,9 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                             <Transition name="spin-to-down">
                                 <FontAwesomeIcon v-if="breadcrumb.simple?.icon" :class="breadcrumb.simple.label ? 'mr-1' : ''" fixed-width class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
                             </Transition>
-        
+                            
                             <Transition name="spin-to-down">
-                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 w-[19rem] sm:w-auto">{{ breadcrumb.simple.label }}</div>
+                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 max-w-[50vw] sm:w-auto">{{ breadcrumb.simple.label }}</div>
                             </Transition>
                         </component>
                     </template>

@@ -26,7 +26,7 @@ class PurchaseOrderResource extends JsonResource
     public function toArray($request): array
     {
         /** @var PurchaseOrder $purchaseOrder */
-        $purchaseOrder = $this;
+        $purchaseOrder = $this->resource;
 
         return [
             'id'          => $purchaseOrder->id,

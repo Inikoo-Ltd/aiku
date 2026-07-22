@@ -34,6 +34,7 @@ use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Facades\DB;
 
 use function Pest\Laravel\actingAs;
 
@@ -826,6 +827,47 @@ test('pending poll rejects a payment belonging to another order', function () {
     expect($result['status'])->toBe('error')
         ->and($order->state)->toBe(OrderStateEnum::CREATING)
         ->and($order->payments()->count())->toBe(0);
+});
+
+test('partial card payment settles remainder with balance without float precision errors', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+
+    list($order, $orderPaymentApiPoint) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+
+    $order->update(['total_amount' => 19.88]);
+    DB::table('customers')->where('id', $this->customer->id)->update(['balance' => 5.00]);
+
+    ProcessCheckoutComPaymentGatewayLog::partialMock()
+        ->shouldReceive('getCheckOutPayment')
+        ->andReturn([
+            'id'     => 'pay_test_partial_settle',
+            'status' => 'Captured',
+            'amount' => 1984,
+            'source' => ['type' => 'card'],
+        ]);
+
+    $paymentGatewayLog = $this->group->paymentGatewayLogs()->create([
+        'payload' => fakeCheckoutComWebhookPayload('payment_captured', 'evt_test_partial_settle', 'pay_test_partial_settle', $orderPaymentApiPoint, 1984),
+        'gateway' => 'checkout-com',
+    ]);
+
+    PreProcessCheckoutComPaymentGatewayLog::run($paymentGatewayLog);
+
+    $paymentGatewayLog->refresh();
+    $orderPaymentApiPoint->refresh();
+    $order->refresh();
+
+    $balancePayment = $order->payments()->where('payments.reference', 'like', 'cu-%')->first();
+
+    expect($paymentGatewayLog->state)->toBe(PaymentGatewayLogStateEnum::PROCESSED)
+        ->and($paymentGatewayLog->status)->toBe(PaymentGatewayLogStatusEnum::OK)
+        ->and($orderPaymentApiPoint->state)->toBe(OrderPaymentApiPointStateEnum::SUCCESS)
+        ->and($order->state)->toBeIn([OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])
+        ->and($balancePayment)->not->toBeNull()
+        ->and((float)$balancePayment->amount)->toBe(0.04)
+        ->and((float)$order->payment_amount)->toBe(19.88);
 });
 
 test('events from another developer machine are not processed', function () {

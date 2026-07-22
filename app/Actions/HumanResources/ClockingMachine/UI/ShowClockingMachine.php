@@ -37,16 +37,17 @@ class ShowClockingMachine extends OrgAction
     private function getAvailableTabs(ClockingMachine $clockingMachine): array
     {
         $tabs = [
-            ClockingMachineTabsEnum::SCAN_QR_CODE->value,
+            ClockingMachineTabsEnum::CLOCKINGS->value,
             ClockingMachineTabsEnum::HISTORY->value,
             ClockingMachineTabsEnum::DATA->value,
-            ClockingMachineTabsEnum::CLOCKINGS->value,
         ];
 
-
         if ($clockingMachine->type === ClockingMachineTypeEnum::QR_CODE->value) {
-            array_splice($tabs, 1, 0, ClockingMachineTabsEnum::SCAN_QR_CODE->value);
-            array_splice($tabs, 2, 0, ClockingMachineTabsEnum::CLOCKING_POLICIES->value);
+            array_unshift(
+                $tabs,
+                ClockingMachineTabsEnum::SCAN_QR_CODE->value,
+                ClockingMachineTabsEnum::CLOCKING_POLICIES->value
+            );
         }
 
         return $tabs;

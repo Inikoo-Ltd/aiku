@@ -24,6 +24,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -161,16 +162,36 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
 
             $order->refresh();
 
-            if ($order->state == OrderStateEnum::CREATING) {
-                $order = SubmitOrder::run($order);
-            } elseif ($order->state == OrderStateEnum::CANCELLED) {
-                Sentry::captureMessage(
-                    'Captured checkout.com payment '.$payment->reference.' recorded on cancelled order '.$order->id.' — refund may be needed'
-                );
-            }
-
             return $order;
         });
+
+        /** Submit runs AFTER the payment transaction commits: a submit failure must never roll
+         * back the payment record — that 422s the webhook, checkout.com retries for hours and
+         * the customer retries paying. Failed submit = paid order in basket + Sentry alert.
+         * The order row lock serialises racing submitters (client callback vs webhook): the
+         * loser re-reads the state as submitted and skips instead of failing on duplicates. */
+        if ($order->state == OrderStateEnum::CREATING) {
+            try {
+                $order = DB::transaction(function () use ($order) {
+                    $lockedOrder = Order::lockForUpdate()->find($order->id);
+
+                    if ($lockedOrder->state == OrderStateEnum::CREATING) {
+                        return SubmitOrder::run($lockedOrder);
+                    }
+
+                    return $lockedOrder;
+                });
+            } catch (\Throwable $e) {
+                Sentry::captureException($e);
+                Sentry::captureMessage(
+                    'Checkout.com payment recorded but order '.$order->id.' failed to submit — paid order left in basket, needs attention'
+                );
+            }
+        } elseif ($order->state == OrderStateEnum::CANCELLED) {
+            Sentry::captureMessage(
+                'Captured checkout.com payment recorded on cancelled order '.$order->id.' — refund may be needed'
+            );
+        }
 
         return [
             'status'   => 'success',
