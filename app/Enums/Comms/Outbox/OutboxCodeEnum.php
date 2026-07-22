@@ -60,6 +60,7 @@ enum OutboxCodeEnum: string
     case WEB_USER_REGISTRATION = 'web_user_registration';
     case NEW_REVIEW = 'new_review';
     case REVIEW_REMINDER = 'review_reminder';
+    case PROSPECT_CONVERTION_1 = 'prospect_convertion_1';
 
 
     public function type(): OutboxTypeEnum
@@ -119,7 +120,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::NEW_REVIEW
             => OutboxTypeEnum::USER_NOTIFICATION,
-            OutboxCodeEnum::BASKET_PUSH, OutboxCodeEnum::NEW_CUSTOMER_PUSH
+            OutboxCodeEnum::BASKET_PUSH, OutboxCodeEnum::NEW_CUSTOMER_PUSH, OutboxCodeEnum::PROSPECT_CONVERTION_1
             => OutboxTypeEnum::PUSH,
         };
     }
@@ -171,6 +172,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
             OutboxCodeEnum::NEW_REVIEW => 'New review',
             OutboxCodeEnum::REVIEW_REMINDER => 'Review reminder',
+            OutboxCodeEnum::PROSPECT_CONVERTION_1 => 'Prospect conversion 1',
         };
     }
 
@@ -222,6 +224,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
             OutboxCodeEnum::NEW_REVIEW => 'New review',
             OutboxCodeEnum::REVIEW_REMINDER => 'Review reminder',
+            OutboxCodeEnum::PROSPECT_CONVERTION_1 => 'Prospect conversion 1',
         };
     }
 
@@ -298,7 +301,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::ORDER_CONFIRMATION => ['b2b', 'b2c', 'dropshipping'],
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::REVIEW_REMINDER,
-            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION, OutboxCodeEnum::NEW_REVIEW => ['b2b', 'dropshipping'],
+            OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
+            OutboxCodeEnum::NEW_REVIEW,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1 => ['b2b', 'dropshipping'],
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::ABANDONED_CART,
             OutboxCodeEnum::REORDER_REMINDER,
@@ -351,6 +356,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::NEW_REVIEW
             => OutboxBuilderEnum::BLADE,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1
+            => OutboxBuilderEnum::BEEFREE,
             default => null
         };
     }
@@ -396,7 +403,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::REVIEW_REMINDER,
-            OutboxCodeEnum::INVOICE_PAID
+            OutboxCodeEnum::INVOICE_PAID,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -448,7 +456,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
-            OutboxCodeEnum::REVIEW_REMINDER
+            OutboxCodeEnum::REVIEW_REMINDER,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
@@ -512,7 +521,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::BASKET_PUSH,
-            OutboxCodeEnum::NEW_CUSTOMER_PUSH
+            OutboxCodeEnum::NEW_CUSTOMER_PUSH,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1
             => PostRoomCodeEnum::MARKETING,
 
             OutboxCodeEnum::TEST,
