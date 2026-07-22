@@ -128,7 +128,7 @@ const rowClass = (xxx: any) => {
 
 
 // Section: multiselect columns selector
-const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'price', 'rrp', 'units', 'unit', 'gross_weight', 'family_id', ])
+const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', /* 'price', 'rrp', */ 'units', 'unit', 'gross_weight', 'family_id', ])
 const groupedColumnList = ref([
     {
         label: 'General',
@@ -139,13 +139,13 @@ const groupedColumnList = ref([
             { label: 'Is For Sale?', value: 'is_for_sale' }
         ]
     },
-    {
+   /*  {
         label: 'Pricing',
         items: [
             { label: 'Price', value: 'price' },
             { label: 'RRP', value: 'rrp' },
         ]
-    },
+    }, */
     {
         label: 'Uniting',
         items: [
