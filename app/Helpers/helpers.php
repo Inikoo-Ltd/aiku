@@ -18,7 +18,7 @@ if (!function_exists('group')) {
 }
 
 if (!function_exists('formatPrice')) {
-    function formatPrice(int|float $num1, int|float $num2)
+    function formatPrice(int|float $num1 = 0, int|float $num2 = 0)
     {
         return trimDecimalZeros(number_format($num1 * $num2, 2, '.', ''));
     }
