@@ -13,6 +13,7 @@ use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -27,6 +28,8 @@ class ShowOrgChatInbox extends OrgAction
 
     private ?ChatSession $selectedSession = null;
 
+    private ?int $preselectShopId = null;
+
     public function handle(Organisation $organisation): Organisation
     {
         return $organisation;
@@ -34,6 +37,8 @@ class ShowOrgChatInbox extends OrgAction
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
+        abort_unless((bool) $request->user()?->chatAgent, 403, __('Only chat agents can access the inbox'));
+
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation);
@@ -41,8 +46,20 @@ class ShowOrgChatInbox extends OrgAction
 
     public function inConversation(Organisation $organisation, ChatSession $chatSession, ActionRequest $request): Organisation
     {
+        abort_unless((bool) $request->user()?->chatAgent, 403, __('Only chat agents can access the inbox'));
+
         $this->selectedSession = $chatSession;
         $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Organisation
+    {
+        abort_unless((bool) $request->user()?->chatAgent, 403, __('Only chat agents can access the inbox'));
+
+        $this->preselectShopId = $shop->id;
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($organisation);
     }
@@ -69,6 +86,7 @@ class ShowOrgChatInbox extends OrgAction
                 'inboxes'              => $this->getAgentInboxes($organisation, $request),
                 'selectedSessionUlid'  => $this->selectedSession ? (string) $this->selectedSession->ulid : null,
                 'initialSession'       => $this->resolveSelectedSession(),
+                'preselectShopId'      => $this->preselectShopId,
             ]
         );
     }

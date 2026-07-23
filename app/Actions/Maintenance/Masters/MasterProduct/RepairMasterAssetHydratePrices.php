@@ -43,7 +43,7 @@ class RepairMasterAssetHydratePrices
         if ($baseProduct->rrp) {
             $updateData['master_rrps']    = $currenciesRate->map(
                 fn ($ratio) => [
-                    'value'         => formatPrice($ratio, $baseProduct->rrp),
+                    'value'         => formatPrice($ratio, $baseProduct->rrp) / trimDecimalZeros($baseProduct->units),
                     'independent'   => false
                 ]
             )->toArray();
@@ -54,7 +54,6 @@ class RepairMasterAssetHydratePrices
             $updateData
         );
 
-        //UpdateMasterAsset::make()->action($masterAsset, $updateData);
 
         $setUpText = '';
 

@@ -29,6 +29,7 @@ const props = defineProps<{
     inboxes: Array<{ id: number; name: string; slug: string; type: string | null }>
     selectedSessionUlid?: string | null
     initialSession?: any | null
+    preselectShopId?: number | null
 }>()
 
 const layout: any = inject("layout", {})
@@ -433,6 +434,11 @@ const onChatListEvent = (e: any) => {
 
 onMounted(async () => {
     fetchInboxNotifications()
+
+    // Preselect the shop when opened from the shop-level nav entry.
+    if (props.preselectShopId && props.inboxes?.some((i) => i.id === props.preselectShopId)) {
+        selectedShopId.value = props.preselectShopId
+    }
 
     const init = props.initialSession
 
