@@ -55,8 +55,9 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
         /** @var Portfolio $portfolio */
         $portfoliosIds->chunkById(20, function($portfoliosIdChunk) use ($customerSalesChannel, $totalNumber, $cacheKey) {
             foreach ($portfoliosIdChunk as $portfoliosId) {
+                $portfolio = Portfolio::find($portfoliosId->id);
+
                 try {
-                    $portfolio = Portfolio::find($portfoliosId->id);
                     if ($portfolio) {
                         $portfolio = StoreNewProductToCurrentShopify::run($portfolio, []);
 
@@ -65,24 +66,18 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
                         } else {
                             Cache::increment($cacheKey . '_fail');
                         }
-
-                        UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
-                            'total' => $totalNumber,
-                            'success' => Cache::get($cacheKey . '_success'),
-                            'fail' => Cache::get($cacheKey . '_fail'),
-                        ]);
                     }
                 } catch (\Exception $e) {
                     Cache::increment($cacheKey . '_fail');
                 }
+
+                UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
+                    'total' => $totalNumber,
+                    'success' => Cache::get($cacheKey . '_success'),
+                    'fail' => Cache::get($cacheKey . '_fail'),
+                ]);
             }
         });
-
-        UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
-            'total' => $totalNumber,
-            'success' => Cache::get($cacheKey . '_success'),
-            'fail' => Cache::get($cacheKey . '_fail'),
-        ]);
 
         Cache::forget($cacheKey . '_success');
         Cache::forget($cacheKey . '_fail');
