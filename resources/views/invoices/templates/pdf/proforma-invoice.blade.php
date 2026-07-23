@@ -238,8 +238,8 @@
             <td style="text-align:right;width:20% ">{{ __('Unit Price') }}</td>
             <td style="text-align:right;width:20% ">{{ __('Units') }}</td>
         @else
-            <td></td>
-            <td style="text-align:left">{{ __('Qty')  }}.</td>
+            <td style="text-align:right">{{ __('Discount') }}</td>
+            <td style="text-align:left">{{ __('Qty') }}.</td>
         @endif
 
         <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
@@ -262,6 +262,8 @@
         @endif
 
         @foreach($transactions as $transaction)
+            @php($netAmount = (float) $transaction->net_amount)
+            @php($discountFactor = max(0, 1 - (float) ($transaction->current_discount_factor ?? 1)))   
             <tr class="@if($loop->last) last @endif">
                 <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
 
@@ -272,7 +274,11 @@
                         @if($transaction->historicAsset?->units > 1)
                             {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
                         @endif
-                        {{ $transaction->historicAsset?->name . ' (' . $order->currency->symbol . $transaction->net_amount . ')' }}
+                        {{ $transaction->historicAsset?->name }}
+
+                        @if($transaction->historicAsset)
+                            ({{ $order->currency->symbol }}{{ number_format((float) $transaction->historicAsset->price, 2) }})
+                        @endif
                         <br>
                         @if($rrp)
                             RRP: {{ $transaction->model->rrp }} <br>
@@ -308,11 +314,11 @@
                     </td>
                     <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
                 @else
-                    <td></td>
-                    <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
+                    <td style="text-align:right">{{ $discountFactor > 0 ? percentage($discountFactor, 1) : '-' }}</td>
+                    <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity_ordered)  }}</td>
                 @endif
 
-                <td style="text-align:right">{{ $order->currency->symbol . $transaction->net_amount }}</td>
+                <td style="text-align:right">{{ $order->currency->symbol }}{{ number_format($netAmount, 2) }}</td>
             </tr>
         @endforeach
     @endforeach
