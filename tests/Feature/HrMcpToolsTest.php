@@ -18,6 +18,10 @@ use App\Models\HumanResources\Timesheet;
 use App\Models\SysAdmin\Guest;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,

@@ -13,6 +13,10 @@ use App\Mcp\Tools\ShopSalesTool;
 use App\Models\Catalogue\ShopTimeSeries;
 use App\Models\SysAdmin\Guest;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,
