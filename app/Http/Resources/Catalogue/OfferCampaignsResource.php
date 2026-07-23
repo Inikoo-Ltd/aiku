@@ -21,6 +21,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property mixed $type
  * @property mixed $number_current_offers
+ * @property mixed $number_customers
+ * @property mixed $number_orders
  * @property mixed $status
  * @property mixed $shop_slug
  * @property mixed $organisation_name
@@ -37,6 +39,8 @@ class OfferCampaignsResource extends JsonResource
             'code'                        => $this->code,
             'name'                        => OfferCampaignTypeEnum::from($this->type->value)->labels()[$this->type->value],
             'number_current_offers'       => $this->number_current_offers,
+            'number_customers'            => $this->number_customers,
+            'number_orders'               => $this->number_orders,
             'status'                      => $this->status,
             'status_icon'                 => $this->status
                 ? [

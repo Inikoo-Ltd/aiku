@@ -13,7 +13,9 @@ namespace App\Actions\DevOps\AppDeployment;
 use App\Models\DevOps\AppDeployment;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 use Symfony\Component\Process\Process;
+use Throwable;
 
 class StoreAppDeployment
 {
@@ -40,12 +42,39 @@ class StoreAppDeployment
         ]);
 
         if ($commit) {
-            GenerateAppDeploymentChangeLog::dispatch($appDeployment);
+            try {
+                $this->withTimeout(180, fn () => GenerateAppDeploymentChangeLog::run($appDeployment));
+            } catch (Throwable $e) {
+                Sentry::captureException($e);
+            }
         }
 
         $command->info('Deployment recorded successfully'.($commit ? " for commit $commit" : '').'.');
 
         return 0;
+    }
+
+    private function withTimeout(int $seconds, callable $callback): void
+    {
+        // pcntl_alarm is only available on the CLI, which is where deployments run.
+        if (!function_exists('pcntl_async_signals')) {
+            $callback();
+
+            return;
+        }
+
+        pcntl_async_signals(true);
+        pcntl_signal(SIGALRM, function () use ($seconds) {
+            throw new \RuntimeException("Timed out after $seconds seconds");
+        });
+        pcntl_alarm($seconds);
+
+        try {
+            $callback();
+        } finally {
+            pcntl_alarm(0);
+            pcntl_signal(SIGALRM, SIG_DFL);
+        }
     }
 
     private function currentTag(string $path): ?string

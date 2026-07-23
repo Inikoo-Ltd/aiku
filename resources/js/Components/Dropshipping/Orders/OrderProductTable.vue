@@ -335,6 +335,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             is_cut_view: newVal
         },
         {
+            preserveScroll: true,
             onStart: () => {
                 set(proxyItem, 'is_transaction_loading', true)
 
@@ -442,7 +443,9 @@ const isOffersData = (offersData: any): boolean => {
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         /> -->
                         <InputNumber 
-                            :model-value="item.quantity_ordered_fractional[0]" 
+                            :model-value="proxyItem.is_cut_view ? (
+                                (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
+                            ) : item.quantity_ordered" 
                             @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
                             inputId="horizontal-buttons" 
                             showButtons 

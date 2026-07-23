@@ -8,8 +8,13 @@
 
 namespace App\Actions\Transfers\Aurora;
 
+use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
+use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
+use App\Actions\Maintenance\Inventory\OrgStockMovement\Traits\CanRepairOrgStockMovements;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStockMovement;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -18,6 +23,8 @@ use Illuminate\Support\Facades\DB;
 
 class FetchAuroraOrgStockMovements extends FetchAuroraAction
 {
+    use CanRepairOrgStockMovements;
+
     public string $commandSignature = 'fetch:stock_movements {organisations?*} {--s|source_id=} {--d|db_suffix=} {--N|only_new : Fetch only new} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OrgStockMovement
@@ -47,6 +54,39 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
                     hydratorsDelay: 1800,
                     strict: false
                 );
+
+                if($orgStockMovement->organisation->is_aiku_stock_control && $orgStockMovement->type==OrgStockMovementTypeEnum::PURCHASE){
+                    $purchase=$orgStockMovement;
+                    $orgStock=$purchase->orgStock;
+                    $location = $purchase->location;
+                    if ($location) {
+                        $this->fixForAuditsInPairs($location, $orgStock);
+                        $this->fixForPurchaseAndAssociatePairs($location, $orgStock);
+                        $this->fixForPostPurchaseAssociates($location, $orgStock);
+                    }
+                    $purchase->refresh();
+                    $orgStock->refresh();
+
+                    $this->processPrePurchaseAssociate($purchase, $orgStock);
+
+                    foreach ($orgStock->locations as $location) {
+                        $locationOrgStock = $orgStock->locationOrgStocks()->where('location_id', $location->id)->first();
+                        $stockQuantity    = GetLocationOrgStockQuantity::run($orgStock, $location);
+
+                        UpdateLocationOrgStock::run(
+                            $locationOrgStock,
+                            [
+                                'quantity' => $stockQuantity
+                            ]
+                        );
+                    }
+
+                    $orgStock->refresh();
+
+                    OrgStockHydrateQuantityInLocations::run($orgStock->id);
+                    $orgStock->refresh();
+
+                }
 
                 $this->recordNew($organisationSource);
                 print "New: ".$orgStockMovement->source_id."\n";

@@ -57,7 +57,12 @@ class StoreLocationOrgStock extends OrgAction
             data_set($modelData, 'quantity', 0);
         }
 
-        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData, $costPerSku) {
+        $date = now()->format('Y-m-d H:i:s.u');
+        if (Arr::has($modelData, 'date')) {
+            $date = Arr::pull($modelData, 'date');
+        }
+
+        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData, $costPerSku, $date) {
             StoreOrgStockMovement::make()->action(
                 $orgStock,
                 $location,
@@ -66,7 +71,7 @@ class StoreLocationOrgStock extends OrgAction
                     'audited_quantity' => 0,
                     'org_amount'       => 0,
                     'grp_amount'       => 0,
-                    'date'             => now()->format('Y-m-d H:i:s.u'),
+                    'date'             => $date,
                     'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
                     'cost_per_sku'     => $costPerSku,
                     'user_id'          => $this->user?->id,
@@ -98,6 +103,7 @@ class StoreLocationOrgStock extends OrgAction
             'notes'            => ['sometimes', 'nullable', 'string', 'max:255'],
             'picking_priority' => ['sometimes', 'integer'],
             'type'             => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
+            'date'             => ['sometimes', 'date_format:Y-m-d H:i:s.u']
         ];
 
         if (!$this->strict) {
@@ -140,7 +146,7 @@ class StoreLocationOrgStock extends OrgAction
     {
         $this->location = $location;
         $this->orgStock = $orgStock;
-        $this->user = request()->user();
+        $this->user     = request()->user();
         $this->initialisation($orgStock->organisation, $request);
 
         $this->handle($orgStock, $location, $this->validatedData);

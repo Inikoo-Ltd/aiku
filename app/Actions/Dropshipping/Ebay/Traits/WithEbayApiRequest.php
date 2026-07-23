@@ -1244,7 +1244,6 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
             $errMsg = 'Fulfill eBay Order Error: '.$e->getMessage();
-            Log::error($errMsg);
             \Sentry::captureMessage($errMsg);
 
             return ['error' => $e->getMessage()];

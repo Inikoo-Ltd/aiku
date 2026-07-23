@@ -109,12 +109,20 @@ watch(
 // Method: listen if app recently deployed
 const isLoadingRefreshPage = ref(false)
 const isModalNeedToRefresh = ref(false)
+interface DeploymentInfo {
+    semantic_version: string | null
+    change_log: string | null
+    committers: { name: string, email: string, github_username: string | null, avatar: string | null }[] | null
+    deployed_at: string | null
+}
+const deploymentInfo = ref<DeploymentInfo | null>(null)
 const onDismissRefreshModal = () => {
     isModalNeedToRefresh.value = false
     layout.app.newVersionAvailable = true
 }
 const onCheckAppVersion = () => {
-    const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData) => {
+    const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData: { deployment: DeploymentInfo | null }) => {
+        deploymentInfo.value = eventData?.deployment || null
         if (route().current()?.includes("dashboard.show")) {
             onRefreshPage()
         } else {
@@ -319,25 +327,55 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
             <div
                 class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
                 <div>
-                    <div
+                    <!-- <div
                         class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
                         <FontAwesomeIcon
                             icon="fal fa-smile"
                             class="text-green-500 text-2xl"
                             fixed-width
                             aria-hidden="true" />
-                    </div>
+                    </div> -->
 
                     <div class="mt-3 text-center sm:mt-5">
-                        <div as="h3" class="font-semibold text-2xl">
+                        <div v-if="deploymentInfo?.semantic_version" as="h3" class="font-semibold text-2xl">
+                            🚀<span class="mx-2">{{ deploymentInfo.semantic_version }}</span>💥
+                        </div>
+                        <div v-else as="h3" class="font-semibold text-2xl">
                             {{ ctrans("Hey, sorry for your inconvenience.") }}
                         </div>
-                        <div class="mt-2 text-sm text-gray-500">
+
+                        
+                        <div
+                            v-if="deploymentInfo?.change_log"
+                            class="mt-3 max-h-48 overflow-y-auto rounded-md bg-gray-50 p-3 text-left text-xs text-gray-600 whitespace-pre-line">
+                            {{ deploymentInfo.change_log }}
+                        </div>
+                        
+                        <div v-else class="mt-2 text-sm text-gray-500">
                             {{
                                 ctrans(
                                     "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
                                 )
                             }}
+                        </div>
+                        <!-- <div v-if="deploymentInfo?.semantic_version" class="mt-2 text-xs text-gray-400">
+                            {{ ctrans("New version") }}: {{ deploymentInfo.semantic_version }}
+                        </div> -->
+                        <div v-if="deploymentInfo?.committers?.length" class="mt-3 flex items-center justify-center -space-x-2">
+                            <template v-for="committer in deploymentInfo.committers" :key="committer.email">
+                                <img
+                                    v-if="committer.avatar"
+                                    :src="committer.avatar"
+                                    :alt="committer.name"
+                                    :title="committer.name"
+                                    class="size-7 rounded-full ring-2 ring-white" />
+                                <div
+                                    v-else
+                                    :title="committer.name"
+                                    class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
+                                    {{ committer.name.charAt(0).toUpperCase() }}
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
