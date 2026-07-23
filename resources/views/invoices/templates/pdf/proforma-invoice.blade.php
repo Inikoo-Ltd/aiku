@@ -198,26 +198,26 @@
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
-        @if($order->address)
+        @if($order->billingAddress)
             <td width="45%" style="border: 0.1mm solid #888888;"><span
                         style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
                 <div>
-                    {{ $order->address->address_line_1 }}
+                    {{ $order->billingAddress->address_line_1 }}
                 </div>
                 <div>
-                    {{ $order->address->address_line_2 }}
+                    {{ $order->billingAddress->address_line_2 }}
                 </div>
                 <div>
-                    {{ $order->address->administrative_area }}
+                    {{ $order->billingAddress->administrative_area }}
                 </div>
                 <div>
-                    {{ $order->address->locality }}
+                    {{ $order->billingAddress->locality }}
                 </div>
                 <div>
-                    {{ $order->address->postal_code }}
+                    {{ $order->billingAddress->postal_code }}
                 </div>
                 <div>
-                    {{ $order->address->country->name }}
+                    {{ $order->billingAddress->country->name }}
                 </div>
             </td>
             <td width="10%">&nbsp;</td>
