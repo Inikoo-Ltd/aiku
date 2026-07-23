@@ -6,6 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\DevOps\UI\IndexAppDeployments;
 use App\Actions\HumanResources\ClockingMachine\UI\RedirectClockingMachineQrScan;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
 use App\Actions\UI\Notification\IndexNotification;
@@ -109,6 +110,7 @@ Route::middleware(
     Route::get('ban/varnish/website/{website}', BreakWebsiteVarnishCache::class)->name('varnish.website');
 
     Route::get('/notifications', IndexNotification::class)->name('notifications');
+    Route::get('/deploys', IndexAppDeployments::class)->name('deploys');
     Route::prefix("overview")
         ->name("overview.")
         ->group(__DIR__."/overview.php");
