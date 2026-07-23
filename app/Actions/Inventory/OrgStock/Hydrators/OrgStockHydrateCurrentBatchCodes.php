@@ -8,13 +8,20 @@
 
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
+use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class OrgStockHydrateCurrentBatchCodes implements ShouldBeUnique
 {
-    use AsAction;
+    use WithHydrateCommand;
+
+    public string $commandSignature = 'hydrate:org-stock-current-batch-codes {organisations?*} {--s|slugs=}';
+
+    public function __construct()
+    {
+        $this->model = OrgStock::class;
+    }
 
     public function getJobUniqueId(OrgStock $orgStock): int
     {
