@@ -50,7 +50,11 @@ class RepairMasterAssetHydratePrices
             $hasRRP   = true;
         }
 
-        UpdateMasterAsset::make()->action($masterAsset, $updateData);
+        $masterAsset->updateQuietly(
+            $updateData
+        );
+
+        //UpdateMasterAsset::make()->action($masterAsset, $updateData);
 
         $setUpText = '';
 
