@@ -76,8 +76,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
     {
         if ($this->tab === 'location_org_stocks') {
             return [
-                __('SKU Code'),
-                __('SKU Name'),
+                __('SKO Code'),
+                __('SKO Name'),
                 __('Location'),
                 __('Quantity'),
                 __('Stock Value'),
@@ -85,8 +85,8 @@ class ShowOrganisationStockHistoryExport implements FromQuery, WithMapping, With
         }
 
         return [
-            __('SKU Code'),
-            __('SKU Name'),
+            __('SKO Code'),
+            __('SKO Name'),
             __('Quantity'),
             __('Stock Value'),
             __('Sold Within 1 Year'),

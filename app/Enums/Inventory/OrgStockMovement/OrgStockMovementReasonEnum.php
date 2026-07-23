@@ -81,7 +81,7 @@ enum OrgStockMovementReasonEnum: string
             self::BIN_ERROR       => 'Wrong Bin Location',
             self::TRANSFER        => 'Warehouse Transfer Adjustment',
             self::RETURN_TO_STOCK => 'Returned to Saleable Stock',
-            self::BARCODE         => 'Barcode / SKU Correction',
+            self::BARCODE         => 'Barcode / SKO Correction',
             self::UOM             => 'Unit of Measure Correction',
             self::DATA_FIX        => 'System Data Correction',
             self::MANUAL          => 'Manual Management Adjustment',

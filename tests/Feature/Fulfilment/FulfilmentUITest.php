@@ -886,7 +886,7 @@ test('UI show fulfilment customer stored item', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'New SKU')
+                    ->where('title', 'New SKO')
                     ->etc()
             )
             ->has('formData')
@@ -2170,7 +2170,7 @@ test('UI show stored item audit', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', "Customer's SKUs audit")
+                    ->where('title', "Customer's SKOs audit")
                     ->has('subNavigation')
                     ->etc()
             )

@@ -1019,7 +1019,7 @@ onMounted(() => {
                                                 <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
                                                      class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
                                                 </div>
-                                                <div v-if="item.sku_list" v-tooltip="trans('SKU')" class="w-fit text-xxs text-slate-600 italic">
+                                                <div v-if="item.sku_list" v-tooltip="trans('SKO')" class="w-fit text-xxs text-slate-600 italic">
                                                         {{ item.sku_list.join('; ') }}
                                                 </div>
                                             </div>

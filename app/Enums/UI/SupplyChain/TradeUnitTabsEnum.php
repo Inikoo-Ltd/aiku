@@ -69,11 +69,11 @@ enum TradeUnitTabsEnum: string
                 'icon'  => 'fal fa-camera-retro',
             ],
             TradeUnitTabsEnum::STOCKS => [
-                'title' => __('Master SKUs'),
+                'title' => __('Master SKOs'),
                 'icon'  => 'fal fa-cloud-rainbow',
             ],
             TradeUnitTabsEnum::ORG_STOCKS => [
-                'title' => __('Org SKUs'),
+                'title' => __('Org SKOs'),
                 'icon'  => 'fal fa-box',
             ],
         };

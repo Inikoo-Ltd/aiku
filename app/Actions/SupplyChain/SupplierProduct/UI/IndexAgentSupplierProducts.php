@@ -141,7 +141,7 @@ class IndexAgentSupplierProducts extends OrgAction
         $actions = null;
 
 
-        $title      = 'SKUs';
+        $title      = 'SKOs';
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-people-arrows'],
@@ -163,7 +163,7 @@ class IndexAgentSupplierProducts extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'              => __('SKUs'),
+                'title'              => __('SKOs'),
                 'pageHead'           => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -188,7 +188,7 @@ class IndexAgentSupplierProducts extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('SKUs'),
+                        'label' => __('SKOs'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],

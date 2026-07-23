@@ -91,7 +91,7 @@ class BatchCodeDeliveryNotesExport implements FromQuery, WithMapping, WithHeadin
             __('State'),
             __('Reference'),
             __('Batch Code'),
-            __('SKU'),
+            __('SKO'),
             __('Expiration Date'),
             __('Date'),
             __('Customer'),

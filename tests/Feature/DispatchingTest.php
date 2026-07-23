@@ -2032,5 +2032,5 @@ test('marks record as failed with a clear message when sku is not found', functi
     $uploadRecord->refresh();
 
     expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::FAILED->value)
-        ->and($uploadRecord->errors)->toContain("SKU 'NON-EXISTENT-SKU' not found.");
+        ->and($uploadRecord->errors)->toContain("SKO 'NON-EXISTENT-SKU' not found.");
 });

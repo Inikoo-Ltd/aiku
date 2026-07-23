@@ -93,7 +93,7 @@ onMounted(() => {
 })
 
 const deliveryListError = inject('deliveryListError', [])
-const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? trans("Return Customer's SKUs") : trans('Return Whole pallets'))
+const pickingTitle = computed(() => props.dataPalletReturn?.type === 'stored_item' ? trans("Return Customer's SKOs") : trans('Return Whole pallets'))
 const hasPickingUsers = computed(() => Boolean(props.dataPalletReturn?.picker_user?.contact_name || props.dataPalletReturn?.packer_user?.contact_name))
 const canUpdatePickingUsers = computed(() => Boolean(props.picker_packer_routes?.update?.name))
 const isWarehouseDispatchingPalletReturnPage = computed(() =>

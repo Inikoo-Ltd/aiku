@@ -394,7 +394,7 @@ test("UI Create Stock in Group", function () {
             ])->etc())
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'New SKU')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'New SKO')->etc()
             );
     });
 });
@@ -491,7 +491,7 @@ test("UI Create Stock in Stock Family Group", function () {
             ])->etc())
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'New SKU')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'New SKO')->etc()
             );
     });
 });
@@ -777,7 +777,7 @@ test('UI Index Stock Families', function () {
                     ->has('icon')
                     ->has('subNavigation')
                     ->has('actions')
-                    ->where('title', 'Master SKU Families')
+                    ->where('title', 'Master SKO Families')
                     ->etc()
             );
     });
@@ -796,7 +796,7 @@ test('UI Create Stock Family', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $p) => $p
-                    ->where('title', 'New SKU family')
+                    ->where('title', 'New SKO family')
                     ->has('actions')
                     ->etc()
             )

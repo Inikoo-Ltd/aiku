@@ -260,15 +260,15 @@ class IndexStocks extends OrgAction
     {
         return match (class_basename($parent)) {
             'Group' => [
-                'title'       => __("No SKUs found"),
+                'title'       => __("No SKOs found"),
                 'description' => $this->canEdit && $parent->goodsStats->number_stock_families == 0 ? __('Get started by creating a shop. ✨')
-                    : __("In fact, is no even create a SKUs family yet 🤷🏽‍♂️"),
+                    : __("In fact, is no even create a SKOs family yet 🤷🏽‍♂️"),
                 'count'       => $parent->goodsStats->number_stocks,
                 'action'      => $this->canEdit && $parent->goodsStats->number_stock_families == 0 ? [
                     'type'    => 'button',
                     'style'   => 'create',
-                    'tooltip' => __('New master SKUs family'),
-                    'label'   => __('Master SKUs family'),
+                    'tooltip' => __('New master SKOs family'),
+                    'label'   => __('Master SKOs family'),
                     'route'   => [
                         'name'       => 'grp.goods.stock-families.create',
                         'parameters' => []
@@ -276,15 +276,15 @@ class IndexStocks extends OrgAction
                 ] : null
             ],
             'StockFamily' => [
-                'title'       => __("No SKUs found"),
-                'description' => $this->canEdit ? __('Get started by creating a new SKU. ✨')
+                'title'       => __("No SKOs found"),
+                'description' => $this->canEdit ? __('Get started by creating a new SKO. ✨')
                     : null,
                 'count'       => $parent->stats->number_stocks,
                 'action'      => $this->canEdit ? [
                     'type'    => 'button',
                     'style'   => 'create',
-                    'tooltip' => __('New master SKU'),
-                    'label'   => __('Master SKU'),
+                    'tooltip' => __('New master SKO'),
+                    'label'   => __('Master SKO'),
                     'route'   => [
                         'name'       => 'inventory.stock-families.show.stocks.create',
                         'parameters' => [$parent->slug]
@@ -365,11 +365,11 @@ class IndexStocks extends OrgAction
         $subNavigation = $this->getStocksSubNavigation();
 
         $title = match ($this->bucket) {
-            'active' => __('Active Master SKUs'),
-            'in_process' => __('In process Master SKUs'),
-            'discontinuing' => __('Discontinuing Master SKUs'),
-            'discontinued' => __('Discontinued Master SKUs'),
-            default => __('Master SKUs')
+            'active' => __('Active Master SKOs'),
+            'in_process' => __('In process Master SKOs'),
+            'discontinuing' => __('Discontinuing Master SKOs'),
+            'discontinued' => __('Discontinued Master SKOs'),
+            default => __('Master SKOs')
         };
 
         return Inertia::render(
@@ -384,14 +384,14 @@ class IndexStocks extends OrgAction
                     'title'         => $title,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-box'],
-                        'title' => __('Master SKU')
+                        'title' => __('Master SKO')
                     ],
                     'actions'       => [
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('New Master SKU'),
-                            'label'   => __('Master SKU'),
+                            'tooltip' => __('New Master SKO'),
+                            'label'   => __('Master SKO'),
                             'route'   => match ($request->route()->getName()) {
                                 'inventory.stock-families.show.stocks.index' => [
                                     'name'       => 'inventory.stock-families.show.stocks.create',
@@ -428,11 +428,11 @@ class IndexStocks extends OrgAction
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             $label = match ($routeParameters['name']) {
-                'grp.goods.stocks.active_stocks.index' => __('Active SKUs'),
-                'grp.goods.stocks.in_process_stocks.index' => __('In process SKUs'),
-                'grp.goods.stocks.discontinuing_stocks.index' => __('Discontinuing SKUs'),
-                'grp.goods.stocks.discontinued_stocks.index' => __('Discontinued SKUs'),
-                default => __('SKUs')
+                'grp.goods.stocks.active_stocks.index' => __('Active SKOs'),
+                'grp.goods.stocks.in_process_stocks.index' => __('In process SKOs'),
+                'grp.goods.stocks.discontinuing_stocks.index' => __('Discontinuing SKOs'),
+                'grp.goods.stocks.discontinued_stocks.index' => __('Discontinued SKOs'),
+                default => __('SKOs')
             };
 
 

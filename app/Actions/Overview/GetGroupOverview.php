@@ -355,19 +355,19 @@ class GetGroupOverview extends OrgAction
                 'count' => $group->inventoryStats->number_locations ?? 0
             ],
             [
-                'name'  => __('SKUs'),
+                'name'  => __('SKOs'),
                 'icon'  => 'fal fa-inventory',
                 'route' => route('grp.goods.stocks.index'),
                 'count' => $group->goodsStats->number_stocks ?? 0
             ],
             [
-                'name'  => __('SKUs Families'),
+                'name'  => __('SKOs Families'),
                 'icon'  => 'fal fa-box',
                 'route' => route('grp.goods.stock-families.index'),
                 'count' => $group->goodsStats->number_stock_families ?? 0
             ],
             [
-                'name'  => __('SKU Movements'),
+                'name'  => __('SKO Movements'),
                 'icon'  => 'fal fa-dolly',
                 'route' => route('grp.overview.inventory.org-stock-movements.index'),
                 'count' => $group->inventoryStats->number_org_stock_movements ?? 0
@@ -386,7 +386,7 @@ class GetGroupOverview extends OrgAction
                 'count' => $group->fulfilmentStats->number_pallets ?? 0
             ],
             [
-                'name'  => __("Customer's SKUs"),
+                'name'  => __("Customer's SKOs"),
                 'icon'  => 'fal fa-box-open',
                 'route' => route('grp.overview.fulfilment.stored-items.index'),
                 'count' => $group->fulfilmentStats->number_stored_items ?? 0

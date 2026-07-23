@@ -146,7 +146,7 @@ class IndexStoredItemMovements extends OrgAction
             }
 
             if ($parent instanceof Pallet) {
-                $table->column(key: 'stored_item_reference', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true)->defaultSort('pallet_reference');
+                $table->column(key: 'stored_item_reference', label: __('SKO'), canBeHidden: false, sortable: true, searchable: true)->defaultSort('pallet_reference');
             }
 
 

@@ -127,7 +127,7 @@ class IndexFulfilmentCustomersApproved extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_pallets_status_storing', label: ['type' => 'text', 'data' => __('Pallets'), 'tooltip' => __('Number of pallets in warehouse')], canBeHidden: false, sortable: true)
-                ->column(key: 'number_stored_items_state_active', label: ['type' => 'text', 'data' => __('SKUs'), 'tooltip' => __('Number of SKUs in warehouse')], canBeHidden: false, sortable: true)
+                ->column(key: 'number_stored_items_state_active', label: ['type' => 'text', 'data' => __('SKOs'), 'tooltip' => __('Number of SKOs in warehouse')], canBeHidden: false, sortable: true)
                 ->column(key: 'number_spaces_state_renting', label: ['type' => 'text', 'data' => __('Spaces'), 'tooltip' => __('Number of renting spaces')], canBeHidden: false, sortable: true)
                 ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 // ->column(key: 'platform_name', label: __('channels'), canBeHidden: false, sortable: false, searchable: false)

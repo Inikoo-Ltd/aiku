@@ -310,12 +310,12 @@ class StoreShopifyProduct extends RetinaAction
                     'Index'     => $index + 1,
                     'ID'        => $variant['id'] ?? 'N/A',
                     'Price'     => $variant['price'] ?? 'N/A',
-                    'SKU'       => $variant['sku'] ?? 'N/A',
+                    'SKO'       => $variant['sku'] ?? 'N/A',
                     'Barcode'   => $variant['barcode'] ?? 'N/A',
                     'Inventory' => $variant['inventoryQuantity'] ?? 'N/A'
                 ];
             }
-            $command->table(['Index', 'ID', 'Price', 'SKU', 'Barcode', 'Inventory'], $variantData);
+            $command->table(['Index', 'ID', 'Price', 'SKO', 'Barcode', 'Inventory'], $variantData);
         }
     }
 }

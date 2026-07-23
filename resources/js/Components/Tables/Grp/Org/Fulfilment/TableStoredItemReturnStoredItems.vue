@@ -561,7 +561,7 @@ function getRequestedPalletStoredItems(item: any) {
                                 </div>
                                 <!-- <div v-if="palletReturn.state === 'picking'"
                                     @xxclick="() => pallet_stored_item.picked_quantity = pallet_stored_item.quantity_in_pallet"
-                                    v-tooltip="trans(`Total Customer's SKU in this pallet`)"
+                                    v-tooltip="trans(`Total Customer's SKO in this pallet`)"
                                     class="text-gray-400 tabular-nums xcursor-pointer xhover:text-gray-600">
                                     {{ trans("Stocks in pallet") }}: {{ pallet_stored_item.quantity_in_pallet }}
                                 </div> -->
@@ -608,7 +608,7 @@ function getRequestedPalletStoredItems(item: any) {
                                 />
 
                                 <div v-if="palletReturn.state === 'in_process'" v-tooltip="trans('Available quantity')" class="text-base">{{ pallet_stored_item.available_quantity }}</div>
-                                <!-- <div v-else-if="palletReturn.state === 'picking'" v-tooltip="trans(`Quantity of Customer's SKU that should be picked`)" class="text-base">{{ pallet_stored_item.selected_quantity }}</div> -->
+                                <!-- <div v-else-if="palletReturn.state === 'picking'" v-tooltip="trans(`Quantity of Customer's SKO that should be picked`)" class="text-base">{{ pallet_stored_item.selected_quantity }}</div> -->
 
                                 <!-- Button: input number (in_process) -->
                                 <NumberWithButtonSave

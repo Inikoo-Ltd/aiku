@@ -62,7 +62,7 @@ class AttachApiOrderTransaction extends RetinaApiAction
     {
         return SKUApiResource::make($sku)
             ->additional([
-                'message' => __('SKU added to Order successfully'),
+                'message' => __('SKO added to Order successfully'),
             ]);
     }
 }

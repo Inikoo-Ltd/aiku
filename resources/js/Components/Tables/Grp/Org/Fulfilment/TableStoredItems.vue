@@ -97,7 +97,7 @@ function storedItemRoute(storedItem) {
                 </Tag>
             </div>
             <div v-else class="text-gray-400 text-xs italic">
-                {{ trans("This Customer's SKU have no pallet") }}
+                {{ trans("This Customer's SKO have no pallet") }}
             </div>
         </template>
     </Table>
