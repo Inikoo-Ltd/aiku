@@ -853,6 +853,8 @@ const extendedColumns = [
 	{ key: "tariff_code", label: "Tariff code" },
 	{ key: "duty_rate", label: "Duty rate" },
 	{ key: "hts_us", label: "HTS US" },
+	{ key: "available_quantity", label: "Stock" },
+	{ key: "status", label: "Status" },
 	{ key: "for_sale", label: "For sale" },
 	{ key: "data_updated", label: "Data updated" },
 ]
