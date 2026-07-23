@@ -251,7 +251,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                $schedule->command('fetch:orders aroma -w full -B')->everyFiveMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'FetchOrdersInBasket',
                 ),
                 name: 'FetchOrdersInBasket',
@@ -277,8 +277,36 @@ class Kernel extends ConsoleKernel
 
 
             $this->logSchedule(
-                $schedule->command('fetch:stock_movements -N -D 2')->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->command('fetch:stock_movements aroma -N -D 2')->everyTenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchAuroraStockMovementsAroma',
+                ),
+                name: 'FetchAuroraStockMovements',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('fetch:stock_movements aw -N -D 2')->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'FetchAuroraStockMovements',
+                ),
+                name: 'FetchAuroraStockMovementsAw',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('fetch:stock_movements sk  -N -D 2')->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchAuroraStockMovements',
+                ),
+                name: 'FetchAuroraStockMovementsSk',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+
+            $this->logSchedule(
+                $schedule->command('fetch:stock_movements es -N -D 2')->everyMinute()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchAuroraStockMovementsEs',
                 ),
                 name: 'FetchAuroraStockMovements',
                 type: 'command',

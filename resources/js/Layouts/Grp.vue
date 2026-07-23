@@ -27,6 +27,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
+import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
 
@@ -108,8 +109,20 @@ watch(
 // Method: listen if app recently deployed
 const isLoadingRefreshPage = ref(false)
 const isModalNeedToRefresh = ref(false)
+interface DeploymentInfo {
+    semantic_version: string | null
+    change_log: string | null
+    committers: { name: string, email: string, github_username: string | null, avatar: string | null }[] | null
+    deployed_at: string | null
+}
+const deploymentInfo = ref<DeploymentInfo | null>(null)
+const onDismissRefreshModal = () => {
+    isModalNeedToRefresh.value = false
+    layout.app.newVersionAvailable = true
+}
 const onCheckAppVersion = () => {
-    const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData) => {
+    const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData: { deployment: DeploymentInfo | null }) => {
+        deploymentInfo.value = eventData?.deployment || null
         if (route().current()?.includes("dashboard.show")) {
             onRefreshPage()
         } else {
@@ -169,6 +182,16 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>
 
 <template>
+    <Teleport v-if="layout.app.newVersionAvailable" to="#topbar_grp">
+        <ScreenWarning
+            class="fixed z-[100] top-0 left-0 cursor-pointer"
+            @click="onRefreshPage()">
+            <span class="text-sm">
+                {{ ctrans("A new version of the app is available. Click here to refresh and get the latest updates.") }}
+            </span>
+        </ScreenWarning>
+    </Teleport>
+
     <div
         id="grp_app"
         class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
@@ -188,7 +211,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 				layout.leftSidebar.show
 					? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-144px)] lg:w-[calc(100%-192px)]'
 					: 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-36px)] lg:w-[calc(100%-48px)]',
-				layout.app.environment === 'staging' ? 'top-11 lg:top-16' : 'top-11 lg:top-10',
+				layout.hasTopBanner ? 'top-11 lg:top-16' : 'top-11 lg:top-10',
 			]"
             :breadcrumbs="usePage().props.breadcrumbs ?? []"
             :navigation="usePage().props.navigation ?? []"
@@ -212,7 +235,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
             class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
-				layout.app.environment === 'staging' ? 'mt-6' : '',
+				layout.hasTopBanner ? 'mt-6' : '',
 			]">
             <slot />
         </main>
@@ -299,38 +322,67 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
     <Modal
         :isOpen="isModalNeedToRefresh"
-        aonClose="isModalNeedToRefresh = false"
         width="w-full max-w-lg">
         <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
             <div
                 class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
                 <div>
-                    <div
+                    <!-- <div
                         class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
                         <FontAwesomeIcon
                             icon="fal fa-smile"
                             class="text-green-500 text-2xl"
                             fixed-width
                             aria-hidden="true" />
-                    </div>
+                    </div> -->
 
                     <div class="mt-3 text-center sm:mt-5">
-                        <div as="h3" class="font-semibold text-2xl">
+                        <div v-if="deploymentInfo?.semantic_version" as="h3" class="font-semibold text-2xl">
+                            🚀<span class="mx-2">{{ deploymentInfo.semantic_version }}</span>💥
+                        </div>
+                        <div v-else as="h3" class="font-semibold text-2xl">
                             {{ ctrans("Hey, sorry for your inconvenience.") }}
                         </div>
-                        <div class="mt-2 text-sm text-gray-500">
+
+                        
+                        <div
+                            v-if="deploymentInfo?.change_log"
+                            class="mt-3 max-h-48 overflow-y-auto rounded-md bg-gray-50 p-3 text-left text-xs text-gray-600 whitespace-pre-line">
+                            {{ deploymentInfo.change_log }}
+                        </div>
+                        
+                        <div v-else class="mt-2 text-sm text-gray-500">
                             {{
                                 ctrans(
                                     "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
                                 )
                             }}
                         </div>
+                        <!-- <div v-if="deploymentInfo?.semantic_version" class="mt-2 text-xs text-gray-400">
+                            {{ ctrans("New version") }}: {{ deploymentInfo.semantic_version }}
+                        </div> -->
+                        <div v-if="deploymentInfo?.committers?.length" class="mt-3 flex items-center justify-center -space-x-2">
+                            <template v-for="committer in deploymentInfo.committers" :key="committer.email">
+                                <img
+                                    v-if="committer.avatar"
+                                    :src="committer.avatar"
+                                    :alt="committer.name"
+                                    :title="committer.name"
+                                    class="size-7 rounded-full ring-2 ring-white" />
+                                <div
+                                    v-else
+                                    :title="committer.name"
+                                    class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
+                                    {{ committer.name.charAt(0).toUpperCase() }}
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
 
                 <div class="mt-5 sm:mt-6 flex flex-col gap-4">
                     <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
-                    <Button @click="() => isModalNeedToRefresh = false" :label="ctrans('Dismiss')" full type="tertiary" />
+                    <Button @click="() => onDismissRefreshModal()" :label="ctrans('Dismiss')" full type="tertiary" />
                 </div>
             </div>
         </div>
