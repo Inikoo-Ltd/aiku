@@ -130,6 +130,11 @@ export interface Contact {
 	}
 	shop?: ChatInboxShop | null
 	organisation?: ChatInboxOrganisation | null
+	ai_summary?: {
+		summary: string
+		key_points: string[]
+		sentiment: string
+	} | null
 }
 
 // --------------------------

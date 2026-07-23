@@ -246,8 +246,27 @@ const copyChatId = async () => {
                     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" />
                         AI Summary
+                        <span v-if="session.ai_summary.sentiment"
+                            class="ml-auto text-[10px] font-medium capitalize px-1.5 py-0.5 rounded-full"
+                            :class="{
+                                'bg-green-100 text-green-700': session.ai_summary.sentiment === 'positive',
+                                'bg-red-100 text-red-600': session.ai_summary.sentiment === 'negative',
+                                'bg-gray-100 text-gray-500': session.ai_summary.sentiment === 'neutral',
+                            }">
+                            {{ session.ai_summary.sentiment }}
+                        </span>
                     </p>
                     <p class="text-xs text-gray-700 leading-relaxed">{{ session.ai_summary.summary }}</p>
+                    <template v-if="session.ai_summary.key_points?.length">
+                        <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mt-3 mb-1.5">Key Points</p>
+                        <ul class="space-y-1">
+                            <li v-for="(point, i) in session.ai_summary.key_points" :key="i"
+                                class="flex items-start gap-1.5 text-xs text-gray-600">
+                                <span class="mt-1.5 w-1 h-1 rounded-full bg-indigo-400 shrink-0"></span>
+                                {{ point }}
+                            </li>
+                        </ul>
+                    </template>
                 </div>
             </div>
 

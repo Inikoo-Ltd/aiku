@@ -64,6 +64,7 @@ const panelSession = computed(() => {
         priority: s.priority ?? null,
         assigned_agent: s.assigned_agent?.name ?? null,
         started: s.created_at ?? null,
+        ai_summary: s.ai_summary ?? null,
     }
 })
 
@@ -107,6 +108,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     agent: s.assigned_agent,
     shop: s.shop,
     organisation: s.organisation,
+    ai_summary: s.ai_summary ?? null,
 })
 
 const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
@@ -230,6 +232,7 @@ const openChat = (c: Contact) => {
         assigned_agent: c.agent,
         shop: c.shop,
         organisation: c.organisation,
+        ai_summary: c.ai_summary ?? null,
     } as SessionAPI
     messages.value = c.messages ?? []
     updateUrl(String(c.ulid))
@@ -617,12 +620,12 @@ onUnmounted(() => {
                                     <span class="text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
                                     <span class="text-[10px] text-gray-400 shrink-0">{{ c.lastMessageTime }}</span>
                                 </div>
-                                <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
                                     <span v-if="c.agent?.name" class="text-[10px] text-gray-400 truncate">
                                         {{ c.agent.name.split(' ')[0] }}
                                     </span>
                                     <span v-if="c.unread && activeTab !== 'closed'"
-                                        class="min-w-[16px] px-1.5 text-[10px] leading-4 text-white rounded-full text-center shrink-0"
+                                        class="ml-auto min-w-[16px] px-1.5 text-[10px] leading-4 text-white rounded-full text-center shrink-0"
                                         :style="{ backgroundColor: 'var(--theme-color-4)' }">
                                         {{ c.unread }}
                                     </span>

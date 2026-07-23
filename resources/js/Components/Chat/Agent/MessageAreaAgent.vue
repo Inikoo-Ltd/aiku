@@ -711,7 +711,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
 
-            <ModalConfirmationDelete v-if="!isClosed" :routeDelete="{
+            <ModalConfirmationDelete v-if="!isClosed && isMyChat" :routeDelete="{
                 name: 'grp.org.chat.agents.sessions.close',
                 parameters: [session?.organisation.id, session?.ulid],
                 method: 'patch',
