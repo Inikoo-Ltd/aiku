@@ -269,6 +269,8 @@ const component = computed(() => {
 	return components[currentTab.value]
 })
 
+const isOrgAgent = computed(() => props.box_stats.first_block.orderer.type === "Agent")
+
 const ordererRoute = computed<string>(() => {
 	const orderer = props.box_stats.first_block.orderer
     const slug = orderer.slug
@@ -529,6 +531,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:state="data.data.state"
+			:isOrgAgent="isOrgAgent"
+			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
 			@update:tab="handleTabUpdate"
 		/>

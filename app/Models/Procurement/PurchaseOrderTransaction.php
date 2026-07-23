@@ -89,6 +89,11 @@ class PurchaseOrderTransaction extends Model
         return $this->belongsTo(SupplierProduct::class);
     }
 
+    public function orgSupplierProduct(): BelongsTo
+    {
+        return $this->belongsTo(OrgSupplierProduct::class);
+    }
+
     public function historicSupplierProduct(): BelongsTo
     {
         return $this->belongsTo(HistoricSupplierProduct::class);

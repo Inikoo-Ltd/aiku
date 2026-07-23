@@ -16,12 +16,12 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle, faTrashAlt } from '@fal'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox } from '@fal'
 import { faExclamationCircle, faSpinner } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox)
 
 const confirm = useConfirm()
 
@@ -29,7 +29,21 @@ const props = defineProps<{
     data: object
     tab?: string
     state?: string
+    isOrgAgent?: boolean
+    orgAgentSlug?: string
 }>()
+
+function supplierRoute(item: any): string {
+    if (!props.isOrgAgent || !props.orgAgentSlug || !item.supplier_slug) {
+        return ''
+    }
+
+    return route('grp.org.procurement.org_agents.show.suppliers.show', [
+        route().params.organisation,
+        props.orgAgentSlug,
+        item.supplier_slug,
+    ])
+}
 
 const locale = useLocaleStore()
 
@@ -220,25 +234,43 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(code)="{ item }">
-            <div class="flex items-center gap-1.5">
-                <Link
-                    v-if="supplierProductRoute(item)"
-                    v-tooltip="trans('Supplier product code')"
-                    :href="supplierProductRoute(item)"
-                    class="primaryLink"
-                >
-                    {{ item.code }}
-                </Link>
-                <span v-else>{{ item.code }}</span>
+            <div class="flex flex-col gap-0.5">
+                <div class="flex items-center gap-1.5">
+                    <Link
+                        v-if="supplierProductRoute(item)"
+                        v-tooltip="trans('Supplier product code')"
+                        :href="supplierProductRoute(item)"
+                        class="primaryLink"
+                    >
+                        {{ item.code }}
+                    </Link>
+                    <span v-else>{{ item.code }}</span>
 
-                <Link
-                    v-if="orgStockRoute(item)"
-                    v-tooltip="trans('Part reference is same as supplier product code')"
-                    :href="orgStockRoute(item)"
-                    class="text-gray-400 hover:text-gray-600"
+                    <Link
+                        v-if="orgStockRoute(item)"
+                        v-tooltip="trans('Part reference is same as supplier product code')"
+                        :href="orgStockRoute(item)"
+                        class="text-gray-400 hover:text-gray-600"
+                    >
+                        <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
+                    </Link>
+                </div>
+
+                <div
+                    v-if="isOrgAgent && item.supplier_name"
+                    class="flex items-center gap-1 text-xs text-gray-500"
                 >
-                    <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
-                </Link>
+                    <FontAwesomeIcon icon="fal fa-hand-holding-box" aria-hidden="true" fixed-width />
+                    <Link
+                        v-if="supplierRoute(item)"
+                        v-tooltip="trans('Supplier')"
+                        :href="supplierRoute(item)"
+                        class="primaryLink"
+                    >
+                        {{ item.supplier_name }}
+                    </Link>
+                    <span v-else>{{ item.supplier_name }}</span>
+                </div>
             </div>
         </template>
 
