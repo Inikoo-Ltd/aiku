@@ -44,6 +44,8 @@ class MasterBulkEditProductsResource extends JsonResource
             'name'                       => $masterProduct->name,
             'price'                      => $masterProduct->price,
             'rrp'                        => $masterProduct->rrp ?? 0,
+            'master_price'                      => $masterProduct->master_prices,
+            'master_rrp'                        => $masterProduct->master_rrps,
             'is_for_sale'                   => (bool) $masterProduct->is_for_sale,
             'not_for_sale_from_trade_unit'  => $masterProduct->not_for_sale_from_trade_unit,
             'currency'                   => $masterProduct->group->currency->code,

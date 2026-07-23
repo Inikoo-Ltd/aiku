@@ -317,24 +317,19 @@ class EditFamily extends OrgAction
                                     ...$this->seoFields($family),
                                 ]
                             ],
-                            [
+                            data_get($family->shop->settings, 'catalog.follow_master_pricing', true) ? [
                                 'label'  => __('Pricing'),
-                                'title'  => __('id'),
                                 'icon'   => 'fa-light fa-money-bill',
                                 'fields' => [
-                                    'cost_price_ratio' => [
-                                        'type'        => 'input_number',
-                                        'bind'        => [
-                                            'maxFractionDigits' => 3
-                                        ],
-                                        'label'       => __('Pricing ratio'),
-                                        'placeholder' => __('Cost price ratio'),
-                                        'required'    => true,
-                                        'value'       => $family->cost_price_ratio,
-                                        'min'         => 0
+                                    'not_follow_master_prices'  => [
+                                        'type'      => 'toggle',
+                                        'label'     => __('Do not follow master prices'),
+                                        'value'     => $family->not_follow_master_prices,
+                                        'information' => __('Enabling this would allow all of the products under this family to have their price editable and it will stop following master'),
+                                        'warningText' => __('Modifying this setting would cause those products to either diverge/follow master').'. '.__('Are you sure you want to do this?'),
                                     ]
                                 ]
-                            ],
+                            ] : null,
                             [
                                 'label'  => __('Image'),
                                 'icon'   => 'fa-light fa-image',

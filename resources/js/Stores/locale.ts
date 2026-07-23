@@ -45,6 +45,18 @@ export const useLocaleStore = defineStore("locale", () => {
 		return formatter.format(num);
 	};
 
+	const currencySymbolNarrow = (currencyCode: string) => {
+		const formatter = new Intl.NumberFormat(language.value.code, {
+			style: (currencyCode || currencyInertia.value?.code) ? "currency" : "decimal",
+			currency: currencyInertia.value?.code || currencyCode || '',
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+			currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.
+		})
+
+		return formatter.formatToParts(1).find(part => part.type === 'currency')?.value ?? ''
+	}
+
 	const numberShort = (number: number) => {
 		return new Intl.NumberFormat(locale_iso.value || language.value.code, {
 			notation: "compact",
@@ -81,5 +93,5 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	}
 
-	return { language, locale_iso, languageOptions, number, numberShort, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
+	return { language, locale_iso, languageOptions, number, numberShort, currencySymbolNarrow, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
 })

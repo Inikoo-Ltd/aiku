@@ -21,7 +21,9 @@ class GetSelectedMasterProductDetails extends GrpAction
 
     public function handle(array $modelData): array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable
     {
-        $masterProduct = MasterAsset::whereIn('id', $modelData['data'])->orderBy('created_at')->get();
+        $masterProduct = MasterAsset::whereIn('id', $modelData['data'])
+            ->orderBy('created_at')
+            ->get();
         return MasterBulkEditProductsResource::collection($masterProduct)->toArray(request());
     }
 

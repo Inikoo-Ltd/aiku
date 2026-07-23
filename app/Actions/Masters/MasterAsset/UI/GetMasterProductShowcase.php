@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
@@ -93,6 +94,8 @@ class GetMasterProductShowcase
             'masterProduct'       => MasterProductResource::make($masterAsset)->resolve(),
             'properties'          => $properties,
             'trade_units'         => $dataTradeUnits,
+            'rebel_prices'        => GetPriceRebelProducts::run($masterAsset, ['type' => 'price']),
+            'rebel_rrp'           => GetPriceRebelProducts::run($masterAsset, ['type' => 'rrp']),
             'gpsr'                => $gpsr,
             'attachment_box'      => [
                 'public'  => [],

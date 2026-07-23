@@ -82,7 +82,19 @@ class StoreMasterAsset extends OrgAction
 
         data_set($modelData, 'bucket_images', $this->strict);
 
-        // TODO MasterLevel Price RRP (Raul)
+        if (Arr::has($modelData, 'master_prices')) {
+            $eurPrice = data_get($modelData, 'master_prices.EUR.value');
+            if ($eurPrice) {
+                data_set($modelData, 'price', $eurPrice);
+            }
+        }
+
+        if (Arr::has($modelData, 'master_rrps')) {
+            $eurRRP = data_get($modelData, 'master_rrps.EUR.value');
+            if ($eurRRP) {
+                data_set($modelData, 'rrp', $eurRRP);
+            }
+        }
 
         $masterAsset = DB::transaction(function () use ($masterFamily, $modelData, $tradeUnits, $shopProducts) {
             /** @var MasterAsset $masterAsset */
@@ -186,6 +198,14 @@ class StoreMasterAsset extends OrgAction
             'marketing_dimensions'     => ['sometimes'],
             'is_minion_variant'        => ['sometimes', 'boolean'],
             'is_for_sale'              => ['sometimes', 'boolean'],
+            // Master Prices
+            'master_prices'                => ['sometimes', 'array'],
+            'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
+            'master_prices.*.independent'  => ['sometimes', 'boolean'],
+            // Master RRPs | This is per unit btw
+            'master_rrps'                   => ['sometimes', 'array'],
+            'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
+            'master_rrps.*.independent'     => ['sometimes', 'boolean'],
 
         ];
 
