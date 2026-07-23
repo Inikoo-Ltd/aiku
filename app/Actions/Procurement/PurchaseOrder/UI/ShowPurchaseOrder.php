@@ -216,16 +216,17 @@ class ShowPurchaseOrder extends OrgAction
                         ],
                     ],
                 ],
-                PurchaseOrderStateEnum::CONFIRMED => [
+                PurchaseOrderStateEnum::CONFIRMED => $purchaseOrder->stockDeliveries()->exists() ? [] : [
                     [
-                        'label'   => __('Settle'),
-                        'tooltip' => __('Settle'),
+                        'label'   => __('Undo Confirm'),
+                        'tooltip' => __('Revert Purchase Order to Submitted'),
                         'type'    => 'button',
-                        'style'   => 'save',
-                        'key'     => 'action',
+                        'style'   => 'delete',
+                        'icon'    => 'fal fa-check-double',
+                        'key'     => 'undo_confirm_purchase_order',
                         'route'   => [
                             'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.settle',
+                            'name'       => 'grp.models.purchase-order.undo-confirm',
                             'parameters' => [
                                 'purchaseOrder' => $purchaseOrder->id,
                             ],
@@ -397,7 +398,10 @@ class ShowPurchaseOrder extends OrgAction
             }
         }
 
-        if (in_array($state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED], true)) {
+        if (
+            in_array($state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED], true)
+            || ($state === PurchaseOrderStateEnum::CONFIRMED && !$purchaseOrder->stockDeliveries()->exists())
+        ) {
             // TODO: Source should come from the Supplier/Agent, which will likely store a
             // "Production waiting time (days)" (e.g. in a json data column). estimated_dispatch would then
             // be submitted_at + production waiting days. No such field yet, so shows "No estimated production date".

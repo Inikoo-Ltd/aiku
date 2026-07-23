@@ -10,6 +10,7 @@ namespace App\Models\Procurement;
 
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -206,5 +208,10 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    public function stockDeliveries(): BelongsToMany
+    {
+        return $this->belongsToMany(StockDelivery::class);
     }
 }

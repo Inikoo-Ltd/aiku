@@ -218,6 +218,7 @@ const submitLoading = ref(false)
 const cancelLoading = ref(false)
 const undoSubmitLoading = ref(false)
 const confirmLoading = ref(false)
+const undoConfirmLoading = ref(false)
 
 const confirmSubmitPurchaseOrder = (action: any) => {
 	confirm.require({
@@ -334,6 +335,29 @@ const confirmConfirmPurchaseOrder = (action: any) => {
 	})
 }
 
+const confirmUndoConfirmPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to undo the confirmation? This purchase order will go back to submitted."),
+		header: trans("Undo Confirm Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Undo confirm"), severity: "danger" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { undoConfirmLoading.value = true },
+				onFinish: () => { undoConfirmLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to undo confirm purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
 const component = computed(() => {
 	const components: Component = {
 		showcase: PurchaseOrderData,
@@ -423,6 +447,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:tooltip="action.tooltip"
 				:loading="undoSubmitLoading"
 				@click="() => confirmUndoSubmitPurchaseOrder(action)"
+			/>
+		</template>
+
+		<template #button-undo-confirm-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="undoConfirmLoading"
+				@click="() => confirmUndoConfirmPurchaseOrder(action)"
 			/>
 		</template>
 
