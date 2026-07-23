@@ -37,7 +37,8 @@ enum RolesEnum: string
 
     case MASTERS_MANAGER = 'masters-manager';
     case MASTERS_MEDIA = 'masters-media';
-    case MASTERS_PROPERTIES = 'masters-properties';
+    case MASTERS_CLERK = 'masters-clerk';
+    case MASTERS_VIEWER = 'masters-viewer';
 
     case ORGANISATIONS_MANAGER = 'organisations-manager';
 
@@ -144,7 +145,8 @@ enum RolesEnum: string
             RolesEnum::GOODS_MANAGER => __('Goods manager'),
             RolesEnum::MASTERS_MANAGER => __('Masters manager'),
             RolesEnum::MASTERS_MEDIA => __('Masters media'),
-            RolesEnum::MASTERS_PROPERTIES => __('Masters properties'),
+            RolesEnum::MASTERS_CLERK => __('Masters clerk'),
+            RolesEnum::MASTERS_VIEWER => __('Masters viewer'),
             RolesEnum::SEO_SUPERVISOR => __('SEO supervisor'),
             RolesEnum::SEO_CLERK => __('SEO clerk'),
             RolesEnum::PPC_SUPERVISOR => __('PPC supervisor'),
@@ -209,9 +211,12 @@ enum RolesEnum: string
                 GroupPermissionsEnum::MASTERS_VIEW,
                 GroupPermissionsEnum::GROUP_WEBMASTER_MEDIA_EDIT
             ],
-            RolesEnum::MASTERS_PROPERTIES => [
+            RolesEnum::MASTERS_CLERK => [
                 GroupPermissionsEnum::MASTERS_VIEW,
-                GroupPermissionsEnum::GROUP_WEBMASTER_PROPERTIES_EDIT
+                GroupPermissionsEnum::MASTERS_EDIT
+            ],
+            RolesEnum::MASTERS_VIEWER => [
+                GroupPermissionsEnum::MASTERS_VIEW
             ],
             RolesEnum::ORG_ADMIN => [
                 OrganisationPermissionsEnum::ORG_ADMIN,
@@ -505,7 +510,8 @@ enum RolesEnum: string
             RolesEnum::GOODS_MANAGER,
             RolesEnum::MASTERS_MANAGER,
             RolesEnum::MASTERS_MEDIA,
-            RolesEnum::MASTERS_PROPERTIES,
+            RolesEnum::MASTERS_CLERK,
+            RolesEnum::MASTERS_VIEWER,
             RolesEnum::ORGANISATIONS_MANAGER => 'Group',
 
             RolesEnum::SHOP_ADMIN,

@@ -33,8 +33,8 @@ enum GroupPermissionsEnum: string
     case GOODS_EDIT = 'goods.view';
 
     case MASTERS = 'masters';
-    case MASTERS_VIEW = 'masters.edit';
-    case MASTERS_EDIT = 'masters.view';
+    case MASTERS_VIEW = 'masters.view';
+    case MASTERS_EDIT = 'masters.edit';
     case MASTER_PRICE_EDIT = 'masters.price_edit';
     case MASTER_OFFER_EDIT = 'masters.offer_edit';
 

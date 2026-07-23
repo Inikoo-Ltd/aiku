@@ -16,11 +16,11 @@ trait WithMastersAuthorisation
     {
         if ($this->asAction) {
             return true;
-        }   
+        }
 
         $this->canEdit = $request->user()->authTo("masters.edit");
         $this->canEditPrices = $request->user()->authTo("masters.price_edit");
-        $this->canEditOffers = dd($request->user()->authTo("masters.offer_editxxx"));
+        $this->canEditOffers = $request->user()->authTo("masters.offer_edit");
 
         return $request->user()->authTo("masters.view");
     }
