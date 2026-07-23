@@ -238,15 +238,17 @@ class GetOrganisationNavigation
                             'parameters' => [$organisation->slug],
                         ],
                     ],
-                    [
-                        'label'   => __('Inbox'),
-                        'icon'    => ['fal', 'fa-inbox'],
-                        'root'    => 'grp.org.chat.inbox',
-                        'route'   => [
-                            'name'       => 'grp.org.chat.inbox',
-                            'parameters' => [$organisation->slug],
+                    ...($user->chatAgent ? [
+                        [
+                            'label'   => __('Inbox'),
+                            'icon'    => ['fal', 'fa-inbox'],
+                            'root'    => 'grp.org.chat.inbox',
+                            'route'   => [
+                                'name'       => 'grp.org.chat.inbox',
+                                'parameters' => [$organisation->slug],
+                            ],
                         ],
-                    ],
+                    ] : []),
                 ],
             ],
         ];
