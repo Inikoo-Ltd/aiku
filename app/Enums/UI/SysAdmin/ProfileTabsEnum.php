@@ -25,6 +25,7 @@ enum ProfileTabsEnum: string
     case HISTORY = 'history';
     case TODO = 'todo';
     case KPI = 'kpi';
+    case API_TOKENS = 'api_tokens';
 
 
     public function blueprint(): array
@@ -39,6 +40,12 @@ enum ProfileTabsEnum: string
                 'title'   => __('KPIs'),
                 'tooltip' => __('Key Performance Indicator'),
                 'icon'    => 'fal fa-rabbit-fast',
+            ],
+
+            ProfileTabsEnum::API_TOKENS => [
+                'title'   => __('AI access'),
+                'tooltip' => __('Connect your AI assistant to Aiku'),
+                'icon'    => 'fal fa-key',
             ],
 
             ProfileTabsEnum::TODO => [

@@ -130,3 +130,4 @@ laradumps.yaml
 
 /tests/Browser/Screenshots
 /devops/server.env
+storage/oauth-*.key

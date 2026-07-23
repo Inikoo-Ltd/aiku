@@ -8,6 +8,7 @@
 
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\UI\Profile\CanVisit;
+use App\Actions\UI\Profile\DeleteProfileApiToken;
 use App\Actions\UI\Profile\EditProfile;
 use App\Actions\UI\Profile\EditProfileSettings;
 use App\Actions\UI\Profile\ShowProfile;
@@ -15,7 +16,9 @@ use App\Actions\UI\Profile\ShowProfileIndexHistory;
 use App\Actions\UI\Profile\ShowProfileIndexKpi;
 use App\Actions\UI\Profile\ShowProfileIndexTimesheets;
 use App\Actions\UI\Profile\ShowProfileIndexTodo;
+use App\Actions\UI\Profile\ShowProfileIndexApiTokens;
 use App\Actions\UI\Profile\ShowProfilePageHeadTabs;
+use App\Actions\UI\Profile\StoreProfileApiToken;
 use App\Actions\UI\Profile\ShowProfileShowcase;
 use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\UI\Profile\UpdateUserBookmarks;
@@ -38,3 +41,6 @@ Route::get('/timesheets', ShowProfileIndexTimesheets::class)->name('timesheets.i
 Route::get('/histories', ShowProfileIndexHistory::class)->name('history.index');
 Route::get('/kpis', ShowProfileIndexKpi::class)->name('kpis.index');
 Route::get('/todo', ShowProfileIndexTodo::class)->name('todo.index');
+Route::get('/api-tokens', ShowProfileIndexApiTokens::class)->name('api-tokens.index');
+Route::post('/api-tokens', StoreProfileApiToken::class)->name('api-tokens.store');
+Route::delete('/api-tokens/{tokenId}', DeleteProfileApiToken::class)->name('api-tokens.delete');
