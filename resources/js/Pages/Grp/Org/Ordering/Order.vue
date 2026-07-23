@@ -2184,9 +2184,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                             :modelValue="get(fieldSummary, ['data', 'shipping_tbc_amount'], null)"
                                             @update:modelValue="(v) => updateShippingTbcAmount(v, get(fieldSummary, ['data', 'shipping_tbc_amount'], null))"
                                             inputId="currency-input" mode="currency" :currency="currency.code"
-                                            locale="en-GB" inputClass="w-20 !px-1.5 !py-0 !text-sm !rounded !text-right"
-                                            :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null
-                                                " :min="0" />
+                                            locale="en-GB" 
+                                            :inputClass="[
+                                                'w-20 !px-1.5 !py-0 !text-sm !rounded !text-right',
+                                                ['dispatched'].some((item) => item == props.state) ? '!text-gray-500 !border-none' : ''
+                                            ]"
+                                            :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null" 
+                                            :min="0" 
+                                            :readonly="['dispatched'].some((item) => item == props.state)"
+                                        />
                                     </div>
                                 </Transition>
                             </div>
