@@ -14,7 +14,7 @@ import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faFilter } from "@fal"
 import {
     Contact,
     SessionAPI,
@@ -150,10 +150,38 @@ const loadMore = async () => {
     }
 }
 
+const showAgentFilter = ref(false)
+const selectedAgentIds = ref<Array<number | string>>([])
+
+const availableAgents = computed(() => {
+    const map = new Map<number | string, { id: number | string; name: string }>()
+    for (const c of contacts.value) {
+        if (c.agent?.id && !map.has(c.agent.id)) {
+            map.set(c.agent.id, { id: c.agent.id, name: c.agent.name })
+        }
+    }
+    return Array.from(map.values())
+})
+
+const toggleAgentFilter = (id: number | string) => {
+    const idx = selectedAgentIds.value.indexOf(id)
+    if (idx >= 0) {
+        selectedAgentIds.value.splice(idx, 1)
+    } else {
+        selectedAgentIds.value.push(id)
+    }
+}
+
+const clearAgentFilter = () => {
+    selectedAgentIds.value = []
+}
+
 const filteredContacts = computed(() =>
     contacts.value.filter(
         (c) => c.status === activeTab.value &&
-            (!selectedShopId.value || c.shop?.id === selectedShopId.value)
+            (!selectedShopId.value || c.shop?.id === selectedShopId.value) &&
+            (!selectedAgentIds.value.length ||
+                (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
     )
 )
 
@@ -181,6 +209,7 @@ const selectShop = (shopId: number) => {
     selectedShopId.value = shopId
     selectedSession.value = null
     messages.value = []
+    clearAgentFilter()
     reloadContacts()
 }
 
@@ -544,9 +573,52 @@ onUnmounted(() => {
                         </button>
                     </div>
                 </div>
-                <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 shrink-0 self-start" @click="toggleSearch">
-                    <FontAwesomeIcon :icon="showSearch ? faTimes : faSearch" class="text-xs" />
-                </button>
+                <div class="flex items-center gap-0.5 shrink-0 self-start">
+                    <!-- Filter by agent -->
+                    <div class="relative">
+                        <button type="button" v-tooltip="trans('Filter by agent')"
+                            class="relative p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+                            @click="showAgentFilter = !showAgentFilter">
+                            <FontAwesomeIcon :icon="faFilter" class="text-xs" />
+                            <span v-if="selectedAgentIds.length"
+                                class="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 px-0.5 text-[8px] font-semibold leading-[14px] text-white rounded-full text-center"
+                                :style="{ backgroundColor: 'var(--theme-color-4)' }">
+                                {{ selectedAgentIds.length }}
+                            </span>
+                        </button>
+
+                        <div v-if="showAgentFilter" class="fixed inset-0 z-[40]" @click="showAgentFilter = false" />
+
+                        <div v-if="showAgentFilter"
+                            class="absolute right-0 top-full mt-1 z-[50] w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                            <div class="px-3 py-1.5 flex items-center justify-between">
+                                <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                                    {{ trans("Filter by agent") }}
+                                </span>
+                                <button v-if="selectedAgentIds.length" type="button"
+                                    class="text-[10px] text-gray-500 underline hover:text-gray-700"
+                                    @click="clearAgentFilter">
+                                    {{ trans("Clear") }}
+                                </button>
+                            </div>
+                            <label v-for="a in availableAgents" :key="a.id"
+                                class="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" :checked="selectedAgentIds.includes(a.id)"
+                                    class="rounded border-gray-300"
+                                    :style="{ accentColor: 'var(--theme-color-4)' }"
+                                    @change="toggleAgentFilter(a.id)" />
+                                <span class="truncate">{{ a.name }}</span>
+                            </label>
+                            <div v-if="!availableAgents.length" class="px-3 py-3 text-xs text-gray-400 text-center">
+                                {{ trans("No agents in this list") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500" @click="toggleSearch">
+                        <FontAwesomeIcon :icon="showSearch ? faTimes : faSearch" class="text-xs" />
+                    </button>
+                </div>
             </div>
 
             <!-- Search -->
