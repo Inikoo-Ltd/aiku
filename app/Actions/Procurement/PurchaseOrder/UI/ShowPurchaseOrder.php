@@ -125,8 +125,8 @@ class ShowPurchaseOrder extends OrgAction
             $actions = match ($purchaseOrder->state) {
                 PurchaseOrderStateEnum::IN_PROCESS => [
                     $showProductsTab ? [
-                        'label'   => __('Add product'),
-                        'tooltip' => __('Add product'),
+                        'label'   => __('Add Product'),
+                        'tooltip' => __('Add Product'),
                         'type'    => 'button',
                         'style'   => 'secondary',
                         'icon'    => 'fal fa-plus',
@@ -142,10 +142,11 @@ class ShowPurchaseOrder extends OrgAction
                     ($purchaseOrder->purchaseOrderTransactions()->count() > 0) ?
                     [
                         'label'   => __('Submit'),
-                        'tooltip' => __('Submit'),
+                        'tooltip' => __('Submit Purchase Order'),
                         'type'    => 'button',
                         'style'   => 'save',
-                        'key'     => 'action',
+                        'icon'    => 'fal fa-paper-plane',
+                        'key'     => 'submit_purchase_order',
                         'route'   => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.purchase-order.submit',
@@ -156,7 +157,7 @@ class ShowPurchaseOrder extends OrgAction
                     ] : [],
                     [
                         'label'   => __('Delete'),
-                        'tooltip' => __('Delete purchase order'),
+                        'tooltip' => __('Delete Purchase Order'),
                         'type'    => 'button',
                         'style'   => 'delete',
                         'icon'    => 'fal fa-trash-alt',
@@ -390,8 +391,9 @@ class ShowPurchaseOrder extends OrgAction
         }
 
         if (in_array($state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED], true)) {
-            // TODO: No source for the estimated dispatch date in aiku (not imported from Aurora, no column),
-            // so it always shows "No estimated production date" for now.
+            // TODO: Source should come from the Supplier/Agent, which will likely store a
+            // "Production waiting time (days)" (e.g. in a json data column). estimated_dispatch would then
+            // be submitted_at + production waiting days. No such field yet, so shows "No estimated production date".
             $timeline['estimated_dispatch'] = [
                 'label'     => __('Estimated dispatch'),
                 'tooltip'   => __('Estimated dispatch'),
@@ -402,9 +404,10 @@ class ShowPurchaseOrder extends OrgAction
             ];
         }
 
-        // TODO: No source for the estimated delivery in aiku (not imported from Aurora), so it's a
-        // placeholder for now. Likely estimated_delivery = confirmed_at + lead days (no lead days yet,
-        // hence "no estimated"), and once dispatched it becomes the stock delivery estimated received.
+        // TODO: Source should come from the Supplier/Agent, which will likely store a
+        // "Delivery time (days)" (e.g. in a json data column). estimated_delivery would then be
+        // estimated_dispatch + delivery days, and once dispatched it becomes the stock delivery estimated
+        // received. No such field yet, so shows "No estimated delivery date".
         $timeline['estimated_delivery'] = [
             'label'     => __('Estimated delivery'),
             'tooltip'   => __('Estimated delivery'),
