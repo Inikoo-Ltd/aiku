@@ -59,6 +59,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')
             ->leftJoin('suppliers', 'supplier_products.supplier_id', 'suppliers.id')
+            ->leftJoin('org_suppliers', 'org_suppliers.id', 'org_supplier_products.org_supplier_id')
             ->leftJoin('currencies as supplier_currency', 'supplier_currency.id', 'supplier_products.currency_id')
             ->leftJoin('organisations', 'organisations.id', 'org_supplier_products.organisation_id')
             ->leftJoin('currencies as org_currency', 'org_currency.id', 'organisations.currency_id');
@@ -101,6 +102,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 'purchase_order_transactions.org_exchange as org_exchange',
                 'purchase_order_transactions.id as purchase_order_transaction_id',
                 'suppliers.name as supplier_name',
+                'org_suppliers.slug as supplier_slug',
             ])
             ->selectRaw("{$orgStockSub} as org_stock_id")
             ->selectRaw("{$purchaseOrder->id} as purchase_order_id")

@@ -13,15 +13,12 @@ import { faBooks } from '@fal'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 import Dashboard from '@/Components/DataDisplay/Dashboard/Dashboard.vue'
 import { Dashboard as DashboardTS } from '@/types/Components/Dashboard'
+import { PageHeadingTypes } from '@/types/PageHeading'
 library.add(faBooks)
 
 defineProps<{
     title: string
-    pageHead: {
-        title: string
-        description?: string
-        icon?: string
-    }
+    pageHead: PageHeadingTypes
     dashboard: DashboardTS
 }>()
 

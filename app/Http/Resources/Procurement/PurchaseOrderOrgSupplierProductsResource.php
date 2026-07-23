@@ -22,6 +22,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property string|null $slug
  * @property string|null $supplier_name
+ * @property string|null $supplier_slug
  * @property float|null $unit_cost
  * @property float|null $units_per_pack
  * @property float|null $units_per_carton
@@ -62,6 +63,7 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
             'code'             => $this->code,
             'name'             => $this->name,
             'supplier_name'    => $this->supplier_name,
+            'supplier_slug'    => $this->supplier_slug,
             'org_stock_id'     => $this->org_stock_id,
             'image_thumbnail'  => $this->image_sources,
 

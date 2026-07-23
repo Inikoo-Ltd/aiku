@@ -512,7 +512,7 @@ const reviewLink = computed(() => {
                 </p>
                 <div v-if="hasReplyTranslation(selectedReview)" @click="toggleReplyTranslation(selectedReview)"
                      class="mt-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer">
-                    {{ showOriginalReply[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
+                    {{ showOriginal[selectedReview.id] ? ctrans("See translation") : ctrans("See original") }}
                 </div>
                 <div class="flex items-center w-full justify-end gap-2"
                      v-if="allow_review_reply_reaction && layout?.iris?.is_logged_in">

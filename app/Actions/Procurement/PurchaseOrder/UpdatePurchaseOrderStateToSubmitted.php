@@ -63,6 +63,10 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
         $this->purchaseOrderHydrate($purchaseOrder);
 
+        // TODO: Decide whether submitting should transmit the order to the supplier/agent
+        // (system-sent email + PDF) or whether that is done manually by the web user outside aiku.
+        // No supplier notification is sent here yet.
+
         return $purchaseOrder;
     }
 

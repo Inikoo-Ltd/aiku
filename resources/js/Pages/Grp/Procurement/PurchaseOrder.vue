@@ -32,7 +32,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare } from "@fas"
 import { faPlus } from "@far"
 
@@ -45,6 +45,8 @@ library.add(
 	faShip,
 	faBox,
 	faHandHoldingBox,
+	faPaperPlane,
+	faExclamationTriangle,
     faShare,
     faArrowCircleDown,
 	faArrowCircleRight,
@@ -210,12 +212,36 @@ watch(isModalProductListOpen, (isOpen, wasOpen) => {
 
 const confirm = useConfirm()
 const deleteLoading = ref(false)
+const submitLoading = ref(false)
+
+const confirmSubmitPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to submit this purchase order?"),
+		header: trans("Submit Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Submit"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { submitLoading.value = true },
+				onFinish: () => { submitLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to submit purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
 
 const confirmDeletePurchaseOrder = (action: any) => {
 	confirm.require({
+		group: "purchase-order",
 		message: trans("Are you sure you want to delete this purchase order? This action cannot be undone."),
-		header: trans("Delete purchase order"),
-		icon: "pi pi-exclamation-triangle",
+		header: trans("Delete Purchase Order"),
 		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
 		acceptProps: { label: trans("Delete"), severity: "danger" },
 		accept: () => {
@@ -244,6 +270,8 @@ const component = computed(() => {
 
 	return components[currentTab.value]
 })
+
+const isOrgAgent = computed(() => props.box_stats.first_block.orderer.type === "Agent")
 
 const ordererRoute = computed<string>(() => {
 	const orderer = props.box_stats.first_block.orderer
@@ -277,6 +305,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:icon="action.icon"
 				:tooltip="action.tooltip"
 				@click="() => openProductListModal(action)"
+			/>
+		</template>
+
+		<template #button-submit-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="submitLoading"
+				@click="() => confirmSubmitPurchaseOrder(action)"
 			/>
 		</template>
 
@@ -494,6 +533,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:state="data.data.state"
+			:isOrgAgent="isOrgAgent"
+			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
 			@update:tab="handleTabUpdate"
 		/>
@@ -509,5 +550,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:typeModel="'purchase_order'"
 	/>
 
-	<ConfirmDialog />
+	<ConfirmDialog group="purchase-order">
+		<template #icon>
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+		</template>
+	</ConfirmDialog>
 </template>

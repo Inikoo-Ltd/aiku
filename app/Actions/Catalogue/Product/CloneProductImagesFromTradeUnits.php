@@ -9,11 +9,18 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Concerns\CanCloneImages;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
+use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterCollection;
+use App\Models\Masters\MasterProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CloneProductImagesFromTradeUnits implements ShouldBeUnique
@@ -57,6 +64,40 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
 
         $this->syncProductImages($tradeUnit, $product);
     }
+
+    protected function cloneImages(TradeUnit|MasterProductCategory|MasterAsset|MasterCollection|Model $source, Product|ProductCategory|Collection|Model $target): void
+    {
+        $images   = [];
+        $position = 1;
+
+        foreach ($source->images as $image) {
+            if($source->images()
+                ->where('model_id', $target->id)
+                ->where('model_type', $target::class)
+                ->where('scope', 'photo')
+                ->where('media_id', $image->id)
+                ->where('sub_scope', 'main')
+                ->exists()) {
+                continue;
+            }
+
+            $images[$image->id] = [
+                'is_public'       => true,
+                'scope'           => 'photo',
+                'sub_scope'       => $image->pivot->sub_scope,
+                'caption'         => $image->pivot->caption,
+                'organisation_id' => $target->organisation_id ?? null,
+                'group_id'        => $target->group_id ?? null,
+                'position'        => $position++,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+                'data'            => '{}',
+            ];
+        }
+
+        $target->images()->sync($images);
+    }
+
 
     public string $commandSignature = 'catalogue:product:clone-images-from-trade-units  {parent?} {slug?}';
 

@@ -16,12 +16,12 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle, faTrashAlt } from '@fal'
-import { faExclamationCircle, faSpinner } from '@fas'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox } from '@fal'
+import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle)
 
 const confirm = useConfirm()
 
@@ -29,7 +29,21 @@ const props = defineProps<{
     data: object
     tab?: string
     state?: string
+    isOrgAgent?: boolean
+    orgAgentSlug?: string
 }>()
+
+function supplierRoute(item: any): string {
+    if (!props.isOrgAgent || !props.orgAgentSlug || !item.supplier_slug) {
+        return ''
+    }
+
+    return route('grp.org.procurement.org_agents.show.suppliers.show', [
+        route().params.organisation,
+        props.orgAgentSlug,
+        item.supplier_slug,
+    ])
+}
 
 const locale = useLocaleStore()
 
@@ -170,6 +184,42 @@ async function onDeleteItem(item: any) {
     }
 }
 
+const cancellingId = ref<number | null>(null)
+
+function confirmCancelItem(event: MouseEvent, item: any) {
+    if (!item.cancelRoute) {
+        return
+    }
+
+    confirm.require({
+        target: event.currentTarget as HTMLElement,
+        message: trans('Cancel this item?'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: trans('Cancel item'),
+        rejectLabel: trans('Keep'),
+        acceptClass: 'p-button-danger',
+        rejectClass: 'p-button-text',
+        accept: () => onCancelItem(item),
+    })
+}
+
+async function onCancelItem(item: any) {
+    cancellingId.value = item.id
+    try {
+        await axios.patch(route(item.cancelRoute.name, item.cancelRoute.parameters))
+        notify({ title: trans('Success'), text: trans('Item cancelled'), type: 'success' })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to cancel item'),
+            type: 'error',
+        })
+    } finally {
+        cancellingId.value = null
+    }
+}
+
 function supplierProductRoute(item: { slug?: string }) {
     if (!item.slug) {
         return ''
@@ -220,25 +270,43 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(code)="{ item }">
-            <div class="flex items-center gap-1.5">
-                <Link
-                    v-if="supplierProductRoute(item)"
-                    v-tooltip="trans('Supplier product code')"
-                    :href="supplierProductRoute(item)"
-                    class="primaryLink"
-                >
-                    {{ item.code }}
-                </Link>
-                <span v-else>{{ item.code }}</span>
+            <div class="flex flex-col gap-0.5">
+                <div class="flex items-center gap-1.5">
+                    <Link
+                        v-if="supplierProductRoute(item)"
+                        v-tooltip="trans('Supplier product code')"
+                        :href="supplierProductRoute(item)"
+                        class="primaryLink"
+                    >
+                        {{ item.code }}
+                    </Link>
+                    <span v-else>{{ item.code }}</span>
 
-                <Link
-                    v-if="orgStockRoute(item)"
-                    v-tooltip="trans('Part reference is same as supplier product code')"
-                    :href="orgStockRoute(item)"
-                    class="text-gray-400 hover:text-gray-600"
+                    <Link
+                        v-if="orgStockRoute(item)"
+                        v-tooltip="trans('Part reference is same as supplier product code')"
+                        :href="orgStockRoute(item)"
+                        class="text-gray-400 hover:text-gray-600"
+                    >
+                        <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
+                    </Link>
+                </div>
+
+                <div
+                    v-if="isOrgAgent && item.supplier_name"
+                    class="flex items-center gap-1 text-xs text-gray-500"
                 >
-                    <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
-                </Link>
+                    <FontAwesomeIcon icon="fal fa-hand-holding-box" aria-hidden="true" fixed-width />
+                    <Link
+                        v-if="supplierRoute(item)"
+                        v-tooltip="trans('Supplier')"
+                        :href="supplierRoute(item)"
+                        class="primaryLink"
+                    >
+                        {{ item.supplier_name }}
+                    </Link>
+                    <span v-else>{{ item.supplier_name }}</span>
+                </div>
             </div>
         </template>
 
@@ -349,6 +417,21 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     fixed-width
                 />
                 <span>{{ item.state_label }}</span>
+                <button
+                    v-if="state === 'submitted' && item.cancelRoute"
+                    v-tooltip="trans('Cancel this item')"
+                    type="button"
+                    class="flex items-center justify-center text-red-500 hover:text-red-700 disabled:text-gray-300"
+                    :disabled="cancellingId === item.id"
+                    @click="confirmCancelItem($event, item)"
+                >
+                    <FontAwesomeIcon
+                        :icon="cancellingId === item.id ? 'fas fa-spinner' : 'fas fa-minus-circle'"
+                        :spin="cancellingId === item.id"
+                        aria-hidden="true"
+                        fixed-width
+                    />
+                </button>
             </div>
         </template>
     </Table>

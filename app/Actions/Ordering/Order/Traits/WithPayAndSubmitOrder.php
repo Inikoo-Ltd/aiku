@@ -14,6 +14,7 @@ use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Models\Ordering\Order;
 use Exception;
+use Sentry;
 
 trait WithPayAndSubmitOrder
 {

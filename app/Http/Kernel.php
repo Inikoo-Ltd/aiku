@@ -88,6 +88,18 @@ class Kernel extends HttpKernel
 
     protected $middlewareGroups = [
 
+        /** Standard Laravel session stack. Vendor packages hardcode this group name:
+         *  Passport's OAuth authorize routes (MCP/AI connections) require it. Do not rename. */
+        'web' => [
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            VerifyCsrfToken::class,
+            SubstituteBindings::class,
+            AddFrameOptionsHeader::class
+        ],
+
         'webhooks' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,

@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PurchaseOrder;
@@ -34,6 +35,26 @@ class IndexPurchaseOrderTransactions extends OrgAction
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
+    protected function getElementGroups(PurchaseOrder $purchaseOrder): array
+    {
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => collect(PurchaseOrderTransactionStateEnum::cases())->mapWithKeys(
+                    fn (PurchaseOrderTransactionStateEnum $state) => [
+                        $state->value => [
+                            PurchaseOrderTransactionStateEnum::labels()[$state->value],
+                            $purchaseOrder->{'number_purchase_order_transactions_state_'.$state->snake()},
+                        ],
+                    ]
+                )->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('purchase_order_transactions.state', $elements);
+                },
+            ],
+        ];
+    }
+
     public function handle(PurchaseOrder $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -50,6 +71,8 @@ class IndexPurchaseOrderTransactions extends OrgAction
         $query = QueryBuilder::for(PurchaseOrderTransaction::class);
         $query->with([
             'supplierProduct.currency',
+            'supplierProduct.supplier',
+            'orgSupplierProduct.orgSupplier',
             'organisation.currency',
             'orgStock.tradeUnits.image',
         ]);
@@ -74,6 +97,17 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $query->where('purchase_order_transactions.purchase_order_id', $parent->id);
         }
 
+        if ($parent->state !== PurchaseOrderStateEnum::IN_PROCESS) {
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $query->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix,
+                );
+            }
+        }
+
         return $query->allowedSorts([AllowedSort::field('code', 'sp.code')])
             ->defaultSort('purchase_order_transactions.id')
             ->allowedFilters([$globalSearch])
@@ -89,6 +123,16 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
+            }
+
+            if ($purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS) {
+                foreach ($this->getElementGroups($purchaseOrder) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements'],
+                    );
+                }
             }
 
             $table
