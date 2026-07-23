@@ -696,6 +696,7 @@ test("UI show org stock", function (OrgStock $orgStock) {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
             )
+            ->has("showcase.latest_movements")
             ->has("tabs");
     });
 })->depends('create org stock');

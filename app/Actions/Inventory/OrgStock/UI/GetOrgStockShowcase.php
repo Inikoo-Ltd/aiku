@@ -10,8 +10,10 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Http\Resources\Inventory\LocationOrgStocksResource;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketImages;
@@ -51,6 +53,11 @@ class GetOrgStockShowcase
                     ],
                 ],
                 'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
+                'latest_movements'   => $this->getLatestMovements($orgStock),
+                'stock_history_route' => [
+                    'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes)$/', '', request()->route()->getName()).'.stock_history',
+                    'parameters' => request()->route()->originalParameters(),
+                ],
                 'stocks_management'  => [
                     'routes'          => [
                         'location_route'                         => [
@@ -129,6 +136,30 @@ class GetOrgStockShowcase
         );
     }
 
+
+    private function getLatestMovements(OrgStock $orgStock): array
+    {
+        return $orgStock->orgStockMovements()
+            ->whereNot('class', OrgStockMovementClassEnum::GARBAGE)
+            ->with(['location', 'user'])
+            ->orderByDesc('date')
+            ->limit(5)
+            ->get()
+            ->map(function (OrgStockMovement $orgStockMovement) {
+                return [
+                    'id'                         => $orgStockMovement->id,
+                    'date'                       => $orgStockMovement->date,
+                    'type_label'                 => $orgStockMovement->type->label(),
+                    'class_icon'                 => $orgStockMovement->class->icon(),
+                    'quantity'                   => trimDecimalZeros($orgStockMovement->quantity),
+                    'is_negative'                => ($orgStockMovement->quantity ?? 0) < 0,
+                    'running_quantity_org_stock' => trimDecimalZeros($orgStockMovement->running_quantity_org_stock),
+                    'location_code'              => $orgStockMovement->location?->code,
+                    'user_name'                  => $orgStockMovement->user?->contact_name,
+                    'reason_label'               => $orgStockMovement->reason?->label(),
+                ];
+            })->toArray();
+    }
 
     private function getDataTradeUnit($tradeUnits): array
     {
