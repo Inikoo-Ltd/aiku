@@ -139,8 +139,9 @@ class ShowIrisReviews extends IrisAction
 
     private function companyTab($shop, IndexReviewsInIris $indexer, array $shopProfile, mixed $reviewSettings): array
     {
+        $setting      = Arr::get($shop->settings, 'reviews.validation_scope.shop', []);
         $reviews      = $indexer->handleCompanyScopeReviews(shop: $shop, prefix: 'company');
-        $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER]);
+        $avgReview    = $indexer->avgByScopeReview($shop, [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER], $setting);
         $totalReviews = $reviews->total();
 
         return [
@@ -150,7 +151,7 @@ class ShowIrisReviews extends IrisAction
             'reviews'           => IrisAllReviewsResource::collection($reviews)->response()->getData(true),
             'avg_review'        => $avgReview ? round((float) $avgReview, 1) : 0.0,
             'total_reviews'     => $totalReviews,
-            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER]),
+            'recommend_percent' => $this->recommendPercent($shop, [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER], $setting),
         ];
     }
 
@@ -214,6 +215,7 @@ class ShowIrisReviews extends IrisAction
         $shop           = $this->shop;
         $productSetting = Arr::get($shop->settings, 'reviews.validation_scope.product', []);
         $familySetting  = Arr::get($shop->settings, 'reviews.validation_scope.family', []);
+        $shopSetting    = Arr::get($shop->settings, 'reviews.validation_scope.shop', []);
 
         $allSetting = $this->broadestScopeSetting($shop);
 
@@ -223,7 +225,7 @@ class ShowIrisReviews extends IrisAction
             ], setting: $allSetting)($t->name('all')->pageName('reviewsPage')))
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
                 ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER,
-            ])($t->name('company')->pageName('reviewsPage')))
+            ], setting: $shopSetting)($t->name('company')->pageName('reviewsPage')))
             ->table(fn (InertiaTable $t) => $indexer->tableStructure(shop: $shop, scopes: [
                 ReviewScopeEnum::FAMILY,
             ], setting: $familySetting)($t->name('family')->pageName('reviewsPage')))
