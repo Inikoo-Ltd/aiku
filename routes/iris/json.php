@@ -48,6 +48,7 @@ use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
 use App\Actions\Reviews\Iris\GetIrisReviews;
 use App\Actions\Search\SearchIrisCatalogue;
+use App\Actions\Search\SearchIrisCataloguePage;
 use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
 use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +70,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
     Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue');
+    Route::get('search/catalogue-page', SearchIrisCataloguePage::class)->name('search.catalogue_page');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
     Route::get('/footer', GetIrisFooterData::class)->name('footer');

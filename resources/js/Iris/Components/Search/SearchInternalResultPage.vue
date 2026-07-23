@@ -28,6 +28,22 @@ interface InternalCatalogueItem {
     url?: string
 }
 
+interface InternalFacetItem {
+    id: number
+    name: string
+    count: number
+    image: any
+    url?: string
+}
+
+interface InternalFacets {
+    departments: InternalFacetItem[]
+    sub_departments: InternalFacetItem[]
+    families: InternalFacetItem[]
+}
+
+const emptyFacets = (): InternalFacets => ({ departments: [], sub_departments: [], families: [] })
+
 const layout = inject('layout', retinaLayoutStructure)
 
 const page = usePage()
@@ -36,70 +52,125 @@ const searchQuery = computed(() => {
     return new URLSearchParams(queryString).get('q') ?? ''
 })
 
-const internalResults = ref<{
-    products: InternalProduct[]
-    product_categories: InternalCatalogueItem[]
-    collections: InternalCatalogueItem[]
-} | null>(null)
+const products = ref<InternalProduct[]>([])
+const facets = ref<InternalFacets>(emptyFacets())
+const collections = ref<InternalCatalogueItem[]>([])
+const totalResults = ref(0)
+const currentPage = ref(1)
+const perPage = 15
+
+const selectedCategoryIds = ref<number[]>([])
+const sortBy = ref('')
+
 const isInternalLoading = ref(false)
+const isLoadingMore = ref(false)
+const isResultsRefreshing = ref(false)
 let internalAbort: AbortController | null = null
 let internalRequestId = 0
 
-const fetchInternalResults = async (query: string) => {
+const resetResults = () => {
+    products.value = []
+    facets.value = emptyFacets()
+    collections.value = []
+    totalResults.value = 0
+    currentPage.value = 1
+}
+
+const fetchInternalResults = async ({ pageNumber = 1, append = false, resultsOnly = false } = {}) => {
+    const query = searchQuery.value
+    if (!query.trim()) {
+        return
+    }
     const requestId = ++internalRequestId
     internalAbort?.abort()
     internalAbort = new AbortController()
-    isInternalLoading.value = true
+    if (append) {
+        isLoadingMore.value = true
+    } else if (resultsOnly) {
+        isResultsRefreshing.value = true
+    } else {
+        isInternalLoading.value = true
+    }
     try {
         const { data } = await axios.get(
-            route('iris.json.search.catalogue', { q: query }),
-            { signal: internalAbort.signal }
+            route('iris.json.search.catalogue_page'),
+            {
+                params: {
+                    q: query,
+                    page: pageNumber,
+                    per_page: perPage,
+                    categories: selectedCategoryIds.value,
+                    sort: sortBy.value || undefined,
+                },
+                signal: internalAbort.signal,
+            }
         )
         if (requestId !== internalRequestId) {
             return
         }
-        internalResults.value = data.results ?? null
+        const results = data.results ?? {}
+        products.value = append ? [...products.value, ...(results.products ?? [])] : (results.products ?? [])
+        totalResults.value = results.total ?? 0
+        currentPage.value = results.page ?? pageNumber
+        if (!append && !resultsOnly) {
+            facets.value = results.facets ?? emptyFacets()
+            collections.value = results.collections ?? []
+        }
     } catch (error) {
         if (axios.isCancel(error) || requestId !== internalRequestId) {
             return
         }
-        internalResults.value = null
+        if (!append && !resultsOnly) {
+            resetResults()
+        }
     } finally {
         if (requestId === internalRequestId) {
             isInternalLoading.value = false
+            isLoadingMore.value = false
+            isResultsRefreshing.value = false
         }
     }
 }
 
 watch(searchQuery, (query) => {
+    selectedCategoryIds.value = []
+    sortBy.value = ''
     if (!query.trim()) {
-        internalResults.value = null
+        resetResults()
         return
     }
-    fetchInternalResults(query)
+    fetchInternalResults()
 })
 
 onBeforeMount(() => {
     if (searchQuery.value.trim()) {
-        fetchInternalResults(searchQuery.value)
+        fetchInternalResults()
     }
 })
 
-const internalProducts = computed(() => internalResults.value?.products ?? [])
-const internalCategories = computed(() => internalResults.value?.product_categories ?? [])
-const internalCollections = computed(() => internalResults.value?.collections ?? [])
+// Section: category facets (checkbox filters refresh the product results only,
+// the side panel keeps its facets so no skeleton flashes)
+const toggleCategory = (categoryId: number) => {
+    const selection = selectedCategoryIds.value
+    selectedCategoryIds.value = selection.includes(categoryId)
+        ? selection.filter((id) => id !== categoryId)
+        : [...selection, categoryId]
+    fetchInternalResults({ resultsOnly: true })
+}
 
-// Sort is client-side because the internal search endpoint only accepts the query
-const sortBy = ref('')
-const sortedProducts = computed(() => {
-    if (!sortBy.value) {
-        return internalProducts.value
-    }
-    const direction = sortBy.value === 'price_amount:desc' ? -1 : 1
-    return [...internalProducts.value].sort(
-        (a, b) => direction * (Number(a.price ?? 0) - Number(b.price ?? 0))
-    )
-})
+const onSortChange = () => {
+    fetchInternalResults({ resultsOnly: true })
+}
+
+const loadMore = () => {
+    fetchInternalResults({ pageNumber: currentPage.value + 1, append: true })
+}
+
+const facetGroups = computed(() => [
+    { key: 'families', label: ctrans('Categories'), items: facets.value.families },
+    { key: 'departments', label: ctrans('Departments'), items: facets.value.departments },
+    { key: 'sub_departments', label: ctrans('Sub Departments'), items: facets.value.sub_departments },
+].filter((group) => group.items.length))
 
 const localeStore = useLocaleStore()
 const formatPrice = (price?: number | string | null) => {
@@ -133,10 +204,14 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
 }
 
 // Section: quick searches (Luigi's Box lookalike tabs + card rail)
+const railCategories = computed(() =>
+    facets.value.families.length ? facets.value.families : facets.value.departments
+)
+
 const activeQuickSearch = ref<'category' | 'collection'>('category')
 const quickSearchTabs = computed(() => [
-    { key: 'category' as const, label: ctrans('Categories'), items: internalCategories.value },
-    { key: 'collection' as const, label: ctrans('Collections'), items: internalCollections.value },
+    { key: 'category' as const, label: ctrans('Categories'), items: railCategories.value as (InternalFacetItem | InternalCatalogueItem)[] },
+    { key: 'collection' as const, label: ctrans('Collections'), items: collections.value as (InternalFacetItem | InternalCatalogueItem)[] },
 ].filter((tab) => tab.items.length))
 
 watch(quickSearchTabs, (tabs) => {
@@ -171,11 +246,11 @@ const isMobileFilterOpen = ref(false)
         }">
             <div id="results-scroll-to"></div>
             <div class="box-border flex flex-col md:flex-row items-stretch gap-6 md:gap-0">
-                <!-- Aside: categories & collections (no facet filtering, the internal endpoint only accepts the query) -->
+                <!-- Aside: category facets with product counts (checkbox filters) -->
                 <aside class="w-full md:w-[300px] flex-shrink-0 md:border-r md:border-[#e8e8e8] md:pr-5"
                     :class="isMobileFilterOpen ? 'block' : 'hidden md:block'">
                     <div class="text-[26px] leading-[1.2em] font-bold mb-2.5">{{ ctrans('Filters') }}</div>
-                    <div class="text-sm text-[#767676] mb-4">{{ sortedProducts.length }} {{ ctrans('results') }}</div>
+                    <div class="text-sm text-[#767676] mb-4">{{ totalResults }} {{ ctrans('results') }}</div>
 
                     <template v-if="isInternalLoading">
                         <div class="border-t border-[#e8e8e8] pt-5 space-y-2">
@@ -184,32 +259,22 @@ const isMobileFilterOpen = ref(false)
                     </template>
                     <template v-else>
                         <div class="border-t border-[#e8e8e8] pt-5 space-y-6">
-                            <div v-if="internalCategories.length" class="border-b border-[#e8e8e8] pb-5">
-                                <p class="text-base font-bold text-[var(--theme-color-0)] mb-2.5">{{
-                                    ctrans('Categories') }} ({{ internalCategories.length }})</p>
+                            <div v-for="group in facetGroups" :key="group.key" class="border-b border-[#e8e8e8] pb-5">
+                                <p class="text-base font-bold text-[var(--theme-color-0)] mb-2.5">
+                                    {{ group.label }} ({{ group.items.length }})</p>
                                 <div class="space-y-1.5">
-                                    <LinkIris v-for="category in internalCategories" :key="category.id"
-                                        :href="category.url"
-                                        class="block text-sm text-[#484848] hover:text-[var(--theme-color-0)] hover:underline cursor-pointer truncate transition-colors">
-                                        {{ category.name }}
-                                    </LinkIris>
+                                    <label v-for="item in group.items" :key="item.id"
+                                        class="flex items-center gap-2.5 cursor-pointer text-sm text-[#484848] hover:text-[var(--theme-color-0)] transition-colors">
+                                        <input type="checkbox"
+                                            class="h-4 w-4 flex-shrink-0 rounded-sm accent-[var(--theme-color-0)] cursor-pointer"
+                                            :checked="selectedCategoryIds.includes(item.id)"
+                                            @change="toggleCategory(item.id)" />
+                                        <span class="">{{ item.name }} ({{ item.count }})</span>
+                                    </label>
                                 </div>
                             </div>
 
-                            <div v-if="internalCollections.length" class="border-b border-[#e8e8e8] pb-5">
-                                <p class="text-base font-bold text-[var(--theme-color-0)] mb-2.5">{{
-                                    ctrans('Collections') }} ({{ internalCollections.length }})</p>
-                                <div class="space-y-1.5">
-                                    <LinkIris v-for="collection in internalCollections" :key="collection.id"
-                                        :href="collection.url"
-                                        class="block text-sm text-[#484848] hover:text-[var(--theme-color-0)] hover:underline cursor-pointer truncate transition-colors">
-                                        {{ collection.name }}
-                                    </LinkIris>
-                                </div>
-                            </div>
-
-                            <p v-if="!internalCategories.length && !internalCollections.length"
-                                class="text-sm text-gray-400">
+                            <p v-if="!facetGroups.length" class="text-sm text-gray-400">
                                 {{ ctrans('No categories found') }}
                             </p>
                         </div>
@@ -221,7 +286,7 @@ const isMobileFilterOpen = ref(false)
                     <div class="text-[22px] md:text-[26px] leading-none font-normal mb-[30px]">
                         {{ ctrans('Results for') }}
                         <strong class="text-[var(--theme-color-0)]">{{ searchQuery }}</strong>
-                        <span v-if="!isInternalLoading"> ({{ sortedProducts.length }})</span>
+                        <span v-if="!isInternalLoading"> ({{ totalResults }})</span>
                     </div>
 
                     <!-- Quick searches: tabs + card rail -->
@@ -297,7 +362,7 @@ const isMobileFilterOpen = ref(false)
                         </button>
                         <div v-if="layout.iris?.is_logged_in" class="flex items-center gap-2 ml-auto">
                             <span class="text-sm font-bold">{{ ctrans('Sort by') }}: </span>
-                            <select v-model="sortBy" :aria-label="ctrans('Sort by')"
+                            <select v-model="sortBy" :aria-label="ctrans('Sort by')" @change="onSortChange"
                                 class="text-sm bg-white border-0 border-b border-black rounded-none py-[5px] w-40 outline-none">
                                 <option value="">{{ ctrans('Default') }}</option>
                                 <option value="price_amount:asc">{{ ctrans('Price: Low to High') }}</option>
@@ -317,14 +382,19 @@ const isMobileFilterOpen = ref(false)
                     </div>
 
                     <!-- Section: Results -->
-                    <div v-else-if="sortedProducts.length"
-                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        <LinkIris v-for="product in sortedProducts" :key="product.id" :href="product.url" class="group text-gray-800 isolate h-full flex flex-col flex-grow no-underline">
+                    <div v-else-if="products.length"
+                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 transition-opacity"
+                        :class="isResultsRefreshing ? 'opacity-60 pointer-events-none' : ''">
+                        <LinkIris v-for="product in products" :key="product.id" :href="product.url" class="group text-gray-800 isolate h-full flex flex-col flex-grow no-underline">
                             <!-- Product detail: image -->
                             <div class="relative block w-full mb-1 rounded overflow-hidden aspect-square bg-white">
-                                <Image v-if="product.image" :src="product.image" :class="product.stock === 0
-                                    ? 'w-full h-full object-contain object-center grayscale opacity-60'
-                                    : 'w-full h-full object-contain object-center'" />
+                                <Image v-if="product.image" :src="product.image"
+                                    class="w-full h-full object-contain object-center"
+                                    :class="product.stock === 0
+                                        ? 'grayscale opacity-60'
+                                        : ''
+                                    "
+                                />
                                 <div v-else class="w-full h-full flex items-center justify-center text-gray-300 font-bold uppercase"> {{ product.code?.slice(0, 3) }}</div>
                                 <div v-if="product.stock === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                                     <span class="w-full bg-white/95 border border-red-500 rounded-sm text-red-500 text-xs font-bold uppercase tracking-wider py-1 text-center shadow-sm">{{ ctrans('Out of stock') }}</span>
@@ -358,12 +428,22 @@ const isMobileFilterOpen = ref(false)
                         </LinkIris>
                     </div>
 
-                    <div v-else class="flex h-40 items-center justify-center text-[#767676] bg-[#ececec] rounded-sm p-2.5 md:p-5">
+                    <div v-else class="flex h-40 items-center justify-center text-[#767676] bg-[#ececec] rounded-sm p-2.5 md:p-5 transition-opacity"
+                        :class="isResultsRefreshing ? 'opacity-60' : ''">
                         {{ ctrans("We couldn't find any suitable results") }}
                     </div>
 
-                    <div v-if="!isInternalLoading && sortedProducts.length" class="mt-[30px] text-center text-[#767676]">
-                        1 - {{ sortedProducts.length }} {{ ctrans('of') }} {{ sortedProducts.length }} {{ ctrans('results') }}
+                    <!-- Pagination: load more + info -->
+                    <div v-if="!isInternalLoading && products.length" class="pt-[30px] text-center">
+                        <button v-if="products.length < totalResults" type="button"
+                            class="rounded-sm font-bold py-[15px] px-2.5 w-[300px] max-w-full text-center bg-[var(--theme-color-0)] text-white hover:brightness-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            :disabled="isLoadingMore"
+                            @click="loadMore">
+                            {{ isLoadingMore ? ctrans('Loading ...') : ctrans('Load more') }}
+                        </button>
+                        <div class="pt-[25px] text-[#767676]">
+                            1 - {{ products.length }} {{ ctrans('of') }} {{ totalResults }} {{ ctrans('results') }}
+                        </div>
                     </div>
                 </main>
             </div>
