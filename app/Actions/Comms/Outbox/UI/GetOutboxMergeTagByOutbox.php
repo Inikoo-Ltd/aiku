@@ -31,7 +31,8 @@ class GetOutboxMergeTagByOutbox extends OrgAction
                 return OutboxMergeTagsEnum::filterTags([
                     OutboxMergeTagsEnum::CUSTOMER_NAME,
                     OutboxMergeTagsEnum::LAST_INVOICE_DATE,
-                    OutboxMergeTagsEnum::GOLD_REWARD_DEADLINE
+                    OutboxMergeTagsEnum::GOLD_REWARD_DEADLINE,
+                    OutboxMergeTagsEnum::UNSUBSCRIBE
                 ]);
             default:
                 return GetMailshotMergeTags::run();

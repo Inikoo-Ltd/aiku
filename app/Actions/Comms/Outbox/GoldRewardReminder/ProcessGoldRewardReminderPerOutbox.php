@@ -30,7 +30,7 @@ class ProcessGoldRewardReminderPerOutbox
         // Build customer query using raw SQL
         $baseQuery = DB::table('customers');
         $baseQuery->leftJoin('customer_comms', 'customers.id', '=', 'customer_comms.customer_id');
-        // $baseQuery->where('customer_comms.is_subscribed_to_reorder_reminder', true);
+        $baseQuery->where('customer_comms.is_subscribed_to_gold_reward_reminder', true);
         $baseQuery->where('customers.shop_id', $outbox->shop_id);
         $baseQuery->whereDate('customers.last_invoiced_at', '=', $compareDate->toDateString());
         $baseQuery->whereNotNull('customers.email');

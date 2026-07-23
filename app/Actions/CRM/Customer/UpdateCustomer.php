@@ -345,6 +345,7 @@ class UpdateCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_gold_reward_reminder' => ['sometimes', 'boolean'],
             'state'                                                 => ['sometimes', Rule::enum(CustomerStateEnum::class)],
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
