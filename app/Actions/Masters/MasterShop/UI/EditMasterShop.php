@@ -12,6 +12,7 @@ namespace App\Actions\Masters\MasterShop\UI;
 
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditMasterShop extends OrgAction
 {
     use WithMasterShopNavigation;
+    use WithMastersEditAuthorisation;
 
     public function asController(MasterShop $masterShop, ActionRequest $request): Response
     {
