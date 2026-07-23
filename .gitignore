@@ -113,7 +113,6 @@ rgb.icc
 /storage/app/robots/*
 /slim_restore.sh
 /get_slim.sh
-/devops/haproxy/haproxy.cfg
 /devops/varnish/warm_up.sh
 /.output.txt
 laradumps.yaml
@@ -123,7 +122,6 @@ laradumps.yaml
 /.junie/*
 /nightowl/*
 /local_storage/*
-/devops/haproxy/facebook-bots.lst
 /lines_by_author_report.txt
 /lines_by_author_report.txt.formatted
 /lines_of_code_by_author.txt
@@ -131,3 +129,5 @@ laradumps.yaml
 /app_actions_dashboard.html
 
 /tests/Browser/Screenshots
+/devops/server.env
+storage/oauth-*.key

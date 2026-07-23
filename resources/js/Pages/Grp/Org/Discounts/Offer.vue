@@ -29,6 +29,7 @@ import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 import PreviewVoucher from '@/Components/Offers/PreviewOffer/PreviewVoucher.vue'
 import PreviewGift from '@/Components/Offers/PreviewOffer/PreviewGift.vue'
+import PreviewStepDiscount from '@/Components/Offers/PreviewOffer/PreviewStepDiscount.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 library.add(faFlagCheckered)
@@ -146,6 +147,10 @@ const hasTrigger = computed(() => {
 const state = props.data.offer_allowances[0]?.state
 const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
 
+const hasDiscountSteps = computed(() =>
+    props.data.offer_allowances?.some(offerAllowance => offerAllowance.data?.steps?.length) ?? false
+)
+
 const irisOffersData = computed(() => {
     const bestPercentageOff = props.data.offer_allowances?.reduce((best, oa) => {
         const po = oa.data?.percentage_off ?? 0
@@ -240,7 +245,13 @@ const irisOffersData = computed(() => {
                     :currencyCode="currency_code"
                     class="xscale-[120%] mt-3"
                 />
-                <Coupon v-else :offer="data.offer" :currency_code="currency_code" />    
+                <PreviewStepDiscount
+                    v-else-if="data.offer.type == 'Product Quantity Ordered' && hasDiscountSteps"
+                    :offer="data.offer"
+                    :offer_allowances="data.offer_allowances"
+                    class="mt-3"
+                />
+                <Coupon v-else :offer="data.offer" :currency_code="currency_code" />
             </div>
 
             <!-- RIGHT -->
@@ -283,6 +294,13 @@ const irisOffersData = computed(() => {
                                 >
                                     {{ data.offer.data_allowance_signature.product_category?.name }}
                                 </Link>
+                            </dd>
+                        </div>
+
+                        <div v-if="data.offer_allowances[0]?.data?.free_quantity !== undefined" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Free quantity") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ data.offer_allowances[0]?.data?.free_quantity }}
                             </dd>
                         </div>
 

@@ -21,6 +21,7 @@ use App\Enums\UI\Procurement\PurchaseOrderTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
+use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\Models\Procurement\OrgAgent;
@@ -90,6 +91,9 @@ class ShowPurchaseOrder extends OrgAction
     {
         $this->validateAttributes();
 
+        $showProductsTab = $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
+            && ($purchaseOrder->parent instanceof OrgAgent || $purchaseOrder->parent instanceof OrgSupplier);
+
         $orderer = [];
         $productListRoute = [];
         $weightAndVolume = $this->getPurchaseOrderWeightAndVolume($purchaseOrder);
@@ -120,13 +124,29 @@ class ShowPurchaseOrder extends OrgAction
         if ($this->canEdit) {
             $actions = match ($purchaseOrder->state) {
                 PurchaseOrderStateEnum::IN_PROCESS => [
+                    $showProductsTab ? [
+                        'label'   => __('Add Product'),
+                        'tooltip' => __('Add Product'),
+                        'type'    => 'button',
+                        'style'   => 'secondary',
+                        'icon'    => 'fal fa-plus',
+                        'key'     => 'add_product',
+                        'route'   => [
+                            'method'     => 'post',
+                            'name'       => 'grp.models.purchase-order.transaction.store',
+                            'parameters' => [
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
+                    ] : [],
                     ($purchaseOrder->purchaseOrderTransactions()->count() > 0) ?
                     [
                         'label'   => __('Submit'),
-                        'tooltip' => __('Submit'),
+                        'tooltip' => __('Submit Purchase Order'),
                         'type'    => 'button',
                         'style'   => 'save',
-                        'key'     => 'action',
+                        'icon'    => 'fal fa-paper-plane',
+                        'key'     => 'submit_purchase_order',
                         'route'   => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.purchase-order.submit',
@@ -135,6 +155,21 @@ class ShowPurchaseOrder extends OrgAction
                             ],
                         ],
                     ] : [],
+                    [
+                        'label'   => __('Delete'),
+                        'tooltip' => __('Delete Purchase Order'),
+                        'type'    => 'button',
+                        'style'   => 'delete',
+                        'icon'    => 'fal fa-trash-alt',
+                        'key'     => 'delete_purchase_order',
+                        'route'   => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.purchase-order.delete',
+                            'parameters' => [
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
+                    ],
                 ],
                 PurchaseOrderStateEnum::SUBMITTED => [
                     [
@@ -246,7 +281,9 @@ class ShowPurchaseOrder extends OrgAction
                 'timelines'   => $this->getTimeline($purchaseOrder),
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => PurchaseOrderTabsEnum::navigation(),
+                    'navigation' => $showProductsTab
+                        ? PurchaseOrderTabsEnum::navigation()
+                        : PurchaseOrderTabsEnum::navigationExcept([PurchaseOrderTabsEnum::PRODUCTS]),
                 ],
                 'routes'      => [
                     'updatePurchaseOrderRoute' => [
@@ -296,11 +333,16 @@ class ShowPurchaseOrder extends OrgAction
                     fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))
                     : Inertia::optional(fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))),
 
+                PurchaseOrderTabsEnum::PRODUCTS->value => $showProductsTab && $this->tab == PurchaseOrderTabsEnum::PRODUCTS->value ?
+                    fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value))
+                    : Inertia::optional(fn () => $showProductsTab ? PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value)) : null),
+
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))),
             ]
         )->table(IndexPurchaseOrderTransactions::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::ITEMS->value))
+            ->table(IndexPurchaseOrderOrgSupplierProducts::make()->tableStructure(prefix: PurchaseOrderTabsEnum::PRODUCTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
     }
 
@@ -349,8 +391,9 @@ class ShowPurchaseOrder extends OrgAction
         }
 
         if (in_array($state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED], true)) {
-            // TODO: No source for the estimated dispatch date in aiku (not imported from Aurora, no column),
-            // so it always shows "No estimated production date" for now.
+            // TODO: Source should come from the Supplier/Agent, which will likely store a
+            // "Production waiting time (days)" (e.g. in a json data column). estimated_dispatch would then
+            // be submitted_at + production waiting days. No such field yet, so shows "No estimated production date".
             $timeline['estimated_dispatch'] = [
                 'label'     => __('Estimated dispatch'),
                 'tooltip'   => __('Estimated dispatch'),
@@ -361,9 +404,10 @@ class ShowPurchaseOrder extends OrgAction
             ];
         }
 
-        // TODO: No source for the estimated delivery in aiku (not imported from Aurora), so it's a
-        // placeholder for now. Likely estimated_delivery = confirmed_at + lead days (no lead days yet,
-        // hence "no estimated"), and once dispatched it becomes the stock delivery estimated received.
+        // TODO: Source should come from the Supplier/Agent, which will likely store a
+        // "Delivery time (days)" (e.g. in a json data column). estimated_delivery would then be
+        // estimated_dispatch + delivery days, and once dispatched it becomes the stock delivery estimated
+        // received. No such field yet, so shows "No estimated delivery date".
         $timeline['estimated_delivery'] = [
             'label'     => __('Estimated delivery'),
             'tooltip'   => __('Estimated delivery'),

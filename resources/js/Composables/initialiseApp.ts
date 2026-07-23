@@ -176,6 +176,14 @@ export const initialiseApp = () => {
             layout.app.environment = usePage().props?.environment
         }
 
+        // Set latest app deployment time
+        if (usePage().props?.last_deployment_at) {
+            layout.app.last_deployment_at = usePage().props?.last_deployment_at
+        }
+        if (usePage().props?.last_deployment_hash) {
+            layout.app.last_deployment_hash = usePage().props?.last_deployment_hash
+        }
+
 
         // Set Organisations, Agents, Digital Agency (for Multiselect in TopBar)
         if (usePage().props.layout?.organisations) {

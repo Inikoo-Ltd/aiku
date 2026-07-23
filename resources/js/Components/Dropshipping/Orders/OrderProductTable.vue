@@ -335,6 +335,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             is_cut_view: newVal
         },
         {
+            preserveScroll: true,
             onStart: () => {
                 set(proxyItem, 'is_transaction_loading', true)
 
@@ -442,7 +443,9 @@ const isOffersData = (offersData: any): boolean => {
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         /> -->
                         <InputNumber 
-                            :model-value="item.quantity_ordered_fractional[0]" 
+                            :model-value="proxyItem.is_cut_view ? (
+                                (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
+                            ) : item.quantity_ordered" 
                             @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
                             inputId="horizontal-buttons" 
                             showButtons 
@@ -546,9 +549,9 @@ const isOffersData = (offersData: any): boolean => {
 
             <!-- Column: Batch Codes -->
             <template #cell(batch_codes)="{ item }">
-                <div class="flex flex-wrap gap-1">
+                <div v-if="item.batch_codes" class="flex flex-wrap gap-1">
                     <span
-                        v-for="code in (item.batch_codes ? item.batch_codes.split(', ') : [])"
+                        v-for="code in item.batch_codes.split(', ')"
                         :key="code"
                         class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
                     >
@@ -556,6 +559,9 @@ const isOffersData = (offersData: any): boolean => {
                         {{ code }}
                     </span>
                 </div>
+                <span v-else class="text-gray-400 italic text-xs">
+                    {{ trans("No batch code set") }}
+                </span>
             </template>
 
             <!-- Section: Price -->

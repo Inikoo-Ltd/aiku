@@ -51,6 +51,7 @@ use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterVariant\ShowMasterVariant;
 use App\Actions\Masters\MasterVariant\EditMasterVariant;
+use App\Actions\Masters\MasterShop\UI\CreateMasterShop;
 use App\Actions\Masters\MasterShop\UI\EditMasterShop;
 use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
@@ -130,6 +131,7 @@ Route::name("master_shops")->prefix('master-shops')
     ->group(function () {
 
         Route::get('', IndexMasterShops::class)->name('.index');
+        Route::get('create', CreateMasterShop::class)->name('.create');
         Route::get('{masterShop}/edit', EditMasterShop::class)->name('.edit');
 
         Route::prefix('/{masterShop}')->as('.show')->group(function () {

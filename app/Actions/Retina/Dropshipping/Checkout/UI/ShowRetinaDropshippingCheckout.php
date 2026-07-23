@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
@@ -54,7 +55,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     }
 
 
-    public function asController(Order $order, ActionRequest $request): array|\Illuminate\Http\RedirectResponse
+    public function asController(Order $order, ActionRequest $request): array|RedirectResponse
     {
         $this->initialisation($request);
 
@@ -68,23 +69,39 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
             ];
 
             if ($order->customerSalesChannel) {
-                return Redirect::route(
-                    'retina.dropshipping.customer_sales_channels.orders.show',
-                    [
-                        'customerSalesChannel' => $order->customerSalesChannel->slug,
-                        'order'                => $order->slug
-                    ]
-                )->with('notification', $notification);
+                return [
+                    'redirect' => true,
+                    'route' => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.orders.show',
+                        'parameters' => [
+                            'customerSalesChannel' => $order->customerSalesChannel->slug,
+                            'order'                => $order->slug
+                        ]
+                    ],
+                    'notification' => $notification
+                ];
             }
 
-            return Redirect::route('retina.dashboard.show')->with('notification', $notification);
+            return [
+                'redirect' => true,
+                'route' => [
+                    'name'       => 'retina.dashboard.show',
+                    'parameters' => []
+                ],
+                'notification' => $notification
+            ];
         }
 
         return $this->handle($order, $this->customer);
     }
 
-    public function htmlResponse(array $checkoutData): Response
+    public function htmlResponse(array $checkoutData): Response|RedirectResponse
     {
+        if(Arr::get($checkoutData, 'redirect') === true) {
+            return Redirect::route(Arr::get($checkoutData, 'route.name'), Arr::get($checkoutData, 'route.parameters'))
+                ->with('notification', Arr::get($checkoutData, 'notification'));
+        }
+
         /** @var Order $order */
         $order = Arr::get($checkoutData, 'order');
 

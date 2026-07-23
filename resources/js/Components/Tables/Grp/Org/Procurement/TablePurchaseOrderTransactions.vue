@@ -8,6 +8,7 @@
 import { computed, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
+import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
 import Image from '@common/Components/Image.vue'
@@ -15,16 +16,34 @@ import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle } from '@fal'
-import { faExclamationCircle } from '@fas'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox } from '@fal'
+import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
+import ConfirmPopup from 'primevue/confirmpopup'
+import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle)
+
+const confirm = useConfirm()
 
 const props = defineProps<{
     data: object
     tab?: string
     state?: string
+    isOrgAgent?: boolean
+    orgAgentSlug?: string
 }>()
+
+function supplierRoute(item: any): string {
+    if (!props.isOrgAgent || !props.orgAgentSlug || !item.supplier_slug) {
+        return ''
+    }
+
+    return route('grp.org.procurement.org_agents.show.suppliers.show', [
+        route().params.organisation,
+        props.orgAgentSlug,
+        item.supplier_slug,
+    ])
+}
 
 const locale = useLocaleStore()
 
@@ -106,16 +125,98 @@ const savingId = ref<number | null>(null)
 
 async function onSaveQuantity(item: any, form: any) {
     const quantityOrdered = Number(form.quantity) * unitsPerLevel(item)
+    const saveRoute = item.saveRoute ?? item.updateRoute
+    const method = String(saveRoute?.method ?? 'patch').toLowerCase()
 
     savingId.value = item.id
     try {
-        await axios.patch(
-            route(item.updateRoute.name, item.updateRoute.parameters),
+        await axios[method](
+            route(saveRoute.name, saveRoute.parameters),
             { quantity_ordered: quantityOrdered }
         )
+        form.defaults()
+        notify({ title: trans('Success'), text: trans('Quantity updated'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to update quantity'),
+            type: 'error',
+        })
     } finally {
         savingId.value = null
+    }
+}
+
+const deletingId = ref<number | null>(null)
+
+function confirmDeleteItem(event: MouseEvent, item: any) {
+    if (!item.deleteRoute) {
+        return
+    }
+
+    confirm.require({
+        target: event.currentTarget as HTMLElement,
+        message: trans('Remove this product from the purchase order?'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: trans('Delete'),
+        rejectLabel: trans('Cancel'),
+        acceptClass: 'p-button-danger',
+        rejectClass: 'p-button-text',
+        accept: () => onDeleteItem(item),
+    })
+}
+
+async function onDeleteItem(item: any) {
+    deletingId.value = item.id
+    try {
+        await axios.delete(route(item.deleteRoute.name, item.deleteRoute.parameters))
+        notify({ title: trans('Success'), text: trans('Item removed'), type: 'success' })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to remove item'),
+            type: 'error',
+        })
+    } finally {
+        deletingId.value = null
+    }
+}
+
+const cancellingId = ref<number | null>(null)
+
+function confirmCancelItem(event: MouseEvent, item: any) {
+    if (!item.cancelRoute) {
+        return
+    }
+
+    confirm.require({
+        target: event.currentTarget as HTMLElement,
+        message: trans('Cancel this item?'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: trans('Cancel item'),
+        rejectLabel: trans('Keep'),
+        acceptClass: 'p-button-danger',
+        rejectClass: 'p-button-text',
+        accept: () => onCancelItem(item),
+    })
+}
+
+async function onCancelItem(item: any) {
+    cancellingId.value = item.id
+    try {
+        await axios.patch(route(item.cancelRoute.name, item.cancelRoute.parameters))
+        notify({ title: trans('Success'), text: trans('Item cancelled'), type: 'success' })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to cancel item'),
+            type: 'error',
+        })
+    } finally {
+        cancellingId.value = null
     }
 }
 
@@ -169,31 +270,49 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(code)="{ item }">
-            <div class="flex items-center gap-1.5">
-                <Link
-                    v-if="supplierProductRoute(item)"
-                    v-tooltip="trans('Supplier product code')"
-                    :href="supplierProductRoute(item)"
-                    class="primaryLink"
-                >
-                    {{ item.code }}
-                </Link>
-                <span v-else>{{ item.code }}</span>
+            <div class="flex flex-col gap-0.5">
+                <div class="flex items-center gap-1.5">
+                    <Link
+                        v-if="supplierProductRoute(item)"
+                        v-tooltip="trans('Supplier product code')"
+                        :href="supplierProductRoute(item)"
+                        class="primaryLink"
+                    >
+                        {{ item.code }}
+                    </Link>
+                    <span v-else>{{ item.code }}</span>
 
-                <Link
-                    v-if="orgStockRoute(item)"
-                    v-tooltip="trans('Part reference is same as supplier product code')"
-                    :href="orgStockRoute(item)"
-                    class="text-gray-400 hover:text-gray-600"
+                    <Link
+                        v-if="orgStockRoute(item)"
+                        v-tooltip="trans('Part reference is same as supplier product code')"
+                        :href="orgStockRoute(item)"
+                        class="text-gray-400 hover:text-gray-600"
+                    >
+                        <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
+                    </Link>
+                </div>
+
+                <div
+                    v-if="isOrgAgent && item.supplier_name"
+                    class="flex items-center gap-1 text-xs text-gray-500"
                 >
-                    <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
-                </Link>
+                    <FontAwesomeIcon icon="fal fa-hand-holding-box" aria-hidden="true" fixed-width />
+                    <Link
+                        v-if="supplierRoute(item)"
+                        v-tooltip="trans('Supplier')"
+                        :href="supplierRoute(item)"
+                        class="primaryLink"
+                    >
+                        {{ item.supplier_name }}
+                    </Link>
+                    <span v-else>{{ item.supplier_name }}</span>
+                </div>
             </div>
         </template>
 
         <template #cell(image_thumbnail)="{ item }">
             <div class="flex">
-                <Image :src="item['image_thumbnail']" imageCover class="aspect-square overflow-hidden" />
+                <Image :src="item['image_thumbnail']" imageCover class="w-20 aspect-square overflow-hidden" />
             </div>
         </template>
 
@@ -235,7 +354,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(quantity)="{ item }">
-            <div v-if="isInProcess" class="flex justify-end">
+            <div v-if="isInProcess" class="flex justify-end items-center gap-2">
                 <NumberWithButtonSave
                     :key="`${item.id}-${currentLevel}`"
                     :modelValue="quantityAtLevel(item)"
@@ -243,6 +362,21 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     :isLoading="savingId === item.id"
                     @onSave="(form) => onSaveQuantity(item, form)"
                 />
+                <button
+                    v-if="item.deleteRoute"
+                    v-tooltip="trans('Remove')"
+                    type="button"
+                    class="flex items-center justify-center text-gray-400 hover:text-red-500 disabled:text-gray-300"
+                    :disabled="deletingId === item.id"
+                    @click="confirmDeleteItem($event, item)"
+                >
+                    <FontAwesomeIcon
+                        :icon="deletingId === item.id ? 'fas fa-spinner' : 'fal fa-trash-alt'"
+                        :spin="deletingId === item.id"
+                        aria-hidden="true"
+                        fixed-width
+                    />
+                </button>
             </div>
             <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
         </template>
@@ -283,7 +417,24 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     fixed-width
                 />
                 <span>{{ item.state_label }}</span>
+                <button
+                    v-if="state === 'submitted' && item.cancelRoute"
+                    v-tooltip="trans('Cancel this item')"
+                    type="button"
+                    class="flex items-center justify-center text-red-500 hover:text-red-700 disabled:text-gray-300"
+                    :disabled="cancellingId === item.id"
+                    @click="confirmCancelItem($event, item)"
+                >
+                    <FontAwesomeIcon
+                        :icon="cancellingId === item.id ? 'fas fa-spinner' : 'fas fa-minus-circle'"
+                        :spin="cancellingId === item.id"
+                        aria-hidden="true"
+                        fixed-width
+                    />
+                </button>
             </div>
         </template>
     </Table>
+
+    <ConfirmPopup />
 </template>

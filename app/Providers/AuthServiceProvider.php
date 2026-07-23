@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
 use Laravel\Passkeys\Passkeys;
+use Laravel\Passport\Passport;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -37,6 +38,10 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerPolicies();
+
+        Passport::authorizationView(function ($parameters) {
+            return view('mcp.authorize', $parameters);
+        });
 
         Auth::provider('case-insensitive-eloquent', function ($app, array $config) {
             return new CaseInsensitiveEloquentUserProvider($app['hash'], $config['model']);

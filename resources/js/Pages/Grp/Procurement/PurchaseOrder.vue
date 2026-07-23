@@ -5,9 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import type { Component } from "vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -16,6 +16,11 @@ import Timeline from "@/Components/Utils/Timeline.vue"
 import PurchaseOrderData from "@/Components/Procurement/PurchaseOrderData.vue"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import ModalProductList from "@/Components/Utils/ModalProductList.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
+import { notify } from "@kyvg/vue3-notification"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
@@ -27,7 +32,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare } from "@fas"
 import { faPlus } from "@far"
 
@@ -40,6 +45,8 @@ library.add(
 	faShip,
 	faBox,
 	faHandHoldingBox,
+	faPaperPlane,
+	faExclamationTriangle,
     faShare,
     faArrowCircleDown,
 	faArrowCircleRight,
@@ -106,6 +113,7 @@ const props = defineProps < {
 	}
 	showcase?: {}
 	items?: {}
+	products?: {}
 	history?: {}
 }>()
 
@@ -159,18 +167,18 @@ const costBlocks = computed(() => {
 		],
 	}
 
-	if (!org_currency || org_currency === currency) {
-		return [supplierBlock]
-	}
-
-	const rate = orgPerOrder.value ?? 1
-	const orgItems = Number(org_items)
+	const sameCurrency = !org_currency || org_currency === currency
+	const orgCurrency = org_currency || currency
+	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
+	const orgItems = sameCurrency ? Number(items) : Number(org_items)
 	const orgExtra = Number(extra) * rate
 
 	const orderPerOrg = rate ? 1 / rate : null
-	const rateLabel = orderPerOrg === null
-		? ""
-		: `1 ${org_currency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
+	const rateLabel = sameCurrency
+		? `${trans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
+		: orderPerOrg === null
+			? ""
+			: `1 ${orgCurrency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
 
 	return [
 		supplierBlock,
@@ -178,9 +186,9 @@ const costBlocks = computed(() => {
 			key: "org",
 			title: rateLabel,
 			rows: [
-				{ label: trans("Items"), value: money(org_currency, orgItems) },
-				{ label: trans("Extra costs"), value: money(org_currency, orgExtra) },
-				{ label: trans("Total"), value: money(org_currency, orgItems + orgExtra), isTotal: true },
+				{ label: trans("Items"), value: money(orgCurrency, orgItems) },
+				{ label: trans("Extra costs"), value: money(orgCurrency, orgExtra) },
+				{ label: trans("Total"), value: money(orgCurrency, orgItems + orgExtra), isTotal: true },
 			],
 		},
 	]
@@ -188,15 +196,82 @@ const costBlocks = computed(() => {
 
 const currentTab = ref(props.tabs.current)
 
+const isModalProductListOpen = ref(false)
+const currentAction = ref<any>(null)
+
+const openProductListModal = (action: any) => {
+	currentAction.value = action
+	isModalProductListOpen.value = true
+}
+
+watch(isModalProductListOpen, (isOpen, wasOpen) => {
+	if (wasOpen && !isOpen) {
+		router.reload({ only: [currentTab.value, "items", "products", "box_stats"] })
+	}
+})
+
+const confirm = useConfirm()
+const deleteLoading = ref(false)
+const submitLoading = ref(false)
+
+const confirmSubmitPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to submit this purchase order?"),
+		header: trans("Submit Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Submit"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { submitLoading.value = true },
+				onFinish: () => { submitLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to submit purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmDeletePurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to delete this purchase order? This action cannot be undone."),
+		header: trans("Delete Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Delete"), severity: "danger" },
+		accept: () => {
+			router.delete(route(action.route.name, action.route.parameters), {
+				onStart: () => { deleteLoading.value = true },
+				onFinish: () => { deleteLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to delete purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
 const component = computed(() => {
 	const components: Component = {
 		showcase: PurchaseOrderData,
 		items: TablePurchaseOrderTransactions,
+		products: TablePurchaseOrderTransactions,
 		history: TableHistories,
 	}
 
 	return components[currentTab.value]
 })
+
+const isOrgAgent = computed(() => props.box_stats.first_block.orderer.type === "Agent")
 
 const ordererRoute = computed<string>(() => {
 	const orderer = props.box_stats.first_block.orderer
@@ -222,7 +297,39 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 <template>
 	<Head :title="capitalize(title)" />
-	<PageHeading :data="pageHead" />
+	<PageHeading :data="pageHead">
+		<template #button-add-product="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				@click="() => openProductListModal(action)"
+			/>
+		</template>
+
+		<template #button-submit-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="submitLoading"
+				@click="() => confirmSubmitPurchaseOrder(action)"
+			/>
+		</template>
+
+		<template #button-delete-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="deleteLoading"
+				@click="() => confirmDeletePurchaseOrder(action)"
+			/>
+		</template>
+	</PageHeading>
 
 	<!-- Purchase Order Timeline -->
 	<div v-if="timelines" class="py-2 border-b border-gray-300">
@@ -418,7 +525,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
 	</div>
 
-	<Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
 	<div class="pb-12">
 		<component
@@ -426,8 +533,26 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:state="data.data.state"
+			:isOrgAgent="isOrgAgent"
+			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
 			@update:tab="handleTabUpdate"
 		/>
 	</div>
+
+	<ModalProductList
+		v-if="routes.products_list?.name"
+		v-model="isModalProductListOpen"
+		:fetchRoute="routes.products_list"
+		:action="currentAction"
+		:current="currentTab"
+		v-model:currentTab="currentTab"
+		:typeModel="'purchase_order'"
+	/>
+
+	<ConfirmDialog group="purchase-order">
+		<template #icon>
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+		</template>
+	</ConfirmDialog>
 </template>

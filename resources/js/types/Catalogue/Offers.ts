@@ -11,10 +11,16 @@ export interface OfferProductCategoryLink {
     type: 'department' | 'sub_department' | 'family'
 }
 
+export interface OfferDiscountStep {
+    min_quantity: number
+    percentage_off: number
+}
+
 export interface OfferResource {
     id?: number
     type: 'Amount AND Order Number' | 'Category Ordered' | 'Category Quantity Ordered' | 'GR Amnesty' | 'Category Quantity Ordered Order Interval' | string
     name: string
+    code?: string
     label?: string | null
     state: string
     status: boolean | string
@@ -54,6 +60,7 @@ export interface OfferAllowanceResource {
     name: string | null
     data: {
         percentage_off?: number
+        steps?: OfferDiscountStep[]
         [key: string]: unknown
     } | null
     state: string | null

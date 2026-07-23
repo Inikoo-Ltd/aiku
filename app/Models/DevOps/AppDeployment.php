@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $semantic_version
  * @property string|null $commit_hash
  * @property string|null $notes
+ * @property string|null $change_log
+ * @property array<int, array{name: string, email: string, github_username: string|null, avatar: string|null}>|null $committers
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AppDeployment newModelQuery()
@@ -21,5 +23,12 @@ class AppDeployment extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['commit_hash'];
+    protected $fillable = ['commit_hash', 'semantic_version', 'change_log', 'committers'];
+
+    protected function casts(): array
+    {
+        return [
+            'committers' => 'array',
+        ];
+    }
 }

@@ -19,6 +19,9 @@ export const layoutStructure = {
         theme: useColorTheme[0] as string[],  // For styling app color
         url: null as string | null, // For url on logo top left
         environment: null as string | null, // 'local' | 'staging'
+        last_deployment_at: null as string | null, // created_at of the latest app deployment
+        last_deployment_hash: null as string | null, // hash of the latest commit
+        newVersionAvailable: false, // true after a post-deploy event when the user dismissed the refresh modal
     },
     currentModule: "",
     currentRoute: "grp.dashboard.show", // Define value to avoid route null at first load

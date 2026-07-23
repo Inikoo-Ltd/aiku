@@ -73,9 +73,9 @@ const showReadMore = ref(false)
 let resizeObserver: ResizeObserver | null = null
 
 const COLLAPSED_HEIGHTS = [
-  { minWidth: 1536, height: 255 },
+  { minWidth: 1536, height: 250 },
   { minWidth: 1024, height: 195 },
-  { minWidth: 0, height: 265 },
+  { minWidth: 0, height: 260 },
 ]
 
 const getCollapsedHeight = (): number => {
@@ -86,6 +86,7 @@ const getCollapsedHeight = (): number => {
 
 const titleStyles = computed(() => ({
   fontSize: titleState.value === 'single' ? '32px' : '25px',
+  lineHeight: '1',
 }))
 
 const measureLines = (el: HTMLElement, fontSize: string): number => {
@@ -260,16 +261,16 @@ const contentClass = computed(() =>
         <!-- CONTENT -->
         <div class="flex min-w-0 flex-1 flex-col">
           <div class="
-      flex
-      flex-col
-      gap-4
-      text-center
-      lg:text-left
-      lg:flex-row
-      lg:items-start
-      lg:justify-between
-      mb-2
-    ">
+              flex
+              flex-col
+              gap-4
+              text-center
+              lg:text-left
+              lg:flex-row
+              lg:items-start
+              lg:justify-between
+              mb-2
+            ">
             <div class="min-w-16 flex-1">
               <h1 ref="titleRef" :style="titleStyles" :class="[
                 'font-bold break-words',
@@ -303,12 +304,9 @@ const contentClass = computed(() =>
     text-[14px]
     leading-[1.6]
     text-[#1d2430]
-    sm:text-[14px]
-    lg:text-[14px]
     2xl:space-y-2
-    2xl:text-[16px]
     overflow-hidden
-  " ref="descriptionRef" :class="!expanded ? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]' : ''">
+  " ref="descriptionContentRef" :class="!expanded ? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]' : ''">
             <div v-html="cleanedDescription"></div>
 
             <!-- Fade overlay -->

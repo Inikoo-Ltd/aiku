@@ -392,8 +392,8 @@ task('deploy', [
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
     'deploy:restart-ssr-by-supervisorctl',
+    'deploy:log-app-deployment',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
-    'deploy:log-app-deployment',
     'deploy:translations:setup-guess-language',
 ]);

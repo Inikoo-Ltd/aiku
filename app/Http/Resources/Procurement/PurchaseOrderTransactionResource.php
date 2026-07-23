@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,6 +27,8 @@ class PurchaseOrderTransactionResource extends JsonResource
             'slug'             => $supplierProduct?->slug,
             'code'             => $supplierProduct?->code,
             'name'             => $supplierProduct?->name,
+            'supplier_name'    => $supplierProduct?->supplier?->name,
+            'supplier_slug'    => $transaction->orgSupplierProduct?->orgSupplier?->slug,
             'org_stock_id'     => $transaction->org_stock_id,
             'image_thumbnail'  => $tradeUnit?->imageSources(64, 64),
 
@@ -55,6 +58,22 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'patch',
             ],
+            'deleteRoute'      => [
+                'name'       => 'grp.models.purchase-order.transaction.delete',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'delete',
+            ],
+            'cancelRoute'      => $transaction->state === PurchaseOrderTransactionStateEnum::SUBMITTED ? [
+                'name'       => 'grp.models.purchase-order.transaction.cancel',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'patch',
+            ] : null,
         ];
     }
 }

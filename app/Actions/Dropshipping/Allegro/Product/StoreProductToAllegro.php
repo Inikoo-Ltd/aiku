@@ -44,6 +44,10 @@ class StoreProductToAllegro extends RetinaAction
         /** @var AllegroUser $allegroUser */
         $allegroUser = $customerSalesChannel->user;
 
+        if (!$allegroUser) {
+            return $portfolio;
+        }
+
         /** @var Customer $customer */
         $customer = $customerSalesChannel->customer;
 
@@ -71,7 +75,7 @@ class StoreProductToAllegro extends RetinaAction
                 $categoryId = $foundedProduct;
             } else {
                 $parent = $product->subDepartment?->name;
-                if (! $parent) {
+                if (!$parent) {
                     $parent = $product->name;
                 }
 
@@ -89,23 +93,21 @@ class StoreProductToAllegro extends RetinaAction
                 ]);
 
                 $allegroProductId = Arr::get($proposedProduct, 'id');
-            } catch (\Exception $e) {
-                $res = Str::contains($e->getMessage(), ['Product already exists.']);
 
-                if ($res) {
+                if (!$allegroProductId && Str::contains((string)Arr::get($proposedProduct, 'message'), 'Product already exists')) {
                     $proposedProduct = $allegroUser->searchProducts([
                         'phrase' => $portfolio->barcode,
                         'mode' => 'GTIN'
                     ]);
 
                     $allegroProductId = Arr::get($proposedProduct, 'products.0.id');
-                } else {
-                    throw $e;
-                }
-            }
 
-            if (!$allegroProductId) {
-                throw new \Exception(Arr::get($proposedProduct, 'message', 'Failed to propose product to Allegro: no product ID returned.'));
+                    if (!$allegroProductId) {
+                        throw new \Exception(Arr::get($proposedProduct, 'message', 'Failed to propose product to Allegro: no product ID returned.'));
+                    }
+                }
+            } catch (\Exception $e) {
+                throw new \Exception($e->getMessage());
             }
 
             $availableQuantity = $product->available_quantity;
@@ -142,7 +144,7 @@ class StoreProductToAllegro extends RetinaAction
                             'id' => $allegroProductId
                         ],
                         'quantity' => [
-                            'value' => $availableQuantity
+                            'value' => (int) $product->units
                         ],
                         'responsibleProducer' => [
                             'id' => $responsibleProducerId
@@ -156,23 +158,23 @@ class StoreProductToAllegro extends RetinaAction
                         ]
                     ]
                 ],
-                'name'     => Str::limit($portfolio->customer_product_name, 75),
+                'name' => Str::substr($portfolio->customer_product_name, 0, 75),
                 'category' => [
                     'id' => $categoryId
                 ],
                 'sellingMode' => [
                     'format' => 'BUY_NOW',
-                    'price'  => [
-                        'amount'   => $this->formatAllegroPrice($customerPrice, $marketplaceId),
+                    'price' => [
+                        'amount' => $this->formatAllegroPrice($customerPrice, $marketplaceId),
                         'currency' => $targetCurrency->code
                     ]
                 ],
                 'stock' => [
                     'available' => $availableQuantity,
-                    'unit'      => 'UNIT'
+                    'unit' => 'UNIT'
                 ],
                 'delivery' => [
-                    'handlingTime'  => 'PT24H',
+                    'handlingTime' => 'PT24H',
                     'shippingRates' => [
                         'id' => Arr::get($allegroUser->settings, 'shipping.id')
                     ]
@@ -183,11 +185,11 @@ class StoreProductToAllegro extends RetinaAction
                     ]
                 ],
                 'publication' => [
-                    'status'    => 'ACTIVE',
+                    'status' => 'ACTIVE',
                     'republish' => true
                 ],
                 'external' => [
-                    'id' => (string) $portfolio->id
+                    'id' => (string)$portfolio->id
                 ],
                 'language' => $offerLanguage,
                 'description' => [
@@ -204,7 +206,7 @@ class StoreProductToAllegro extends RetinaAction
                 ]
             ];
 
-            $allegroOffer   = $allegroUser->createOffer($offerData);
+            $allegroOffer = $allegroUser->createOffer($offerData);
             $allegroOfferId = Arr::get($allegroOffer, 'id');
 
             if (!$allegroOfferId) {
@@ -212,9 +214,9 @@ class StoreProductToAllegro extends RetinaAction
             }
 
             UpdatePortfolio::run($portfolio, [
-                'platform_product_id'         => $allegroOfferId,
+                'platform_product_id' => $allegroOfferId,
                 'platform_product_variant_id' => $allegroOfferId,
-                'errors_response'             => null
+                'errors_response' => null
             ]);
 
             $publishResponse = $allegroUser->publishOffers(Str::uuid(), [$allegroOfferId]);
@@ -233,15 +235,15 @@ class StoreProductToAllegro extends RetinaAction
                 ]);
             } else {
                 UpdatePlatformPortfolioLog::dispatch($logs, [
-                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $allegroOffer
+                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => json_encode($allegroOffer)
                 ]);
             }
 
             return $portfolio;
         } catch (\Throwable $e) {
             UpdatePlatformPortfolioLog::dispatch($logs, [
-                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                 'response' => $e->getMessage()
             ]);
 
