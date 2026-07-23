@@ -1,7 +1,8 @@
 name: Backend Tests
 on:
   push:
-    branches: [ "main_stop" ]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   HOME: /home/aiku_test
