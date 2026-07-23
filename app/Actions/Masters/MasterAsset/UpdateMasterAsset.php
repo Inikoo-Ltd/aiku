@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
+use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Helpers\Translations\Translate;
@@ -43,7 +44,7 @@ class UpdateMasterAsset extends OrgAction
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
     use WithMasterAssetTradeUnits;
-
+    use WithCustomTradeUnitAudits;
 
     private MasterAsset $masterAsset;
 
@@ -111,6 +112,8 @@ class UpdateMasterAsset extends OrgAction
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
 
         $masterAsset = DB::transaction(function () use ($masterAsset, $modelData, $tradeUnits) {
+            $oldTradeUnitData = $masterAsset->tradeUnits;
+
             /** @var MasterAsset $masterAsset */
             if (!empty($tradeUnits)) {
                 $this->processTradeUnits($masterAsset, $tradeUnits);
@@ -131,6 +134,8 @@ class UpdateMasterAsset extends OrgAction
 
             $this->update($masterAsset, $modelData);
             $masterAsset->refresh();
+
+            $this->dispatchCustomAuditTradeUnit($masterAsset, $oldTradeUnitData);
 
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
