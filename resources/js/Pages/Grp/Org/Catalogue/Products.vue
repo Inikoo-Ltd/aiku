@@ -214,7 +214,7 @@ const replaceProps = (updatedData) => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other>
+       <!--  <template #other>
             <Button
                 v-if="editable_table && currentTab !== 'index_ordering'"
                 :disabled="compSelectedProductsId.length <= 0"
@@ -224,7 +224,7 @@ const replaceProps = (updatedData) => {
                 :icon="faPencil"
                 label="Edit Products"
             />
-        </template>
+        </template> -->
 
            <template #button-save-order="{ action }">
             <Button

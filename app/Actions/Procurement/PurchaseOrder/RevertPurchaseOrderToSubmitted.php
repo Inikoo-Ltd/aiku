@@ -1,12 +1,5 @@
 <?php
 
-/*
- * author Arya Permana - Kirin
- * created on 12-11-2024-10h-37m
- * github: https://github.com/KirinZero0
- * copyright 2024
- */
-
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
@@ -20,7 +13,7 @@ use App\Models\Procurement\PurchaseOrder;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdatePurchaseOrderStateToConfirmed extends OrgAction
+class RevertPurchaseOrderToSubmitted extends OrgAction
 {
     use AsAction;
     use HasPurchaseOrderHydrators;
@@ -37,19 +30,23 @@ class UpdatePurchaseOrderStateToConfirmed extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        if ($purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED) {
-            abort(422, __('Purchase order can only be confirmed if it is submitted'));
+        if ($purchaseOrder->state !== PurchaseOrderStateEnum::CONFIRMED) {
+            abort(422, __('Only confirmed purchase orders can be reverted to submitted'));
+        }
+
+        if ($purchaseOrder->stockDeliveries()->exists()) {
+            abort(422, __('Purchase order with stock deliveries cannot be reverted to submitted'));
         }
 
         $purchaseOrder->purchaseOrderTransactions()
-            ->where('state', PurchaseOrderTransactionStateEnum::SUBMITTED)
+            ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
             ->update([
-                'state' => PurchaseOrderTransactionStateEnum::CONFIRMED,
+                'state' => PurchaseOrderTransactionStateEnum::SUBMITTED,
             ]);
 
         $purchaseOrder = $this->update($purchaseOrder, [
-            'state'        => PurchaseOrderStateEnum::CONFIRMED,
-            'confirmed_at' => now(),
+            'state'        => PurchaseOrderStateEnum::SUBMITTED,
+            'confirmed_at' => null,
         ]);
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);

@@ -25,13 +25,13 @@ use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToNotReceived;
-use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSettled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
@@ -445,12 +445,17 @@ test('change purchase order state to confirmed', function ($purchaseOrder) {
     return $purchaseOrder;
 })->depends('add item to purchase order');
 
-test('change purchase order state to settled', function ($purchaseOrder) {
-    try {
-        $purchaseOrder = UpdatePurchaseOrderStateToSettled::make()->action($purchaseOrder);
-    } catch (ValidationException) {
-    }
-    expect($purchaseOrder->state)->toEqual(PurchaseOrderStateEnum::SETTLED);
+test('revert purchase order state to submitted', function ($purchaseOrder) {
+    $purchaseOrder->refresh();
+
+    $purchaseOrder = RevertPurchaseOrderToSubmitted::make()->action($purchaseOrder);
+
+    expect($purchaseOrder->state)->toEqual(PurchaseOrderStateEnum::SUBMITTED)
+        ->and($purchaseOrder->confirmed_at)->toBeNull();
+
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+
+    expect($purchaseOrder->state)->toEqual(PurchaseOrderStateEnum::CONFIRMED);
 
     return $purchaseOrder;
 })->depends('change purchase order state to confirmed');
@@ -463,7 +468,7 @@ test('change purchase order state to not received', function ($purchaseOrder) {
     expect($purchaseOrder->state)->toEqual(PurchaseOrderStateEnum::NOT_RECEIVED);
 
     return $purchaseOrder;
-})->depends('change purchase order state to settled');
+})->depends('revert purchase order state to submitted');
 
 test('change purchase order state to cancelled', function ($purchaseOrder) {
     $purchaseOrder->refresh();

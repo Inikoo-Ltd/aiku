@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
@@ -39,6 +39,11 @@ const emits = defineEmits<{
 
 const layout: any = inject("layout", {})
 const bKeys = Blueprint(props.webpageData)?.blueprint?.map(b => b?.key?.join("-")) || []
+const key = ref(1)
+
+onMounted(() => {
+  key.value++
+})
 
 const slidesPerView = computed(() => {
   const perRow = props.modelValue?.settings?.per_row ?? {}
@@ -123,8 +128,8 @@ const compSwiperOptions = computed(() => {
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="flex-1 flex flex-col">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])"  />
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :key="`ecom-${key}`" :product="product" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])"  />
+              <ProductRender v-else :key="`ds-${key}`" :product="product" :productHasPortfolio="[]" />
             </div>
 
             <div v-else class="flex-1 flex items-center justify-center text-gray-400">

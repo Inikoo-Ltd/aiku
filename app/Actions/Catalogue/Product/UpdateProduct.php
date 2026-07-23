@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
@@ -342,6 +343,10 @@ class UpdateProduct extends OrgAction
             UpdateHistoricProductInBasketTransactions::dispatch($product);
         }
 
+        if (Arr::has($changed, 'not_follow_master_prices') && !$product->not_follow_master_prices) {
+            MasterAssetHydrateMasterPricesRRPtoChild::run($product->masterProduct, $product->shop);
+        }
+
         if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $oldState != $product->state) {
             $product = ProductHydrateAvailableQuantity::run($product);
         }
@@ -473,7 +478,8 @@ class UpdateProduct extends OrgAction
             'not_for_sale_from_trade_unit'  => ['sometimes', 'boolean'],
             'has_live_webpage'              => ['sometimes', 'boolean'],
             'marketplace_id'                => ['sometimes'],
-            'not_follow_master_trade_units' => ['sometimes', 'boolean']
+            'not_follow_master_trade_units' => ['sometimes', 'boolean'],
+            'not_follow_master_prices'      => ['sometimes', 'boolean'],
         ];
 
 

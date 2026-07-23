@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
@@ -43,6 +43,11 @@ const emits = defineEmits<{
 
 
 const layout: any = inject("layout", {})
+const key = ref(1)
+
+onMounted(() => {
+  key.value++
+})
 
 const slidesPerView = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -113,8 +118,8 @@ console.log('see also', layout)
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle":product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" :screen-type="props.screenType"/>
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :key="`ecom-${key}`" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle":product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" :screen-type="props.screenType"/>
+              <ProductRender v-else :key="`ds-${key}`" :product="product" :productHasPortfolio="[]" />
             </div>
           </div>
         </SwiperSlide>
