@@ -1,12 +1,5 @@
 <?php
 
-/*
- * author Arya Permana - Kirin
- * created on 12-11-2024-10h-35m
- * github: https://github.com/KirinZero0
- * copyright 2024
- */
-
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
@@ -20,7 +13,7 @@ use App\Models\Procurement\PurchaseOrder;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdatePurchaseOrderStateToCancelled extends OrgAction
+class UpdatePurchaseOrderStateToInProcess extends OrgAction
 {
     use AsAction;
     use HasPurchaseOrderHydrators;
@@ -38,26 +31,20 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         if ($purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED) {
-            abort(422, __('Only submitted purchase orders can be cancelled'));
+            abort(422, __('Only submitted purchase orders can be reverted to in process'));
         }
 
-        $purchaseOrder->purchaseOrderTransactions()->update([
-            'state'          => PurchaseOrderTransactionStateEnum::CANCELLED,
-            'net_amount'     => 0,
-            'grp_net_amount' => 0,
-            'org_net_amount' => 0,
-        ]);
+        $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::SUBMITTED)
+            ->update([
+                'state' => PurchaseOrderTransactionStateEnum::IN_PROCESS,
+            ]);
 
         $purchaseOrder = $this->update($purchaseOrder, [
-            'state'         => PurchaseOrderStateEnum::CANCELLED,
-            'cancelled_at'  => now(),
-            'cost_extra'    => 0,
-            'cost_shipping' => 0,
-            'cost_duties'   => 0,
-            'cost_tax'      => 0,
+            'state'        => PurchaseOrderStateEnum::IN_PROCESS,
+            'submitted_at' => null,
         ]);
 
-        CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 
         $this->purchaseOrderHydrate($purchaseOrder);
@@ -74,8 +61,7 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
 
     public function action(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        $this->asAction      = true;
-        $this->purchaseOrder = $purchaseOrder;
+        $this->asAction = true;
         $this->initialisation($purchaseOrder->organisation, []);
 
         return $this->handle($purchaseOrder);

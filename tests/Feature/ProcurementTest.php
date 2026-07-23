@@ -29,11 +29,11 @@ use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToNotReceived;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSettled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
-use App\Actions\Procurement\PurchaseOrder\UpdateStateToCreatingPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\SupplyChain\Agent\HydrateAgents;
@@ -423,7 +423,7 @@ test('change state to submitted purchase order', function ($purchaseOrder) {
 test('change state to creating purchase order', function ($purchaseOrder) {
     $purchaseOrder->refresh();
 
-    $purchaseOrder = UpdateStateToCreatingPurchaseOrder::make()->action($purchaseOrder);
+    $purchaseOrder = UpdatePurchaseOrderStateToInProcess::make()->action($purchaseOrder);
 
     expect($purchaseOrder->state)->toEqual(PurchaseOrderStateEnum::IN_PROCESS);
 

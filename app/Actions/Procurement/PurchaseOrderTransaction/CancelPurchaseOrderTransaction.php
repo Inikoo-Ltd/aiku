@@ -32,7 +32,10 @@ class CancelPurchaseOrderTransaction extends OrgAction
         }
 
         $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, [
-            'state' => PurchaseOrderTransactionStateEnum::CANCELLED,
+            'state'          => PurchaseOrderTransactionStateEnum::CANCELLED,
+            'net_amount'     => 0,
+            'grp_net_amount' => 0,
+            'org_net_amount' => 0,
         ]);
 
         CalculatePurchaseOrderTotalAmounts::run($purchaseOrderTransaction->purchaseOrder);

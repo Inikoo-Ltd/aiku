@@ -187,11 +187,26 @@ class ShowPurchaseOrder extends OrgAction
                         ],
                     ],
                     [
-                        'label'   => __('Cancel'),
-                        'tooltip' => __('Cancel'),
+                        'label'   => __('Undo Submit'),
+                        'tooltip' => __('Revert Purchase Order to In Process'),
                         'type'    => 'button',
                         'style'   => 'delete',
-                        'key'     => 'action',
+                        'icon'    => 'fal fa-paper-plane',
+                        'key'     => 'undo_submit_purchase_order',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.purchase-order.undo-submit',
+                            'parameters' => [
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
+                    ],
+                    [
+                        'label'   => __('Cancel'),
+                        'tooltip' => __('Cancel Purchase Order'),
+                        'type'    => 'button',
+                        'style'   => 'delete',
+                        'key'     => 'cancel_purchase_order',
                         'route'   => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.purchase-order.cancel',
@@ -211,20 +226,6 @@ class ShowPurchaseOrder extends OrgAction
                         'route'   => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.purchase-order.settle',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
-                    [
-                        'label'   => __('Cancel'),
-                        'tooltip' => __('Cancel'),
-                        'type'    => 'button',
-                        'style'   => 'delete',
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.cancel',
                             'parameters' => [
                                 'purchaseOrder' => $purchaseOrder->id,
                             ],
@@ -313,6 +314,8 @@ class ShowPurchaseOrder extends OrgAction
                         'volume' => Arr::get($weightAndVolume, 'volume'),
                         'is_weight_partial' => Arr::get($weightAndVolume, 'is_weight_partial'),
                         'is_volume_partial' => Arr::get($weightAndVolume, 'is_volume_partial'),
+                        'production_time' => null,
+                        'delivery_time' => null,
                     ],
                     'third_block' => [
                         'currency'     => $purchaseOrder->currency?->code,
@@ -379,6 +382,10 @@ class ShowPurchaseOrder extends OrgAction
 
         foreach ([PurchaseOrderStateEnum::SETTLED, PurchaseOrderStateEnum::CANCELLED, PurchaseOrderStateEnum::NOT_RECEIVED] as $terminalState) {
             if ($state === $terminalState) {
+                if ($purchaseOrder->confirmed_at === null) {
+                    unset($timeline[PurchaseOrderStateEnum::CONFIRMED->value]);
+                }
+
                 $timeline[$terminalState->value] = [
                     'label'     => $labels[$terminalState->value],
                     'tooltip'   => $labels[$terminalState->value],
