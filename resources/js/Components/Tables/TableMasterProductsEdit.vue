@@ -133,7 +133,7 @@ const rowClass = (xxx: any) => {
 
 
 // Section: multiselect columns selector
-const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'master_price', 'master_rrp', 'units', 'unit', 'gross_weight', 'family_id', ])
+const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'master_prices', 'master_rrps', 'units', 'unit', 'gross_weight', 'family_id', ])
 const groupedColumnList = ref([
     {
         label: 'General',
@@ -147,8 +147,8 @@ const groupedColumnList = ref([
     {
         label: 'Pricing',
         items: [
-            { label: 'Price', value: 'master_price' },
-            { label: 'RRP', value: 'master_rrp' },
+            { label: 'Price', value: 'master_prices' },
+            { label: 'RRP', value: 'master_rrps' },
         ]
     },
     {
@@ -403,9 +403,9 @@ const onSelectFamily = (option: any) => {
                 </Column>
 
                 <!-- Column: Price -->
-                <Column v-if="selectedColumns.includes('master_price')" field="price" header="Price" sortable style="min-width: 18rem">
+                <Column v-if="selectedColumns.includes('master_prices')" field="price" header="Price" sortable style="min-width: 18rem">
                     <template #body="slotProps">
-                        <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_price" :masterAsset="slotProps.data.id" :type_input="'price'" :currencies="currencies" />
+                        <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_prices" :masterAsset="slotProps.data.id" :type_input="'price'" :currencies="currencies" />
                        <!--  <InputNumber
                             v-model="slotProps.data.price"
                             @input="(e) => slotProps.data.price = e?.value ?? 0"
@@ -421,9 +421,9 @@ const onSelectFamily = (option: any) => {
                 </Column>
                 
                 <!-- Column: RRP -->
-                <Column v-if="selectedColumns.includes('master_rrp')" field="rrp" header="RRP" sortable style="min-width: 18rem">
+                <Column v-if="selectedColumns.includes('master_rrps')" field="rrp" header="RRP" sortable style="min-width: 18rem">
                     <template #body="slotProps">
-                         <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_rrp" :masterAsset="slotProps.data.id" :type_input="'rrp'" :currencies="currencies" />
+                         <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_rrps" :masterAsset="slotProps.data.id" :type_input="'rrp'" :currencies="currencies" />
                        <!--  <InputNumber
                             v-model="slotProps.data.rrp"
                             @input="(e) => slotProps.data.rrp = e?.value ?? 0"
