@@ -30,6 +30,12 @@ class SubmitApiOrder extends RetinaApiAction
      */
     public function handle(Order $order): Order|JsonResponse
     {
+        if($order->transactions->count() === 0) {
+            return response()->json([
+                'message' => "This order has no products yet. Please add products to the order before submitting it."
+            ], 403);
+        }
+
         if ($order->customer_id != $this->customer->id || $order->shop_id != $this->shop->id) {
             return response()->json([
                 'message' => "Unable to make modifications for this order"
@@ -39,7 +45,7 @@ class SubmitApiOrder extends RetinaApiAction
         if ($order->state != OrderStateEnum::CREATING) {
             return response()->json([
                 'message' => "This order is already in the '{$order->state->value}' state and cannot be updated."
-            ], 409);
+            ], 403);
         }
 
         return $this->payAndSubmitOrder($order);
@@ -60,7 +66,7 @@ class SubmitApiOrder extends RetinaApiAction
     /**
      * @throws \Throwable
      */
-    public function asController(Order $order, ActionRequest $request): Order
+    public function asController(Order $order, ActionRequest $request): Order|JsonResponse
     {
         $this->initialisationFromDropshipping($request);
 
