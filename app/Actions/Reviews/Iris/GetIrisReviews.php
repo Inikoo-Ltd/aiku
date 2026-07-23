@@ -31,10 +31,8 @@ class GetIrisReviews extends IrisAction
 
         if ($model instanceof Product) {
             $reviews = GetIrisProductReviews::run($model);
-            $model = $model;
         } elseif ($model instanceof ProductCategory) {
             $reviews = GetIrisProductCategoryReviews::run($model);
-            $model = $model;
             
             if ($reviews->isEmpty()) {
                 $reviews = GetIrisShopReviews::run($webpage->shop);
@@ -58,7 +56,7 @@ class GetIrisReviews extends IrisAction
         return $reviewData;
     }
 
-    public function asController(Webpage $webpage, ActionRequest $request)
+    public function asController(Webpage $webpage, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
 

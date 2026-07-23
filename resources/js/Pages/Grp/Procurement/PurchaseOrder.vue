@@ -216,6 +216,7 @@ const submitLoading = ref(false)
 
 const confirmSubmitPurchaseOrder = (action: any) => {
 	confirm.require({
+		group: "purchase-order",
 		message: trans("Are you sure you want to submit this purchase order?"),
 		header: trans("Submit Purchase Order"),
 		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
@@ -238,6 +239,7 @@ const confirmSubmitPurchaseOrder = (action: any) => {
 
 const confirmDeletePurchaseOrder = (action: any) => {
 	confirm.require({
+		group: "purchase-order",
 		message: trans("Are you sure you want to delete this purchase order? This action cannot be undone."),
 		header: trans("Delete Purchase Order"),
 		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
@@ -548,7 +550,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:typeModel="'purchase_order'"
 	/>
 
-	<ConfirmDialog>
+	<ConfirmDialog group="purchase-order">
 		<template #icon>
 			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
 		</template>

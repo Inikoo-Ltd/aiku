@@ -26,7 +26,7 @@ trait WithGetIrisReviewsTrait
         $scopes = [];
         if ($parent instanceof Shop) {
             $shop = $parent;
-            $scopes = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER, ReviewScopeEnum::PRODUCT, ReviewScopeEnum::FAMILY];
+            $scopes = [ReviewScopeEnum::SHOP, ReviewScopeEnum::ORDER];
             $setting = Arr::get($shop->settings, 'reviews.validation_scope.shop', []);
         } else {
             $shop = $parent->shop;
@@ -75,6 +75,7 @@ trait WithGetIrisReviewsTrait
 
     public function getIrisReviews(Product|ProductCategory|Shop $parent, ?string $prefix = null): LengthAwarePaginator
     {
+        
         $shop = $parent instanceof Shop ? $parent : $parent->shop;
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -134,16 +135,10 @@ trait WithGetIrisReviewsTrait
             ->leftJoin('users as reply_users', 'reviews.reply_by', '=', 'reply_users.id')
             ->select($select);
 
-        // if ($parent instanceof Shop) {
-        //     $randomSort = AllowedSort::custom('random', new RandomSort());
-        //     array_push($allowedSort, $randomSort);
-        //     $queryBuilder
-        //         ->defaultSort($randomSort);
-
-        // } else {
+   
         $queryBuilder
-            ->defaultSort('-created_at');
-        // }
+            ->defaultSort('-published_at');
+
 
         return $queryBuilder
             ->allowedSorts($allowedSort)

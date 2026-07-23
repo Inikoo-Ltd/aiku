@@ -17,11 +17,11 @@ import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox } from '@fal'
-import { faExclamationCircle, faSpinner } from '@fas'
+import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle)
 
 const confirm = useConfirm()
 
@@ -181,6 +181,42 @@ async function onDeleteItem(item: any) {
         })
     } finally {
         deletingId.value = null
+    }
+}
+
+const cancellingId = ref<number | null>(null)
+
+function confirmCancelItem(event: MouseEvent, item: any) {
+    if (!item.cancelRoute) {
+        return
+    }
+
+    confirm.require({
+        target: event.currentTarget as HTMLElement,
+        message: trans('Cancel this item?'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: trans('Cancel item'),
+        rejectLabel: trans('Keep'),
+        acceptClass: 'p-button-danger',
+        rejectClass: 'p-button-text',
+        accept: () => onCancelItem(item),
+    })
+}
+
+async function onCancelItem(item: any) {
+    cancellingId.value = item.id
+    try {
+        await axios.patch(route(item.cancelRoute.name, item.cancelRoute.parameters))
+        notify({ title: trans('Success'), text: trans('Item cancelled'), type: 'success' })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to cancel item'),
+            type: 'error',
+        })
+    } finally {
+        cancellingId.value = null
     }
 }
 
@@ -381,6 +417,21 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     fixed-width
                 />
                 <span>{{ item.state_label }}</span>
+                <button
+                    v-if="state === 'submitted' && item.cancelRoute"
+                    v-tooltip="trans('Cancel this item')"
+                    type="button"
+                    class="flex items-center justify-center text-red-500 hover:text-red-700 disabled:text-gray-300"
+                    :disabled="cancellingId === item.id"
+                    @click="confirmCancelItem($event, item)"
+                >
+                    <FontAwesomeIcon
+                        :icon="cancellingId === item.id ? 'fas fa-spinner' : 'fas fa-minus-circle'"
+                        :spin="cancellingId === item.id"
+                        aria-hidden="true"
+                        fixed-width
+                    />
+                </button>
             </div>
         </template>
     </Table>
