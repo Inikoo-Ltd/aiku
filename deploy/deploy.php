@@ -122,7 +122,7 @@ task('deploy:refresh-vue', function () {
 desc('Reload octane after deployment');
 task('artisan:octane:reload', function () {
     artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
-})->select('env=prod');
+});
 
 desc('Save ssr checksums');
 task('deploy:save-ssr-checksums', function () {
@@ -216,7 +216,7 @@ task(
             writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
         }
     }
-)->select('env=prod');
+);
 
 desc('Restart Inertia SSR by supervisorctl');
 task('deploy:restart-ssr-by-supervisorctl', function () {

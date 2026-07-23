@@ -8,7 +8,7 @@ import:
 config:
   application: 'aiku'
   default_selector: 'env=prod'
-  repository: 'https://github.com/inikoo/aiku.git'
+  repository: 'https://github.com/Inikoo-Ltd/aiku.git'
 
 hosts:
   aiku:
@@ -25,6 +25,13 @@ hosts:
       env: prod
   staging:
     environment: 'staging'
+    deploy_path: '~/aiku'
+    branch: staging
+    labels:
+      env: staging
+  neon:
+    environment: 'staging'
+    hostname: neon_staging
     deploy_path: '~/aiku'
     branch: staging
     labels:

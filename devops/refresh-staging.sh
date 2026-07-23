@@ -19,7 +19,7 @@
 set -euo pipefail
 
 REPLICA="${REPLICA:-helio}"                 # ssh alias of the prod replica (DB dump)
-MEDIA_SRC="${MEDIA_SRC:-aiku@65.109.156.60:/home/aiku/aiku/shared/storage/media/}"  # boro media
+MEDIA_SRC="${MEDIA_SRC:-boro:/home/aiku/aiku/shared/storage/media/}"  # ssh alias defined on neon
 PROD_DB="${PROD_DB:-aiku}"
 STAGING_DB="${STAGING_DB:-aiku_staging}"
 STAGING_ROLE="${STAGING_ROLE:-staging}"
@@ -74,8 +74,7 @@ log "done. staging refreshed from $REPLICA."
 # INITIAL FULL LOAD (manual, one time — not this script):
 #   # on the replica, streamed straight onto neon:
 #   ssh -A helio 'pg_dump -Fc -x --no-owner -Z3 -d aiku \
-#     | ssh -o StrictHostKeyChecking=accept-new staging@157.180.99.45 \
-#         "cat > /home/staging/dumps/aiku-prod-full.dump"'
+#     | ssh staging@<neon> "cat > /home/staging/dumps/aiku-prod-full.dump"'
 #   # then on neon:
 #   sudo -u postgres pg_restore --no-owner --role=staging -x -j8 \
 #     -d aiku_staging /home/staging/dumps/aiku-prod-full.dump
