@@ -14,14 +14,19 @@ use App\Mcp\Tools\DeliveryNotesSummaryTool;
 use App\Mcp\Tools\EmployeeAttendanceTool;
 use App\Mcp\Tools\EmployeeDirectoryTool;
 use App\Mcp\Tools\FamilySalesTool;
+use App\Mcp\Tools\GroupSalesTool;
 use App\Mcp\Tools\MailshotPerformanceTool;
 use App\Mcp\Tools\OffersOverviewTool;
 use App\Mcp\Tools\OrderStatusTool;
+use App\Mcp\Tools\OrgFamilySalesTool;
+use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\ProductsWithoutImagesTool;
 use App\Mcp\Tools\ShopReviewsTool;
 use App\Mcp\Tools\ShopSalesTool;
 use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\TopProductsTool;
+use App\Mcp\Tools\TradeUnitFamilySalesTool;
+use App\Mcp\Tools\TradeUnitSalesTool;
 use App\Mcp\Tools\WebsiteOverviewTool;
 use App\Mcp\Tools\WebTrafficTool;
 use Laravel\Mcp\Server;
@@ -54,5 +59,10 @@ class AikuServer extends Server
         CustomerEmailPressureTool::class,
         ShopReviewsTool::class,
         CustomerNotesTool::class,
+        OrgFamilySalesTool::class,
+        OrgStockSalesTool::class,
+        GroupSalesTool::class,
+        TradeUnitFamilySalesTool::class,
+        TradeUnitSalesTool::class,
     ];
 }
