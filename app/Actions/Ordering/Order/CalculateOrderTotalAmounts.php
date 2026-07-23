@@ -134,14 +134,17 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         }
     }
 
-    public string $commandSignature = 'order:totals {order}';
+    public string $commandSignature = 'order:totals {order} {--ignoreCalculateDiscounts}';
 
     public function asCommand(Command $command): int
     {
         $exitCode = 0;
         $order    = Order::where('slug', $command->argument('order'))->firstOrFail();
+
+        $ignoreCalculateDiscounts = !(bool)$command->option('ignoreCalculateDiscounts');
+        
         if ($order) {
-            $this->handle($order);
+            $this->handle($order, calculateDiscounts: $ignoreCalculateDiscounts);
             $command->line("Order $order->reference totals calculated. 🧮");
         } else {
             $command->error("Model not found");
