@@ -361,6 +361,7 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToNotReceived;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSettled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
+use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Production\Artefact\ImportArtefact;
@@ -1212,6 +1213,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::post('transactions/{historicSupplierProduct:id}/{orgStock:id}/store', StorePurchaseOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/update', UpdatePurchaseOrderTransaction::class)->name('transaction.update')->withoutScopedBindings();
     Route::delete('transactions/{purchaseOrderTransaction:id}/delete', DeletePurchaseOrderTransaction::class)->name('transaction.delete')->withoutScopedBindings();
+    Route::patch('transactions/{purchaseOrderTransaction:id}/cancel', CancelPurchaseOrderTransaction::class)->name('transaction.cancel')->withoutScopedBindings();
 });
 
 Route::name('email.')->prefix('email/')->group(function () {
