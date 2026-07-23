@@ -18,6 +18,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use function Clue\StreamFilter\fun;
 
 class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUnique
 {
@@ -42,10 +43,9 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
             ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('status', true)
             ->where('platform_status', false)
-            ->whereIn('id', Arr::get($attributes, 'portfolios'))
-            ->get();
+            ->whereIn('id', Arr::get($attributes, 'portfolios'));
 
-        $totalNumber = count($portfoliosIds);
+        $totalNumber = $portfoliosIds->count();
 
         // Use a unique key per job/session to avoid cross-request pollution
         $cacheKey = 'upload_progress_' . $customerSalesChannel->id . '_' . uniqid();
@@ -53,28 +53,36 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
         Cache::put($cacheKey . '_fail', 0, now()->addHour());
 
         /** @var Portfolio $portfolio */
-        foreach ($portfoliosIds as $portfoliosId) {
-            try {
-                $portfolio = Portfolio::find($portfoliosId->id);
-                if ($portfolio) {
-                    $portfolio = StoreNewProductToCurrentShopify::run($portfolio, []);
+        $portfoliosIds->chunkById(20, function($portfoliosIdChunk) use ($customerSalesChannel, $totalNumber, $cacheKey) {
+            foreach ($portfoliosIdChunk as $portfoliosId) {
+                try {
+                    $portfolio = Portfolio::find($portfoliosId->id);
+                    if ($portfolio) {
+                        $portfolio = StoreNewProductToCurrentShopify::run($portfolio, []);
 
-                    if ($portfolio->platform_status) {
-                        Cache::increment($cacheKey . '_success');
-                    } else {
-                        Cache::increment($cacheKey . '_fail');
+                        if ($portfolio->platform_status) {
+                            Cache::increment($cacheKey . '_success');
+                        } else {
+                            Cache::increment($cacheKey . '_fail');
+                        }
+
+                        UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
+                            'total' => $totalNumber,
+                            'success' => Cache::get($cacheKey . '_success'),
+                            'fail' => Cache::get($cacheKey . '_fail'),
+                        ]);
                     }
-
-                    UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
-                        'total' => $totalNumber,
-                        'success' => Cache::get($cacheKey . '_success'),
-                        'fail' => Cache::get($cacheKey . '_fail'),
-                    ]);
+                } catch (\Exception $e) {
+                    Cache::increment($cacheKey . '_fail');
                 }
-            } catch (\Exception $e) {
-                Cache::increment($cacheKey . '_fail');
             }
-        }
+        });
+
+        UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
+            'total' => $totalNumber,
+            'success' => Cache::get($cacheKey . '_success'),
+            'fail' => Cache::get($cacheKey . '_fail'),
+        ]);
 
         Cache::forget($cacheKey . '_success');
         Cache::forget($cacheKey . '_fail');
