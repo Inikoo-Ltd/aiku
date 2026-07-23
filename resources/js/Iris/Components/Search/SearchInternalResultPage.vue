@@ -33,7 +33,7 @@ interface InternalFacetItem {
     id: number
     name: string
     count: number
-    image: any
+    image?: any
     url?: string
 }
 
@@ -41,9 +41,19 @@ interface InternalFacets {
     departments: InternalFacetItem[]
     sub_departments: InternalFacetItem[]
     families: InternalFacetItem[]
+    brands: InternalFacetItem[]
+    tags: InternalFacetItem[]
+    price: { min: number | null, max: number | null }
 }
 
-const emptyFacets = (): InternalFacets => ({ departments: [], sub_departments: [], families: [] })
+const emptyFacets = (): InternalFacets => ({
+    departments: [],
+    sub_departments: [],
+    families: [],
+    brands: [],
+    tags: [],
+    price: { min: null, max: null },
+})
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -61,6 +71,10 @@ const currentPage = ref(1)
 const perPage = 15
 
 const selectedCategoryIds = ref<number[]>([])
+const selectedBrandIds = ref<number[]>([])
+const selectedTagIds = ref<number[]>([])
+const priceMin = ref('')
+const priceMax = ref('')
 const sortBy = ref('')
 
 const isInternalLoading = ref(false)
@@ -101,6 +115,10 @@ const fetchInternalResults = async ({ pageNumber = 1, append = false, resultsOnl
                     page: pageNumber,
                     per_page: perPage,
                     categories: selectedCategoryIds.value,
+                    brands: selectedBrandIds.value,
+                    tags: selectedTagIds.value,
+                    price_min: priceMin.value !== '' ? priceMin.value : undefined,
+                    price_max: priceMax.value !== '' ? priceMax.value : undefined,
                     sort: sortBy.value || undefined,
                 },
                 signal: internalAbort.signal,
@@ -135,6 +153,10 @@ const fetchInternalResults = async ({ pageNumber = 1, append = false, resultsOnl
 
 watch(searchQuery, (query) => {
     selectedCategoryIds.value = []
+    selectedBrandIds.value = []
+    selectedTagIds.value = []
+    priceMin.value = ''
+    priceMax.value = ''
     sortBy.value = ''
     if (!query.trim()) {
         resetResults()
@@ -149,13 +171,28 @@ onBeforeMount(() => {
     }
 })
 
-// Section: category facets (checkbox filters refresh the product results only,
+// Section: facet filters (checkbox/price changes refresh the product results only,
 // the side panel keeps its facets so no skeleton flashes)
-const toggleCategory = (categoryId: number) => {
-    const selection = selectedCategoryIds.value
-    selectedCategoryIds.value = selection.includes(categoryId)
-        ? selection.filter((id) => id !== categoryId)
-        : [...selection, categoryId]
+const facetSelections = {
+    categories: selectedCategoryIds,
+    brands: selectedBrandIds,
+    tags: selectedTagIds,
+} as const
+
+type FacetSelectionKey = keyof typeof facetSelections
+
+const isFacetSelected = (selection: FacetSelectionKey, id: number) =>
+    facetSelections[selection].value.includes(id)
+
+const toggleFacet = (selection: FacetSelectionKey, id: number) => {
+    const current = facetSelections[selection].value
+    facetSelections[selection].value = current.includes(id)
+        ? current.filter((selectedId) => selectedId !== id)
+        : [...current, id]
+    fetchInternalResults({ resultsOnly: true })
+}
+
+const onPriceChange = () => {
     fetchInternalResults({ resultsOnly: true })
 }
 
@@ -163,13 +200,24 @@ const onSortChange = () => {
     fetchInternalResults({ resultsOnly: true })
 }
 
-const hasActiveFilters = computed(() => selectedCategoryIds.value.length > 0 || !!sortBy.value)
+const hasActiveFilters = computed(() =>
+    selectedCategoryIds.value.length > 0
+    || selectedBrandIds.value.length > 0
+    || selectedTagIds.value.length > 0
+    || priceMin.value !== ''
+    || priceMax.value !== ''
+    || !!sortBy.value
+)
 
 const resetFilters = () => {
     if (!hasActiveFilters.value) {
         return
     }
     selectedCategoryIds.value = []
+    selectedBrandIds.value = []
+    selectedTagIds.value = []
+    priceMin.value = ''
+    priceMax.value = ''
     sortBy.value = ''
     fetchInternalResults({ resultsOnly: true })
 }
@@ -179,10 +227,16 @@ const loadMore = () => {
 }
 
 const facetGroups = computed(() => [
-    { key: 'families', label: ctrans('Categories'), items: facets.value.families },
-    { key: 'departments', label: ctrans('Departments'), items: facets.value.departments },
-    { key: 'sub_departments', label: ctrans('Sub Departments'), items: facets.value.sub_departments },
+    { key: 'families', label: ctrans('Categories'), selection: 'categories' as const, items: facets.value.families },
+    { key: 'departments', label: ctrans('Departments'), selection: 'categories' as const, items: facets.value.departments },
+    { key: 'sub_departments', label: ctrans('Sub Departments'), selection: 'categories' as const, items: facets.value.sub_departments },
+    { key: 'brands', label: ctrans('Brands'), selection: 'brands' as const, items: facets.value.brands },
+    { key: 'tags', label: ctrans('Tags'), selection: 'tags' as const, items: facets.value.tags },
 ].filter((group) => group.items.length))
+
+const showPriceFacet = computed(() =>
+    !!layout.iris?.is_logged_in && facets.value.price?.max !== null
+)
 
 const localeStore = useLocaleStore()
 const formatPrice = (price?: number | string | null) => {
@@ -216,14 +270,15 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
 }
 
 // Section: quick searches (Luigi's Box lookalike tabs + card rail)
-const railCategories = computed(() =>
-    facets.value.families.length ? facets.value.families : facets.value.departments
-)
+type RailItem = InternalFacetItem | InternalCatalogueItem
 
-const activeQuickSearch = ref<'category' | 'collection'>('category')
+const activeQuickSearch = ref<'category' | 'department' | 'sub_department' | 'tag' | 'collection'>('category')
 const quickSearchTabs = computed(() => [
-    { key: 'category' as const, label: ctrans('Categories'), items: railCategories.value as (InternalFacetItem | InternalCatalogueItem)[] },
-    { key: 'collection' as const, label: ctrans('Collections'), items: collections.value as (InternalFacetItem | InternalCatalogueItem)[] },
+    { key: 'category' as const, label: ctrans('Categories'), items: facets.value.families as RailItem[] },
+    { key: 'department' as const, label: ctrans('Departments'), items: facets.value.departments as RailItem[] },
+    { key: 'sub_department' as const, label: ctrans('Sub Departments'), items: facets.value.sub_departments as RailItem[] },
+    { key: 'tag' as const, label: ctrans('Tags'), items: facets.value.tags as RailItem[] },
+    { key: 'collection' as const, label: ctrans('Collections'), items: collections.value as RailItem[] },
 ].filter((tab) => tab.items.length))
 
 watch(quickSearchTabs, (tabs) => {
@@ -235,6 +290,13 @@ watch(quickSearchTabs, (tabs) => {
 const activeRailItems = computed(() =>
     quickSearchTabs.value.find((tab) => tab.key === activeQuickSearch.value)?.items ?? []
 )
+
+// Tags have no storefront page; clicking a tag card toggles its facet filter instead
+const onRailItemClick = (item: RailItem) => {
+    if (activeQuickSearch.value === 'tag') {
+        toggleFacet('tags', item.id)
+    }
+}
 
 // Reuse the global rail helpers from app-iris.blade.php (lb-qs / data-lb-rail hooks)
 const scrollRail = (event: Event, direction: number) => {
@@ -255,19 +317,22 @@ const visitingProductId = ref<number | null>(null)
 
 <template>
     <div id="lb-search-element">
+        <div v-if="layout.app.environment === 'local'" class="bg-yellow-500 w-full text-center py-1 rounded">
+            Internal search
+        </div>
         <div class="antialiased box-border pt-[30px] pb-[30px] md:pb-[50px]" :style="{
             fontFamily: layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily
         }">
-            <div id="results-scroll-to"></div>
+            <!-- <div id="results-scroll-to"></div> -->
             <div class="box-border flex flex-col md:flex-row items-stretch gap-6 md:gap-0">
                 <!-- Aside: category facets with product counts (checkbox filters) -->
                 <aside class="w-full md:w-[300px] flex-shrink-0 md:border-r md:border-[#e8e8e8] md:pr-5"
                     :class="isMobileFilterOpen ? 'block' : 'hidden md:block'">
                     <div class="text-[26px] leading-[1.2em] font-bold mb-2.5">{{ ctrans('Filters') }}</div>
                     <div class="flex items-center justify-between gap-2 mb-4">
-                        <div class="text-sm text-[#767676]">{{ totalResults }} {{ ctrans('results') }}</div>
+                        <!-- <div class="text-sm text-[#767676]">{{ totalResults }} {{ ctrans('results') }}</div> -->
                         <button v-if="hasActiveFilters" type="button"
-                            class="text-sm underline hover:no-underline text-[var(--theme-color-0)] cursor-pointer"
+                            class="text-sm underline hover:no-underline text-red-500 cursor-pointer"
                             @click="resetFilters">
                             {{ ctrans('Cancel all filters') }}
                         </button>
@@ -288,10 +353,32 @@ const visitingProductId = ref<number | null>(null)
                                         class="flex items-center gap-2.5 cursor-pointer text-sm text-[#484848] hover:text-[var(--theme-color-0)] transition-colors">
                                         <input type="checkbox"
                                             class="h-4 w-4 flex-shrink-0 rounded-sm accent-[var(--theme-color-0)] cursor-pointer"
-                                            :checked="selectedCategoryIds.includes(item.id)"
-                                            @change="toggleCategory(item.id)" />
+                                            :checked="isFacetSelected(group.selection, item.id)"
+                                            @change="toggleFacet(group.selection, item.id)" />
                                         <span class="">{{ item.name }} ({{ item.count }})</span>
                                     </label>
+                                </div>
+                            </div>
+
+                            <!-- Facet: price range (hidden for guests, they can't see prices) -->
+                            <div v-if="showPriceFacet" class="border-b border-[#e8e8e8] pb-5">
+                                <p class="text-base font-bold text-[var(--theme-color-0)] mb-2.5">
+                                    {{ ctrans('Price') }}</p>
+                                <div class="text-sm text-[#767676] mb-2">
+                                    {{ ctrans('From') }} {{ formatPrice(facets.price.min) }} - {{ ctrans('to') }} {{ formatPrice(facets.price.max) }}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" v-model="priceMin" min="0" step="0.01"
+                                        :placeholder="String(facets.price.min ?? '')"
+                                        :aria-label="ctrans('From')"
+                                        @change="onPriceChange"
+                                        class="w-full min-w-0 text-sm border border-[#9e9e9e] rounded-sm px-2 py-1.5 focus:border-[var(--theme-color-0)] focus:ring-[var(--theme-color-0)]" />
+                                    <span class="text-[#767676]">-</span>
+                                    <input type="number" v-model="priceMax" min="0" step="0.01"
+                                        :placeholder="String(facets.price.max ?? '')"
+                                        :aria-label="ctrans('to')"
+                                        @change="onPriceChange"
+                                        class="w-full min-w-0 text-sm border border-[#9e9e9e] rounded-sm px-2 py-1.5 focus:border-[var(--theme-color-0)] focus:ring-[var(--theme-color-0)]" />
                                 </div>
                             </div>
 
@@ -349,9 +436,17 @@ const visitingProductId = ref<number | null>(null)
                             <!-- Rail -->
                             <div data-lb-rail role="list"
                                 class="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory px-1 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-10">
-                                <LinkIris v-for="item in activeRailItems" :key="item.id" :href="item.url"
+                                <component
+                                    v-for="item in activeRailItems" :key="item.id"
+                                    :is="item.url ? LinkIris : 'button'"
+                                    :href="item.url || undefined"
+                                    :type="item.url ? undefined : 'button'"
                                     role="listitem"
-                                    class="snap-start shrink-0 w-[200px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition">
+                                    class="snap-start shrink-0 w-[200px] overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-md transition text-left"
+                                    :class="!item.url && isFacetSelected('tags', item.id)
+                                        ? 'border-[var(--theme-color-0)] ring-1 ring-[var(--theme-color-0)]'
+                                        : 'border-gray-200'"
+                                    @click="onRailItemClick(item)">
                                     <!-- Image (full cover, square) -->
                                     <div class="relative w-full aspect-square">
                                         <Image v-if="item.image" :src="item.image"
@@ -369,7 +464,7 @@ const visitingProductId = ref<number | null>(null)
                                         class="bg-gray-100 px-3 text-sm font-semibold text-gray-800 text-center flex items-center justify-center h-[52px] leading-snug">
                                         <span class="line-clamp-2">{{ item.name }}</span>
                                     </div>
-                                </LinkIris>
+                                </component>
                             </div>
                         </div>
                     </div>
@@ -381,7 +476,7 @@ const visitingProductId = ref<number | null>(null)
                             @click="isMobileFilterOpen = !isMobileFilterOpen">
                             {{ ctrans('Filters') }}
                         </button>
-                        <div v-if="layout.iris?.is_logged_in" class="flex items-center gap-2 ml-auto">
+                        <div v-if="layout.iris?.is_logged_in" class="flex items-center gap-2 xml-auto">
                             <span class="text-sm font-bold">{{ ctrans('Sort by') }}: </span>
                             <select v-model="sortBy" :aria-label="ctrans('Sort by')" @change="onSortChange"
                                 class="text-sm bg-white border-0 border-b border-black rounded-none py-[5px] w-40 outline-none">

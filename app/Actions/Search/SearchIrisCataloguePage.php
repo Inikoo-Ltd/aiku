@@ -12,8 +12,11 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Helpers\Brand;
+use App\Models\Helpers\Tag;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class SearchIrisCataloguePage extends IrisAction
@@ -29,6 +32,10 @@ class SearchIrisCataloguePage extends IrisAction
     {
         $query       = Arr::get($modelData, 'q');
         $categoryIds = array_map('intval', Arr::get($modelData, 'categories', []));
+        $brandIds    = array_map('intval', Arr::get($modelData, 'brands', []));
+        $tagIds      = array_map('intval', Arr::get($modelData, 'tags', []));
+        $priceMin    = Arr::get($modelData, 'price_min');
+        $priceMax    = Arr::get($modelData, 'price_max');
         $perPage     = (int) Arr::get($modelData, 'per_page', 15);
         $pageNumber  = (int) Arr::get($modelData, 'page', 1);
         $sort        = Arr::get($modelData, 'sort');
@@ -43,7 +50,14 @@ class SearchIrisCataloguePage extends IrisAction
                     'page'        => 1,
                     'last_page'   => 1,
                     'per_page'    => $perPage,
-                    'facets'      => ['departments' => [], 'sub_departments' => [], 'families' => []],
+                    'facets'      => [
+                        'departments'     => [],
+                        'sub_departments' => [],
+                        'families'        => [],
+                        'brands'          => [],
+                        'tags'            => [],
+                        'price'           => ['min' => null, 'max' => null],
+                    ],
                     'collections' => [],
                 ],
             ];
@@ -51,6 +65,19 @@ class SearchIrisCataloguePage extends IrisAction
 
         $productsQuery = Product::query()->whereIn('id', $matchedIds);
         $this->applyCategoryFilters($productsQuery, $categoryIds);
+
+        if (!empty($brandIds)) {
+            $productsQuery->whereHas('brands', fn ($brandQuery) => $brandQuery->whereIn('brands.id', $brandIds));
+        }
+        if (!empty($tagIds)) {
+            $productsQuery->whereHas('tags', fn ($tagQuery) => $tagQuery->whereIn('tags.id', $tagIds));
+        }
+        if ($priceMin !== null && $priceMin !== '') {
+            $productsQuery->where('price', '>=', (float) $priceMin);
+        }
+        if ($priceMax !== null && $priceMax !== '') {
+            $productsQuery->where('price', '<=', (float) $priceMax);
+        }
 
         $total    = (clone $productsQuery)->count();
         $lastPage = max(1, (int) ceil($total / $perPage));
@@ -88,7 +115,11 @@ class SearchIrisCataloguePage extends IrisAction
                 'page'        => $pageNumber,
                 'last_page'   => $lastPage,
                 'per_page'    => $perPage,
-                'facets'      => $this->categoryFacets($matchedIds),
+                'facets'      => array_merge(
+                    $this->categoryFacets($matchedIds),
+                    $this->brandTagFacets($matchedIds),
+                    ['price' => $this->priceRange($matchedIds)],
+                ),
                 'collections' => $this->matchedCollections($query),
             ],
         ];
@@ -191,6 +222,76 @@ class SearchIrisCataloguePage extends IrisAction
     }
 
     /**
+     * Brand and tag facets counted from the matched products, capped to the 30 most frequent
+     * per group to keep the side panel manageable.
+     *
+     * @param array<int, int> $matchedIds
+     *
+     * @return array{brands: array<int, array<string, mixed>>, tags: array<int, array<string, mixed>>}
+     */
+    private function brandTagFacets(array $matchedIds): array
+    {
+        $morphClass = (new Product())->getMorphClass();
+
+        $buildGroup = function (string $table, string $column, string $modelClass) use ($matchedIds, $morphClass) {
+            $counts = DB::table($table)
+                ->where('model_type', $morphClass)
+                ->whereIn('model_id', $matchedIds)
+                ->select($column, DB::raw('count(distinct model_id) as count'))
+                ->groupBy($column)
+                ->pluck('count', $column);
+
+            if ($counts->isEmpty()) {
+                return [];
+            }
+
+            $models = $modelClass::query()->whereIn('id', $counts->keys()->all())->get()->keyBy('id');
+
+            return $counts
+                ->map(function ($count, $id) use ($models) {
+                    $model = $models->get($id);
+                    if (!$model) {
+                        return null;
+                    }
+
+                    return [
+                        'id'    => $model->id,
+                        'name'  => $model->name,
+                        'count' => (int) $count,
+                    ];
+                })
+                ->filter()
+                ->sortByDesc('count')
+                ->take(30)
+                ->values()
+                ->all();
+        };
+
+        return [
+            'brands' => $buildGroup('model_has_brands', 'brand_id', Brand::class),
+            'tags'   => $buildGroup('model_has_tags', 'tag_id', Tag::class),
+        ];
+    }
+
+    /**
+     * @param array<int, int> $matchedIds
+     *
+     * @return array{min: float|null, max: float|null}
+     */
+    private function priceRange(array $matchedIds): array
+    {
+        $range = Product::query()
+            ->whereIn('id', $matchedIds)
+            ->selectRaw('min(price) as min_price, max(price) as max_price')
+            ->first();
+
+        return [
+            'min' => $range?->min_price !== null ? (float) $range->min_price : null,
+            'max' => $range?->max_price !== null ? (float) $range->max_price : null,
+        ];
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function matchedCollections(string $query): array
@@ -223,6 +324,12 @@ class SearchIrisCataloguePage extends IrisAction
             'q'            => ['required', 'string'],
             'categories'   => ['sometimes', 'array'],
             'categories.*' => ['integer'],
+            'brands'       => ['sometimes', 'array'],
+            'brands.*'     => ['integer'],
+            'tags'         => ['sometimes', 'array'],
+            'tags.*'       => ['integer'],
+            'price_min'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'price_max'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'page'         => ['sometimes', 'integer', 'min:1'],
             'per_page'     => ['sometimes', 'integer', 'min:1', 'max:100'],
             'sort'         => ['sometimes', 'nullable', 'in:price_amount:asc,price_amount:desc'],
