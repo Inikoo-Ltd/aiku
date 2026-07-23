@@ -1,0 +1,2 @@
+# /etc/exports on neon (NFS server)
+/srv/nfs/shared 10.0.1.0/24(rw,sync,no_subtree_check,root_squash)
