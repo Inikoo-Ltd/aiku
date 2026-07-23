@@ -58,7 +58,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
         $masterShop = $masterProductCategory->masterShop;
 
-        $openShopsQuery = $masterShop->shops()->where('state', ShopStateENUM::OPEN);
+        $openShopsQuery = $masterShop->shops()->where('state', ShopStateEnum::OPEN);
 
         $baseCurrency      = Currency::where('code', 'EUR')->first();
 
