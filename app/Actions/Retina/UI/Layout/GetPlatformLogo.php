@@ -10,7 +10,7 @@ namespace App\Actions\Retina\UI\Layout;
 
 trait GetPlatformLogo
 {
-    public function getPlatformLogo(?string $platformCode): ?string
+    public function getPlatformLogo(?string $platformCode = null): ?string
     {
         return match ($platformCode) {
             'shopify' => 'https://cdn-icons-png.flaticon.com/64/5968/5968919.png',
