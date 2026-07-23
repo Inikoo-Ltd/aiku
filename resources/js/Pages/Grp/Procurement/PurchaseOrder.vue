@@ -100,6 +100,8 @@ const props = defineProps < {
             volume: number | null
             is_weight_partial: boolean
             is_volume_partial: boolean
+            production_time: string | null
+            delivery_time: string | null
 		}
         third_block: {
             currency: string | null
@@ -213,6 +215,7 @@ watch(isModalProductListOpen, (isOpen, wasOpen) => {
 const confirm = useConfirm()
 const deleteLoading = ref(false)
 const submitLoading = ref(false)
+const cancelLoading = ref(false)
 
 const confirmSubmitPurchaseOrder = (action: any) => {
 	confirm.require({
@@ -252,6 +255,29 @@ const confirmDeletePurchaseOrder = (action: any) => {
 					notify({
 						title: trans("Something went wrong"),
 						text: trans("Failed to delete purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmCancelPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to cancel this purchase order? All item amounts will be set to zero."),
+		header: trans("Cancel Purchase Order"),
+		rejectProps: { label: trans("Keep"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Cancel order"), severity: "danger" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { cancelLoading.value = true },
+				onFinish: () => { cancelLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to cancel purchase order"),
 						type: "error",
 					})
 				},
@@ -327,6 +353,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:tooltip="action.tooltip"
 				:loading="deleteLoading"
 				@click="() => confirmDeletePurchaseOrder(action)"
+			/>
+		</template>
+
+		<template #button-cancel-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="cancelLoading"
+				@click="() => confirmCancelPurchaseOrder(action)"
 			/>
 		</template>
 	</PageHeading>
@@ -451,6 +488,25 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             </div>
 
             <hr class="my-1 border-t border-gray-300" />
+
+            <template v-if="data.data.state === 'cancelled'">
+                <div class="space-y-1 text-sm">
+                    <div class="flex items-center justify-between gap-4">
+                        <span>{{ trans("Production time") }}</span>
+                        <span :class="box_stats.second_block.production_time ? '' : 'italic text-gray-400'">
+                            {{ box_stats.second_block.production_time ?? trans("Unknown") }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between gap-4">
+                        <span>{{ trans("Delivery time") }}</span>
+                        <span :class="box_stats.second_block.delivery_time ? '' : 'italic text-gray-400'">
+                            {{ box_stats.second_block.delivery_time ?? trans("Unknown") }}
+                        </span>
+                    </div>
+                </div>
+
+                <hr class="my-1 border-t border-gray-300" />
+            </template>
 
             <div class="flex justify-center gap-4">
                 <div class="flex items-center">
