@@ -121,6 +121,7 @@ class IndexOrders extends OrgAction
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
+        $query->leftJoin('platforms', 'orders.platform_id', '=', 'platforms.id');
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id')->where('shops.state', ShopStateEnum::OPEN);
 
 
@@ -222,6 +223,7 @@ class IndexOrders extends OrgAction
                 'orders.tracking_number',
                 'orders.shipping_data',
                 'orders.with_replacement',
+                'platforms.type as platform',
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column

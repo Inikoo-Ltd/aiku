@@ -228,6 +228,8 @@ const setNewMarkerDate = (newVal: Date) => {
                     {{ order["reference"] }}
                 </Link>
 
+                <img v-if="order?.platform" :src="order?.platform" class="w-4" alt="platform" />
+
                 <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon
