@@ -53,6 +53,7 @@ const emit = defineEmits([
     "view-message-details",
     "transfer-agent-success",
     "assign-self-success",
+    "messages-read",
     "open-jira-settings",
 ])
 
@@ -552,6 +553,7 @@ const markAsRead = async () => {
             session_ulid: chatSession.value.ulid,
             request_from: requestFrom,
         })
+        emit("messages-read")
     } catch (e) {
         console.error("Failed to mark read", e)
     }

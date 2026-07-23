@@ -14,12 +14,11 @@ import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
-import { faChevronUp, faChevronDown, faCog } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight } from "@fal"
 import {
     Contact,
     SessionAPI,
     ChatMessage,
-    ChatInboxGroup,
 } from "@/types/Chat/chat"
 
 const props = defineProps<{
@@ -110,11 +109,14 @@ const mapSession = (s: SessionAPI): Contact => ({
     organisation: s.organisation,
 })
 
+const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
+
 const buildParams = (page: number) => ({
     statuses: [activeTab.value],
     assigned_to_me: myAgentId,
     organisation_id: props.organisation.id,
     page,
+    ...(selectedShopId.value ? { shop_id: selectedShopId.value } : {}),
     ...(viewMode.value === "team" ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
@@ -146,42 +148,76 @@ const loadMore = async () => {
     }
 }
 
-const filteredContacts = computed(() => contacts.value.filter((c) => c.status === activeTab.value))
+const filteredContacts = computed(() =>
+    contacts.value.filter(
+        (c) => c.status === activeTab.value &&
+            (!selectedShopId.value || c.shop?.id === selectedShopId.value)
+    )
+)
 
-const groupedContacts = computed<ChatInboxGroup[]>(() => {
-    const groups = new Map<number | string, ChatInboxGroup>()
+const selectedInbox = computed(() =>
+    props.inboxes?.find((i) => i.id === selectedShopId.value) ?? props.inboxes?.[0] ?? null
+)
 
-    for (const c of filteredContacts.value) {
-        const key = c.shop?.id ?? "other"
+const inboxRailCollapsed = ref(false)
 
-        if (!groups.has(key)) {
-            groups.set(key, {
-                key,
-                shopName: c.shop?.name ?? trans("Other"),
-                organisationName: c.organisation?.name ?? "",
-                unread: 0,
-                contacts: [],
-            })
-        }
+const SHOP_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"]
 
-        const group = groups.get(key)!
-        group.contacts.push(c)
+const shopInitials = (name: string) => {
+    const words = (name || "?").trim().split(/\s+/).filter(Boolean)
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
+    return (words[0] ?? "?").slice(0, 2).toUpperCase()
+}
 
-        if (activeTab.value !== "closed") {
-            group.unread += c.unread ?? 0
-        }
+const shopAvatarStyle = (inbox: { id: number }) => {
+    const color = SHOP_COLORS[(inbox.id ?? 0) % SHOP_COLORS.length]
+    return { backgroundColor: color + "1A", color }
+}
+
+const selectShop = (shopId: number) => {
+    if (selectedShopId.value === shopId) return
+    selectedShopId.value = shopId
+    selectedSession.value = null
+    messages.value = []
+    reloadContacts()
+}
+
+// Per-agent (My Chats) incoming-chat counts used for the badges.
+const notifWaiting = ref<any[]>([])
+const notifActive = ref<any[]>([])
+const notifReopen = ref<any[]>([])
+
+const fetchInboxNotifications = async () => {
+    if (!myAgentId) return
+    try {
+        const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`)
+        notifWaiting.value = data?.data?.waiting ?? []
+        notifActive.value = data?.data?.active ?? []
+        notifReopen.value = data?.data?.reopen ?? []
+    } catch (e) {
+        // silent — badges are non-critical
     }
+}
 
-    return Array.from(groups.values())
+const tabUnread = computed(() => {
+    const sid = selectedShopId.value
+    const inShop = (arr: any[]) => (sid ? arr.filter((s) => s?.shop?.id === sid) : arr)
+    return {
+        waiting: inShop(notifWaiting.value).length,
+        active: inShop(notifActive.value).length,
+        closed: inShop(notifReopen.value).length,
+    }
 })
 
-const collapsedInboxes = ref<Set<number | string>>(new Set())
-const toggleInbox = (key: number | string) => {
-    const next = new Set(collapsedInboxes.value)
-    next.has(key) ? next.delete(key) : next.add(key)
-    collapsedInboxes.value = next
-}
-const isInboxCollapsed = (key: number | string) => collapsedInboxes.value.has(key)
+const shopUnread = computed<Record<number, number>>(() => {
+    const map: Record<number, number> = {}
+    for (const s of [...notifWaiting.value, ...notifActive.value, ...notifReopen.value]) {
+        const sid = s?.shop?.id
+        if (!sid) continue
+        map[sid] = (map[sid] ?? 0) + 1
+    }
+    return map
+})
 
 const openChat = (c: Contact) => {
     selectedSession.value = {
@@ -203,6 +239,12 @@ const handleClickContact = (c: Contact) => {
     errorPerContact.value[c.ulid] = ""
     // Waiting chats open into an "Assign to me" step (no composer) until assigned.
     openChat(c)
+}
+
+const onMessagesRead = () => {
+    // A chat was read → its unread badge should clear.
+    reloadContacts()
+    fetchInboxNotifications()
 }
 
 const onAssignSelfSuccess = async () => {
@@ -334,6 +376,7 @@ const openSelectedFromProp = () => {
 
 const onChatListEvent = (e: any) => {
     reloadContacts()
+    fetchInboxNotifications()
 
     const s = e?.session
     const open = selectedSession.value
@@ -357,6 +400,8 @@ const onChatListEvent = (e: any) => {
 }
 
 onMounted(async () => {
+    fetchInboxNotifications()
+
     const init = props.initialSession
     if (init && ["waiting", "active", "closed"].includes(init.status) && activeTab.value !== init.status) {
         // Triggers the tab watcher (which reloads the list and clears the selection).
@@ -420,24 +465,83 @@ onUnmounted(() => {
     </Dialog>
 
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
-        <!-- LEFT: inbox + conversation list -->
-        <div class="w-80 shrink-0 border-r border-gray-200 flex flex-col">
-            <!-- Tabs -->
-            <div class="px-3 py-2 border-b flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1 text-xs">
-                    <button
-                        :class="viewMode === 'my' ? 'font-semibold text-gray-800' : 'text-gray-400'"
-                        @click="viewMode = 'my'">
-                        {{ trans("My Chats") }}
-                    </button>
-                    <span class="text-gray-300">·</span>
-                    <button
-                        :class="viewMode === 'team' ? 'font-semibold text-gray-800' : 'text-gray-400'"
-                        @click="viewMode = 'team'">
-                        {{ trans("Team Chats") }}
-                    </button>
+        <!-- PANEL 1: Inboxes (shops the agent handles) -->
+        <div class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
+            :class="inboxRailCollapsed ? 'w-16' : 'w-52'">
+            <!-- Header + collapse toggle -->
+            <div class="border-b border-gray-200 flex items-center h-[41px]"
+                :class="inboxRailCollapsed ? 'justify-center' : 'justify-between px-3'">
+                <span v-if="!inboxRailCollapsed"
+                    class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                    {{ trans("Inboxes") }}
+                </span>
+                <button type="button" @click="inboxRailCollapsed = !inboxRailCollapsed"
+                    v-tooltip="inboxRailCollapsed ? trans('Expand') : trans('Collapse')"
+                    class="p-1 rounded hover:bg-gray-200 text-gray-400">
+                    <FontAwesomeIcon :icon="inboxRailCollapsed ? faAngleRight : faAngleLeft" class="text-xs" />
+                </button>
+            </div>
+
+            <!-- Shop list -->
+            <div class="flex-1 overflow-y-auto py-1">
+                <button v-for="inbox in inboxes" :key="inbox.id" type="button" @click="selectShop(inbox.id)"
+                    v-tooltip="inboxRailCollapsed ? inbox.name : undefined"
+                    class="w-full flex items-center transition-colors relative"
+                    :class="[
+                        inboxRailCollapsed ? 'justify-center py-2' : 'gap-2.5 px-3 py-2.5',
+                        selectedShopId === inbox.id ? 'font-medium text-gray-800' : 'text-gray-700 hover:bg-gray-100',
+                    ]"
+                    :style="selectedShopId === inbox.id ? selectedItemStyle : {}">
+                    <div class="relative shrink-0">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold"
+                            :style="shopAvatarStyle(inbox)">
+                            {{ shopInitials(inbox.name) }}
+                        </div>
+                        <span v-if="shopUnread[inbox.id]"
+                            class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500 ring-2 ring-gray-50">
+                            {{ shopUnread[inbox.id] }}
+                        </span>
+                    </div>
+                    <span v-if="!inboxRailCollapsed" class="truncate text-sm">{{ inbox.name }}</span>
+                </button>
+                <div v-if="!inboxes.length && !inboxRailCollapsed" class="px-3 py-6 text-xs text-gray-400 text-center">
+                    {{ trans("No inboxes assigned") }}
                 </div>
-                <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500" @click="toggleSearch">
+            </div>
+
+            <!-- Future: Highlighted (placeholder) -->
+            <div class="border-t border-gray-200 py-1">
+                <button type="button" disabled v-tooltip="trans('Highlighted (coming soon)')"
+                    class="w-full flex items-center text-sm text-gray-400 cursor-not-allowed"
+                    :class="inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2'">
+                    <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" />
+                    <span v-if="!inboxRailCollapsed">{{ trans("Highlighted") }}</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- PANEL 2: conversation list for the selected inbox -->
+        <div class="w-80 shrink-0 border-r border-gray-200 flex flex-col">
+            <!-- Selected inbox + My/Team segmented toggle -->
+            <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
+                        {{ selectedInbox?.name ?? trans("Inbox") }}
+                    </div>
+                    <div class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
+                        <button type="button" class="px-2.5 py-1 rounded-md transition-all"
+                            :class="viewMode === 'my' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                            @click="viewMode = 'my'">
+                            {{ trans("My Chats") }}
+                        </button>
+                        <button type="button" class="px-2.5 py-1 rounded-md transition-all"
+                            :class="viewMode === 'team' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                            @click="viewMode = 'team'">
+                            {{ trans("Team Chats") }}
+                        </button>
+                    </div>
+                </div>
+                <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 shrink-0 self-start" @click="toggleSearch">
                     <FontAwesomeIcon :icon="showSearch ? faTimes : faSearch" class="text-xs" />
                 </button>
             </div>
@@ -445,32 +549,46 @@ onUnmounted(() => {
             <!-- Search -->
             <div v-if="showSearch" class="px-3 py-2 border-b">
                 <input v-model="searchQuery" type="text" :placeholder="trans('Search…')"
-                    class="w-full text-sm border rounded px-2 py-1 focus:outline-none focus:ring-1" />
+                    class="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1" />
             </div>
 
-            <!-- Status tabs -->
-            <div class="flex border-b text-xs">
-                <button v-if="viewMode === 'my'" class="flex-1 py-2"
-                    :class="activeTab === 'waiting' ? 'font-semibold border-b-2' : 'text-gray-400'"
-                    :style="activeTab === 'waiting' ? { borderColor: 'var(--theme-color-4)' } : {}"
-                    @click="activeTab = 'waiting'">
-                    {{ trans("Waiting") }}
-                </button>
-                <button class="flex-1 py-2"
-                    :class="activeTab === 'active' ? 'font-semibold border-b-2' : 'text-gray-400'"
-                    :style="activeTab === 'active' ? { borderColor: 'var(--theme-color-4)' } : {}"
-                    @click="activeTab = 'active'">
-                    {{ trans("Active") }}
-                </button>
-                <button class="flex-1 py-2"
-                    :class="activeTab === 'closed' ? 'font-semibold border-b-2' : 'text-gray-400'"
-                    :style="activeTab === 'closed' ? { borderColor: 'var(--theme-color-4)' } : {}"
-                    @click="activeTab = 'closed'">
-                    {{ trans("Closed") }}
-                </button>
+            <!-- Status segmented tabs -->
+            <div class="px-3 py-2 border-b">
+                <div class="flex items-center bg-gray-100 rounded-lg p-1 text-xs">
+                    <button v-if="viewMode === 'my'" type="button"
+                        class="flex-1 py-1.5 rounded-md transition-all inline-flex items-center justify-center gap-1"
+                        :class="activeTab === 'waiting' ? 'bg-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                        :style="activeTab === 'waiting' ? { color: 'var(--theme-color-4)' } : {}"
+                        @click="activeTab = 'waiting'">
+                        {{ trans("Waiting") }}
+                        <span v-if="viewMode === 'my' && tabUnread.waiting"
+                            class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
+                            :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.waiting }}</span>
+                    </button>
+                    <button type="button"
+                        class="flex-1 py-1.5 rounded-md transition-all inline-flex items-center justify-center gap-1"
+                        :class="activeTab === 'active' ? 'bg-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                        :style="activeTab === 'active' ? { color: 'var(--theme-color-4)' } : {}"
+                        @click="activeTab = 'active'">
+                        {{ trans("Active") }}
+                        <span v-if="viewMode === 'my' && tabUnread.active"
+                            class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
+                            :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.active }}</span>
+                    </button>
+                    <button type="button"
+                        class="flex-1 py-1.5 rounded-md transition-all inline-flex items-center justify-center gap-1"
+                        :class="activeTab === 'closed' ? 'bg-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                        :style="activeTab === 'closed' ? { color: 'var(--theme-color-4)' } : {}"
+                        @click="activeTab = 'closed'">
+                        {{ trans("Closed") }}
+                        <span v-if="viewMode === 'my' && tabUnread.closed"
+                            class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
+                            :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.closed }}</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- List -->
+            <!-- List (flat, for the selected inbox) -->
             <div class="flex-1 overflow-y-auto">
                 <div v-if="filteredContacts.length === 0"
                     class="h-full flex flex-col items-center justify-center gap-2 text-center px-4">
@@ -479,73 +597,49 @@ onUnmounted(() => {
                 </div>
 
                 <div v-else>
-                    <div v-for="group in groupedContacts" :key="group.key">
-                        <!-- Inbox header -->
-                        <button type="button"
-                            class="w-full flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 border-b sticky top-0 z-[1]"
-                            @click="toggleInbox(group.key)">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <FontAwesomeIcon
-                                    :icon="isInboxCollapsed(group.key) ? faChevronDown : faChevronUp"
-                                    class="text-[10px] text-gray-400 shrink-0" />
-                                <span class="text-xs font-semibold text-gray-700 truncate">{{ group.shopName }}</span>
+                    <div v-for="c in filteredContacts" :key="c.ulid">
+                        <div class="relative flex items-center gap-3 px-3 py-2 border-b cursor-pointer transition-colors"
+                            :class="selectedSession?.ulid === c.ulid ? '' : 'hover:bg-gray-50'"
+                            :style="selectedSession?.ulid === c.ulid ? selectedItemStyle : {}"
+                            @click="handleClickContact(c)">
+                            <div v-if="isAssigning[c.ulid]"
+                                class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
+                                <LoadingIcon class="w-8 h-8 text-white" />
                             </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                <span v-if="group.unread"
-                                    class="min-w-[16px] px-1.5 text-[10px] leading-4 text-white rounded-full text-center"
-                                    :style="{ backgroundColor: 'var(--theme-color-4)' }">
-                                    {{ group.unread }}
-                                </span>
-                                <span class="text-[10px] text-gray-400">{{ group.contacts.length }}</span>
+
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+                                <Image v-if="c.avatar" :src="c.avatar" class="w-full h-full rounded-full object-cover" />
+                                <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
                             </div>
-                        </button>
 
-                        <div v-show="!isInboxCollapsed(group.key)">
-                            <div v-for="c in group.contacts" :key="c.ulid">
-                                <div class="relative flex items-center gap-3 px-3 py-2 border-b cursor-pointer transition-colors"
-                                    :class="selectedSession?.ulid === c.ulid ? '' : 'hover:bg-gray-50'"
-                                    :style="selectedSession?.ulid === c.ulid ? selectedItemStyle : {}"
-                                    @click="handleClickContact(c)">
-                                    <div v-if="isAssigning[c.ulid]"
-                                        class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
-                                        <LoadingIcon class="w-8 h-8 text-white" />
-                                    </div>
-
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
-                                        <Image v-if="c.avatar" :src="c.avatar" class="w-full h-full rounded-full object-cover" />
-                                        <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
-                                    </div>
-
-                                    <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                                        <div class="flex items-center justify-between gap-2">
-                                            <span class="text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
-                                            <span class="text-[10px] text-gray-400 shrink-0">{{ c.lastMessageTime }}</span>
-                                        </div>
-                                        <div class="flex items-center justify-between gap-2">
-                                            <span v-if="c.agent?.name" class="text-[10px] text-gray-400 truncate">
-                                                {{ c.agent.name.split(' ')[0] }}
-                                            </span>
-                                            <span v-if="c.unread && activeTab !== 'closed'"
-                                                class="min-w-[16px] px-1.5 text-[10px] leading-4 text-white rounded-full text-center shrink-0"
-                                                :style="{ backgroundColor: 'var(--theme-color-4)' }">
-                                                {{ c.unread }}
-                                            </span>
-                                        </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-xs text-gray-500 truncate flex-1 leading-snug">{{ c.lastMessage }}</span>
-                                            <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
-                                                :class="c.webUser?.id ? 'border-green-400 text-green-500' : 'border-blue-300 text-blue-400'">
-                                                {{ c.webUser?.id ? 'C' : 'G' }}
-                                            </span>
-                                        </div>
-                                    </div>
+                            <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
+                                    <span class="text-[10px] text-gray-400 shrink-0">{{ c.lastMessageTime }}</span>
                                 </div>
-
-                                <div v-if="errorPerContact[c.ulid]"
-                                    class="px-3 py-1 text-xs text-red-600 bg-red-50 border-b">
-                                    {{ errorPerContact[c.ulid] }}
+                                <div class="flex items-center justify-between gap-2">
+                                    <span v-if="c.agent?.name" class="text-[10px] text-gray-400 truncate">
+                                        {{ c.agent.name.split(' ')[0] }}
+                                    </span>
+                                    <span v-if="c.unread && activeTab !== 'closed'"
+                                        class="min-w-[16px] px-1.5 text-[10px] leading-4 text-white rounded-full text-center shrink-0"
+                                        :style="{ backgroundColor: 'var(--theme-color-4)' }">
+                                        {{ c.unread }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs text-gray-500 truncate flex-1 leading-snug">{{ c.lastMessage }}</span>
+                                    <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
+                                        :class="c.webUser?.id ? 'border-green-400 text-green-500' : 'border-blue-300 text-blue-400'">
+                                        {{ c.webUser?.id ? 'C' : 'G' }}
+                                    </span>
                                 </div>
                             </div>
+                        </div>
+
+                        <div v-if="errorPerContact[c.ulid]"
+                            class="px-3 py-1 text-xs text-red-600 bg-red-50 border-b">
+                            {{ errorPerContact[c.ulid] }}
                         </div>
                     </div>
 
@@ -570,7 +664,8 @@ onUnmounted(() => {
                     @close-session="closeSession" @view-history="showHistoryPanel"
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
                     @transfer-agent-success="onTransferAgentSuccess"
-                    @assign-self-success="onAssignSelfSuccess" @open-jira-settings="onOpenJiraSettings" />
+                    @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
+                    @open-jira-settings="onOpenJiraSettings" />
             </div>
         </div>
 
