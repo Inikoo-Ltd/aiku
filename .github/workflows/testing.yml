@@ -34,7 +34,15 @@ jobs:
           cd private
           ln -s ../../../../../artifacts/fa .
       - name: Generate database dumps 📚
-        run: ./generate_testing_db_dumps.sh php8.4 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+        run: |
+          MIGRATIONS_HASH=$(git ls-files -s database/migrations database/seeders | git hash-object --stdin)
+          if [ ! -f ../../../../artifacts/aiku.dump ] || [ "$MIGRATIONS_HASH" != "$(cat ../../../../artifacts/aiku.dump.migrations_hash 2>/dev/null)" ]; then
+            ./generate_testing_db_dumps.sh php8.4 aiku_test
+            cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+            echo "$MIGRATIONS_HASH" > ../../../../artifacts/aiku.dump.migrations_hash
+          else
+            echo "Migrations unchanged, reusing cached aiku.dump"
+          fi
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test without coverage
