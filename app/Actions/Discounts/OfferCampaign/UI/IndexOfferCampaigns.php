@@ -68,7 +68,9 @@ class IndexOfferCampaigns extends OrgAction
             'shops.name as shop_name',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
-            'offer_campaign_stats.number_current_offers as number_current_offers'
+            'offer_campaign_stats.number_current_offers as number_current_offers',
+            'offer_campaign_stats.number_customers as number_customers',
+            'offer_campaign_stats.number_orders as number_orders'
         ];
 
         $timeSeriesData = $query->withTimeSeriesAggregation(
@@ -91,7 +93,7 @@ class IndexOfferCampaigns extends OrgAction
 
         return $query->defaultSort('offer_campaigns.id')
             ->select($selects)
-            ->allowedSorts(['code', 'name', 'state', 'number_current_offers', 'orders', 'invoices', 'sales_grp_currency_external'])
+            ->allowedSorts(['code', 'name', 'state', 'number_current_offers', 'number_customers', 'number_orders', 'orders', 'invoices', 'sales_grp_currency_external'])
             ->allowedFilters([$globalSearch, 'code', 'name'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -126,6 +128,8 @@ class IndexOfferCampaigns extends OrgAction
             }
 
             $table->column(key: 'number_current_offers', label: __('Current Offers'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_customers', label: __('Customers'), tooltip: __('Total number of customers associated with this campaign'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_orders', label: __('Orders'), tooltip: __('Total number of orders associated with this campaign'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('id');
         };
     }
