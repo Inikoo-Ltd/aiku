@@ -14,6 +14,7 @@ use App\Actions\Iris\CRM\DeleteIrisBackInStockReminder;
 use App\Actions\Iris\CRM\DeleteIrisPortfolioFavourites;
 use App\Actions\Iris\CRM\StoreIrisBackInStockReminder;
 use App\Actions\Iris\CRM\StoreIrisFavourites;
+use App\Actions\Iris\CRM\StoreIrisProductLastSeen;
 use App\Actions\Iris\CRM\UpdateIrisCustomer;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
