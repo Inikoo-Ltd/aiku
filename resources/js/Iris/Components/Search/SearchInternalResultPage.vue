@@ -7,6 +7,7 @@ import { useLocaleStore } from '@/Stores/locale'
 import { ctrans } from '@/Composables/useTrans'
 import Image from '@common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
+import LoadingOverlay2 from '@/Components/Utils/LoadingOverlay2.vue'
 
 interface InternalProduct {
     id: number
@@ -248,6 +249,8 @@ const scrollRail = (event: Event, direction: number) => {
 }
 
 const isMobileFilterOpen = ref(false)
+
+const visitingProductId = ref<number | null>(null)
 </script>
 
 <template>
@@ -403,7 +406,13 @@ const isMobileFilterOpen = ref(false)
                     <div v-else-if="products.length"
                         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 transition-opacity"
                         :class="isResultsRefreshing ? 'opacity-60 pointer-events-none' : ''">
-                        <LinkIris v-for="product in products" :key="product.id" :href="product.url" class="group text-gray-800 isolate h-full flex flex-col flex-grow no-underline">
+                        <LinkIris v-for="product in products" :key="product.id" :href="product.url"
+                            class="relative group text-gray-800 isolate h-full flex flex-col flex-grow no-underline"
+                            @start="visitingProductId = product.id"
+                            @error="visitingProductId = null"
+                            @finish="visitingProductId = null"
+                        >
+                            <LoadingOverlay2 v-if="visitingProductId === product.id" class="z-20 rounded" />
                             <!-- Product detail: image -->
                             <div class="relative block w-full mb-1 rounded overflow-hidden aspect-square bg-white">
                                 <Image v-if="product.image" :src="product.image"
