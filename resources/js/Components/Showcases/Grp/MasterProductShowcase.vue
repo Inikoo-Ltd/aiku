@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject, ref } from "vue"
+import { computed, inject, ref, useTemplateRef } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faTrash as falTrash,
@@ -19,7 +19,7 @@ import {
 	faCheckCircle
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faThumbtack } from "@fas"
-import { faImage } from "@far"
+import { faImage, faStarfighter, faStarshipFreighter } from "@far"
 import ImagePrime from "primevue/image"
 import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
@@ -29,6 +29,7 @@ import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterPro
 import AttachmentCard from "@/Components/AttachmentCard.vue"
 import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
+import Popover from "primevue/popover"
 import { Link, router } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/layout"
 import { provide } from "vue"
@@ -68,6 +69,8 @@ const props = defineProps<{
 	handleTabUpdate: Function
 	salesData?: any
 	data: {
+		rebel_prices  : {},
+        rebel_rrp : {}
 		availability_status: {
 			is_for_sale: boolean
 			product: {}[]
@@ -148,6 +151,28 @@ const props = defineProps<{
 	return [...unique.values()]
 }) */
 const locale = inject('locale', aikuLocaleStructure)
+
+const rebelPricePopover = useTemplateRef('rebelPricePopover')
+type RebelPrice = {
+	id: number
+	shop_id: number
+	shop_code: string
+	currency_code: string
+	value: number | null
+	currency_symbol: string
+}
+const rebelPriceList = computed<RebelPrice[]>(() => Object.values(props.data?.rebel_prices ?? {}))
+
+const toggleRebelPrice = (event: Event) => {
+	rebelPricePopover.value?.toggle(event)
+}
+
+const rebelRrpPopover = useTemplateRef('rebelRrpPopover')
+const rebelRrpList = computed<RebelPrice[]>(() => Object.values(props.data?.rebel_rrp ?? {}))
+
+const toggleRebelRrp = (event: Event) => {
+	rebelRrpPopover.value?.toggle(event)
+}
 
 const tradeUnitTags = computed(() => {
 	const list = props.data?.trade_units ?? []
@@ -302,9 +327,49 @@ const isModalProductForSale = ref(false)
 					<span>
 						{{ locale.currencyFormat(data.masterProduct.currency, data.masterProduct.price) }}
 					</span>
-					<FontAwesomeIcon v-if="!data.masterProduct.price" :icon="faWarning" class="my-auto ml-auto"/>
+					<div class="flex gap-2 my-auto ml-auto">
+						<FontAwesomeIcon v-if="!data.masterProduct.price" :icon="faWarning" class="" />
+						<span
+						    v-if="rebelPriceList.length > 0"
+							class="inline-flex items-center gap-1 text-yellow-500 hover:text-yellow-600"
+							v-tooltip="trans('Show rebel prices (products not following master pricing)')"
+							@click.stop="toggleRebelPrice"
+						>
+							<FontAwesomeIcon :icon="faStarfighter" />
+							<span class="text-xs font-bold">{{ rebelPriceList.length }}</span>
+						</span>
+					</div>
+
 				</div>
-				<div 
+
+				<Popover ref="rebelPricePopover">
+					<div class="min-w-[20rem]">
+						<div class="mb-2 text-xs font-semibold text-gray-700">
+							{{ trans('Rebel Prices') }}
+							<span class="text-gray-400">({{ trans('not following master pricing') }})</span>
+						</div>
+
+						<div class="overflow-x-auto">
+							<table class="w-full border-collapse text-xs">
+								<thead>
+									<tr class="bg-gray-100 text-left text-gray-600">
+										<th class="border px-3 py-1.5">{{ trans('Shop') }}</th>
+										<th class="border px-3 py-1.5 text-right">{{ trans('Price') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="rebel in rebelPriceList" :key="rebel.shop_id" class="hover:bg-gray-50">
+										<td class="border px-3 py-1.5 font-medium text-gray-700">{{ rebel.shop_code }}</td>
+										<td class="border px-3 py-1.5 text-right">
+											{{ locale.currencyFormat(rebel.currency_code, rebel.value ?? 0) }}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</Popover>
+				<div
 					class="border border-solid py-1 px-3 rounded-md font-semibold w-full flex flex-cols cursor-pointer"
 					:class="data.masterProduct.rrp ? 'border-gray-400' : 'border-red-700 text-red-500 animate-pulse'"
 					v-tooltip="data.masterProduct.rrp ? '' : 'RRP is not set up for this master product'"
@@ -318,8 +383,47 @@ const isModalProductForSale = ref(false)
 							({{ locale.currencyFormat(data.masterProduct.currency, data.masterProduct.rrp_per_unit) }}/{{ data.masterProduct.unit }})
 						</span>
 					</span>
-					<FontAwesomeIcon v-if="!data.masterProduct.rrp" :icon="faWarning" class="my-auto ml-auto"/>
+					<div class="flex gap-2 my-auto ml-auto">
+						<FontAwesomeIcon v-if="!data.masterProduct.rrp" :icon="faWarning" class="" />
+						<span
+							v-if="rebelRrpList.length"
+							class="inline-flex items-center gap-1 text-yellow-500 hover:text-yellow-600"
+							v-tooltip="trans('Show rebel RRP (products not following master pricing)')"
+							@click.stop="toggleRebelRrp"
+						>
+							<FontAwesomeIcon :icon="faStarfighter" />
+							<span class="text-xs font-bold">{{ rebelRrpList.length }}</span>
+						</span>
+					</div>
 				</div>
+
+				<Popover ref="rebelRrpPopover">
+					<div class="min-w-[20rem]">
+						<div class="mb-2 text-xs font-semibold text-gray-700">
+							{{ trans('Rebel RRP') }}
+							<span class="text-gray-400">({{ trans('not following master pricing') }})</span>
+						</div>
+
+						<div class="overflow-x-auto">
+							<table class="w-full border-collapse text-xs">
+								<thead>
+									<tr class="bg-gray-100 text-left text-gray-600">
+										<th class="border px-3 py-1.5">{{ trans('Shop') }}</th>
+										<th class="border px-3 py-1.5 text-right">{{ trans('RRP') }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="rebel in rebelRrpList" :key="rebel.shop_id" class="hover:bg-gray-50">
+										<td class="border px-3 py-1.5 font-medium text-gray-700">{{ rebel.shop_code }}</td>
+										<td class="border px-3 py-1.5 text-right">
+											{{ locale.currencyFormat(rebel.currency_code, rebel.value ?? 0) }}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</Popover>
 			</div>
 			<div class="mr-3">
 				<SalesAnalyticsCompact  v-if="salesData" :salesData="salesData" />

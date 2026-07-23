@@ -572,4 +572,14 @@ const onSelectFamily = (option: any) => {
 :deep(.multiselect .multiselect-dropdown) {
     max-height: 22rem !important;
 }
+
+:deep(.p-datatable-scrollable .p-datatable-frozen-column) {
+    position: sticky;
+    background: var(--p-datatable-row-background, #fff);
+    z-index: 3;
+}
+
+:deep(.p-datatable-scrollable .p-datatable-tbody > tr > td) {
+    z-index: 1;
+}
 </style>

@@ -27,8 +27,8 @@ class GetPriceRebelProducts extends GrpAction
                 $shop = $product->shop;
                 if (
                     !data_get($shop->settings, 'catalog.follow_master_pricing', true) ||
-                    $product->family->not_follow_master_prices ||
-                    $product->not_follow_master_prices
+                    $product->family?->not_follow_master_prices ||
+                    $product?->not_follow_master_prices
                 ) {
                     return [
                         $shop->id => [
