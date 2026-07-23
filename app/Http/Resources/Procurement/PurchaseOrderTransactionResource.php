@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -65,6 +66,14 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'delete',
             ],
+            'cancelRoute'      => $transaction->state === PurchaseOrderTransactionStateEnum::SUBMITTED ? [
+                'name'       => 'grp.models.purchase-order.transaction.cancel',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'patch',
+            ] : null,
         ];
     }
 }
