@@ -8,7 +8,22 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\CustomerEmailPressureTool;
+use App\Mcp\Tools\CustomerNotesTool;
+use App\Mcp\Tools\DeliveryNotesSummaryTool;
+use App\Mcp\Tools\EmployeeAttendanceTool;
+use App\Mcp\Tools\EmployeeDirectoryTool;
+use App\Mcp\Tools\FamilySalesTool;
+use App\Mcp\Tools\MailshotPerformanceTool;
+use App\Mcp\Tools\OffersOverviewTool;
+use App\Mcp\Tools\OrderStatusTool;
+use App\Mcp\Tools\ProductsWithoutImagesTool;
+use App\Mcp\Tools\ShopReviewsTool;
 use App\Mcp\Tools\ShopSalesTool;
+use App\Mcp\Tools\StockLevelsTool;
+use App\Mcp\Tools\TopProductsTool;
+use App\Mcp\Tools\WebsiteOverviewTool;
+use App\Mcp\Tools\WebTrafficTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -24,5 +39,20 @@ class AikuServer extends Server
      */
     protected array $tools = [
         ShopSalesTool::class,
+        TopProductsTool::class,
+        OrderStatusTool::class,
+        StockLevelsTool::class,
+        DeliveryNotesSummaryTool::class,
+        EmployeeDirectoryTool::class,
+        EmployeeAttendanceTool::class,
+        WebsiteOverviewTool::class,
+        WebTrafficTool::class,
+        ProductsWithoutImagesTool::class,
+        FamilySalesTool::class,
+        OffersOverviewTool::class,
+        MailshotPerformanceTool::class,
+        CustomerEmailPressureTool::class,
+        ShopReviewsTool::class,
+        CustomerNotesTool::class,
     ];
 }

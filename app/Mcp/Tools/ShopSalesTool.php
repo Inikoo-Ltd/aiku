@@ -8,15 +8,15 @@
 
 namespace App\Mcp\Tools;
 
-use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
-use App\Models\Ordering\Order;
+use App\Models\Catalogue\ShopTimeSeries;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Number of orders and net sales for a shop over a date range. Excludes unsubmitted and cancelled orders.')]
+#[Description('Sales summary for a shop over a date range: orders, invoices, sales revenue and customers invoiced.')]
 class ShopSalesTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum
@@ -37,19 +37,23 @@ class ShopSalesTool extends AikuTool
             return Response::error('Shop not found or permission denied.');
         }
 
-        $sales = Order::where('shop_id', $shop->id)
-            ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
-            ->whereBetween('date', [$request->date('from'), $request->date('to')->endOfDay()])
-            ->selectRaw('count(*) as number_orders, coalesce(sum(net_amount), 0) as net_amount')
+        $sales = ShopTimeSeries::where('shop_id', $shop->id)
+            ->where('shop_time_series.frequency', TimeSeriesFrequencyEnum::DAILY)
+            ->join('shop_time_series_records', 'shop_time_series_records.shop_time_series_id', '=', 'shop_time_series.id')
+            ->whereBetween('shop_time_series_records.from', [$request->date('from'), $request->date('to')->endOfDay()])
+            ->selectRaw('coalesce(sum(orders), 0) as number_orders, coalesce(sum(invoices), 0) as number_invoices, coalesce(sum(refunds), 0) as number_refunds, coalesce(sum(sales_external), 0) as sales, coalesce(sum(customers_invoiced), 0) as customers_invoiced')
             ->first();
 
         return Response::json([
-            'shop'          => $shop->name,
-            'from'          => $request->string('from'),
-            'to'            => $request->string('to'),
-            'number_orders' => (int) $sales->number_orders,
-            'net_amount'    => (float) $sales->net_amount,
-            'currency'      => $shop->currency->code,
+            'shop'               => $shop->name,
+            'from'               => $request->string('from'),
+            'to'                 => $request->string('to'),
+            'number_orders'      => (int) $sales->number_orders,
+            'number_invoices'    => (int) $sales->number_invoices,
+            'number_refunds'     => (int) $sales->number_refunds,
+            'sales'              => (float) $sales->sales,
+            'customers_invoiced' => (int) $sales->customers_invoiced,
+            'currency'           => $shop->currency->code,
         ]);
     }
 

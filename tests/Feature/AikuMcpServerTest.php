@@ -6,14 +6,12 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-use App\Actions\Ordering\Order\StoreOrder;
-use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Mcp\Servers\AikuServer;
 use App\Mcp\Tools\ShopSalesTool;
-use App\Models\Helpers\Address;
-use App\Models\Ordering\Order;
+use App\Models\Catalogue\ShopTimeSeries;
 use App\Models\SysAdmin\Guest;
-use App\Actions\SysAdmin\Guest\StoreGuest;
 
 beforeEach(function () {
     list(
@@ -28,6 +26,14 @@ beforeEach(function () {
     app()->instance('group', $this->group);
     setPermissionsTeamId($this->group->id);
 });
+
+function shopDailyTimeSeries($shop): ShopTimeSeries
+{
+    return ShopTimeSeries::firstOrCreate([
+        'shop_id'   => $shop->id,
+        'frequency' => TimeSeriesFrequencyEnum::DAILY,
+    ]);
+}
 
 test('user without orders permission is denied', function () {
     $guest = StoreGuest::make()->action(
@@ -47,59 +53,47 @@ test('user without orders permission is denied', function () {
     $response->assertHasErrors(['Shop not found or permission denied.']);
 });
 
-test('admin user gets shop sales', function () {
-    $billingAddress  = new Address(Address::factory()->definition());
-    $deliveryAddress = new Address(Address::factory()->definition());
-
-    $modelData = Order::factory()->definition();
-    data_set($modelData, 'billing_address', $billingAddress);
-    data_set($modelData, 'delivery_address', $deliveryAddress);
-
-    $numberOrdersBefore = countableOrders($this->shop, '2026-06-01', '2026-06-30');
-
-    $order = StoreOrder::make()->action($this->customer, $modelData);
-    $order->update([
-        'state'      => OrderStateEnum::SUBMITTED,
-        'net_amount' => 150.50,
-        'date'       => '2026-06-15',
-    ]);
+test('admin user gets shop sales from time series', function () {
+    $timeSeries = shopDailyTimeSeries($this->shop);
+    $timeSeries->records()->updateOrCreate(
+        ['period' => '2025-06-15', 'frequency' => TimeSeriesFrequencyEnum::DAILY->singleLetter()],
+        [
+            'from'               => '2025-06-15 00:00:00',
+            'to'                 => '2025-06-15 23:59:59',
+            'orders'             => 3,
+            'invoices'           => 2,
+            'sales_external'     => 150.50,
+            'customers_invoiced' => 2,
+        ]
+    );
 
     $response = AikuServer::actingAs($this->user)->tool(ShopSalesTool::class, [
         'shop' => $this->shop->slug,
-        'from' => '2026-06-01',
-        'to'   => '2026-06-30',
+        'from' => '2025-06-01',
+        'to'   => '2025-06-30',
     ]);
 
     $response->assertOk()
-        ->assertSee('"number_orders":'.($numberOrdersBefore + 1));
+        ->assertSee('"number_orders":3')
+        ->assertSee('150.5');
 });
 
-test('creating-state orders are excluded from sales', function () {
-    $billingAddress  = new Address(Address::factory()->definition());
-    $deliveryAddress = new Address(Address::factory()->definition());
-
-    $modelData = Order::factory()->definition();
-    data_set($modelData, 'billing_address', $billingAddress);
-    data_set($modelData, 'delivery_address', $deliveryAddress);
-
-    $numberOrdersBefore = countableOrders($this->shop, '2026-03-01', '2026-03-31');
-
-    $order = StoreOrder::make()->action($this->customer, $modelData);
-    $order->update(['date' => '2026-03-15']);
+test('records outside the date range are excluded', function () {
+    $timeSeries = shopDailyTimeSeries($this->shop);
+    $timeSeries->records()->updateOrCreate(
+        ['period' => '2025-03-15', 'frequency' => TimeSeriesFrequencyEnum::DAILY->singleLetter()],
+        [
+            'from'   => '2025-03-15 00:00:00',
+            'to'     => '2025-03-15 23:59:59',
+            'orders' => 7,
+        ]
+    );
 
     $response = AikuServer::actingAs($this->user)->tool(ShopSalesTool::class, [
         'shop' => $this->shop->slug,
-        'from' => '2026-03-01',
-        'to'   => '2026-03-31',
+        'from' => '2025-04-01',
+        'to'   => '2025-04-30',
     ]);
 
-    $response->assertOk()->assertSee('"number_orders":'.$numberOrdersBefore);
+    $response->assertOk()->assertSee('"number_orders":0');
 });
-
-function countableOrders($shop, string $from, string $to): int
-{
-    return Order::where('shop_id', $shop->id)
-        ->whereNotIn('state', [OrderStateEnum::CREATING, OrderStateEnum::CANCELLED])
-        ->whereBetween('date', [$from.' 00:00:00', $to.' 23:59:59'])
-        ->count();
-}
