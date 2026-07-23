@@ -3,6 +3,7 @@
 namespace App\Actions\Maintenance\Masters\MasterProduct;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
@@ -35,7 +36,7 @@ class RepairMasterAssetHydratePrices
                     'value'         => formatPrice($ratio, $baseProduct->price),
                     'independent'   => false
                 ]
-            );
+            )->toArray();
             $hasPrice = true;
         }
 
@@ -45,11 +46,11 @@ class RepairMasterAssetHydratePrices
                     'value'         => formatPrice($ratio, $baseProduct->rrp),
                     'independent'   => false
                 ]
-            );
+            )->toArray();
             $hasRRP   = true;
         }
 
-        $masterAsset->updateQuietly($updateData);
+        UpdateMasterAsset::make()->action($masterAsset, $updateData);
 
         $setUpText = '';
 
