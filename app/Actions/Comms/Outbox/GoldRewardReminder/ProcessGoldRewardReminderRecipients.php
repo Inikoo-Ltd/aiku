@@ -50,7 +50,7 @@ class ProcessGoldRewardReminderRecipients implements ShouldQueue
             }
 
 
-            $lastInvoiceDate = Carbon::parse($customerModel->last_invoice_date);
+            $lastInvoiceDate = Carbon::parse($customerModel->last_invoiced_at);
 
             $dispatchedEmail = StoreDispatchedEmail::run(
                 $emailBulkRun,
