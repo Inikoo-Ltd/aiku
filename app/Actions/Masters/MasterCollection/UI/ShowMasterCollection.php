@@ -124,7 +124,7 @@ class ShowMasterCollection extends GrpAction
                         'icon'    => 'fas fa-times-circle',
                         'class'   => 'text-red-400'
                     ],
-                    'actions' => [
+                    'actions' => $this->canEdit ? [
                         [
                             'type'    => 'button',
                             'style'   => 'edit',
@@ -137,7 +137,7 @@ class ShowMasterCollection extends GrpAction
                                 ]
                             ]
                         ]
-                    ],
+                    ] : [],
                     'subNavigation' => $subNavigation,
                 ],
                 'tabs'        => [

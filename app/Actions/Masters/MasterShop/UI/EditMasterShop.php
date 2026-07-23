@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -59,7 +59,7 @@ class EditMasterShop extends OrgAction
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' => [
+                    'blueprint' => array_values(array_filter([
                         [
                             'label'  => __('Id'),
                             'icon'   => 'fa-light fa-fingerprint',
@@ -76,7 +76,7 @@ class EditMasterShop extends OrgAction
                                 ]
                             ]
                         ],
-                        [
+                        $this->canEditPrices ? [
                             'label'  => __('Pricing'),
                             'icon'   => 'fa-light fa-money-bill',
                             'fields' => [
@@ -113,8 +113,8 @@ class EditMasterShop extends OrgAction
                                     'min'         => 0,
                                 ]
                             ]
-                        ],
-                        [
+                        ] : null,
+                        $this->canEditOffers ? [
                             'label'  => __('Offers'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
@@ -124,8 +124,8 @@ class EditMasterShop extends OrgAction
                                     'value' => $masterShop->gold_reward_eligible
                                 ],
                             ]
-                        ],
-                    ],
+                        ] : null,
+                    ])),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.master_shops.update',

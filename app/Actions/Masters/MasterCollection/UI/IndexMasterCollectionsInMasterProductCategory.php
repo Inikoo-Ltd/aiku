@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
@@ -33,6 +34,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 {
+    use WithMastersAuthorisation;
     use WithMasterDepartmentSubNavigation;
     use WithMasterSubDepartmentSubNavigation;
     use WithTab;
@@ -215,7 +217,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
                 $currentRoute = $request->route()->getName();
 
-                if (!isset($routes[$currentRoute])) {
+                if (!$this->canEdit || !isset($routes[$currentRoute])) {
                     return [];
                 }
 

@@ -12,6 +12,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Goods\TradeUnitFamily\GetTradeUnitFamilyForFamilies;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditMasterFamily extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithMasterFamilyNavigation;
 
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): Response

@@ -68,7 +68,7 @@ class ShowMasterShop extends OrgAction
                         'icon'  => 'fal fa-store-alt'
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
+                    'actions'       => $this->canEdit ? [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -78,7 +78,7 @@ class ShowMasterShop extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
-                    ],
+                    ] : [],
                 ],
                 'tabs'     => [
                     'current'    => $this->tab,

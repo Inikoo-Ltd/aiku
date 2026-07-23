@@ -12,6 +12,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Models\Masters\MasterProductCategory;
@@ -23,6 +24,7 @@ use Spatie\LaravelOptions\Options;
 
 class CreateMasterSubDepartment extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     /**
      * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
      */

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterShop;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -19,7 +19,7 @@ use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterShop extends GrpAction
+class UpdateMasterShop extends OrgAction
 {
     use WithActionUpdate;
     use WithMastersEditAuthorisation;
@@ -52,12 +52,30 @@ class UpdateMasterShop extends GrpAction
                 ),
             ],
             'name'   => ['sometimes', 'max:250', 'string'],
-            'cost_price_ratio'   => ['sometimes', 'min:0'],
-            'price_rrp_ratio'   => ['sometimes', 'min:0'],
-            'price_rrp_warning_ratio'   => ['sometimes', 'min:0'],
+            'cost_price_ratio'   => ['sometimes', 'min:0', $this->canEditPricesRule()],
+            'price_rrp_ratio'   => ['sometimes', 'min:0', $this->canEditPricesRule()],
+            'price_rrp_warning_ratio'   => ['sometimes', 'min:0', $this->canEditPricesRule()],
             'status' => ['sometimes', 'required', 'boolean'],
-            'gold_reward_eligible' => ['sometimes', 'required', 'boolean'],
+            'gold_reward_eligible' => ['sometimes', 'required', 'boolean', $this->canEditOffersRule()],
         ];
+    }
+
+    private function canEditPricesRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) {
+            if (!$this->asAction && !$this->canEditPrices) {
+                $fail(__('You are not authorised to edit prices'));
+            }
+        };
+    }
+
+    private function canEditOffersRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) {
+            if (!$this->asAction && !$this->canEditOffers) {
+                $fail(__('You are not authorised to edit offers'));
+            }
+        };
     }
 
     public function action(MasterShop $masterShop, array $modelData, int $hydratorsDelay = 0, bool $strict = true): MasterShop
@@ -66,14 +84,14 @@ class UpdateMasterShop extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
 
-        $this->initialisation($masterShop->group, $modelData);
+        $this->initialisationFromGroup($masterShop->group, $modelData);
 
         return $this->handle($masterShop, $this->validatedData);
     }
 
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterShop
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterShop, $this->validatedData);
     }

@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -30,6 +31,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMasterSubDepartments extends GrpAction
 {
+    use WithMastersAuthorisation;
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
 
@@ -244,7 +246,7 @@ class IndexMasterSubDepartments extends GrpAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'actions'       => [
+                    'actions'       => $this->canEdit ? [
                         [
                             'type'    => 'button',
                             'style'   => 'create',
@@ -261,7 +263,7 @@ class IndexMasterSubDepartments extends GrpAction
                                 ]
                             }
                         ],
-                    ],
+                    ] : [],
                     'subNavigation' => $subNavigation,
                 ],
                 'tabs'                                => [
