@@ -23,6 +23,7 @@ jobs:
           ln -s ../../../../.pgpass .pgpass
           ln -s ../../../../env.aiku.testing .env.testing
           ln -s ../../../../env.aiku.testing .env
+          ln -s ../../../../../artifacts/playwright/node_modules node_modules
           ln -s ../../../../../artifacts/public/grp public/grp
           ln -s ../../../../../artifacts/public/iris public/iris
           ln -s ../../../../../artifacts/public/retina public/retina
