@@ -274,13 +274,13 @@ class EditProduct extends OrgAction
             ]
         ];
 
-        if (!data_get($product->shop->settings, 'catalog.follow_master_pricing', true) || $product->family->not_follow_master_prices) {
+        if (!data_get($product->shop->settings, 'catalog.follow_master_pricing', true) || $product->family?->not_follow_master_prices) {
             $pricingFields = [];
         }
 
         if (
             !data_get($product->shop->settings, 'catalog.follow_master_pricing', true) ||
-            $product->family->not_follow_master_prices ||
+            $product->family?->not_follow_master_prices ||
             $product->not_follow_master_prices
         ) {
             $pricingFields = array_merge($pricingFields,

@@ -28,7 +28,7 @@ class MasterAssetHydrateMasterPricesRRPtoChild
             // Skip if shop setting is disabled / family not follow master prices / product not follow master prices
             if (
                 !data_get($shopSettings, 'catalog.follow_master_pricing', true) ||
-                $product->family->not_follow_master_prices ||
+                $product->family?->not_follow_master_prices ||
                 $product->not_follow_master_prices
             ) {
                 continue;
