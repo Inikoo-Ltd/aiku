@@ -30,6 +30,10 @@ class SearchCatalogue
             $collectionsQuery->where('shop_id', $shopId);
         }
 
+        $productsQuery->take(11);
+        $productCategoriesQuery->take(10);
+        $collectionsQuery->take(10);
+
         $mapCatalogueItem = static fn (array $document) => [
             'id'    => (int)$document['id'],
             'code'  => $document['code'] ?? null,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onMounted, ref, computed, watch, onBeforeMount, defineAsyncComponent } from "vue"
+import { inject, onMounted, ref, computed, watch, onBeforeMount, defineAsyncComponent, nextTick } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
@@ -60,6 +60,32 @@ const openInternalPopover = () => {
 
 const closeInternalPopover = () => {
     popoverRef.value?.hide()
+}
+
+// Point the popover caret at the horizontal center of the input, even though the
+// panel itself spans the full viewport width (PrimeVue can no longer shift it to align)
+const updateCaretPosition = () => {
+    if (!inputRef.value) {
+        return
+    }
+    const rect = inputRef.value.getBoundingClientRect()
+    const panel = document.querySelector('.luigi-internal-search-popover') as HTMLElement | null
+    panel?.style.setProperty('--caret-left', `${rect.left + rect.width / 2}px`)
+}
+
+const onPopoverShow = () => {
+    isPopoverVisible.value = true
+    showDropdown.value = true
+    nextTick(updateCaretPosition)
+    window.addEventListener('resize', updateCaretPosition)
+    window.addEventListener('scroll', updateCaretPosition, true)
+}
+
+const onPopoverHide = () => {
+    isPopoverVisible.value = false
+    showDropdown.value = false
+    window.removeEventListener('resize', updateCaretPosition)
+    window.removeEventListener('scroll', updateCaretPosition, true)
 }
 
 const fetchInternalResults = debounce(async (query: string) => {
@@ -283,11 +309,12 @@ const visitSearchPage = () => {
             ref="popoverRef"
             appendTo="body"
             :dismissable="true"
-            class="luigi-internal-search-popover"
-            @show="() => { isPopoverVisible = true; showDropdown = true }"
-            @hide="() => { isPopoverVisible = false; showDropdown = false }"
+            class="luigi-internal-search-popover !w-[90vw] -translate-x-1/2"
+            style="left: 50%"
+            @show="onPopoverShow"
+            @hide="onPopoverHide"
         >
-            <div class="h-[70vh] max-h-[550px] w-full overflow-hidden">
+            <div class="h-[70vh] max-h-[550px]  overflow-hidden">
                 <SearchResultCatalogue
                     v-model:open="showDropdown"
                     :results="internalResults"
@@ -301,10 +328,32 @@ const visitSearchPage = () => {
 
 <style lang="scss">
 
-/* Internal search popover: wide (90vw) panel; PrimeVue keeps its arrow pointing at the input */
+/* Internal search popover: full-width panel pinned to the viewport */
 .luigi-internal-search-popover.p-popover {
-    width: 90vw !important;
-    max-width: 1100px !important;
+    // left: 0 !important;
+    // right: 0 !important;
+    // width: auto !important;
+    max-width: none !important;
+}
+
+/* Caret: an accent diamond aimed at the input center (--caret-left is set in JS on show) */
+.luigi-internal-search-popover.p-popover::before {
+    display: none !important;
+}
+
+.luigi-internal-search-popover.p-popover::after {
+    content: "" !important;
+    position: absolute !important;
+    top: -5px !important;
+    left: var(--caret-left, 50%) !important;
+    width: 12px !important;
+    height: 12px !important;
+    margin-left: -6px !important;
+    background: var(--theme-color-0) !important;
+    border: none !important;
+    border-radius: 2px 0 0 0 !important;
+    box-shadow: none !important;
+    transform: rotate(45deg) !important;
 }
 
 .luigi-internal-search-popover .p-popover-content {

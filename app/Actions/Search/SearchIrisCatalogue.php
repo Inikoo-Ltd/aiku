@@ -60,8 +60,12 @@ class SearchIrisCatalogue extends IrisAction
 
             $item['url']   = $model?->webpage?->getCanonicalUrl() ?: null;
             $item['image'] = $image ?: $item['image'] ?? null;
+            $item['stock'] = $model?->available_quantity;
+            $item['units'] = $model?->units;
+            $item['unit'] = $model?->unit;
 
-            if ($largeImage && $showPrice) {
+
+            if ($showPrice) {
                 $item['price'] = $model?->price;
             }
 
