@@ -17,6 +17,7 @@ use App\Actions\Comms\EmailDeliveryChannel\UpdateEmailDeliveryChannel;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\CRM\Customer;
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -48,12 +49,19 @@ class ProcessGoldRewardReminderRecipients implements ShouldQueue
                 continue;
             }
 
+
+            $lastInvoiceDate = Carbon::parse($customerModel->last_invoice_date);
+
             $dispatchedEmail = StoreDispatchedEmail::run(
                 $emailBulkRun,
                 $customerModel,
                 [
                     'outbox_id'     => $emailBulkRun->outbox_id,
-                    'email_address' => $customerModel->email
+                    'email_address' => $customerModel->email,
+                    'data->additional_data' => [
+                        'last_invoice_date' => $lastInvoiceDate->format('Y-m-d'),
+                        'gold_reward_deadline' => $lastInvoiceDate->copy()->addDays(30)->format('Y-m-d'),
+                    ]
                 ]
             );
 
