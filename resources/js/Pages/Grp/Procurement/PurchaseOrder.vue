@@ -217,6 +217,7 @@ const deleteLoading = ref(false)
 const submitLoading = ref(false)
 const cancelLoading = ref(false)
 const undoSubmitLoading = ref(false)
+const confirmLoading = ref(false)
 
 const confirmSubmitPurchaseOrder = (action: any) => {
 	confirm.require({
@@ -310,6 +311,29 @@ const confirmUndoSubmitPurchaseOrder = (action: any) => {
 	})
 }
 
+const confirmConfirmPurchaseOrder = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to confirm this purchase order?"),
+		header: trans("Confirm Purchase Order"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Confirm") },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { confirmLoading.value = true },
+				onFinish: () => { confirmLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to confirm purchase order"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
 const component = computed(() => {
 	const components: Component = {
 		showcase: PurchaseOrderData,
@@ -377,6 +401,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:tooltip="action.tooltip"
 				:loading="deleteLoading"
 				@click="() => confirmDeletePurchaseOrder(action)"
+			/>
+		</template>
+
+		<template #button-confirm-purchase-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="confirmLoading"
+				@click="() => confirmConfirmPurchaseOrder(action)"
 			/>
 		</template>
 

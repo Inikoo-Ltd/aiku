@@ -174,10 +174,10 @@ class ShowPurchaseOrder extends OrgAction
                 PurchaseOrderStateEnum::SUBMITTED => [
                     [
                         'label'   => __('Confirm'),
-                        'tooltip' => __('Confirm'),
+                        'tooltip' => __('Confirm Purchase Order'),
                         'type'    => 'button',
                         'style'   => 'save',
-                        'key'     => 'action',
+                        'key'     => 'confirm_purchase_order',
                         'route'   => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.purchase-order.confirm',
