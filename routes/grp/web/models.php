@@ -342,6 +342,7 @@ use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryTransla
 use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentsMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UploadImagesToMasterProductCategory;
+use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
 use App\Actions\Masters\MasterVariant\StoreMasterVariant;
 use App\Actions\Masters\MasterVariant\UpdateMasterVariant;
@@ -557,6 +558,8 @@ Route::name('stock.')->prefix('/stock')->group(function () {
     Route::post('/', StoreStock::class)->name('store');
     Route::patch('/{stock:id}', UpdateStock::class)->name('update');
 });
+
+Route::post('master-shop', StoreMasterShop::class)->name('master_shop.store');
 
 Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
     Route::patch('/', UpdateMasterShop::class)->name('update');
