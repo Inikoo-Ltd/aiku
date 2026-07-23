@@ -6,7 +6,7 @@ import JsonViewer from 'vue-json-viewer';
 import { faPlus, faMinus } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowRight, faChevronDoubleDown } from '@fal';
+import { faArrowRight, faPlus as falPlus, faMinus as falMinus} from '@fal';
 
 library.add(faPlus, faMinus, faArrowRight);
 
@@ -102,6 +102,36 @@ const clickExpand = (id: string) => {
     }
 }
 
+const getTradeUnitHistory = (oldData, newData) => {
+    const modified = [];
+    const added = [];
+    const removed = [];
+
+    const keys = new Set([
+        ...Object.keys(oldData ?? {}),
+        ...Object.keys(newData ?? {}),
+    ]);
+
+    for (const key of keys) {
+        const oldValue = oldData?.[key];
+        const newValue = newData?.[key];
+
+        if (oldValue === undefined) {
+            added.push({ key, old: newValue });
+        } else if (newValue === undefined) {
+            removed.push({ key, new: oldValue });
+        } else if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+            modified.push({
+                key,
+                old: oldValue,
+                new: newValue,
+            });
+        }
+    }
+
+    return { modified, added, removed };
+}
+
 </script>
 
 <template>
@@ -120,43 +150,96 @@ const clickExpand = (id: string) => {
             <span>{{ formatDate(user.datetime) }}</span>
         </template>
 
-        <template #cell(values)="{ item: user }">
+        <template #cell(values)="{ item: history }">
             <!-- Only display the values column if the event is not "migration" -->
              <div class="flex">
                 <div 
-                    v-if="user.event !== 'migration'" 
+                    v-if="history.event !== 'migration'" 
                     class="space-y-2 overflow-y-auto grid flex-auto transition-all ease-in-out duration-700" 
-                    :class="user.id && expandedRows.includes(user.id) ? 'max-h-[999px]' : 'max-h-[100px]'"
+                    :class="history.id && expandedRows.includes(history.id) ? 'max-h-[999px]' : 'max-h-[100px]'"
                     style="scrollbar-width:none"
                 >
+                    <div 
+                        v-if="history.event == 'update_trade_units'"
+                        :key="history.id"
+                        class="grid space-x-2 text-sm"
+                    >
+                        <div 
+                            v-for="(audit, key) in getTradeUnitHistory(history.old_values, history.new_values)"
+                            :class="[
+                                !audit.length ? 'hidden': 'mb-1'
+                            ]"
+                            class="!mx-0"
+                        >
+                            <span class="font-semibold">
+                                {{ key.charAt(0).toUpperCase() + key.slice(1) }}: 
+                            </span>
+                            <div 
+                                class="flex flex-col gap-2 border rounded-md px-2 py-1 w-[75%] mb-1"
+                                :class="{
+                                    'bg-blue-100 border-blue-400': key == 'modified',
+                                    'bg-red-100 border-red-400': key == 'removed',
+                                    'bg-green-100 border-green-400': key == 'added',
+                                }"
+                            >
+                                <div
+                                    v-for="(item, key2) in audit"
+                                    :key="key2"
+                                    class="flex items-center space-x-2 text-xs"
+                                >
+                                    <span class="font-semibold">
+                                        <span>
+                                            {{ key == 'modified' ? '~' : (key == 'added'  ? '+' : '-') }}
+                                        </span>
+                                        {{ item.key }}:
+                                    </span>
+                                    <span>
+                                        <span v-if="item.old">
+                                            {{ item.old }} 
+                                        </span>
+                                        <span v-if="item.old && item.new" class="px-1">
+                                            <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
+                                        </span v-if="item.new">
+                                        <span>
+                                            {{ item.new }}
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div
-                    v-for="key in getChangedKeys(user.old_values, user.new_values)"
-                    :key="key"
-                    class="flex items-center space-x-2 text-sm"
+                        v-else
+                        v-for="key in getChangedKeys(history.old_values, history.new_values)"
+                        :key="key"
+                        class="flex items-center space-x-2 text-sm"
                     >
                         <span class="font-bold text-gray-700">{{ formatKey(key) }}:</span>
-                        <span class="text-gray-600">{{ formatValue(user.old_values[key], key) }}</span>
+                        <span class="text-gray-600">{{ formatValue(history.old_values[key], key) }}</span>
                             <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
-                        <span class="text-gray-800">{{ formatValue(user.new_values[key], key) }}</span>
+                        <span class="text-gray-800">{{ formatValue(history.new_values[key], key) }}</span>
                     </div>
                 </div>
                 <div 
-                    v-if="(getChangedKeys(user.old_values, user.new_values).length ?? 0) > 4"
-                    @click="clickExpand(user.id)"
+                    v-if=" 
+                        history.event == 'update_trade_units' ?
+                        (getChangedKeys(history.old_values, history.new_values).length ?? 0) > 2
+                        : (getChangedKeys(history.old_values, history.new_values).length ?? 0) > 4
+                    "
+                    @click="clickExpand(history.id)"
                     class="flex-initial w-[50px] my-auto cursor-pointer"
                 >
                     <span
                         class="justify-self-end text-md p-2 rounded-full h-[30px] w-[30px] flex align-center hover:opacity-85" 
-                        :class="user.id && expandedRows.includes(user.id) ? 'align-top' : 'align-center'"
+                        :class="history.id && expandedRows.includes(history.id) ? 'align-top' : 'align-center'"
                         :style="{
                             background: layout?.app?.theme[0],
                             color: layout?.app?.theme[1],
                         }"
                     >
                         <FontAwesomeIcon 
-                            :icon="faChevronDoubleDown" 
+                            :icon="history.id && expandedRows.includes(history.id) ? faMinus : faPlus" 
                             class="h-fit transition-all ease-out duration-700"
-                            :class="user.id && expandedRows.includes(user.id) ? 'rotate-180' : ''"
                         />
                     </span>
                 </div>

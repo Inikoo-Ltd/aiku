@@ -57,6 +57,10 @@ const setupState = (step: Timeline) => {
     }else return
 }
 
+const isDangerStep = (step: Timeline) => {
+    return setupState(step) && ['cancelled', 'not_received'].includes(step.key)
+}
+
 // Handle Swiper initialization
 const onSwiper = (swiper) => {
     swiperInstance.value = swiper
@@ -136,7 +140,7 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                             class="z-10 px-1 w-full absolute flex align-center items-center align-middle content-center -translate-x-1/2 top-1/2 -translate-y-1/2">
                             <div class="w-full rounded items-center align-middle align-center flex-1">
                                 <div class="w-full py-[1px] rounded ml-[1px]"
-                                    :class="setupState(step) ? 'bg-[#66dc71]' : 'bg-gray-300'" />
+                                    :class="setupState(step) ? (isDangerStep(step) ? 'bg-red-400' : 'bg-[#66dc71]') : 'bg-gray-300'" />
                             </div>
                         </div>
 
@@ -145,7 +149,9 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                             v-tooltip="step.label"
                             class="z-20 aspect-square mx-auto rounded-full text-lg flex justify-center items-center"
                             :class="[
-                                setupState(step) ? 'text-green-600 bg-[#66dc71] h-3' : 'border border-gray-300 text-gray-400 bg-white h-3'
+                                setupState(step)
+                                    ? (isDangerStep(step) ? 'text-red-600 bg-red-400 h-3' : 'text-green-600 bg-[#66dc71] h-3')
+                                    : 'border border-gray-300 text-gray-400 bg-white h-3'
                             ]"
                         >
                         </div>

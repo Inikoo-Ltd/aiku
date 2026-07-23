@@ -16,18 +16,31 @@ trait WithPurchaseOrderWeightAndVolume
         $lines = DB::table('purchase_order_transactions as pot')
             ->leftJoin('supplier_products as sp', 'sp.id', '=', 'pot.supplier_product_id')
             ->where('pot.purchase_order_id', $purchaseOrder->id)
+            ->selectRaw("pot.state = 'cancelled' as is_cancelled")
             ->selectSub($this->tradeUnitWeightSubQuery('gross_weight'), 'gross_weight')
             ->selectSub($this->tradeUnitWeightSubQuery('net_weight'), 'net_weight')
             ->selectRaw('sp.cbm * pot.quantity_ordered / nullif(sp.units_per_carton, 0) as volume');
 
         $totals = DB::query()
             ->fromSub($lines, 'line')
-            ->selectRaw('sum(line.gross_weight) as gross_weight')
-            ->selectRaw('sum(line.net_weight) as net_weight')
-            ->selectRaw('sum(line.volume) as volume')
-            ->selectRaw('count(*) filter (where line.gross_weight is null) as unknown_weight_lines')
-            ->selectRaw('count(*) filter (where line.volume is null) as unknown_volume_lines')
+            ->selectRaw('sum(line.gross_weight) filter (where not line.is_cancelled) as gross_weight')
+            ->selectRaw('sum(line.net_weight) filter (where not line.is_cancelled) as net_weight')
+            ->selectRaw('sum(line.volume) filter (where not line.is_cancelled) as volume')
+            ->selectRaw('count(*) filter (where line.gross_weight is null and not line.is_cancelled) as unknown_weight_lines')
+            ->selectRaw('count(*) filter (where line.volume is null and not line.is_cancelled) as unknown_volume_lines')
+            ->selectRaw('count(*) as total_lines')
+            ->selectRaw('count(*) filter (where not line.is_cancelled) as active_lines')
             ->first();
+
+        if ($totals->total_lines > 0 && (int) $totals->active_lines === 0) {
+            return [
+                'gross_weight'      => 0.0,
+                'net_weight'        => 0.0,
+                'volume'            => 0.0,
+                'is_weight_partial' => false,
+                'is_volume_partial' => false,
+            ];
+        }
 
         return [
             'gross_weight'      => $this->gramsToKilograms($totals->gross_weight),
