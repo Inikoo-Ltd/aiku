@@ -162,6 +162,17 @@ const onSortChange = () => {
     fetchInternalResults({ resultsOnly: true })
 }
 
+const hasActiveFilters = computed(() => selectedCategoryIds.value.length > 0 || !!sortBy.value)
+
+const resetFilters = () => {
+    if (!hasActiveFilters.value) {
+        return
+    }
+    selectedCategoryIds.value = []
+    sortBy.value = ''
+    fetchInternalResults({ resultsOnly: true })
+}
+
 const loadMore = () => {
     fetchInternalResults({ pageNumber: currentPage.value + 1, append: true })
 }
@@ -250,7 +261,14 @@ const isMobileFilterOpen = ref(false)
                 <aside class="w-full md:w-[300px] flex-shrink-0 md:border-r md:border-[#e8e8e8] md:pr-5"
                     :class="isMobileFilterOpen ? 'block' : 'hidden md:block'">
                     <div class="text-[26px] leading-[1.2em] font-bold mb-2.5">{{ ctrans('Filters') }}</div>
-                    <div class="text-sm text-[#767676] mb-4">{{ totalResults }} {{ ctrans('results') }}</div>
+                    <div class="flex items-center justify-between gap-2 mb-4">
+                        <div class="text-sm text-[#767676]">{{ totalResults }} {{ ctrans('results') }}</div>
+                        <button v-if="hasActiveFilters" type="button"
+                            class="text-sm underline hover:no-underline text-[var(--theme-color-0)] cursor-pointer"
+                            @click="resetFilters">
+                            {{ ctrans('Cancel all filters') }}
+                        </button>
+                    </div>
 
                     <template v-if="isInternalLoading">
                         <div class="border-t border-[#e8e8e8] pt-5 space-y-2">
@@ -389,13 +407,13 @@ const isMobileFilterOpen = ref(false)
                             <!-- Product detail: image -->
                             <div class="relative block w-full mb-1 rounded overflow-hidden aspect-square bg-white">
                                 <Image v-if="product.image" :src="product.image"
-                                    class="w-full h-full object-contain object-center"
-                                    :class="product.stock === 0
+                                    xass="w-full h-full object-contain object-center"
+                                    cclass="product.stock === 0
                                         ? 'grayscale opacity-60'
                                         : ''
                                     "
                                 />
-                                <div v-else class="w-full h-full flex items-center justify-center text-gray-300 font-bold uppercase"> {{ product.code?.slice(0, 3) }}</div>
+                                <div v-else class="w-full h-full flex items-center justify-center text-gray-400 font-bold uppercase text-4xl"> {{ product.code?.slice(0, 3) }}</div>
                                 <div v-if="product.stock === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                                     <span class="w-full bg-white/95 border border-red-500 rounded-sm text-red-500 text-xs font-bold uppercase tracking-wider py-1 text-center shadow-sm">{{ ctrans('Out of stock') }}</span>
                                 </div>
