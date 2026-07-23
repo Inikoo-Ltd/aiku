@@ -462,14 +462,14 @@ class Kernel extends ConsoleKernel
             );
 
 
-            $this->logSchedule(
-                $schedule->job(RunReorderRemainderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'RunReorderRemainderEmailBulkRuns',
-                ),
-                name: 'RunReorderRemainderEmailBulkRuns',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
+            // $this->logSchedule(
+            //     $schedule->job(RunReorderRemainderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+            //         monitorSlug: 'RunReorderRemainderEmailBulkRuns',
+            //     ),
+            //     name: 'RunReorderRemainderEmailBulkRuns',
+            //     type: 'job',
+            //     scheduledAt: now()->format('H:i')
+            // );
 
             $this->logSchedule(
                 $schedule->job(RunGoldRewardReminderEmailBulkRuns::makeJob())->dailyAt('15:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
