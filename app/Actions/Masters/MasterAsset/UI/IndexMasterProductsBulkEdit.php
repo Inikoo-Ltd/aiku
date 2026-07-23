@@ -11,10 +11,13 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterProductsResource;
+use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -30,21 +33,39 @@ class IndexMasterProductsBulkEdit extends GrpAction
     use WithMasterFamilySubNavigation;
     use WithMastersAuthorisation;
 
-    private Group|MasterShop|MasterProductCategory $parent;
-
-    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null): Group|MasterShop|MasterProductCategory
+    public function handle(MasterShop $parent, $prefix = null): Group|MasterShop|MasterProductCategory
     {
         return $parent;
     }
 
-    public function jsonResponse(Group|MasterShop|MasterProductCategory $masterAssets): AnonymousResourceCollection
+    public function jsonResponse(MasterShop $parent): AnonymousResourceCollection
     {
-        return MasterProductsResource::collection($masterAssets);
+        return MasterProductsResource::collection($parent);
     }
 
-    public function htmlResponse(Group|MasterShop|MasterProductCategory $masterAssets, ActionRequest $request): Response
+    public function htmlResponse(MasterShop $parent, ActionRequest $request): Response
     {
         $title = __('Bulk edit Master Products');
+    
+        $shopCurrencies = Shop::where('master_shop_id', $parent->id)
+            ->select('currency_id')
+            ->distinct()
+            ->get();
+
+        $baseEuro   = Currency::where('code', 'EUR')->first();
+        $currencies = Currency::whereIn('id', $shopCurrencies)->get();
+        $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseEuro) {
+            $ratioEuro  = GetCurrencyExchange::run($baseEuro, $currency);
+
+            return [
+                $currency->code => [
+                    'ratio_eur'     => $ratioEuro,
+                    'currency'      => $currency->code,
+                    'currency_symbol'  => $currency->symbol,
+                    'currency_id'      => $currency->id,
+                ]
+            ];
+        });
 
         return Inertia::render(
             'Masters/MasterProductsBulkEdit',
@@ -54,18 +75,16 @@ class IndexMasterProductsBulkEdit extends GrpAction
                     'model'         => __('Master Products'),
                     'title'         => __('Bulk Edit'),
                 ],
-
+                'currencies'        => $currenciesRate,
             ]
         );
     }
 
-    public function asController(ActionRequest $request): Group|MasterShop|MasterProductCategory
+    public function asController(MasterShop $masterShop, ActionRequest $request): Group|MasterShop|MasterProductCategory
     {
-        $group        = group();
-        $this->parent = $group;
-        $this->initialisation($group, $request);
+        $this->initialisation(group(), $request);
 
-        return $this->handle($group);
+        return $this->handle($masterShop);
     }
 
 }

@@ -22,6 +22,7 @@ const props = defineProps<{
 		type: string
 		placeholder: string
 		readonly?: boolean
+		disabled?: boolean
 		copyButton: boolean
 		maxLength?: number
 		noIcon?: boolean
@@ -150,16 +151,19 @@ const getDescriptionSegments = (description: string) => {
 							}
 						}
 					"
-					class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+					class="pr-1 relative inline-flex h-6 w-12 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
 					:class="[
 						value ? 'bg-indigo-500' : 'bg-indigo-100',
 						form.errors[fieldName] ? 'errorShake' : '',
-					]">
+						fieldData?.disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+					]"
+					:disabled="fieldData?.disabled"
+				>
 					<span
 						aria-hidden="true"
 						:class="value ? 'translate-x-6 bg-white ' : 'translate-x-0 bg-gray-50'"
 						class="flex items-center justify-center pointer-events-none h-full w-1/2 transform rounded-full shadow-lg ring-0 transition">
-						<template v-if="!fieldData.noIcon">
+						<template v-if="!fieldData?.noIcon">
 							<FontAwesomeIcon
 								v-if="value"
 								icon="fal fa-check"

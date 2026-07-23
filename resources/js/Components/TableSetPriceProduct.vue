@@ -32,7 +32,9 @@ interface ProductItem {
     currency?: string;
     product?: {
         org_cost?: number;
+        shop_cost?: number;
         org_currency?: string;
+        shop_currency?: string;
         stock?: number;
         price?: number;
         rrp?: number;
@@ -68,7 +70,7 @@ const locale = inject("locale", {});
 // helper to calculate profit margin %
 function getMargin(item: ProductItem) {
     const p = Number(item.product?.price);
-    const cost = Number(item.product?.org_cost);
+    const cost = Number(item.product?.shop_cost);
 
     if (isNaN(p) || p === 0) return 0;
     if (isNaN(cost) || cost === 0) return 100;
@@ -78,11 +80,9 @@ function getMargin(item: ProductItem) {
 
 // helper for RRP margin
 function getRrpMargin(item: ProductItem) {
-    const rrp = item.product?.useCustomRrp
-        ? Number(item.product?.rrp * (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1))
-        : Math.round(Number(item.product?.price) * 2.4);
-
-    const cost = Number(item.product?.org_cost);
+    const units = props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1;
+    const rrp = Number(item.product?.rrp) * units;
+    const cost = Number(item.product?.price);
 
     if (isNaN(rrp) || rrp === 0) return 0;
     if (isNaN(cost) || cost === 0) return 100;
@@ -133,6 +133,39 @@ modelValue.value.data.forEach((item) => {
         );
     }
 });
+
+// hydrate each shop's price & rrp from the master prices/rrps, matched by currency code
+const applyMasterPricing = () => {
+    const masterPrices = (props.form.master_prices ?? {}) as Record<string, { value: number | null }>;
+    const masterRrps = (props.form.master_rrps ?? {}) as Record<string, { value: number | null }>;
+
+    modelValue.value.data.forEach((item) => {
+        if (!item.product) {
+            return;
+        }
+
+        const currencyCode = item.product.shop_currency ?? props.currency;
+        const masterPrice = masterPrices[currencyCode]?.value;
+        const masterRrp = masterRrps[currencyCode]?.value;
+
+        if (masterPrice != null) {
+            item.product.price = masterPrice;
+        }
+
+        if (masterRrp != null) {
+            item.product.useCustomRrp = true;
+            item.product.rrp = masterRrp;
+        }
+    });
+
+    emits("change", modelValue.value);
+};
+
+watch(
+    () => [props.form.master_prices, props.form.master_rrps],
+    applyMasterPricing,
+    { deep: true, immediate: true }
+);
 
 
 function roundDown2(num: number) {
@@ -255,17 +288,17 @@ function roundDown2(num: number) {
                         <div class="flex flex-col items-end gap-[2px]">
 
                             <!-- STOCK -->
-                            <div v-if="item.product?.stock" class="flex items-baseline gap-1">
+                          <!--   <div v-if="item.product?.stock" class="flex items-baseline gap-1">
                                 <span class="text-sm font-semibold text-gray-800">
                                     {{ item.product?.stock }}
                                 </span>
-                            </div>
+                            </div> -->
 
                             <!-- VALUE -->
                             <div v-if="item.product?.org_value_in_warehouse" v-tooltip="trans('Value in warehouse')"
                                 class="flex items-center gap-1 text-[11px] text-gray-500">
                                 <span class="font-medium text-gray-600">
-                                     {{ locale.currencyFormat(item.product?.shop_currency ?? currency,item.product?.org_value_in_warehouse) }}
+                                     {{ locale.currencyFormat(item.product?.shop_currency ?? currency,item.product?.org_value_in_warehouse_per_shop) }}
                                 </span>
                             </div>
 
@@ -279,7 +312,8 @@ function roundDown2(num: number) {
 
                     <!-- PRICE BLOCK -->
                     <td class="px-3 py-2 bg-blue-50 border-l-2 border-blue-400">
-                        <InputNumber v-model="item.product.price" mode="currency"
+                        {{ locale.currencyFormat(item.product?.shop_currency ?? currency, item.product?.price ) }}
+                        <!-- <InputNumber v-model="item.product.price" mode="currency"
                             :disabled="!item.product.create_in_shop"
                             :currency="item?.product?.shop_currency ?? currency" :step="0.25" :showButtons="true"
                             inputClass="w-full" :min="0.01" @input="emits('change', modelValue)" />
@@ -292,7 +326,7 @@ function roundDown2(num: number) {
                             class="text-xxs text-yellow-500">
                             Price should be at least {{ (item.product.org_cost * (1 + price_rrp_warning_ratio /
                                 100)).toFixed(2) }} ({{ price_rrp_warning_ratio }}% above cost).
-                        </span>
+                        </span> -->
                     </td>
 
                     <td class="px-3 py-2 text-right bg-blue-50">
@@ -301,6 +335,8 @@ function roundDown2(num: number) {
                     </td>
 
                     <td class="px-3 py-2 text-right bg-blue-50 border-r border-blue-400">
+                        <!--  {{ Number(item.product?.price) }}
+                         {{ Number(item.product?.org_cost)  }}  -->
                         <span :class="{
                             'text-green-600 font-medium': getMargin(item) > 0,
                             'text-red-600 font-medium': getMargin(item) < 0,
@@ -319,7 +355,8 @@ function roundDown2(num: number) {
                     </td>
 
                     <td class="px-3 py-2 text-right bg-purple-50">
-                        <div class="flex justify-end gap-2 text-xs">
+                          {{ locale.currencyFormat(item.product?.shop_currency ?? currency, item.product.rrp ) }}
+                       <!--  <div class="flex justify-end gap-2 text-xs">
                             <div class="w-32" v-if="item.product?.useCustomRrp">
                                 <InputNumber v-model="item.product.rrp" mode="currency"
                                     :disabled="!item.product.create_in_shop"
@@ -342,7 +379,7 @@ function roundDown2(num: number) {
                             </button>
                         </div>
                         <span v-if="form?.errors[`shop_products.${item.id}.rrp`]" class="text-xs text-red-500">{{
-                            form?.errors[`shop_products.${item.id}.rrp`] }}</span>
+                            form?.errors[`shop_products.${item.id}.rrp`] }}</span> -->
                     </td>
 
                     <td class="px-3 py-2 text-right bg-purple-50 border-r-2 border-purple-400">

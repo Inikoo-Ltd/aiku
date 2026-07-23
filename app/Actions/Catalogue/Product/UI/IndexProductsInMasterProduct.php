@@ -198,7 +198,7 @@ class IndexProductsInMasterProduct extends OrgAction
                         ],
                     ],
                     'data'                              => ProductsResource::collection($products),
-                    'editable_table'                    => true,
+                    'editable_table'                    => false,
                     'mismatch_trade_unit_with_master'   => $hasMismatch,
                     'tabs'                         => [
                         'current'    => $this->tab,

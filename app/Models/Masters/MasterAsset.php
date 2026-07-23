@@ -17,6 +17,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
+use App\Models\Helpers\Currency;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Reviews\MasterAssetReviewStat;
@@ -230,13 +231,17 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'web_images'              => 'array',
         'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
+        'master_prices'           => 'array',
+        'master_rrps'           => 'array',
     ];
 
     protected $attributes = [
-        'data'         => '{}',
-        'offers_data'  => '{}',
-        'web_images'   => '{}',
-        'tax_category' => '{}',
+        'data'          => '{}',
+        'offers_data'   => '{}',
+        'web_images'    => '{}',
+        'tax_category'  => '{}',
+        'master_prices' => '{}',
+        'master_rrps'   => '{}'
     ];
 
     public function generateTags(): array
@@ -282,6 +287,16 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
+    }
+
+    public function getPricefromCurrency(Currency $currency): float
+    {
+        return data_get($this->master_prices, "{$currency->code}.value", 0);
+    }
+
+    public function getRRPfromCurrency(Currency $currency): float
+    {
+        return data_get($this->master_rrps, "{$currency->code}.value", 0);
     }
 
     public function assets(): HasMany

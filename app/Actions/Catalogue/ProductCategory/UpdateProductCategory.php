@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
 use App\Actions\Discounts\Offer\FinishOffer;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
@@ -167,6 +168,10 @@ class UpdateProductCategory extends OrgAction
             ]);
         }
 
+        if (Arr::has($changes, 'not_follow_master_prices') && !$productCategory->not_follow_master_prices) {
+            ProductHydratePricesFromMaster::dispatch($productCategory);
+        }
+
         if (Arr::hasAny($changes, [
             'code',
             'name',
@@ -293,6 +298,7 @@ class UpdateProductCategory extends OrgAction
             'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],
             'faq.*.source_question'         => ['sometimes', 'nullable', 'string'],
             'faq.*.source_answer'           => ['sometimes', 'nullable', 'string'],
+            'not_follow_master_prices'      => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

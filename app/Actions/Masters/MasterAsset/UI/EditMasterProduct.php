@@ -9,12 +9,15 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\GrpAction;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
+use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -148,6 +151,26 @@ class EditMasterProduct extends GrpAction
             );
         });
 
+        $masterShop = $masterProduct->masterShop;
+        $shopCurrencies = Shop::where('master_shop_id', $masterShop->id)
+            ->select('currency_id')
+            ->distinct()
+            ->get();
+
+        $baseEuro   = Currency::where('code', 'EUR')->first();
+        $currencies = Currency::whereIn('id', $shopCurrencies)->get();
+        $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseEuro) {
+            $ratioEuro  = GetCurrencyExchange::run($baseEuro, $currency);
+
+            return [
+                $currency->code => [
+                    'ratio_eur'     => $ratioEuro,
+                    'currency'      => $currency->code,
+                    'currency_symbol'  => $currency->symbol,
+                    'currency_id'      => $currency->id,
+                ]
+            ];
+        });
 
         return [
             [
@@ -243,7 +266,7 @@ class EditMasterProduct extends GrpAction
                     ],
                 ]
             ],
-            [
+            /* [
                 'label'  => __('Pricing'),
                 'icon'   => 'fa-light fa-money-bill',
                 'fields' => [
@@ -267,6 +290,30 @@ class EditMasterProduct extends GrpAction
                         ],
                         'value'    => ($masterProduct->rrp / trimDecimalZeros($masterProduct->units)),
                         'min'      => 0.01
+                    ],
+                ]
+            ], */
+            [
+                'label'  => __('Pricing'),
+                'icon'   => 'fa-light fa-money-bill',
+                'fields' => [
+                    'master_prices'            => [
+                        'type'          => 'multiple_price_currency',
+                        'label'         => __('Price').' / '.__('Outer'),
+                        'required'      => true,
+                        'currencies'    => $currenciesRate,
+                        'value'         => $masterProduct->master_prices,
+                        'masterAsset'   => $masterProduct->id,
+                        'type_input'          => 'price'
+                    ],
+                    'master_rrps'            => [
+                        'type'          => 'multiple_price_currency',
+                        'label'         => __('RRP').' / '.__('Unit'),
+                        'required'      => true,
+                        'currencies'    => $currenciesRate,
+                        'value'         => $masterProduct->master_rrps,
+                        'masterAsset'   => $masterProduct->id,
+                        'type_input'          => 'rrp'
                     ],
                 ]
             ],

@@ -81,7 +81,7 @@ defineExpose({
         <div :class="{ 'relative w-full': true, 'flex': prefix, 'pr-6': suffix }">
             <slot v-if="prefix" name="prefix">
                 <div
-                    class="flex justify-center items-center pl-2 gap-x-1 opacity-50">
+                    class="flex justify-center items-center pl-2 gap-x-1 opacity-50" :class="disabled ? 'bg-gray-200' : 'bg-white'">
                     {{ prefix }}
                 </div>
             </slot>
