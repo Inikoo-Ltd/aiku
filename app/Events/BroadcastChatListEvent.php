@@ -4,6 +4,7 @@ namespace App\Events;
 
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Models\Chat\ChatMessage;
+use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -18,26 +19,25 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
     use InteractsWithSockets;
     use SerializesModels;
 
-    public $message;
+    public ?ChatMessage $message;
+
+    public ?ChatSession $chatSession;
 
     /**
-     * Create a new event instance.
-     *
-     * @return void
+     * @param  ChatMessage|null  $message      Present for new-message events.
+     * @param  ChatSession|null  $chatSession  Present for assignment/status events (assign, take-over, close, reopen).
      */
-    public function __construct(?ChatMessage $message = null)
+    public function __construct(?ChatMessage $message = null, ?ChatSession $chatSession = null)
     {
         $this->message = $message;
+        $this->chatSession = $chatSession ?? $message?->chatSession;
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return \Illuminate\Broadcasting\Channel|array
-     */
     public function broadcastOn()
     {
-        return new PresenceChannel('chat-list');
+        $shopId = $this->chatSession?->shop_id ?? 0;
+
+        return new PresenceChannel("chat-list.{$shopId}");
     }
 
     public function broadcastAs(): string
@@ -47,20 +47,21 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        if (!$this->message) {
-            return [
-                'message' => null
-            ];
-        }
-
         return [
-            'message' => [
+            'message' => $this->message ? [
                 'sender_type'       => $this->message->sender_type->value,
                 'sender_name'       => $this->resolveSenderName(),
                 'text'              => $this->resolveMessageText(),
-                'shop_id'           => $this->message->chatSession->shop_id,
+                'shop_id'           => $this->chatSession?->shop_id,
                 'assigned_user_id'  => $this->resolveAssignedAgentId(),
-            ]
+            ] : null,
+            'session' => $this->chatSession ? [
+                'ulid'                => $this->chatSession->ulid,
+                'shop_id'             => $this->chatSession->shop_id,
+                'status'              => $this->chatSession->status?->value,
+                'assigned_user_id'    => $this->resolveAssignedAgentId(),
+                'assigned_agent_name' => $this->resolveAssignedAgentName(),
+            ] : null,
         ];
     }
 
@@ -69,7 +70,7 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
         $senderName = "Customer";
 
         if ($this->message->sender_type->value === 'guest') {
-            $senderName = $this->message->chatSession?->guest_identifier ?? "Guest";
+            $senderName = $this->chatSession?->guest_identifier ?? "Guest";
         }
 
         if ($this->message->sender_type->value === 'user') {
@@ -80,15 +81,21 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
         return $senderName;
     }
 
-    private function resolveAssignedAgentId(): ?int
+    private function activeAssignment(): ?\App\Models\Chat\ChatAssignment
     {
-        $activeAssignment = $this->message->chatSession->assignments()
+        return $this->chatSession?->assignments()
             ->where('status', ChatAssignmentStatusEnum::ACTIVE)
             ->first();
+    }
 
-        return $activeAssignment
-            ? $activeAssignment->chatAgent?->user?->id
-            : null;
+    private function resolveAssignedAgentId(): ?int
+    {
+        return $this->activeAssignment()?->chatAgent?->user?->id;
+    }
+
+    private function resolveAssignedAgentName(): ?string
+    {
+        return $this->activeAssignment()?->chatAgent?->user?->contact_name;
     }
 
     private function resolveMessageText(): string

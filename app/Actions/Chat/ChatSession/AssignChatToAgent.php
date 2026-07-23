@@ -177,7 +177,7 @@ class AssignChatToAgent
                 $validated['note'] ?? null
             );
             $actionType     = $this->getActionType($assignedByAgent->id, $validated['agent_id'], $chatSession);
-            BroadcastChatListEvent::dispatch();
+            BroadcastChatListEvent::dispatch(null, $chatSession);
 
             return response()->json([
                 'success' => true,
@@ -302,7 +302,7 @@ class AssignChatToAgent
 
                 ChatAgentHydrateChats::run($agent);
 
-                BroadcastChatListEvent::dispatch();
+                BroadcastChatListEvent::dispatch(null, $chatSession);
             }
 
             return response()->json([
@@ -384,7 +384,7 @@ class AssignChatToAgent
                 ]
             );
 
-            BroadcastChatListEvent::dispatch();
+            BroadcastChatListEvent::dispatch(null, $chatSession);
 
             return response()->json([
                 'success' => true,

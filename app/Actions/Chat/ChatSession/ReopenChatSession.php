@@ -73,7 +73,7 @@ class ReopenChatSession
                 ]
             );
 
-            BroadcastChatListEvent::dispatch();
+            BroadcastChatListEvent::dispatch(null, $chatSession);
 
             return $chatSession->fresh();
         });

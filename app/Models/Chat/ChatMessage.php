@@ -76,6 +76,7 @@ class ChatMessage extends Model implements HasMedia
         'is_read' => 'boolean',
         'delivered_at' => 'datetime',
         'read_at' => 'datetime',
+        'edited_at' => 'datetime',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

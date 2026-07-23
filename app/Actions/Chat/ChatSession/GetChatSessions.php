@@ -40,6 +40,8 @@ class GetChatSessions
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
             'search'          => ['sometimes', 'string', 'max:100'],
+            'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
+            'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
         ];
     }
 
@@ -110,6 +112,17 @@ class GetChatSessions
                     });
                 }
             }
+        }
+
+        if (!empty($filters['organisation_id'])) {
+            $organisationId = (int) $filters['organisation_id'];
+            $query->whereHas('shop', function ($q) use ($organisationId) {
+                $q->where('organisation_id', $organisationId);
+            });
+        }
+
+        if (!empty($filters['shop_id'])) {
+            $query->where('shop_id', (int) $filters['shop_id']);
         }
 
         if (isset($filters['web_user_id'])) {
