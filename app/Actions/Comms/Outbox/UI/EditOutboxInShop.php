@@ -37,7 +37,7 @@ class EditOutboxInShop extends OrgAction
             'fields' => [
                 'subject' => [
                     'type' => 'input',
-                    'label' => __('subject'),
+                    'label' => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required' => false,
                     'value' => $outbox->emailOngoingRun?->email?->subject,
@@ -92,9 +92,10 @@ class EditOutboxInShop extends OrgAction
                 'fields' => [
                     'days_after' => [
                         'type' => 'input_number',
-                        'label' => __('Days after last order dispatched'),
+                        'label' => __('Reminder Interval (Days)'),
                         'placeholder' => __('Days after last order dispatched'),
-                        'required' => false,
+                        'information' => __('Number of days to wait after the last dispatched order before sending this reminder.'),
+                        'required' => true,
                         'value' => $outbox->days_after,
                     ],
                 ]
