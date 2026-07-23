@@ -1491,7 +1491,10 @@ test('picking waiting warehouse and crm flow', function () {
     \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
 
     $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2]);
-    \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
+    \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run($item->refresh(), $this->user, [
+        'quantity'              => 1,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+    ]);
 
     $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2, 'locked_at' => null]);
     $undone = \App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse::run($item->refresh());

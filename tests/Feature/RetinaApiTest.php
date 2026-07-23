@@ -190,6 +190,16 @@ test('retina api dropshipping order submit', function () {
         'customer_sales_channel_id' => $this->dropshippingChannel->id,
     ]);
 
+    $portfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
+        $this->dropshippingChannel,
+        $this->product,
+        []
+    );
+
+    postJson(route('retina.api.dropshipping.order.transaction.store', [$order, $portfolio]), [
+        'quantity_ordered' => 2,
+    ])->assertCreated();
+
     $response = patchJson(route('retina.api.dropshipping.order.submit', $order));
     $response->assertOk();
     $response->assertJsonStructure([

@@ -472,6 +472,7 @@ test('change purchase order state to not received', function ($purchaseOrder) {
 
 test('change purchase order state to cancelled', function ($purchaseOrder) {
     $purchaseOrder->refresh();
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED]);
 
     $purchaseOrder = UpdatePurchaseOrderStateToCancelled::make()->action($purchaseOrder);
 
@@ -793,11 +794,11 @@ test('UI show purchase order', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', $this->purchaseOrder->reference)
+                    ->where('title', 'Purchase Order')
+                    ->where('afterTitle.label', $this->purchaseOrder->reference)
                     ->etc()
             )
             ->has('tabs')
-            ->has('currency')
             ->has('box_stats')
             ->has('timelines')
             ->has('data');
