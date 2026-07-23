@@ -79,7 +79,13 @@ class EditOutboxInShop extends OrgAction
             ]
         ];
 
-        if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD, OutboxCodeEnum::GOLD_REWARD_REMINDER_1, OutboxCodeEnum::GOLD_REWARD_REMINDER_2, OutboxCodeEnum::GOLD_REWARD_REMINDER_3 ])) {
+        if (in_array($outbox->code, [
+            OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3 ])) {
             $fields[] = $subjectField;
             $fields[] = [
                 'title' => '',

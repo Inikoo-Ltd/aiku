@@ -508,7 +508,9 @@
       "oos_in_order_notification",
       "review_reminder",
       "invoice_paid",
-      "gold_reward_reminder_1"
+      "gold_reward_reminder_1",
+      "gold_reward_reminder_2",
+      "gold_reward_reminder_3"
     ],
     "name": "Beefree blank email template",
     "content": "beefree_blank_email_template.json",
