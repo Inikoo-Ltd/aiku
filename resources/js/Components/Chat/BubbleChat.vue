@@ -32,7 +32,8 @@ interface Message {
     id?: number
     _status?: MessageStatus
     original?: Translation
-    translations?: Translation[]   
+    translations?: Translation[]
+    edited_at?: string | null
 }
 
 interface Translation {
@@ -50,7 +51,44 @@ const props = defineProps<{
     viewerType: ViewerType
     agentName?: string | null
     contactName?: string | null
+    canEdit?: boolean
 }>()
+
+const emit = defineEmits<{
+    (e: "edit-message", payload: { id: number; text: string }): void
+}>()
+
+const EDIT_WINDOW_MS = 30 * 60 * 1000
+
+const isEditableMessage = computed(() =>
+    props.canEdit === true &&
+    props.viewerType === "agent" &&
+    props.message.sender_type === "agent" &&
+    (props.message.message_type ?? "text") === "text" &&
+    !!props.message.id &&
+    props.message._status !== "sending" &&
+    Date.now() - new Date(props.message.created_at).getTime() < EDIT_WINDOW_MS
+)
+
+const isEditingMessage = ref(false)
+const editText = ref("")
+
+const startEditMessage = () => {
+    editText.value = props.message.original?.text || props.message.message_text
+    isEditingMessage.value = true
+}
+
+const cancelEditMessage = () => {
+    isEditingMessage.value = false
+}
+
+const saveEditMessage = () => {
+    const text = editText.value.trim()
+    if (text && props.message.id && text !== (props.message.original?.text || props.message.message_text)) {
+        emit("edit-message", { id: props.message.id, text })
+    }
+    isEditingMessage.value = false
+}
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
@@ -250,9 +288,25 @@ watch(selectedLanguage, async (val) => {
                 {{ senderLabel }}
             </div>
 
-            <p class="whitespace-pre-wrap break-words">
+            <p v-if="!isEditingMessage" class="whitespace-pre-wrap break-words">
                 {{ displayText }}
             </p>
+
+            <div v-else class="flex flex-col gap-1.5 min-w-[220px]">
+                <textarea v-model="editText" rows="2"
+                    class="w-full text-sm rounded-md border border-gray-300 px-2 py-1.5 text-gray-800 bg-white focus:outline-none focus:ring-1 resize-y"
+                    @keydown.enter.exact.prevent="saveEditMessage" @keydown.esc="cancelEditMessage" />
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button" class="text-[11px] underline opacity-80" @click="cancelEditMessage">
+                        {{ trans("Cancel") }}
+                    </button>
+                    <button type="button"
+                        class="text-[11px] font-semibold px-2 py-0.5 rounded bg-white text-gray-800 border border-gray-300 hover:bg-gray-50"
+                        @click="saveEditMessage">
+                        {{ trans("Save") }}
+                    </button>
+                </div>
+            </div>
             <div v-if="
                 message?.is_offline_message &&
                 !(props.message.sender_type === 'guest' && props.viewerType === 'user')
@@ -330,6 +384,14 @@ watch(selectedLanguage, async (val) => {
             </div>
 
             <div class="flex items-center justify-end gap-1 text-[10px] opacity-70 min-h-[14px]">
+                <button v-if="isEditableMessage && !isEditingMessage" type="button"
+                    class="mr-auto underline leading-none" @click="startEditMessage">
+                    {{ trans("Edit") }}
+                </button>
+
+                <span v-if="message.edited_at" class="italic leading-none">
+                    {{ trans("edited") }}
+                </span>
                 <span v-if="!isSending" class="leading-none">
                     {{ time }}
                 </span>

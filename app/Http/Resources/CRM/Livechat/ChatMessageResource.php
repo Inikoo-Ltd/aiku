@@ -60,6 +60,7 @@ class ChatMessageResource extends JsonResource
             ] : null,
             'metadata' => $chatMessage->metadata,
             'is_offline_message' => $chatMessage->metadata['is_offline_message'] ?? false,
+            'edited_at' => $chatMessage->edited_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'timestamp' => $chatMessage->created_at->timestamp

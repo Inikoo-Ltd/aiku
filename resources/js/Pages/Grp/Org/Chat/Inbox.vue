@@ -435,6 +435,12 @@ onMounted(async () => {
     fetchInboxNotifications()
 
     const init = props.initialSession
+
+    // Jump to the shop (inbox) the opened chat belongs to.
+    if (init?.shop?.id) {
+        selectedShopId.value = init.shop.id
+    }
+
     if (init && ["waiting", "active", "closed"].includes(init.status) && activeTab.value !== init.status) {
         // Triggers the tab watcher (which reloads the list and clears the selection).
         activeTab.value = init.status
