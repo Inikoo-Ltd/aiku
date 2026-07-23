@@ -9,7 +9,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, onMounted } from "vue"
 import { router, usePage } from "@inertiajs/vue3"
 import { debounce, forEach, findKey } from "lodash-es"
 import qs from "qs"
@@ -115,6 +115,11 @@ const updates = ref(0)
 const isVisiting = ref(false)
 const visitCancelToken = ref<{ cancel: Function } | null>(null)
 const isLoading = ref(false)
+const key = ref(1)
+
+onMounted(() => {
+	key.value++
+})
 
 // ============================================================================
 // QUERY BUILDER SETUP
@@ -553,7 +558,7 @@ watch(
 					<slot name="card" :item="item">
 						<ProductRenderEcom
 							:product="item"
-							:key="index"
+							:key="`${index}-${key}`"
 							:hasInBasket="item"
 							:detach-to-favourite-route="{
 								name: 'retina.models.product.unfavourite',
