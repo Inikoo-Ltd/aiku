@@ -66,7 +66,7 @@ class RepairTradeUnitsImageSlots
         }
 
         $orphans = $tradeUnit->images
-            ->filter(fn($media) => blank($media->pivot->sub_scope) && ! isset($usedMediaIds[(int) $media->id]))
+            ->filter(fn ($media) => blank($media->pivot->sub_scope) && ! isset($usedMediaIds[(int) $media->id]))
             ->sortBy([['created_at', 'desc'], ['id', 'desc']]);
 
         foreach ($orphans as $orphan) {

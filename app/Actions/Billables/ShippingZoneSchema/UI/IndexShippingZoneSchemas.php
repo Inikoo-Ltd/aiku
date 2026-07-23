@@ -111,7 +111,7 @@ class IndexShippingZoneSchemas extends OrgAction
                     }
                 );
             $table->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
-          //  $table->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+            //  $table->column(key: 'slug', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true)

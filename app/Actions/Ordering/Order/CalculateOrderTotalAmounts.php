@@ -142,7 +142,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         $order    = Order::where('slug', $command->argument('order'))->firstOrFail();
 
         $ignoreCalculateDiscounts = !(bool)$command->option('ignoreCalculateDiscounts');
-        
+
         if ($order) {
             $this->handle($order, calculateDiscounts: $ignoreCalculateDiscounts);
             $command->line("Order $order->reference totals calculated. 🧮");

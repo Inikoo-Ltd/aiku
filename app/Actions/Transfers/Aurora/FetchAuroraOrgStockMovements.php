@@ -55,9 +55,9 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
                     strict: false
                 );
 
-                if($orgStockMovement->organisation->is_aiku_stock_control && $orgStockMovement->type==OrgStockMovementTypeEnum::PURCHASE){
-                    $purchase=$orgStockMovement;
-                    $orgStock=$purchase->orgStock;
+                if ($orgStockMovement->organisation->is_aiku_stock_control && $orgStockMovement->type == OrgStockMovementTypeEnum::PURCHASE) {
+                    $purchase = $orgStockMovement;
+                    $orgStock = $purchase->orgStock;
                     $location = $purchase->location;
                     if ($location) {
                         $this->fixForAuditsInPairs($location, $orgStock);

@@ -33,7 +33,7 @@ class GetIrisReviews extends IrisAction
             $reviews = GetIrisProductReviews::run($model);
         } elseif ($model instanceof ProductCategory) {
             $reviews = GetIrisProductCategoryReviews::run($model);
-            
+
             if ($reviews->isEmpty()) {
                 $reviews = GetIrisShopReviews::run($webpage->shop);
                 $model = $webpage->shop;

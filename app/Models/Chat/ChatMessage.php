@@ -40,6 +40,7 @@ use App\Models\Traits\HasSearch;
  * @property int|null $original_language_id
  * @property string|null $original_text
  * @property array<array-key, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $edited_at
  * @property-read Media|null $attachment
  * @property-read \App\Models\Chat\ChatSession|null $chatSession
  * @property-read Media|null $image

@@ -3,7 +3,6 @@
 namespace App\Actions\Maintenance\Masters\MasterProduct;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
-use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
@@ -80,12 +79,12 @@ class RepairMasterAssetHydratePrices
             $command->error("Unable to process, Shop and Master Shop argument must be present");
             return;
         }
-        
+
         $baseShop       = Shop::where('slug', $shopArgument)->firstOrFail();
         $baseCurrency   = $baseShop->currency;
-        
+
         $masterShop = MasterShop::where('slug', $masterShopArgument)->firstOrFail();
-        
+
         $shopCurrencies = Shop::where('master_shop_id', $masterShop->id)
             ->whereNot('currency_id', $baseCurrency->id)
             ->select('currency_id')
@@ -104,7 +103,7 @@ class RepairMasterAssetHydratePrices
             ->with('products') // Eager load, this only does 1 query (SELECT * FROM PRODUCTS WHERE products.master_asset_id IN $masterAssets->ids), leave it be, it's not heavy, we'll chunk anyway
             ->orderBy('id')
             ->chunkById(250, function ($chunks) use ($baseShop, $currenciesRate, $command) {
-                foreach($chunks as $masterAsset) {
+                foreach ($chunks as $masterAsset) {
                     $this->handle($masterAsset, $baseShop, $currenciesRate, $command);
                 }
             });

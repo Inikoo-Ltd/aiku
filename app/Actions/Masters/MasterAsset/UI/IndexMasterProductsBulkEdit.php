@@ -46,7 +46,7 @@ class IndexMasterProductsBulkEdit extends GrpAction
     public function htmlResponse(MasterShop $parent, ActionRequest $request): Response
     {
         $title = __('Bulk edit Master Products');
-    
+
         $shopCurrencies = Shop::where('master_shop_id', $parent->id)
             ->select('currency_id')
             ->distinct()

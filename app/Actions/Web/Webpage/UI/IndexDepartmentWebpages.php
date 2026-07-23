@@ -206,7 +206,7 @@ class IndexDepartmentWebpages extends OrgAction
         }
 
         $actions = [];
-        
+
         $website = $this->website;
 
         $allowBulkOffline = $this->canEdit;

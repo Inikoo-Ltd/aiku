@@ -97,7 +97,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
 
     public function htmlResponse(array $checkoutData): Response|RedirectResponse
     {
-        if(Arr::get($checkoutData, 'redirect') === true) {
+        if (Arr::get($checkoutData, 'redirect') === true) {
             return Redirect::route(Arr::get($checkoutData, 'route.name'), Arr::get($checkoutData, 'route.parameters'))
                 ->with('notification', Arr::get($checkoutData, 'notification'));
         }

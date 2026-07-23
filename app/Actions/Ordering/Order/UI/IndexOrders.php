@@ -22,7 +22,6 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrdersTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
-use App\Http\Resources\Sales\OrderResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;

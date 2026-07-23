@@ -12,12 +12,10 @@ use App\Actions\GrpAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetTradeUnitDataForMasterProductCreation extends GrpAction
@@ -59,13 +57,13 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         }
 
         $masterShop = $masterProductCategory->masterShop;
-        
+
         $openShopsQuery = $masterShop->shops()->where('state', ShopStateENUM::OPEN);
 
         $baseCurrency      = Currency::where('code', 'EUR')->first();
 
         $openOrganisations = Organisation::whereIn('id', $openShopsQuery->pluck('organisation_id'))->get();
-        
+
         $organisationData  = [];
         $grpCosts          = [];
         $avgCost           = 0;
@@ -115,7 +113,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
         $finalData = [];
 
-        foreach($openShopsQuery->get() as $shop) {
+        foreach ($openShopsQuery->get() as $shop) {
             $orgStocksData = $organisationData[$shop->organisation_id];
             $shopCurrencyCode = $shop->currency->code;
 

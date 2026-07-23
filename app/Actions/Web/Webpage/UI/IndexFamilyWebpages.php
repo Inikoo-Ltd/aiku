@@ -210,7 +210,7 @@ class IndexFamilyWebpages extends OrgAction
         $routeCreate = '';
 
         $actions = [];
-        
+
         $website = $this->website;
 
         $allowBulkOffline = $this->canEdit;

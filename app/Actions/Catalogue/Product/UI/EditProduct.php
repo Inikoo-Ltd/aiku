@@ -283,7 +283,8 @@ class EditProduct extends OrgAction
             $product->family?->not_follow_master_prices ||
             $product->not_follow_master_prices
         ) {
-            $pricingFields = array_merge($pricingFields,
+            $pricingFields = array_merge(
+                $pricingFields,
                 [
                     'price'        => [
                         'type'     => 'input_number',
@@ -306,7 +307,8 @@ class EditProduct extends OrgAction
                         'value'    => ($product->rrp / trimDecimalZeros($product->units)),
                         'min'      => 0.01
                     ],
-                ]);
+                ]
+            );
         }
 
 
@@ -580,7 +582,7 @@ class EditProduct extends OrgAction
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => $pricingFields
-                    // [    
+                    // [
                     //     // 'cost_price_ratio' => [
                     //     //     'type'        => 'input_number',
                     //     //     'bind'        => [

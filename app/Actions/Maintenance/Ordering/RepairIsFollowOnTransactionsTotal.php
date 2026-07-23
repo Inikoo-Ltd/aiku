@@ -10,7 +10,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class RepairIsFollowOnTransactionsTotal
 {
     use AsAction;
-    
+
     public function handle(Transaction $transaction, ?Command $command = null)
     {
         $transaction->update([
@@ -26,7 +26,7 @@ class RepairIsFollowOnTransactionsTotal
 
         CalculateOrderTotalAmounts::run($order);
     }
-    
+
     public string $commandSignature = 'repair:is_follow_on_transactions';
 
     public function asCommand(Command $command)

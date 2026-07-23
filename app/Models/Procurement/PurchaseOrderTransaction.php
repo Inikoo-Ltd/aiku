@@ -53,6 +53,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricSupplierProduct|null $historicSupplierProduct
  * @property-read OrgStock|null $orgStock
+ * @property-read \App\Models\Procurement\OrgSupplierProduct|null $orgSupplierProduct
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Procurement\PurchaseOrder|null $purchaseOrder
  * @property-read SupplierProduct|null $supplierProduct
