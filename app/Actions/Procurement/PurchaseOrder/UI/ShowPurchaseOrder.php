@@ -187,6 +187,21 @@ class ShowPurchaseOrder extends OrgAction
                         ],
                     ],
                     [
+                        'label'   => __('Undo Submit'),
+                        'tooltip' => __('Revert Purchase Order to In Process'),
+                        'type'    => 'button',
+                        'style'   => 'delete',
+                        'icon'    => 'fal fa-paper-plane',
+                        'key'     => 'undo_submit_purchase_order',
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.purchase-order.undo-submit',
+                            'parameters' => [
+                                'purchaseOrder' => $purchaseOrder->id,
+                            ],
+                        ],
+                    ],
+                    [
                         'label'   => __('Cancel'),
                         'tooltip' => __('Cancel Purchase Order'),
                         'type'    => 'button',
