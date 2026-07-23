@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
@@ -51,7 +51,7 @@ const emits = defineEmits<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
-
+const key = ref(1)
 
 const slidesPerView = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -77,6 +77,11 @@ const titleContent = computed(() => props.fieldValue?.recommendation_settings?.t
 
 const prevEl = ref(null)
 const nextEl = ref(null)
+
+
+onMounted(()=>{
+  key.value ++
+})
 
 console.log('related product :', props)
 </script>
@@ -112,11 +117,11 @@ console.log('related product :', props)
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">
             <div class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
               <div v-if="product" class="flex-1 flex flex-col product-card">
-                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'"
+                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'" :key="key"
                   :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
                   :buttonStyle="layout?.buttonBasket?.buttonStyle" :product="product" :hideLogin="true"
                   :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" />
-                <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+                <ProductRender v-else :product="product" :productHasPortfolio="[]"  :key="key" />
               </div>
             </div>
           </SwiperSlide>
