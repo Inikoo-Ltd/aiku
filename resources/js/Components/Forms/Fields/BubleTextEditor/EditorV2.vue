@@ -41,6 +41,7 @@ import {CustomImage} from './CustomResizeImage/CustomImageSetting'
 import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
 import Link from "@tiptap/extension-link"
+import Iframe from "@/Components/Forms/Fields/BubleTextEditor/Iframe/IframeExtension.js"
 
 import {
     faUndo,
@@ -195,6 +196,7 @@ const editorInstance = useEditor({
         }),
         Blockquote,
         CharacterCount,
+        Iframe,
         Youtube,
         Highlight.configure({
             multicolor: true
