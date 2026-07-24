@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 13 Jul 2026 16:20:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Mon, 13 Jul 2026 16:20:00 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -14,7 +14,8 @@ trait HasCardWebImages
 {
     /**
      * Product cards only render web_images.{main,secondary}.gallery through a picture
-     * element reading avif/webp/original (+ retina variants).
+     * element reading avif/webp/original (+ retina variants). When secondary is
+     * missing, it falls back to the first non-main gallery in web_images.all.
      *
      * @return array<string, array<string, array<string, string>>>
      */
@@ -24,6 +25,9 @@ trait HasCardWebImages
 
         foreach (['main', 'secondary'] as $slot) {
             $gallery = Arr::get($webImages, "$slot.gallery");
+            if (!is_array($gallery) && $slot === 'secondary') {
+                $gallery = $this->getSecondaryGalleryFallback($webImages);
+            }
             if (!is_array($gallery)) {
                 continue;
             }
@@ -34,6 +38,25 @@ trait HasCardWebImages
         }
 
         return $cardWebImages;
+    }
+
+    /**
+     * First gallery in web_images.all that is not the main image.
+     *
+     * @return array<string, string>|null
+     */
+    protected function getSecondaryGalleryFallback(mixed $webImages): ?array
+    {
+        $mainOriginal = Arr::get($webImages, 'main.gallery.original');
+
+        foreach (Arr::get($webImages, 'all', []) as $image) {
+            $gallery = Arr::get($image, 'gallery');
+            if (is_array($gallery) && Arr::get($gallery, 'original') !== $mainOriginal) {
+                return $gallery;
+            }
+        }
+
+        return null;
     }
 
     /**
