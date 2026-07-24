@@ -25,8 +25,8 @@ enum StockDeliveryTabsEnum: string
     {
         return match ($this) {
             StockDeliveryTabsEnum::SHOWCASE    => [
-                'title' => __('Data'),
-                'icon'  => 'fal fa-database',
+                'title' => __('Settings'),
+                'icon'  => 'fal fa-sliders-h',
             ],
             StockDeliveryTabsEnum::ITEMS       => [
                 'title' => __('Items'),

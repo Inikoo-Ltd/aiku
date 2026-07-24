@@ -49,22 +49,23 @@ class ShowStockDelivery extends OrgAction
 
     public function asController(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
     {
+        $this->stockDelivery = $stockDelivery;
         $this->initialisation($organisation, $request)->withTab(StockDeliveryTabsEnum::values());
-        $this->stockDelivery    = $stockDelivery;
+
         return $this->handle($stockDelivery);
     }
 
     public function maya(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): void
     {
-        $this->maya   = true;
-        $this->initialisation($organisation, $request)->withTab(StockDeliveryTabsEnum::values());
+        $this->maya          = true;
         $this->stockDelivery = $stockDelivery;
+
+        $this->initialisation($organisation, $request)->withTab(StockDeliveryTabsEnum::values());
     }
 
     public function htmlResponse(StockDelivery $stockDelivery, ActionRequest $request): Response
     {
         $this->validateAttributes();
-
 
         return Inertia::render(
             'Procurement/StockDelivery',
@@ -114,21 +115,21 @@ class ShowStockDelivery extends OrgAction
                     fn () => GetStockDeliveryData::run($stockDelivery)
                     : Inertia::optional(fn () => GetStockDeliveryData::run($stockDelivery)),
 
-                StockDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == StockDeliveryTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))
-                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))),
-
                 StockDeliveryTabsEnum::ITEMS->value => $this->tab == StockDeliveryTabsEnum::ITEMS->value ?
                     fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value))
                     : Inertia::optional(fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value))),
+
+                StockDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == StockDeliveryTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))),
 
                 StockDeliveryTabsEnum::HISTORY->value => $this->tab == StockDeliveryTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexStockDeliveryItems::make()->tableStructure(parent: $stockDelivery, prefix: StockDeliveryTabsEnum::ITEMS->value))
+        )->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::ITEMS->value))
             ->table(IndexAttachments::make()->tableStructure(prefix: StockDeliveryTabsEnum::ATTACHMENTS->value))
-            ->table(IndexHistory::make()->tableStructure(StockDeliveryTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: StockDeliveryTabsEnum::HISTORY->value));
     }
 
     public function jsonResponse(): StockDeliveryResource
@@ -178,14 +179,16 @@ class ShowStockDelivery extends OrgAction
         ];
 
         foreach (StockDeliveryStateEnum::cases() as $case) {
-            if (in_array($case, $hiddenUnlessCurrent, true) && $stockDelivery->state != $case) {
+            $timestamp = match ($case) {
+                StockDeliveryStateEnum::IN_PROCESS    => $stockDelivery->created_at,
+                StockDeliveryStateEnum::CONFIRMED     => Arr::get($stockDelivery->data, 'confirmed_at'),
+                StockDeliveryStateEnum::READY_TO_SHIP => Arr::get($stockDelivery->data, 'ready_to_ship_at'),
+                default                               => $stockDelivery->{$case->snake() . '_at'} ?: null
+            };
+
+            if (in_array($case, $hiddenUnlessCurrent, true) && $stockDelivery->state != $case && !$timestamp) {
                 continue;
             }
-
-            $timestamp = match ($case) {
-                StockDeliveryStateEnum::IN_PROCESS => $stockDelivery->created_at,
-                default                            => $stockDelivery->{$case->snake() . '_at'} ?: null
-            };
 
             $estimatedTimestamp = $timestamp ? null : match ($case) {
                 StockDeliveryStateEnum::DISPATCHED => Arr::get($stockDelivery->data, 'estimated_dispatched_date'),
