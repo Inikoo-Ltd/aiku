@@ -24,7 +24,7 @@ class RepairMasterAssetHydratePrices
             )
             ->keyBy('shop_id');
 
-        if (!$baseProducts) {
+        if ($baseProducts->isEmpty()) {
             $command?->info("Master Asset: [{$masterAsset->code}] Skipped, no base product");
             return;
         };
@@ -46,7 +46,7 @@ class RepairMasterAssetHydratePrices
                 return [
                     $shop->currency->code => [
                         'value'         => $price,
-                        'independent'   => (bool) $product
+                        'independent'   => !((bool) $product)
                     ]
                 ];
             });
@@ -68,7 +68,7 @@ class RepairMasterAssetHydratePrices
                 return [
                     $shop->currency->code => [
                         'value'         => $rrp,
-                        'independent'   => (bool) $product
+                        'independent'   => !((bool) $product)
                     ]
                 ];
             });
