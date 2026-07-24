@@ -101,7 +101,6 @@ class ShowPurchaseOrder extends OrgAction
         $productListRoute = [];
         $weightAndVolume = $this->getPurchaseOrderWeightAndVolume($purchaseOrder);
         $deliveryStats = $this->getDeliveryStats($purchaseOrder);
-        $actions = [];
 
         if ($purchaseOrder->parent instanceof OrgAgent) {
             $orderer = OrgAgentResource::make($purchaseOrder->parent)->toArray($request);
@@ -123,135 +122,6 @@ class ShowPurchaseOrder extends OrgAction
                     'purchaseOrder' => $purchaseOrder->slug,
                 ],
             ];
-        }
-
-        if ($this->canEdit) {
-            $actions = match ($purchaseOrder->state) {
-                PurchaseOrderStateEnum::IN_PROCESS => [
-                    $showProductsTab ? [
-                        'label'   => __('Add Product'),
-                        'tooltip' => __('Add Product'),
-                        'type'    => 'button',
-                        'style'   => 'secondary',
-                        'icon'    => 'fal fa-plus',
-                        'key'     => 'add_product',
-                        'route'   => [
-                            'method'     => 'post',
-                            'name'       => 'grp.models.purchase-order.transaction.store',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ] : [],
-                    ($purchaseOrder->purchaseOrderTransactions()->count() > 0) ?
-                    [
-                        'label'   => __('Submit'),
-                        'tooltip' => __('Submit Purchase Order'),
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'icon'    => 'fal fa-paper-plane',
-                        'key'     => 'submit_purchase_order',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.submit',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ] : [],
-                    [
-                        'label'   => __('Delete'),
-                        'tooltip' => __('Delete Purchase Order'),
-                        'type'    => 'button',
-                        'style'   => 'delete',
-                        'icon'    => 'fal fa-trash-alt',
-                        'key'     => 'delete_purchase_order',
-                        'route'   => [
-                            'method'     => 'delete',
-                            'name'       => 'grp.models.purchase-order.delete',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
-                ],
-                PurchaseOrderStateEnum::SUBMITTED => [
-                    [
-                        'label'   => __('Confirm'),
-                        'tooltip' => __('Confirm Purchase Order'),
-                        'type'    => 'button',
-                        'style'   => 'save',
-                        'key'     => 'confirm_purchase_order',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.confirm',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
-                    [
-                        'label'   => __('Undo Submit'),
-                        'tooltip' => __('Revert Purchase Order to In Process'),
-                        'type'    => 'button',
-                        'style'   => 'delete',
-                        'icon'    => 'fal fa-paper-plane',
-                        'key'     => 'undo_submit_purchase_order',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.undo-submit',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
-                    [
-                        'label'   => __('Cancel'),
-                        'tooltip' => __('Cancel Purchase Order'),
-                        'type'    => 'button',
-                        'style'   => 'delete',
-                        'key'     => 'cancel_purchase_order',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.cancel',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
-                ],
-                PurchaseOrderStateEnum::CONFIRMED => $purchaseOrder->stockDeliveries()->exists() ? [] : [
-                    [
-                        'label'   => __('New Delivery'),
-                        'tooltip' => __('Create Stock Delivery from this Purchase Order'),
-                        'type'    => 'button',
-                        'style'   => 'create',
-                        'icon'    => 'fal fa-plus',
-                        'key'     => 'new_stock_delivery',
-                        'route'   => [
-                            'method'     => 'post',
-                            'name'       => 'grp.models.purchase-order.stock-delivery.store',
-                            'parameters' => ['purchaseOrder' => $purchaseOrder->id],
-                        ],
-                    ],
-                    [
-                        'label'   => __('Undo Confirm'),
-                        'tooltip' => __('Revert Purchase Order to Submitted'),
-                        'type'    => 'button',
-                        'style'   => 'delete',
-                        'icon'    => 'fal fa-check-double',
-                        'key'     => 'undo_confirm_purchase_order',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.undo-confirm',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
-                ],
-                default => []
-            };
         }
 
         return Inertia::render(
@@ -278,7 +148,7 @@ class ShowPurchaseOrder extends OrgAction
                             'parameters' => array_values($request->route()->originalParameters()),
                         ],
                     ] : false,
-                    'actions' => $actions,
+                    'actions' => $this->canEdit ? $this->getActions($purchaseOrder, $showProductsTab) : [],
                 ],
                 'data'                     => PurchaseOrderResource::make($purchaseOrder),
                 'timelines'                => $this->getTimeline($purchaseOrder),
@@ -322,8 +192,8 @@ class ShowPurchaseOrder extends OrgAction
                         'volume'                   => Arr::get($weightAndVolume, 'volume'),
                         'is_weight_partial'        => Arr::get($weightAndVolume, 'is_weight_partial'),
                         'is_volume_partial'        => Arr::get($weightAndVolume, 'is_volume_partial'),
-                        'production_time'          => null,
-                        'delivery_time'            => null,
+                        'production_time'          => null, // Todo: not sure in which states this should appear, so far only known when the purchase order is cancelled
+                        'delivery_time'            => null, // Todo: not sure in which states this should appear, so far only known when the purchase order is cancelled
                     ],
                     'third_block' => [
                         'currency'     => $purchaseOrder->currency?->code,
@@ -360,6 +230,136 @@ class ShowPurchaseOrder extends OrgAction
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource
     {
         return new PurchaseOrderResource($purchaseOrder);
+    }
+
+    public function getActions(PurchaseOrder $purchaseOrder, bool $showProductsTab): array
+    {
+        return match ($purchaseOrder->state) {
+            PurchaseOrderStateEnum::IN_PROCESS => [
+                $showProductsTab ? [
+                    'label'   => __('Add Product'),
+                    'tooltip' => __('Add Product'),
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-plus',
+                    'key'     => 'add_product',
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.purchase-order.transaction.store',
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                        ],
+                    ],
+                ] : [],
+                ($purchaseOrder->purchaseOrderTransactions()->count() > 0) ?
+                [
+                    'label'   => __('Submit'),
+                    'tooltip' => __('Submit Purchase Order'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-paper-plane',
+                    'key'     => 'submit_purchase_order',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.submit',
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                        ],
+                    ],
+                ] : [],
+                [
+                    'label'   => __('Delete'),
+                    'tooltip' => __('Delete Purchase Order'),
+                    'type'    => 'button',
+                    'style'   => 'delete',
+                    'icon'    => 'fal fa-trash-alt',
+                    'key'     => 'delete_purchase_order',
+                    'route'   => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.purchase-order.delete',
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                        ],
+                    ],
+                ],
+            ],
+            PurchaseOrderStateEnum::SUBMITTED => [
+                [
+                    'label'   => __('Confirm'),
+                    'tooltip' => __('Confirm Purchase Order'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'key'     => 'confirm_purchase_order',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.confirm',
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                        ],
+                    ],
+                ],
+                [
+                    'label'   => __('Undo Submit'),
+                    'tooltip' => __('Revert Purchase Order to In Process'),
+                    'type'    => 'button',
+                    'style'   => 'delete',
+                    'icon'    => 'fal fa-paper-plane',
+                    'key'     => 'undo_submit_purchase_order',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.undo-submit',
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                        ],
+                    ],
+                ],
+                [
+                    'label'   => __('Cancel'),
+                    'tooltip' => __('Cancel Purchase Order'),
+                    'type'    => 'button',
+                    'style'   => 'delete',
+                    'key'     => 'cancel_purchase_order',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.cancel',
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                        ],
+                    ],
+                ],
+            ],
+            PurchaseOrderStateEnum::CONFIRMED => $purchaseOrder->stockDeliveries()->exists() ? [] : [
+                [
+                    'label'   => __('New Delivery'),
+                    'tooltip' => __('Create Stock Delivery from this Purchase Order'),
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'icon'    => 'fal fa-plus',
+                    'key'     => 'new_stock_delivery',
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'grp.models.purchase-order.stock-delivery.store',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                ],
+                [
+                    'label'   => __('Undo Confirm'),
+                    'tooltip' => __('Revert Purchase Order to Submitted'),
+                    'type'    => 'button',
+                    'style'   => 'delete',
+                    'icon'    => 'fal fa-check-double',
+                    'key'     => 'undo_confirm_purchase_order',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.undo-confirm',
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                        ],
+                    ],
+                ],
+            ],
+            default => []
+        };
     }
 
     public function getTimeline(PurchaseOrder $purchaseOrder): array
@@ -461,7 +461,7 @@ class ShowPurchaseOrder extends OrgAction
         return [
             'total_delivery_items'     => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_except_cancelled') : null,
             'total_placed_items'       => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_state_placed') : null,
-            'is_delivery_items_active' => $rank !== false && $rank >= array_search(PurchaseOrderDeliveryStateEnum::CONFIRMED->value, $progression, true),
+            'is_delivery_items_active' => $hasStockDelivery,
             'is_placed_items_active'   => $rank !== false && $rank >= array_search(PurchaseOrderDeliveryStateEnum::RECEIVED->value, $progression, true),
         ];
     }

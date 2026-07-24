@@ -66,6 +66,7 @@ class LocationOrgStocksResource extends JsonResource
         return [
             'id'                                    => $locationOrgStock->id,
             'code'                                  => $locationOrgStock->location->code,
+            'packed_in'                             => $packedIn,
             'quantity'                              => $locationOrgStock->quantity,
             'quantity_fractional'                   => riseDivisor(divideWithRemainder(findSmallestFactors($locationOrgStock->quantity ?? 0)), $packedIn),
             'value'                                 => $locationOrgStock->value,

@@ -127,6 +127,12 @@ class EditWebpage extends OrgAction
                 'label'         => __('Title Suffix'),
                 'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
             ],
+            'show_price'  => [
+                'type'          => 'toggle',
+                'information'   => __('Toggle whether or not the price is shown when logged out on the webpage. This would not override individual webpage setting (if exists)'),
+                'label'         => __('Show Price on Webpage'),
+                'value'         => data_get($webpage->settings, 'webpage.show_price', false),
+            ],
             'index_page'      => [
                 'type'        => 'toggle',
                 'label'       => __('Index Page'),

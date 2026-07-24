@@ -8,6 +8,11 @@
 
 namespace Deployer;
 
+// Default is 300s; the octane-anchor rsync of a full release is disk-bound and
+// can exceed that on the HDD staging box (esp. during RAID resync). Harmless on
+// fast prod hosts — only allows a slow command to finish instead of being killed.
+set('default_timeout', 2400);
+
 set('update_code_strategy', 'clone');
 
 set('bin/php', function () {
@@ -126,7 +131,13 @@ task('deploy:refresh-vue', function () {
 
 desc('Reload octane after deployment');
 task('artisan:octane:reload', function () {
-    artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
+    // Non-fatal: if octane isn't running (fresh box / supervisor will start it),
+    // reload has nothing to signal — don't fail the whole deploy over it.
+    try {
+        artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>octane:reload skipped: '.$e->getMessage().'</comment>');
+    }
 });
 
 desc('Save ssr checksums');

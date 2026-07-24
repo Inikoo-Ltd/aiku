@@ -200,7 +200,13 @@ class EditWebsite extends OrgAction
                         'type'          => 'input',
                         'information'   => __('Would add the set suffix to all of the webpages title. This would not override individual webpage setting (if exists)'),
                         'label'         => __('Title Suffix'),
-                        'value'         => data_get($website->settings, 'webpage.title_prefix', null),
+                        'value'         => data_get($website->settings, 'webpage.title_suffix', null),
+                    ],
+                    'show_price'  => [
+                        'type'          => 'toggle',
+                        'information'   => __('Toggle whether or not the price is shown when logged out on the webpage. This would not override individual webpage setting (if exists)'),
+                        'label'         => __('Show Price on Webpage'),
+                        'value'         => data_get($website->settings, 'webpage.show_price', false),
                     ]
                 ]
             ];
