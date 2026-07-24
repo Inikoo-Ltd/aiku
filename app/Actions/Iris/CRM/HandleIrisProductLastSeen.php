@@ -3,18 +3,14 @@
 namespace App\Actions\Iris\CRM;
 
 use App\Actions\IrisAction;
-use App\Http\Resources\Catalogue\IrisProductLastSeenResource;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ProductLastSeen;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Str;
-use Lorisleiva\Actions\ActionRequest;
 
 class HandleIrisProductLastSeen extends IrisAction
 {
-    public function handle(Webpage $webpage, ?Customer $customer, ?string $cookieId): ProductLastSeen
+    public function handle(Webpage $webpage, ?Customer $customer, ?string $cookieId, ?Carbon $lastSeenAt = null): ProductLastSeen
     {
         return ProductLastSeen::updateOrCreate(
             [
