@@ -32,13 +32,11 @@ use App\Http\Resources\Fulfilment\FulfilmentPickingSessionStoredItemsGroupedReso
 
 class ShowFulfilmentPickingSession extends OrgAction
 {
-    use AsAction;
-    use WithInertia;
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
-        (new AutoFinishPickingFulfilmentPickingSession())->action($pickingSession);
-        (new AutoFinishPackingFulfilmentPickingSession())->action($pickingSession);
+        new AutoFinishPickingFulfilmentPickingSession()->action($pickingSession);
+        new AutoFinishPackingFulfilmentPickingSession()->action($pickingSession);
 
         return $pickingSession->fresh();
     }
