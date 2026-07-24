@@ -27,6 +27,7 @@
       }
       index?: {}
       sales?: {}
+      hideCheckbox?: boolean
   }>()
 
   const currentTab = ref<string>(props.tabs.current)
@@ -47,5 +48,5 @@
       <Head :title="capitalize(title)" />
       <PageHeading :data="pageHead" />
       <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-      <component :is="component" :key="currentTab" :tab="currentTab" :data="currentData"></component>
+      <component :is="component" :key="currentTab" :tab="currentTab" :data="currentData" :hide-checkbox="hideCheckbox"></component>
   </template>

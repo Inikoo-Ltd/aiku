@@ -23,7 +23,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 defineProps<{
     data: object,
-    tab?: string
+    tab?: string,
+    hideCheckbox?: boolean
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -151,7 +152,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
 </script>
 
 <template>
-    <Table @onCheckedAll="onCheckedAll" :resource="data" :name="tab" class="mt-5" :isCheckBox="true" :key="tableKey"
+    <Table @onCheckedAll="onCheckedAll" :resource="data" :name="tab" class="mt-5" :isCheckBox="!hideCheckbox" :key="tableKey"
     @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
         checkboxKey='id' :isChecked="(item) => selectedSubDepartment.includes(item.id)" ref="_table">
         <template #cell(image_thumbnail)="{ item: collection }">
@@ -160,7 +161,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </div>
         </template>
            <template #add-on-button>
-            <div v-if="selectedSubDepartment.length != 0">
+            <div v-if="!hideCheckbox && selectedSubDepartment.length != 0">
                 <Button :icon="faFolderTree" :label="trans('Assign to another department')" @click="visibleDialog = true" :size="'xs'"
                     type="secondary" />
             </div>

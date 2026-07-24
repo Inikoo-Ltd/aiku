@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
@@ -29,7 +29,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterSubDepartments extends GrpAction
+class IndexMasterSubDepartments extends OrgAction
 {
     use WithMastersAuthorisation;
     use WithMasterCatalogueSubNavigation;
@@ -41,7 +41,7 @@ class IndexMasterSubDepartments extends GrpAction
     {
         $this->parent = $masterShop;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $masterShop, prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
@@ -51,7 +51,7 @@ class IndexMasterSubDepartments extends GrpAction
     {
         $this->parent = $masterDepartment;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $masterDepartment, prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
@@ -266,6 +266,7 @@ class IndexMasterSubDepartments extends GrpAction
                     ] : [],
                     'subNavigation' => $subNavigation,
                 ],
+                'hideCheckbox'    => !$this->canEdit,
                 'tabs'                                => [
                     'current'    => $this->tab,
                     'navigation' => $navigation,
