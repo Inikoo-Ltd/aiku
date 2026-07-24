@@ -32,6 +32,9 @@ enum OutboxCodeEnum: string
     case REORDER_REMINDER = 'reorder_reminder';
     case REORDER_REMINDER_2ND = 'reorder_reminder_2nd';
     case REORDER_REMINDER_3RD = 'reorder_reminder_3rd';
+    case GOLD_REWARD_REMINDER_1 = 'gold_reward_reminder_1';
+    case GOLD_REWARD_REMINDER_2 = 'gold_reward_reminder_2';
+    case GOLD_REWARD_REMINDER_3 = 'gold_reward_reminder_3';
     case MARKETING = 'marketing';
     case NEWSLETTER = 'newsletter';
     case OOS_NOTIFICATION = 'oos_notification';
@@ -119,7 +122,11 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::NEW_REVIEW
             => OutboxTypeEnum::USER_NOTIFICATION,
-            OutboxCodeEnum::BASKET_PUSH, OutboxCodeEnum::NEW_CUSTOMER_PUSH
+            OutboxCodeEnum::BASKET_PUSH,
+            OutboxCodeEnum::NEW_CUSTOMER_PUSH,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3
             => OutboxTypeEnum::PUSH,
         };
     }
@@ -142,6 +149,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER => '1st Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_3RD => '3rd Reorder reminder',
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1 => '1st Gold reward reminder',
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2 => '2nd Gold reward reminder',
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3 => '3rd Gold reward reminder',
             OutboxCodeEnum::MARKETING => 'Marketing',
             OutboxCodeEnum::NEWSLETTER => 'Newsletter',
             OutboxCodeEnum::OOS_NOTIFICATION => 'Out of stock notification',
@@ -193,6 +203,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER => 'Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_2ND => '2nd Reorder reminder',
             OutboxCodeEnum::REORDER_REMINDER_3RD => '3rd Reorder reminder',
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1 => '1st Gold reward reminder',
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2 => '2nd Gold reward reminder',
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3 => '3rd Gold reward reminder',
             OutboxCodeEnum::MARKETING => 'Deals',
             OutboxCodeEnum::NEWSLETTER => 'Newsletter',
             OutboxCodeEnum::OOS_NOTIFICATION => 'Out of stock notification',
@@ -304,6 +317,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::INVOICE_PAID
@@ -385,6 +401,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
@@ -448,7 +467,10 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
-            OutboxCodeEnum::REVIEW_REMINDER
+            OutboxCodeEnum::REVIEW_REMINDER,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3
             => EmailOngoingRunTypeEnum::BULK,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
@@ -511,6 +533,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
             OutboxCodeEnum::REORDER_REMINDER_3RD,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH
             => PostRoomCodeEnum::MARKETING,
@@ -526,6 +551,9 @@ enum OutboxCodeEnum: string
             self::REORDER_REMINDER,
             self::REORDER_REMINDER_2ND,
             self::REORDER_REMINDER_3RD,
+            self::GOLD_REWARD_REMINDER_1,
+            self::GOLD_REWARD_REMINDER_2,
+            self::GOLD_REWARD_REMINDER_3,
             self::BASKET_LOW_STOCK,
             self::PRICE_CHANGE_NOTIFICATION => true,
             default => false,

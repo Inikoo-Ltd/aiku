@@ -22,7 +22,7 @@ class MasterAssetHydrateMasterPricesRRPtoChild
             ->when($shop, fn ($q) => $q->where('products.shop_id', $shop->id))
             ->get();
 
-        foreach($products as $product) {
+        foreach ($products as $product) {
             $shopSettings = $product->shop->settings;
 
             // Skip if shop setting is disabled / family not follow master prices / product not follow master prices

@@ -13,6 +13,10 @@ use App\Mcp\Tools\ProductsWithoutImagesTool;
 use App\Models\SysAdmin\Guest;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,

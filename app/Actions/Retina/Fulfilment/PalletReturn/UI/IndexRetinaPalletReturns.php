@@ -121,7 +121,7 @@ class IndexRetinaPalletReturns extends RetinaAction
             $this->customer->fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? [
                 'type'    => 'button',
                 'style'   => 'create',
-                'tooltip' => __('Create new dispatch (Selected SKUs)'),
+                'tooltip' => __('Create new dispatch (Selected SKOs)'),
                 'label'   => __('Dropshipping dispatch'),
                 'route'   => [
                     'method'     => 'post',

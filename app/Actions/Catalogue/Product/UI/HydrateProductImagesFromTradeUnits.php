@@ -67,7 +67,7 @@ class HydrateProductImagesFromTradeUnits extends OrgAction
             $shopIds = Shop::where('is_aiku', true)->pluck('id')->all();
         }
 
-       
+
         $query = Product::whereIn('shop_id', $shopIds);
         $total = $query->count();
 

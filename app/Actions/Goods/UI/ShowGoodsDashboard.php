@@ -47,7 +47,7 @@ class ShowGoodsDashboard extends OrgAction
                 'flatTreeMaps' => [
                     [
                         [
-                            'name'  => __('Master SKUs families'),
+                            'name'  => __('Master SKOs families'),
                             'icon'  => ['fal', 'fa-boxes-alt'],
                             'route' => [
                                 'name'       => 'grp.goods.stock-families.index',
@@ -59,7 +59,7 @@ class ShowGoodsDashboard extends OrgAction
 
                         ],
                         [
-                            'name'  => __('Master SKUs'),
+                            'name'  => __('Master SKOs'),
                             'icon'  => ['fal', 'fa-box'],
                             'route' => [
                                 'name'       => 'grp.goods.stocks.index',

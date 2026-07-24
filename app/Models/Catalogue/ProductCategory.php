@@ -98,7 +98,6 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $offers_data
  * @property bool|null $is_for_sale
  * @property string|null $not_for_sale_since
- * @property bool $not_follow_master_prices
  * @property HealthRankEnum|null $health_rank
  * @property string|null $desc_video_url
  * @property int|null $desc_art1
@@ -116,6 +115,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $showcase_image_id
  * @property bool|null $has_gr_vol_discount
  * @property bool $follow_master_gr
+ * @property bool $not_follow_master_prices
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections

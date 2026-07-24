@@ -366,7 +366,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
 
             $table
                 ->defaultSort('code')
-                ->withLabelRecord([__('sku'), __('SKUs')])
+                ->withLabelRecord([__('sku'), __('SKOs')])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
@@ -478,11 +478,11 @@ class IndexOrgStocksWithNoProducts extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $stocks, ActionRequest $request): Response
     {
-        $title      = __('SKUs');
+        $title      = __('SKOs');
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-box'],
-            'title' => __('SKUs'),
+            'title' => __('SKOs'),
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -490,7 +490,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
         $subNavigation = $this->getOrgStocksSubNavigation();
 
         if ($this->bucket == 'current') {
-            $title = __('Current SKUs');
+            $title = __('Current SKOs');
         }
 
         return Inertia::render(
@@ -535,7 +535,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => 'SKUs',
+                        'label' => 'SKOs',
                         'icon'  => 'fal fa-bars',
                     ],
                     'suffix' => $suffix,

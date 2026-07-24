@@ -636,7 +636,7 @@ const locationRoute = (item: any) => {
                                 </Tag>
                             </div>
                             <div v-else class="text-gray-400 text-xs italic">
-                                {{ trans("No SKUs items") }}
+                                {{ trans("No SKOs items") }}
                             </div>
                         </div>
 
@@ -1109,7 +1109,7 @@ const locationRoute = (item: any) => {
 
     <Modal :isOpen="isModalPickingUsers" @onClose="onCloseModalPickingUsers" width="w-full max-w-xl" :isClosableInBackground="false" closeButton>
         <div class="flex flex-col gap-4">
-            <div class="text-center text-lg font-semibold">{{ trans("Return Customer's SKUs") }}</div>
+            <div class="text-center text-lg font-semibold">{{ trans("Return Customer's SKOs") }}</div>
             <div v-if="canChangePicker" class="flex flex-col gap-2">
                 <div class="text-sm font-medium">{{ trans("Picker") }}</div>
                 <PureMultiselectInfiniteScroll

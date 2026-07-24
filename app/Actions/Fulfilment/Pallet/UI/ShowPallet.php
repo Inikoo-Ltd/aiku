@@ -120,8 +120,8 @@ class ShowPallet extends OrgAction
 
     public function htmlResponse(Pallet $pallet, ActionRequest $request): Response
     {
-        $continuePalletAuditLabel = __("Continue pallet's SKUs audit");
-        $startPalletAuditLabel    = __("Start pallet's SKUs audit");
+        $continuePalletAuditLabel = __("Continue pallet's SKOs audit");
+        $startPalletAuditLabel    = __("Start pallet's SKOs audit");
 
         $icon       = [
             'icon'    => ['fal', 'fa-pallet'],

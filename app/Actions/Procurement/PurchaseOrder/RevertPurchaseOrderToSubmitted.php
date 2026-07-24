@@ -47,7 +47,11 @@ class RevertPurchaseOrderToSubmitted extends OrgAction
         $purchaseOrder = $this->update($purchaseOrder, [
             'state'        => PurchaseOrderStateEnum::SUBMITTED,
             'confirmed_at' => null,
-        ]);
+            'data'         => [
+                'estimated_production_date' => null,
+                'estimated_receiving_date'  => null,
+            ],
+        ], ['data']);
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 

@@ -254,7 +254,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('Master SKUs families'),
+                        'label' => __('Master SKOs families'),
                         'icon'  => ['fal', 'fa-rainbow'],
                         'root'  => 'grp.goods.stock-families.',
                         'route' => [
@@ -263,7 +263,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('Master SKUs'),
+                        'label' => __('Master SKOs'),
                         'icon'  => ['fal', 'fa-cloud-rainbow'],
                         'root'  => 'grp.goods.stocks.',
                         'route' => [

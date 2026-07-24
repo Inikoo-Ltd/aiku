@@ -13,6 +13,10 @@ use App\Mcp\Tools\TradeUnitFamilySalesTool;
 use App\Mcp\Tools\TradeUnitSalesTool;
 use App\Models\SysAdmin\Guest;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,

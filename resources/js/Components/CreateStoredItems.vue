@@ -188,7 +188,7 @@ const onSaveNameForNewStoredItem = async () => {
 <template>
 	<div v-if="!messageMode">
 		<div class="text-center font-semibold text-2xl mb-4">
-			{{ title ? title : disabledSelect.edit ? trans("Edit customer's SKUs") : trans("Set up Customer's SKUs") }}
+			{{ title ? title : disabledSelect.edit ? trans("Edit customer's SKOs") : trans("Set up Customer's SKOs") }}
 		</div>
 		<div class="grid grid-cols-3 gap-x-4">
 			<label class="mt-1 block text-sm font-medium text-gray-700">{{ trans("Reference") }}</label>
@@ -288,7 +288,7 @@ const onSaveNameForNewStoredItem = async () => {
 				@update:modelValue="() => errorNewStoredItemName = ''"
 				:class="errorNewStoredItemName ? 'errorShake' : ''"
 				class="col-span-2"
-				:placeholder="trans(`Customer's SKU name`)"
+				:placeholder="trans(`Customer's SKO name`)"
 			/>
 		</div>
 		<p v-if="errorNewStoredItemName" class="mt-2 text-sm text-red-500">

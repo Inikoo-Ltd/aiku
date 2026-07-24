@@ -16,48 +16,34 @@ enum StockDeliveryTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    // case SHOWCASE            = 'SHOWCASE';
-
-    case ITEMS               = 'items';
-
-    case HISTORY             = 'history';
-    // case ATTACHMENTS         = 'attachments';
-    // case DATA                = 'data';
-
-
-
-
+    case SHOWCASE    = 'showcase';
+    case ITEMS       = 'items';
+    case ATTACHMENTS = 'attachments';
+    case HISTORY     = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
-            // StockDeliveryTabsEnum::DATA     => [
-            //     'title' => __('Data'),
-            //     'icon'  => 'fal fa-database',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            // ],
-            StockDeliveryTabsEnum::ITEMS  => [
+            StockDeliveryTabsEnum::SHOWCASE    => [
+                'title' => __('Data'),
+                'icon'  => 'fal fa-database',
+            ],
+            StockDeliveryTabsEnum::ITEMS       => [
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
-            // StockDeliveryTabsEnum::SHOWCASE => [
-            //     'title' => __('Supplier delivery'),
-            //     'icon'  => 'fal fa-info-circle',
-            // ],
+            StockDeliveryTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
             StockDeliveryTabsEnum::HISTORY     => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            // StockDeliveryTabsEnum::ATTACHMENTS => [
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            //     'title' => __('Attachments'),
-            //     'icon'  => 'fal fa-paperclip',
-
-            // ],
         };
     }
 }

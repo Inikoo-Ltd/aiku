@@ -12,6 +12,10 @@ use App\Mcp\Tools\MailshotPerformanceTool;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Models\SysAdmin\Guest;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,

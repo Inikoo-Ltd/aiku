@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { inject, ref, computed, onMounted } from "vue"
+import { Link } from "@inertiajs/vue3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -22,6 +23,7 @@ import Icon from "@/Components/Icon.vue"
 import JsBarcode from "jsbarcode"
 import { ctrans } from "@/Composables/useTrans"
 import { trans } from "laravel-vue-i18n"
+import { useFormatTime } from "@/Composables/useFormatTime"
 library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
 
 const props = defineProps < {
@@ -69,6 +71,19 @@ const props = defineProps < {
             name: string
             parameters: Record<string, string>
         }
+        latest_movements?: {
+            id: number
+            date: string
+            type_label: string
+            class_icon: string | object
+            quantity: string | number
+            is_negative: boolean
+            running_quantity_org_stock: string | number
+            location_code: string | null
+            user_name: string | null
+            reason_label: string | null
+        }[]
+        stock_history_route?: routeType
     }
     reasons?: {
         increase: [],
@@ -226,6 +241,45 @@ onMounted(() => {
                         class="ml-auto text-3xl text-gray-400 transition hover:text-red-500">
                         <Icon :data="{ icon: 'fal fa-file-pdf' }" />
                     </a>
+                </div>
+            </div>
+
+            <!-- Latest movements -->
+            <div v-if="data.latest_movements?.length" class="mt-6 rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                    <span class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                        {{ trans("Latest movements") }}
+                    </span>
+                    <Link v-if="data.stock_history_route"
+                        :href="route(data.stock_history_route.name, data.stock_history_route.parameters)"
+                        class="text-xs font-medium text-indigo-500 hover:text-indigo-700">
+                        {{ trans("View all") }}
+                    </Link>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    <div v-for="movement in data.latest_movements" :key="movement.id"
+                        class="flex items-center gap-3 px-4 py-2.5 text-sm">
+                        <Icon :data="movement.class_icon" class="w-4 shrink-0 text-gray-400" />
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate font-medium text-gray-700">
+                                {{ movement.type_label }}
+                                <span v-if="movement.reason_label" class="font-normal text-gray-500">· {{ movement.reason_label }}</span>
+                            </div>
+                            <div class="truncate text-xs text-gray-400">
+                                {{ useFormatTime(movement.date, { formatTime: "hms" }) }}
+                                <span v-if="movement.location_code"> · {{ movement.location_code }}</span>
+                                <span v-if="movement.user_name"> · {{ movement.user_name }}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold tabular-nums" :class="movement.is_negative ? 'text-red-500' : 'text-green-600'">
+                                {{ movement.is_negative ? '' : '+' }}{{ movement.quantity }}
+                            </div>
+                            <div class="text-xs tabular-nums text-gray-400" v-tooltip="trans('Running quantity')">
+                                {{ movement.running_quantity_org_stock }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

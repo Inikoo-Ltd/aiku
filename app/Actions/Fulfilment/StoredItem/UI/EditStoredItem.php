@@ -64,7 +64,7 @@ class EditStoredItem extends OrgAction
             'name' => [
                 'type'    => 'input',
                 'label'   => __('Name'),
-                'placeholder'   => __("Customer's SKU name"),
+                'placeholder'   => __("Customer's SKO name"),
                 'value'   => $storedItem->name,
                 // 'required' => true
             ],
@@ -80,7 +80,7 @@ class EditStoredItem extends OrgAction
                 'noSaveButton'        => true,
                 'confirmation' => [
                     'title'       => __('Mark as discontinuing'),
-                    'description' => __("Once discontinuing, no more quantity can be added to this SKU. When its quantity reaches 0 it will be automatically discontinued."),
+                    'description' => __("Once discontinuing, no more quantity can be added to this SKO. When its quantity reaches 0 it will be automatically discontinued."),
                     'confirm'     => __('Mark as discontinuing'),
                     'cancel'      => __('Cancel'),
                 ],
@@ -102,9 +102,9 @@ class EditStoredItem extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("Customer's SKUs"),
+                'title'       => __("Customer's SKOs"),
                 'pageHead'    => [
-                    'model'     => __("Customer's SKU"),
+                    'model'     => __("Customer's SKO"),
                     'title'     => $storedItem->slug,
                     'icon'      => 'fal fa-narwhal',
                     'actions'   => [

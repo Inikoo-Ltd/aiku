@@ -156,7 +156,7 @@ class IndexPalletsInCustomer extends OrgAction
                 $table->column(key: 'location_code', label: __('location'), canBeHidden: false, sortable: true, searchable: true);
             }
             if ($this->fulfilmentCustomer->items_storage) {
-                $table->column(key: 'stored_items', label: __("Customer's SKUs"), canBeHidden: false);
+                $table->column(key: 'stored_items', label: __("Customer's SKOs"), canBeHidden: false);
             }
 
             if ($prefix == FulfilmentCustomerPalletsTabsEnum::STORING->value) {
@@ -226,8 +226,8 @@ class IndexPalletsInCustomer extends OrgAction
             $actions[] = [
                 'type'        => 'button',
                 'style'       => 'create',
-                'tooltip'     => __('Create new return (Customer SKUs)'),
-                'label'       => __('Return (Customer SKUs)'),
+                'tooltip'     => __('Create new return (Customer SKOs)'),
+                'label'       => __('Return (Customer SKOs)'),
                 'fullLoading' => true,
                 'route'       => [
                     'method'     => 'post',
@@ -242,8 +242,8 @@ class IndexPalletsInCustomer extends OrgAction
                     $actions[] = [
                         'type'    => 'button',
                         'style'   => 'secondary',
-                        'tooltip' => __("Continue customer's SKUs audit"),
-                        'label'   => __("Continue customer's SKUs audit"),
+                        'tooltip' => __("Continue customer's SKOs audit"),
+                        'label'   => __("Continue customer's SKOs audit"),
                         'route'   => [
                             'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.show',
                             'parameters' => array_merge($request->route()->originalParameters(), ['storedItemAudit' => $openStoredItemAudit->slug])
@@ -252,8 +252,8 @@ class IndexPalletsInCustomer extends OrgAction
                 } else {
                     $actions[] = [
                         'type'    => 'button',
-                        'tooltip' => __("Start customer's SKUs audit"),
-                        'label'   => __("Start customer's SKUs audit"),
+                        'tooltip' => __("Start customer's SKOs audit"),
+                        'label'   => __("Start customer's SKOs audit"),
                         'route'   => [
                             'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.create',
                             'parameters' => $request->route()->originalParameters()

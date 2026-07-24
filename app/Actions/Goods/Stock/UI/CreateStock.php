@@ -51,10 +51,10 @@ class CreateStock extends OrgAction
                 'icon'     =>
                     [
                         'icon'  => ['fal', 'fa-box'],
-                        'title' => __('SKU')
+                        'title' => __('SKO')
                     ],
                 'pageHead' => [
-                    'title'        => __('New SKU'),
+                    'title'        => __('New SKO'),
                     'actions'      => [
                         [
                             'type'  => 'button',
@@ -70,7 +70,7 @@ class CreateStock extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('New SKU'),
+                            'title'  => __('New SKO'),
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',

@@ -30,7 +30,7 @@ class SubmitApiOrder extends RetinaApiAction
      */
     public function handle(Order $order): Order|JsonResponse
     {
-        if($order->transactions->count() === 0) {
+        if ($order->transactions->count() === 0) {
             return response()->json([
                 'message' => "This order has no products yet. Please add products to the order before submitting it."
             ], 403);

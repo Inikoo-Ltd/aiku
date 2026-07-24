@@ -138,7 +138,7 @@ class IndexPalletStoredItems extends OrgAction
             if (!$parent instanceof Pallet) {
                 $table->column(key: 'pallet_reference', label: __('pallet'), canBeHidden: false, sortable: true, searchable: true);
             }
-            $table->column(key: 'stored_item_reference', label: __('Customer SKU'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'stored_item_reference', label: __('Customer SKO'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Pallet) {
                 $table->column(key: 'stored_item_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             }

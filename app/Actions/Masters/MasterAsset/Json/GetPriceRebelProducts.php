@@ -41,7 +41,7 @@ class GetPriceRebelProducts extends GrpAction
                         ]
                     ];
                 }
-                
+
                 return [];
 
             })

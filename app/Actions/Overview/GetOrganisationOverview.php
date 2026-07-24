@@ -361,7 +361,7 @@ class GetOrganisationOverview extends OrgAction
                 'count' => $organisation->fulfilmentStats->number_pallets ?? 0
             ],
             [
-                'name'  => __("Customer's SKUs"),
+                'name'  => __("Customer's SKOs"),
                 'icon'  => 'fal fa-box-open',
                 'route' => '',
                 'count' => $organisation->fulfilmentStats->number_stored_items ?? 0

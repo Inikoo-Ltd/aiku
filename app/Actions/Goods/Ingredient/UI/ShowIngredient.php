@@ -53,7 +53,7 @@ class ShowIngredient extends GrpAction
                 ],
                 'pageHead'    => [
                     'icon'  => [
-                        'title' => __('SKUs'),
+                        'title' => __('SKOs'),
                         'icon'  => 'fal fa-apple-crate'
                     ],
                     'title' => $ingredient->name,

@@ -13,6 +13,10 @@ use App\Models\Analytics\WebUserRequest;
 use App\Models\SysAdmin\Guest;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,
@@ -55,11 +59,12 @@ test('admin user gets website overview', function () {
 
 test('admin user gets web traffic data', function () {
     $website = createWebsite($this->shop);
+    $webUser = createWebUser(createCustomer($this->shop));
 
     WebUserRequest::create([
         'group_id'    => $this->group->id,
         'website_id'  => $website->id,
-        'web_user_id' => 1,
+        'web_user_id' => $webUser->id,
         'date'        => '2026-06-15',
         'route_name'   => 'test',
         'route_params' => '{}',

@@ -289,10 +289,10 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
 
             <DataTable v-if="proxyItem.stored_items?.length || proxyItem.new_stored_items?.length"
                        :value="[...proxyItem.stored_items, ...proxyItem.new_stored_items]">
-                <Column field="reference" :header="trans('SKU')" class="">
+                <Column field="reference" :header="trans('SKO')" class="">
                     <template #body="{ data }">
                         <div class="whitespace-nowrap">{{ data.reference }}
-                            <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans(`New added Customer's SKU`)" icon="fas fa-star" size="xs" class="text-indigo-500" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans(`New added Customer's SKO`)" icon="fas fa-star" size="xs" class="text-indigo-500" fixed-width aria-hidden="true" />
                         </div>
                     </template>
                 </Column>
@@ -498,7 +498,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
             >
                 <template #default="{ openModal }">
                     <Button @click="openModal" type="dashed" icon="fas fa-plus" fuxll
-                            :label="trans(`Customer's SKU`)" />
+                            :label="trans(`Customer's SKO`)" />
                 </template>
 
                 <template #modal="{ form, sendToServer, closeModal }">
@@ -509,7 +509,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                             audited_quantity: form.quantity,
                         },
                         true
-                    )" :stored_items="item.stored_items" @closeModal="closeModal" title="Add Customer's SKU" />
+                    )" :stored_items="item.stored_items" @closeModal="closeModal" title="Add Customer's SKO" />
                 </template>
             </StoredItemsProperty>
         </template>

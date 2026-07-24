@@ -42,7 +42,7 @@ class BatchCodeImport implements ToCollection, WithHeadingRow, SkipsOnFailure, W
                 ->first();
 
             if (!$orgStock) {
-                $this->setRecordAsFailed($uploadRecord, ["SKU '{$row->get('sku')}' not found."]);
+                $this->setRecordAsFailed($uploadRecord, ["SKO '{$row->get('sku')}' not found."]);
                 return;
             }
 

@@ -2015,7 +2015,7 @@ test('TranslateSessionMessages chains translation jobs for unread visitor messag
 test('UI Show shop chat dashboard', function () {
     actingAs($this->user);
 
-    $response = get(route('grp.org.shops.show.crm.chat.dashboard', [$this->organisation->slug, $this->shop->slug]));
+    $response = get(route('grp.org.shops.show.chat.dashboard', [$this->organisation->slug, $this->shop->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Shop/Chat/Dashboard');

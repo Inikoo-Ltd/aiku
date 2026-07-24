@@ -126,8 +126,8 @@ class ShowFulfilmentCustomer extends OrgAction
                     [
                         'type'        => 'button',
                         'style'       => 'create',
-                        'tooltip'     => __('Create Return (Customer SKUs)'),
-                        'label'       => __('Return (SKUs)'),
+                        'tooltip'     => __('Create Return (Customer SKOs)'),
+                        'label'       => __('Return (SKOs)'),
                         'fullLoading' => true,
                         'route'       => [
                             'method'     => 'post',

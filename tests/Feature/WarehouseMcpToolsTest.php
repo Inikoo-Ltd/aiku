@@ -12,6 +12,10 @@ use App\Mcp\Tools\DeliveryNotesSummaryTool;
 use App\Models\SysAdmin\Guest;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,

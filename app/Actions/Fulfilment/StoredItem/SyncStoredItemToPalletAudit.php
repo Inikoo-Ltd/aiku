@@ -67,7 +67,7 @@ class SyncStoredItemToPalletAudit extends OrgAction
             if (in_array($type, [StoredItemAuditDeltaTypeEnum::SET_UP, StoredItemAuditDeltaTypeEnum::ADDITION], true)) {
                 $storedItem = StoredItem::find($storedItemId);
                 if ($storedItem && !$storedItem->state->canBeStored()) {
-                    throw ValidationException::withMessages(['stored_item_ids' => __('The SKU ":reference" is :state and cannot be stored.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
+                    throw ValidationException::withMessages(['stored_item_ids' => __('The SKO ":reference" is :state and cannot be stored.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
                 }
             }
 

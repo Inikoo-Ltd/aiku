@@ -1,7 +1,8 @@
 name: Backend Tests
 on:
   push:
-    branches: [ "main_stop" ]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   HOME: /home/aiku_test
@@ -14,7 +15,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          # full history: DevopsTest resolves HEAD~2 to diff deployments
+          fetch-depth: 0
       - name: Composer install
         run: php8.4 /usr/local/bin/composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       - name: Prepare environment
@@ -22,6 +24,9 @@ jobs:
           ln -s ../../../../.pgpass .pgpass
           ln -s ../../../../env.aiku.testing .env.testing
           ln -s ../../../../env.aiku.testing .env
+          ln -s ../../../../../artifacts/playwright/node_modules node_modules
+          ln -s ../../../../../artifacts/oauth/oauth-private.key storage/oauth-private.key
+          ln -s ../../../../../artifacts/oauth/oauth-public.key storage/oauth-public.key
           ln -s ../../../../../artifacts/public/grp public/grp
           ln -s ../../../../../artifacts/public/iris public/iris
           ln -s ../../../../../artifacts/public/retina public/retina
@@ -30,8 +35,16 @@ jobs:
           cd private
           ln -s ../../../../../artifacts/fa .
       - name: Generate database dumps 📚
-        run: ./generate_testing_db_dumps.sh php8.4 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+        run: |
+          MIGRATIONS_HASH=$(git ls-files -s database/migrations database/seeders | git hash-object --stdin)
+          if [ ! -f ../../../../artifacts/aiku.dump ] || [ "$MIGRATIONS_HASH" != "$(cat ../../../../artifacts/aiku.dump.migrations_hash 2>/dev/null)" ]; then
+            ./generate_testing_db_dumps.sh php8.4 aiku_test
+            cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+            echo "$MIGRATIONS_HASH" > ../../../../artifacts/aiku.dump.migrations_hash
+          else
+            echo "Migrations unchanged, reusing cached aiku.dump"
+          fi
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test without coverage
-        run: /usr/bin/php8.4 -dxdebug.mode=off vendor/bin/pest --parallel --exclude-group=integration --stop-on-defect
+        run: /usr/bin/php8.4 -dxdebug.mode=off vendor/bin/pest --parallel --exclude-group=integration,browser --stop-on-defect

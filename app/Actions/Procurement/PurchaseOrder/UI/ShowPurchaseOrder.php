@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -16,6 +17,7 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\PurchaseOrderTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -24,6 +26,7 @@ use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
@@ -218,6 +221,19 @@ class ShowPurchaseOrder extends OrgAction
                 ],
                 PurchaseOrderStateEnum::CONFIRMED => $purchaseOrder->stockDeliveries()->exists() ? [] : [
                     [
+                        'label'   => __('New Delivery'),
+                        'tooltip' => __('Create Stock Delivery from this Purchase Order'),
+                        'type'    => 'button',
+                        'style'   => 'create',
+                        'icon'    => 'fal fa-plus',
+                        'key'     => 'new_stock_delivery',
+                        'route'   => [
+                            'method'     => 'post',
+                            'name'       => 'grp.models.purchase-order.stock-delivery.store',
+                            'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                        ],
+                    ],
+                    [
                         'label'   => __('Undo Confirm'),
                         'tooltip' => __('Revert Purchase Order to Submitted'),
                         'type'    => 'button',
@@ -227,22 +243,6 @@ class ShowPurchaseOrder extends OrgAction
                         'route'   => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.purchase-order.undo-confirm',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
-                ],
-                PurchaseOrderStateEnum::SETTLED => [
-                    [
-                        'label'   => __('Not Received'),
-                        'tooltip' => __('Not Received'),
-                        'type'    => 'button',
-                        'style'   => 'delete',
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.not-received',
                             'parameters' => [
                                 'purchaseOrder' => $purchaseOrder->id,
                             ],
@@ -279,8 +279,9 @@ class ShowPurchaseOrder extends OrgAction
                     ] : false,
                     'actions' => $actions,
                 ],
-                'data'        => PurchaseOrderResource::make($purchaseOrder),
-                'timelines'   => $this->getTimeline($purchaseOrder),
+                'data'                     => PurchaseOrderResource::make($purchaseOrder),
+                'timelines'                => $this->getTimeline($purchaseOrder),
+                'stock_delivery_timelines' => $this->getStockDeliveryTimelines($purchaseOrder),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $showProductsTab
@@ -310,6 +311,7 @@ class ShowPurchaseOrder extends OrgAction
                     ],
                     'second_block'     => [
                         'state' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
+                        'delivery_state' => PurchaseOrderDeliveryStateEnum::stateIcon()[$purchaseOrder->delivery_state->value],
                         'total_items' => $purchaseOrder->number_purchase_order_transactions,
                         'weight' => Arr::get($weightAndVolume, 'gross_weight'),
                         'volume' => Arr::get($weightAndVolume, 'volume'),
@@ -402,32 +404,54 @@ class ShowPurchaseOrder extends OrgAction
             in_array($state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED], true)
             || ($state === PurchaseOrderStateEnum::CONFIRMED && !$purchaseOrder->stockDeliveries()->exists())
         ) {
-            // TODO: Source should come from the Supplier/Agent, which will likely store a
-            // "Production waiting time (days)" (e.g. in a json data column). estimated_dispatch would then
-            // be submitted_at + production waiting days. No such field yet, so shows "No estimated production date".
+            // TODO: Default should come from the Supplier/Agent "Production waiting time (days)"
+            // (no such field yet). While the purchase order is not confirmed, only a sub label should
+            // show (e.g. "Estimated X days after confirmation"); once confirmed, the default timestamp
+            // is calculated as confirmed_at + production waiting days.
+            $estimatedProductionDate = Arr::get($purchaseOrder->data, 'estimated_production_date');
+
             $timeline['estimated_dispatch'] = [
                 'label'     => __('Estimated dispatch'),
                 'tooltip'   => __('Estimated dispatch'),
                 'key'       => 'estimated_dispatch',
                 'icon'      => 'fal fa-truck',
-                'sub_label' => __('No estimated production date'),
-                'timestamp' => null,
+                'sub_label' => $estimatedProductionDate ? null : __('No estimated production date'),
+                'timestamp' => $estimatedProductionDate,
             ];
         }
 
-        // TODO: Source should come from the Supplier/Agent, which will likely store a
-        // "Delivery time (days)" (e.g. in a json data column). estimated_delivery would then be
-        // estimated_dispatch + delivery days, and once dispatched it becomes the stock delivery estimated
-        // received. No such field yet, so shows "No estimated delivery date".
+        // TODO: Default should come from the Supplier/Agent "Delivery time (days)" (no such field yet).
+        // While the purchase order is not confirmed, only a sub label should show
+        // (e.g. "Estimated 30 days after confirmation"); once confirmed, the default timestamp is
+        // calculated as estimated dispatch + delivery days, and once dispatched it becomes the
+        // stock delivery estimated received date.
+        $estimatedReceivingDate = Arr::get($purchaseOrder->data, 'estimated_receiving_date');
+
         $timeline['estimated_delivery'] = [
             'label'     => __('Estimated delivery'),
             'tooltip'   => __('Estimated delivery'),
             'key'       => 'estimated_delivery',
-            'sub_label' => __('No estimated delivery date'),
-            'timestamp' => null,
+            'sub_label' => $estimatedReceivingDate ? null : __('No estimated delivery date'),
+            'timestamp' => $estimatedReceivingDate,
         ];
 
         return $timeline;
+    }
+
+    public function getStockDeliveryTimelines(PurchaseOrder $purchaseOrder): array
+    {
+        return $purchaseOrder->stockDeliveries()->get()->map(fn (StockDelivery $stockDelivery) => [
+            'reference' => $stockDelivery->reference,
+            'state'     => $stockDelivery->state->value,
+            'route'     => [
+                'name'       => 'grp.org.procurement.stock_deliveries.show',
+                'parameters' => [
+                    'organisation'  => $purchaseOrder->organisation->slug,
+                    'stockDelivery' => $stockDelivery->slug,
+                ],
+            ],
+            'timeline'  => ShowStockDelivery::make()->getTimeline($stockDelivery, false),
+        ])->all();
     }
 
     public function getPrevious(PurchaseOrder $purchaseOrder, ActionRequest $request): ?array

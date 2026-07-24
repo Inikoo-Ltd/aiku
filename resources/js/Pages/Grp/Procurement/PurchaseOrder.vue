@@ -13,7 +13,7 @@ import { trans } from "laravel-vue-i18n"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
-import PurchaseOrderData from "@/Components/Procurement/PurchaseOrderData.vue"
+import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
@@ -32,8 +32,8 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle } from "@fal"
-import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare } from "@fas"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows } from "@fal"
+import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
 library.add(
@@ -55,7 +55,10 @@ library.add(
 	faPencil,
     faPlus,
     faInventory,
-    faBars
+    faBars,
+	faTruck,
+	faClipboardList,
+	faPeopleArrows,
 )
 
 const props = defineProps < {
@@ -70,6 +73,14 @@ const props = defineProps < {
    	timelines: {
 		[key: string]: TSTimeline
 	}
+	stock_delivery_timelines: {
+		reference: string
+		state: string
+		route: routeType
+		timeline: {
+			[key: string]: TSTimeline
+		}
+	}[]
     tabs: {
         current: string
         navigation: {}
@@ -95,6 +106,12 @@ const props = defineProps < {
         }
         second_block: {
             state: string
+            delivery_state: {
+                tooltip: string
+                icon: string
+                class: string
+                color: string
+            }
             total_items: number
             weight: number | null
             volume: number | null
@@ -219,6 +236,7 @@ const cancelLoading = ref(false)
 const undoSubmitLoading = ref(false)
 const confirmLoading = ref(false)
 const undoConfirmLoading = ref(false)
+const newStockDeliveryLoading = ref(false)
 
 const confirmSubmitPurchaseOrder = (action: any) => {
 	confirm.require({
@@ -358,9 +376,32 @@ const confirmUndoConfirmPurchaseOrder = (action: any) => {
 	})
 }
 
+const confirmNewStockDelivery = (action: any) => {
+	confirm.require({
+		group: "purchase-order",
+		message: trans("Are you sure you want to create a new delivery from this purchase order?"),
+		header: trans("New Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Create delivery") },
+		accept: () => {
+			router.post(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { newStockDeliveryLoading.value = true },
+				onFinish: () => { newStockDeliveryLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to create delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
 const component = computed(() => {
 	const components: Component = {
-		showcase: PurchaseOrderData,
+		showcase: ProcurementOrderData,
 		items: TablePurchaseOrderTransactions,
 		products: TablePurchaseOrderTransactions,
 		history: TableHistories,
@@ -450,6 +491,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			/>
 		</template>
 
+		<template #button-new-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="newStockDeliveryLoading"
+				@click="() => confirmNewStockDelivery(action)"
+			/>
+		</template>
+
 		<template #button-undo-confirm-purchase-order="{ action }">
 			<Button
 				:style="action.style"
@@ -483,7 +535,24 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		/>
 	</div>
 
-	<!-- Todo: Add Stock Delivery Timeline -->
+	<!-- Stock Delivery Timelines -->
+	<div
+		v-for="stockDelivery in stock_delivery_timelines"
+		:key="stockDelivery.reference"
+		class="flex items-center gap-x-4 py-2 pl-4 border-b border-gray-300"
+	>
+		<Link :href="route(stockDelivery.route.name, stockDelivery.route.parameters)" class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap">
+			<FontAwesomeIcon icon="fas fa-truck" fixed-width aria-hidden="true" />
+			{{ stockDelivery.reference }}
+		</Link>
+		<Timeline
+			class="flex-1 min-w-0"
+			:options="stockDelivery.timeline"
+			:state="stockDelivery.state"
+			:slidesPerView="6"
+			:format-time="'MMMM d yyyy, HH:mm'"
+		/>
+	</div>
 
 	<div class="grid grid-cols-2 lg:grid-cols-4 text-gray-500 divide-x divide-gray-300 border-b border-gray-300">
 	    <!-- First Block -->
@@ -588,8 +657,32 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 		<!-- Second Block -->
 		<BoxStatPallet class="p-4">
-            <div class="flex justify-center">
-                {{ box_stats.second_block.state }}
+            <div class="flex justify-center items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <FontAwesomeIcon
+                        v-tooltip="trans('Purchase Order')"
+                        icon="fal fa-clipboard-list"
+                        class="text-gray-400"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                    <span>{{ box_stats.second_block.state }}</span>
+                </div>
+
+                <div v-if="stock_delivery_timelines.length" class="h-4 w-px bg-gray-300" />
+
+                <div v-if="stock_delivery_timelines.length" class="flex items-center gap-2">
+                    <FontAwesomeIcon
+                        v-tooltip="trans('Stock Delivery')"
+                        icon="fal fa-people-arrows"
+                        class="text-gray-400"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                    <span v-tooltip="box_stats.second_block.delivery_state.tooltip">
+                        {{ box_stats.second_block.delivery_state.tooltip }}
+                    </span>
+                </div>
             </div>
 
             <hr class="my-1 border-t border-gray-300" />

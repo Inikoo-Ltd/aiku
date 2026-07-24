@@ -246,7 +246,7 @@ class IndexProductsInCatalogue extends OrgAction
 
             if ($shop->type == ShopTypeEnum::EXTERNAL) {
                 $table
-                    ->column(key: 'product_org_stocks', label: __('SKU'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
+                    ->column(key: 'product_org_stocks', label: __('SKO'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');
             } else {
                 $table
                     ->column(key: 'variant_slug', label: __('Variant'), canBeHidden: false, sortable: true, searchable: false, type: 'icon');

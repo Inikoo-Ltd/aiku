@@ -1501,7 +1501,7 @@ const onDispatchPalletReturn = async () => {
 
     <Modal :isOpen="isModalPickingUsers" @onClose="onCloseModalPickingUsers" width="w-full max-w-xl" :isClosableInBackground="false" closeButton>
         <div class="flex flex-col gap-4">
-            <div class="text-center text-lg font-semibold">{{ trans("Return Customer's SKUs") }}</div>
+            <div class="text-center text-lg font-semibold">{{ trans("Return Customer's SKOs") }}</div>
             <div v-if="canChangePicker || canChangePacker" class="flex flex-col gap-2">
                 <div class="text-sm font-medium">{{ activePickingUsersLabel }}</div>
                 <PureMultiselectInfiniteScroll

@@ -696,6 +696,7 @@ test("UI show org stock", function (OrgStock $orgStock) {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
             )
+            ->has("showcase.latest_movements")
             ->has("tabs");
     });
 })->depends('create org stock');
@@ -716,7 +717,7 @@ test("UI index org stocks all", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKOs')->etc()
             );
     });
 });
@@ -737,7 +738,7 @@ test("UI index org stocks discontinued", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKOs')->etc()
             );
     });
 });
@@ -758,7 +759,7 @@ test("UI index org stocks abnormally", function () {
             ->has("breadcrumbs")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKOs')->etc()
             );
     });
 });
@@ -826,7 +827,7 @@ test("UI Index Org Stocks", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Current SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Current SKOs')->etc()
             );
     });
 });
@@ -847,7 +848,7 @@ test("UI Index Org Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKU Families')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKO Families')->etc()
             );
     });
 });
@@ -887,7 +888,7 @@ test("UI Index Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Master SKO Families')->etc()
             );
     });
 });
@@ -903,7 +904,7 @@ test("UI Create stock family", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "New SKU family")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "New SKO family")->etc()
             )
             ->has("formData");
     });
@@ -923,7 +924,7 @@ test("UI index inventory stored item", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "Customer's SKUs")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "Customer's SKOs")->etc()
             )
             ->has("tabs");
     });

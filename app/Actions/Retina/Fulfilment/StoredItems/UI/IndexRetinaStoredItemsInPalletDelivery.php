@@ -90,16 +90,16 @@ class IndexRetinaStoredItemsInPalletDelivery extends RetinaAction
             'Fulfilment/StoredItems',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __("Customer's SKUs"),
+                'title'       => __("Customer's SKOs"),
                 'pageHead'    => [
-                    'title'   => __("Customer's SKUs"),
+                    'title'   => __("Customer's SKOs"),
                     'actions' => [
                         'buttons' => [
                             'route' => [
                                 'name'       => 'grp.org.hr.employees.create',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
-                            'label' => __("Customer's SKUs")
+                            'label' => __("Customer's SKOs")
                         ]
                     ],
                 ],
@@ -128,7 +128,7 @@ class IndexRetinaStoredItemsInPalletDelivery extends RetinaAction
                         'route' => [
                             'name' => 'grp.fulfilment.stored-items.index'
                         ],
-                        'label' => __("Customer's SKUs"),
+                        'label' => __("Customer's SKOs"),
                         'icon'  => 'fal fa-bars',
                     ],
 

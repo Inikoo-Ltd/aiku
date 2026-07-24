@@ -58,14 +58,14 @@ class EditOrgStock extends OrgAction
         $warning = [
             'type'  => 'warning',
             'title' => __('Important'),
-            'text'  => __('Products relies on SKU data. Editing it would affect the related product display behavior'),
+            'text'  => __('Products relies on SKO data. Editing it would affect the related product display behavior'),
             'icon'  => ['fas', 'fa-exclamation-triangle']
         ];
 
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Editing SKU').' '.$orgStock->code,
+                'title'       => __('Editing SKO').' '.$orgStock->code,
                 'warning'     => $warning,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $orgStock,
@@ -79,7 +79,7 @@ class EditOrgStock extends OrgAction
                         'title' => __('Sku'),
                         'icon'  => 'fal fa-box'
                     ],
-                    'model' => __('SKU'),
+                    'model' => __('SKO'),
                     'title' => $orgStock->code,
                     'actions'   => [
                         [
@@ -140,7 +140,7 @@ class EditOrgStock extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('SKUs')
+                            'label' => __('SKOs')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

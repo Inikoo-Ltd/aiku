@@ -151,7 +151,7 @@ function onSavePartialMoveSku() {
                     selectedRows.value = {}
                     notify({
                         title: ctrans("Success"),
-                        text: ctrans("SKU moved successfully"),
+                        text: ctrans("SKO moved successfully"),
                         type: "success",
                     })
                     router.reload()
@@ -160,7 +160,7 @@ function onSavePartialMoveSku() {
                 onError: () => {
                     notify({
                         title: ctrans("Something went wrong"),
-                        text: ctrans("Failed to move SKU"),
+                        text: ctrans("Failed to move SKO"),
                         type: "error",
                     })
                 },
@@ -181,14 +181,14 @@ function onSaveMoveAllSku() {
                 form.reset()
                 notify({
                     title: ctrans("Success"),
-                    text: ctrans("All SKU moved successfully"),
+                    text: ctrans("All SKO moved successfully"),
                     type: "success",
                 })
             },
             onError: () => {
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to move all SKU"),
+                    text: ctrans("Failed to move all SKO"),
                     type: "error",
                 })
             },
@@ -343,8 +343,8 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canMoveAllSku" @onSelectRow="onSelectRow" :key="key">
           <template #add-on-button v-if="canMoveAllSku">
-                <Button :label="ctrans('Move All SKU')" type="white" :icon="faForklift" size="xs" @click="openMoveAllSku"></Button>
-                <Button v-if="hasSelection" :label="ctrans('Partialy Move SKU')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
+                <Button :label="ctrans('Move All SKO')" type="white" :icon="faForklift" size="xs" @click="openMoveAllSku"></Button>
+                <Button v-if="hasSelection" :label="ctrans('Partialy Move SKO')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
           </template>
         <template #cell(state)="{ item: stock }">
             <Icon :data="stock.state"></Icon>
@@ -507,10 +507,10 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                             locationOrgStock: stock.location_org_stock_id
                         },
                     }"
-                    :title="ctrans('Are you sure you want to unlink this SKU from the location?')"
+                    :title="ctrans('Are you sure you want to unlink this SKO from the location?')"
                     :description="ctrans(':qty stock will be removed and marked as lost!', { qty: locale.number(Number(stock.quantity)) })"
                     isFullLoading
-                    :noLabel="ctrans('Yes, unlink SKU :code', { code: stock.code })"
+                    :noLabel="ctrans('Yes, unlink SKO :code', { code: stock.code })"
                     noIcon="fal fa-unlink"
                 >
                     <template #default="{ changeModel, isLoadingdelete }">
@@ -532,7 +532,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
     </Table>
 
     <Dialog
-        :header="ctrans('Move All SKU')"
+        :header="ctrans('Move All SKO')"
         v-model:visible="isOpenMoveAllSku"
         modal
         closable
@@ -593,7 +593,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
     </Dialog>
 
     <Dialog
-        :header="ctrans('Partialy Move SKU')"
+        :header="ctrans('Partialy Move SKO')"
         v-model:visible="isOpenPartialMove"
         modal
         closable

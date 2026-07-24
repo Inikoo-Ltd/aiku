@@ -29,7 +29,7 @@ class ProductHydratePricesFromMaster
 
         $products   = Product::query();
         $shop       = $parent;
-        
+
         if ($parent instanceof ProductCategory) {
             $shop = $parent->shop;
             $products->where('family_id', $parent->id);
@@ -40,7 +40,7 @@ class ProductHydratePricesFromMaster
         $products
             ->with('masterProduct')
             ->chunkById(500, function ($chunks) use ($shop) {
-                foreach($chunks as $product) {
+                foreach ($chunks as $product) {
                     MasterAssetHydrateMasterPricesRRPtoChild::run($product->masterProduct, $shop);
                 }
             });

@@ -9,9 +9,9 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
-use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\OrgAction;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterProductsBulkEdit extends GrpAction
+class UpdateMasterProductsBulkEdit extends OrgAction
 {
     use WithMastersEditAuthorisation;
 
@@ -50,6 +50,14 @@ class UpdateMasterProductsBulkEdit extends GrpAction
             'data.*.unit'                   =>  ['sometimes', 'required', 'string'],
             'data.*.gross_weight'           =>  ['sometimes', 'numeric'],
             'data.*.master_family_id'       =>  ['sometimes', 'nullable'],
+            // Master Prices
+            'data.*.master_prices'                => ['sometimes', 'array'],
+            'data.*.master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
+            'data.*.master_prices.*.independent'  => ['sometimes', 'boolean'],
+            // Master RRPs | This is per unit btw
+            'data.*.master_rrps'                   => ['sometimes', 'array'],
+            'data.*.master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
+            'data.*.master_rrps.*.independent'     => ['sometimes', 'boolean'],
         ];
     }
 
@@ -74,7 +82,7 @@ class UpdateMasterProductsBulkEdit extends GrpAction
     public function asController(ActionRequest $request)
     {
         $group        = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($this->validatedData);
     }

@@ -71,7 +71,7 @@ class IndexOrgStocksInStock extends OrgAction
             }
 
             $table
-                ->withLabelRecord([__('SKU'), __('SKUs')])
+                ->withLabelRecord([__('SKO'), __('SKOs')])
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations);
@@ -79,7 +79,7 @@ class IndexOrgStocksInStock extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'org_sku', label: __('Organisation'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'packed_in', label: __('Units per SKU'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'packed_in', label: __('Units per SKO'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             $table->column(key: 'quantity_in_locations', label: __('Stock in Locations'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'quantity_available', label: __('Stock Available'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

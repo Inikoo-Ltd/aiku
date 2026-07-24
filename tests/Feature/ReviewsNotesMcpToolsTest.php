@@ -15,6 +15,10 @@ use App\Models\SysAdmin\Guest;
 
 use function Pest\Laravel\actingAs;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,

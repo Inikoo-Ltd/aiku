@@ -54,9 +54,9 @@ class EditInvoice extends OrgAction
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
 
-        $title=_('Edit invoice');
-        if($invoice->type==InvoiceTypeEnum::REFUND){
-            $title=_('Edit refund');
+        $title = _('Edit invoice');
+        if ($invoice->type == InvoiceTypeEnum::REFUND) {
+            $title = _('Edit refund');
         }
 
         return Inertia::render(
@@ -69,7 +69,7 @@ class EditInvoice extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'     =>$title,
+                    'title'     => $title,
                     'container' => [
                         'icon'    => ['fal', 'fa-user'],
                         'tooltip' => $title,

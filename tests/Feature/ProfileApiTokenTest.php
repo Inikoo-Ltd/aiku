@@ -11,6 +11,10 @@ use App\Actions\UI\Profile\DeleteProfileApiToken;
 use App\Actions\UI\Profile\StoreProfileApiToken;
 use App\Models\SysAdmin\Guest;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,

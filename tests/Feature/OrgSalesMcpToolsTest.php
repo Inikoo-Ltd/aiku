@@ -12,6 +12,10 @@ use App\Mcp\Tools\OrgFamilySalesTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Models\SysAdmin\Guest;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,

@@ -11,6 +11,10 @@ use App\Actions\UI\Profile\StoreProfileApiToken;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list(
         $this->organisation,

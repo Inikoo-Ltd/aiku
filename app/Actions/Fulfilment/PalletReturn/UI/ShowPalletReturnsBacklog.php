@@ -84,8 +84,8 @@ class ShowPalletReturnsBacklog extends OrgAction
             $actions[] = [
                 'type'        => 'button',
                 'style'       => 'create',
-                'tooltip'     => __('Create new return (Customer SKUs)'),
-                'label'       => __('Return (Customer SKUs)'),
+                'tooltip'     => __('Create new return (Customer SKOs)'),
+                'label'       => __('Return (Customer SKOs)'),
                 'fullLoading' => true,
                 'route'       => [
                     'method'     => 'post',

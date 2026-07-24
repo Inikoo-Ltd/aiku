@@ -130,7 +130,7 @@ class ShowStockFamily extends OrgAction
                             'route' => [
                                 'name' => 'grp.goods.stock-families.index',
                             ],
-                            'label' => __('SKUs families'),
+                            'label' => __('SKOs families'),
                             'icon'  => 'fal fa-bars'
                         ],
                         'model' => [

@@ -2,6 +2,10 @@
 
 use App\Models\Helpers\Audit;
 
+beforeAll(function () {
+    loadDB();
+});
+
 it('merges into recent updated audit and does not create a second row', function () {
     $auditableId = random_int(100000, 999999);
 

@@ -17,6 +17,7 @@ use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunMailshotTrackingUpdates;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\GoldRewardReminder\RunGoldRewardReminderEmailBulkRuns;
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
@@ -461,11 +462,20 @@ class Kernel extends ConsoleKernel
             );
 
 
+            // $this->logSchedule(
+            //     $schedule->job(RunReorderRemainderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->onOneServer()->sentryMonitor(
+            //         monitorSlug: 'RunReorderRemainderEmailBulkRuns',
+            //     ),
+            //     name: 'RunReorderRemainderEmailBulkRuns',
+            //     type: 'job',
+            //     scheduledAt: now()->format('H:i')
+            // );
+
             $this->logSchedule(
-                $schedule->job(RunReorderRemainderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'RunReorderRemainderEmailBulkRuns',
+                $schedule->job(RunGoldRewardReminderEmailBulkRuns::makeJob())->dailyAt('15:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunGoldRewardReminderEmailBulkRuns',
                 ),
-                name: 'RunReorderRemainderEmailBulkRuns',
+                name: 'RunGoldRewardReminderEmailBulkRuns',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

@@ -37,7 +37,7 @@ class EditOutboxInShop extends OrgAction
             'fields' => [
                 'subject' => [
                     'type' => 'input',
-                    'label' => __('subject'),
+                    'label' => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required' => false,
                     'value' => $outbox->emailOngoingRun?->email?->subject,
@@ -79,16 +79,23 @@ class EditOutboxInShop extends OrgAction
             ]
         ];
 
-        if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD])) {
+        if (in_array($outbox->code, [
+            OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3 ])) {
             $fields[] = $subjectField;
             $fields[] = [
                 'title' => '',
                 'fields' => [
                     'days_after' => [
                         'type' => 'input_number',
-                        'label' => __('Days after last order dispatched'),
+                        'label' => __('Reminder Interval (Days)'),
                         'placeholder' => __('Days after last order dispatched'),
-                        'required' => false,
+                        'information' => __('Number of days to wait after the last dispatched order before sending this reminder.'),
+                        'required' => true,
                         'value' => $outbox->days_after,
                     ],
                 ]

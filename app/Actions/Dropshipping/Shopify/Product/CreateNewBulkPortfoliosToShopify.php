@@ -18,7 +18,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use function Clue\StreamFilter\fun;
 
 class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUnique
 {
@@ -53,7 +52,7 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
         Cache::put($cacheKey . '_fail', 0, now()->addHour());
 
         /** @var Portfolio $portfolio */
-        $portfoliosIds->chunkById(20, function($portfoliosIdChunk) use ($customerSalesChannel, $totalNumber, $cacheKey) {
+        $portfoliosIds->chunkById(20, function ($portfoliosIdChunk) use ($customerSalesChannel, $totalNumber, $cacheKey) {
             foreach ($portfoliosIdChunk as $portfoliosId) {
                 $portfolio = Portfolio::find($portfoliosId->id);
 
