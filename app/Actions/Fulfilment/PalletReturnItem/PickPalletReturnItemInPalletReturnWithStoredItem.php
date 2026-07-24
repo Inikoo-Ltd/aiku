@@ -16,6 +16,7 @@ use App\Actions\Fulfilment\PalletReturn\UpdatePalletReturn;
 use App\Actions\Fulfilment\PalletStoredItem\SetPalletStoredItemStateToReturned;
 use App\Actions\Fulfilment\StoredItemMovement\StoreStoredItemMovementFromPicking;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Fulfilment\PalletReturnItemResource;
@@ -28,7 +29,7 @@ use App\Models\SysAdmin\User;
 
 class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
 {
-    use WithFulfilmentShopAuthorisation;
+    use WithFulfilmentWarehouseEditAuthorisation;
     use WithActionUpdate;
 
 
@@ -90,7 +91,8 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
      */
     public function asController(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItem
     {
-        $this->initialisationFromFulfilment($palletReturnItem->palletReturn->fulfilment, $request);
+
+        $this->initialisationFromWarehouse($palletReturnItem->palletReturn->warehouse, $request);
 
         $user = $request->user() instanceof User ? $request->user() : null;
         return $this->handle($palletReturnItem, $this->validatedData, $user);
