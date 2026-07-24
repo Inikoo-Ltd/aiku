@@ -447,6 +447,7 @@ class IndexMasterFamilies extends OrgAction
                 'subNavigation' => $subNavigation,
             ],
             'shopsData'   => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
+            'hideCheckbox'    => !$this->canEdit
         ];
 
         $baseData['storeRoute'] = match ($this->parent::class) {
