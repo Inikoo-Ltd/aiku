@@ -15,7 +15,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          # full history: DevopsTest resolves HEAD~2 to diff deployments
+          fetch-depth: 0
       - name: Composer install
         run: php8.4 /usr/local/bin/composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       - name: Prepare environment

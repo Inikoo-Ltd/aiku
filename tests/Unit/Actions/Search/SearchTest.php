@@ -14,7 +14,6 @@ use App\Actions\Search\Search;
 use App\Actions\Search\SearchSysAdmin;
 use App\Actions\Search\StoreSearchLog;
 use App\Models\Helpers\SearchLog;
-use App\Models\SysAdmin\Group;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -76,7 +75,7 @@ it('caches results for queries of two characters or fewer', function () {
 it('logs searches, records clicks and aggregates analytics', function () {
     Http::fake(['*/analytics/events' => Http::response(['ok' => true])]);
     SearchLog::query()->delete();
-    $group = Group::first();
+    $group = createGroup();
 
     $user = \App\Models\SysAdmin\User::first();
 
@@ -119,7 +118,7 @@ it('logs searches, records clicks and aggregates analytics', function () {
 
 it('collapses type-ahead query refinements into a single search log', function () {
     SearchLog::query()->delete();
-    $group = Group::first();
+    $group = createGroup();
 
     $base = [
         'group_id'   => $group->id,
