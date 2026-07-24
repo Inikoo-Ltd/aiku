@@ -9,6 +9,7 @@ use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryResource;
@@ -58,6 +59,10 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         $stockDelivery->purchaseOrders()->attach($purchaseOrder->id);
         $stockDelivery->update([
             'number_purchase_orders' => $stockDelivery->purchaseOrders()->count(),
+        ]);
+
+        $purchaseOrder->update([
+            'delivery_state' => PurchaseOrderDeliveryStateEnum::from($stockDelivery->state->value),
         ]);
 
         $purchaseOrderTransactions = $purchaseOrder->purchaseOrderTransactions()

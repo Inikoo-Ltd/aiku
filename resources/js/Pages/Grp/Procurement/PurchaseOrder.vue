@@ -32,7 +32,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
@@ -57,6 +57,8 @@ library.add(
     faInventory,
     faBars,
 	faTruck,
+	faClipboardList,
+	faPeopleArrows,
 )
 
 const props = defineProps < {
@@ -104,6 +106,12 @@ const props = defineProps < {
         }
         second_block: {
             state: string
+            delivery_state: {
+                tooltip: string
+                icon: string
+                class: string
+                color: string
+            }
             total_items: number
             weight: number | null
             volume: number | null
@@ -649,8 +657,32 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 		<!-- Second Block -->
 		<BoxStatPallet class="p-4">
-            <div class="flex justify-center">
-                {{ box_stats.second_block.state }}
+            <div class="flex justify-center items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <FontAwesomeIcon
+                        v-tooltip="trans('Purchase Order')"
+                        icon="fal fa-clipboard-list"
+                        class="text-gray-400"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                    <span>{{ box_stats.second_block.state }}</span>
+                </div>
+
+                <div v-if="stock_delivery_timelines.length" class="h-4 w-px bg-gray-300" />
+
+                <div v-if="stock_delivery_timelines.length" class="flex items-center gap-2">
+                    <FontAwesomeIcon
+                        v-tooltip="trans('Stock Delivery')"
+                        icon="fal fa-people-arrows"
+                        class="text-gray-400"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                    <span v-tooltip="box_stats.second_block.delivery_state.tooltip">
+                        {{ box_stats.second_block.delivery_state.tooltip }}
+                    </span>
+                </div>
             </div>
 
             <hr class="my-1 border-t border-gray-300" />

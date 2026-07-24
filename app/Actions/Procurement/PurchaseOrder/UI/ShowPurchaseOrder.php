@@ -17,6 +17,7 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\PurchaseOrderTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -310,6 +311,7 @@ class ShowPurchaseOrder extends OrgAction
                     ],
                     'second_block'     => [
                         'state' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
+                        'delivery_state' => PurchaseOrderDeliveryStateEnum::stateIcon()[$purchaseOrder->delivery_state->value],
                         'total_items' => $purchaseOrder->number_purchase_order_transactions,
                         'weight' => Arr::get($weightAndVolume, 'gross_weight'),
                         'volume' => Arr::get($weightAndVolume, 'volume'),
