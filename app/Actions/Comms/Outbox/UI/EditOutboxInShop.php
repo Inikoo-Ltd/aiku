@@ -136,6 +136,30 @@ class EditOutboxInShop extends OrgAction
             $fields[] = $subjectField;
             $fields[] = $intervalField;
             $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
+        } elseif (in_array($outbox->code, [OutboxCodeEnum::PRICE_CHANGE])) {
+            $fields[] = $subjectField;
+            $fields[] = [
+                'title' => '',
+                'fields' => [
+                    'interval' => [
+                        'type' => 'select',
+                        'label' => __('Cooldown Period'),
+                        'placeholder' => __('Cooldown Period'),
+                        'required' => true,
+                        'mode' => 'single',
+                        'options' => [
+                            ['value' => 0, 'label' => __('Immediately')],
+                            ['value' => 5, 'label' => __('5 minutes')],
+                            ['value' => 10, 'label' => __('10 minutes')],
+                            ['value' => 30, 'label' => __('30 minutes')],
+                            ['value' => 60, 'label' => __('1 hour')],
+                            ['value' => 120, 'label' => __('2 hours')],
+                        ],
+                        'value' => $outbox->interval ?? 5,
+                    ],
+                ]
+            ];
+            $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
         } else {
             $fields[] = $subjectField;
             $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
