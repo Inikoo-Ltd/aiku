@@ -402,29 +402,35 @@ class ShowPurchaseOrder extends OrgAction
             in_array($state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED], true)
             || ($state === PurchaseOrderStateEnum::CONFIRMED && !$purchaseOrder->stockDeliveries()->exists())
         ) {
-            // TODO: Source should come from the Supplier/Agent, which will likely store a
-            // "Production waiting time (days)" (e.g. in a json data column). estimated_dispatch would then
-            // be submitted_at + production waiting days. No such field yet, so shows "No estimated production date".
+            // TODO: Default should come from the Supplier/Agent "Production waiting time (days)"
+            // (no such field yet). While the purchase order is not confirmed, only a sub label should
+            // show (e.g. "Estimated X days after confirmation"); once confirmed, the default timestamp
+            // is calculated as confirmed_at + production waiting days.
+            $estimatedProductionDate = Arr::get($purchaseOrder->data, 'estimated_production_date');
+
             $timeline['estimated_dispatch'] = [
                 'label'     => __('Estimated dispatch'),
                 'tooltip'   => __('Estimated dispatch'),
                 'key'       => 'estimated_dispatch',
                 'icon'      => 'fal fa-truck',
-                'sub_label' => __('No estimated production date'),
-                'timestamp' => null,
+                'sub_label' => $estimatedProductionDate ? null : __('No estimated production date'),
+                'timestamp' => $estimatedProductionDate,
             ];
         }
 
-        // TODO: Source should come from the Supplier/Agent, which will likely store a
-        // "Delivery time (days)" (e.g. in a json data column). estimated_delivery would then be
-        // estimated_dispatch + delivery days, and once dispatched it becomes the stock delivery estimated
-        // received. No such field yet, so shows "No estimated delivery date".
+        // TODO: Default should come from the Supplier/Agent "Delivery time (days)" (no such field yet).
+        // While the purchase order is not confirmed, only a sub label should show
+        // (e.g. "Estimated 30 days after confirmation"); once confirmed, the default timestamp is
+        // calculated as estimated dispatch + delivery days, and once dispatched it becomes the
+        // stock delivery estimated received date.
+        $estimatedReceivingDate = Arr::get($purchaseOrder->data, 'estimated_receiving_date');
+
         $timeline['estimated_delivery'] = [
             'label'     => __('Estimated delivery'),
             'tooltip'   => __('Estimated delivery'),
             'key'       => 'estimated_delivery',
-            'sub_label' => __('No estimated delivery date'),
-            'timestamp' => null,
+            'sub_label' => $estimatedReceivingDate ? null : __('No estimated delivery date'),
+            'timestamp' => $estimatedReceivingDate,
         ];
 
         return $timeline;
