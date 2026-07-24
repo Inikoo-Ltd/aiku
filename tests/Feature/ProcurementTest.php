@@ -60,6 +60,7 @@ use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 
@@ -448,10 +449,17 @@ test('change purchase order state to confirmed', function ($purchaseOrder) {
 test('revert purchase order state to submitted', function ($purchaseOrder) {
     $purchaseOrder->refresh();
 
-    $purchaseOrder = RevertPurchaseOrderToSubmitted::make()->action($purchaseOrder);
+    $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, [
+        'estimated_production_date' => '2026-07-27',
+        'estimated_receiving_date'  => '2026-08-31',
+    ]);
+
+    $purchaseOrder = RevertPurchaseOrderToSubmitted::make()->action($purchaseOrder->refresh());
 
     expect($purchaseOrder->state)->toEqual(PurchaseOrderStateEnum::SUBMITTED)
-        ->and($purchaseOrder->confirmed_at)->toBeNull();
+        ->and($purchaseOrder->confirmed_at)->toBeNull()
+        ->and(Arr::get($purchaseOrder->data, 'estimated_production_date'))->toBeNull()
+        ->and(Arr::get($purchaseOrder->data, 'estimated_receiving_date'))->toBeNull();
 
     $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
 
