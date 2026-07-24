@@ -11,6 +11,8 @@ import { faHelmetBattle, faStar, faGlobe } from "@fas"
 import { faCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
+import { ctrans } from '@/Composables/useTrans'
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
 library.add(faHelmetBattle, faStar, faCircle, faGlobe)
 
@@ -134,17 +136,20 @@ const groupPositionList = {
             {
                 slug: "gp-clk", // Note, this is not slug is job position code
                 grade: "clerk-1",
-                label: trans("Clerk")
+                label: trans("Clerk"),
+                
             },
             {
                 slug: "gp-md", // Note, this is not slug is job position code
                 grade: "clerk-2",
-                label: trans("Media")
+                label: trans("Media"),
+                information: ctrans('This role can only manage media. Cannot edit or delete other data.')
             },
             {
                 slug: "gp-vw", // Note, this is not slug is job position code
                 grade: "clerk-3",
-                label: trans("Viewer")
+                label: trans("Viewer"),
+                information: ctrans('This role can only view the data. Cannot edit or delete.')
             },
         ]
         // value: null
@@ -258,6 +263,7 @@ const organisationPositionCounts = ref({})
                                                     ]">
                                                         {{ subDepartment.label }}
                                                     </span>
+                                                    <InformationIcon v-if="subDepartment.information" :information="subDepartment.information" class="ml-1" />
                                                 </div>
                                             </button>
                                         </template>
