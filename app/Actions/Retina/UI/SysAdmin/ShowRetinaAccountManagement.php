@@ -14,6 +14,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
+use App\Models\Dispatching\Shipper;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
@@ -118,6 +119,19 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'type'  => 'input',
                                         'label' => 'UKIMS',
                                         'value' => $customer->ukims
+                                    ],
+                                    'shipper_id'               => [
+                                        'type'        => 'select',
+                                        'label'       => __('Preferred shipping'),
+                                        'placeholder' => __('Select preferred shipping'),
+                                        'value'       => $customer->shipper_id,
+                                        'options'     => Shipper::where('organisation_id', $this->organisation->id)
+                                            ->where('status', true)
+                                            ->get()->map(fn (Shipper $shipper) => [
+                                            'value' => $shipper->id,
+                                            'label' => $shipper->name,
+                                        ])->values()->all(),
+                                        'searchable'  => true,
                                     ],
                                     'tax_number'       => [
                                         'type'          => 'tax_number',

@@ -156,6 +156,29 @@ class UpdateShop extends OrgAction
             }
         }
 
+        if (Arr::has($modelData, 'preferred_shipping')) {
+            $preferredShippingRows = Arr::pull($modelData, 'preferred_shipping');
+
+            $keptIds = [];
+            foreach ($preferredShippingRows as $row) {
+                $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode', 'important']);
+
+                if (Arr::get($row, 'id')) {
+                    $shop->preferredShippings()->whereKey($row['id'])->update($rowData);
+                    $keptIds[] = $row['id'];
+                } else {
+                    data_set($rowData, 'group_id', $shop->group_id);
+                    data_set($rowData, 'organisation_id', $shop->organisation_id);
+
+                    $preferredShipping = $shop->preferredShippings()->create($rowData);
+                    $keptIds[]         = $preferredShipping->id;
+                }
+            }
+
+            $shop->preferredShippings()->whereNotIn('id', $keptIds)->delete();
+
+        }
+
         $sesFailoverAuditOld = [];
         $sesFailoverAuditNew = [];
 
@@ -850,6 +873,12 @@ class UpdateShop extends OrgAction
             'banned_countries.banned_list.*.billing'                  => ['required', 'boolean'],
             'banned_countries.banned_list.*.delivery'                 => ['required', 'boolean'],
             'banned_countries.banned_list.*.ip_block'                 => ['required', 'boolean'],
+            'preferred_shipping'                                      => ['sometimes', 'array'],
+            'preferred_shipping.*.id'                                 => ['sometimes', 'nullable', 'integer', Rule::exists('preferred_shippings', 'id')->where('shop_id', $this->shop->id)],
+            'preferred_shipping.*.shipper_id'                         => ['required', 'integer', Rule::exists('shippers', 'id')->where('organisation_id', $this->shop->organisation_id)],
+            'preferred_shipping.*.country_id'                         => ['sometimes', 'nullable', 'integer', Rule::exists('countries', 'id')->where('status', true)],
+            'preferred_shipping.*.postcode'                           => ['sometimes', 'nullable', 'string', 'max:255'],
+            'preferred_shipping.*.important'                          => ['sometimes', 'boolean'],
         ];
 
         $channelIds = SalesChannel::pluck('id');

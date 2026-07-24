@@ -18,6 +18,7 @@ use App\Models\CRM\Customer;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Traits\SanitizeInputs;
 
@@ -77,6 +78,12 @@ class UpdateRetinaCustomer extends RetinaAction
             'tags'                         => ['sometimes', 'array'],
             'eori'                         => ['sometimes', 'nullable', 'string', 'max:20'],
             'ukims'                        => ['sometimes', 'nullable', 'string', 'max:255'],
+            'shipper_id'                   => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('shippers', 'id')->where('organisation_id', $this->shop->organisation_id),
+            ],
             'is_gift_opted_out'            => ['sometimes', 'boolean'],
             'identity_document_number'     => ['sometimes', 'nullable', 'string'],
             'identity_document_number_alt' => ['sometimes', 'nullable', 'string'],

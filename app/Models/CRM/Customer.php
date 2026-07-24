@@ -26,6 +26,7 @@ use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\AllegroUser;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
@@ -140,6 +141,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed>|null $contact_name_components
  * @property string|null $traffic_sources
  * @property int|null $master_shop_id
+ * @property int|null $shipper_id
  * @property bool $is_re recargo de equivalencia
  * @property string|null $post_source_id
  * @property bool $is_credit_customer Sage credit customer flag
@@ -187,6 +189,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Payment> $payments
  * @property-read Collection<int, \App\Models\CRM\PollReply> $pollReplies
  * @property-read Collection<int, Portfolio> $portfolios
+ * @property-read Shipper|null $shipper
  * @property-read Collection<int, Asset> $products
  * @property-read Collection<int, \App\Models\CRM\Prospect> $prospects
  * @property-read Collection<int, ReturnDeliveryNote> $returnDeliveryNotes
@@ -495,6 +498,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function deliveryAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class, 'delivery_address_id');
+    }
+
+    public function shipper(): BelongsTo
+    {
+        return $this->belongsTo(Shipper::class);
     }
 
     public function portfolios(): HasMany
