@@ -19,6 +19,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisProductAlternatives;
 use App\Actions\Catalogue\Product\Json\GetIrisProductEcomOrdering;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
@@ -73,6 +74,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('product-last-seen/{webpage:id}', GetIrisProductLastSeen::class)->name('product_last_seen.index')->withoutScopedBindings()->whereNumber('webpage');
     Route::post('product-last-seen/{webpage:id}', StoreIrisProductLastSeen::class)->name('product_last_seen.store')->withoutScopedBindings();
+    Route::get('product/{product:id}/alternatives', GetIrisProductAlternatives::class)->name('product.alternatives')->withoutScopedBindings()->whereNumber('product');
 
     Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue');
     Route::get('search/catalogue-page', SearchIrisCataloguePage::class)->name('search.catalogue_page');
