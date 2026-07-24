@@ -126,7 +126,13 @@ task('deploy:refresh-vue', function () {
 
 desc('Reload octane after deployment');
 task('artisan:octane:reload', function () {
-    artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
+    // Non-fatal: if octane isn't running (fresh box / supervisor will start it),
+    // reload has nothing to signal — don't fail the whole deploy over it.
+    try {
+        artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>octane:reload skipped: '.$e->getMessage().'</comment>');
+    }
 });
 
 desc('Save ssr checksums');
