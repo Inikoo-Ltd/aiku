@@ -13,10 +13,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisProductLastSeen extends IrisAction
 {
-    private ?string $cookieId = null;
     private Webpage $webpage;
 
-    public function handle(Webpage $webpage): LengthAwarePaginator
+    public function handle(Webpage $webpage)
     {
         $queryBuilder = QueryBuilder::for(Product::class)
             ->join('product_last_seens', 'product_last_seens.webpage_id', '=', 'products.webpage_id')
@@ -32,10 +31,7 @@ class GetIrisProductLastSeen extends IrisAction
             'product_last_seens.last_seen_at',
         ]);
 
-        return $queryBuilder
-            ->orderByDesc('product_last_seens.last_seen_at')
-            ->withIrisPaginator(25)
-            ->withQueryString();
+        return $queryBuilder->first();
     }
 
     public function authorize(ActionRequest $request): bool
@@ -43,7 +39,7 @@ class GetIrisProductLastSeen extends IrisAction
         return $this->webpage->website_id !== $this->website->id;
     }
 
-    public function asController(Webpage $webpage, ActionRequest $request): LengthAwarePaginator
+    public function asController(Webpage $webpage, ActionRequest $request)
     {
         $this->webpage = $webpage;
         $this->initialisation($request);
@@ -51,10 +47,8 @@ class GetIrisProductLastSeen extends IrisAction
         return $this->handle($webpage);
     }
 
-    public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
+    public function jsonResponse($lastSeen): AnonymousResourceCollection
     {
-        return IrisProductLastSeenResource::collection($products)->additional([
-            'cookie_id' => $this->cookieId
-        ]);
+        return IrisProductLastSeenResource::make($lastSeen);
     }
 }
