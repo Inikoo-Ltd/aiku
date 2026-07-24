@@ -8,33 +8,53 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property int $id
- * @property string $state
- * @property float $unit_quantity
- * @property float $unit_quantity_checked
- * @property float $unit_quantity_placed
- * @property int $org_stock_id
- * @property string $org_stock_slug
- * @property string $org_stock_code
- * @property string $org_stock_name
- */
 class StockDeliveryItemResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var StockDeliveryItem $item */
+        $item = $this->resource;
+
+        $supplierProduct = $item->supplierProduct;
+
         return [
-            'id'                    => $this->id,
-            'state'                 => $this->state,
-            'unit_quantity'         => $this->unit_quantity,
-            'unit_quantity_checked' => $this->unit_quantity_checked,
-            'unit_quantity_placed'  => $this->unit_quantity_placed,
-            'org_stock_id'          => $this->org_stock_id,
-            'org_stock_slug'        => $this->org_stock_slug,
-            'org_stock_code'        => $this->org_stock_code,
-            'org_stock_name'        => $this->org_stock_name,
+            'id'                    => $item->id,
+            'slug'                  => $supplierProduct?->slug,
+            'code'                  => $supplierProduct?->code,
+            'name'                  => $supplierProduct?->name,
+            'units_per_pack'        => $supplierProduct?->units_per_pack,
+            'units_per_carton'      => $supplierProduct?->units_per_carton,
+            'unit_quantity'         => $item->unit_quantity,
+            'unit_quantity_checked' => $item->unit_quantity_checked,
+            'unit_quantity_placed'  => $item->unit_quantity_placed,
+            'net_amount'            => $item->net_amount,
+            'net_currency'          => $supplierProduct?->currency?->code,
+            'org_net_amount'        => $item->org_net_amount,
+            'org_currency'          => $item->organisation?->currency?->code,
+            'org_exchange'          => $item->org_exchange,
+            'weight'                => $item->weight === null ? null : (float) $item->weight,
+            'volume'                => $item->volume === null ? null : (float) $item->volume,
+            'state'                 => $item->state->value,
+            'state_label'           => StockDeliveryItemStateEnum::labels()[$item->state->value],
+            'state_icon'            => StockDeliveryItemStateEnum::stateIcon()[$item->state->value],
+            'org_stock_id'          => $item->org_stock_id,
+            'org_stock_slug'        => $item->org_stock_slug,
+            'org_stock_code'        => $item->org_stock_code,
+            'org_stock_name'        => $item->org_stock_name,
+            'confirmRoute'          => $item->state === StockDeliveryItemStateEnum::IN_PROCESS ? [
+                'name'       => 'grp.models.stock-delivery-item.confirm',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
+            'readyToShipRoute'      => $item->state === StockDeliveryItemStateEnum::CONFIRMED ? [
+                'name'       => 'grp.models.stock-delivery-item.ready-to-ship',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
         ];
     }
 }

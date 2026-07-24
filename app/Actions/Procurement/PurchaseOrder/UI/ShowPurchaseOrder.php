@@ -461,7 +461,7 @@ class ShowPurchaseOrder extends OrgAction
         return [
             'total_delivery_items'     => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_except_cancelled') : null,
             'total_placed_items'       => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_state_placed') : null,
-            'is_delivery_items_active' => $rank !== false && $rank >= array_search(PurchaseOrderDeliveryStateEnum::CONFIRMED->value, $progression, true),
+            'is_delivery_items_active' => $hasStockDelivery,
             'is_placed_items_active'   => $rank !== false && $rank >= array_search(PurchaseOrderDeliveryStateEnum::RECEIVED->value, $progression, true),
         ];
     }
