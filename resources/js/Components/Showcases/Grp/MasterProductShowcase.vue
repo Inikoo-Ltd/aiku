@@ -68,6 +68,7 @@ const props = defineProps<{
 	handleTabUpdate: Function
 	salesData?: any
 	data: {
+		can_edit: boolean
 		availability_status: {
 			is_for_sale: boolean
 			product: {}[]
@@ -337,7 +338,7 @@ const isModalProductForSale = ref(false)
 			<div class="text-left text-lg">
 				{{ trans('Product For Sale Statuses') }}
 			</div>
-			<div class="justify-self-end text-lg">
+			<div v-if="data.can_edit" class="justify-self-end text-lg">
 				<FontAwesomeIcon
 					icon="fal fa-edit"
 					class="hover:cursor-pointer hover:opacity-80"

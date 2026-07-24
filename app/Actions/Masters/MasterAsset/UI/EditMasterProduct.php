@@ -18,10 +18,12 @@ use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 
 class EditMasterProduct extends GrpAction
 {
     use WithMasterProductNavigation;
+    use WithMastersAuthorisation;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {

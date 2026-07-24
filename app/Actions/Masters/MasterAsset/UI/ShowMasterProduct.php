@@ -15,7 +15,7 @@ use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterAsset\GetMasterProductImages;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
@@ -39,7 +39,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterProduct extends GrpAction
+class ShowMasterProduct extends OrgAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -66,7 +66,7 @@ class ShowMasterProduct extends GrpAction
         $this->parent = $masterShop;
         $group        = group();
 
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -75,7 +75,7 @@ class ShowMasterProduct extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -84,7 +84,7 @@ class ShowMasterProduct extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -92,7 +92,7 @@ class ShowMasterProduct extends GrpAction
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $this->parent = $masterDepartment;
-        $this->initialisation($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -103,7 +103,7 @@ class ShowMasterProduct extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -224,7 +224,7 @@ class ShowMasterProduct extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        [
+                        $this->canEdit ? [
                             'key'   => 'edit',
                             'type'  => 'button',
                             'style' => 'edit',
@@ -232,7 +232,7 @@ class ShowMasterProduct extends GrpAction
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ] : false,
                         $this->canDelete ? [
                             'key'   => 'delete',
                             'type'  => 'button',
@@ -242,7 +242,7 @@ class ShowMasterProduct extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        [
+                        $this->canEdit ? [
                             'key'   => 'assign',
                             'type'  => 'button',
                             'style' => 'create',
@@ -251,9 +251,9 @@ class ShowMasterProduct extends GrpAction
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ] : false,
                     ],
-                    'subNavigation'        => $this->getMasterProductsSubNavigation($masterAsset),
+                    'subNavigation'        => $this->getMasterProductsSubNavigation($masterAsset, $this->canEdit),
                 ],
                 'masterAsset'          => $masterAsset,
                 'currency'             => $masterAsset->group->currency,

@@ -13,7 +13,7 @@ use App\Models\Masters\MasterAsset;
 
 trait WithMasterProductSubNavigation
 {
-    protected function getMasterProductsSubNavigation(MasterAsset $masterProduct): array
+    protected function getMasterProductsSubNavigation(MasterAsset $masterProduct, bool $canEdit = false): array
     {
         $masterShop = $masterProduct->masterShop;
         $currentRoute = request()->route()->getName();
@@ -74,6 +74,7 @@ trait WithMasterProductSubNavigation
                     'tooltip' => __('Products in shop')
                 ]
             ],
+            'can_edit' => $canEdit
         ];
     }
 
