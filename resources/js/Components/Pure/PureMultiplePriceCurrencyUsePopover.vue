@@ -118,7 +118,9 @@ const recalculateDerivedPrices = () => {
 
 const onUpdate = () => {
     recalculateDerivedPrices()
-    emits('update:modelValue', prices.value)
+    emits('update:modelValue', Object.fromEntries(
+        Object.entries(prices.value).map(([code, price]) => [code, { ...price }])
+    ))
 }
 
 watch(baseCurrencyCode, onUpdate)
