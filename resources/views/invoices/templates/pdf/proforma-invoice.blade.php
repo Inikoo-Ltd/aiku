@@ -306,13 +306,13 @@
 
                 @if($pro_mode)
                     <td style="text-align:right">
-                        @if($transaction->quantity==0 || $transaction->quantity==null)
-                            {{ $order->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                        @if(!$transaction->quantity_ordered || $transaction->quantity_ordered == 0)
+                            {{ $order->currency->symbol }} {{ number_format((float) optional($transaction->historicAsset)->price, 2) }}
                         @elseif($transaction->historicAsset)
-                            {{ $order->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
+                            {{ $order->currency->symbol . ' ' . number_format((float) $transaction->net_amount / $transaction->quantity_ordered, 2) }}
                         @endif
                     </td>
-                    <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
+                    <td style="text-align:right">{{  trimDecimalZeros($transaction->quantity_ordered) }}</td>
                 @else
                     <td style="text-align:right">{{ $discountFactor > 0 ? percentage($discountFactor, 1) : '-' }}</td>
                     <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity_ordered)  }}</td>
