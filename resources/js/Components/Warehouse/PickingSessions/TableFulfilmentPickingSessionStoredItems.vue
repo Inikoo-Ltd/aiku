@@ -929,7 +929,7 @@ const onDispatchPalletReturn = async () => {
                                 <div
                                     v-for="palletStoredItem in getRequestedPallets(storedItem)"
                                     :key="palletStoredItem.id"
-                                    class="flex items-center gap-x-4"
+                                    class="flex w-fit items-center gap-x-4"
                                 >
                                     <div class="min-w-[150px]">
                                         <Link
@@ -1021,11 +1021,11 @@ const onDispatchPalletReturn = async () => {
                                             isRowPicking(storedItem) ||
                                             (isPickingFinished() && storedItem.pallet_return_state !== 'picked')
                                         "
-                                        class="flex items-center gap-x-4 ml-auto"
+                                        class="flex items-center gap-x-4"
                                     >
                                         <div class="shrink-0">
                                             <template v-if="isRowPicking(storedItem)">
-                                                <div class="grid gap-y-1">
+                                                <div class="grid min-w-[480px] gap-y-1">
                                                     <div
                                                         v-if="getRemainingActionQuantity(palletStoredItem) > 0"
                                                         class="flex items-center justify-between gap-x-3"
@@ -1281,7 +1281,7 @@ const onDispatchPalletReturn = async () => {
         </template>
 
         <template #cell(actions)="{ item }">
-            <div v-if="isFirstReturnRow(item) && (isPickingFinished() || isPackingFinished())" class="flex justify-end gap-x-2">
+            <div v-if="isFirstReturnRow(item) && (isPickingFinished() || isPackingFinished())" class="flex flex-wrap justify-end items-center gap-2 whitespace-nowrap">
                 <template v-if="item?.pallet_return_state === 'picking'">
                     <Button
                         icon="fal fa-save"
