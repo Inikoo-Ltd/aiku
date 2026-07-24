@@ -25,6 +25,22 @@ export const useLocaleStore = defineStore("locale", () => {
 		return new Intl.NumberFormat(locale_iso.value || language.value.code).format(number)
 	}
 
+	// Derive the locale from the currency's home country so the amount is laid out
+	// the way that country writes it (e.g. RON -> ro-RO -> "80,09 lei", not "lei 80.09").
+	// The first two letters of an ISO 4217 currency code are the ISO 3166 country code.
+	const localeForCurrency = (currencyCode: string): string | undefined => {
+		if (!currencyCode) {
+			return locale_iso.value || language.value.code
+		}
+		try {
+			const region = currencyCode.slice(0, 2).toUpperCase()
+			const maximized = new Intl.Locale("und", { region }).maximize()
+			return `${maximized.language}-${region}`
+		} catch {
+			return locale_iso.value || language.value.code
+		}
+	}
+
 	const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
 		// if (typeof amount === "undefined" || amount === null) return 0
 		const getAmount = amount ?? 0
@@ -33,10 +49,11 @@ export const useLocaleStore = defineStore("locale", () => {
 		}
 
 		const num = typeof getAmount === "string" ? parseFloat(getAmount) : (getAmount || 0)
+		const resolvedCurrency = currencyInertia.value?.code || currencyCode || ''
 
-		const formatter = new Intl.NumberFormat(language.value.code, {
-			style: (currencyCode || currencyInertia.value?.code) ? "currency" : "decimal",
-			currency: currencyInertia.value?.code || currencyCode || '',
+		const formatter = new Intl.NumberFormat(localeForCurrency(resolvedCurrency), {
+			style: resolvedCurrency ? "currency" : "decimal",
+			currency: resolvedCurrency,
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
 			currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.
@@ -46,9 +63,11 @@ export const useLocaleStore = defineStore("locale", () => {
 	};
 
 	const currencySymbolNarrow = (currencyCode: string) => {
-		const formatter = new Intl.NumberFormat(language.value.code, {
-			style: (currencyCode || currencyInertia.value?.code) ? "currency" : "decimal",
-			currency: currencyInertia.value?.code || currencyCode || '',
+		const resolvedCurrency = currencyInertia.value?.code || currencyCode || ''
+
+		const formatter = new Intl.NumberFormat(localeForCurrency(resolvedCurrency), {
+			style: resolvedCurrency ? "currency" : "decimal",
+			currency: resolvedCurrency,
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
 			currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.
