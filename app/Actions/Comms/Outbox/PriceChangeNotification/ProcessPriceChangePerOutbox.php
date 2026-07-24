@@ -63,27 +63,36 @@ class ProcessPriceChangePerOutbox
                 ->where('customer_sales_channels.platform_status', true);
         });
 
-        // check product
-        $baseQuery->join('products', function ($join) use ($last24Hours, $lastOutBoxSent) {
+        // check product (rebels that do not follow master pricing)
+        $baseQuery->join('products', function ($join) {
             $join->on('portfolios.item_id', '=', 'products.id');
             $join->where('products.is_for_sale', true);
-            $join->where('products.price_updated_at', '>', $last24Hours);
+            $join->where('products.not_follow_master_prices', true);
             $join->whereIn('products.state', [
                 ProductStateEnum::ACTIVE->value,
                 ProductStateEnum::DISCONTINUING->value,
             ]);
+            $join->whereNull('products.deleted_at');
+            $join->whereNotNull('products.master_product_id');
+        });
+
+        // check master asset price/rrp change from the audit trail
+        $baseQuery->join('audits', function ($join) use ($last24Hours, $lastOutBoxSent) {
+            $join->on('audits.auditable_id', '=', 'products.master_product_id')
+                ->where('audits.auditable_type', 'MasterAsset')
+                ->where('audits.event', 'updated')
+                ->where('audits.created_at', '>', $last24Hours)
+                ->whereRaw("(jsonb_exists(audits.new_values, 'price') OR jsonb_exists(audits.new_values, 'rrp'))");
 
             if ($lastOutBoxSent) {
-                $join->where('products.price_updated_at', '>', $lastOutBoxSent);
+                $join->where('audits.created_at', '>', $lastOutBoxSent);
             }
-
-            $join->whereNull('products.deleted_at');
         });
 
         $baseQuery->select(
             'customers.id',
             'customers.email',
-            DB::raw('STRING_AGG(products.id::TEXT, \',\' ORDER BY products.id) AS product_ids')
+            DB::raw('STRING_AGG(DISTINCT products.id::TEXT, \',\' ORDER BY products.id::TEXT) AS product_ids')
         );
         $baseQuery->groupBy('customers.id');
 
