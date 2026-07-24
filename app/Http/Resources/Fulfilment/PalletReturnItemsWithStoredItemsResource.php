@@ -15,6 +15,7 @@ use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 /**
  * @property mixed $id
@@ -158,8 +159,25 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                             'code' => $palletStoredItem->pallet->location->code ?? null
                         ] : null
                     ];
-                }),
+                })
+                ->pipe(fn (Collection $palletStoredItems) => self::sortPalletStoredItems($palletStoredItems)),
             'total_quantity' => (int) $this->total_quantity,
         ];
+    }
+
+    /**
+     * @param  Collection<int, array{id: int, reference: string|null, location: array{code: string|null}|null}>  $palletStoredItems
+     * @return Collection<int, array{id: int, reference: string|null, location: array{code: string|null}|null}>
+     */
+    public static function sortPalletStoredItems(Collection $palletStoredItems): Collection
+    {
+        return $palletStoredItems
+            ->sortBy(fn (array $palletStoredItem) => sprintf(
+                '%s|%s|%012d',
+                $palletStoredItem['location']['code'] ?? '~',
+                $palletStoredItem['reference'] ?? '~',
+                (int) $palletStoredItem['id']
+            ))
+            ->values();
     }
 }

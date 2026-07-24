@@ -403,7 +403,7 @@ const isModalProductForSale = ref(false)
         <div>
 			<div class="grid justify-items-end pr-3 pb-2 gap-2">
 				<ReuseMasterPriceBlock
-					:title="trans('Master Price')"
+					:title="trans('Outer Price ')"
 					:prices="data.masterProduct.master_prices"
 					:rebelList="rebelPriceList"
 					:toggleRebel="toggleRebelPrice"
@@ -438,7 +438,7 @@ const isModalProductForSale = ref(false)
 					</div>
 				</Popover>
 				<ReuseMasterPriceBlock
-					:title="trans('Master RRP')"
+					:title="trans('RRP / Units')"
 					:prices="data.masterProduct.master_rrp"
 					:rebelList="rebelRrpList"
 					:toggleRebel="toggleRebelRrp"

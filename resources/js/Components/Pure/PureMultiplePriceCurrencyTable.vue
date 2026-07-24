@@ -43,6 +43,8 @@ const props = withDefaults(defineProps<{
     visibleCurrencyCodes?: string[]
     autoFromCost?: boolean
     autoMultiplier?: number
+    alwaysIndependentCurrencyCodes?: string[]
+    selfCostCurrencyCodes?: string[]
 }>(), {
     label: 'Price',
     color: 'blue',
@@ -53,7 +55,9 @@ const props = withDefaults(defineProps<{
     unitsPerOuter: 1,
     autoFromCost: false,
     autoMultiplier: 2.4,
-    visibleCurrencyCodes: () => ['GBP', 'EUR']
+    visibleCurrencyCodes: () => ['GBP', 'EUR'],
+    alwaysIndependentCurrencyCodes: () => ['GBP'],
+    selfCostCurrencyCodes: () => []
 })
 
 const emits = defineEmits<{
@@ -101,6 +105,10 @@ const currencyList = computed(
 
 const baseCurrencyCode = ref('EUR')
 
+const isAlwaysIndependent = (code: string) => props.alwaysIndependentCurrencyCodes.includes(code)
+
+const isSelfCost = (code: string) => props.selfCostCurrencyCodes.includes(code)
+
 const visibleCurrencies = computed(
     () => currencyList.value.filter(currency => props.visibleCurrencyCodes.includes(currency.code))
 )
@@ -124,7 +132,7 @@ const buildPrices = (): Record<string, CurrencyPrice> => {
 
         prices[currency.code] = {
             value: rawValue == null || rawValue === '' ? null : Number(rawValue),
-            independent: existing?.independent ?? false
+            independent: isAlwaysIndependent(currency.code) ? true : (existing?.independent ?? false)
         }
 
         return prices
@@ -160,11 +168,22 @@ const recalculateDerivedPrices = () => {
 
     currencyList.value.forEach(currency => {
         const entry = prices.value[currency.code]
-        const ratio = getRatio(currency)
 
         if (!entry || entry.independent || currency.code === baseCurrencyCode.value) {
             return
         }
+
+        if (props.autoFromCost && isSelfCost(currency.code)) {
+            const cost = props.costs?.[currency.code]
+
+            entry.value = cost == null
+                ? null
+                : Math.round(cost * props.autoMultiplier * 100) / 100
+
+            return
+        }
+
+        const ratio = getRatio(currency)
 
         entry.value = basePrice == null || ratio == null
             ? null
@@ -276,6 +295,7 @@ const rows = computed(() => {
                     :cost="costs?.[row.currency.code]"
                     :readonly="readonly"
                     :isBase="row.isBase"
+                    :alwaysIndependent="isAlwaysIndependent(row.currency.code)"
                     :autoMode="autoFromCost"
                     @change="onUpdate"
                 >

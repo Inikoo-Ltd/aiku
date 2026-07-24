@@ -55,8 +55,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('basket/transaction-data', GetIrisBasketTransactions::class)->name('basket.transaction_data');
 
-    Route::get('zentrada-web-api', ZentradaWebApi::class)->name('zentrada_web_api');
-
     Route::get('product-category/{productCategory:id}/portfolio-data', GetIrisPortfoliosInProductCategory::class)->name('product_category.portfolio_data')->whereNumber('productCategory');
     Route::get('product-category/{productCategory:id}/transaction-data', GetIrisBasketTransactionsInProductCategory::class)->name('product_category.transaction_data')->whereNumber('productCategory');
     Route::get('product/{product:id}/transaction-data', GetIrisBasketTransactionsInProduct::class)->name('product.transaction_data')->withoutScopedBindings()->whereNumber('product');
@@ -66,6 +64,8 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 
 
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
+    Route::get('zentrada-web-api', ZentradaWebApi::class)->name('zentrada_web_api');
+
     Route::get('basket-transaction-product-data/{transaction:id}', GetIrisBasketTransactionProductData::class)->name('basket_transaction_product_data')->whereNumber('transaction');
 
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
