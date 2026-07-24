@@ -45,24 +45,14 @@ const props = defineProps<{
                 <div v-if="props.data?.company" class="grid grid-flow-col justify-start items-center">
                     <FontAwesomeIcon fixed-width icon="fal fa-building" class="mr-4 text-gray-400" aria-hidden="true" />
                     {{ props.data?.company }}
-                    <div class="group cursor-pointer px-1.5 flex justify-center text-xl "
-                        @click="useCopyText(props.data?.company)">
-                        <FontAwesomeIcon icon="fal fa-copy"
-                            class="text-sm leading-none mr-1 opacity-20 group-hover:opacity-75 group-active:opacity-100"
-                            aria-hidden="true" />
-                    </div>
+                    <CopyButton :text="props.data?.company" class="ml-2" />
                 </div>
 
                 <!-- Contact name -->
                 <div v-if="props.data?.contact" class="grid grid-flow-col justify-start items-center">
                     <FontAwesomeIcon fixed-width icon="fal fa-male" class="mr-4 text-gray-400" aria-hidden="true" />
                     {{ props.data?.contact }}
-                    <div class="group cursor-pointer px-1.5 flex justify-center text-xl "
-                        @click="useCopyText(props.data?.contact)">
-                        <FontAwesomeIcon icon="fal fa-copy"
-                            class="text-sm leading-none mr-1 opacity-20 group-hover:opacity-75 group-active:opacity-100"
-                            aria-hidden="true" />
-                    </div>
+                    <CopyButton :text="props.data?.contact" class="ml-2" />
                 </div>
 
                 <!-- Currency -->

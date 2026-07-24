@@ -8,7 +8,9 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
@@ -22,25 +24,33 @@ class UpdateStockDeliveryItem extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
-    public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
-    {
-        return $this->update($stockDeliveryItem, $modelData, ['data']);
-    }
-
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
         }
+
         $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
 
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
+
+    public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
+    {
+        $stockDeliveryItem = $this->update($stockDeliveryItem, $modelData, ['data']);
+
+        StockDeliveriesHydrateItems::dispatch($stockDeliveryItem->stockDelivery)->delay($this->hydratorsDelay);
+        UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem::run($stockDeliveryItem);
+
+        return $stockDeliveryItem;
+    }
+
     public function rules(): array
     {
         $rules = [
             'unit_quantity' => ['sometimes', 'required', 'numeric', 'gte:0'],
         ];
+
         if (!$this->strict) {
             $rules['state'] = ['sometimes','required', Rule::enum(StockDeliveryItemStateEnum::class)];
             $rules['unit_quantity_checked'] = ['sometimes', 'numeric', 'gte:0'];
@@ -53,12 +63,9 @@ class UpdateStockDeliveryItem extends OrgAction
 
     public function action(StockDeliveryItem $stockDeliveryItem, array $modelData, int $hydratorsDelay = 0, bool $strict = true): StockDeliveryItem
     {
-
-        $this->asAction      = true;
-        $this->strict        = $strict;
-
+        $this->asAction       = true;
+        $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-
         $this->initialisation($stockDeliveryItem->organisation, $modelData);
 
         return $this->handle($stockDeliveryItem, $this->validatedData);
@@ -67,6 +74,7 @@ class UpdateStockDeliveryItem extends OrgAction
     public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): StockDeliveryItem
     {
         $this->initialisation($stockDeliveryItem->organisation, $request);
+
         return $this->handle($stockDeliveryItem, $this->validatedData);
     }
 

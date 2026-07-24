@@ -57,7 +57,7 @@ class ShowOrgSupplierProduct extends OrgAction
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
     {
         $this->parent = $orgAgent;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(OrgSupplierProductTabsEnum::values());
 
         return $this->handle($orgSupplierProduct);
     }
@@ -82,6 +82,7 @@ class ShowOrgSupplierProduct extends OrgAction
                 //     'next'     => $this->getNext($orgSupplierProduct, $request),
                 // ],
                 'pageHead'                                           => [
+                    'model' => __('Supplier Product'),
                     'icon'  =>
                         [
                             'icon'  => ['fal', 'box-usd'],

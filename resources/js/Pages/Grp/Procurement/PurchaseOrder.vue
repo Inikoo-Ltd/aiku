@@ -113,6 +113,10 @@ const props = defineProps < {
                 color: string
             }
             total_items: number
+            total_delivery_items: number | null
+            total_placed_items: number | null
+            is_delivery_items_active: boolean
+            is_placed_items_active: boolean
             weight: number | null
             volume: number | null
             is_weight_partial: boolean
@@ -706,6 +710,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                 <hr class="my-1 border-t border-gray-300" />
             </template>
 
+            <!-- Todo: Create Purchase Order Export as PDF -->
+
             <div class="flex justify-center gap-4">
                 <div class="flex items-center">
                     <FontAwesomeIcon
@@ -717,22 +723,30 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                     <span>{{ box_stats.second_block.total_items }}</span>
                 </div>
 
-                <div class="flex items-center text-gray-300">
+                <div
+                    class="flex items-center"
+                    :class="box_stats.second_block.is_delivery_items_active ? '' : 'text-gray-300'"
+                >
                     <FontAwesomeIcon
+                        v-tooltip="trans('Delivery items')"
         				icon="fas fa-arrow-circle-down"
         				aria-hidden="true"
         				fixed-width
     				/>
-                    <span>-</span>
+                    <span>{{ box_stats.second_block.total_delivery_items ?? '-' }}</span>
                 </div>
 
-                <div class="flex items-center text-gray-300">
+                <div
+                    class="flex items-center"
+                    :class="box_stats.second_block.is_placed_items_active ? '' : 'text-gray-300'"
+                >
                     <FontAwesomeIcon
+                        v-tooltip="trans('Placed items')"
         				icon="fas fa-inventory"
         				aria-hidden="true"
         				fixed-width
     				/>
-                    <span>-</span>
+                    <span>{{ box_stats.second_block.total_placed_items ?? '-' }}</span>
                 </div>
             </div>
 

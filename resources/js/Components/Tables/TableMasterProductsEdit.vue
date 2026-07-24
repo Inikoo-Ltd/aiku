@@ -147,8 +147,8 @@ const groupedColumnList = ref([
     {
         label: 'Pricing',
         items: [
-            { label: 'Price', value: 'master_prices' },
-            { label: 'RRP', value: 'master_rrps' },
+            { label: 'Outer Price', value: 'master_prices' },
+            { label: 'RRP/Unit', value: 'master_rrps' },
         ]
     },
     {
@@ -402,8 +402,24 @@ const onSelectFamily = (option: any) => {
                     </template>
                 </Column>
 
+                  <!-- Column: Units -->
+                <Column v-if="selectedColumns.includes('units')" field="units" header="Units" style="min-width: 6rem">
+                    <template #body="slotProps">
+                        <InputNumber
+                            v-model="slotProps.data.units"
+                            @input="(e) => slotProps.data.units = e?.value ?? 0"
+                            :maxFractionDigits="2"
+                            locale="en-US"
+                            :min="0"
+                            inputClass="text-right"
+                            fluid
+                            :disabled="true"
+                        />
+                    </template>
+                </Column>
+
                 <!-- Column: Price -->
-                <Column v-if="selectedColumns.includes('master_prices')" field="price" header="Price" sortable style="min-width: 18rem">
+                <Column v-if="selectedColumns.includes('master_prices')" field="price" header="Outer Price" sortable style="min-width: 18rem">
                     <template #body="slotProps">
                         <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_prices" :masterAsset="slotProps.data.id" :type_input="'price'" :currencies="currencies" />
                        <!--  <InputNumber
@@ -421,7 +437,7 @@ const onSelectFamily = (option: any) => {
                 </Column>
                 
                 <!-- Column: RRP -->
-                <Column v-if="selectedColumns.includes('master_rrps')" field="rrp" header="RRP" sortable style="min-width: 18rem">
+                <Column v-if="selectedColumns.includes('master_rrps')" field="rrp" header="RRP/Unit" sortable style="min-width: 18rem">
                     <template #body="slotProps">
                          <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_rrps" :masterAsset="slotProps.data.id" :type_input="'rrp'" :currencies="currencies" />
                        <!--  <InputNumber
@@ -472,20 +488,7 @@ const onSelectFamily = (option: any) => {
                     </template>
                 </Column>
 
-                <!-- Column: Units -->
-                <Column v-if="selectedColumns.includes('units')" field="units" header="Units" style="min-width: 6rem">
-                    <template #body="slotProps">
-                        <InputNumber
-                            v-model="slotProps.data.units"
-                            @input="(e) => slotProps.data.units = e?.value ?? 0"
-                            :maxFractionDigits="2"
-                            locale="en-US"
-                            :min="0"
-                            inputClass="text-right"
-                            fluid
-                        />
-                    </template>
-                </Column>
+              
 
                 <!-- Column: Unit -->
                 <Column v-if="selectedColumns.includes('unit')" field="unit" header="Unit" style="min-width: 8rem">
