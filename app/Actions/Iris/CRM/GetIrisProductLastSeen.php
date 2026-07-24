@@ -7,7 +7,7 @@ use App\Http\Resources\Catalogue\IrisProductLastSeenResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use App\Services\QueryBuilder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -16,7 +16,7 @@ class GetIrisProductLastSeen extends IrisAction
     private ?string $cookieId = null;
     private Webpage $webpage;
 
-    public function handle(Webpage $webpage): LengthAwarePaginatorContract
+    public function handle(Webpage $webpage): LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(Product::class)
             ->join('product_last_seens', 'product_last_seens.webpage_id', '=', 'products.webpage_id')
@@ -43,7 +43,7 @@ class GetIrisProductLastSeen extends IrisAction
         return $this->webpage->website_id !== $this->website->id;
     }
 
-    public function asController(Webpage $webpage, ActionRequest $request): LengthAwarePaginatorContract
+    public function asController(Webpage $webpage, ActionRequest $request): LengthAwarePaginator
     {
         $this->webpage = $webpage;
         $this->initialisation($request);
@@ -51,7 +51,7 @@ class GetIrisProductLastSeen extends IrisAction
         return $this->handle($webpage);
     }
 
-    public function jsonResponse(LengthAwarePaginatorContract $products): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
         return IrisProductLastSeenResource::collection($products)->additional([
             'cookie_id' => $this->cookieId
