@@ -30,7 +30,9 @@ use Lorisleiva\Actions\ActionRequest;
  *
  * 2. Borrow from the other shops of the same master shop, but only when this shop cannot fill the
  *    10 list with purchases of the last 30 days. A product that never sold here, or that has not
- *    sold here for the last 30 days, will use the dates of the other shops.
+ *    sold here for the last 30 days, will use the dates of the other shops. When that still cannot
+ *    fill the list, borrow from every shop in the group, across master shops, matching the same
+ *    physical product by its trade unit.
  *
  * 3. Displaying 10 list, max 3 can share the same date and one product can appear max 4 times.
  *    Prioritize unique products rather than repeated ones. The repeated products must be a purchase
@@ -73,6 +75,13 @@ class GetIrisLastOrderedProducts extends IrisAction
                 $candidates,
                 $this->getMasterShopCandidates($productCategory, $ignoredProductId)
             );
+
+            if ($this->needsMasterShopBoost($candidates)) {
+                $candidates = $this->mergeMasterShopCandidates(
+                    $candidates,
+                    $this->getGroupCandidates($productCategory, $ignoredProductId)
+                );
+            }
         }
 
         $products = $this->spreadOverDays($candidates);
@@ -110,6 +119,40 @@ class GetIrisLastOrderedProducts extends IrisAction
             ->where('invoice_transactions.model_type', 'Product')
             ->where('invoice_transactions.master_family_id', $productCategory->master_product_category_id)
             ->where('invoice_transactions.date', '>', now()->subDays(self::MASTER_SHOP_LOOKBACK_DAYS))
+            ->where(function ($query) {
+                $query->where('invoice_transactions.is_refund', false)
+                    ->orWhereNull('invoice_transactions.is_refund');
+            })
+            ->orderByRaw('products.id, invoice_transactions.date::date DESC, invoice_transactions.date DESC');
+
+        return $this->fetchCandidates($query, $ignoredProductId);
+    }
+
+    /** What every shop in the group sold of the same trade unit, put back on this shop's products. */
+    private function getGroupCandidates(ProductCategory $productCategory, ?string $ignoredProductId): Collection
+    {
+        $query = DB::table('invoice_transactions')
+            ->selectRaw('DISTINCT ON (products.id, invoice_transactions.date::date) products.id as product_id, products.code, products.name, products.web_images, webpages.canonical_url, invoice_transactions.date as submitted_at')
+            ->join('model_has_trade_units as seller_trade_units', function ($join) {
+                $join->on('seller_trade_units.model_id', '=', 'invoice_transactions.master_asset_id')
+                    ->where('seller_trade_units.model_type', 'MasterAsset');
+            })
+            ->join('model_has_trade_units as product_trade_units', function ($join) {
+                $join->on('product_trade_units.trade_unit_id', '=', 'seller_trade_units.trade_unit_id')
+                    ->where('product_trade_units.model_type', 'Product');
+            })
+            ->join('products', function ($join) use ($productCategory) {
+                $join->on('products.id', '=', 'product_trade_units.model_id')
+                    ->where('products.shop_id', $productCategory->shop_id)
+                    ->where('products.family_id', $productCategory->id);
+            })
+            ->join('webpages', 'products.webpage_id', '=', 'webpages.id')
+            ->where('invoice_transactions.model_type', 'Product')
+            ->where('invoice_transactions.date', '>', now()->subDays(self::MASTER_SHOP_LOOKBACK_DAYS))
+            ->where(function ($query) use ($productCategory) {
+                $query->where('invoice_transactions.master_family_id', '!=', $productCategory->master_product_category_id)
+                    ->orWhereNull('invoice_transactions.master_family_id');
+            })
             ->where(function ($query) {
                 $query->where('invoice_transactions.is_refund', false)
                     ->orWhereNull('invoice_transactions.is_refund');

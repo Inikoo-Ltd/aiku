@@ -125,12 +125,13 @@ class RepairTradeUnitsImageSlots
 
     public function getCommandSignature(): string
     {
-        return 'trade_units:repair_image_slots {tradeUnit?} {--dry-run}';
+        return 'trade_units:repair_image_slots {tradeUnit?} {--dry-run} {--force-propagate}';
     }
 
     public function asCommand(Command $command): int
     {
-        $dryRun = (bool) $command->option('dry-run');
+        $dryRun         = (bool) $command->option('dry-run');
+        $forcePropagate = (bool) $command->option('force-propagate');
 
         if ($slug = $command->argument('tradeUnit')) {
             $tradeUnit = TradeUnit::where('slug', $slug)->first();
@@ -165,10 +166,10 @@ class RepairTradeUnitsImageSlots
 
         TradeUnit::with('images')
             ->orderBy('id')
-            ->chunkById(1000, function ($tradeUnits) use (&$processed, &$fixedSlots, &$touchedUnits, &$overflowed, &$failures, $dryRun, $command, $bar) {
+            ->chunkById(1000, function ($tradeUnits) use (&$processed, &$fixedSlots, &$touchedUnits, &$overflowed, &$failures, $dryRun, $forcePropagate, $command, $bar) {
                 foreach ($tradeUnits as $tradeUnit) {
                     try {
-                        $result = $this->handle($tradeUnit, $dryRun);
+                        $result = $this->handle($tradeUnit, $dryRun, $forcePropagate);
 
                         $overflowed += $result['overflowed'];
 
