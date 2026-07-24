@@ -30,7 +30,7 @@ class UpdateMasterProductsBulkEdit extends OrgAction
         data_forget($modelData, '*.id');
 
         foreach ($masterAssets as $id => $masterAsset) {
-            UpdateMasterAsset::dispatch($masterAsset, $modelData[$id]);
+            UpdateMasterAsset::dispatch($masterAsset, $modelData[$id])->onQueue('urgent');
         }
 
         return $masterAssets;

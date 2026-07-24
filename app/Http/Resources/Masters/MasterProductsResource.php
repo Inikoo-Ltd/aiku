@@ -94,7 +94,7 @@ class MasterProductsResource extends JsonResource
             'units'                             => $this->units,
             'price'                             => $this->price,
             'rrp'                               => $this->rrp,
-            'master_price'                      => $this->master_price,
+            'master_prices'                      => $this->master_prices,
             'master_rrp'                        => $this->master_rrps,
             'status'                            => $this->status,
             'currency_code'                     => $this->currency_code,
