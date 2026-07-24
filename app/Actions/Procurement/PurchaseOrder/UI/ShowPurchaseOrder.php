@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
@@ -24,6 +25,7 @@ use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
@@ -218,6 +220,19 @@ class ShowPurchaseOrder extends OrgAction
                 ],
                 PurchaseOrderStateEnum::CONFIRMED => $purchaseOrder->stockDeliveries()->exists() ? [] : [
                     [
+                        'label'   => __('New Delivery'),
+                        'tooltip' => __('Create Stock Delivery from this Purchase Order'),
+                        'type'    => 'button',
+                        'style'   => 'create',
+                        'icon'    => 'fal fa-plus',
+                        'key'     => 'new_stock_delivery',
+                        'route'   => [
+                            'method'     => 'post',
+                            'name'       => 'grp.models.purchase-order.stock-delivery.store',
+                            'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                        ],
+                    ],
+                    [
                         'label'   => __('Undo Confirm'),
                         'tooltip' => __('Revert Purchase Order to Submitted'),
                         'type'    => 'button',
@@ -227,22 +242,6 @@ class ShowPurchaseOrder extends OrgAction
                         'route'   => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.purchase-order.undo-confirm',
-                            'parameters' => [
-                                'purchaseOrder' => $purchaseOrder->id,
-                            ],
-                        ],
-                    ],
-                ],
-                PurchaseOrderStateEnum::SETTLED => [
-                    [
-                        'label'   => __('Not Received'),
-                        'tooltip' => __('Not Received'),
-                        'type'    => 'button',
-                        'style'   => 'delete',
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.purchase-order.not-received',
                             'parameters' => [
                                 'purchaseOrder' => $purchaseOrder->id,
                             ],
@@ -279,8 +278,9 @@ class ShowPurchaseOrder extends OrgAction
                     ] : false,
                     'actions' => $actions,
                 ],
-                'data'        => PurchaseOrderResource::make($purchaseOrder),
-                'timelines'   => $this->getTimeline($purchaseOrder),
+                'data'                     => PurchaseOrderResource::make($purchaseOrder),
+                'timelines'                => $this->getTimeline($purchaseOrder),
+                'stock_delivery_timelines' => $this->getStockDeliveryTimelines($purchaseOrder),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $showProductsTab
@@ -434,6 +434,22 @@ class ShowPurchaseOrder extends OrgAction
         ];
 
         return $timeline;
+    }
+
+    public function getStockDeliveryTimelines(PurchaseOrder $purchaseOrder): array
+    {
+        return $purchaseOrder->stockDeliveries()->get()->map(fn (StockDelivery $stockDelivery) => [
+            'reference' => $stockDelivery->reference,
+            'state'     => $stockDelivery->state->value,
+            'route'     => [
+                'name'       => 'grp.org.procurement.stock_deliveries.show',
+                'parameters' => [
+                    'organisation'  => $purchaseOrder->organisation->slug,
+                    'stockDelivery' => $stockDelivery->slug,
+                ],
+            ],
+            'timeline'  => ShowStockDelivery::make()->getTimeline($stockDelivery, false),
+        ])->all();
     }
 
     public function getPrevious(PurchaseOrder $purchaseOrder, ActionRequest $request): ?array

@@ -56,6 +56,10 @@ const currencyList = computed(
 
 const baseCurrencyCode = ref('EUR')
 
+const alwaysIndependentCurrencyCodes = ['GBP']
+
+const isAlwaysIndependent = (code: string) => alwaysIndependentCurrencyCodes.includes(code)
+
 const visibleCurrencies = computed(
     () => currencyList.value.filter(currency => props.visibleCurrencyCodes.includes(currency.code))
 )
@@ -78,7 +82,7 @@ const buildPrices = (): Record<string, CurrencyPrice> => {
 
         prices[currency.code] = {
             value: existing?.value ?? null,
-            independent: existing?.independent ?? false
+            independent: isAlwaysIndependent(currency.code) ? true : (existing?.independent ?? false)
         }
 
         return prices
@@ -213,7 +217,7 @@ const saveRebel = async (rebel: PriceRebel) => {
             </template>
 
             <PriceCurrencyRow v-model="prices[currency.code]" :currency="currency" :readonly="readonly"
-                :disabled="!prices[currency.code].independent" required showIndependent @change="onUpdate" />
+                :disabled="!prices[currency.code].independent" required :showIndependent="!isAlwaysIndependent(currency.code)" @change="onUpdate" />
         </div>
 
         <div class="mt-0.5 flex items-center gap-x-2 pl-8">
@@ -247,7 +251,7 @@ const saveRebel = async (rebel: PriceRebel) => {
                             </template>
 
                             <PriceCurrencyRow v-model="prices[currency.code]" :currency="currency" :readonly="readonly"
-                                :disabled="!prices[currency.code].independent" showIndependent @change="onUpdate" />
+                                :disabled="!prices[currency.code].independent" :showIndependent="!isAlwaysIndependent(currency.code)" @change="onUpdate" />
                         </div>
                     </div>
                 </template>

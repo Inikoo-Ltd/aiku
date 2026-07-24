@@ -1,30 +1,29 @@
 <?php
 
-namespace App\Actions\Procurement\PurchaseOrder\UI;
+namespace App\Actions\GoodsIn\StockDelivery\UI;
 
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Models\Procurement\PurchaseOrder;
+use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetPurchaseOrderData
+class GetStockDeliveryData
 {
     use AsObject;
 
-    public function handle(PurchaseOrder $purchaseOrder): array
+    public function handle(StockDelivery $stockDelivery): array
     {
-        $data = $purchaseOrder->data ?? [];
+        $data = $stockDelivery->data ?? [];
 
         $isParcel  = Arr::get($data, 'delivery_type') === 'parcel';
         $incoterms = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
 
         $blueprint = [
             [
-                'title'  => __('Purchase order'),
+                'title'  => __('Stock delivery'),
                 'fields' => [
                     'delivery_type' => [
                         'type'               => 'select',
-                        'label'              => __('Delivery type'),
+                        'label'              => __('Stock delivery type'),
                         'value'              => Arr::get($data, 'delivery_type'),
                         'revisit_after_save' => true,
                         'options'            => [
@@ -35,22 +34,42 @@ class GetPurchaseOrderData
                     'reference'     => [
                         'type'  => 'readonly',
                         'label' => __('Public Id'),
-                        'value' => $purchaseOrder->reference,
+                        'value' => $stockDelivery->reference,
                     ],
                 ],
             ],
             [
-                'title'  => __('Payment terms'),
+                'title'  => __('Invoice'),
                 'fields' => [
-                    'payment_terms' => [
-                        'type'  => 'textarea',
-                        'label' => __('Payment terms'),
-                        'value' => Arr::get($data, 'payment_terms'),
+                    'invoice_number' => [
+                        'type'  => 'input',
+                        'label' => __('Invoice number'),
+                        'value' => Arr::get($data, 'invoice_number'),
+                    ],
+                    'invoice_date'   => [
+                        'type'  => 'date',
+                        'label' => __('Invoice date'),
+                        'value' => Arr::get($data, 'invoice_date'),
                     ],
                 ],
             ],
             [
-                'title'  => __('Delivery terms'),
+                'title'  => __('Estimated dates'),
+                'fields' => [
+                    'estimated_dispatched_date' => [
+                        'type'  => 'date',
+                        'label' => __('Estimated dispatched date'),
+                        'value' => Arr::get($data, 'estimated_dispatched_date'),
+                    ],
+                    'estimated_receiving_date'  => [
+                        'type'  => 'date',
+                        'label' => __('Estimated receiving date'),
+                        'value' => Arr::get($data, 'estimated_receiving_date'),
+                    ],
+                ],
+            ],
+            [
+                'title'  => __('Delivery rules'),
                 'fields' => [
                     'incoterm'         => [
                         'type'    => 'select',
@@ -78,45 +97,14 @@ class GetPurchaseOrderData
                     ],
                 ],
             ],
-            [
-                'title'  => __('Labels'),
-                'fields' => [
-                    'terms_and_conditions' => [
-                        'type'  => 'editor_v2',
-                        'label' => __('Terms and conditions'),
-                        'value' => Arr::get($data, 'terms_and_conditions'),
-                        'full'  => true,
-                    ],
-                ],
-            ],
         ];
-
-        if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED) {
-            array_splice($blueprint, 1, 0, [
-                [
-                    'title'  => __('Estimated process dates'),
-                    'fields' => [
-                        'estimated_production_date' => [
-                            'type'  => 'date',
-                            'label' => __('Estimated production date'),
-                            'value' => Arr::get($data, 'estimated_production_date'),
-                        ],
-                        'estimated_receiving_date'  => [
-                            'type'  => 'date',
-                            'label' => __('Estimated receiving date'),
-                            'value' => Arr::get($data, 'estimated_receiving_date'),
-                        ],
-                    ],
-                ],
-            ]);
-        }
 
         return [
             'blueprint'   => $blueprint,
             'updateRoute' => [
                 'method'     => 'patch',
-                'name'       => 'grp.models.purchase-order.update',
-                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                'name'       => 'grp.models.stock-delivery.update',
+                'parameters' => ['stockDelivery' => $stockDelivery->id],
             ],
         ];
     }

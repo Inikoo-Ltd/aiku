@@ -3,8 +3,8 @@
 namespace App\Actions\Maintenance\Masters\MasterProduct;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
@@ -15,97 +15,138 @@ class RepairMasterAssetHydratePrices
 {
     use AsAction;
 
-    public function handle(MasterAsset $masterAsset, Shop $baseShop, Collection $currenciesRate, ?Command $command = null)
+    /**
+     * @param Collection<int, Shop> $baseShops           one shop per currency, base currency first
+     * @param array<int, array<int, float|null>>  $baseCurrenciesExchange  [fromShopId][toShopId] => rate
+     */
+    public function handle(MasterAsset $masterAsset, Collection $baseShops, array $baseCurrenciesExchange, bool $dryRun = false, ?Command $command = null): void
     {
-        $baseProduct = $masterAsset->products->where('shop_id', $baseShop->id)->first();
+        $baseProducts = $masterAsset
+            ->products
+            ->whereIn('shop_id', $baseShops->pluck('id'))
+            ->sortBy(fn ($product) => [$product->state == ProductStateEnum::DISCONTINUED, $product->id])
+            ->groupBy('shop_id')
+            ->map->first();
 
-        if (!$baseProduct) {
+        if ($baseProducts->isEmpty()) {
             $command?->info("Master Asset: [{$masterAsset->code}] Skipped, no base product");
+
             return;
-        };
-
-        $hasPrice = false;
-        $hasRRP   = false;
-
-        $updateData = [];
-
-        if ($baseProduct->price) {
-            $updateData['master_prices']    = $currenciesRate->map(
-                fn ($ratio) => [
-                    'value'         => formatPrice($ratio, $baseProduct->price),
-                    'independent'   => false
-                ]
-            )->toArray();
-            $hasPrice = true;
         }
 
-        if ($baseProduct->rrp) {
-            $updateData['master_rrps']    = $currenciesRate->map(
-                fn ($ratio) => [
-                    'value'         => formatPrice($ratio, $baseProduct->rrp) / trimDecimalZeros($baseProduct->units),
-                    'independent'   => false
-                ]
-            )->toArray();
-            $hasRRP   = true;
+        $sourceShop    = $baseShops->first(fn ($shop) => $baseProducts->has($shop->id));
+        $sourceProduct = $baseProducts->get($sourceShop->id);
+
+        $prices = [];
+        $rrps   = [];
+
+        foreach ($baseShops as $shop) {
+            $product = $baseProducts->get($shop->id);
+            $rate    = $product ? 1 : $baseCurrenciesExchange[$sourceShop->id][$shop->id] ?? null;
+
+            if (!$rate) {
+                continue;
+            }
+
+            $price = formatPrice($rate, ($product ?? $sourceProduct)->price);
+            if ($price > 0) {
+                $prices[$shop->currency->code] = [
+                    'value'       => $price,
+                    'independent' => false
+                ];
+            }
+
+            $rrp = formatPrice($rate, ($product ?? $sourceProduct)->rrp);
+            if ($rrp > 0) {
+                $rrps[$shop->currency->code] = [
+                    'value'       => $rrp,
+                    'independent' => false
+                ];
+            }
         }
 
-        $masterAsset->updateQuietly(
-            $updateData
-        );
+        $modelData = [
+            'master_prices' => $prices,
+            'master_rrps'   => $rrps
+        ];
 
-
-        $setUpText = '';
-
-        if ($command && $hasPrice) {
-            $setUpText = '| Master Price hydrated |';
+        if ($eurPrice = data_get($prices, 'EUR.value')) {
+            $modelData['price'] = $eurPrice;
         }
 
-        if ($command && $hasRRP) {
-            $setUpText .= '| Master RRP hydrated |';
+        if ($eurRRP = data_get($rrps, 'EUR.value')) {
+            $modelData['rrp'] = $eurRRP;
         }
 
-        $command?->info("Master Asset: [{$masterAsset->code}] => $setUpText from $baseProduct->slug");
+        if (!$dryRun) {
+            $masterAsset->updateQuietly($modelData);
+        }
+
+        $expected       = $baseShops->count();
+        $additionalText = '';
+        if (count($prices) < $expected) {
+            $additionalText .= '| PRICE NOT FULLY HYDRATED ('.count($prices)."/$expected)";
+        }
+        if (count($rrps) < $expected) {
+            $additionalText .= '| RRP NOT FULLY HYDRATED ('.count($rrps)."/$expected)";
+        }
+
+        $prefix = $dryRun ? '[DRY RUN] ' : '';
+        $command?->info("{$prefix}Master Asset: [{$masterAsset->code}] => Hydrated {$additionalText}");
     }
 
-    // Shop as base, master_shop as target
-    public string $commandSignature = 'repair:master_asset_hydrate_prices {shop} {master_shop}';
+    public string $commandSignature = 'repair:master_asset_hydrate_prices {master_shop} {--dry-run : Compute and report without writing}';
 
-    public function asCommand(Command $command)
+    public function asCommand(Command $command): int
     {
-        $shopArgument       = $command->argument('shop');
-        $masterShopArgument = $command->argument('master_shop');
+        $masterShop = MasterShop::where('slug', $command->argument('master_shop'))->firstOrFail();
+        $dryRun     = (bool) $command->option('dry-run');
 
-        if (!$shopArgument || !$masterShopArgument) {
-            $command->error("Unable to process, Shop and Master Shop argument must be present");
-            return;
+        if ($dryRun) {
+            $command->warn('DRY RUN: no changes will be written');
         }
 
-        $baseShop       = Shop::where('slug', $shopArgument)->firstOrFail();
-        $baseCurrency   = $baseShop->currency;
+        $baseShops = Shop::where('master_shop_id', $masterShop->id)
+            ->with('currency')
+            ->orderBy('id')
+            ->get()
+            ->unique('currency_id')
+            ->sortBy(fn ($shop) => $shop->currency->code != 'EUR')
+            ->values();
 
-        $masterShop = MasterShop::where('slug', $masterShopArgument)->firstOrFail();
+        if ($baseShops->isEmpty()) {
+            $command->error("Master shop [{$masterShop->slug}] has no shops");
 
-        $shopCurrencies = Shop::where('master_shop_id', $masterShop->id)
-            ->whereNot('currency_id', $baseCurrency->id)
-            ->select('currency_id')
-            ->distinct()
-            ->get();
+            return 1;
+        }
 
-        $currencies     = Currency::whereIn('id', $shopCurrencies)->get()->keyBy('id');
-        $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseCurrency) {
-            $currencyRatio = GetCurrencyExchange::run($baseCurrency, $currency);
-            return [
-                $currency->code => round($currencyRatio, 2)
-            ];
-        });
+        $command->info('Preparing currency exchange (Eager Loading): '.$baseShops->pluck('currency.code')->join(', '));
+
+        $baseCurrenciesExchange = [];
+        foreach ($baseShops as $from) {
+            foreach ($baseShops as $to) {
+                if ($from->id === $to->id) {
+                    continue;
+                }
+
+                $rate = GetCurrencyExchange::run($from->currency, $to->currency);
+                if (!$rate) {
+                    $command->warn("No exchange rate {$from->currency->code} → {$to->currency->code}, those prices will be left out");
+                }
+
+                $baseCurrenciesExchange[$from->id][$to->id] = $rate;
+            }
+        }
 
         MasterAsset::where('master_shop_id', $masterShop->id)
-            ->with('products') // Eager load, this only does 1 query (SELECT * FROM PRODUCTS WHERE products.master_asset_id IN $masterAssets->ids), leave it be, it's not heavy, we'll chunk anyway
+            ->with('products')
             ->orderBy('id')
-            ->chunkById(250, function ($chunks) use ($baseShop, $currenciesRate, $command) {
+            ->chunkById(250, function ($chunks) use ($baseShops, $baseCurrenciesExchange, $dryRun, $command) {
                 foreach ($chunks as $masterAsset) {
-                    $this->handle($masterAsset, $baseShop, $currenciesRate, $command);
+                    $this->handle($masterAsset, $baseShops, $baseCurrenciesExchange, $dryRun, $command);
                 }
             });
+
+        return 0;
     }
 }

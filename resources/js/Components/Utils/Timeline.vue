@@ -7,9 +7,10 @@ import { format } from 'date-fns'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle } from '@fal'
+import { faThumbtack } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { localesCode, OptionsTime, useFormatTime as useFormatTimeComposables } from '@/Composables/useFormatTime'
-library.add(faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle)
+library.add(faCalendarAlt, faSparkles, faSpellCheck, faSeedling, faInfoCircle, faThumbtack)
 import type { Timeline } from '@/types/Timeline'
 
 const props = defineProps<{
@@ -163,6 +164,8 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                     <div v-tooltip="step.timestamp ? useFormatTimeComposables(step.timestamp, { formatTime: 'PPPPpp' }) : undefined"
                         class="text-xxs md:text-xs text-[#555] text-center select-none">
                         <template v-if="step.timestamp">
+                            <FontAwesomeIcon v-if="step.timestamp_icon" v-tooltip="step.timestamp_tooltip"
+                                :icon="step.timestamp_icon" class="mr-1 text-xs text-gray-400" aria-hidden="true" />
                             <span v-if="step.format_time">{{ useFormatTimeComposables(step.timestamp, { formatTime: step.format_time }) }}</span>
                             <span v-else>{{ useFormatTime(step.timestamp) }}</span>
                         </template>

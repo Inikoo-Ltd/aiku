@@ -32,6 +32,7 @@ const props = withDefaults(defineProps<{
     cost?: number | null
     readonly?: boolean
     isBase?: boolean
+    alwaysIndependent?: boolean
     autoMode?: boolean
 }>(), {
     unitsPerOuter: 1
@@ -46,14 +47,16 @@ const emits = defineEmits<{
 
 const units = computed(() => props.unitsPerOuter || 1)
 
-const showToggle = computed(() => props.autoMode ? true : !props.isBase)
+const showToggle = computed(() => props.alwaysIndependent ? false : (props.autoMode ? true : !props.isBase))
 
 const useRobotIcon = computed(() => !!props.autoMode && !!props.isBase)
 
 const inputDisabled = computed(
-    () => props.autoMode
-        ? !model.value.independent
-        : (!props.isBase && !model.value.independent)
+    () => props.alwaysIndependent
+        ? false
+        : (props.autoMode
+            ? !model.value.independent
+            : (!props.isBase && !model.value.independent))
 )
 
 const unitValue = computed(

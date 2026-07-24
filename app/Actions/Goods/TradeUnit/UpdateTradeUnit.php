@@ -116,6 +116,12 @@ class UpdateTradeUnit extends GrpAction
             ]);
         }
 
+        if (Arr::has($modelData, 'ingredients')) {
+            SyncIngredientsToTradeUnit::make()->action($tradeUnit, [
+                'ingredients' => Arr::pull($modelData, 'ingredients') ?? []
+            ]);
+        }
+
         $oldTradeUnitFamily = null;
         if (Arr::has($modelData, 'trade_unit_family_id')) {
             $oldTradeUnitFamily = $tradeUnit->tradeUnitFamily;
@@ -305,6 +311,11 @@ class UpdateTradeUnit extends GrpAction
             'duty_rate'             => ['sometimes', 'nullable', 'string'],
             'hts_us'                => ['sometimes', 'nullable', 'string'],
             'marketing_ingredients' => ['sometimes', 'nullable', 'string'],
+            'ingredients'           => ['sometimes', 'nullable', 'array'],
+            'ingredients.*'         => [
+                'string',
+                Rule::exists('ingredients', 'slug')->where('group_id', $this->group->id)
+            ],
             'name_i8n'              => ['sometimes', 'array'],
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n'       => ['sometimes', 'array'],

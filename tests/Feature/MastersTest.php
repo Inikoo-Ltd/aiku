@@ -60,6 +60,11 @@ use App\Models\Masters\MasterProductCategoryStats;
 use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterShopOrderingStats;
 use App\Models\Masters\MasterShopStats;
+use App\Actions\Maintenance\Masters\MasterProduct\RepairMasterAssetHydratePrices;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Currency;
 use Illuminate\Support\Facades\Bus;
 use Inertia\Testing\AssertableInertia;
 
@@ -1729,4 +1734,68 @@ test('HydrateMasterShopSales hydrates orders stats for a master shop', function 
     HydrateMasterShopSales::make()->handle($masterShop);
 
     expect($masterShop->refresh())->toBeInstanceOf(MasterShop::class);
+});
+
+test('RepairMasterAssetHydratePrices hydrates master prices from the base shop products', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'RMAHP-DEPT-'.uniqid(),
+        'name' => 'Repair Prices Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'RMAHP-FAM-'.uniqid(),
+        'name' => 'Repair Prices Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RMAHP-AST-'.uniqid(),
+        'name'    => 'Repair Prices Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $baseShops = collect(['EUR' => 901, 'GBP' => 902, 'CZK' => 903, 'SEK' => 904])
+        ->map(function ($shopId, $currencyCode) {
+            $shop = (new Shop())->forceFill(['id' => $shopId]);
+            $shop->setRelation('currency', Currency::where('code', $currencyCode)->first());
+
+            return $shop;
+        })
+        ->values();
+
+    $masterAsset->setRelation('products', collect([
+        (new Product())->forceFill(['id' => 2, 'shop_id' => 901, 'price' => 99, 'rrp' => 99, 'state' => ProductStateEnum::DISCONTINUED]),
+        (new Product())->forceFill(['id' => 1, 'shop_id' => 901, 'price' => 12, 'rrp' => 24, 'state' => ProductStateEnum::ACTIVE]),
+        (new Product())->forceFill(['id' => 3, 'shop_id' => 902, 'price' => 8, 'rrp' => 16, 'state' => ProductStateEnum::ACTIVE]),
+    ]));
+
+    $exchange = [901 => [902 => 0.5, 903 => 25.0, 904 => null]];
+
+    RepairMasterAssetHydratePrices::make()->handle($masterAsset, $baseShops, $exchange, dryRun: true);
+
+    expect($masterAsset->refresh()->master_prices)->toBe([]);
+
+    $masterAsset->setRelation('products', collect([
+        (new Product())->forceFill(['id' => 2, 'shop_id' => 901, 'price' => 99, 'rrp' => 99, 'state' => ProductStateEnum::DISCONTINUED]),
+        (new Product())->forceFill(['id' => 1, 'shop_id' => 901, 'price' => 12, 'rrp' => 24, 'state' => ProductStateEnum::ACTIVE]),
+        (new Product())->forceFill(['id' => 3, 'shop_id' => 902, 'price' => 8, 'rrp' => 16, 'state' => ProductStateEnum::ACTIVE]),
+    ]));
+
+    RepairMasterAssetHydratePrices::make()->handle($masterAsset, $baseShops, $exchange);
+
+    $masterAsset->refresh();
+
+    expect($masterAsset->master_prices)->toEqual([
+        'EUR' => ['value' => '12', 'independent' => false],
+        'GBP' => ['value' => '8', 'independent' => false],
+        'CZK' => ['value' => '300', 'independent' => true],
+    ])
+        ->and($masterAsset->master_rrps)->toEqual([
+            'EUR' => ['value' => '24', 'independent' => false],
+            'GBP' => ['value' => '16', 'independent' => false],
+            'CZK' => ['value' => '600', 'independent' => true],
+        ])
+        ->and((float) $masterAsset->price)->toBe(12.0)
+        ->and((float) $masterAsset->rrp)->toBe(24.0);
 });

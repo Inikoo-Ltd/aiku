@@ -69,6 +69,11 @@ task('npm:my_install', function () {
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
+    if (!$frontEndChanged && !test('[ -d {{previous_release}}/public/iris/assets ]')) {
+        writeln('Previous release has no built assets (failed/first deploy). Forcing build.');
+        $frontEndChanged = true;
+        set('front_end_changed', true);
+    }
     if ($frontEndChanged) {
         run("cd {{release_path}} && {{bin/npm}} run build");
         run(
