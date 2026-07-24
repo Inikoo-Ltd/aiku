@@ -15,7 +15,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditTradeUnit extends OrgAction
 {
@@ -223,44 +222,6 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'input-dimension',
                                     'label' => __('Dimensions').' ('.__('Marketing').')',
                                     'value' => $tradeUnit->marketing_dimensions,
-                                ],
-                            ],
-                        ],
-                        [
-                            'label'  => __('Translations'),
-                            'icon'   => 'fa-light fa-language',
-                            'fields' => [
-                                'name_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('Translate name'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->name,
-                                    'full' => true,
-                                    'value' => $tradeUnit->getTranslations('name_i8n')
-                                ],
-                                'description_title_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('Translate description title'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->description_title,
-                                    'full' => true,
-                                    'value' => $tradeUnit->getTranslations('description_title_i8n')
-                                ],
-                                'description_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('Translate description'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->description,
-                                    'full' => true,
-                                    'value' => $tradeUnit->getTranslations('description_i8n')
-                                ],
-                                'description_extra_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('Translate description extra'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->description_extra,
-                                    'full' => true,
-                                    'value' => $tradeUnit->getTranslations('description_extra_i8n')
                                 ],
                             ],
                         ],

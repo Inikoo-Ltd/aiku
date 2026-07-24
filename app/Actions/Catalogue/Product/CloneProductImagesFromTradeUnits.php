@@ -70,13 +70,14 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
         $position = 1;
 
         foreach ($source->images as $image) {
-            if ($source->images()
-                ->where('model_id', $target->id)
-                ->where('model_type', $target::class)
-                ->where('scope', 'photo')
-                ->where('media_id', $image->id)
-                ->where('sub_scope', 'main')
-                ->exists()) {
+            if (
+                $target
+                    ->images()
+                    ->where('scope', 'photo')
+                    ->where('media_id', $image->id)
+                    ->where('sub_scope', 'main')
+                    ->exists()
+            ) {
                 continue;
             }
 

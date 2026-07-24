@@ -39,6 +39,21 @@ class GetPurchaseOrderData
                 ],
             ],
             [
+                'title'  => __('Estimated process dates'),
+                'fields' => [
+                    'estimated_production_date' => [
+                        'type'  => 'date',
+                        'label' => __('Estimated production date'),
+                        'value' => Arr::get($data, 'estimated_production_date'),
+                    ],
+                    'estimated_receiving_date'  => [
+                        'type'  => 'date',
+                        'label' => __('Estimated receiving date'),
+                        'value' => Arr::get($data, 'estimated_receiving_date'),
+                    ],
+                ],
+            ],
+            [
                 'title'  => __('Payment terms'),
                 'fields' => [
                     'payment_terms' => [
