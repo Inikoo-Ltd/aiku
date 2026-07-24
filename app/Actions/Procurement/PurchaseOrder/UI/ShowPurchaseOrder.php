@@ -100,6 +100,7 @@ class ShowPurchaseOrder extends OrgAction
         $orderer = [];
         $productListRoute = [];
         $weightAndVolume = $this->getPurchaseOrderWeightAndVolume($purchaseOrder);
+        $deliveryStats = $this->getDeliveryStats($purchaseOrder);
         $actions = [];
 
         if ($purchaseOrder->parent instanceof OrgAgent) {
@@ -310,15 +311,19 @@ class ShowPurchaseOrder extends OrgAction
                         ],
                     ],
                     'second_block'     => [
-                        'state' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
-                        'delivery_state' => PurchaseOrderDeliveryStateEnum::stateIcon()[$purchaseOrder->delivery_state->value],
-                        'total_items' => $purchaseOrder->number_purchase_order_transactions,
-                        'weight' => Arr::get($weightAndVolume, 'gross_weight'),
-                        'volume' => Arr::get($weightAndVolume, 'volume'),
-                        'is_weight_partial' => Arr::get($weightAndVolume, 'is_weight_partial'),
-                        'is_volume_partial' => Arr::get($weightAndVolume, 'is_volume_partial'),
-                        'production_time' => null,
-                        'delivery_time' => null,
+                        'state'                    => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
+                        'delivery_state'           => PurchaseOrderDeliveryStateEnum::stateIcon()[$purchaseOrder->delivery_state->value],
+                        'total_items'              => $purchaseOrder->number_purchase_order_transactions,
+                        'total_delivery_items'     => $deliveryStats['total_delivery_items'],
+                        'total_placed_items'       => $deliveryStats['total_placed_items'],
+                        'is_delivery_items_active' => $deliveryStats['is_delivery_items_active'],
+                        'is_placed_items_active'   => $deliveryStats['is_placed_items_active'],
+                        'weight'                   => Arr::get($weightAndVolume, 'gross_weight'),
+                        'volume'                   => Arr::get($weightAndVolume, 'volume'),
+                        'is_weight_partial'        => Arr::get($weightAndVolume, 'is_weight_partial'),
+                        'is_volume_partial'        => Arr::get($weightAndVolume, 'is_volume_partial'),
+                        'production_time'          => null,
+                        'delivery_time'            => null,
                     ],
                     'third_block' => [
                         'currency'     => $purchaseOrder->currency?->code,
@@ -436,6 +441,29 @@ class ShowPurchaseOrder extends OrgAction
         ];
 
         return $timeline;
+    }
+
+    public function getDeliveryStats(PurchaseOrder $purchaseOrder): array
+    {
+        $progression = [
+            PurchaseOrderDeliveryStateEnum::IN_PROCESS->value,
+            PurchaseOrderDeliveryStateEnum::CONFIRMED->value,
+            PurchaseOrderDeliveryStateEnum::READY_TO_SHIP->value,
+            PurchaseOrderDeliveryStateEnum::DISPATCHED->value,
+            PurchaseOrderDeliveryStateEnum::RECEIVED->value,
+            PurchaseOrderDeliveryStateEnum::CHECKED->value,
+            PurchaseOrderDeliveryStateEnum::PLACED->value,
+        ];
+
+        $rank = array_search($purchaseOrder->delivery_state->value, $progression, true);
+        $hasStockDelivery = $purchaseOrder->stockDeliveries()->exists();
+
+        return [
+            'total_delivery_items'     => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_except_cancelled') : null,
+            'total_placed_items'       => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_state_placed') : null,
+            'is_delivery_items_active' => $rank !== false && $rank >= array_search(PurchaseOrderDeliveryStateEnum::CONFIRMED->value, $progression, true),
+            'is_placed_items_active'   => $rank !== false && $rank >= array_search(PurchaseOrderDeliveryStateEnum::RECEIVED->value, $progression, true),
+        ];
     }
 
     public function getStockDeliveryTimelines(PurchaseOrder $purchaseOrder): array
