@@ -46,9 +46,11 @@ use App\Actions\Masters\MasterShop\HydrateMasterShopSales;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
+use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetOrderingIntervals;
 use App\Models\Masters\MasterAssetStats;
@@ -60,12 +62,16 @@ use App\Models\Masters\MasterProductCategoryStats;
 use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterShopOrderingStats;
 use App\Models\Masters\MasterShopStats;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Guest;
 use Illuminate\Support\Facades\Bus;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -93,6 +99,38 @@ function createFreshMasterShop(): MasterShop
     ]);
 }
 
+function createMasterCollectionPermissionFixtures(): array
+{
+    $suffix           = uniqid();
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'MCPD-'.$suffix,
+        'name' => 'Master Collection Permission Department',
+    ]);
+    $masterFamily     = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'MCPF-'.$suffix,
+        'name' => 'Master Collection Permission Family',
+    ]);
+    $masterCollection = StoreMasterCollection::make()->action(
+        $masterFamily,
+        [
+            'code' => 'MCPC-'.$suffix,
+            'name' => 'Master Collection Permission Collection',
+        ],
+        createChildren: false
+    );
+    $masterAsset      = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'MCPA-'.$suffix,
+        'name'    => 'Master Collection Permission Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    return [$masterCollection, $masterAsset];
+}
+
 function ensureMasterProductCategory(): \App\Models\Masters\MasterProductCategory
 {
     $group = group();
@@ -110,6 +148,25 @@ function ensureMasterProductCategory(): \App\Models\Masters\MasterProductCategor
         'code' => 'DEPT-'.uniqid(),
         'name' => 'Test Department',
     ]);
+}
+
+function createMastersRoleGuest(Group $group, RolesEnum $role): Guest
+{
+    setPermissionsTeamId($group->id);
+
+    $guest = StoreGuest::make()->action(
+        $group,
+        array_merge(
+            Guest::factory()->definition(),
+            [
+                'positions' => [],
+            ]
+        )
+    );
+
+    $guest->getUser()->assignRole($role->value);
+
+    return $guest;
 }
 
 
@@ -900,6 +957,83 @@ test('UI Show Master Collection', function (MasterCollection $masterCollection) 
             ->has('routes');
     });
 })->depends('create master collection');
+
+test('masters viewer cannot see master collection model controls', function () {
+    [$masterCollection] = createMasterCollectionPermissionFixtures();
+    $viewer = createMastersRoleGuest($this->group, RolesEnum::MASTERS_VIEWER);
+    actingAs($viewer->getUser());
+
+    $routes = [
+        'grp.masters.master_shops.show.master_collections.linked_master_collections' => 'Masters/MasterCollections',
+        'grp.masters.master_shops.show.master_collections.families'                  => 'Masters/MasterFamilies',
+        'grp.masters.master_shops.show.master_collections.products'                  => 'Masters/MasterProducts',
+    ];
+
+    foreach ($routes as $routeName => $component) {
+        get(route($routeName, [
+            'masterShop'       => $masterCollection->masterShop->slug,
+            'masterCollection' => $masterCollection->slug,
+        ]))->assertInertia(fn (AssertableInertia $page) => $page
+            ->component($component)
+            ->where('routes', []));
+    }
+});
+
+test('masters manager can see master collection model controls', function () {
+    [$masterCollection] = createMasterCollectionPermissionFixtures();
+    $manager = createMastersRoleGuest($this->group, RolesEnum::MASTERS_MANAGER);
+    actingAs($manager->getUser());
+
+    $routes = [
+        'grp.masters.master_shops.show.master_collections.linked_master_collections',
+        'grp.masters.master_shops.show.master_collections.families',
+        'grp.masters.master_shops.show.master_collections.products',
+    ];
+
+    foreach ($routes as $routeName) {
+        get(route($routeName, [
+            'masterShop'       => $masterCollection->masterShop->slug,
+            'masterCollection' => $masterCollection->slug,
+        ]))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('routes.submitAttach.name', 'grp.models.master_collection.attach-models')
+            ->where('routes.detach.name', 'grp.models.master_collection.detach-models'));
+    }
+});
+
+test('master collection model mutations require masters edit permission', function () {
+    [$masterCollection, $masterAsset] = createMasterCollectionPermissionFixtures();
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterAsset);
+
+    expect($masterCollection->masterProducts()->whereKey($masterAsset->id)->exists())->toBeTrue();
+
+    $viewer = createMastersRoleGuest($this->group, RolesEnum::MASTERS_VIEWER);
+    actingAs($viewer->getUser());
+
+    post(route('grp.models.master_collection.attach-models', $masterCollection), [
+        'products' => [$masterAsset->id],
+    ])->assertForbidden();
+
+    delete(route('grp.models.master_collection.detach-models', $masterCollection), [
+        'product' => $masterAsset->id,
+    ])->assertForbidden();
+
+    expect($masterCollection->masterProducts()->whereKey($masterAsset->id)->exists())->toBeTrue();
+
+    $manager = createMastersRoleGuest($this->group, RolesEnum::MASTERS_MANAGER);
+    actingAs($manager->getUser());
+
+    delete(route('grp.models.master_collection.detach-models', $masterCollection), [
+        'product' => $masterAsset->id,
+    ])->assertRedirect();
+
+    expect($masterCollection->masterProducts()->whereKey($masterAsset->id)->exists())->toBeFalse();
+
+    post(route('grp.models.master_collection.attach-models', $masterCollection), [
+        'products' => [$masterAsset->id],
+    ])->assertRedirect();
+
+    expect($masterCollection->masterProducts()->whereKey($masterAsset->id)->exists())->toBeTrue();
+});
 
 // UI: Edit master collection
 test('UI Edit Master Collection', function (MasterCollection $masterCollection) {

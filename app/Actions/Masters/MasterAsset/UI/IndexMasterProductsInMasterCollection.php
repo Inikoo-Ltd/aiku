@@ -12,6 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\WithMasterCollectionNavigation;
 use App\Actions\Masters\MasterCollection\UI\WithMasterCollectionSubNavigation;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -29,6 +30,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMasterProductsInMasterCollection extends GrpAction
 {
+    use WithMastersAuthorisation;
     use WithMasterCollectionNavigation;
     use WithMasterCollectionSubNavigation;
 
@@ -153,7 +155,7 @@ class IndexMasterProductsInMasterCollection extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::SALES, MasterProductsTabsEnum::INDEX_ORDERING]),
                 ],
-                'routes'    => [
+                'routes'    => $this->canEdit ? [
                     'dataList'     => [
                         'name'       => 'grp.json.master_shop.master_products_not_attached_to_master_collection',
                         'parameters' => [
@@ -174,13 +176,13 @@ class IndexMasterProductsInMasterCollection extends GrpAction
                             'masterCollection' => $this->parent->id
                         ]
                     ]
-                ],
+                ] : [],
                 MasterProductsTabsEnum::INDEX->value => $this->tab == MasterProductsTabsEnum::INDEX->value ?
                     fn () => MasterProductsResource::collection($masterAssets)
                     : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))),
 
             ]
-        )->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value));
+        )->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value, action: $this->canEdit));
     }
 
     public function getBreadcrumbs(MasterCollection $parent, string $routeName, array $routeParameters, ?string $suffix = null): array

@@ -13,6 +13,7 @@ use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterCollection;
@@ -24,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DetachMasterModelFromMasterCollection extends GrpAction
 {
+    use WithMastersEditAuthorisation;
+
     public function handle(MasterCollection $masterCollection, MasterAsset|MasterProductCategory|MasterCollection $model, bool $detachChildren = true): MasterCollection
     {
         if ($model instanceof MasterAsset) {

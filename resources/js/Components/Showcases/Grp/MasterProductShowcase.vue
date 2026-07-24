@@ -375,7 +375,7 @@ const isModalProductForSale = ref(false)
 			</div>
 			<div class="text-right min-h-max" :class="item.is_for_sale ? 'text-green-600' : 'text-red-600'">
 				<span
-				v-on:click="router.visit(productRoute(item, true))"
+				v-on:click="data.can_edit && router.visit(productRoute(item, true))"
 				v-tooltip="item.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
 				:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">

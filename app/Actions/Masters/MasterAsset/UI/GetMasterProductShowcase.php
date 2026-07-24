@@ -27,7 +27,7 @@ class GetMasterProductShowcase
     use HasBucketImages;
     use HasBucketAttachment;
 
-    public function handle(MasterAsset $masterAsset): array
+    public function handle(MasterAsset $masterAsset, bool $canEdit = false): array
     {
         $tradeUnits = $masterAsset->tradeUnits;
         $tradeUnits->loadMissing(['ingredients']);
@@ -107,6 +107,7 @@ class GetMasterProductShowcase
                 'from_trade_unit'        => $masterAsset->not_for_sale_from_trade_unit,
                 'parentLink'             => $parentLink,
             ],
+            'can_edit'            => $canEdit,
         ];
     }
 

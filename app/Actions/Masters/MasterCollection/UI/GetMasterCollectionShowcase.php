@@ -15,7 +15,7 @@ class GetMasterCollectionShowcase
 {
     use AsObject;
 
-    public function handle(MasterCollection $masterCollection): array
+    public function handle(MasterCollection $masterCollection, bool $canEdit = false): array
     {
         return [
             'id'                    => $masterCollection->id,
@@ -30,7 +30,7 @@ class GetMasterCollectionShowcase
             'parent_subdepartments' => $masterCollection->parentMasterSubDepartments,
             'image'                 => $masterCollection->imageSources(720, 480),
             'state_icon'            => $masterCollection->state ? $masterCollection->state->stateIcon()[$masterCollection->state->value] : null,
-            'can_edit'              => true,
+            'can_edit'              => $canEdit,
             'routes'                => [
                 'departments_route'     => [
                     'name'       => 'grp.json.master_shop.master_departments',

@@ -141,7 +141,7 @@ class GetMasterCollectionsInMasterCollection extends GrpAction
                     'navigation' => MasterCollectionsTabsEnum::navigationExcept([MasterCollectionsTabsEnum::SALES]),
                 ],
                 'accessedFromCollection'    => true,
-                'routes'    => [
+                'routes'    => $this->canEdit ? [
                     'dataList'     => [
                         'name'       => 'grp.json.master_shop.master_collections_not_attached_to_master_collection',
                         'parameters' => [
@@ -162,13 +162,13 @@ class GetMasterCollectionsInMasterCollection extends GrpAction
                             'masterCollection' => $this->parent->id
                         ]
                     ]
-                ],
+                ] : [],
                 MasterCollectionsTabsEnum::INDEX->value => $this->tab == MasterCollectionsTabsEnum::INDEX->value ?
                     fn () => MasterCollectionsResource::collection($masterCollections)
                     : Inertia::optional(fn () => MasterCollectionsResource::collection($masterCollections)),
             ]
         )
-        ->table($this->tableStructure($this->parent, MasterCollectionsTabsEnum::INDEX->value));
+        ->table($this->tableStructure($this->parent, MasterCollectionsTabsEnum::INDEX->value, action: $this->canEdit));
     }
 
     public function getBreadcrumbs(MasterCollection $parent, string $routeName, array $routeParameters, ?string $suffix = null): array

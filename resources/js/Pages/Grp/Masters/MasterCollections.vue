@@ -112,7 +112,7 @@ const resetSelectionByScope = {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other v-if="accessedFromCollection">
+        <template #other v-if="accessedFromCollection && routes?.dataList">
             <Button
                 type="secondary"
                 label="Attach Collections"

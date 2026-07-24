@@ -120,7 +120,7 @@ const resetSelectionByScope = {
         <template #button-add-master-family>
             <Button :label="trans('Master Family')" @click="showDialog = true" :style="'create'" />
         </template>
-        <template #other v-if="accessedFromCollection">
+        <template #other v-if="accessedFromCollection && routes?.dataList">
             <Button
                 type="secondary"
                 label="Attach Families"

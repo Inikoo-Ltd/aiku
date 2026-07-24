@@ -15,7 +15,7 @@ use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
-use App\Actions\OrgAction;
+use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterAsset\GetMasterProductImages;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
@@ -39,7 +39,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterProduct extends OrgAction
+class ShowMasterProduct extends GrpAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -66,7 +66,7 @@ class ShowMasterProduct extends OrgAction
         $this->parent = $masterShop;
         $group        = group();
 
-        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -75,7 +75,7 @@ class ShowMasterProduct extends OrgAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -84,7 +84,7 @@ class ShowMasterProduct extends OrgAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -92,7 +92,7 @@ class ShowMasterProduct extends OrgAction
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $this->parent = $masterDepartment;
-        $this->initialisationFromGroup($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisation($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -103,7 +103,7 @@ class ShowMasterProduct extends OrgAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -271,8 +271,8 @@ class ShowMasterProduct extends OrgAction
                 'products'             => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset)),
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
-                    fn () => GetMasterProductShowcase::run($masterAsset)
-                    : Inertia::optional(fn () => GetMasterProductShowcase::run($masterAsset)),
+                    fn () => GetMasterProductShowcase::run($masterAsset, $this->canEdit)
+                    : Inertia::optional(fn () => GetMasterProductShowcase::run($masterAsset, $this->canEdit)),
 
                 'salesData' => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductTimeSeriesData::run($masterAsset)

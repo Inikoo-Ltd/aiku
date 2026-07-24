@@ -12,6 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\WithMasterCollectionNavigation;
 use App\Actions\Masters\MasterCollection\UI\WithMasterCollectionSubNavigation;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\Catalogue\MasterCollectionsTabsEnum;
 use App\Enums\UI\Catalogue\MasterProductCategoryTabsEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
@@ -29,6 +30,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMasterFamiliesInMasterCollection extends GrpAction
 {
+    use WithMastersAuthorisation;
     use WithMasterCollectionNavigation;
     use WithMasterCollectionSubNavigation;
 
@@ -98,8 +100,11 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                 ->column(key: 'status_icon', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'image_thumbnail', label: '', type: 'avatar')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($action) {
+                $table->column(key: 'actions', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
+            }
         };
     }
 
@@ -139,7 +144,7 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
             ],
             'hideCheckbox'           => true,
             'accessedFromCollection' => true,
-            'routes'                 => [
+            'routes'                 => $this->canEdit ? [
                 'dataList'     => [
                     'name'       => 'grp.json.master_shop.master_families_not_attached_to_master_collection',
                     'parameters' => [
@@ -160,7 +165,7 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                         'masterCollection' => $this->parent->id
                     ]
                 ]
-            ],
+            ] : [],
         ];
 
         $baseData['tabs'] = [
@@ -176,7 +181,7 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
             'Masters/MasterFamilies',
             $baseData
         )
-            ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value));
+            ->table($this->tableStructure($this->parent, prefix: MasterProductCategoryTabsEnum::INDEX->value, action: $this->canEdit));
     }
 
     public function getBreadcrumbs(MasterCollection $parent, string $routeName, array $routeParameters, ?string $suffix = null): array

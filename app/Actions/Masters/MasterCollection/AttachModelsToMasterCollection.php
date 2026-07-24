@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterCollection;
@@ -21,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachModelsToMasterCollection extends GrpAction
 {
+    use WithMastersEditAuthorisation;
+
     public function handle(MasterCollection $masterCollection, array $modelData): MasterCollection
     {
         foreach (Arr::get($modelData, 'families', []) as $modelID) {

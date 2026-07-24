@@ -214,8 +214,8 @@ class ShowMasterCollection extends GrpAction
                 ],
 
                 MasterCollectionTabsEnum::SHOWCASE->value => $this->tab == MasterCollectionTabsEnum::SHOWCASE->value ?
-                    fn () => GetMasterCollectionShowcase::run($masterCollection)
-                    : Inertia::optional(fn () => GetMasterCollectionShowcase::run($masterCollection)),
+                    fn () => GetMasterCollectionShowcase::run($masterCollection, $this->canEdit)
+                    : Inertia::optional(fn () => GetMasterCollectionShowcase::run($masterCollection, $this->canEdit)),
 
                 'salesData' => $this->tab == MasterCollectionTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterCollectionTimeSeriesData::run($masterCollection)
