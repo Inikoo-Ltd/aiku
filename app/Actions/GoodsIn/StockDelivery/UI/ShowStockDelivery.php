@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
+use App\Actions\GoodsIn\StockDelivery\Traits\WithStockDeliveryWeightAndVolume;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryItems;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
@@ -18,9 +19,13 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Procurement\OrgAgentResource;
+use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -30,6 +35,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowStockDelivery extends OrgAction
 {
+    use WithStockDeliveryWeightAndVolume;
+
     public function authorize(): bool
     {
         if ($this->maya) {
@@ -80,7 +87,7 @@ class ShowStockDelivery extends OrgAction
                         'title' => __('Stock Delivery'),
                     ],
                     'afterTitle' => [
-                        'label' => $stockDelivery->state->labels()[$stockDelivery->state->value],
+                        'label' => $this->getStateLabels()[$stockDelivery->state->value],
                     ],
                     'edit'       => $this->canEdit ? [
                         'route' => [
@@ -91,6 +98,7 @@ class ShowStockDelivery extends OrgAction
                 ],
                 'stock_delivery'   => StockDeliveryResource::make($stockDelivery)->toArray($request),
                 'timelines'        => $this->getTimeline($stockDelivery),
+                'box_stats'        => $this->getBoxStats($stockDelivery, $request),
                 'tabs'             => [
                     'current'    => $this->tab,
                     'navigation' => StockDeliveryTabsEnum::navigation(),
@@ -164,11 +172,67 @@ class ShowStockDelivery extends OrgAction
         return $timeline;
     }
 
+    public function getStateLabels(): array
+    {
+        return array_replace(
+            StockDeliveryStateEnum::labels(),
+            [StockDeliveryStateEnum::PLACED->value => __('Costing done')]
+        );
+    }
+
+    public function getBoxStats(StockDelivery $stockDelivery, ActionRequest $request): array
+    {
+        $orderer = [];
+        if ($stockDelivery->parent instanceof OrgAgent) {
+            $orderer = OrgAgentResource::make($stockDelivery->parent)->toArray($request);
+        } elseif ($stockDelivery->parent instanceof OrgSupplier) {
+            $orderer = OrgSupplierResource::make($stockDelivery->parent)->toArray($request);
+        }
+
+        $weightAndVolume = $this->getStockDeliveryWeightAndVolume($stockDelivery);
+
+        return [
+            'first_block'  => [
+                'orderer'  => $orderer,
+                'delivery' => [
+                    'type'             => Arr::get($stockDelivery->data, 'delivery_type'),
+                    'incoterm'         => Arr::get($stockDelivery->data, 'incoterm'),
+                    'port_of_export'   => Arr::get($stockDelivery->data, 'port_of_export'),
+                    'port_of_import'   => Arr::get($stockDelivery->data, 'port_of_import'),
+                    'delivery_address' => Arr::get($stockDelivery->data, 'delivery_address'),
+                ],
+            ],
+            'second_block' => [
+                'state'                        => $this->getStateLabels()[$stockDelivery->state->value],
+                'total_items'                  => $stockDelivery->number_stock_delivery_items,
+                'total_received_checked_items' => $stockDelivery->number_stock_delivery_items_state_received + $stockDelivery->number_stock_delivery_items_state_checked,
+                'total_placed_items'           => $stockDelivery->number_stock_delivery_items_state_placed,
+                'weight'                       => Arr::get($weightAndVolume, 'gross_weight'),
+                'volume'                       => Arr::get($weightAndVolume, 'volume'),
+                'is_weight_partial'            => Arr::get($weightAndVolume, 'is_weight_partial'),
+                'is_volume_partial'            => Arr::get($weightAndVolume, 'is_volume_partial'),
+                'production_time'              => null, // Todo: not sure in which states this should appear, so far only known when the purchase order is cancelled
+                'delivery_time'                => null, // Todo: not sure in which states this should appear, so far only known when the purchase order is cancelled
+            ],
+            'third_block'  => [
+                'currency'     => $stockDelivery->currency?->code,
+                'org_currency' => $stockDelivery->organisation?->currency?->code,
+                'org_exchange' => $stockDelivery->org_exchange,
+                'items'        => $stockDelivery->cost_items,
+                'extra'        => $stockDelivery->cost_extra + $stockDelivery->cost_shipping + $stockDelivery->cost_duties + $stockDelivery->cost_tax,
+                'total'        => $stockDelivery->cost_total,
+                'org_items'    => $stockDelivery->items()->sum('org_net_amount'),
+            ],
+        ];
+    }
+
     public function getTimeline(StockDelivery $stockDelivery, bool $withPurchaseOrderStates = true): array
     {
         $purchaseOrder = $withPurchaseOrderStates ? $stockDelivery->purchaseOrders()->first() : null;
 
         $timeline = $purchaseOrder ? $this->getPurchaseOrderTimeline($purchaseOrder) : [];
+
+        $labels = $this->getStateLabels();
 
         $hiddenUnlessCurrent = [
             StockDeliveryStateEnum::CONFIRMED,
@@ -198,11 +262,11 @@ class ShowStockDelivery extends OrgAction
 
             $label = $case == StockDeliveryStateEnum::IN_PROCESS && $purchaseOrder
                 ? __('Created')
-                : $case->labels()[$case->value];
+                : $labels[$case->value];
 
             $timeline[$case->value] = [
                 'label'             => $label,
-                'tooltip'           => $case->labels()[$case->value],
+                'tooltip'           => $labels[$case->value],
                 'key'               => $case->value,
                 'format_time'       => $estimatedTimestamp ? 'MMMM d yyyy' : 'MMMM d yyyy, HH:mm',
                 'timestamp'         => $timestamp ?: $estimatedTimestamp,
