@@ -8,9 +8,12 @@
 
 namespace App\Actions\Goods\Stock;
 
+use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
+use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateStocks;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
+use App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Goods\Stock;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -31,7 +34,14 @@ class SyncStockTradeUnits
         StockHydrateGrossWeightFromTradeUnits::dispatch($stock);
 
         foreach ($stock->orgStocks as $orgStock) {
-            OrgStockHydratePackedIn::dispatch($orgStock);
+            // Update childrens
+            SyncOrgStockTradeUnits::run($orgStock, $tradeUnitsData);
+            OrgStockHydratePackedIn::run($orgStock);
+            // Update product packed_in data
+            foreach ($orgStock->products as $product) {
+                SyncProductOrgStocksFromTradeUnits::run($product);
+            }
+            SyncDeliveryNoteItemsRequiredPickQuantity::dispatch($orgStock);
         }
 
         return $stock;

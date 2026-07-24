@@ -33,6 +33,21 @@ class UpdateStock extends OrgAction
 
     public function handle(Stock $stock, array $modelData): Stock
     {
+        // Update Trade Unit Details for this stock
+        $tradeUnitData = Arr::pull($modelData, 'trade_units');
+        if ($tradeUnitData) {
+            $tradeUnitData = collect($tradeUnitData)->mapWithKeys(function ($item) {
+                return [
+                    $item['id'] => [
+                        'quantity'  => $item['quantity']
+                    ]
+                ];
+            })->toArray();
+
+            // Update Trade Unit Details for the orgStocks
+            SyncStockTradeUnits::run($stock, $tradeUnitData);
+        }
+
         $stock   = $this->update($stock, $modelData, ['data', 'settings']);
         $changes = Arr::except($stock->getChanges(), ['updated_at', 'last_fetched_at']);
 
@@ -93,6 +108,7 @@ class UpdateStock extends OrgAction
             ],
             'name'            => ['sometimes', 'required', 'string', 'max:255'],
             'stock_family_id' => ['sometimes', 'nullable', 'exists:stock_families,id'],
+            'trade_units'     => ['sometimes', 'present', 'array'],
         ];
 
         if (!$this->strict) {

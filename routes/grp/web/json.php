@@ -105,6 +105,7 @@ use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
 use App\Actions\CRM\Customer\Json\GetCustomersInShop;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
+use App\Actions\Goods\Stock\JSON\ValidateStockTradeUnitChanges;
 use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
@@ -338,3 +339,5 @@ Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelec
 
 // Families list under department page
 Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+
+Route::get('{stock}/validate-stock-trade-unit-changes', ValidateStockTradeUnitChanges::class)->name('validate-stock-trade-unit-changes');

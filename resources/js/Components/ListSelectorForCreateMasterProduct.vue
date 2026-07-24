@@ -37,6 +37,7 @@ const props = withDefaults(defineProps<{
     no_data_label?: string
     tabs?: Array<{ label: string, routeFetch: routeType }>
     is_dropship?:boolean
+    showSKOLabel: boolean
 }>(), {
     key_quantity: 'quantity_selected',
     head_label: 'Selected Products',
@@ -307,7 +308,12 @@ defineExpose({
                                 </template>
                                  <template #prefix>
                                 <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap w-full">
-                                    <span class=""> &#8623; SKO </span>
+                                    <span class=""> 
+                                        &#8623;  
+                                        <span v-if="showSKOLabel">
+                                            {{ ctrans("SKO") }}
+                                        </span>
+                                    </span>
                                     <span class="font-bold">
                                         <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
                                     </span>
