@@ -12,8 +12,8 @@ use App\Actions\Comms\Email\SendResetPasswordEmail;
 use App\Actions\CRM\WebUserPasswordReset\StoreWebUserPasswordReset;
 use App\Actions\RetinaAction;
 use App\Models\CRM\WebUser;
+use Closure;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,7 +26,9 @@ class SendRetinaResetPasswordEmail extends RetinaAction
 
     public function handle(array $modelData): void
     {
-        $webUser = WebUser::where('website_id', $this->website->id)->where('email', $modelData['email'])->first();
+        $webUser = WebUser::where('website_id', $this->website->id)
+            ->whereRaw('lower(email) = ?', [strtolower($modelData['email'])])
+            ->first();
 
         $token = Str::random(rand(24, 28));
         $webUserPasswordReset = StoreWebUserPasswordReset::run($webUser, $token);
@@ -64,12 +66,16 @@ class SendRetinaResetPasswordEmail extends RetinaAction
             'email' => [
                 'required',
                 'email',
-                Rule::exists('web_users')
-                    ->where('status', true)
-                    ->where(
-                        'website_id',
-                        $this->website->id
-                    )
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $exists = WebUser::where('website_id', $this->website->id)
+                        ->where('status', true)
+                        ->whereRaw('lower(email) = ?', [strtolower((string) $value)])
+                        ->exists();
+
+                    if (! $exists) {
+                        $fail(__("We can't find a user with that email address."));
+                    }
+                },
             ],
         ];
     }

@@ -6,9 +6,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faLongArrowRight } from "@fal"
 import { faInfoCircle, faForklift, faTimes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { InputNumber, Textarea } from 'primevue'
+import { Textarea } from 'primevue'
 import { ref, computed, onMounted } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import {formatDistanceStrict} from 'date-fns/formatDistanceStrict'
 import { notify } from '@kyvg/vue3-notification'
@@ -19,9 +20,11 @@ const props = defineProps<{
     part_locations: {
         id: number
         code: string
-        slug: string
-        stock: number
-        isAudited: boolean
+        slug?: string
+        quantity: number
+        isAudited?: boolean
+        audited_at?: string | null
+        packed_in?: number
     }[],
     replenishment_data: Record<number, {
         replenishment_stock?: number
@@ -52,11 +55,19 @@ const form = useForm({
     stockCheck: props.part_locations.map(item => ({
         id: item.id,
         name: item.code,
-        stock: Number(item.quantity ?? 0) ,
+        stock: Number(item.quantity ?? 0),
+        packed_in: Number(item.packed_in ?? 1),
         isAudited: item.isAudited,
         audited_at: item.audited_at
     })),
     moveStock: null
+})
+
+// packed_in is uniform across all locations of the same org stock. When > 1 the stock
+// is fractional (e.g. packed_in = 6 means the base movable unit is 1/6), otherwise integer.
+const denominator = computed<number | undefined>(() => {
+    const packedIn = Number(props.part_locations?.[0]?.packed_in ?? 1)
+    return packedIn > 1 ? packedIn : undefined
 })
 
 const selectedReason = ref('')
@@ -69,7 +80,7 @@ const canSave = computed(() => {
     return !!moveStock.value.from
         && !!moveStock.value.to
         // && !!selectedReason.value
-        && Number(moveStock.value.quantity) >= 1
+        && Number(moveStock.value.quantity) > 0
         && Number(moveStock.value.quantity) <= Number(moveStock.value.from?.stock ?? 0)
 })
 
@@ -90,6 +101,7 @@ const selectSource = (location: any) => {
         moveStock.value.from = null
         moveStock.value.isActive = false
         moveStock.value.quantity = 0
+        inputKey.value++
         syncForm()
         return
     }
@@ -110,6 +122,7 @@ const selectSource = (location: any) => {
     moveStock.value.from = location
     moveStock.value.isActive = true
     moveStock.value.quantity = 0
+    inputKey.value++
     syncForm()
 }
 
@@ -117,6 +130,7 @@ const selectTarget = (location: any) => {
     if (isTarget(location)) {
         moveStock.value.to = null
         moveStock.value.quantity = 0
+        inputKey.value++
         syncForm()
         return
     }
@@ -141,6 +155,7 @@ const selectTarget = (location: any) => {
         moveStock.value.to = location
         moveStock.value.isActive = true
         moveStock.value.quantity = 0
+        inputKey.value++
         syncForm()
         return
     }
@@ -157,22 +172,48 @@ const closeMoveStock = () => {
         quantity: 0,
         isActive: false
     }
+    inputKey.value++
     form.moveStock = null
 }
 
-const updateMoveQuantity = (value: number) => {
-    const validValue = Number(value || 0)
-    const maxQuantity = Number(getMaxQuantity())
+const roundQuantity = (value: number) => Math.round(Number(value) * 1e6) / 1e6
 
-    if (validValue < 0 || validValue > maxQuantity) {
-        moveStock.value.quantity = 0
-    } else {
-        moveStock.value.quantity = validValue
+// Bumping this key remounts NumberWithButtonSave so it picks up quantities set
+// programmatically (move-all, replenishment, source/target reset).
+const inputKey = ref(0)
+
+// Renders a quantity as a "numerator/denominator" fraction when the stock is packed,
+// otherwise as a plain (rounded) decimal.
+const displayQty = (value: number) => {
+    const rounded = roundQuantity(Number(value ?? 0))
+    if (denominator.value) {
+        return `${Math.round(rounded * denominator.value)}/${denominator.value}`
     }
+    return String(rounded)
+}
+
+const updateMoveQuantity = (value: number) => {
+    const maxQuantity = roundQuantity(Number(getMaxQuantity()))
+    let validValue = roundQuantity(Number(value || 0))
+
+    // Clamp into [0, max]. The fractional stepper can overshoot max by up to 1/denominator
+    // (it rounds max up to the nearest fraction), so clamp instead of resetting to 0.
+    if (validValue < 0) {
+        validValue = 0
+    } else if (validValue > maxQuantity) {
+        validValue = maxQuantity
+    }
+
+    moveStock.value.quantity = validValue
 
     if (form.moveStock) {
         form.moveStock.quantity = moveStock.value.quantity
     }
+}
+
+const setMoveQuantity = (value: number) => {
+    updateMoveQuantity(value)
+    inputKey.value++
 }
 
 const getMaxQuantity = () => {
@@ -186,14 +227,14 @@ const getCalculatedStock = (warehouse: { stock: number; id: any }) => {
     
     // If this is the source warehouse, subtract the quantity
     if (moveStock.value.from?.id === warehouse.id) {
-        const result = warehouse.stock - moveStock.value.quantity
-        
+        const result = roundQuantity(warehouse.stock - moveStock.value.quantity)
+
         return result
     }
 
     if (moveStock.value.to?.id === warehouse.id) {
-        const result = warehouse.stock + moveStock.value.quantity
-        
+        const result = roundQuantity(warehouse.stock + moveStock.value.quantity)
+
         return result
     }
     
@@ -269,7 +310,7 @@ const applyReplenishment = (location: any) => {
     const maxQty = Number(getMaxQuantity())
     const nextValue = Number(moveStock.value.quantity) + Number(replenishment)
 
-    updateMoveQuantity(Math.min(nextValue, maxQty))
+    setMoveQuantity(Math.min(nextValue, maxQty))
 }
 
 onMounted(() => {
@@ -337,12 +378,12 @@ onMounted(() => {
                     </div>
                     <div v-if="moveStock.from" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
                         <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
-                            {{ moveStock.from.stock }}
+                            {{ displayQty(moveStock.from.stock) }}
                         </span>
                         <template v-if="moveStock.quantity > 0">
                             <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                             <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-green-700">
-                                {{ getCalculatedStock(moveStock.from) }}
+                                {{ displayQty(getCalculatedStock(moveStock.from)) }}
                             </span>
                         </template>
                     </div>
@@ -353,7 +394,7 @@ onMounted(() => {
                 <div class="text-center">
                     <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Quantity') }}</div>
                     <div class="font-medium tabular-nums text-gray-700" xclass="moveStock.quantity ? '' : ' border-b border-dashed border-gray-400'">
-                        {{ moveStock.quantity || '......' }}
+                        {{ moveStock.quantity ? displayQty(moveStock.quantity) : '......' }}
                     </div>
                 </div>
 
@@ -375,12 +416,12 @@ onMounted(() => {
                     </div>
                     <div v-if="moveStock.to" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
                         <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
-                            {{ moveStock.to.stock }}
+                            {{ displayQty(moveStock.to.stock) }}
                         </span>
                         <template v-if="moveStock.quantity > 0">
                             <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                             <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-blue-700">
-                                {{ getCalculatedStock(moveStock.to) }}
+                                {{ displayQty(getCalculatedStock(moveStock.to)) }}
                             </span>
                         </template>
                     </div>
@@ -485,23 +526,23 @@ onMounted(() => {
                                 'border rounded px-1.5 py-0.5 border-gray-300 text-gray-600',
                                 isSource(form) ? 'cursor-pointer hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition' : ''
                             ]"
-                            @click="isSource(form) && updateMoveQuantity(Number(form.stock))"
-                        >{{ form.stock }}</span>
+                            @click="isSource(form) && setMoveQuantity(Number(form.stock))"
+                        >{{ displayQty(form.stock) }}</span>
                         <span v-if="isSource(form)" class="text-red-500 font-semibold">−</span>
-                        <div v-if="isSource(form)" class="w-24 shrink-0">
-                            <InputNumber
+                        <div v-if="isSource(form)" class="shrink-0">
+                            <NumberWithButtonSave
+                                :key="inputKey"
                                 :modelValue="moveStock.quantity"
-                                @input="(event: { value: any }) => updateMoveQuantity(event.value)"
+                                @update:modelValue="(val: number) => updateMoveQuantity(val)"
                                 :min="0"
                                 :max="getMaxQuantity()"
-                                :step="1"
-                                size="small"
-                                fluid
-                                inputClass="!py-0 !text-red-600"
+                                :denominator="denominator"
+                                noSaveButton
+                                noUndoButton
                             />
                         </div>
                         <span v-else :class="getStockChangeIndicator(form) > 0 ? 'text-green-600' : 'text-red-500'">
-                            {{ getStockChangeIndicator(form) > 0 ? '+' : '−' }}{{ Math.abs(getStockChangeIndicator(form)) }}
+                            {{ getStockChangeIndicator(form) > 0 ? '+' : '−' }}{{ displayQty(Math.abs(getStockChangeIndicator(form))) }}
                         </span>
                         <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                         <span
@@ -509,7 +550,7 @@ onMounted(() => {
                             class="font-semibold"
                             :class="isSource(form) ? 'text-green-700' : 'text-blue-700'"
                         >
-                            {{ getCalculatedStock(form) }}
+                            {{ displayQty(getCalculatedStock(form)) }}
                         </span>
                     </span>
 
@@ -519,7 +560,7 @@ onMounted(() => {
                         v-tooltip="trans('Stock in this location')"
                         class="tabular-nums text-xs border rounded px-1.5 py-0.5 border-gray-300 text-gray-600"
                     >
-                        {{ form.stock }}
+                        {{ displayQty(form.stock) }}
                     </span>
                 </div>
 

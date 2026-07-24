@@ -177,9 +177,14 @@ class UpdateProductCategory extends OrgAction
             'name',
             'type',
             'state',
-            'name_i8n'
+            'name_i8n',
+            'faq',
         ])) {
             $this->productCategoryHydrators($productCategory);
+
+            if ($productCategory->webpage) {
+                BreakWebpageCache::dispatch($productCategory->webpage, true);
+            }
 
             if ($productCategory->webpage_id) {
                 ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60);

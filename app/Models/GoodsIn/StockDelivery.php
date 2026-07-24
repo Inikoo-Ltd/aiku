@@ -10,6 +10,7 @@ namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Currency;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -175,5 +177,10 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function parent(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class);
     }
 }

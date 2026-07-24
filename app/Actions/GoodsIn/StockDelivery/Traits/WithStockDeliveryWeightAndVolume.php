@@ -1,22 +1,24 @@
 <?php
 
-namespace App\Actions\Procurement\PurchaseOrder\Traits;
+namespace App\Actions\GoodsIn\StockDelivery\Traits;
 
-use App\Models\Procurement\PurchaseOrder;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
-trait WithPurchaseOrderWeightAndVolume
+trait WithStockDeliveryWeightAndVolume
 {
-    public function getPurchaseOrderWeightAndVolume(PurchaseOrder $purchaseOrder): array
+    public function getStockDeliveryWeightAndVolume(StockDelivery $stockDelivery): array
     {
-        $lines = DB::table('purchase_order_transactions as pot')
-            ->leftJoin('supplier_products as sp', 'sp.id', '=', 'pot.supplier_product_id')
-            ->where('pot.purchase_order_id', $purchaseOrder->id)
-            ->selectRaw("pot.state = 'cancelled' as is_cancelled")
+        $lines = DB::table('stock_delivery_items as sdi')
+            ->leftJoin('supplier_products as sp', 'sp.id', '=', 'sdi.supplier_product_id')
+            ->where('sdi.stock_delivery_id', $stockDelivery->id)
+            ->whereNull('sdi.deleted_at')
+            ->selectRaw("sdi.state = '".StockDeliveryItemStateEnum::CANCELLED->value."' as is_cancelled")
             ->selectSub($this->tradeUnitWeightSubQuery('gross_weight'), 'gross_weight')
             ->selectSub($this->tradeUnitWeightSubQuery('net_weight'), 'net_weight')
-            ->selectRaw('sp.cbm * pot.quantity_ordered / nullif(sp.units_per_carton, 0) as volume');
+            ->selectRaw('sp.cbm * sdi.unit_quantity / nullif(sp.units_per_carton, 0) as volume');
 
         $totals = DB::query()
             ->fromSub($lines, 'line')
@@ -57,12 +59,12 @@ trait WithPurchaseOrderWeightAndVolume
     {
         return DB::table('model_has_trade_units as mhtu')
             ->join('trade_units as tu', 'tu.id', '=', 'mhtu.trade_unit_id')
-            ->whereColumn('mhtu.model_id', 'pot.org_stock_id')
+            ->whereColumn('mhtu.model_id', 'sdi.org_stock_id')
             ->where('mhtu.model_type', 'OrgStock')
             ->selectRaw("
                 case
                     when count(*) = 0 or count(*) filter (where tu.$column is null) > 0 then null
-                    else sum(tu.$column * mhtu.quantity) * pot.quantity_ordered
+                    else sum(tu.$column * mhtu.quantity) * sdi.unit_quantity
                 end
             ");
     }
