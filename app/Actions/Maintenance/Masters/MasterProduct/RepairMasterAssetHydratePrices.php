@@ -37,7 +37,7 @@ class RepairMasterAssetHydratePrices
                 $price = 0;
                 if (!$product) {
                     $baseCopy = $baseProducts->first();
-                    $convert = $baseCurrenciesExchange[$baseCopy->shop_id][$shop->id];
+                    $convert = $baseCurrenciesExchange[$baseCopy?->shop_id][$shop->id];
                     $price = formatPrice($convert, $baseCopy?->price);
                 } else {
                     $price = formatPrice(1, $product?->price);
