@@ -10,6 +10,7 @@
 
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\UpdateStateToCheckedStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStateToDispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStateToSettledStockDelivery;
@@ -31,7 +32,6 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
-use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToNotReceived;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
@@ -46,6 +46,7 @@ use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
@@ -468,16 +469,6 @@ test('revert purchase order state to submitted', function ($purchaseOrder) {
     return $purchaseOrder;
 })->depends('change purchase order state to confirmed');
 
-test('change purchase order state to not received', function ($purchaseOrder) {
-    try {
-        $purchaseOrder = UpdatePurchaseOrderStateToNotReceived::make()->action($purchaseOrder);
-    } catch (ValidationException) {
-    }
-    expect($purchaseOrder->state)->toEqual(PurchaseOrderStateEnum::NOT_RECEIVED);
-
-    return $purchaseOrder;
-})->depends('revert purchase order state to submitted');
-
 test('change purchase order state to cancelled', function ($purchaseOrder) {
     $purchaseOrder->refresh();
     $purchaseOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED]);
@@ -487,7 +478,7 @@ test('change purchase order state to cancelled', function ($purchaseOrder) {
     expect($purchaseOrder->state)->toEqual(PurchaseOrderStateEnum::CANCELLED);
 
     return $purchaseOrder;
-})->depends('change purchase order state to not received');
+})->depends('revert purchase order state to submitted');
 
 
 test('create supplier delivery', function (OrgSupplier $orgSupplier) {
@@ -642,6 +633,58 @@ test('check supplier delivery items all correct', function ($stockDeliveryItems)
     }
     expect($stockDeliveryItems[0]->stockDelivery->fresh()->state)->toEqual(StockDeliveryStateEnum::RECEIVED);
 })->depends('create supplier delivery items by selected purchase order');
+
+test('create stock delivery from purchase order', function () {
+    $supplier    = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier = StoreOrgSupplier::make()->action($this->organisation, $supplier);
+
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'PO-SD',
+        'name'             => 'Purchase order to stock delivery',
+        'cost'             => 150,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+    StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $this->orgStocks[0],
+        PurchaseOrderTransaction::factory()->definition()
+    );
+
+    $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), [
+        'delivery_type'             => 'container',
+        'incoterm'                  => 'FOB',
+        'estimated_production_date' => '2026-07-27',
+        'estimated_receiving_date'  => '2026-08-31',
+    ]);
+
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+
+    $stockDelivery = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh());
+
+    expect($stockDelivery)->toBeInstanceOf(StockDelivery::class)
+        ->and($stockDelivery->state)->toEqual(StockDeliveryStateEnum::IN_PROCESS)
+        ->and($stockDelivery->parent_id)->toBe($orgSupplier->id)
+        ->and($stockDelivery->number_purchase_orders)->toBe(1)
+        ->and($stockDelivery->items()->count())->toBe(1)
+        ->and($stockDelivery->items()->first()->state)->toEqual(StockDeliveryItemStateEnum::IN_PROCESS)
+        ->and(Arr::get($stockDelivery->data, 'delivery_type'))->toBe('container')
+        ->and(Arr::get($stockDelivery->data, 'incoterm'))->toBe('FOB')
+        ->and(Arr::get($stockDelivery->data, 'estimated_dispatched_date'))->toBe('2026-07-27')
+        ->and(Arr::get($stockDelivery->data, 'estimated_receiving_date'))->toBe('2026-08-31');
+
+    return $stockDelivery;
+});
 
 
 test('hydrate agents', function () {

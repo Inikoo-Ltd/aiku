@@ -20,7 +20,7 @@ enum StockDeliveryStateEnum: string
     case DISPATCHED = 'dispatched';
     case RECEIVED = 'received';
     case CHECKED = 'checked';
-    case BOOKING_IN = 'booking_in';
+    case BOOKING_IN = 'booking_in'; // Skippable
     case BOOKED_IN = 'booked_in';
     // Final
     case PLACED = 'placed';
