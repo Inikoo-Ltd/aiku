@@ -8,6 +8,11 @@
 
 namespace Deployer;
 
+// Default is 300s; the octane-anchor rsync of a full release is disk-bound and
+// can exceed that on the HDD staging box (esp. during RAID resync). Harmless on
+// fast prod hosts — only allows a slow command to finish instead of being killed.
+set('default_timeout', 2400);
+
 set('update_code_strategy', 'clone');
 
 set('bin/php', function () {

@@ -322,8 +322,8 @@ class ShowPurchaseOrder extends OrgAction
                         'volume'                   => Arr::get($weightAndVolume, 'volume'),
                         'is_weight_partial'        => Arr::get($weightAndVolume, 'is_weight_partial'),
                         'is_volume_partial'        => Arr::get($weightAndVolume, 'is_volume_partial'),
-                        'production_time'          => null,
-                        'delivery_time'            => null,
+                        'production_time'          => null, // Todo: not sure in which states this should appear, so far only known when the purchase order is cancelled
+                        'delivery_time'            => null, // Todo: not sure in which states this should appear, so far only known when the purchase order is cancelled
                     ],
                     'third_block' => [
                         'currency'     => $purchaseOrder->currency?->code,

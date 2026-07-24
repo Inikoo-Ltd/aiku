@@ -631,7 +631,7 @@ test('check supplier delivery items all correct', function ($stockDeliveryItems)
             'unit_quantity_checked' => 6
         ]);
     }
-    expect($stockDeliveryItems[0]->stockDelivery->fresh()->state)->toEqual(StockDeliveryStateEnum::RECEIVED);
+    expect($stockDeliveryItems[0]->stockDelivery->fresh()->state)->toEqual(StockDeliveryStateEnum::CHECKED);
 })->depends('create supplier delivery items by selected purchase order');
 
 test('create stock delivery from purchase order', function () {

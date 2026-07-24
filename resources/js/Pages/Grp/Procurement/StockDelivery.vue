@@ -7,7 +7,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import type { Component } from "vue"
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
+import { trans } from "laravel-vue-i18n"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -18,7 +19,9 @@ import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.v
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 
+import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 
@@ -26,8 +29,10 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows } from "@fal"
+import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle } from "@fas"
 
 library.add(
 	faInventory,
@@ -38,7 +43,16 @@ library.add(
 	faTerminal,
 	faCameraRetro,
 	faPaperclip,
-	faInfoCircle
+	faInfoCircle,
+	faHandHoldingBox,
+	faPeopleArrows,
+	faBars,
+	faBoxCheck,
+	fasInventory,
+	faShare,
+	faArrowCircleRight,
+	faArrowCircleLeft,
+	faExclamationCircle
 )
 
 const props = defineProps<{
@@ -49,6 +63,43 @@ const props = defineProps<{
 	}
 	timelines: {
 		[key: string]: TSTimeline
+	}
+	box_stats: {
+		first_block: {
+			orderer: {
+				slug?: string
+				type?: string
+				name?: string
+			}
+			delivery: {
+				type: string | null
+				incoterm: string | null
+				port_of_export: string | null
+				port_of_import: string | null
+				delivery_address: string | null
+			}
+		}
+		second_block: {
+			state: string
+			total_items: number
+			total_received_checked_items: number
+			total_placed_items: number
+			weight: number | null
+			volume: number | null
+			is_weight_partial: boolean
+			is_volume_partial: boolean
+			production_time: string | null
+			delivery_time: string | null
+		}
+		third_block: {
+			currency: string | null
+			org_currency: string | null
+			org_exchange: number | string | null
+			items: number | string
+			extra: number | string
+			total: number | string
+			org_items: number | string
+		}
 	}
 	tabs: {
 		current: string
@@ -64,6 +115,8 @@ const props = defineProps<{
 	history?: {}
 }>()
 
+const locale = useLocaleStore()
+
 const currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
 
@@ -76,6 +129,100 @@ const component = computed(() => {
 	}
 
 	return components[currentTab.value]
+})
+
+const metrics = computed(() => {
+	const { weight, volume, is_weight_partial, is_volume_partial } = props.box_stats.second_block
+
+	return [
+		{
+			key: "weight",
+			isUnknown: weight === null,
+			showMark: weight === null || is_weight_partial,
+			text: weight === null ? trans("Unknown weight") : `${locale.number(weight)}Kg`,
+			tooltip: weight === null ? trans("No item has weight data") : trans("Some items have unknown weight"),
+		},
+		{
+			key: "volume",
+			isUnknown: volume === null,
+			showMark: volume === null || is_volume_partial,
+			text: volume === null ? trans("Unknown CBM") : `${locale.number(volume)} m³`,
+			tooltip: volume === null ? trans("No item has CBM data") : trans("Some items have unknown CBM"),
+		},
+	]
+})
+
+const ordererRoute = computed<string>(() => {
+	const orderer = props.box_stats.first_block.orderer
+	const slug = orderer.slug
+	const type = orderer.type
+
+	if (!slug || !type) return ""
+
+	const organisation = route().params["organisation"]
+
+	switch (type) {
+		case "Agent":
+			return route("grp.org.procurement.org_agents.show", [organisation, slug])
+		case "Supplier":
+			return route("grp.org.procurement.org_suppliers.show", [organisation, slug])
+		default:
+			return ""
+	}
+})
+
+const orgPerOrder = computed(() => {
+	const { items, org_items, org_exchange } = props.box_stats.third_block
+	const deliveryItems = Number(items)
+	const orgItems = Number(org_items)
+
+	if (deliveryItems) {
+		return orgItems / deliveryItems
+	}
+
+	return Number(org_exchange) || null
+})
+
+const costBlocks = computed(() => {
+	const { currency, org_currency, items, extra, total, org_items } = props.box_stats.third_block
+
+	const money = (code: string | null, amount: number) => locale.currencyFormat(code ?? "", amount)
+
+	const supplierBlock = {
+		key: "supplier",
+		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
+		rows: [
+			{ label: trans("Items"), value: money(currency, Number(items)) },
+			{ label: trans("Extra costs"), value: money(currency, Number(extra)) },
+			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
+		],
+	}
+
+	const sameCurrency = !org_currency || org_currency === currency
+	const orgCurrency = org_currency || currency
+	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
+	const orgItems = sameCurrency ? Number(items) : Number(org_items)
+	const orgExtra = Number(extra) * rate
+
+	const orderPerOrg = rate ? 1 / rate : null
+	const rateLabel = sameCurrency
+		? `${trans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
+		: orderPerOrg === null
+			? ""
+			: `1 ${orgCurrency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
+
+	return [
+		supplierBlock,
+		{
+			key: "org",
+			title: rateLabel,
+			rows: [
+				{ label: trans("Items"), value: money(orgCurrency, orgItems) },
+				{ label: trans("Extra costs"), value: money(orgCurrency, orgExtra) },
+				{ label: trans("Total"), value: money(orgCurrency, orgItems + orgExtra), isTotal: true },
+			],
+		},
+	]
 })
 
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -102,6 +249,187 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:slidesPerView="6"
 			:format-time="'MMMM d yyyy, HH:mm'"
 		/>
+	</div>
+
+	<div class="grid grid-cols-2 lg:grid-cols-4 text-gray-500 divide-x divide-gray-300 border-b border-gray-300">
+		<!-- First Block -->
+		<BoxStatPallet class="p-4">
+			<div class="flex flex-col gap-4">
+				<!-- Orderer -->
+				<div v-if="box_stats.first_block.orderer.name" class="flex items-center gap-2">
+					<dt>
+						<FontAwesomeIcon
+							v-tooltip="trans(box_stats.first_block.orderer.type ?? '')"
+							icon="fal fa-hand-holding-box"
+							aria-hidden="true"
+							fixed-width
+						/>
+					</dt>
+					<dd>
+						<Link v-if="ordererRoute" :href="ordererRoute" class="primaryLink">
+							{{ box_stats.first_block.orderer.name }}
+						</Link>
+						<span v-else>{{ box_stats.first_block.orderer.name }}</span>
+					</dd>
+				</div>
+
+				<!-- Delivery terms -->
+				<div v-if="box_stats.first_block.delivery.type === 'container'">
+					<div class="flex items-center gap-2">
+						<dt>
+							<FontAwesomeIcon
+								v-tooltip="trans('Incoterm')"
+								icon="fas fa-share"
+								aria-hidden="true"
+								fixed-width
+							/>
+						</dt>
+						<dd v-if="box_stats.first_block.delivery.incoterm">{{ box_stats.first_block.delivery.incoterm }}</dd>
+						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
+							<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
+							<span>{{ trans("Incoterm not set") }}</span>
+						</dd>
+					</div>
+
+					<div class="flex items-center gap-2">
+						<dt>
+							<FontAwesomeIcon
+								v-tooltip="trans('Port of export')"
+								icon="fas fa-arrow-circle-right"
+								aria-hidden="true"
+								fixed-width
+							/>
+						</dt>
+						<dd v-if="box_stats.first_block.delivery.port_of_export">{{ box_stats.first_block.delivery.port_of_export }}</dd>
+						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
+							<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
+							<span>{{ trans("Port of export not set") }}</span>
+						</dd>
+					</div>
+
+					<div class="flex items-center gap-2">
+						<dt>
+							<FontAwesomeIcon
+								v-tooltip="trans('Port of import')"
+								icon="fas fa-arrow-circle-left"
+								aria-hidden="true"
+								fixed-width
+							/>
+						</dt>
+						<dd v-if="box_stats.first_block.delivery.port_of_import">{{ box_stats.first_block.delivery.port_of_import }}</dd>
+						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
+							<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
+							<span>{{ trans("Port of import not set") }}</span>
+						</dd>
+					</div>
+				</div>
+
+				<!-- Deliver to -->
+				<div class="pt-2 text-sm">
+					<div class="text-gray-400">{{ trans("Deliver to") }}:</div>
+					<div v-if="box_stats.first_block.delivery.delivery_address" class="text-xs whitespace-pre-line">{{ box_stats.first_block.delivery.delivery_address }}</div>
+					<div v-else class="flex items-center gap-1 text-red-500 text-xs italic">
+						<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
+						<span>{{ trans("Delivery address not set") }}</span>
+					</div>
+				</div>
+			</div>
+		</BoxStatPallet>
+
+		<!-- Second Block -->
+		<BoxStatPallet class="p-4">
+			<div class="flex justify-center items-center gap-2">
+				<FontAwesomeIcon
+					v-tooltip="trans('Stock Delivery')"
+					icon="fal fa-people-arrows"
+					class="text-gray-400"
+					fixed-width
+					aria-hidden="true"
+				/>
+				<span>{{ box_stats.second_block.state }}</span>
+			</div>
+
+			<hr class="my-1 border-t border-gray-300" />
+
+			<!-- Todo: not sure in which states production/delivery time should appear, so far only known when the purchase order is cancelled, hidden for now -->
+			<template v-if="false">
+				<div class="space-y-1 text-sm">
+					<div class="flex items-center justify-between gap-4">
+						<span>{{ trans("Production time") }}</span>
+						<span :class="box_stats.second_block.production_time ? '' : 'italic text-gray-400'">
+							{{ box_stats.second_block.production_time ?? trans("Unknown") }}
+						</span>
+					</div>
+					<div class="flex items-center justify-between gap-4">
+						<span>{{ trans("Delivery time") }}</span>
+						<span :class="box_stats.second_block.delivery_time ? '' : 'italic text-gray-400'">
+							{{ box_stats.second_block.delivery_time ?? trans("Unknown") }}
+						</span>
+					</div>
+				</div>
+
+				<hr class="my-1 border-t border-gray-300" />
+			</template>
+
+			<div class="flex justify-center gap-4">
+				<div class="flex items-center gap-1">
+					<FontAwesomeIcon v-tooltip="trans('Items')" icon="fas fa-bars" aria-hidden="true" fixed-width />
+					<span>{{ box_stats.second_block.total_items }}</span>
+				</div>
+
+				<div class="flex items-center gap-1">
+					<FontAwesomeIcon v-tooltip="trans('Received & checked items')" icon="fas fa-box-check" aria-hidden="true" fixed-width />
+					<span>{{ box_stats.second_block.total_received_checked_items }}</span>
+				</div>
+
+				<div class="flex items-center gap-1">
+					<FontAwesomeIcon v-tooltip="trans('Costing done')" icon="fas fa-inventory" aria-hidden="true" fixed-width />
+					<span>{{ box_stats.second_block.total_placed_items }}</span>
+				</div>
+			</div>
+
+			<div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+				<div
+					v-for="metric in metrics"
+					:key="metric.key"
+					class="flex items-center justify-center gap-1"
+					:class="metric.isUnknown ? 'italic text-red-500' : ''"
+				>
+					<FontAwesomeIcon
+						v-if="metric.showMark"
+						v-tooltip="metric.tooltip"
+						icon="fas fa-exclamation-circle"
+						:class="metric.isUnknown ? 'text-red-500' : 'text-orange-500'"
+						aria-hidden="true"
+						fixed-width
+					/>
+					<span>{{ metric.text }}</span>
+				</div>
+			</div>
+		</BoxStatPallet>
+
+		<!-- Third Block: costs -->
+		<BoxStatPallet v-for="block in costBlocks" :key="block.key" class="p-4">
+			<div class="flex justify-center text-center">
+				{{ block.title }}
+			</div>
+
+			<hr class="my-1 border-t border-gray-300" />
+
+			<div class="mt-2 space-y-1 text-sm">
+				<div
+					v-for="row in block.rows"
+					:key="row.label"
+					class="flex items-center justify-between gap-4"
+					:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
+				>
+					<span>{{ row.label }}</span>
+					<span>{{ row.value }}</span>
+				</div>
+			</div>
+		</BoxStatPallet>
+
+		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
 	</div>
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
