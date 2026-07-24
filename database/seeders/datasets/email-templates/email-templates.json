@@ -502,6 +502,17 @@
   },
    {
     "outboxes": [
+      "price_change"
+    ],
+    "name": "Price change",
+    "content": "price_change.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "products"
+    ]
+  },
+   {
+    "outboxes": [
       "chat_notification_to_customer",
       "price_change_notification",
       "web_user_registration",
