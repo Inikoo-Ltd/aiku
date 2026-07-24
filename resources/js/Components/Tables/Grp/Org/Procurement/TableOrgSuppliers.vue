@@ -19,24 +19,25 @@ defineProps<{
 
 const locale = useLocaleStore();
 
-
+const routeCurrent = route().current()
+const routeParams = route().routeParams
 
 function supplierRoute(supplier: Supplier) {
-  console.log(route().current())
-    switch (route().current()) {
+  console.log(routeCurrent)
+    switch (routeCurrent) {
         case 'grp.org.procurement.org_suppliers.index':
             return route(
                 'grp.org.procurement.org_suppliers.show',
                 [
-                  route().params['organisation'],
+                  routeParams['organisation'],
                   supplier.org_supplier_slug
                 ]);
         case 'grp.org.procurement.org_agents.show.suppliers.index':
             return route(
                 'grp.org.procurement.org_agents.show.suppliers.show',
                 [
-                  route().params['organisation'],
-                  route().params['orgAgent'],
+                  routeParams['organisation'],
+                  routeParams['orgAgent'],
                   supplier.org_supplier_slug
                 ]);
 

@@ -434,6 +434,19 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 </button>
             </div>
         </template>
+
+        <template #cell(delivery_state)="{ item }">
+            <div class="flex items-center gap-1.5">
+                <FontAwesomeIcon
+                    v-tooltip="item.delivery_state_icon?.tooltip"
+                    :icon="item.delivery_state_icon?.icon"
+                    :class="item.delivery_state_icon?.class"
+                    aria-hidden="true"
+                    fixed-width
+                />
+                <span>{{ item.delivery_state_label }}</span>
+            </div>
+        </template>
     </Table>
 
     <ConfirmPopup />

@@ -13,6 +13,7 @@ use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,14 +25,25 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
     {
         $weights = $this->getWeights($stockDelivery);
 
+        $stateCounts = $stockDelivery->items()
+            ->groupBy('state')
+            ->selectRaw('state, count(*) as aggregate')
+            ->pluck('aggregate', 'state');
+
+        $items = (int) $stateCounts->sum();
+
         $stats = [
-            'number_stock_delivery_items' => $stockDelivery->items()->count(),
-            'gross_weight'                => $weights['gross_weight'],
-            'net_weight'                  => $weights['net_weight'],
+            'number_stock_delivery_items'                  => $items,
+            'number_stock_delivery_items_except_cancelled' => $items - (int) Arr::get($stateCounts, StockDeliveryItemStateEnum::CANCELLED->value, 0),
+            'gross_weight'                                 => $weights['gross_weight'],
+            'net_weight'                                   => $weights['net_weight'],
         ];
 
-        $checkedItemsCount = $stockDelivery->items()->where('state', StockDeliveryItemStateEnum::CHECKED)->count();
-        $items             = $stockDelivery->items()->count();
+        foreach (StockDeliveryItemStateEnum::cases() as $case) {
+            $stats['number_stock_delivery_items_state_'.$case->snake()] = (int) Arr::get($stateCounts, $case->value, 0);
+        }
+
+        $checkedItemsCount = (int) Arr::get($stateCounts, StockDeliveryItemStateEnum::CHECKED->value, 0);
 
         if (($checkedItemsCount === $items) && ($items > 0)) {
             $stats['state']                              = StockDeliveryStateEnum::CHECKED;
@@ -42,9 +54,6 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
         $stockDelivery->update($stats);
     }
 
-    /**
-     * @return array{gross_weight: ?float, net_weight: ?float}
-     */
     private function getWeights(StockDelivery $stockDelivery): array
     {
         $lines = DB::table('stock_delivery_items as sdi')

@@ -15,7 +15,7 @@ import { trans } from 'laravel-vue-i18n'
 
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
-import { set, get } from 'lodash-es'
+import { set, get, pick } from 'lodash-es'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { router } from '@inertiajs/vue3'
@@ -23,6 +23,9 @@ import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue'
 import PureInput from '../Pure/PureInput.vue'
 import { RouteParams } from 'ziggy-js'
 import PureMultiplePriceCurrencyUsePopover from '../Pure/PureMultiplePriceCurrencyUsePopover.vue'
+import PureAvgOrgCost from '../Pure/PureAvgOrgCost.vue'
+import PureProfitMargin from '../Pure/PureProfitMargin.vue'
+import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
@@ -133,7 +136,7 @@ const rowClass = (xxx: any) => {
 
 
 // Section: multiselect columns selector
-const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'master_prices', 'master_rrps', 'units', 'unit', 'gross_weight', 'family_id', ])
+const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'master_prices', 'master_rrps', 'units', 'unit', 'gross_weight', 'family_id', 'avg_org_cost', 'profit_margin', 'rrp_margin' ])
 const groupedColumnList = ref([
     {
         label: 'General',
@@ -147,8 +150,11 @@ const groupedColumnList = ref([
     {
         label: 'Pricing',
         items: [
-            { label: 'Price', value: 'master_prices' },
-            { label: 'RRP', value: 'master_rrps' },
+            { label: 'Avg org cost', value: 'avg_org_cost' },
+            { label: 'Profit margin', value: 'profit_margin' },
+            { label: 'RRP margin', value: 'rrp_margin' },
+            { label: 'Outer Price', value: 'master_prices' },
+            { label: 'RRP/Unit', value: 'master_rrps' },
         ]
     },
     {
@@ -181,8 +187,9 @@ watch(selectedColumns, (e) => {  // To avoid 'name' to be unselected
 
 // Section: Submit data
 const isLoadingSave = ref(false)
+const editableFields = ['id', 'name', 'description', 'is_for_sale', 'unit', 'gross_weight', 'master_family_id', 'master_prices', 'master_rrps']
 const onSave = async () => {
-    console.log('productsList.value', productsList.value)
+    const payload = productsList.value.map((product: any) => pick(product, editableFields))
     try {
         isLoadingSave.value = true
         const response = await axios.post(
@@ -192,7 +199,7 @@ const onSave = async () => {
                     masterShop: routeParams.masterShop
                 }
             ),
-            { data: productsList.value }
+            { data: payload }
         )
         if (response.status !== 200) {
             
@@ -252,6 +259,15 @@ const onSelectFamily = (option: any) => {
         row.master_family_data = option
     }
 }
+
+const locale = inject("locale", {});
+
+const tradeUnitRoute = (tradeUnit) => {
+    return route(
+        "grp.trade_units.units.show",
+        [tradeUnit.slug])
+}
+
 </script>
 
 
@@ -402,42 +418,78 @@ const onSelectFamily = (option: any) => {
                     </template>
                 </Column>
 
+                  <!-- Column: Units -->
+                <Column v-if="selectedColumns.includes('units')" field="units" header="Units" style="min-width: 6rem">
+                    <template #body="slotProps">
+                        <LabelSKU :product="slotProps.data" :trade_units="slotProps.data.trade_units"
+                            :routeFunction="tradeUnitRoute" />
+                       <!--  <InputNumber
+                            v-model="slotProps.data.units"
+                            @input="(e) => slotProps.data.units = e?.value ?? 0"
+                            :maxFractionDigits="2"
+                            locale="en-US"
+                            :min="0"
+                            inputClass="text-right"
+                            fluid
+                            :disabled="true"
+                        /> -->
+                    </template>
+                </Column>
+
+                  <!-- Column: Profit avg_org_cost -->
+                 <Column v-if="selectedColumns.includes('avg_org_cost')" field="avg_org_cost" header="Avg org cost" style="min-width: 12rem" >
+                    <template #body="slotProps">
+                        <PureAvgOrgCost
+                            :avgOrgCost="slotProps.data.avg_org_cost"
+                            :orgData="slotProps.data.org_data"
+                            :currencies="currencies"
+                        />
+                    </template>
+                </Column>
+
+
+
                 <!-- Column: Price -->
-                <Column v-if="selectedColumns.includes('master_prices')" field="price" header="Price" sortable style="min-width: 18rem">
+                <Column v-if="selectedColumns.includes('master_prices')" field="price" header="Outer Price" sortable style="min-width: 18rem">
                     <template #body="slotProps">
                         <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_prices" :masterAsset="slotProps.data.id" :type_input="'price'" :currencies="currencies" />
-                       <!--  <InputNumber
-                            v-model="slotProps.data.price"
-                            @input="(e) => slotProps.data.price = e?.value ?? 0"
-                            mode="currency"
-                            :currency="slotProps.data.currency"
-                            inputClass="text-right"
-                            :maxFractionDigits="2"
-                            locale="en-US"
-                            :min="0"
-                            fluid
-                        /> -->
                     </template>
                 </Column>
-                
+
+
+                  <!-- Column: Profit margin -->
+                <Column v-if="selectedColumns.includes('profit_margin')" field="profit_margin" header="Profit margin" style="min-width: 12rem" >
+                    <template #body="slotProps">
+                        <PureProfitMargin
+                            :avgOrgCost="slotProps.data.avg_org_cost"
+                            :prices="slotProps.data.master_prices"
+                            :currencies="currencies"
+                        />
+                    </template>
+                </Column>
+
+
+
+
                 <!-- Column: RRP -->
-                <Column v-if="selectedColumns.includes('master_rrps')" field="rrp" header="RRP" sortable style="min-width: 18rem">
+                <Column v-if="selectedColumns.includes('master_rrps')" field="rrp" header="RRP/Unit" sortable style="min-width: 18rem" >
                     <template #body="slotProps">
                          <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_rrps" :masterAsset="slotProps.data.id" :type_input="'rrp'" :currencies="currencies" />
-                       <!--  <InputNumber
-                            v-model="slotProps.data.rrp"
-                            @input="(e) => slotProps.data.rrp = e?.value ?? 0"
-                            mode="currency"
-                            :currency="slotProps.data.currency"
-                            inputClass="text-right"
-                            :maxFractionDigits="2"
-                            locale="en-US"
-                            :min="0"
-                            fluid
-                        /> -->
                     </template>
                 </Column>
-                
+
+                <!-- Column: RRP margin -->
+                <Column v-if="selectedColumns.includes('rrp_margin')" field="rrp_margin" header="RRP margin" style="min-width: 12rem" >
+                    <template #body="slotProps">
+                        <PureProfitMargin
+                            :avgOrgCost="slotProps.data.avg_org_cost"
+                            :prices="slotProps.data.master_rrps"
+                            :costPrices="slotProps.data.master_prices"
+                            :currencies="currencies"
+                        />
+                    </template>
+                </Column>
+
                 <!-- Column: Unit price -->
                 <!-- <Column v-if="selectedColumns.includes('unit_price')" field="unit_price" header="Unit price" sortable style="min-width: 8rem">
                     <template #body="slotProps">
@@ -472,20 +524,7 @@ const onSelectFamily = (option: any) => {
                     </template>
                 </Column>
 
-                <!-- Column: Units -->
-                <Column v-if="selectedColumns.includes('units')" field="units" header="Units" style="min-width: 6rem">
-                    <template #body="slotProps">
-                        <InputNumber
-                            v-model="slotProps.data.units"
-                            @input="(e) => slotProps.data.units = e?.value ?? 0"
-                            :maxFractionDigits="2"
-                            locale="en-US"
-                            :min="0"
-                            inputClass="text-right"
-                            fluid
-                        />
-                    </template>
-                </Column>
+              
 
                 <!-- Column: Unit -->
                 <Column v-if="selectedColumns.includes('unit')" field="unit" header="Unit" style="min-width: 8rem">

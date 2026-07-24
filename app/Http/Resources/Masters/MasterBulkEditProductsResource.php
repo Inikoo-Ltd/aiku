@@ -10,10 +10,12 @@ namespace App\Http\Resources\Masters;
 */
 
 use App\Actions\Traits\HasBucketImages;
+use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Helpers\NaturalLanguage;
 use App\Actions\Traits\HasBucketAttachment;
+use App\Http\Resources\Goods\TradeUnitsForMasterBulkEditResource;
 
 class MasterBulkEditProductsResource extends JsonResource
 {
@@ -27,9 +29,6 @@ class MasterBulkEditProductsResource extends JsonResource
 
         $tradeUnits = $masterProduct->tradeUnits;
 
-        $tradeUnits->loadMissing('ingredients');
-
-
         $countriesOrigin = [];
         $countries      = array_filter(array_map('trim', explode(',', $masterProduct->country_of_origin ?? '')));
         foreach ($countries as $country) {
@@ -37,24 +36,24 @@ class MasterBulkEditProductsResource extends JsonResource
         }
 
         return [
-            'id'                         => $masterProduct->id,
-            'shop_id'                    => $masterProduct->shop_id,
-            'slug'                       => $masterProduct->slug,
-            'code'                       => $masterProduct->code,
-            'name'                       => $masterProduct->name,
-            'price'                      => $masterProduct->price,
-            'rrp'                        => $masterProduct->rrp ?? 0,
-            'master_prices'                      => $masterProduct->master_prices,
-            'master_rrps'                        => $masterProduct->master_rrps,
+            'id'                            => $masterProduct->id,
+            'shop_id'                       => $masterProduct->shop_id,
+            'slug'                          => $masterProduct->slug,
+            'code'                          => $masterProduct->code,
+            'name'                          => $masterProduct->name,
+            'price'                         => $masterProduct->price,
+            'rrp'                           => $masterProduct->rrp ?? 0,
+            'master_prices'                 => $masterProduct->master_prices,
+            'master_rrps'                   => $masterProduct->master_rrps,
             'is_for_sale'                   => (bool) $masterProduct->is_for_sale,
             'not_for_sale_from_trade_unit'  => $masterProduct->not_for_sale_from_trade_unit,
-            'currency'                   => $masterProduct->group->currency->code,
-            'master_family_id'           => $masterProduct->master_family_id,
-            'master_family_data'         => $masterProduct->masterFamily ? [
-                'id'    => $masterProduct->masterFamily->id,
-                'name'  => $masterProduct->masterFamily->name,
+            'currency'                      => $masterProduct->currency_code,
+            'master_family_id'              => $masterProduct->master_family_id,
+            'master_family_data'            => $masterProduct->master_family_id ? [
+                'id'    => $masterProduct->master_family_id,
+                'name'  => $masterProduct->master_family_name,
             ] : null,
-            'web_images'                   => $masterProduct->web_images,
+            'web_images'                    => $masterProduct->web_images,
             'description'                   => $masterProduct->description,
             'description_title'             => $masterProduct->description_title,
             'created_at'                    => $masterProduct->created_at,
@@ -62,18 +61,18 @@ class MasterBulkEditProductsResource extends JsonResource
             'description_extra'             => $masterProduct->description_extra,
             'units'                         => trimDecimalZeros($masterProduct->units),
             'unit'                          => $masterProduct->unit,
-            'unit_price'                          => $masterProduct->unit_price,
+            'unit_price'                    => $masterProduct->unit_price,
             'name_i8n'                      => $masterProduct->getTranslations('name_i8n'),
             'description_i8n'               => $masterProduct->getTranslations('description_i8n'),
             'description_title_i8n'         => $masterProduct->getTranslations('description_title_i8n'),
             'description_extra_i8n'         => $masterProduct->getTranslations('description_extra_i8n'),
             'country_of_origin'             => NaturalLanguage::make()->country($masterProduct->tradeUnits()->first()?->country_of_origin),
-            'countries_of_origin'             => $countriesOrigin,
+            'countries_of_origin'           => $countriesOrigin,
             'marketing_dimensions'          => NaturalLanguage::make()->dimensions($masterProduct->marketing_dimensions),
             'marketing_ingredients'         => $masterProduct->marketing_ingredients,
             'marketing_weight'              => NaturalLanguage::make()->weight($masterProduct->marketing_weight),
             'gross_weight'                  => $masterProduct->gross_weight ?? 0,
-            'gross_weight_human'                  => NaturalLanguage::make()->weight($masterProduct->gross_weight),
+            'gross_weight_human'            => NaturalLanguage::make()->weight($masterProduct->gross_weight),
             'cpnp_number'                   => $masterProduct->cpnp_number,
             'ufi_number'                    => $masterProduct->ufi_number,
             'scpn_number'                   => $masterProduct->scpn_number,
@@ -83,6 +82,9 @@ class MasterBulkEditProductsResource extends JsonResource
             'packing_group'                 => $masterProduct->packing_group,
             'proper_shipping_name'          => $masterProduct->proper_shipping_name,
             'hazard_identification_number'  => $masterProduct->hazard_identification_number,
+            'trade_units'                   => TradeUnitsForMasterBulkEditResource::collection($tradeUnits)->toArray($request),
+            'org_data'                      => $masterProduct->org_data,
+            'avg_org_cost'                  => $masterProduct->avg_org_cost
         ];
     }
 }

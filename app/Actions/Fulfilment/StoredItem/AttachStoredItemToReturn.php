@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\StoredItem;
 
 use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Fulfilment\PalletReturn;
@@ -22,6 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachStoredItemToReturn extends OrgAction
 {
+    use WithFulfilmentWarehouseEditAuthorisation;
+
     private PalletStoredItem $palletStoredItem;
 
     public function handle(PalletReturn $palletReturn, PalletStoredItem $palletStoredItem, array $modelData)
@@ -75,15 +78,6 @@ class AttachStoredItemToReturn extends OrgAction
         $palletReturn = SetStoredItemReturnAutoServices::run($palletReturn);
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.edit");
-    }
-
     public function rules(): array
     {
         return [
@@ -95,7 +89,7 @@ class AttachStoredItemToReturn extends OrgAction
     public function asController(PalletReturn $palletReturn, PalletStoredItem $palletStoredItem, ActionRequest $request)
     {
         $this->palletStoredItem = $palletStoredItem;
-        $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
+        $this->initialisationFromWarehouse($palletReturn->warehouse, $request);
 
         $this->handle($palletReturn, $palletStoredItem, $this->validatedData);
     }
