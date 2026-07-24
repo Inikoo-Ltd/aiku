@@ -10,6 +10,7 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
+use App\Http\Resources\Goods\IngredientsResource;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -281,15 +282,15 @@ class EditTradeUnit extends OrgAction
                                 'ingredients' => [
                                     'type'  => 'select_infinite',
                                     'label' => __('Ingredients'),
-                                    'value' => $tradeUnit->ingredients,
+                                    'value' => $tradeUnit->ingredients->pluck('slug')->all(),
                                     'mode' => 'tags',
+                                    'options' => IngredientsResource::collection($tradeUnit->ingredients)->resolve(),
                                     'fetchRoute' => [
                                         'name'       => 'grp.goods.ingredients.index',
                                         'parameters' => []
                                     ],
                                     'valueProp'  => 'slug',
                                     'labelProp'  => 'name',
-
                                 ],
                                 'origin_country_id' => [
                                     'type'  => 'select',
