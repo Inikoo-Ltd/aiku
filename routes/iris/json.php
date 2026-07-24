@@ -37,6 +37,8 @@ use App\Actions\Helpers\Tag\Json\GetIrisTags;
 use App\Actions\Iris\Basket\FetchIrisEcomBasket;
 use App\Actions\Iris\Basket\GetIrisBasketTransactionProductData;
 use App\Actions\Iris\Catalogue\FetchFamilyListCustomSorted;
+use App\Actions\Iris\CRM\GetIrisProductLastSeen;
+use App\Actions\Iris\CRM\StoreIrisProductLastSeen;
 use App\Actions\Iris\Json\GetBanner;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
 use App\Actions\Iris\Json\GetIrisFooterData;
@@ -68,6 +70,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('basket-transaction-product-data/{transaction:id}', GetIrisBasketTransactionProductData::class)->name('basket_transaction_product_data')->whereNumber('transaction');
 
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
+
+    Route::get('product-last-seen/{webpage:id}', GetIrisProductLastSeen::class)->name('product_last_seen.index')->withoutScopedBindings()->whereNumber('webpage');
+    Route::post('product-last-seen/{webpage:id}', StoreIrisProductLastSeen::class)->name('product_last_seen.store')->withoutScopedBindings();
 
     Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue');
     Route::get('search/catalogue-page', SearchIrisCataloguePage::class)->name('search.catalogue_page');

@@ -74,7 +74,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         ->name("models.")
         ->group(__DIR__."/models.php");
 
-    Route::post('product-last-seen/{webpage:id}', StoreIrisProductLastSeen::class)->name('product_last_seen.store')->withoutScopedBindings();
     Route::get('attachment/{media:ulid}/download', DownloadRetinaAttachment::class)->name('attach.download')->withoutScopedBindings();
 
     Route::get('data-feed.csv', DownloadIrisProduct::class)->name('shop.data_feed');
