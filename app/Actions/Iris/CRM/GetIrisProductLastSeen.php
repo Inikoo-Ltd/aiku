@@ -38,7 +38,7 @@ class GetIrisProductLastSeen extends IrisAction
         }
 
         $queryBuilder->select([
-            'products.id',
+            'product_last_seens.id',
             'products.code',
             'products.name',
             'products.available_quantity',
