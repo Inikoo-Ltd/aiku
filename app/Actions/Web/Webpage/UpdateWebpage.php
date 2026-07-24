@@ -133,6 +133,10 @@ class UpdateWebpage extends OrgAction
             data_set($modelData, 'settings.webpage.title_suffix', Arr::pull($modelData, 'webpage_title_suffix', null));
         }
 
+        if(Arr::has($modelData, 'show_price')) {
+            data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
+        }
+
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
         $changes = Arr::except($webpage->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -219,6 +223,7 @@ class UpdateWebpage extends OrgAction
             'follow_link'                    => ['sometimes', 'nullable', 'boolean'],
             'webpage_title_prefix'           => ['sometimes', 'nullable', 'string'],
             'webpage_title_suffix'           => ['sometimes', 'nullable', 'string'],
+            'show_price'                     => ['sometimes', 'nullable', 'boolean'],
         ];
 
         if (!$this->strict) {
