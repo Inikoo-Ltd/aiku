@@ -29,7 +29,7 @@ class GetIrisProductLastSeen extends IrisAction
             ->where('product_last_seens.webpage_id', '=', $webpage->id);
 
         $queryBuilder->select([
-            'products.id',
+            'product_last_seens.id',
             'products.code',
             'products.name',
             'webpages.slug',
