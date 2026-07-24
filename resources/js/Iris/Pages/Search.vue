@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { inject, onBeforeMount } from "vue"
+import { inject, onBeforeMount, computed, onMounted, defineAsyncComponent } from "vue"
 
 import { irisLocaleStructure } from "@iris/Composables/useIrisLocaleStructure"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { getStyles } from "@/Composables/styles"
-import { onMounted } from "vue"
 import { ctrans } from "@/Composables/useTrans"
+
+const SearchInternalResultPage = defineAsyncComponent(() => import("@/Iris/Components/Search/SearchInternalResultPage.vue"))
 
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -19,6 +20,9 @@ const props = defineProps<{
 }>()
 
 // console.log("PROP web_block_family", props.web_block_family);
+
+// Section: Internal catalogue search (used when website search model is 'internal')
+const isInternalSearch = computed(() => layout.iris?.iris_search_model === 'internal')
 
 // Init: Search result
 const LBInitSearchResult = async () => {
@@ -193,7 +197,7 @@ const LBInitSearchResult = async () => {
 }
 
 onBeforeMount(() => {
-    if (layout.iris?.iris_search_model === 'internal') {
+    if (isInternalSearch.value) {
         return
     }
 
@@ -249,7 +253,9 @@ onMounted(() => {
         <div class="md:mt-4 min-h-44" :style="{
             fontFamily: layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily
         }">
-            <div id="luigi_result_search" class="h-40 mb-4">
+            <SearchInternalResultPage v-if="isInternalSearch" />
+
+            <div v-else id="luigi_result_search" class="h-40 mb-4">
                 <div class="flex gap-x-4 h-full">
                     <div class="w-96 skeleton rounded-md">
                     </div>
