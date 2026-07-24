@@ -7,8 +7,12 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import type { Component } from "vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
+
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
+import { notify } from "@kyvg/vue3-notification"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -31,7 +35,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle } from "@fas"
 
 library.add(
@@ -46,6 +50,7 @@ library.add(
 	faInfoCircle,
 	faHandHoldingBox,
 	faPeopleArrows,
+	faExclamationTriangle,
 	faBars,
 	faBoxCheck,
 	fasInventory,
@@ -226,6 +231,32 @@ const costBlocks = computed(() => {
 })
 
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const confirm = useConfirm()
+const deleteLoading = ref(false)
+
+const confirmDeleteStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to delete this stock delivery? The purchase order will be reverted to before this delivery."),
+		header: trans("Delete Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Delete"), severity: "danger" },
+		accept: () => {
+			router.delete(route(action.route.name, action.route.parameters), {
+				onStart: () => { deleteLoading.value = true },
+				onFinish: () => { deleteLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to delete stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
 </script>
 
 <template>
@@ -237,6 +268,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				label="Attach"
 				icon="upload"
 				@click="() => (isModalUploadOpen = true)"
+			/>
+		</template>
+
+		<template #button-delete-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="deleteLoading"
+				@click="() => confirmDeleteStockDelivery(action)"
 			/>
 		</template>
 	</PageHeading>
@@ -450,4 +492,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		progressDescription="Adding Stock Delivery Attachments"
 		:attachmentRoutes="attachmentRoutes"
 	/>
+
+	<ConfirmDialog group="stock-delivery">
+		<template #icon>
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+		</template>
+	</ConfirmDialog>
 </template>
