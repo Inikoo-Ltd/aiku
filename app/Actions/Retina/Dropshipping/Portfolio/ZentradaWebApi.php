@@ -173,7 +173,7 @@ class ZentradaWebApi extends RetinaAction
 
     public function asController(ActionRequest $request): StreamedResponse
     {
-        $this->initialisation($request);
+        $this->shop = $request->website->shop;
 
         return $this->handle($this->shop);
     }

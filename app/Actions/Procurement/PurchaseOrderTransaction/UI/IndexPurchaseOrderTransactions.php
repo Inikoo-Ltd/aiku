@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
@@ -35,9 +36,15 @@ class IndexPurchaseOrderTransactions extends OrgAction
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
+    protected function showDeliveryState(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
+            && $purchaseOrder->stockDeliveries()->exists();
+    }
+
     protected function getElementGroups(PurchaseOrder $purchaseOrder): array
     {
-        return [
+        $elementGroups = [
             'state' => [
                 'label'    => __('State'),
                 'elements' => collect(PurchaseOrderTransactionStateEnum::cases())->mapWithKeys(
@@ -53,6 +60,25 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 },
             ],
         ];
+
+        if ($this->showDeliveryState($purchaseOrder)) {
+            $elementGroups['delivery_state'] = [
+                'label'    => __('Delivery State'),
+                'elements' => collect(PurchaseOrderTransactionDeliveryStateEnum::cases())->mapWithKeys(
+                    fn (PurchaseOrderTransactionDeliveryStateEnum $deliveryState) => [
+                        $deliveryState->value => [
+                            PurchaseOrderTransactionDeliveryStateEnum::labels()[$deliveryState->value],
+                            $purchaseOrder->{'number_purchase_orders_transactions_delivery_state_'.$deliveryState->snake()},
+                        ],
+                    ]
+                )->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('purchase_order_transactions.delivery_state', $elements);
+                },
+            ];
+        }
+
+        return $elementGroups;
     }
 
     public function handle(PurchaseOrder $parent, $prefix = null): LengthAwarePaginator
@@ -154,6 +180,10 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false)
                     ->column(key: 'state', label: __('State'), canBeHidden: false);
+
+                if ($this->showDeliveryState($purchaseOrder)) {
+                    $table->column(key: 'delivery_state', label: __('Delivery State'), canBeHidden: false);
+                }
             }
 
             $table->defaultSort('code');

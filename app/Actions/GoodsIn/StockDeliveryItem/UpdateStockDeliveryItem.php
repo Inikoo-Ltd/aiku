@@ -10,6 +10,7 @@ namespace App\Actions\GoodsIn\StockDeliveryItem;
 
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
@@ -39,6 +40,7 @@ class UpdateStockDeliveryItem extends OrgAction
         $stockDeliveryItem = $this->update($stockDeliveryItem, $modelData, ['data']);
 
         StockDeliveriesHydrateItems::dispatch($stockDeliveryItem->stockDelivery)->delay($this->hydratorsDelay);
+        UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem::run($stockDeliveryItem);
 
         return $stockDeliveryItem;
     }
