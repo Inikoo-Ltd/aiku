@@ -49,7 +49,7 @@ jobs:
       - name: Launch 🚀
         uses: deployphp/action@v1
         with:
-          dep: deploy staging
+          dep: deploy neon
           ssh-config: ${{ secrets.DEPLOY_SSH_CONFIG }}
           private-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
           known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}

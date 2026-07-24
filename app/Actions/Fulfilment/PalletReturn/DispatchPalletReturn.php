@@ -40,6 +40,8 @@ class DispatchPalletReturn extends OrgAction
 {
     use WithActionUpdate;
 
+    private PalletReturn $palletReturn;
+
 
     /**
      * @throws \Throwable
@@ -123,7 +125,14 @@ class DispatchPalletReturn extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
+        $warehouseId = $this->palletReturn->warehouse_id;
+
+        return $request->user()->authTo([
+            "fulfilment-shop.{$this->fulfilment->id}.edit",
+            "fulfilment.$warehouseId.edit",
+            "supervisor-incoming.$warehouseId",
+            "supervisor-fulfilment.$warehouseId",
+        ]);
     }
 
     public function jsonResponse(PalletReturn $palletReturn): JsonResource
@@ -136,6 +145,7 @@ class DispatchPalletReturn extends OrgAction
      */
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
         return $this->handle($palletReturn, $this->validatedData);

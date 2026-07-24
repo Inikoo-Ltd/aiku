@@ -20,11 +20,30 @@ use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 trait CanCloneImages
 {
+    protected function dedupeAttachedImages(Model $model): void
+    {
+        $keepIds = DB::table('model_has_media')
+            ->where('model_type', $model->getMorphClass())
+            ->where('model_id', $model->id)
+            ->selectRaw('min(id) as id')
+            ->groupBy('media_id')
+            ->pluck('id');
+
+        DB::table('model_has_media')
+            ->where('model_type', $model->getMorphClass())
+            ->where('model_id', $model->id)
+            ->whereNotIn('id', $keepIds)
+            ->delete();
+    }
+
     protected function cloneImages(TradeUnit|MasterProductCategory|MasterAsset|MasterCollection|Model $source, Product|ProductCategory|Collection|Model $target): void
     {
+        $this->dedupeAttachedImages($target);
+
         $images   = [];
         $position = 1;
 
