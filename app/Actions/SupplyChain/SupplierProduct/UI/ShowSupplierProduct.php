@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\InertiaAction;
 use App\Enums\UI\SupplyChain\SupplierProductTabsEnum;
@@ -21,18 +22,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowSupplierProduct extends InertiaAction
 {
+    use WithSupplyChainAuthorisation;
     public function handle(SupplierProduct $supplierProduct): SupplierProduct
     {
         return $supplierProduct;
     }
 
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('supply-chain.edit');
-
-        return $request->user()->authTo('supply-chain.view');
-    }
 
     public function asController(SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct
     {

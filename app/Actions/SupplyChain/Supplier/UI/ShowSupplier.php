@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
@@ -27,8 +28,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowSupplier extends GrpAction
+class ShowSupplier extends OrgAction
 {
+    use WithSupplyChainAuthorisation;
     use WithSupplierSubNavigation;
     public function handle(Supplier $supplier): Supplier
     {
@@ -36,17 +38,9 @@ class ShowSupplier extends GrpAction
     }
 
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo('supply-chain.edit');
-        $this->canDelete = $request->user()->authTo('supply-chain.edit');
-
-        return $request->user()->authTo("supply-chain.view");
-    }
-
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
-        $this->initialisation($supplier->group, $request)->withTab(SupplierTabsEnum::values());
+        $this->initialisationFromGroup($supplier->group, $request)->withTab(SupplierTabsEnum::values());
 
         return $this->handle($supplier);
     }
@@ -55,7 +49,7 @@ class ShowSupplier extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
     {
-        $this->initialisation($supplier->group, $request)->withTab(SupplierTabsEnum::values());
+        $this->initialisationFromGroup($supplier->group, $request)->withTab(SupplierTabsEnum::values());
 
         return $this->handle($supplier);
     }

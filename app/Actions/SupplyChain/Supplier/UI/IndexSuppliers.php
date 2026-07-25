@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
@@ -27,8 +28,9 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexSuppliers extends GrpAction
+class IndexSuppliers extends OrgAction
 {
+    use WithSupplyChainAuthorisation;
     use WithAgentSubNavigation;
     private array $elementGroups;
 
@@ -176,18 +178,11 @@ class IndexSuppliers extends GrpAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("supply-chain.edit");
-
-        return $request->user()->authTo("supply-chain.view");
-    }
-
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $group        = app('group');
         $this->parent = $group;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group);
     }
@@ -197,7 +192,7 @@ class IndexSuppliers extends GrpAction
         $this->bucket = 'free';
         $group        = app('group');
         $this->parent = $group;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group);
     }
@@ -207,7 +202,7 @@ class IndexSuppliers extends GrpAction
         $this->bucket = 'in_agents';
         $group        = app('group');
         $this->parent = $group;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group);
     }
@@ -215,7 +210,7 @@ class IndexSuppliers extends GrpAction
     public function inAgent(Agent $agent, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $agent;
-        $this->initialisation($agent->group, $request);
+        $this->initialisationFromGroup($agent->group, $request);
 
         return $this->handle($agent);
     }

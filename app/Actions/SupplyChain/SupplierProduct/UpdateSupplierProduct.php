@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\HistoricSupplierProduct\StoreHistoricSupplierProduct;
@@ -24,8 +25,9 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
-class UpdateSupplierProduct extends GrpAction
+class UpdateSupplierProduct extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 
@@ -131,7 +133,7 @@ class UpdateSupplierProduct extends GrpAction
         $this->hydratorsDelay  = $hydratorsDelay;
         $this->skipHistoric    = $skipHistoric;
         $this->supplierProduct = $supplierProduct;
-        $this->initialisation($supplierProduct->group, $modelData);
+        $this->initialisationFromGroup($supplierProduct->group, $modelData);
 
         return $this->handle($supplierProduct, $this->validatedData);
     }
