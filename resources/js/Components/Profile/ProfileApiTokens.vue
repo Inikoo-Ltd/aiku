@@ -110,7 +110,7 @@ const onCopySnippet = (key: string, text: string) => {
                 class="flex-1 rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
             <Button
-                type="submit"
+                nativeType="submit"
                 :label="trans('Create key')"
                 icon="fal fa-key"
                 :loading="isCreating"
@@ -173,7 +173,7 @@ const onCopySnippet = (key: string, text: string) => {
                 {{ trans('This lets your AI assistant answer questions using Aiku data, for example "What were the sales in my shop last month?". It can only see what you can see in Aiku, and it can never change anything.') }}
             </p>
             <p class="text-sm text-gray-600">
-                {{ trans('You need two things: the address below, and a key (create one above with the button — it looks like a long random text).') }}
+                {{ trans('Everyone needs the address below. Claude and Perplexity also need a key (create one above with the button). ChatGPT and Gemini need no key — they will ask you to sign in to Aiku instead.') }}
             </p>
             <div class="flex items-center gap-2">
                 <span class="text-sm text-gray-500">{{ trans('Address') }}:</span>
@@ -218,10 +218,33 @@ const onCopySnippet = (key: string, text: string) => {
 
             <details class="rounded-md border border-gray-200">
                 <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
-                    ChatGPT {{ trans('and') }} Google Gemini
+                    ChatGPT
                 </summary>
-                <div class="px-4 pb-4 pt-1 text-sm text-gray-600">
-                    {{ trans('ChatGPT and Google Gemini do not work with Aiku yet. Please use Claude or Perplexity for now.') }}
+                <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
+                    <p class="text-xs text-amber-600">{{ trans('Needs a paid ChatGPT plan. No key needed — you will sign in with your normal Aiku login instead.') }}</p>
+                    <ol class="list-decimal space-y-1.5 pl-5">
+                        <li>{{ trans('Open ChatGPT and click your name (bottom left), then') }} <span class="font-medium">{{ trans('Settings') }}</span></li>
+                        <li>{{ trans('Go to') }} <span class="font-medium">{{ trans('Connectors') }}</span>. {{ trans('If you do not see a create option, open') }} <span class="font-medium">{{ trans('Advanced') }}</span> {{ trans('and switch on') }} <span class="font-medium">{{ trans('Developer mode') }}</span></li>
+                        <li>{{ trans('Click') }} <span class="font-medium">{{ trans('Create') }}</span>, {{ trans('name it') }} <span class="font-medium">Aiku</span> {{ trans('and paste the address above') }}</li>
+                        <li>{{ trans('Choose OAuth as authentication if asked, then click through — a page from Aiku will open') }}</li>
+                        <li>{{ trans('Sign in with your normal Aiku username and password and click Approve') }}</li>
+                        <li>{{ trans('In a new chat, enable the Aiku connector and ask your question') }}</li>
+                    </ol>
+                </div>
+            </details>
+
+            <details class="rounded-md border border-gray-200">
+                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
+                    Google Gemini
+                </summary>
+                <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
+                    <p class="text-xs text-amber-600">{{ trans('Only works with a personal Google account — not a work or school account. No key needed.') }}</p>
+                    <ol class="list-decimal space-y-1.5 pl-5">
+                        <li>{{ trans('Open gemini.google.com, click') }} <span class="font-medium">{{ trans('Settings & help') }}</span> ({{ trans('bottom left') }}), {{ trans('then') }} <span class="font-medium">{{ trans('Connected apps') }}</span></li>
+                        <li>{{ trans('Under custom apps, click to add one and paste the address above') }}</li>
+                        <li>{{ trans('Follow the steps on screen — when an Aiku page opens, sign in with your Aiku username and password and click Approve') }}</li>
+                        <li>{{ trans('Ask Gemini something like "How many orders did my shop get this week?"') }}</li>
+                    </ol>
                 </div>
             </details>
 
