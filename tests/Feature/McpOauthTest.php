@@ -26,6 +26,24 @@ beforeEach(function () {
     $this->group = $this->organisation->group;
     app()->instance('group', $this->group);
     setPermissionsTeamId($this->group->id);
+
+    $this->user->update(['can_use_mcp' => true]);
+});
+
+test('user without can_use_mcp flag is rejected with 403', function () {
+    $this->user->update(['can_use_mcp' => false]);
+    $plainTextToken = $this->user->createToken('NoMcpFlag')->plainTextToken;
+
+    postJson('/mcp/aiku', [
+        'jsonrpc' => '2.0',
+        'id'      => 1,
+        'method'  => 'ping',
+    ], [
+        'Accept'        => 'application/json, text/event-stream',
+        'Authorization' => 'Bearer '.$plainTextToken,
+    ])->assertForbidden();
+
+    $this->user->update(['can_use_mcp' => true]);
 });
 
 test('oauth discovery endpoints are published', function () {

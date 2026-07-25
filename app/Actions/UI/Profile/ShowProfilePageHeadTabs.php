@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\UI\WithInertia;
 use App\Enums\UI\SysAdmin\ProfileTabsEnum;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -43,7 +44,9 @@ class ShowProfilePageHeadTabs extends OrgAction
             ],
             'tabs'                           => [
                 'current'    => $this->tab,
-                'navigation' => ProfileTabsEnum::navigation()
+                'navigation' => $request->user()->can_use_mcp
+                    ? ProfileTabsEnum::navigation()
+                    : Arr::except(ProfileTabsEnum::navigation(), ProfileTabsEnum::API_TOKENS->value)
             ],
 
         ];
