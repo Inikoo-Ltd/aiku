@@ -11,6 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -21,6 +22,7 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterSubDepartment extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithMasterSubDepartmentNavigation;
 
     /**

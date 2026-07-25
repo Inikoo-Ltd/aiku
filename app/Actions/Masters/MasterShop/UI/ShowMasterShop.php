@@ -18,6 +18,7 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,9 +26,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowMasterShop extends OrgAction
 {
+    use WithMastersAuthorisation;
     use WithMasterCatalogueSubNavigation;
     use WithMasterShopNavigation;
-
 
     public function handle(MasterShop $masterShop): MasterShop
     {
@@ -66,7 +67,7 @@ class ShowMasterShop extends OrgAction
                         'icon'  => 'fal fa-store-alt'
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
+                    'actions'       => $this->canEdit ? [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -76,7 +77,7 @@ class ShowMasterShop extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
-                    ],
+                    ] : [],
                 ],
                 'tabs'     => [
                     'current'    => $this->tab,

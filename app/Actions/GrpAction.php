@@ -24,6 +24,8 @@ class GrpAction
 
     protected bool $asAction      = false;
     protected bool $canEdit               = false;
+    protected bool $canEditPrices         = false;
+    protected bool $canEditOffers         = false;
     protected bool $canDelete             = false;
 
     public int $hydratorsDelay    = 0;

@@ -11,6 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditMasterDepartment extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithMasterDepartmentNavigation;
 
     private MasterShop|Group $parent;

@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -12,6 +12,7 @@ namespace App\Actions\Masters\MasterShop\UI;
 
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditMasterShop extends OrgAction
 {
     use WithMasterShopNavigation;
+    use WithMastersEditAuthorisation;
 
     public function asController(MasterShop $masterShop, ActionRequest $request): Response
     {
@@ -57,7 +59,7 @@ class EditMasterShop extends OrgAction
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' => [
+                    'blueprint' => array_values(array_filter([
                         [
                             'label'  => __('Id'),
                             'icon'   => 'fa-light fa-fingerprint',
@@ -74,7 +76,7 @@ class EditMasterShop extends OrgAction
                                 ]
                             ]
                         ],
-                        [
+                        $this->canEditPrices ? [
                             'label'  => __('Pricing'),
                             'icon'   => 'fa-light fa-money-bill',
                             'fields' => [
@@ -111,8 +113,8 @@ class EditMasterShop extends OrgAction
                                     'min'         => 0,
                                 ]
                             ]
-                        ],
-                        [
+                        ] : null,
+                        $this->canEditOffers ? [
                             'label'  => __('Offers'),
                             'icon'   => 'fa-light fa-badge-percent',
                             'fields' => [
@@ -122,8 +124,8 @@ class EditMasterShop extends OrgAction
                                     'value' => $masterShop->gold_reward_eligible
                                 ],
                             ]
-                        ],
-                    ],
+                        ] : null,
+                    ])),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.master_shops.update',
