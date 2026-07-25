@@ -145,7 +145,7 @@ class EditMasterFamily extends OrgAction
                                     'options' => [
                                         'counter' => true,
                                     ],
-                                    'toogle'  => [
+                                    'toggle'  => [
                                         'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description
@@ -156,7 +156,7 @@ class EditMasterFamily extends OrgAction
                                     'options' => [
                                         'counter' => true,
                                     ],
-                                    'toogle'  => [
+                                    'toggle'  => [
                                         'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description_extra

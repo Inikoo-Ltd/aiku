@@ -485,7 +485,7 @@ class EditWebsite extends OrgAction
                     'value' => Arr::get($website->settings, 'welcome_message'),
                     'full' => true,
                     'information' => __('Displayed on the Retina dashboard as the main text.'),
-                    'toogle' => [
+                    'toggle' => [
                         'heading2',
                         'heading3',
                         'fontSize',

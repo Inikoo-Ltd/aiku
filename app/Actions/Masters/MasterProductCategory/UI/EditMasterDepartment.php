@@ -100,7 +100,7 @@ class EditMasterDepartment extends OrgAction
                                     'options'   => [
                                         'counter'   => true,
                                     ],
-                                    'toogle'  => [
+                                    'toggle'  => [
                                           'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                           'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
                                           'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -113,7 +113,7 @@ class EditMasterDepartment extends OrgAction
                                     'options'   => [
                                         'counter'   => true,
                                     ],
-                                    'toogle'  => [
+                                    'toggle'  => [
                                           'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                           'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
                                           'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'

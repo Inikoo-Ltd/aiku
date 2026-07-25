@@ -187,7 +187,7 @@ class EditMasterProduct extends OrgAction
                             'counter' => true,
                         ],
                         'value'   => $masterProduct->description,
-                        'toogle'  => [
+                        'toggle'  => [
                             'heading2',
                             'heading3',
                             'fontSize',
@@ -217,7 +217,7 @@ class EditMasterProduct extends OrgAction
                             'counter' => true,
                         ],
                         'value'   => $masterProduct->description_extra,
-                        'toogle'  => [
+                        'toggle'  => [
                             'heading2',
                             'heading3',
                             'fontSize',

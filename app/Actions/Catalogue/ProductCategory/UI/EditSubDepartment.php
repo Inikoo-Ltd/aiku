@@ -186,7 +186,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                 'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -207,7 +207,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                     'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -232,7 +232,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                 'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -253,7 +253,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                     'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'

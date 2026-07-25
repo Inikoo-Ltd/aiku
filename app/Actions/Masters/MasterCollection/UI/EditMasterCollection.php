@@ -83,7 +83,7 @@ class EditMasterCollection extends OrgAction
                                             'counter' => true,
                                         ],
                                         'value'   => $masterCollection->description,
-                                        'toogle'  => [
+                                        'toggle'  => [
                                             'heading2',
                                             'heading3',
                                             'fontSize',
@@ -113,7 +113,7 @@ class EditMasterCollection extends OrgAction
                                             'counter' => true,
                                         ],
                                         'value'   => $masterCollection->description_extra,
-                                        'toogle'  => [
+                                        'toggle'  => [
                                             'heading2',
                                             'heading3',
                                             'fontSize',

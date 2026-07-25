@@ -153,7 +153,7 @@ class EditDepartment extends OrgAction
                                                     'website' => $department->shop->website?->slug
                                                 ]
                                             ],
-                                            'toogle'        => [
+                                            'toggle'        => [
                                                'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
@@ -222,7 +222,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'        => [
+                                                'toggle'        => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -260,7 +260,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'  => [
+                                                'toggle'  => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -302,7 +302,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website->slug
                                                     ]
                                                 ],
-                                                'toogle'        => [
+                                                'toggle'        => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -340,7 +340,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'  => [
+                                                'toggle'  => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
