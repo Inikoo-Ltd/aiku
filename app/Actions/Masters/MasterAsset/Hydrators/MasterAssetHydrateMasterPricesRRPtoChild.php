@@ -13,7 +13,7 @@ class MasterAssetHydrateMasterPricesRRPtoChild
 {
     use AsAction;
 
-    public function handle(MasterAsset $masterAsset, ?Shop $shop = null): void
+    public function handle(MasterAsset $masterAsset, ?Shop $shop = null, bool $skipBreakWebpageCache = false): void
     {
         $currencies = Currency::whereIn('id', $masterAsset->products->pluck('currency_id'))->get()->keyBy('id');
 
@@ -51,7 +51,9 @@ class MasterAssetHydrateMasterPricesRRPtoChild
                 data_set($dataToBeUpdated, 'rrp_per_unit', $rrpPerUnit);
             }
 
-            UpdateProduct::make()->action($product, $dataToBeUpdated);
+            $updateProduct = UpdateProduct::make();
+            $updateProduct->skipBreakWebpageCache = $skipBreakWebpageCache;
+            $updateProduct->action($product, $dataToBeUpdated);
         }
     }
 }

@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 25 Jul 2026 15:05:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Sat, 25 Jul 2026 15:05:00 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -18,6 +18,9 @@ class UpdateMasterShopPriceExchange extends OrgAction
 {
     use WithMastersEditAuthorisation;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(MasterShop $masterShop, array $modelData): MasterShop
     {
         $currencyCode   = $modelData['currency'];
@@ -73,6 +76,9 @@ class UpdateMasterShopPriceExchange extends OrgAction
         ];
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterShop
     {
         $this->initialisationFromGroup(group(), $request);
@@ -80,6 +86,9 @@ class UpdateMasterShopPriceExchange extends OrgAction
         return $this->handle($masterShop, $this->validatedData);
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function action(MasterShop $masterShop, array $modelData): MasterShop
     {
         $this->asAction = true;

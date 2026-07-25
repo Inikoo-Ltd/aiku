@@ -59,6 +59,8 @@ class UpdateProduct extends OrgAction
 
     private Product $product;
 
+    public bool $skipBreakWebpageCache = false;
+
     public function handle(Product $product, array $modelData): Product
     {
         // Note laravel wasChanged do not work! for this action, no idea why need to use $oldData
@@ -303,7 +305,8 @@ class UpdateProduct extends OrgAction
             $this->getProductInformationFieldNames()
         );
 
-        if ($product->webpage
+        if (!$this->skipBreakWebpageCache
+            && $product->webpage
             && (Arr::hasAny(
                 $changed,
                 $fieldsUsedInWebpages

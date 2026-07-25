@@ -39,6 +39,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property array<array-key, mixed>|null $offers_data
  * @property bool $gold_reward_eligible
+ * @property array<array-key, mixed> $price_exchanges
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group|null $group
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
