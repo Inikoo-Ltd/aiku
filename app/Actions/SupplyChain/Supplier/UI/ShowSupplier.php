@@ -176,7 +176,7 @@ class ShowSupplier extends OrgAction
                     fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))
                     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier)))
             ]
-        )->table(IndexSupplierProducts::make()->tableStructure())
+        )->table(IndexSupplierProducts::make()->tableStructure(parent: $supplier))
             ->table(IndexAttachments::make()->tableStructure(SupplierTabsEnum::ATTACHMENTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
     }

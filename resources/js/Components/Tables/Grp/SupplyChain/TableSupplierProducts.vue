@@ -16,7 +16,6 @@ const props = defineProps<{
 
 
 function supplierProductRoute(supplierProduct: SupplierProduct) {
-     console.log(route().current())
     switch (route().current()) {
         case 'grp.org.procurement.suppliers.show':
             return route(
@@ -40,9 +39,11 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
           [route().params["organisation"],route().params["warehouse"], supplierProduct.slug]);
 
         case 'grp.supply-chain.agents.show.supplier_products.index':
-            return '#';
         case 'grp.supply-chain.supplier_products.index':
-            return '#';
+        case 'grp.supply-chain.supplier_products.free':
+        case 'grp.supply-chain.supplier_products.in_agents':
+        case 'grp.overview.procurement.supplier-products.index':
+            return route('grp.majordomo.redirect_supplier_product', [supplierProduct.id]);
         default:
             return route(
                 'grp.org.procurement.org_supplier_products.show',

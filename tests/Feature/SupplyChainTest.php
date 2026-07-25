@@ -313,6 +313,7 @@ test('UI Index suppliers', function () {
             ->component('SupplyChain/Suppliers')
             ->has('title')
             ->has('pageHead')
+            ->where('pageHead.actions', null)
             ->has('data')
             ->has('breadcrumbs', 3);
     });
@@ -326,6 +327,7 @@ test('UI Index free suppliers', function () {
         $page
             ->component('SupplyChain/Suppliers')
             ->where('title', 'Free Suppliers')
+            ->has('pageHead.actions', 1)
             ->has('pageHead.subNavigation', 3)
             ->has('data')
             ->has('breadcrumbs', 3);
@@ -340,6 +342,7 @@ test('UI Index suppliers in agents', function () {
         $page
             ->component('SupplyChain/Suppliers')
             ->where('title', 'Agents Suppliers')
+            ->where('pageHead.actions', null)
             ->has('pageHead.subNavigation', 3)
             ->has('data')
             ->has('breadcrumbs', 3);
@@ -365,6 +368,34 @@ test('majordomo redirect supplier link', function () {
 
     $this->get(route('grp.majordomo.redirect_supplier', [$agentSupplier->id]))
         ->assertRedirect(route('grp.supply-chain.agents.show.suppliers.show', [$agent->slug, $agentSupplier->slug]));
+});
+
+test('majordomo redirect supplier product link', function () {
+    $freeSupplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $freeProductData = SupplierProduct::factory()->definition();
+    data_set($freeProductData, 'stock_id', $this->stocks[0]->id);
+    $freeProduct = StoreSupplierProduct::make()->action($freeSupplier, $freeProductData);
+
+    $agent = StoreAgent::make()->action(
+        group: $this->group,
+        modelData: Agent::factory()->definition()
+    );
+    $agentSupplier = StoreSupplier::make()->action(
+        parent: $agent,
+        modelData: Supplier::factory()->definition()
+    );
+    $agentProductData = SupplierProduct::factory()->definition();
+    data_set($agentProductData, 'stock_id', $this->stocks[1]->id);
+    $agentProduct = StoreSupplierProduct::make()->action($agentSupplier, $agentProductData);
+
+    $this->get(route('grp.majordomo.redirect_supplier_product', [$freeProduct->id]))
+        ->assertRedirect(route('grp.supply-chain.supplier_products.show', [$freeProduct->slug]));
+
+    $this->get(route('grp.majordomo.redirect_supplier_product', [$agentProduct->id]))
+        ->assertRedirect(route('grp.supply-chain.agents.show.supplier_products.show', [$agent->slug, $agentProduct->slug]));
 });
 
 test('UI create supplier', function () {

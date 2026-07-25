@@ -43,12 +43,25 @@ class IndexSupplierProducts extends OrgAction
 
     protected function getElementGroups(Group|Agent|Supplier $parent): array
     {
+        if ($parent instanceof Group && $this->bucket != 'all') {
+            $bucketCounts = SupplierProduct::where('group_id', $parent->id)
+                ->when($this->bucket == 'free', fn ($query) => $query->whereNull('agent_id'))
+                ->when($this->bucket == 'in_agents', fn ($query) => $query->whereNotNull('agent_id'))
+                ->selectRaw('state, count(*) as count')
+                ->groupBy('state')
+                ->pluck('count', 'state')->all();
+            $stateCounts  = array_map(fn ($state) => $bucketCounts[$state->value] ?? 0, array_column(SupplierProductStateEnum::cases(), null, 'value'));
+        } else {
+            $stateCounts = SupplierProductStateEnum::count($parent);
+        }
+
         return [
             'state' => [
                 'label'    => __('State'),
+                'default'  => SupplierProductStateEnum::ACTIVE->value.','.SupplierProductStateEnum::DISCONTINUING->value,
                 'elements' => array_merge_recursive(
                     SupplierProductStateEnum::labels(),
-                    SupplierProductStateEnum::count($parent)
+                    $stateCounts
                 ),
 
                 'engine' => function ($query, $elements) {
@@ -80,13 +93,15 @@ class IndexSupplierProducts extends OrgAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null
             );
         }
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
             ->select([
+                'supplier_products.id',
                 'supplier_products.code',
                 'supplier_products.slug',
                 'supplier_products.name'
@@ -114,14 +129,25 @@ class IndexSupplierProducts extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null, Group|Agent|Supplier|null $parent = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
+        $parent ??= isset($this->scope) ? $this->scope : group();
+
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null
+                );
+            }
+
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()

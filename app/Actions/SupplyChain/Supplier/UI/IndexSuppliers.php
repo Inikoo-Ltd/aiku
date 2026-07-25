@@ -53,10 +53,11 @@ class IndexSuppliers extends OrgAction
 
         return [
             'status' => [
-                'label'    => __('status'),
+                'label'    => __('Status'),
+                'default'  => 'active',
                 'elements' => [
-                    'active'   => [__('active'), $numberActiveSuppliers],
-                    'archived' => [__('archived'), $numberArchivedSuppliers]
+                    'active'   => [__('Active'), $numberActiveSuppliers],
+                    'archived' => [__('Archived'), $numberArchivedSuppliers]
                 ],
 
                 'engine' => function ($query, $elements) {
@@ -101,7 +102,8 @@ class IndexSuppliers extends OrgAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null
             );
         }
 
@@ -127,7 +129,8 @@ class IndexSuppliers extends OrgAction
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null
                 );
             }
 
@@ -238,18 +241,21 @@ class IndexSuppliers extends OrgAction
         ];
         $afterTitle = null;
         $iconRight = null;
-        $actions = [
-            [
-                'type'  => 'button',
-                'style' => 'primary',
-                'icon'  => 'fal fa-plus',
-                'label' => __('Supplier'),
-                'route' => [
-                    'name'       => 'grp.supply-chain.suppliers.create',
-                    'parameters' => array_values($request->route()->originalParameters())
-                ]
-            ],
-        ];
+        $actions = null;
+        if ($this->bucket == 'free') {
+            $actions = [
+                [
+                    'type'  => 'button',
+                    'style' => 'primary',
+                    'icon'  => 'fal fa-plus',
+                    'label' => __('Supplier'),
+                    'route' => [
+                        'name'       => 'grp.supply-chain.suppliers.create',
+                        'parameters' => array_values($request->route()->originalParameters())
+                    ]
+                ],
+            ];
+        }
 
         if ($this->parent instanceof Agent) {
             $subNavigation = $this->getAgentNavigation($this->parent);
