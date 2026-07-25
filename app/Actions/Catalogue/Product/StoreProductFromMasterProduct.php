@@ -45,8 +45,8 @@ class StoreProductFromMasterProduct extends OrgAction
                 $createInShop = Arr::get($shopProductData, 'create_in_shop');
 
                 if ($createInShop == 'Yes') {
-                    $price = $masterAsset->getPricefromCurrency($shop->currency) ;
-                    $rrp   = $masterAsset->getRRPfromCurrency($shop->currency);
+                    $price = $masterAsset->getPriceFromCurrency($shop->currency) ;
+                    $rrp   = $masterAsset->getRrpFromCurrency($shop->currency);
 
                     $tradeUnits = [];
                     foreach ($masterAsset->tradeUnits as $tradeUnit) {

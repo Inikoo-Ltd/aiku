@@ -234,7 +234,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
         'master_prices'           => 'array',
-        'master_rrps'           => 'array',
+        'master_rrps'             => 'array',
     ];
 
     protected $attributes = [
@@ -291,12 +291,12 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
-    public function getPricefromCurrency(Currency $currency): float
+    public function getPriceFromCurrency(Currency $currency): float
     {
         return data_get($this->master_prices, "{$currency->code}.value", 0);
     }
 
-    public function getRRPfromCurrency(Currency $currency): float
+    public function getRrpFromCurrency(Currency $currency): float
     {
         return data_get($this->master_rrps, "{$currency->code}.value", 0);
     }
