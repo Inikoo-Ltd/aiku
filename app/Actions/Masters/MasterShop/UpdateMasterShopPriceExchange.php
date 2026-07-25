@@ -18,6 +18,8 @@ class UpdateMasterShopPriceExchange extends OrgAction
 {
     use WithMastersEditAuthorisation;
 
+    protected ?int $auditUserID = null;
+
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -25,6 +27,13 @@ class UpdateMasterShopPriceExchange extends OrgAction
     {
         $currencyCode   = $modelData['currency'];
         $priceExchanges = $masterShop->price_exchanges ?? [];
+
+        $runningProgress = RecalculateMasterShopMinorCurrencyPrices::getProgress($masterShop, $currencyCode);
+        if ($runningProgress && !in_array($runningProgress['state'], ['finished', 'failed'])) {
+            throw ValidationException::withMessages([
+                'currency' => __('A price recalculation for :currency is already running, wait for it to finish', ['currency' => $currencyCode])
+            ]);
+        }
 
         if ($modelData['is_major']) {
             $priceExchanges[$currencyCode] = ['is_major' => true];
@@ -60,7 +69,12 @@ class UpdateMasterShopPriceExchange extends OrgAction
         $masterShop->update(['price_exchanges' => $priceExchanges]);
 
         if (!$modelData['is_major']) {
-            RecalculateMasterShopMinorCurrencyPrices::dispatch($masterShop, $currencyCode);
+            RecalculateMasterShopMinorCurrencyPrices::setProgress($masterShop, $currencyCode, [
+                'state' => 'queued',
+                'done'  => 0,
+                'total' => 0,
+            ]);
+            RecalculateMasterShopMinorCurrencyPrices::dispatch($masterShop, $currencyCode, $this->auditUserID);
         }
 
         return $masterShop;
@@ -81,6 +95,7 @@ class UpdateMasterShopPriceExchange extends OrgAction
      */
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterShop
     {
+        $this->auditUserID = $request->user()?->id;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterShop, $this->validatedData);
@@ -89,6 +104,11 @@ class UpdateMasterShopPriceExchange extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
+    public function htmlResponse(): \Illuminate\Http\RedirectResponse
+    {
+        return back();
+    }
+
     public function action(MasterShop $masterShop, array $modelData): MasterShop
     {
         $this->asAction = true;

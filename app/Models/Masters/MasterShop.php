@@ -95,6 +95,7 @@ class MasterShop extends Model implements Auditable
     protected array $auditInclude = [
         'code',
         'name',
+        'price_exchanges',
     ];
 
 

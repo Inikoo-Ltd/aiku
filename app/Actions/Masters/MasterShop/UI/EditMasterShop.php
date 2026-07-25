@@ -10,12 +10,13 @@
 
 namespace App\Actions\Masters\MasterShop\UI;
 
-use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices;
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\CurrencyExchange;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -90,6 +91,13 @@ class EditMasterShop extends OrgAction
                                     'noSaveButton' => true,
                                     'value'       => $masterShop->price_exchanges,
                                     'currencies_shops' => $this->getCurrenciesShops($masterShop),
+                                    'master_shop_id'   => $masterShop->id,
+                                    'running_operations' => collect(array_keys($masterShop->price_exchanges ?? []))
+                                        ->mapWithKeys(fn (string $currencyCode) => [
+                                            $currencyCode => RecalculateMasterShopMinorCurrencyPrices::getProgress($masterShop, $currencyCode)
+                                        ])
+                                        ->filter()
+                                        ->all(),
                                     'updateRoute' => [
                                         'name'       => 'grp.models.master_shops.price_exchange.update',
                                         'parameters' => [
@@ -142,13 +150,28 @@ class EditMasterShop extends OrgAction
         }
 
         $currencies = $shops->pluck('currency')->unique('id');
+
+        $pivotCode      = config('app.currency_exchange.pivot');
+        $pivotExchanges = CurrencyExchange::whereIn('currency_id', $currencies->pluck('id'))
+            ->orderBy('date')
+            ->get()
+            ->keyBy('currency_id')
+            ->map(fn (CurrencyExchange $currencyExchange) => (float)$currencyExchange->exchange);
+
+        $pivotExchangeFor = function ($currency) use ($pivotExchanges, $pivotCode) {
+            return $currency->code === $pivotCode ? 1.0 : $pivotExchanges->get($currency->id);
+        };
+
         foreach ($currencies as $currency) {
             foreach ($currencies as $baseCurrency) {
                 if ($baseCurrency->id == $currency->id) {
                     continue;
                 }
+                $basePivot   = $pivotExchangeFor($baseCurrency);
+                $targetPivot = $pivotExchangeFor($currency);
+
                 $currenciesShops[$currency->code]['real_exchanges'][$baseCurrency->code] =
-                    GetCurrencyExchange::run($baseCurrency, $currency);
+                    $basePivot && $targetPivot ? round($targetPivot / $basePivot, 6) : null;
             }
         }
 

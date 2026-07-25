@@ -16,6 +16,12 @@ trait WithVarnishBan
 {
     protected function sendVarnishBanHttp(array $banExpression, ?Command $command = null): void
     {
+        if (!config('iris.cache.varnish')) {
+            $command?->info('Varnish disabled, skipping BAN');
+
+            return;
+        }
+
         foreach (config('iris.cache.varnish_hosts') as $varnishHost) {
             if (!$varnishHost) {
                 continue;

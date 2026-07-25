@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { reactive, ref, computed } from "vue"
+import { reactive, ref, computed, onMounted, onUnmounted } from "vue"
 import { router } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
 import { trans } from "laravel-vue-i18n"
@@ -28,9 +28,66 @@ const props = defineProps<{
             number_products: number
             real_exchanges?: Record<string, number | null>
         }>
+        master_shop_id?: number
+        running_operations?: Record<string, Progress>
         updateRoute: routeType
     }
 }>()
+
+interface Progress {
+    state: 'queued' | 'waiting' | 'updating_prices' | 'breaking_cache' | 'repricing_baskets' | 'finished' | 'failed'
+    waiting_for?: string[]
+    done: number
+    total: number
+    baskets_total?: number
+    baskets_done?: number
+    baskets_started_at?: string
+    updating_started_at?: string
+    started_at?: string
+    error?: string
+}
+
+const operations = reactive<Record<string, Progress>>({ ...(props.fieldData.running_operations || {}) })
+const progressModalCurrency = ref<string | null>(null)
+
+const isRunning = (code: string) =>
+    !!operations[code] && !['finished', 'failed'].includes(operations[code].state)
+
+const progressPct = (progress: Progress) =>
+    progress.total ? Math.round(progress.done / progress.total * 100) : 0
+
+const remainingText = (done: number | undefined, total: number | undefined, startedAt: string | undefined) => {
+    if (!total || !done || !startedAt) return null
+    const elapsedMs = Date.now() - new Date(startedAt).getTime()
+    if (elapsedMs <= 0) return null
+    const remainingMs = elapsedMs * (total - done) / done
+    const remainingMin = Math.ceil(remainingMs / 60000)
+    return remainingMin <= 1 ? trans("less than a minute left") : trans(":min min left", { min: String(remainingMin) })
+}
+
+const etaText = (progress: Progress) => remainingText(progress.done, progress.total, progress.updating_started_at || progress.started_at)
+
+const basketsPct = (progress: Progress) =>
+    progress.baskets_total ? Math.round((progress.baskets_done || 0) / progress.baskets_total * 100) : 0
+
+const basketsEtaText = (progress: Progress) =>
+    remainingText(progress.baskets_done, progress.baskets_total, progress.baskets_started_at)
+
+onMounted(() => {
+    if (props.fieldData.master_shop_id && window.Echo) {
+        window.Echo.private(`grp.master-shop.${props.fieldData.master_shop_id}`)
+            .listen('.price-exchange-progress', (event: Progress & { currency: string }) => {
+                const { currency, ...progress } = event
+                operations[currency] = progress
+            })
+    }
+})
+
+onUnmounted(() => {
+    if (props.fieldData.master_shop_id && window.Echo) {
+        window.Echo.leave(`grp.master-shop.${props.fieldData.master_shop_id}`)
+    }
+})
 
 const rows = reactive(
     Object.entries(props.fieldData.value || {})
@@ -166,11 +223,10 @@ const save = () => {
             onSuccess: () => {
                 row.original = JSON.stringify(rowPayload(row))
                 confirmingRow.value = null
-                notify({
-                    title: trans("Success"),
-                    text: trans("Currency :currency updated. Prices are being recalculated in the background.", { currency: row.code }),
-                    type: "success"
-                })
+                if (!row.is_major) {
+                    operations[row.code] ??= { state: 'queued', done: 0, total: 0 }
+                    progressModalCurrency.value = row.code
+                }
             },
             onError: (errors) => {
                 notify({
@@ -206,6 +262,7 @@ const save = () => {
                                 type="button"
                                 class="px-3 py-1 rounded-full transition-colors"
                                 :class="row.is_major ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'text-gray-300 hover:text-gray-500'"
+                                :disabled="isRunning(row.code)"
                                 @click="row.is_major = true"
                             >
                                 {{ trans("Major") }}
@@ -220,7 +277,7 @@ const save = () => {
                                 v-tooltip="row.is_major && followerCodes(row.code).length
                                     ? trans('Cannot be minor: :followers follow it', { followers: followerCodes(row.code).join(', ') })
                                     : undefined"
-                                :disabled="row.is_major && followerCodes(row.code).length > 0"
+                                :disabled="isRunning(row.code) || (row.is_major && followerCodes(row.code).length > 0)"
                                 @click="setMinor(row)"
                             >
                                 {{ trans("Minor") }}
@@ -228,7 +285,7 @@ const save = () => {
                         </div>
                     </td>
                     <td class="py-2 pr-4">
-                        <select v-if="!row.is_major" v-model="row.major" class="rounded border-gray-300 text-sm py-1">
+                        <select v-if="!row.is_major" v-model="row.major" :disabled="isRunning(row.code)" class="rounded border-gray-300 text-sm py-1 disabled:opacity-50">
                             <option v-for="majorCode in majorCodes.filter(code => code !== row.code)" :key="majorCode" :value="majorCode">
                                 {{ majorCode }}
                             </option>
@@ -237,10 +294,38 @@ const save = () => {
                     </td>
                     <td class="py-2 pr-4">
                         <input v-if="!row.is_major" v-model="row.exchange" type="number" min="0" step="any"
-                            class="rounded border-gray-300 text-sm py-1 w-28 tabular-nums" />
+                            :disabled="isRunning(row.code)"
+                            class="rounded border-gray-300 text-sm py-1 w-28 tabular-nums disabled:opacity-50" />
                     </td>
                     <td class="py-2 text-right">
-                        <span :class="{ invisible: !isDirty(row) }" v-tooltip="invalidReason(row)">
+                        <button v-if="isRunning(row.code)" type="button"
+                            class="w-28 text-left cursor-pointer"
+                            v-tooltip="trans('Updating prices, click for details')"
+                            @click="progressModalCurrency = row.code">
+                            <template v-if="operations[row.code].state === 'repricing_baskets'">
+                                <div class="h-2 rounded-full bg-gray-200 overflow-hidden">
+                                    <div class="h-full bg-indigo-500 transition-all"
+                                        :style="{ width: basketsPct(operations[row.code]) + '%' }" />
+                                </div>
+                                <div class="text-[10px] text-gray-400 mt-0.5">
+                                    {{ trans('baskets') }} {{ basketsPct(operations[row.code]) }}%{{ basketsEtaText(operations[row.code]) ? ' · ~' + basketsEtaText(operations[row.code]) : '' }}
+                                </div>
+                            </template>
+                            <template v-else>
+                                <div class="h-2 rounded-full bg-gray-200 overflow-hidden">
+                                    <div class="h-full bg-indigo-500 transition-all"
+                                        :class="{ 'animate-pulse': !operations[row.code].total }"
+                                        :style="{ width: operations[row.code].total ? progressPct(operations[row.code]) + '%' : '100%' }" />
+                                </div>
+                                <div class="text-[10px] text-gray-400 mt-0.5">
+                                    {{ operations[row.code].total
+                                        ? progressPct(operations[row.code]) + '%'
+                                            + (etaText(operations[row.code]) ? ' · ~' + etaText(operations[row.code]) : '')
+                                        : (['queued', 'waiting'].includes(operations[row.code].state) ? trans('waiting…') : trans('working…')) }}
+                                </div>
+                            </template>
+                        </button>
+                        <span v-else :class="{ invisible: !isDirty(row) }" v-tooltip="invalidReason(row)">
                             <Button
                                 :label="trans('Apply…')"
                                 size="xs"
@@ -252,6 +337,93 @@ const save = () => {
                 </tr>
             </tbody>
         </table>
+
+        <Modal :isOpen="!!progressModalCurrency" width="w-full max-w-lg" @close="progressModalCurrency = null">
+            <div v-if="progressModalCurrency && operations[progressModalCurrency]">
+                <div class="font-bold text-xl mb-4">
+                    {{ trans("Updating :currency prices", { currency: progressModalCurrency }) }}
+                </div>
+
+                <div class="space-y-4 text-sm">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">{{ trans("1. Changing product prices") }}</span>
+                            <span class="tabular-nums text-gray-500">
+                                {{ operations[progressModalCurrency].total
+                                    ? operations[progressModalCurrency].done.toLocaleString() + ' / ' + operations[progressModalCurrency].total.toLocaleString()
+                                        + ' (' + progressPct(operations[progressModalCurrency]) + '%)'
+                                    : trans('starting…') }}
+                            </span>
+                        </div>
+                        <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
+                            <div class="h-full bg-indigo-500 transition-all"
+                                :class="{ 'animate-pulse': operations[progressModalCurrency].state === 'queued' }"
+                                :style="{ width: operations[progressModalCurrency].total
+                                    ? progressPct(operations[progressModalCurrency]) + '%'
+                                    : '0%' }" />
+                        </div>
+                        <div v-if="operations[progressModalCurrency].state === 'updating_prices' && etaText(operations[progressModalCurrency])"
+                            class="text-xs text-gray-400 mt-1 text-right">
+                            ~{{ etaText(operations[progressModalCurrency]) }}
+                        </div>
+                        <div v-if="operations[progressModalCurrency].state === 'waiting'"
+                            class="text-xs text-amber-600 mt-1 text-right">
+                            {{ trans("Waiting for the :currencies price update to finish, will start automatically…", {
+                                currencies: (operations[progressModalCurrency].waiting_for || []).join(', ')
+                            }) }}
+                        </div>
+                        <div v-else-if="operations[progressModalCurrency].state === 'updating_prices' && !operations[progressModalCurrency].done"
+                            class="text-xs text-gray-400 mt-1 text-right">
+                            {{ trans("starting…") }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1"
+                            :class="operations[progressModalCurrency].state === 'finished' ? 'text-emerald-600'
+                                : operations[progressModalCurrency].state === 'repricing_baskets' ? 'text-gray-700'
+                                : 'text-gray-400'">
+                            <span>
+                                {{ operations[progressModalCurrency].state === 'finished' ? '✓' : '○' }}
+                                {{ trans("2. Repricing basket orders") }}
+                            </span>
+                            <span v-if="operations[progressModalCurrency].baskets_total !== undefined" class="tabular-nums text-gray-500">
+                                {{ (operations[progressModalCurrency].baskets_done || 0).toLocaleString() }} /
+                                {{ operations[progressModalCurrency].baskets_total.toLocaleString() }}
+                                ({{ basketsPct(operations[progressModalCurrency]) }}%)
+                            </span>
+                        </div>
+                        <template v-if="['repricing_baskets', 'finished'].includes(operations[progressModalCurrency].state)">
+                            <div class="h-3 rounded-full bg-gray-200 overflow-hidden">
+                                <div class="h-full bg-indigo-500 transition-all"
+                                    :style="{ width: basketsPct(operations[progressModalCurrency]) + '%' }" />
+                            </div>
+                            <div v-if="operations[progressModalCurrency].state === 'repricing_baskets' && basketsEtaText(operations[progressModalCurrency])"
+                                class="text-xs text-gray-400 mt-1 text-right">
+                                ~{{ basketsEtaText(operations[progressModalCurrency]) }}
+                            </div>
+                        </template>
+                    </div>
+
+                    <div v-if="operations[progressModalCurrency].state === 'finished'"
+                        class="rounded border border-emerald-300 bg-emerald-50 text-emerald-700 px-3 py-2 font-medium">
+                        {{ trans("Done! All prices updated.") }}
+                    </div>
+                    <div v-else-if="operations[progressModalCurrency].state === 'failed'"
+                        class="rounded border border-red-300 bg-red-50 text-red-700 px-3 py-2">
+                        <span class="font-medium">{{ trans("Something went wrong.") }}</span>
+                        {{ operations[progressModalCurrency].error }}
+                    </div>
+                    <p v-else class="text-gray-500 text-xs">
+                        {{ trans("This can take several minutes. You can close this window, the update continues in the background.") }}
+                    </p>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <Button :label="trans('Close')" type="tertiary" @click="progressModalCurrency = null" />
+                </div>
+            </div>
+        </Modal>
 
         <Modal :isOpen="!!confirmingRow" width="w-full max-w-lg" @close="confirmingRow = null">
             <div v-if="confirmingRow">
