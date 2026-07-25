@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterProductCategory;
@@ -67,12 +68,12 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
         $organisationData  = [];
         $grpCosts          = [];
         $avgCost           = 0;
-        $totalAvailGrpCost = 0;
 
+        /** @var Organisation $organisation */
         foreach ($openOrganisations as $organisation) {
             $organisationData[$organisation->id] = $this->getOrgStockData($organisation, $tradeUnits);
 
-            $grpCost  = data_get($organisationData, "{$organisation->id}.grp_cost");
+            $grpCost  = data_get($organisationData, "$organisation->id.grp_cost");
             $baseCost = $grpCost > 0
                 ? formatPrice($grpCost, GetCurrencyExchange::run(group()->currency, $baseCurrency))
                 : null;
@@ -84,8 +85,8 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
             }
         }
 
-        if (count($grpCosts)) {
-            $avgCost = array_reduce($grpCosts, fn ($carry, $item) => $carry += $item) / count($grpCosts);
+        if ($grpCosts !== []) {
+            $avgCost = array_sum($grpCosts) / count($grpCosts);
         }
 
         $currencies = Currency::whereIn('id', $openShopsQuery->pluck('currency_id'))->get()->keyBy('id');
@@ -112,7 +113,7 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
         ]);
 
         $finalData = [];
-
+        /** @var Shop $shop */
         foreach ($openShopsQuery->get() as $shop) {
             $orgStocksData = $organisationData[$shop->organisation_id];
             $shopCurrencyCode = $shop->currency->code;
