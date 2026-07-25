@@ -527,6 +527,30 @@ test("UI Show master shop", function (MasterShop $masterShop) {
     });
 })->depends('create master shop');
 
+test("UI Show master shop showcase has price exchanges", function (MasterShop $masterShop) {
+    $masterShop->update([
+        'price_exchanges' => [
+            'GBP' => ['is_major' => true],
+            'EUR' => ['is_major' => true],
+            'SEK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 11],
+        ]
+    ]);
+
+    $response = get(
+        route("grp.masters.master_shops.show", [$masterShop->slug])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Masters/MasterShop")
+            ->has("showcase.price_exchanges", 3)
+            ->where("showcase.price_exchanges.0.is_major", true)
+            ->where("showcase.price_exchanges.2.code", "SEK")
+            ->where("showcase.price_exchanges.2.major", "EUR")
+            ->where("showcase.price_exchanges.2.exchange", 11)
+            ->etc();
+    });
+})->depends('create master shop');
+
 test('update master shop', function (MasterShop $masterShop) {
     $updatedMasterShop = UpdateMasterShop::make()->action(
         $masterShop,
@@ -1798,4 +1822,83 @@ test('HydrateMasterShopSales hydrates orders stats for a master shop', function 
     HydrateMasterShopSales::make()->handle($masterShop);
 
     expect($masterShop->refresh())->toBeInstanceOf(MasterShop::class);
+});
+
+test('master shop price exchanges default and seeder', function () {
+    $masterShop = StoreMasterShop::make()->action($this->group, [
+        'code' => 'AW',
+        'name' => 'Ancient Wisdom Master',
+        'type' => ShopTypeEnum::B2B,
+    ]);
+
+    expect($masterShop->price_exchanges)->toBe([]);
+
+    (new \Database\Seeders\MasterShopPriceExchangesSeeder())->run();
+    $masterShop->refresh();
+
+    expect($masterShop->price_exchanges)->toHaveKeys(['GBP', 'EUR', 'PLN', 'CZK', 'HUF', 'RON', 'SEK', 'UAH'])
+        ->and($masterShop->price_exchanges['EUR']['is_major'])->toBeTrue()
+        ->and($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11])
+        ->and($masterShop->price_exchanges['PLN']['exchange'])->toBe(4.3);
+});
+
+test('update master shop price exchange recalculates minor prices', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PXDEP-'.uniqid(),
+        'name' => 'Price Exchange Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PXFAM-'.uniqid(),
+        'name' => 'Price Exchange Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PXAST-'.uniqid(),
+        'name'    => 'Price Exchange Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'master_prices' => [
+            'EUR' => ['value' => 10, 'independent' => false],
+            'SEK' => ['value' => 100, 'independent' => false],
+        ]
+    ]);
+
+    $masterShop->update(['price_exchanges' => ['EUR' => ['is_major' => true]]]);
+
+    $masterShop = \App\Actions\Masters\MasterShop\UpdateMasterShopPriceExchange::make()->action($masterShop, [
+        'currency' => 'SEK',
+        'is_major' => false,
+        'major'    => 'EUR',
+        'exchange' => 11,
+    ]);
+
+    $masterAsset->refresh();
+
+    expect($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11])
+        ->and(data_get($masterAsset->master_prices, 'SEK.value'))->toBe('110');
+
+    $masterAsset->updateQuietly([
+        'master_prices' => [
+            'EUR' => ['value' => 10, 'independent' => false],
+            'SEK' => ['value' => 200, 'independent' => true],
+        ]
+    ]);
+
+    \App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices::run($masterShop, 'SEK');
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'SEK.value'))->toBe(200);
+
+    expect(fn () => \App\Actions\Masters\MasterShop\UpdateMasterShopPriceExchange::make()->action($masterShop, [
+        'currency' => 'EUR',
+        'is_major' => false,
+        'major'    => 'SEK',
+        'exchange' => 0.09,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
 });

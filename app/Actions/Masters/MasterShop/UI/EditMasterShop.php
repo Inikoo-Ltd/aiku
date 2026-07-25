@@ -80,7 +80,19 @@ class EditMasterShop extends OrgAction
                             'label'  => __('Pricing'),
                             'icon'   => 'fa-light fa-money-bill',
                             'fields' => [
-
+                                'price_exchanges' => [
+                                    'type'        => 'master_shop_price_exchanges',
+                                    'label'       => __('Currencies'),
+                                    'full'        => true,
+                                    'noSaveButton' => true,
+                                    'value'       => $masterShop->price_exchanges,
+                                    'updateRoute' => [
+                                        'name'       => 'grp.models.master_shops.price_exchange.update',
+                                        'parameters' => [
+                                            'masterShop' => $masterShop->id
+                                        ]
+                                    ]
+                                ]
                             ]
                         ] : null,
                         $this->canEditOffers ? [

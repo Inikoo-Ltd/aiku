@@ -64,15 +64,17 @@ class MasterShop extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'        => 'array',
-        'type'        => ShopTypeEnum::class,
-        'status'      => 'boolean',
-        'offers_data' => 'array',
+        'data'            => 'array',
+        'type'            => ShopTypeEnum::class,
+        'status'          => 'boolean',
+        'offers_data'     => 'array',
+        'price_exchanges' => 'array',
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'offers_data' => '{}',
+        'data'            => '{}',
+        'offers_data'     => '{}',
+        'price_exchanges' => '{}',
     ];
 
     protected $guarded = [];

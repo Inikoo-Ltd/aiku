@@ -349,6 +349,7 @@ use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UploadImagesToMasterProductCategory;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
+use App\Actions\Masters\MasterShop\UpdateMasterShopPriceExchange;
 use App\Actions\Masters\MasterVariant\StoreMasterVariant;
 use App\Actions\Masters\MasterVariant\UpdateMasterVariant;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -569,6 +570,7 @@ Route::post('master-shop', StoreMasterShop::class)->name('master_shop.store');
 
 Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
     Route::patch('/', UpdateMasterShop::class)->name('update');
+    Route::patch('price-exchange', UpdateMasterShopPriceExchange::class)->name('price_exchange.update');
     Route::post('master-department', StoreMasterDepartment::class)->name('master_department.store');
     Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
     Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
