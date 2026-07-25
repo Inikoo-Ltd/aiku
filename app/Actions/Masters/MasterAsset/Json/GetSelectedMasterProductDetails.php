@@ -76,7 +76,7 @@ class GetSelectedMasterProductDetails extends OrgAction
                 if (count($grpCosts)) {
                     $avgCost = array_reduce($grpCosts, fn ($carry, $item) => $carry += $item) / count($grpCosts);
                 }
-                
+
                 $masterProduct->org_data     = $organisationData;
                 $masterProduct->avg_org_cost = $avgCost;
 
