@@ -23,6 +23,11 @@ const props = defineProps<{
     fieldName: string
     fieldData: {
         value: Record<string, PriceExchange>
+        currencies_shops?: Record<string, {
+            shops: string[]
+            number_products: number
+            real_exchanges?: Record<string, number | null>
+        }>
         updateRoute: routeType
     }
 }>()
@@ -72,8 +77,81 @@ const rowPayload = (row: { code: string, is_major: boolean, major?: string | nul
 const rowIsValid = (row: typeof rows[0]) =>
     row.is_major || (row.major && majorCodes.value.includes(row.major) && Number(row.exchange) > 0)
 
+const affectedShops = (code: string) => props.fieldData.currencies_shops?.[code] ?? null
+
+const realExchange = (row: typeof rows[0]) =>
+    !row.is_major && row.major
+        ? affectedShops(row.code)?.real_exchanges?.[row.major] ?? null
+        : null
+
+const realExchangeDiffPct = (row: typeof rows[0]) => {
+    const real = realExchange(row)
+    if (!real || !(Number(row.exchange) > 0)) return null
+    return (Number(row.exchange) / real - 1) * 100
+}
+
 const confirmingRow = ref<typeof rows[0] | null>(null)
+
+const cancelAndRevert = () => {
+    if (confirmingRow.value) {
+        const original: PriceExchange = JSON.parse(confirmingRow.value.original)
+        confirmingRow.value.is_major = original.is_major
+        confirmingRow.value.major = original.major ?? null
+        confirmingRow.value.exchange = original.exchange ?? null
+    }
+    confirmingRow.value = null
+}
 const isSaving = ref(false)
+
+const majorChanged = (row: typeof rows[0]) => {
+    const original: PriceExchange = JSON.parse(row.original)
+    return !original.is_major && !row.is_major && original.major !== row.major
+        ? { from: original.major, to: row.major }
+        : null
+}
+
+const becomingMajor = (row: typeof rows[0]) => row.is_major && !(JSON.parse(row.original) as PriceExchange).is_major
+
+const impactSeverityClass = (absPct: number) => {
+    if (absPct < 2) return 'border-gray-300 bg-gray-50 text-gray-700'
+    if (absPct < 4) return 'border-yellow-300 bg-yellow-50 text-yellow-700'
+    if (absPct < 6) return 'border-orange-300 bg-orange-50 text-orange-700'
+    return 'border-red-300 bg-red-50 text-red-700'
+}
+
+const impactSeverityTextClass = (absPct: number) => {
+    if (absPct < 2) return 'text-gray-600'
+    if (absPct < 4) return 'text-yellow-600 font-medium'
+    if (absPct < 6) return 'text-orange-600 font-medium'
+    return 'text-red-600 font-bold'
+}
+
+const exchangeChangePct = (row: typeof rows[0]): { pct: number, estimated: boolean } | null => {
+    const original: PriceExchange = JSON.parse(row.original)
+    if (row.is_major || !row.exchange) return null
+
+    let ratio: number
+    let estimated = false
+
+    if (original.is_major || !original.exchange) {
+        const real = affectedShops(row.code)?.real_exchanges?.[row.major || '']
+        if (!real) return null
+        ratio = Number(row.exchange) / real
+        estimated = true
+    } else {
+        ratio = Number(row.exchange) / Number(original.exchange)
+        if (original.major !== row.major) {
+            const realOld = affectedShops(row.code)?.real_exchanges?.[original.major || '']
+            const realNew = affectedShops(row.code)?.real_exchanges?.[row.major || '']
+            if (!realOld || !realNew) return null
+            ratio *= realOld / realNew
+            estimated = true
+        }
+    }
+
+    const pct = (ratio - 1) * 100
+    return Math.abs(pct) < 0.005 ? null : { pct, estimated }
+}
 
 const save = () => {
     if (!confirmingRow.value) return
@@ -160,12 +238,11 @@ const save = () => {
                     <td class="py-2 pr-4">
                         <input v-if="!row.is_major" v-model="row.exchange" type="number" min="0" step="any"
                             class="rounded border-gray-300 text-sm py-1 w-28 tabular-nums" />
-                        <span v-else class="text-gray-400">{{ trans("Set manually") }}</span>
                     </td>
                     <td class="py-2 text-right">
-                        <span v-if="isDirty(row)" v-tooltip="invalidReason(row)">
+                        <span :class="{ invisible: !isDirty(row) }" v-tooltip="invalidReason(row)">
                             <Button
-                                :label="trans('Save')"
+                                :label="trans('Apply…')"
                                 size="xs"
                                 :disabled="!rowIsValid(row)"
                                 @click="confirmingRow = row"
@@ -178,8 +255,27 @@ const save = () => {
 
         <Modal :isOpen="!!confirmingRow" width="w-full max-w-lg" @close="confirmingRow = null">
             <div v-if="confirmingRow">
-                <div class="font-bold text-xl mb-3 text-amber-600">
-                    ⚠️ {{ trans("This will change prices in whole shops") }}
+                <div v-if="becomingMajor(confirmingRow)" class="font-bold text-xl mb-3">
+                    {{ trans(":currency will become a major currency", { currency: confirmingRow.code }) }}
+                </div>
+                <div v-else class="font-bold text-xl mb-3 text-amber-600">
+                    ⚠️
+                    <template v-if="affectedShops(confirmingRow.code)">
+                        {{ affectedShops(confirmingRow.code)!.shops.length === 1
+                            ? trans("This will change the price of all :count products in shop :shop", {
+                                count: affectedShops(confirmingRow.code)!.number_products.toLocaleString(),
+                                shop: affectedShops(confirmingRow.code)!.shops[0]
+                            })
+                            : trans("This will change the price of all :count products in :n shops: :shops", {
+                                count: affectedShops(confirmingRow.code)!.number_products.toLocaleString(),
+                                n: String(affectedShops(confirmingRow.code)!.shops.length),
+                                shops: affectedShops(confirmingRow.code)!.shops.join(', ')
+                            })
+                        }}
+                    </template>
+                    <template v-else>
+                        {{ trans("This will change prices in whole shops") }}
+                    </template>
                 </div>
                 <div class="text-sm space-y-2">
                     <p v-if="!confirmingRow.is_major">
@@ -189,18 +285,67 @@ const save = () => {
                             exchange: String(confirmingRow.exchange)
                         }) }}
                     </p>
-                    <p v-if="!confirmingRow.is_major">
-                        {{ trans("The prices of every product in every shop using :currency will be recalculated in the background. This affects hundreds or thousands of live prices.", { currency: confirmingRow.code }) }}
-                    </p>
-                    <p v-else>
-                        {{ trans(":currency will become a major currency: its prices will no longer follow an exchange rate and must be edited manually per product.", { currency: confirmingRow.code }) }}
-                    </p>
+                    <template v-if="!confirmingRow.is_major">
+                        <p v-if="majorChanged(confirmingRow)" class="font-medium">
+                            {{ trans(":currency will stop following :from and will follow :to instead.", {
+                                currency: confirmingRow.code,
+                                from: majorChanged(confirmingRow)!.from || '',
+                                to: majorChanged(confirmingRow)!.to || ''
+                            }) }}
+                        </p>
+                        <div v-if="exchangeChangePct(confirmingRow)"
+                            class="rounded border px-3 py-2 font-medium"
+                            :class="impactSeverityClass(Math.abs(exchangeChangePct(confirmingRow)!.pct))">
+                            {{ exchangeChangePct(confirmingRow)!.pct > 0
+                                ? trans("All :currency prices will INCREASE by approximately :pct%", { currency: confirmingRow.code, pct: exchangeChangePct(confirmingRow)!.pct.toFixed(1) })
+                                : trans("All :currency prices will DECREASE by approximately :pct%", { currency: confirmingRow.code, pct: Math.abs(exchangeChangePct(confirmingRow)!.pct).toFixed(1) })
+                            }}
+                            <span v-if="exchangeChangePct(confirmingRow)!.estimated" class="font-normal text-xs opacity-75">
+                                ({{ majorChanged(confirmingRow)
+                                    ? trans("estimated: assumes :from and :to prices track the market rate", {
+                                        from: majorChanged(confirmingRow)!.from || '',
+                                        to: majorChanged(confirmingRow)!.to || ''
+                                    })
+                                    : trans("estimated against today's market rate")
+                                }})
+                            </span>
+                        </div>
+                        <div v-if="realExchange(confirmingRow)" class="rounded border border-gray-200 bg-gray-50 px-3 py-2 space-y-0.5">
+                            <div class="text-gray-600">
+                                {{ trans("Real exchange today: 1 :major = :rate :currency", {
+                                    major: confirmingRow.major || '',
+                                    rate: realExchange(confirmingRow)!.toLocaleString(undefined, { maximumFractionDigits: 4 }),
+                                    currency: confirmingRow.code
+                                }) }}
+                            </div>
+                            <div v-if="realExchangeDiffPct(confirmingRow) !== null"
+                                :class="impactSeverityTextClass(Math.abs(realExchangeDiffPct(confirmingRow)!))">
+                                {{ realExchangeDiffPct(confirmingRow)! >= 0
+                                    ? trans("Your rate is :pct% ABOVE the real exchange", { pct: realExchangeDiffPct(confirmingRow)!.toFixed(1) })
+                                    : trans("Your rate is :pct% BELOW the real exchange", { pct: Math.abs(realExchangeDiffPct(confirmingRow)!).toFixed(1) })
+                                }}
+                            </div>
+                        </div>
+                        <ul class="list-disc pl-5 space-y-1 text-gray-600">
+                            <li>{{ trans("Every product price in every shop using :currency will be recalculated.", { currency: confirmingRow.code }) }}</li>
+                            <li>{{ trans("Orders currently in customers' baskets will be repriced too.") }}</li>
+                            <li>{{ trans("This runs in the background and can take several minutes to complete.") }}</li>
+                        </ul>
+                    </template>
+                    <template v-else>
+                        <p class="font-medium text-emerald-700">
+                            {{ trans("No prices will change now.") }}
+                        </p>
+                        <p>
+                            {{ trans(":currency prices will stop following an exchange rate. From now on, when changing prices in the Masters section, you must provide the :currency price yourself.", { currency: confirmingRow.code }) }}
+                        </p>
+                    </template>
                 </div>
                 <div class="mt-6 flex gap-2 justify-end">
-                    <Button :label="trans('Cancel')" type="tertiary" @click="confirmingRow = null" />
+                    <Button :label="trans('Cancel')" type="tertiary" @click="cancelAndRevert" />
                     <Button
-                        :label="trans('Yes, update prices')"
-                        type="negative"
+                        :label="becomingMajor(confirmingRow) ? trans('Yes, make it major') : trans('Yes, update prices')"
+                        :type="becomingMajor(confirmingRow) ? 'primary' : 'negative'"
                         :loading="isSaving"
                         @click="save"
                     />

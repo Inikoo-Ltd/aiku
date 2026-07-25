@@ -10,9 +10,12 @@
 
 namespace App\Actions\Masters\MasterShop\UI;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -86,6 +89,7 @@ class EditMasterShop extends OrgAction
                                     'full'        => true,
                                     'noSaveButton' => true,
                                     'value'       => $masterShop->price_exchanges,
+                                    'currencies_shops' => $this->getCurrenciesShops($masterShop),
                                     'updateRoute' => [
                                         'name'       => 'grp.models.master_shops.price_exchange.update',
                                         'parameters' => [
@@ -118,6 +122,37 @@ class EditMasterShop extends OrgAction
                 ]
             ]
         );
+    }
+
+    /** @return array<string, array{shops: array<int, string>, number_products: int}> */
+    protected function getCurrenciesShops(MasterShop $masterShop): array
+    {
+        $currenciesShops = [];
+
+        $shops = Shop::where('master_shop_id', $masterShop->id)
+            ->where('state', ShopStateEnum::OPEN)
+            ->with(['currency', 'stats'])
+            ->get();
+
+        foreach ($shops as $shop) {
+            $currencyCode = $shop->currency->code;
+            $currenciesShops[$currencyCode]['shops'][]        = $shop->name;
+            $currenciesShops[$currencyCode]['number_products'] =
+                ($currenciesShops[$currencyCode]['number_products'] ?? 0) + (int)$shop->stats?->number_current_products;
+        }
+
+        $currencies = $shops->pluck('currency')->unique('id');
+        foreach ($currencies as $currency) {
+            foreach ($currencies as $baseCurrency) {
+                if ($baseCurrency->id == $currency->id) {
+                    continue;
+                }
+                $currenciesShops[$currency->code]['real_exchanges'][$baseCurrency->code] =
+                    GetCurrencyExchange::run($baseCurrency, $currency);
+            }
+        }
+
+        return $currenciesShops;
     }
 
     public function getBreadcrumbs(MasterShop $masterShop): array
