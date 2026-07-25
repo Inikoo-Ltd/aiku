@@ -46,9 +46,9 @@ class MasterAssetHydrateMasterPricesRRPtoChild
                 data_set($dataToBeUpdated, 'price', $price);
             }
 
-            $rrpPerUnit = $masterAsset->getRrpFromCurrency($currency);
-            if ($rrpPerUnit) {
-                data_set($dataToBeUpdated, 'rrp_per_unit', $rrpPerUnit);
+            $rrp = $masterAsset->getRrpFromCurrency($currency);
+            if ($rrp) {
+                data_set($dataToBeUpdated, 'rrp', $rrp);
             }
 
             $updateProduct = UpdateProduct::make();

@@ -340,7 +340,7 @@ class UpdateMasterAsset extends OrgAction
             'master_prices'                => ['sometimes', 'array'],
             'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
             'master_prices.*.independent'  => ['sometimes', 'boolean'],
-            // Master RRPs | This is per unit btw
+            // Master RRPs | values are totals (same basis as products.rrp), NOT per unit
             'master_rrps'                   => ['sometimes', 'array'],
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
