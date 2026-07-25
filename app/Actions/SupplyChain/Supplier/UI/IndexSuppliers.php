@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 04 Apr 2024 10:14:33 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Thu, 04 Apr 2024 10:14:33 Central Indonesia Time, Bali, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -34,14 +34,27 @@ class IndexSuppliers extends GrpAction
 
     private mixed $parent;
 
+    private string $bucket = 'all';
+
     protected function getSElementGroups(Group|Agent $parent): array
     {
+        if ($parent instanceof Group) {
+            [$numberActiveSuppliers, $numberArchivedSuppliers] = match ($this->bucket) {
+                'free' => [$parent->supplyChainStats->number_active_independent_suppliers, $parent->supplyChainStats->number_archived_independent_suppliers],
+                'in_agents' => [$parent->supplyChainStats->number_active_suppliers_in_agents, $parent->supplyChainStats->number_archived_suppliers_in_agents],
+                default => [$parent->supplyChainStats->number_active_suppliers, $parent->supplyChainStats->number_archived_suppliers],
+            };
+        } else {
+            $numberActiveSuppliers   = $parent->stats->number_active_suppliers;
+            $numberArchivedSuppliers = $parent->stats->number_archived_suppliers;
+        }
+
         return [
             'status' => [
                 'label'    => __('status'),
                 'elements' => [
-                    'active'   => [__('active'), $parent instanceof Group ? $parent->supplyChainStats->number_active_independent_suppliers : $parent->stats->number_active_suppliers],
-                    'archived' => [__('archived'), $parent instanceof Group ? $parent->supplyChainStats->number_archived_independent_suppliers : $parent->stats->number_archived_suppliers]
+                    'active'   => [__('active'), $numberActiveSuppliers],
+                    'archived' => [__('archived'), $numberArchivedSuppliers]
                 ],
 
                 'engine' => function ($query, $elements) {
@@ -73,8 +86,11 @@ class IndexSuppliers extends GrpAction
             $queryBuilder->where('suppliers.agent_id', $parent->id);
         } else {
             $queryBuilder->where('suppliers.group_id', $parent->id);
-            $queryBuilder->whereNull('suppliers.agent_id');
-
+            if ($this->bucket == 'free') {
+                $queryBuilder->whereNull('suppliers.agent_id');
+            } elseif ($this->bucket == 'in_agents') {
+                $queryBuilder->whereNotNull('suppliers.agent_id');
+            }
         }
 
 
@@ -89,7 +105,7 @@ class IndexSuppliers extends GrpAction
 
         return $queryBuilder
             ->defaultSort('suppliers.code')
-            ->select(['suppliers.code', 'suppliers.slug', 'suppliers.name', 'suppliers.location as location', 'number_supplier_products', 'number_purchase_orders'])
+            ->select(['suppliers.id', 'suppliers.code', 'suppliers.slug', 'suppliers.name', 'suppliers.location as location', 'number_supplier_products', 'number_purchase_orders'])
             ->leftJoin('supplier_stats', 'supplier_stats.supplier_id', 'suppliers.id')
             ->allowedSorts(['code', 'name', 'agent_name', 'location', 'number_supplier_products', 'number_purchase_orders'])
             ->allowedFilters([$globalSearch])
@@ -176,6 +192,26 @@ class IndexSuppliers extends GrpAction
         return $this->handle($group);
     }
 
+    public function free(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'free';
+        $group        = app('group');
+        $this->parent = $group;
+        $this->initialisation($group, $request);
+
+        return $this->handle($group);
+    }
+
+    public function inAgents(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'in_agents';
+        $group        = app('group');
+        $this->parent = $group;
+        $this->initialisation($group, $request);
+
+        return $this->handle($group);
+    }
+
     public function inAgent(Agent $agent, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $agent;
@@ -192,7 +228,14 @@ class IndexSuppliers extends GrpAction
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('Suppliers');
+        $title = match ($this->bucket) {
+            'free' => __('Free Suppliers'),
+            'in_agents' => __('Agents Suppliers'),
+            default => __('Suppliers')
+        };
+        if ($this->parent instanceof Group) {
+            $subNavigation = $this->getSuppliersSubNavigation();
+        }
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-person-dolly'],
@@ -216,7 +259,6 @@ class IndexSuppliers extends GrpAction
         if ($this->parent instanceof Agent) {
             $subNavigation = $this->getAgentNavigation($this->parent);
             $title = $this->parent->organisation->name;
-            $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-people-arrows'],
                 'title' => __('Suppliers')
@@ -246,7 +288,7 @@ class IndexSuppliers extends GrpAction
             'SupplyChain/Suppliers',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('Suppliers'),
+                'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -303,7 +345,8 @@ class IndexSuppliers extends GrpAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'grp.supply-chain.suppliers.index'
+                                'name'       => $routeName,
+                                'parameters' => $routeParameters
                             ],
                             'label' => __('Suppliers'),
                             'icon'  => 'fal fa-bars'
@@ -312,5 +355,40 @@ class IndexSuppliers extends GrpAction
                 ]
             )
         };
+    }
+
+    public function getSuppliersSubNavigation(): array
+    {
+        return [
+            [
+                'label'  => __('Free'),
+                'root'   => 'grp.supply-chain.suppliers.free',
+                'route'  => [
+                    'name'       => 'grp.supply-chain.suppliers.free',
+                    'parameters' => []
+                ],
+                'number' => $this->group->supplyChainStats->number_independent_suppliers
+            ],
+            [
+                'label'  => __('Agents'),
+                'root'   => 'grp.supply-chain.suppliers.in_agents',
+                'route'  => [
+                    'name'       => 'grp.supply-chain.suppliers.in_agents',
+                    'parameters' => []
+                ],
+                'number' => $this->group->supplyChainStats->number_suppliers_in_agents
+            ],
+            [
+                'label'  => __('All'),
+                'icon'   => 'fal fa-bars',
+                'root'   => 'grp.supply-chain.suppliers.index',
+                'align'  => 'right',
+                'route'  => [
+                    'name'       => 'grp.supply-chain.suppliers.index',
+                    'parameters' => []
+                ],
+                'number' => $this->group->supplyChainStats->number_suppliers
+            ],
+        ];
     }
 }

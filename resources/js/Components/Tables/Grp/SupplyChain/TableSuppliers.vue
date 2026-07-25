@@ -19,24 +19,7 @@ defineProps<{
 const locale = useLocaleStore();
 
 function supplierRoute(supplier: Supplier) {
-    console.log(supplier.agent_slug, supplier.slug);
-    switch (route().current()) {
-        case 'grp.supply-chain.suppliers.index':
-            return route(
-                'grp.supply-chain.suppliers.show',
-                [supplier.slug]);
-        case 'grp.overview.procurement.suppliers.index':
-            return route(
-                'grp.supply-chain.suppliers.show',
-                [supplier.slug]);
-        default:
-            return route(
-                'grp.supply-chain.agents.show.suppliers.show',
-                [
-                    route().params['agent'],
-                    supplier.slug
-                ]);
-    }
+    return route("grp.majordomo.redirect_supplier", [supplier.id])
 }
 
 </script>

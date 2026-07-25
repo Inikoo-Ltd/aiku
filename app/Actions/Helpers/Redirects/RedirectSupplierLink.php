@@ -18,6 +18,10 @@ class RedirectSupplierLink extends GrpAction
 {
     public function handle(Supplier $supplier): RedirectResponse
     {
+        if ($supplier->agent_id) {
+            return Redirect::to(route('grp.supply-chain.agents.show.suppliers.show', [$supplier->agent->slug, $supplier->slug]));
+        }
+
         return Redirect::to(route('grp.supply-chain.suppliers.show', [$supplier->slug]));
     }
 

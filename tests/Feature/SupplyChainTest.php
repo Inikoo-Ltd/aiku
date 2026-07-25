@@ -314,6 +314,55 @@ test('UI Index suppliers', function () {
     });
 });
 
+test('UI Index free suppliers', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.suppliers.free'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/Suppliers')
+            ->where('title', 'Free Suppliers')
+            ->has('pageHead.subNavigation', 3)
+            ->has('data')
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI Index suppliers in agents', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.suppliers.in_agents'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/Suppliers')
+            ->where('title', 'Agents Suppliers')
+            ->has('pageHead.subNavigation', 3)
+            ->has('data')
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('majordomo redirect supplier link', function () {
+    $freeSupplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $agent        = StoreAgent::make()->action(
+        group: $this->group,
+        modelData: Agent::factory()->definition()
+    );
+    $agentSupplier = StoreSupplier::make()->action(
+        parent: $agent,
+        modelData: Supplier::factory()->definition()
+    );
+
+    $this->get(route('grp.majordomo.redirect_supplier', [$freeSupplier->id]))
+        ->assertRedirect(route('grp.supply-chain.suppliers.show', [$freeSupplier->slug]));
+
+    $this->get(route('grp.majordomo.redirect_supplier', [$agentSupplier->id]))
+        ->assertRedirect(route('grp.supply-chain.agents.show.suppliers.show', [$agent->slug, $agentSupplier->slug]));
+});
+
 test('UI create supplier', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.suppliers.create'));
