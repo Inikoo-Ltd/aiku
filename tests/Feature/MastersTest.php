@@ -49,6 +49,9 @@ use App\Actions\Masters\MasterShop\UpdateMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
+use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetOrderingIntervals;
 use App\Models\Masters\MasterAssetStats;
@@ -63,6 +66,7 @@ use App\Models\Masters\MasterShopStats;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -1295,9 +1299,12 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
         ])
     );
 
-    $response->assertInertia(function (AssertableInertia $page) use ($masterAsset) {
+    $expectsWarning = $masterAsset->stats->number_assets > 0;
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterAsset, $expectsWarning) {
         $page
             ->component('EditModel')
+            ->where('warning', fn ($warning) => $expectsWarning === ($warning !== null))
             ->has('breadcrumbs')
             ->has(
                 'pageHead',
@@ -1326,6 +1333,70 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
             );
     });
 })->depends('create master asset');
+
+test('UI Index Master Products Bulk Edit', function (MasterShop $masterShop) {
+    $response = get(route('grp.masters.master_shops.show.bulk-edit', [$masterShop->slug]));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Masters/MasterProductsBulkEdit')
+            ->has('currencies')
+            ->etc()
+    );
+})->depends('create master shop');
+
+test('UI Edit Master Product with a trade unit not linked to a stock', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'NOSTK-DEPT-'.uniqid(),
+        'name' => 'No Stock Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'NOSTK-FAM-'.uniqid(),
+        'name' => 'No Stock Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'NOSTK-AST-'.uniqid(),
+        'name'    => 'No Stock Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+    $masterAsset->tradeUnits()->attach($tradeUnit->id, ['quantity' => 3]);
+
+    expect(
+        DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->where('trade_unit_id', $tradeUnit->id)
+            ->exists()
+    )->toBeFalse();
+
+    $response = get(
+        route('grp.masters.master_shops.show.master_families.master_products.edit', [
+            'masterShop'    => $masterShop->slug,
+            'masterFamily'  => $masterFamily->slug,
+            'masterProduct' => $masterAsset->slug,
+        ])
+    );
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page->where(
+            'formData.blueprint.5.fields.trade_units.value',
+            fn ($tradeUnits) => collect($tradeUnits)->count() === 1
+                && collect($tradeUnits)->every(fn ($tradeUnit) => $tradeUnit['packed_in'] == 1)
+        )->etc()
+    );
+
+    $masterAsset->load('tradeUnits');
+    $showcase = GetMasterProductShowcase::run($masterAsset);
+
+    expect($showcase['trade_units'])->toHaveCount(1)
+        ->and($showcase['trade_units'][0])->toHaveKey('pick_fractional');
+});
 
 
 // ADDITIONAL MASTER ASSET ACTIONS

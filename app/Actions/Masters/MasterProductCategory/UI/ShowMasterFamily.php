@@ -15,11 +15,11 @@ use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\OrgAction;
-use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\GetRelatedMasterProducts;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\MasterVariant\IndexMasterVariant;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -29,8 +29,6 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterProductCategoryTimeSeriesResource;
 use App\Http\Resources\Masters\MasterVariantsResource;
-use App\Models\Catalogue\Shop;
-use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -170,26 +168,7 @@ class ShowMasterFamily extends OrgAction
             ];
         }
 
-        $masterShop = $masterFamily->masterShop;
-        $shopCurrencies = Shop::where('master_shop_id', $masterShop->id)
-            ->select('currency_id')
-            ->distinct()
-            ->get();
-
-        $baseEuro   = Currency::where('code', 'EUR')->first();
-        $currencies = Currency::whereIn('id', $shopCurrencies)->get();
-        $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseEuro) {
-            $ratioEuro  = GetCurrencyExchange::run($baseEuro, $currency);
-
-            return [
-                $currency->code => [
-                    'ratio_eur'     => $ratioEuro,
-                    'currency'      => $currency->code,
-                    'currency_symbol'  => $currency->symbol,
-                    'currency_id'      => $currency->id,
-                ]
-            ];
-        });
+        $currenciesRate = GetMasterShopCurrenciesRate::run($masterFamily->masterShop);
 
 
         return Inertia::render(

@@ -20,7 +20,6 @@ use App\Helpers\NaturalLanguage;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 
 class GetMasterProductShowcase
 {
@@ -67,7 +66,7 @@ class GetMasterProductShowcase
 
         $dataTradeUnits = [];
         if ($masterAsset->tradeUnits) {
-            $dataTradeUnits = $this->getDataTradeUnit($masterAsset->tradeUnits);
+            $dataTradeUnits = $this->getDataTradeUnit($masterAsset);
         }
 
         $product = $masterAsset
@@ -113,15 +112,11 @@ class GetMasterProductShowcase
         ];
     }
 
-    private function getDataTradeUnit($tradeUnits): array
+    private function getDataTradeUnit(MasterAsset $masterAsset): array
     {
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        $packedIn = $masterAsset->getStockPackedInByTradeUnit();
 
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
+        return $masterAsset->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
             return array_merge(
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / Arr::get($packedIn, $tradeUnit->id, 1))), Arr::get($packedIn, $tradeUnit->id, 1))],
                 GetTradeUnitShowcase::run($tradeUnit)

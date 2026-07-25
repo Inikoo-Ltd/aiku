@@ -9,15 +9,15 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\MorphPivot;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
-use App\Models\Catalogue\Shop;
-use App\Models\Helpers\Currency;
+use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -78,7 +78,7 @@ class EditMasterProduct extends OrgAction
             'EditModel',
             [
                 'title'       => __('Editing master product').': '.$masterAsset->code,
-                'warning'     => $masterAsset->products ? [
+                'warning'     => $masterAsset->stats->number_assets > 0 ? [
                     'type'  => 'warning',
                     'title' => __('Important'),
                     'text'  => __('Changes to this master name or descriptions will overwrite child product names and descriptions where “Follow Master” is enabled.'),
@@ -134,43 +134,27 @@ class EditMasterProduct extends OrgAction
      */
     public function getBlueprint(MasterAsset $masterProduct): array
     {
-        $barcodes = $masterProduct->tradeUnits->pluck('barcode')->filter()->unique();
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        $packedIn = $masterProduct->getStockPackedInByTradeUnit();
 
-        $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
+        $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
+            /** @var MorphPivot $pivot */
+            $pivot            = $tradeUnit->getRelationValue('pivot');
+            $quantity         = $pivot->getAttribute('quantity');
+            $packedInQuantity = Arr::get($packedIn, $tradeUnit->id, 1);
+            $fraction         = $quantity / $packedInQuantity;
+
             return array_merge(
-                ['quantity' => (int)$t->pivot->quantity],
-                ['fraction' => $t->pivot->quantity / $packedIn[$t->id]],
-                ['packed_in' => $packedIn[$t->id]],
-                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity / $packedIn[$t->id])), $packedIn[$t->id])],
-                $t->toArray()
+                [
+                    'quantity'        => (int)$quantity,
+                    'packed_in'       => $packedInQuantity,
+                    'fraction'        => $fraction,
+                    'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($fraction)), $packedInQuantity),
+                ],
+                $tradeUnit->toArray()
             );
         });
 
-        $masterShop = $masterProduct->masterShop;
-        $shopCurrencies = Shop::where('master_shop_id', $masterShop->id)
-            ->select('currency_id')
-            ->distinct()
-            ->get();
-
-        $baseEuro   = Currency::where('code', 'EUR')->first();
-        $currencies = Currency::whereIn('id', $shopCurrencies)->get();
-        $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseEuro) {
-            $ratioEuro  = GetCurrencyExchange::run($baseEuro, $currency);
-
-            return [
-                $currency->code => [
-                    'ratio_eur'     => $ratioEuro,
-                    'currency'      => $currency->code,
-                    'currency_symbol'  => $currency->symbol,
-                    'currency_id'      => $currency->id,
-                ]
-            ];
-        });
+        $currenciesRate = GetMasterShopCurrenciesRate::run($masterProduct->masterShop);
 
         return [
             [
@@ -196,14 +180,6 @@ class EditMasterProduct extends OrgAction
                         ],
                         'value'   => $masterProduct->name
                     ],
-                    /*  'description_title' => [
-                         'type'    => 'input',
-                         'label'   => __('Description title'),
-                         'options' => [
-                             'counter' => true,
-                         ],
-                         'value'   => $masterProduct->description_title
-                     ], */
                     'description'       => [
                         'type'    => 'textEditor',
                         'label'   => __('Description'),
@@ -266,33 +242,6 @@ class EditMasterProduct extends OrgAction
                     ],
                 ]
             ],
-            /* [
-                'label'  => __('Pricing'),
-                'icon'   => 'fa-light fa-money-bill',
-                'fields' => [
-                    'price'            => [
-                        'type'     => 'input_number',
-                        'label'    => __('Price').'/'.__('outer'),
-                        'required' => true,
-                        'bind'     => [
-                            'minFractionDigits' => 0,
-                            'maxFractionDigits' => 2,
-                        ],
-                        'value'    => $masterProduct->price,
-                    ],
-                    'rrp_per_unit'  => [
-                        'type'     => 'input_number',
-                        'label'    => __('RRP').'/'.__('unit'),
-                        'required' => true,
-                        'bind'     => [
-                            'minFractionDigits' => 0,
-                            'maxFractionDigits' => 2,
-                        ],
-                        'value'    => ($masterProduct->rrp / trimDecimalZeros($masterProduct->units)),
-                        'min'      => 0.01
-                    ],
-                ]
-            ], */
             [
                 'label'  => __('Pricing'),
                 'icon'   => 'fa-light fa-money-bill',
@@ -326,15 +275,6 @@ class EditMasterProduct extends OrgAction
                         'type'  => 'input',
                         'label' => __('Unit label'),
                         'value' => $masterProduct->unit,
-                    ],
-                    'barcode' => [
-                        'type'     => 'select',
-                        'label'    => __('Barcode'),
-                        'value'    => $masterProduct->barcode,
-                        'readonly' => $masterProduct->tradeUnits->count() == 1,
-                        'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                            return [$barcode => $barcode];
-                        })->toArray()
                     ],
 
                 ]

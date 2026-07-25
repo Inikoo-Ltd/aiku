@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -449,6 +450,15 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return Tag::whereHas('tradeUnits', function ($query) {
             $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
         })->get();
+    }
+
+    public function getStockPackedInByTradeUnit(): array
+    {
+        return DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->whereIn('trade_unit_id', $this->tradeUnits->pluck('id'))
+            ->pluck('quantity', 'trade_unit_id')
+            ->toArray();
     }
 
     public function getBrand(): ?Brand
