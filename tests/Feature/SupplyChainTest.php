@@ -181,7 +181,11 @@ test('create supplier product in agent supplier', function ($supplier) {
     $supplierProductData = SupplierProduct::factory()->definition();
     data_set($supplierProductData, 'stock_id', $this->stocks[2]->id);
     $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
-    expect($supplierProduct)->toBeInstanceOf(SupplierProduct::class);
+    $this->group->refresh();
+    expect($supplierProduct)->toBeInstanceOf(SupplierProduct::class)
+        ->and($this->group->supplyChainStats->number_supplier_products)->toBe(3)
+        ->and($this->group->supplyChainStats->number_independent_supplier_products)->toBe(2)
+        ->and($this->group->supplyChainStats->number_supplier_products_in_agents)->toBe(1);
 })->depends('create supplier in agent');
 
 
@@ -392,6 +396,34 @@ test('UI Index suppliers product in supplier', function () {
             ->has('data')
             ->has('upload_spreadsheet')
             ->has('breadcrumbs', 4);
+    });
+});
+
+test('UI Index free supplier products', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.supplier_products.free'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/SupplierProducts')
+            ->where('title', 'Free Supplier Products')
+            ->has('pageHead.subNavigation', 3)
+            ->has('data')
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI Index supplier products in agents', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.supplier_products.in_agents'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/SupplierProducts')
+            ->where('title', 'Agents Supplier Products')
+            ->has('pageHead.subNavigation', 3)
+            ->has('data')
+            ->has('breadcrumbs', 3);
     });
 });
 

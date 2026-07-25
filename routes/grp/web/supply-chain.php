@@ -96,6 +96,8 @@ Route::prefix("suppliers")->name("suppliers")->group(
 Route::prefix("supplier-products")->name("supplier_products.")->group(
     function () {
         Route::get('', IndexSupplierProducts::class)->name('index');
+        Route::get('free', [IndexSupplierProducts::class, 'free'])->name('free');
+        Route::get('in-agents', [IndexSupplierProducts::class, 'inAgents'])->name('in_agents');
 
         Route::get('/{supplierProduct}', ShowSupplierProduct::class)->name('show');
     }

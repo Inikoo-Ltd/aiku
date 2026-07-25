@@ -31,6 +31,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_active_suppliers_in_agents Active suppliers, status=true
  * @property int $number_archived_suppliers_in_agents Archived suppliers status=false
  * @property int $number_supplier_products
+ * @property int $number_independent_supplier_products supplier products with no agent
+ * @property int $number_supplier_products_in_agents supplier products belonging to agent suppliers
  * @property int $number_current_supplier_products state=active|discontinuing
  * @property int $number_available_supplier_products
  * @property int $number_no_available_supplier_products only for state=active|discontinuing
