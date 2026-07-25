@@ -6,9 +6,10 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Http\Middleware\LogMcpRequest;
 use App\Mcp\Servers\AikuServer;
 use Laravel\Mcp\Facades\Mcp;
 
 Mcp::oauthRoutes();
 
-Mcp::web('/mcp/aiku', AikuServer::class)->middleware(['auth:mcp,mcp-oauth', 'bind_group']);
+Mcp::web('/mcp/aiku', AikuServer::class)->middleware(['auth:mcp,mcp-oauth', 'bind_group', LogMcpRequest::class]);
