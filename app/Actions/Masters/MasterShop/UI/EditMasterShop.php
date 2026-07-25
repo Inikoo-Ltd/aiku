@@ -80,38 +80,7 @@ class EditMasterShop extends OrgAction
                             'label'  => __('Pricing'),
                             'icon'   => 'fa-light fa-money-bill',
                             'fields' => [
-                                'cost_price_ratio' => [
-                                    'type'        => 'input_number',
-                                    'bind'        => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'       => __('Pricing ratio'),
-                                    'placeholder' => __('Cost price ratio'),
-                                    'required'    => true,
-                                    'value'       => $masterShop->cost_price_ratio,
-                                    'min'         => 0
-                                ],
-                                'price_rrp_ratio'  => [
-                                    'type'        => 'input_number',
-                                    'bind'        => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'       => __('RRP ratio'),
-                                    'placeholder' => __('Price rrp ratio'),
-                                    'required'    => true,
-                                    'value'       => $masterShop->price_rrp_ratio,
-                                    'min'         => 0
-                                ],
-                                'price_rrp_warning_ratio'  => [
-                                    'type'        => 'input_number',
-                                    'label'       => __('Price rrp warning ratio'),
-                                    'bind'        => [
-                                         'suffix'      => '%',
-                                    ],
-                                    'required'    => false,
-                                    'value'       => $masterShop->price_rrp_warning_ratio,
-                                    'min'         => 0,
-                                ]
+
                             ]
                         ] : null,
                         $this->canEditOffers ? [

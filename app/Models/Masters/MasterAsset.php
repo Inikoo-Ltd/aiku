@@ -82,7 +82,6 @@ use App\Models\Traits\HasSearch;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property numeric|null $cost_price_ratio
  * @property int|null $front_image_id
  * @property int|null $34_image_id
  * @property int|null $left_image_id

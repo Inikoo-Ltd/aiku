@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
@@ -61,13 +62,13 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
 
         $openShopsQuery = $masterShop->shops()->where('state', ShopStateEnum::OPEN);
 
-        $baseCurrency      = Currency::where('code', 'EUR')->first();
+        $baseCurrency = Currency::where('code', 'EUR')->first();
 
         $openOrganisations = Organisation::whereIn('id', $openShopsQuery->pluck('organisation_id'))->get();
 
-        $organisationData  = [];
-        $grpCosts          = [];
-        $avgCost           = 0;
+        $organisationData = [];
+        $grpCosts         = [];
+        $avgCost          = 0;
 
         /** @var Organisation $organisation */
         foreach ($openOrganisations as $organisation) {
@@ -89,53 +90,61 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
             $avgCost = array_sum($grpCosts) / count($grpCosts);
         }
 
-        $currencies = Currency::whereIn('id', $openShopsQuery->pluck('currency_id'))->get()->keyBy('id');
-        $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseCurrency) {
-            $ratioEuro  = GetCurrencyExchange::run($baseCurrency, $currency);
+        $currencies     = Currency::whereIn('id', $openShopsQuery->pluck('currency_id'))->get()->keyBy('id');
+        $currenciesRate = $currencies->mapWithKeys(function ($currency) use ($baseCurrency) {
+            $ratioEuro = GetCurrencyExchange::run($baseCurrency, $currency);
 
             return [
                 $currency->code => [
-                    'ratio_eur'         => $ratioEuro,
-                    'currency'          => $currency->code,
-                    'currency_symbol'   => $currency->symbol,
-                    'currency_id'       => $currency->id,
+                    'ratio_eur'       => $ratioEuro,
+                    'currency'        => $currency->code,
+                    'currency_symbol' => $currency->symbol,
+                    'currency_id'     => $currency->id,
                 ]
             ];
         });
 
         $masterPrices = $currenciesRate->map(fn ($ratio) => [
-            'value'         => formatPrice(data_get($ratio, 'ratio_eur', 1), $avgCost),
-            'independent'   => false
+            'value'       => formatPrice(data_get($ratio, 'ratio_eur', 1), $avgCost),
+            'independent' => false
         ]);
         $masterRrps   = $currenciesRate->map(fn ($ratio) => [
-            'value'         => formatPrice(data_get($ratio, 'ratio_eur', 1), round(($avgCost / $totalUnit) * 2.4, 2)),
-            'independent'   => false
+            'value'       => formatPrice(data_get($ratio, 'ratio_eur', 1), round(($avgCost / $totalUnit) * 2.4, 2)),
+            'independent' => false
         ]);
+
+
+        if ($masterShop->type == ShopTypeEnum::DROPSHIPPING) {
+            $costPriceRatio = 3.5;
+        } else {
+            $costPriceRatio = 2;
+        }
+
 
         $finalData = [];
         /** @var Shop $shop */
         foreach ($openShopsQuery->get() as $shop) {
-            $orgStocksData = $organisationData[$shop->organisation_id];
+            $orgStocksData    = $organisationData[$shop->organisation_id];
             $shopCurrencyCode = $shop->currency->code;
 
             if (!$avgCost) {
-                $shopCost       = null;
-                $price          = null;
-                $rrp            = null;
+                $shopCost = null;
+                $price    = null;
+                $rrp      = null;
             } else {
-                $shopCost       = $masterPrices->get($shopCurrencyCode)['value'];
-                $price          = round($shopCost * $shop->cost_price_ratio, 2);
-                $rrp            = round($price * 2.4, 2);
+                $shopCost = $masterPrices->get($shopCurrencyCode)['value'];
+                $price    = round($shopCost * $costPriceRatio, 2);
+                $rrp      = round($price * 2.4, 2);
             }
 
-            $orgStocksData['org_value_in_warehouse_per_shop']   = GetCurrencyExchange::run($organisation->currency, $shop->currency) * $orgStocksData['org_value_in_warehouse'];
-            $orgStocksData['shop_currency']                     = $shopCurrencyCode;
-            $orgStocksData['shop_cost']                         = $shopCost;
-            $orgStocksData['id']                                = $shop->id;
-            $orgStocksData['price']                             = $price ?? 0.01;
-            $orgStocksData['rrp']                               = $rrp ?? 0.01;
-            $orgStocksData['gross_weight']                      = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
-            $orgStocksData['margin']                            = ($orgStocksData['price'] > 0)
+            $orgStocksData['org_value_in_warehouse_per_shop'] = GetCurrencyExchange::run($organisation->currency, $shop->currency) * $orgStocksData['org_value_in_warehouse'];
+            $orgStocksData['shop_currency']                   = $shopCurrencyCode;
+            $orgStocksData['shop_cost']                       = $shopCost;
+            $orgStocksData['id']                              = $shop->id;
+            $orgStocksData['price']                           = $price ?? 0.01;
+            $orgStocksData['rrp']                             = $rrp ?? 0.01;
+            $orgStocksData['gross_weight']                    = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
+            $orgStocksData['margin']                          = ($orgStocksData['price'] > 0)
                 ? round((($orgStocksData['price'] - $orgStocksData['shop_cost']) / $orgStocksData['price']) * 100, 2)
                 : null;
 

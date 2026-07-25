@@ -20,7 +20,7 @@ class MasterAssetHydrateMasterPricesRRPtoChild
         $products = $masterAsset
             ->products()
             ->with(['family', 'shop'])
-            ->when($shop, fn($q) => $q->where('products.shop_id', $shop->id))
+            ->when($shop, fn ($q) => $q->where('products.shop_id', $shop->id))
             ->get();
 
         /** @var Product $product */

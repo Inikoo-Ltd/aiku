@@ -37,10 +37,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property numeric $cost_price_ratio
- * @property numeric $price_rrp_ratio
  * @property array<array-key, mixed>|null $offers_data
- * @property float $price_rrp_warning_ratio
  * @property bool $gold_reward_eligible
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group|null $group
@@ -67,15 +64,15 @@ class MasterShop extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'            => 'array',
-        'type'            => ShopTypeEnum::class,
-        'status'           => 'boolean',
-        'offers_data'      => 'array',
+        'data'        => 'array',
+        'type'        => ShopTypeEnum::class,
+        'status'      => 'boolean',
+        'offers_data' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'offers_data'   => '{}',
+        'data'        => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];

@@ -19,9 +19,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<array-key, mixed> $arguments
  * @property bool $is_error
  * @property int|null $duration_ms
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property-read User $user
- *
+ * @property \Illuminate\Support\Carbon $created_at
+ * @property-read \App\Models\SysAdmin\User|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|McpRequest newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|McpRequest newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|McpRequest query()
  * @mixin \Eloquent
  */
 class McpRequest extends Model
