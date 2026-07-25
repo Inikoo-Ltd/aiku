@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Guest\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Guest\WithGuestsSubNavigations;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
@@ -25,7 +25,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexGuests extends GrpAction
+class IndexGuests extends OrgAction
 {
     use WithSysAdminAuthorization;
     use WithGuestsSubNavigations;
@@ -200,7 +200,7 @@ class IndexGuests extends GrpAction
     {
         $group       = group();
         $this->scope = 'inactive';
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->scope);
     }
@@ -209,7 +209,7 @@ class IndexGuests extends GrpAction
     {
         $group       = group();
         $this->scope = 'active';
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->scope);
     }
@@ -218,7 +218,7 @@ class IndexGuests extends GrpAction
     {
         $group       = group();
         $this->scope = 'all';
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->scope);
     }

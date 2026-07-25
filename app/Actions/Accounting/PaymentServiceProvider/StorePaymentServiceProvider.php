@@ -8,7 +8,7 @@
 
 namespace App\Actions\Accounting\PaymentServiceProvider;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Models\Accounting\PaymentServiceProvider;
@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class StorePaymentServiceProvider extends GrpAction
+class StorePaymentServiceProvider extends OrgAction
 {
     public function handle(Group $group, array $modelData): PaymentServiceProvider
     {
@@ -66,7 +66,7 @@ class StorePaymentServiceProvider extends GrpAction
     public function action(Group $group, array $modelData): PaymentServiceProvider
     {
         $this->asAction = true;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
         return $this->handle($group, $this->validatedData);
     }
 

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -18,7 +18,7 @@ use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetTradeUnitDataForMasterProductCreation extends GrpAction
+class GetTradeUnitDataForMasterProductCreation extends OrgAction
 {
     use HasBucketImages;
 
@@ -33,7 +33,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): \Illuminate\Http\Response|array
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle(masterProductCategory: $masterProductCategory, modelData: $this->validatedData);
     }

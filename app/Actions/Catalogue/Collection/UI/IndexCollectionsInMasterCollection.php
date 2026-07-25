@@ -8,7 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\WithMasterCollectionNavigation;
 use App\Actions\Masters\MasterCollection\UI\WithMasterCollectionSubNavigation;
@@ -27,7 +27,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexCollectionsInMasterCollection extends GrpAction
+class IndexCollectionsInMasterCollection extends OrgAction
 {
     use WithMasterCollectionNavigation;
     use WithMasterCollectionSubNavigation;
@@ -222,7 +222,7 @@ class IndexCollectionsInMasterCollection extends GrpAction
         $this->parent = $masterCollection;
         $group = group();
 
-        $this->initialisation($group, $request)->withTab(CollectionsTabsEnum::valuesExcept([CollectionsTabsEnum::SALES]));
+        $this->initialisationFromGroup($group, $request)->withTab(CollectionsTabsEnum::valuesExcept([CollectionsTabsEnum::SALES]));
 
         return $this->handle($masterCollection, CollectionsTabsEnum::INDEX->value);
     }
@@ -233,7 +233,7 @@ class IndexCollectionsInMasterCollection extends GrpAction
         $this->parent = $masterCollection;
         $group = group();
 
-        $this->initialisation($group, $request)->withTab(CollectionsTabsEnum::valuesExcept([CollectionsTabsEnum::SALES]));
+        $this->initialisationFromGroup($group, $request)->withTab(CollectionsTabsEnum::valuesExcept([CollectionsTabsEnum::SALES]));
 
         return $this->handle($masterCollection, CollectionsTabsEnum::INDEX->value);
     }
@@ -244,7 +244,7 @@ class IndexCollectionsInMasterCollection extends GrpAction
         $this->parent = $masterCollection;
         $group = group();
 
-        $this->initialisation($group, $request)->withTab(CollectionsTabsEnum::valuesExcept([CollectionsTabsEnum::SALES]));
+        $this->initialisationFromGroup($group, $request)->withTab(CollectionsTabsEnum::valuesExcept([CollectionsTabsEnum::SALES]));
 
         return $this->handle($masterCollection, CollectionsTabsEnum::INDEX->value);
     }
@@ -255,7 +255,7 @@ class IndexCollectionsInMasterCollection extends GrpAction
         $this->parent = $masterCollection;
         $group        = group();
 
-        $this->initialisation($group, $request)->withTab(CollectionsTabsEnum::valuesExcept([CollectionsTabsEnum::SALES]));
+        $this->initialisationFromGroup($group, $request)->withTab(CollectionsTabsEnum::valuesExcept([CollectionsTabsEnum::SALES]));
 
         return $this->handle($masterCollection, CollectionsTabsEnum::INDEX->value);
     }

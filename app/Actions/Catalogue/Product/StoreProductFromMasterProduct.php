@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -18,7 +18,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 
-class StoreProductFromMasterProduct extends GrpAction
+class StoreProductFromMasterProduct extends OrgAction
 {
     public string $jobQueue = 'urgent';
 
@@ -208,7 +208,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
         $group = $masterAsset->group;
 
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         $this->handle($masterAsset, $this->validatedData, $generateVariant, $ignoreCreateWebpage);
     }

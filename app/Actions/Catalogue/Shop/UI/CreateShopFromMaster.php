@@ -12,7 +12,7 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -20,7 +20,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 
-class CreateShopFromMaster extends GrpAction
+class CreateShopFromMaster extends OrgAction
 {
     // TODO master authorisation to create shop (?)
     private MasterShop $masterShop;
@@ -29,7 +29,7 @@ class CreateShopFromMaster extends GrpAction
     {
         $group            = group();
         $this->masterShop = $masterShop;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $organisation;
     }

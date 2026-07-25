@@ -14,7 +14,7 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
@@ -38,7 +38,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterFamily extends GrpAction
+class ShowMasterFamily extends OrgAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -58,7 +58,7 @@ class ShowMasterFamily extends GrpAction
         $this->parent = $masterShop;
         $group        = group();
 
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -67,7 +67,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -76,7 +76,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -86,7 +86,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -96,7 +96,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -106,7 +106,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }

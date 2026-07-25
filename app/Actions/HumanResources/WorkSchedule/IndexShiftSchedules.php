@@ -2,13 +2,13 @@
 
 namespace App\Actions\HumanResources\WorkSchedule;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\HumanResources\WorkSchedule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexShiftSchedules extends GrpAction
+class IndexShiftSchedules extends OrgAction
 {
     public function handle(ActionRequest $request): JsonResponse
     {

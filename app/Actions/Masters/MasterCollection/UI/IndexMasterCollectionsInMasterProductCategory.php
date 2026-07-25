@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
@@ -31,7 +31,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterCollectionsInMasterProductCategory extends GrpAction
+class IndexMasterCollectionsInMasterProductCategory extends OrgAction
 {
     use WithMasterDepartmentSubNavigation;
     use WithMasterSubDepartmentSubNavigation;
@@ -281,7 +281,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
-        $this->initialisation($masterShop->group, $request)
+        $this->initialisationFromGroup($masterShop->group, $request)
             ->withTab(MasterCollectionsTabsEnum::values());
 
         return $this->handle($masterDepartment, prefix: MasterCollectionsTabsEnum::INDEX->value);
@@ -290,7 +290,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
     public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterSubDepartment;
-        $this->initialisation($masterShop->group, $request)
+        $this->initialisationFromGroup($masterShop->group, $request)
             ->withTab(MasterCollectionsTabsEnum::values());
 
         return $this->handle($masterSubDepartment, prefix: MasterCollectionsTabsEnum::INDEX->value);

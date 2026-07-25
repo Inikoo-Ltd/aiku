@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,7 +22,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
-class EditMasterProduct extends GrpAction
+class EditMasterProduct extends OrgAction
 {
     use WithMasterProductNavigation;
 
@@ -33,14 +33,14 @@ class EditMasterProduct extends GrpAction
 
     public function asController(MasterShop $masterShop, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }
 
     public function inGroup(MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterProduct->group, $request);
+        $this->initialisationFromGroup($masterProduct->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -48,7 +48,7 @@ class EditMasterProduct extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartment(MasterAsset $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterProduct->group, $request);
+        $this->initialisationFromGroup($masterProduct->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -56,7 +56,7 @@ class EditMasterProduct extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -64,7 +64,7 @@ class EditMasterProduct extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }

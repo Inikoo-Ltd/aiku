@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\UI\GetMasterDepartmentNavigation;
 use App\Actions\Masters\MasterProductCategory\UI\GetMasterFamilyNavigation;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
@@ -40,7 +40,7 @@ use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use Illuminate\Support\Collection;
 
-class IndexMasterProducts extends GrpAction
+class IndexMasterProducts extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
@@ -644,7 +644,7 @@ class IndexMasterProducts extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($group, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -653,7 +653,7 @@ class IndexMasterProducts extends GrpAction
     {
         $group        = group();
         $this->parent = $masterShop;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterShop, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -664,7 +664,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -675,7 +675,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -686,7 +686,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -697,7 +697,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -708,7 +708,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle(parent: $masterFamily, prefix: MasterProductsTabsEnum::INDEX->value, filterInVariant: $filterInVariant);
     }
@@ -717,7 +717,7 @@ class IndexMasterProducts extends GrpAction
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
-        $this->initialisation($masterDepartment->group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($masterDepartment->group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterDepartment, prefix: MasterProductsTabsEnum::INDEX->value);
     }

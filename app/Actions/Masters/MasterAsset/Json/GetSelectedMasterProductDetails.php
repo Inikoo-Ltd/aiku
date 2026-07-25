@@ -9,7 +9,7 @@
 
 namespace App\Actions\Masters\MasterAsset\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Models\Masters\MasterAsset;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -20,7 +20,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetSelectedMasterProductDetails extends GrpAction
+class GetSelectedMasterProductDetails extends OrgAction
 {
     use WithMastersAuthorisation;
 
@@ -97,7 +97,7 @@ class GetSelectedMasterProductDetails extends GrpAction
     public function asController(ActionRequest $request): \Illuminate\Http\Response|array|\JsonSerializable|\Illuminate\Contracts\Support\Arrayable
     {
         $group        = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($this->validatedData);
     }

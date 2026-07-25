@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\StoreCollectionsFromMasterCollection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
@@ -29,7 +29,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreMasterCollection extends GrpAction
+class StoreMasterCollection extends OrgAction
 {
     use WithImageCatalogue;
     use WithNoStrictRules;
@@ -138,7 +138,7 @@ class StoreMasterCollection extends GrpAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($parent->group, $modelData);
+        $this->initialisationFromGroup($parent->group, $modelData);
 
         return $this->handle($parent, $this->validatedData, $createChildren);
     }
@@ -149,7 +149,7 @@ class StoreMasterCollection extends GrpAction
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterCollection
     {
         $this->masterShop = $masterShop;
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterShop, $this->validatedData);
     }
@@ -161,7 +161,7 @@ class StoreMasterCollection extends GrpAction
     {
         $this->masterShop = $masterProductCategory->masterShop;
 
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisationFromGroup($masterProductCategory->group, $request);
 
         return $this->handle($masterProductCategory, $this->validatedData);
     }

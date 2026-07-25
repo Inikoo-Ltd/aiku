@@ -10,10 +10,10 @@
 namespace App\Actions\Masters\MasterProductCategory\Hydrators;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Masters\MasterProductCategory;
 
-class MasterProductCategoryHydrateFAQ extends GrpAction
+class MasterProductCategoryHydrateFAQ extends OrgAction
 {
     public function handle(MasterProductCategory $masterProductCategory)
     {
@@ -26,7 +26,7 @@ class MasterProductCategoryHydrateFAQ extends GrpAction
 
     public function action(MasterProductCategory $masterProductCategory)
     {
-        $this->initialisation($masterProductCategory->group, []);
+        $this->initialisationFromGroup($masterProductCategory->group, []);
 
         $this->handle($masterProductCategory);
     }

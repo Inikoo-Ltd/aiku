@@ -11,7 +11,7 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\Catalogue\ProductCategory\CloneProductCategoryImagesFromMaster;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -19,7 +19,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterProductCategory;
 
-class StoreDepartmentFromMasterDepartment extends GrpAction
+class StoreDepartmentFromMasterDepartment extends OrgAction
 {
     /**
      * @throws \Throwable
@@ -83,7 +83,7 @@ class StoreDepartmentFromMasterDepartment extends GrpAction
 
         $group = $masterProductCategory->group;
 
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($masterProductCategory, $this->validatedData);
     }

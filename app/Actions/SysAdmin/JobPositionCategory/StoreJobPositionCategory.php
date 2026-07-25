@@ -8,14 +8,14 @@
 
 namespace App\Actions\SysAdmin\JobPositionCategory;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\JobPositionCategory;
 use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 
-class StoreJobPositionCategory extends GrpAction
+class StoreJobPositionCategory extends OrgAction
 {
     public function handle(Group $group, array $modelData): JobPositionCategory
     {
@@ -53,7 +53,7 @@ class StoreJobPositionCategory extends GrpAction
         $this->asAction = true;
 
 
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }

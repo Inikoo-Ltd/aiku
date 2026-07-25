@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterShop\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\Masters\UI\ShowMastersDashboard;
@@ -23,7 +23,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterShop extends GrpAction
+class ShowMasterShop extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMasterShopNavigation;
@@ -37,7 +37,7 @@ class ShowMasterShop extends GrpAction
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterShop
     {
         $group = group();
-        $this->initialisation($group, $request)->withTab(MasterShopTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterShopTabsEnum::values());
 
         return $this->handle($masterShop);
     }

@@ -13,7 +13,7 @@ use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
 use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
 use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
@@ -27,7 +27,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowTradeUnit extends GrpAction
+class ShowTradeUnit extends OrgAction
 {
     use WithGoodsAuthorisation;
 
@@ -40,7 +40,7 @@ class ShowTradeUnit extends GrpAction
 
     public function asController(TradeUnit $tradeUnit, ActionRequest $request): TradeUnit
     {
-        $this->initialisation(group(), $request)->withTab(TradeUnitTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(TradeUnitTabsEnum::values());
 
         return $this->handle($tradeUnit);
     }

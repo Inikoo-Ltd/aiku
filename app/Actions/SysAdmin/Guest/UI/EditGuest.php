@@ -8,14 +8,14 @@
 
 namespace App\Actions\SysAdmin\Guest\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\UI\Traits\HasPermissionsForm;
 use App\Models\SysAdmin\Guest;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditGuest extends GrpAction
+class EditGuest extends OrgAction
 {
     use HasPermissionsForm;
 
@@ -34,7 +34,7 @@ class EditGuest extends GrpAction
     public function asController(Guest $guest, ActionRequest $request): Guest
     {
         $group = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($guest);
     }

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterShop;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -19,7 +19,7 @@ use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterShop extends GrpAction
+class UpdateMasterShop extends OrgAction
 {
     use WithActionUpdate;
     use WithMastersEditAuthorisation;
@@ -66,14 +66,14 @@ class UpdateMasterShop extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
 
-        $this->initialisation($masterShop->group, $modelData);
+        $this->initialisationFromGroup($masterShop->group, $modelData);
 
         return $this->handle($masterShop, $this->validatedData);
     }
 
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterShop
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterShop, $this->validatedData);
     }

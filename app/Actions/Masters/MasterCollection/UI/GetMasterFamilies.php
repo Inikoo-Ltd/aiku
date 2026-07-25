@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Masters\MasterCollection;
@@ -20,11 +20,11 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetMasterFamilies extends GrpAction
+class GetMasterFamilies extends OrgAction
 {
     public function asController(MasterShop $masterShop, MasterCollection $scope, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle(parent: $masterShop, scope: $scope);
     }

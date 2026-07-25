@@ -7,14 +7,14 @@
 
 namespace App\Actions\Helpers\Jira;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Jira\Traits\WithJiraApiRequest;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsCommand;
 
-class CreateJiraTicket extends GrpAction
+class CreateJiraTicket extends OrgAction
 {
     use WithJiraApiRequest;
     use AsCommand;
@@ -100,7 +100,7 @@ class CreateJiraTicket extends GrpAction
     public function action(Group $group, array $modelData): ?array
     {
         $this->asAction = true;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }
@@ -110,7 +110,7 @@ class CreateJiraTicket extends GrpAction
      */
     public function asController(ActionRequest $request): ?array
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($this->group, $this->validatedData);
     }

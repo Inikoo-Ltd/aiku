@@ -9,13 +9,13 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Fulfilment\PalletDelivery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class RedirectPalletDelivery extends GrpAction
+class RedirectPalletDelivery extends OrgAction
 {
     public function handle(PalletDelivery $palletDelivery): ?RedirectResponse
     {
@@ -31,7 +31,7 @@ class RedirectPalletDelivery extends GrpAction
 
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): RedirectResponse
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($palletDelivery);
     }

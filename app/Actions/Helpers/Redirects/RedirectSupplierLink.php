@@ -8,13 +8,13 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class RedirectSupplierLink extends GrpAction
+class RedirectSupplierLink extends OrgAction
 {
     public function handle(Supplier $supplier): RedirectResponse
     {
@@ -27,7 +27,7 @@ class RedirectSupplierLink extends GrpAction
 
     public function asController(Supplier $supplier, ActionRequest $request): RedirectResponse
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($supplier);
     }
