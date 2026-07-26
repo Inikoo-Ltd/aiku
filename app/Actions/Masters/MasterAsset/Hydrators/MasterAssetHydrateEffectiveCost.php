@@ -27,6 +27,8 @@ class MasterAssetHydrateEffectiveCost
 {
     use AsAction;
 
+    public string $jobQueue = 'low-priority';
+
     public string $commandSignature = 'master_assets:hydrate_effective_cost {master_shop? : master shop slug, all if omitted}';
 
     /** @var array<int, float|null> */

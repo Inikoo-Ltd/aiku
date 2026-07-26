@@ -1526,6 +1526,25 @@ test('hydrate effective cost weights org costs by available stock', function () 
         ->toBe(round(6 / 2 * 2 * $exchange, 4));
 });
 
+test('effective cost hydrator is scheduled nightly and queued low-priority', function () {
+    expect(\App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost::make()->jobQueue)
+        ->toBe('low-priority');
+
+    config(['app.master' => true]);
+    $schedule = new \Illuminate\Console\Scheduling\Schedule();
+    $kernel   = app(\App\Console\Kernel::class);
+    (function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        $this->schedule($schedule);
+    })->call($kernel, $schedule);
+
+    expect(
+        collect($schedule->events())->contains(
+            fn ($event) => str_contains($event->command ?? '', 'master_assets:hydrate_effective_cost')
+                && $event->expression === '30 2 * * *'
+        )
+    )->toBeTrue();
+});
+
 test('UI Edit Master Product with a trade unit not linked to a stock', function () {
     $masterShop       = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
