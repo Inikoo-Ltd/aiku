@@ -24,14 +24,18 @@ class RepairMasterProductUnitsIntegrity
 
     public const float PRICE_TOLERANCE = 0.05;
 
+    public const float PRICE_OUTER_BOUND = 2.0;
+
     public string $commandSignature = 'repair:master_product_units_integrity {master_shop} {--fix : Write corrections (default is report only)}';
 
     /**
      * Classification ladder for a master asset whose following products disagree with it on units.
      * The trade-unit pivot arbitrates which side is stale, but pivots are synced from the master so
      * they are not independent evidence: every auto-fix additionally requires price corroboration
-     * (product price matches master price in that currency within tolerance). No price data means
-     * no proof, so the finding is reported for manual review instead of fixed.
+     * (product price matches master price in that currency within tolerance). Fixing a single
+     * product needs that product itself verified; fixing the master needs only one of its
+     * unanimous products verified as an anchor. No price data means no proof, so the finding is
+     * reported for manual review instead of fixed.
      *  - product with different trade-unit composition        -> diff_trade_units (manual review)
      *  - multi trade-unit (bundle) master                      -> bundle (manual review)
      *  - master units == its own pivot quantity                -> product_stale_pivot (fix product; price-guarded)
@@ -157,7 +161,7 @@ class RepairMasterProductUnitsIntegrity
             return $this->finding($masterAsset, 'consensus_conflicts_pivot', null, $detail, false);
         }
 
-        $priceVerdict = $this->priceVerdict($masterAsset, $products);
+        $priceVerdict = $this->anchoredPriceVerdict($masterAsset, $products);
         if ($priceVerdict !== 'ok') {
             return $this->finding($masterAsset, 'master_stale_consensus_price_'.$priceVerdict, null, $detail, false);
         }
@@ -173,29 +177,64 @@ class RepairMasterProductUnitsIntegrity
 
     /**
      * Product pivots are synced from the master, so matching signatures alone don't prove which
-     * side is right. Price agreement is the independent evidence: 'ok' only when every product has
-     * a comparable master price in its currency and all are within tolerance.
+     * side is right. Price agreement is the independent evidence. Used for the single-product
+     * path, where there is no sibling to corroborate against: 'ok' only when the product has a
+     * comparable master price in its currency and is within tolerance.
      */
     private function priceVerdict(MasterAsset $masterAsset, Collection $products): string
     {
-        $currencies = $this->currenciesById();
-        $verdict    = 'ok';
+        $verdict = 'ok';
 
         foreach ($products as $product) {
-            $currencyCode = $currencies->get($product->currency_id)?->code;
-            $masterPrice  = (float) data_get($masterAsset->master_prices, "$currencyCode.value");
+            $ratio = $this->priceRatio($masterAsset, $product);
 
-            if (!$masterPrice || (float) $product->price <= 0) {
+            if ($ratio === null) {
                 $verdict = 'unverifiable';
                 continue;
             }
 
-            if (abs((float) $product->price / $masterPrice - 1) > self::PRICE_TOLERANCE) {
+            if (abs($ratio - 1) > self::PRICE_TOLERANCE) {
                 return 'divergent';
             }
         }
 
         return $verdict;
+    }
+
+    /**
+     * Master-level variant, used when the products already agree unanimously with the pivot. One
+     * price-verified product anchors the whole set, so shop-level pricing spreads (a EUR shop
+     * pricing off its own margin rather than the official exchange) no longer veto the fix. A
+     * price beyond PRICE_OUTER_BOUND is too large to be a spread and reads as a real pack-size
+     * difference, so it still blocks.
+     */
+    private function anchoredPriceVerdict(MasterAsset $masterAsset, Collection $products): string
+    {
+        $ratios = $products
+            ->map(fn (Product $product) => $this->priceRatio($masterAsset, $product))
+            ->reject(fn (?float $ratio) => $ratio === null);
+
+        if ($ratios->isEmpty()) {
+            return 'unverifiable';
+        }
+
+        if ($ratios->contains(fn (float $ratio) => $ratio > self::PRICE_OUTER_BOUND || $ratio < 1 / self::PRICE_OUTER_BOUND)) {
+            return 'divergent';
+        }
+
+        return $ratios->contains(fn (float $ratio) => abs($ratio - 1) <= self::PRICE_TOLERANCE) ? 'ok' : 'divergent';
+    }
+
+    private function priceRatio(MasterAsset $masterAsset, Product $product): ?float
+    {
+        $currencyCode = $this->currenciesById()->get($product->currency_id)?->code;
+        $masterPrice  = (float) data_get($masterAsset->master_prices, "$currencyCode.value");
+
+        if (!$masterPrice || (float) $product->price <= 0) {
+            return null;
+        }
+
+        return (float) $product->price / $masterPrice;
     }
 
     /**

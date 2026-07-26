@@ -9,6 +9,8 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Product;
+use App\Models\Goods\TradeUnit;
 
 use function Pest\Laravel\actingAs;
 
@@ -75,6 +77,20 @@ beforeEach(function () {
     $this->repair = RepairMasterProductUnitsIntegrity::make();
 });
 
+function createUnitsSibling(Product $product, TradeUnit $tradeUnit, float $price): Product
+{
+    $sibling = $product->replicate(['slug', 'code', 'source_id']);
+    $sibling->forceFill([
+        'slug'  => 'sibling-'.uniqid(),
+        'code'  => 'SIBLING-'.uniqid(),
+        'units' => 8,
+        'price' => $price,
+    ])->saveQuietly();
+    $sibling->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 8]]);
+
+    return $sibling;
+}
+
 test('product stale vs self-consistent master is fixed only with price proof', function () {
     $this->masterAsset->updateQuietly(['units' => 8]);
     $this->product->updateQuietly(['units' => 80]);
@@ -138,6 +154,30 @@ test('master stale consensus is not fixed when price diverges or is missing', fu
     $findings = $this->repair->handle($this->masterAsset->refresh(), fix: true);
     expect($findings[0]['bucket'])->toBe('master_stale_consensus_price_unverifiable')
         ->and((float) $this->masterAsset->refresh()->units)->toBe(0.071);
+});
+
+test('master stale consensus is fixed when one product anchors the price', function () {
+    createUnitsSibling($this->product, $this->tradeUnit, 125);
+
+    $this->masterAsset->updateQuietly(['units' => 0.071]);
+    $this->product->updateQuietly(['units' => 8]);
+
+    $findings = $this->repair->handle($this->masterAsset->refresh(), fix: true);
+    expect($findings[0]['bucket'])->toBe('master_stale_consensus')
+        ->and((float) $this->masterAsset->refresh()->units)->toBe(8.0)
+        ->and($this->masterAsset->units_review)->toBeNull();
+});
+
+test('master stale consensus is blocked when a product price is beyond the outer bound', function () {
+    createUnitsSibling($this->product, $this->tradeUnit, 900);
+
+    $this->masterAsset->updateQuietly(['units' => 0.071]);
+    $this->product->updateQuietly(['units' => 8]);
+
+    $findings = $this->repair->handle($this->masterAsset->refresh(), fix: true);
+    expect($findings[0]['bucket'])->toBe('master_stale_consensus_price_divergent')
+        ->and((float) $this->masterAsset->refresh()->units)->toBe(0.071)
+        ->and($this->masterAsset->units_review)->toBe('price_divergent');
 });
 
 test('consensus conflicting with pivot is never fixed', function () {
