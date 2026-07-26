@@ -15,9 +15,9 @@ interface CurrencyRate {
     currency: string
     currency_symbol?: string
     currency_id: number
-    ratio_gbp: number | null
     ratio_eur: number | null
     is_major?: boolean
+    major?: string | null
 }
 
 interface CurrencyPrice {
@@ -97,9 +97,9 @@ const currencyList = computed(
     () => Object.values(props.currencies ?? {}).map(rate => ({
         code: rate.currency,
         symbol: rate.currency_symbol,
-        ratio_gbp: rate.ratio_gbp,
         ratio_eur: rate.ratio_eur,
-        is_major: rate.is_major ?? false
+        is_major: rate.is_major ?? false,
+        major: rate.major ?? null
     }))
 )
 
@@ -109,9 +109,22 @@ const majorCurrencyCodes = computed(
     () => currencyList.value.filter(currency => currency.is_major).map(currency => currency.code)
 )
 
-const baseCurrencyCode = computed(
-    () => majorCurrencyCodes.value[0] ?? currencyList.value[0]?.code
-)
+// The base is the major the minors actually follow, so edits to it recalculate
+// them live; other majors are edited independently and drive nothing.
+const baseCurrencyCode = computed(() => {
+    const followCounts: Record<string, number> = {}
+    currencyList.value.forEach(currency => {
+        if (currency.major) {
+            followCounts[currency.major] = (followCounts[currency.major] ?? 0) + 1
+        }
+    })
+
+    const mostFollowed = Object.entries(followCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
+
+    return (mostFollowed && majorCurrencyCodes.value.includes(mostFollowed))
+        ? mostFollowed
+        : (majorCurrencyCodes.value[0] ?? currencyList.value[0]?.code)
+})
 
 const effectiveAlwaysIndependentCurrencyCodes = computed(
     () => props.alwaysIndependentCurrencyCodes ?? majorCurrencyCodes.value.filter(code => code !== baseCurrencyCode.value)
@@ -176,10 +189,6 @@ watch(() => props.currencies, () => {
     }
 })
 
-const getRatio = (currency: { ratio_gbp: number | null, ratio_eur: number | null }) => {
-    return currency.ratio_eur
-}
-
 const recalculateDerivedPrices = () => {
     const baseEntry = prices.value[baseCurrencyCode.value]
 
@@ -190,8 +199,6 @@ const recalculateDerivedPrices = () => {
             ? null
             : Math.round(baseCost * props.autoMultiplier * 100) / 100
     }
-
-    const basePrice = baseEntry?.value
 
     currencyList.value.forEach(currency => {
         const entry = prices.value[currency.code]
@@ -210,11 +217,16 @@ const recalculateDerivedPrices = () => {
             return
         }
 
-        const ratio = getRatio(currency)
+        if (!currency.major) {
+            return
+        }
 
-        entry.value = basePrice == null || ratio == null
+        const majorPrice = prices.value[currency.major]?.value
+        const ratio      = currency.ratio_eur
+
+        entry.value = majorPrice == null || ratio == null
             ? null
-            : Math.round(basePrice * ratio * 100) / 100
+            : Math.round(majorPrice * ratio * 100) / 100
     })
 }
 
@@ -249,7 +261,6 @@ const showHiddenCurrencies = ref(false)
 type CurrencyListItem = {
     code: string
     symbol?: string
-    ratio_gbp: number | null
     ratio_eur: number | null
 }
 

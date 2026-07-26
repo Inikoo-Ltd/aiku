@@ -78,10 +78,10 @@ class EditMasterProduct extends OrgAction
             'EditModel',
             [
                 'title'       => __('Editing master product').': '.$masterAsset->code,
-                'warning'     => $masterAsset->stats->number_assets > 0 ? [
+                'warning'     => $masterAsset->units_review ? [
                     'type'  => 'warning',
-                    'title' => __('Important'),
-                    'text'  => __('Changes to this master name or descriptions will overwrite child product names and descriptions where “Follow Master” is enabled.'),
+                    'title' => __('Units need review'),
+                    'text'  => __('This master product has a units mismatch with its shop products (:bucket) — per-unit prices may be wrong, review before editing.', ['bucket' => $masterAsset->units_review]),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -276,6 +276,7 @@ class EditMasterProduct extends OrgAction
                         'value'         => $masterProduct->master_rrps,
                         'masterAsset'   => $masterProduct->id,
                         'unitsReview'   => $unitsReview,
+                        'perUnits'      => (float) $masterProduct->units,
                         'type_input'          => 'rrp'
                     ],
                 ]

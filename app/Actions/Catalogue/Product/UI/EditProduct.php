@@ -304,7 +304,7 @@ class EditProduct extends OrgAction
                             'minFractionDigits' => 0,
                             'maxFractionDigits' => 2,
                         ],
-                        'value'    => ($product->rrp / trimDecimalZeros($product->units)),
+                        'value'    => $product->units > 0 ? ($product->rrp / trimDecimalZeros($product->units)) : $product->rrp,
                         'min'      => 0.01
                     ],
                 ]

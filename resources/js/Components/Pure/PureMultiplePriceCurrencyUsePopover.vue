@@ -1,21 +1,22 @@
 <script setup lang='ts'>
 import { computed, ref, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronDown, faExclamationTriangle, faSave as falSave, faStarfighter } from '@fal'
+import { faChevronDown, faSave as falSave, faStarfighter } from '@fal'
 import { faSave as fadSave, faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PriceCurrencyRow from '@/Components/Pure/Supports/PriceCurrencyRow.vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import axios from 'axios'
-library.add(faChevronDown, faExclamationTriangle, falSave, fadSave, faSpinnerThird, faStarfighter)
+library.add(faChevronDown, falSave, fadSave, faSpinnerThird, faStarfighter)
 
 interface CurrencyRate {
     currency: string
     currency_symbol?: string
     currency_id: number
-    ratio_gbp: number | null
     ratio_eur: number | null
     is_major?: boolean
+    major?: string | null
+    fraction_digits?: number | null
 }
 
 interface CurrencyPrice {
@@ -48,9 +49,10 @@ const currencyList = computed(
     () => Object.values(props.currencies ?? {}).map(rate => ({
         code: rate.currency,
         symbol: rate.currency_symbol,
-        ratio_gbp: rate.ratio_gbp,
+        fraction_digits: rate.fraction_digits ?? null,
         ratio_eur: rate.ratio_eur,
-        is_major: rate.is_major ?? false
+        is_major: rate.is_major ?? false,
+        major: rate.major ?? null
     }))
 )
 
@@ -60,9 +62,22 @@ const majorCurrencyCodes = computed(
     () => currencyList.value.filter(currency => currency.is_major).map(currency => currency.code)
 )
 
-const baseCurrencyCode = computed(
-    () => majorCurrencyCodes.value[0] ?? currencyList.value[0]?.code
-)
+// The base is the major the minors actually follow, so edits to it recalculate
+// them live; other majors are edited independently and drive nothing.
+const baseCurrencyCode = computed(() => {
+    const followCounts: Record<string, number> = {}
+    currencyList.value.forEach(currency => {
+        if (currency.major) {
+            followCounts[currency.major] = (followCounts[currency.major] ?? 0) + 1
+        }
+    })
+
+    const mostFollowed = Object.entries(followCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
+
+    return (mostFollowed && majorCurrencyCodes.value.includes(mostFollowed))
+        ? mostFollowed
+        : (majorCurrencyCodes.value[0] ?? currencyList.value[0]?.code)
+})
 
 const alwaysIndependentCurrencyCodes = computed(
     () => majorCurrencyCodes.value.filter(code => code !== baseCurrencyCode.value)
@@ -120,24 +135,20 @@ watch(() => props.currencies, () => {
     prices.value = buildPrices()
 })
 
-const getRatio = (currency: { ratio_gbp: number | null, ratio_eur: number | null }) => {
-    return currency.ratio_eur
-}
-
 const recalculateDerivedPrices = () => {
-    const basePrice = prices.value[baseCurrencyCode.value]?.value
-
     currencyList.value.forEach(currency => {
         const entry = prices.value[currency.code]
-        const ratio = getRatio(currency)
+        const ratio = currency.ratio_eur
 
-        if (entry.independent) {
+        if (entry.independent || !currency.major) {
             return
         }
 
-        entry.value = basePrice == null || ratio == null
+        const majorPrice = prices.value[currency.major]?.value
+
+        entry.value = majorPrice == null || ratio == null
             ? null
-            : Math.round(basePrice * ratio * 100) / 100
+            : Math.round(majorPrice * ratio * 100) / 100
     })
 }
 
@@ -192,7 +203,6 @@ const fetchRebels = async () => {
         )
         hasFetchedRebels.value = true
     } catch (error) {
-        console.log('masuk',error)
         priceRebels.value = {}
         originalRebelValues.value = {}
     } finally {

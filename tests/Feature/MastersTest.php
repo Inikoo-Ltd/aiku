@@ -1929,6 +1929,8 @@ test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from mast
 
     expect($rates['GBP']['is_major'])->toBeTrue()
         ->and($rates['GBP']['ratio_eur'])->toBe(1.0)
+        ->and($rates['GBP']['major'])->toBeNull()
         ->and($rates['EUR']['is_major'])->toBeFalse()
-        ->and($rates['EUR']['ratio_eur'])->toBe(1.18);
+        ->and($rates['EUR']['ratio_eur'])->toBe(1.18)
+        ->and($rates['EUR']['major'])->toBe('GBP');
 });
