@@ -23,6 +23,13 @@ const props = defineProps<{
     showIndependent?: boolean
     highlighted?: boolean
     dirty?: boolean
+    placeholder?: string
+    impact?: {
+        dirty: boolean
+        delta: number | null
+        marginBefore: number | null
+        marginAfter: number | null
+    } | null
 }>()
 
 const model = defineModel<CurrencyPrice>({ required: true })
@@ -65,14 +72,38 @@ const displayValue = computed({
             aria-hidden="true"
         />
 
-        <PureInputNumber
-            v-model="displayValue"
-            :readonly="readonly"
-            :required="required"
-            :disabled="disabled"
-            :minValue="0"
-            @update:modelValue="emits('change')"
-        />
+        <div class="relative w-full">
+            <PureInputNumber
+                v-model="displayValue"
+                :placeholder="placeholder"
+                :readonly="readonly"
+                :required="required"
+                :disabled="disabled"
+                :minValue="0"
+                @update:modelValue="emits('change')"
+            />
+            <span
+                v-if="impact"
+                class="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-x-2 text-xs tabular-nums"
+                aria-hidden="true"
+            >
+                <span
+                    v-if="impact.delta !== null"
+                    class="font-medium"
+                    :class="impact.delta >= 0 ? 'text-green-600' : 'text-red-600'"
+                >{{ impact.delta >= 0 ? '▲' : '▼' }} {{ impact.delta >= 0 ? '+' : '' }}{{ impact.delta }}%</span>
+                <span v-if="impact.marginAfter !== null" class="text-gray-400">
+                    {{ ctrans('margin') }}
+                    <template v-if="impact.marginBefore !== null">{{ impact.marginBefore }}% → </template>
+                    <span
+                        v-if="impact.dirty"
+                        class="font-medium"
+                        :class="impact.marginBefore === null || impact.marginAfter >= impact.marginBefore ? 'text-green-600' : 'text-red-600'"
+                    >{{ impact.marginAfter }}%</span>
+                    <span v-else class="font-medium text-gray-500">{{ impact.marginAfter }}%</span>
+                </span>
+            </span>
+        </div>
 
         <div class="w-8 shrink-0">
             <slot name="action" />

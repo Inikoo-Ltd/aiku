@@ -70,6 +70,7 @@ class IndexMasterProductsPricing extends OrgAction
                 'master_assets.master_prices',
                 'master_assets.master_rrps',
                 'master_assets.units_review',
+                'master_assets.effective_cost',
                 'currencies.code as currency_code',
                 'master_asset_stats.number_current_assets as used_in',
                 'master_asset_stats.number_customers_who_favourited as favourites',

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use Inertia\Inertia;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -156,6 +158,18 @@ class EditMasterProduct extends OrgAction
 
         $currenciesRate = GetMasterShopCurrenciesRate::run($masterProduct->masterShop);
 
+        $costs = null;
+        if ($masterProduct->effective_cost !== null) {
+            $groupCurrency = $masterProduct->group->currency;
+            $currencies    = Currency::whereIn('code', $currenciesRate->keys())->get()->keyBy('code');
+
+            $costs = $currenciesRate->map(function ($rate, $currencyCode) use ($masterProduct, $groupCurrency, $currencies) {
+                $exchange = GetCurrencyExchange::run($groupCurrency, $currencies[$currencyCode]);
+
+                return $exchange ? round((float) $masterProduct->effective_cost * $exchange, 2) : null;
+            });
+        }
+
         $unitsReview = [
             'master'   => $masterProduct->units_review,
             'products' => $masterProduct->products()
@@ -275,6 +289,7 @@ class EditMasterProduct extends OrgAction
                         'unitsReview'   => $unitsReview,
                         'updateRoute'   => $pricesUpdateRoute,
                         'noSaveButton'  => true,
+                        'costs'         => $costs,
                         'type_input'          => 'price'
                     ],
                     'master_rrps'            => [
@@ -288,6 +303,7 @@ class EditMasterProduct extends OrgAction
                         'updateRoute'   => $pricesUpdateRoute,
                         'noSaveButton'  => true,
                         'perUnits'      => (float) $masterProduct->units,
+                        'counterpartRecord' => $masterProduct->master_prices,
                         'type_input'          => 'rrp'
                     ],
                 ]

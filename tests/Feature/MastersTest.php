@@ -1416,6 +1416,115 @@ test('UI Index Master Products in family has pricing tab', function () {
     );
 });
 
+test('bulk update master assets prices applies per-unit rrp and skips independents', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'BLKPR-DEP-'.uniqid(),
+        'name' => 'Bulk Prices Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'BLKPR-FAM-'.uniqid(),
+        'name' => 'Bulk Prices Family',
+    ]);
+
+    $assetA = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BLKPR-A-'.uniqid(),
+        'name'    => 'Bulk A',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $assetB = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BLKPR-B-'.uniqid(),
+        'name'    => 'Bulk B',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $assetA->updateQuietly([
+        'units'       => 16,
+        'master_rrps' => [
+            'EUR' => ['value' => 10, 'independent' => false],
+            'PLN' => ['value' => 300, 'independent' => true],
+        ],
+    ]);
+    $assetB->updateQuietly(['units' => 2, 'master_rrps' => ['EUR' => ['value' => 5, 'independent' => false]]]);
+
+    Queue::fake();
+
+    \App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices::make()->action([
+        'ids'          => [$assetA->id, $assetB->id],
+        'rrp_per_unit' => true,
+        'master_rrps'  => [
+            'EUR' => ['value' => 2, 'independent' => false],
+            'PLN' => ['value' => 99, 'independent' => false],
+            'HUF' => ['value' => null, 'independent' => false],
+        ],
+    ]);
+
+    $assetA->refresh();
+    $assetB->refresh();
+
+    expect(data_get($assetA->master_rrps, 'EUR.value'))->toEqual(32)
+        ->and(data_get($assetA->master_rrps, 'PLN.value'))->toBe(300)
+        ->and(data_get($assetA->master_rrps, 'PLN.independent'))->toBeTrue()
+        ->and(data_get($assetA->master_rrps, 'HUF'))->toBeNull()
+        ->and(data_get($assetB->master_rrps, 'EUR.value'))->toEqual(4)
+        ->and(data_get($assetB->master_rrps, 'PLN.value'))->toEqual(198);
+
+    Queue::assertPushed(
+        \Lorisleiva\Actions\Decorators\JobDecorator::class,
+        2,
+    );
+});
+
+test('hydrate effective cost weights org costs by available stock', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'EFC-DEP-'.uniqid(),
+        'name' => 'Effective Cost Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'EFC-FAM-'.uniqid(),
+        'name' => 'Effective Cost Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'EFC-AST-'.uniqid(),
+        'name'    => 'Effective Cost Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits()->first();
+    $masterAsset->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 2]]);
+
+    $orgStock = $this->organisation->orgStocks()->first();
+    $tradeUnit->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+    $orgStock->updateQuietly([
+        'current_supplier_sku_cost' => 6,
+        'packed_in'                 => 2,
+        'quantity_available'        => 50,
+    ]);
+
+    \App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost::run($masterAsset->refresh());
+
+    $exchange = \App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange::run(
+        $this->organisation->currency,
+        $this->organisation->group->currency
+    );
+
+    expect((float) $masterAsset->refresh()->effective_cost)
+        ->toBe(round(6 / 2 * 2 * $exchange, 4));
+});
+
 test('UI Edit Master Product with a trade unit not linked to a stock', function () {
     $masterShop       = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [

@@ -317,6 +317,7 @@ use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetImageAlt;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
@@ -616,6 +617,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
 });
 
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
+Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::class)->name('master_asset.prices.bulk_update');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');
 

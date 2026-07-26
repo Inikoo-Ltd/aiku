@@ -48,6 +48,9 @@ const props = defineProps<{
     perUnits?: number
     form?: any
     submitForm?: () => void
+    inputPlaceholder?: string
+    counterpartRecord?: Record<string, CurrencyPrice> | null
+    costs?: Record<string, number | null> | null
 }>()
 
 // DB stores values per outer; when perUnits is set the user edits per unit,
@@ -195,6 +198,66 @@ const isDirty = (code: string) => {
 const hasDirtyHiddenCurrency = computed(
     () => hiddenCurrencies.value.some(currency => isDirty(currency.code))
 )
+
+// Live impact of the value being typed: price delta % and margin before → after,
+// margin computed against the counterpart record (rrp when editing prices, and
+// prices when editing rrps). Shown only while the row is dirty.
+export interface RowImpact {
+    dirty: boolean
+    delta: number | null
+    marginBefore: number | null
+    marginAfter: number | null
+}
+
+const impactFor = (code: string): RowImpact | null => {
+    const dirty    = isDirty(code)
+    const original = originalPrices.value[code]?.value
+    const current  = prices.value[code]?.value
+
+    let delta: number | null = null
+    if (dirty && original && current != null) {
+        delta = Math.round(((current - original) / original) * 100)
+    }
+
+    let marginBefore: number | null = null
+    let marginAfter: number | null  = null
+
+    const currentStored  = current != null ? (toStored(current) ?? 0) : 0
+    const originalStored = original != null ? (toStored(original) ?? 0) : 0
+
+    if (props.type_input === 'price') {
+        // price margin is against the effective cost: (price − cost) / price
+        const cost = Number(props.costs?.[code] ?? 0)
+        if (cost > 0) {
+            const margin = (price: number): number | null =>
+                price > 0 ? Math.round(((price - cost) / price) * 100) : null
+
+            marginAfter  = currentStored > 0 ? margin(currentStored) : null
+            marginBefore = originalStored > 0 ? margin(originalStored) : null
+        }
+    } else {
+        // rrp margin is the retail markup against the price
+        const counterpart = Number(props.counterpartRecord?.[code]?.value ?? 0)
+        if (counterpart > 0) {
+            const margin = (rrp: number): number | null =>
+                rrp > 0 ? Math.round(((rrp - counterpart) / rrp) * 100) : null
+
+            marginAfter  = currentStored > 0 ? margin(currentStored) : null
+            marginBefore = originalStored > 0 ? margin(originalStored) : null
+        }
+    }
+
+    if (delta === null && marginAfter === null) {
+        return null
+    }
+
+    // Static view (not dirty): only the current margin, no before/after arrow
+    if (!dirty) {
+        return { dirty, delta: null, marginBefore: null, marginAfter }
+    }
+
+    return { dirty, delta, marginBefore, marginAfter }
+}
 
 const showHiddenCurrencies = ref(false)
 
@@ -427,6 +490,8 @@ const saveRebel = async (rebel: PriceRebel) => {
 
             <PriceCurrencyRow
                 v-model="prices[baseCurrency.code]"
+                :impact="impactFor(baseCurrency.code)"
+                :placeholder="inputPlaceholder"
                 :dirty="isDirty(baseCurrency.code)"
                 :currency="baseCurrency"
                 :readonly="readonly"
@@ -486,6 +551,8 @@ const saveRebel = async (rebel: PriceRebel) => {
 
             <PriceCurrencyRow
                 v-model="prices[currency.code]"
+                :impact="impactFor(currency.code)"
+                :placeholder="inputPlaceholder"
                 :dirty="isDirty(currency.code)"
                 :currency="currency"
                 :readonly="readonly"
@@ -507,6 +574,8 @@ const saveRebel = async (rebel: PriceRebel) => {
             >
                 <PriceCurrencyRow
                     v-model="prices[currency.code]"
+                    :impact="impactFor(currency.code)"
+                    :placeholder="inputPlaceholder"
                     :dirty="isDirty(currency.code)"
                     :currency="currency"
                     :readonly="readonly"
@@ -580,6 +649,8 @@ const saveRebel = async (rebel: PriceRebel) => {
 
                     <PriceCurrencyRow
                         v-model="prices[currency.code]"
+                        :impact="impactFor(currency.code)"
+                        :placeholder="inputPlaceholder"
                         :dirty="isDirty(currency.code)"
                         :currency="currency"
                         :readonly="readonly"

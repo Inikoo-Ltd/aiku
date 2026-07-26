@@ -16,6 +16,8 @@ use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -25,6 +27,7 @@ use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
 use App\Http\Resources\Masters\MasterProductsPricingResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -537,6 +540,22 @@ class IndexMasterProducts extends OrgAction
                         ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
                         ->keys()
                         ->values()
+                    : null,
+                'pricingCurrencies'       => $this->parent instanceof MasterProductCategory
+                    ? GetMasterShopCurrenciesRate::run($this->parent->masterShop)
+                    : null,
+                'pricingCostRates'        => $this->parent instanceof MasterProductCategory
+                    ? GetMasterShopCurrenciesRate::run($this->parent->masterShop)
+                        ->keys()
+                        ->mapWithKeys(function (string $currencyCode) {
+                            $currency = Currency::where('code', $currencyCode)->first();
+
+                            return [
+                                $currencyCode => $currency
+                                    ? GetCurrencyExchange::run($this->parent->group->currency, $currency)
+                                    : null
+                            ];
+                        })
                     : null,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,

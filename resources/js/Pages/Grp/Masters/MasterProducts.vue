@@ -56,10 +56,14 @@ const props = defineProps<{
     variantSlugs?: Record<string, string>
     hide_bulk_edit?: boolean
     pricingMajorCurrencies?: string[]
+    pricingCurrencies?: Record<string, any>
+    pricingCostRates?: Record<string, number | null>
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const pricingBulkField = ref<'master_prices' | 'master_rrps' | null>(null)
 
 const component = computed(() => {
     const components: any = {
@@ -246,8 +250,24 @@ watch(() => currentTab.value, (tab) => {
         </template>
 
         <template #other>
+            <template v-if="currentTab === 'pricing'">
+                <Button
+                    @click="() => pricingBulkField = 'master_prices'"
+                    :label="trans('Bulk edit prices') + ` (${compSelectedProductsId?.length})`"
+                    :disabled="!compSelectedProductsId.length"
+                    type="primary"
+                    icon="fal fa-pencil"
+                />
+                <Button
+                    @click="() => pricingBulkField = 'master_rrps'"
+                    :label="trans('Bulk edit RRPs') + ` (${compSelectedProductsId?.length})`"
+                    :disabled="!compSelectedProductsId.length"
+                    type="primary"
+                    icon="fal fa-pencil"
+                />
+            </template>
             <Button
-                v-if="!hide_bulk_edit"
+                v-if="!hide_bulk_edit && currentTab !== 'pricing'"
                 @click="() => onVisit()"
                 :label="trans('Bulk edit products') + ` (${compSelectedProductsId?.length})`"
                 :disabled="!compSelectedProductsId.length"
@@ -297,6 +317,10 @@ watch(() => currentTab.value, (tab) => {
         :tab="currentTab"
         :data="currentTab == 'index_ordering' ?  localData : props[currentTab]"
         :majorCurrencies="pricingMajorCurrencies"
+        :pricingCurrencies="pricingCurrencies"
+        :bulkEditField="pricingBulkField"
+        :pricingCostRates="pricingCostRates"
+        @bulkEditHandled="pricingBulkField = null"
         :masterProductCategoryId="masterProductCategoryId"
         :variant-slugs="variantSlugs"
         :isCheckBox="!hide_bulk_edit"

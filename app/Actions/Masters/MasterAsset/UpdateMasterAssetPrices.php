@@ -26,6 +26,8 @@ class UpdateMasterAssetPrices extends OrgAction
 
     public const int SYNC_CASCADE_MAX_PRODUCTS = 5;
 
+    public bool $forceAsyncCascade = false;
+
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
         if ($eurPrice = data_get($modelData, 'master_prices.EUR.value')) {
@@ -43,7 +45,7 @@ class UpdateMasterAssetPrices extends OrgAction
         if ($changedPrices || $changedRRPs) {
             $type = $changedPrices && $changedRRPs ? 'both' : ($changedPrices ? 'price' : 'rrp');
 
-            if ($masterAsset->products()->count() <= self::SYNC_CASCADE_MAX_PRODUCTS) {
+            if (!$this->forceAsyncCascade && $masterAsset->products()->count() <= self::SYNC_CASCADE_MAX_PRODUCTS) {
                 CascadeMasterAssetPricesToChildren::run($masterAsset, $type);
             } else {
                 CascadeMasterAssetPricesToChildren::dispatch($masterAsset, $type);
