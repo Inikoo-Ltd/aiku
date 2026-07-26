@@ -54,13 +54,23 @@ const props = defineProps<{
 }>()
 
 // DB stores values per outer; when perUnits is set the user edits per unit,
-// so values are divided for display and multiplied back on save.
+// so values are divided for display and multiplied back on save. The per-unit
+// precision grows with units so every 0.01 step of the outer stays expressible
+// (at units=1000 a 2dp per-unit value could only move the outer in 10.00 jumps).
+const displayFactor = computed(() => {
+    if (!props.perUnits || props.perUnits <= 1) {
+        return 100
+    }
+
+    return Math.pow(10, Math.min(6, 2 + Math.ceil(Math.log10(props.perUnits))))
+})
+
 const toDisplay = (value: number | null): number | null => {
     if (value == null || !props.perUnits || props.perUnits <= 0) {
         return value
     }
 
-    return Math.round(value / props.perUnits * 100) / 100
+    return Math.round(value / props.perUnits * displayFactor.value) / displayFactor.value
 }
 
 const toStored = (value: number | null): number | null => {
@@ -182,9 +192,21 @@ const snapshotPrices = (source: Record<string, CurrencyPrice>): Record<string, C
 
 const originalPrices = ref<Record<string, CurrencyPrice>>(snapshotPrices(prices.value))
 
+// Stored (per-outer) values as loaded, kept so untouched currencies are emitted
+// verbatim: the per-unit display rounds to displayFactor decimals, and pushing an
+// unedited value through that round trip would silently rewrite it on save.
+const buildOriginalStoredValues = (): Record<string, number | null> =>
+    Object.fromEntries(currencyList.value.map(currency => [
+        currency.code,
+        props.modelValue?.[currency.code]?.value != null ? Number(props.modelValue[currency.code].value) : null
+    ]))
+
+const originalStoredValues = ref<Record<string, number | null>>(buildOriginalStoredValues())
+
 watch(() => props.currencies, () => {
     prices.value = buildPrices()
     originalPrices.value = snapshotPrices(prices.value)
+    originalStoredValues.value = buildOriginalStoredValues()
 })
 
 const isDirty = (code: string) => {
@@ -332,7 +354,9 @@ const onUpdate = (changedCode: string) => {
     recalculateDerivedPrices(changedCode)
     emits('update:modelValue', Object.fromEntries(
         Object.entries(prices.value).map(([code, entry]) => [code, {
-            value: toStored(entry.value),
+            value: entry.value === originalPrices.value[code]?.value
+                ? (originalStoredValues.value[code] ?? toStored(entry.value))
+                : toStored(entry.value),
             // majors are forced independent for display only — persist the stored
             // flag so a future major→minor demotion still makes it a follower
             independent: isAlwaysIndependent(code)

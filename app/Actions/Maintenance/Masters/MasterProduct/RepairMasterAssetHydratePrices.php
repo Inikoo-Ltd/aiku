@@ -3,6 +3,7 @@
 namespace App\Actions\Maintenance\Masters\MasterProduct;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterAsset;
@@ -83,18 +84,21 @@ class RepairMasterAssetHydratePrices
             }
         }
 
+        $prices = $this->mergePreservingIndependents($masterAsset->master_prices, $prices);
+        $rrps   = $this->mergePreservingIndependents($masterAsset->master_rrps, $rrps);
+
         $modelData = [
             'master_prices' => $prices,
             'master_rrps'   => $rrps
         ];
 
-        $baseCurrencyCode = $majorShops->keys()->first();
+        $baseCurrencyCode = GetMasterShopCurrenciesRate::baseCurrencyCode($priceExchanges) ?? $majorShops->keys()->first();
 
-        if ($price = data_get($prices, 'EUR.value') ?? data_get($prices, "$baseCurrencyCode.value")) {
+        if ($price = data_get($prices, "$baseCurrencyCode.value")) {
             $modelData['price'] = $price;
         }
 
-        if ($rrp = data_get($rrps, 'EUR.value') ?? data_get($rrps, "$baseCurrencyCode.value")) {
+        if ($rrp = data_get($rrps, "$baseCurrencyCode.value")) {
             $modelData['rrp'] = $rrp;
         }
 
@@ -113,6 +117,28 @@ class RepairMasterAssetHydratePrices
 
         $prefix = $dryRun ? '[DRY RUN] ' : '';
         $command?->info("{$prefix}Master Asset: [{$masterAsset->code}] => Hydrated {$additionalText}");
+    }
+
+    /**
+     * Rehydration starts from the stored record so currencies it cannot recompute survive,
+     * and hand-maintained entries (independent === true) are never touched.
+     *
+     * @param array<string, array{value: mixed, independent?: bool}> $computed
+     * @return array<string, array{value: mixed, independent?: bool}>
+     */
+    protected function mergePreservingIndependents(mixed $existing, array $computed): array
+    {
+        $merged = is_array($existing) ? $existing : [];
+
+        foreach ($computed as $currencyCode => $entry) {
+            if (data_get($merged, "$currencyCode.independent") === true) {
+                continue;
+            }
+
+            $merged[$currencyCode] = $entry;
+        }
+
+        return $merged;
     }
 
     public string $commandSignature = 'repair:master_asset_hydrate_prices {master_shop} {--dry-run : Compute and report without writing}';

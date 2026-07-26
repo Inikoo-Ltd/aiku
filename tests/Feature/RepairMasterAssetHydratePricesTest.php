@@ -83,4 +83,18 @@ test('hydrates master prices from major shop product and derives minors from off
         ->and(data_get($masterAsset->master_rrps, 'USD.value'))->toBe('400')
         ->and((float) $masterAsset->price)->toBe(100.0)
         ->and((float) $masterAsset->rrp)->toBe(200.0);
+
+    $masterAsset->updateQuietly([
+        'master_prices' => array_merge($masterAsset->master_prices, [
+            'USD' => ['value' => 555, 'independent' => true],
+            'XXX' => ['value' => 42, 'independent' => false],
+        ]),
+    ]);
+
+    Artisan::call('repair:master_asset_hydrate_prices', ['master_shop' => $masterShop->slug]);
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'USD.value'))->toBe(555)
+        ->and(data_get($masterAsset->master_prices, 'USD.independent'))->toBeTrue()
+        ->and(data_get($masterAsset->master_prices, 'XXX.value'))->toBe(42);
 });

@@ -2180,6 +2180,56 @@ test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from mast
         ->and($rates['EUR']['major'])->toBe('GBP');
 });
 
+test('updating master prices merges per currency, skips nulls and syncs legacy columns from the base major', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'MRGDEP-'.uniqid(),
+        'name' => 'Merge Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'MRGFAM-'.uniqid(),
+        'name' => 'Merge Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'MRGAST-'.uniqid(),
+        'name'    => 'Merge Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'master_prices' => [
+            'GBP' => ['value' => 10, 'independent' => false],
+            'EUR' => ['value' => 11.8, 'independent' => false],
+            'PLN' => ['value' => 50, 'independent' => true],
+        ],
+    ]);
+
+    expect(\App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate::baseCurrencyCode($masterShop->price_exchanges))->toBe('GBP');
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [
+            'GBP' => ['value' => 20, 'independent' => false],
+            'EUR' => ['value' => null, 'independent' => false],
+        ],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'GBP.value'))->toBe(20)
+        ->and(data_get($masterAsset->master_prices, 'EUR.value'))->toBe(11.8)
+        ->and(data_get($masterAsset->master_prices, 'PLN.value'))->toBe(50)
+        ->and(data_get($masterAsset->master_prices, 'PLN.independent'))->toBeTrue()
+        ->and((float) $masterAsset->price)->toBe(20.0);
+});
+
 test('reprocessing a master asset time series with a mid period window keeps the whole period total', function () {
     $masterShop       = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [

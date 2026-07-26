@@ -93,6 +93,17 @@ const compSelectedIds = computed(() =>
     Object.keys(selectedIds.value).filter(key => selectedIds.value[key]).map(Number)
 )
 
+// Selection survives pagination but props.data only holds the current page, so every
+// row seen is cached: bulk edit must judge "all same" over the whole selection, not
+// just the rows that happen to be visible when the modal opens.
+const rowCache = ref<Record<number, MasterProductPricing>>({})
+
+watch(() => (props.data as any)?.data, (rows: MasterProductPricing[] | undefined) => {
+    for (const row of rows ?? []) {
+        rowCache.value[row.id] = row
+    }
+}, { immediate: true, deep: false })
+
 // Cascade progress tracked at table level so it survives closing the modal
 // (and several products can cascade at the same time, each on its own row)
 const cascadeByAsset = ref<Record<number, { state: string, type?: string, done: number, total: number, doneAt?: string }>>({})
@@ -176,13 +187,19 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
         return
     }
 
-    const rows = (((props.data as any)?.data ?? []) as MasterProductPricing[])
-        .filter(row => compSelectedIds.value.includes(row.id))
+    const rows = compSelectedIds.value
+        .map(id => rowCache.value[id])
+        .filter((row): row is MasterProductPricing => !!row)
 
-    // When every selected product already shares the exact same values (and units,
-    // for the per-unit rrp), prefill the form with them instead of starting blank
+    // Prefill (and the shared margin context below) only when the cache covers the
+    // entire selection AND every selected product already shares the exact same
+    // values (and units, for the per-unit rrp) — otherwise start blank so values
+    // shown never misrepresent off-screen rows.
+    const selectionFullyKnown = rows.length === compSelectedIds.value.length
+
     const firstRecord = canonicalRecord(rows[0]?.[field])
-    const allSame = rows.length > 0
+    const allSame = selectionFullyKnown
+        && rows.length > 0
         && rows.every(row => canonicalRecord(row[field]) === firstRecord)
         && (field !== 'master_rrps' || rows.every(row => Number(row.units) === Number(rows[0].units)))
 
@@ -190,9 +207,13 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
     if (allSame) {
         prefill = JSON.parse(JSON.stringify(rows[0][field] ?? {}))
         if (field === 'master_rrps' && Number(rows[0].units) > 0) {
+            const units = Number(rows[0].units)
+            // enough per-unit decimals that saving the untouched prefill (× units
+            // server side) reproduces the stored outer value instead of drifting it
+            const factor = units > 1 ? Math.pow(10, Math.min(6, 2 + Math.ceil(Math.log10(units)))) : 100
             for (const code of Object.keys(prefill)) {
                 if (prefill[code]?.value != null) {
-                    prefill[code].value = Math.round(Number(prefill[code].value) / Number(rows[0].units) * 100) / 100
+                    prefill[code].value = Math.round(Number(prefill[code].value) / units * factor) / factor
                 }
             }
         }
@@ -202,11 +223,11 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
     // are identical across the whole selection
     const otherField = field === 'master_prices' ? 'master_rrps' : 'master_prices'
     const firstOther = canonicalRecord(rows[0]?.[otherField])
-    bulkCounterpart.value = rows.every(row => canonicalRecord(row[otherField]) === firstOther)
+    bulkCounterpart.value = selectionFullyKnown && rows.every(row => canonicalRecord(row[otherField]) === firstOther)
         ? (rows[0]?.[otherField] ?? null)
         : null
 
-    bulkEffectiveCost.value = rows.length && rows.every(row => Number(row.effective_cost ?? 0) === Number(rows[0].effective_cost ?? 0))
+    bulkEffectiveCost.value = selectionFullyKnown && rows.length && rows.every(row => Number(row.effective_cost ?? 0) === Number(rows[0].effective_cost ?? 0))
         ? Number(rows[0].effective_cost ?? 0) || null
         : null
 
