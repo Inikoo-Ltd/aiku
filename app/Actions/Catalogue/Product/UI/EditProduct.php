@@ -311,6 +311,17 @@ class EditProduct extends OrgAction
             );
         }
 
+        if ($product->units_review) {
+            $pricingFields['units'] = [
+                'type'         => 'input_with_warning',
+                'label'        => __('Units'),
+                'value'        => $product->units,
+                'showWarning'  => true,
+                'warningTitle' => __('Units mismatch with master product').' ('.$product->units_review.')',
+                'warningBody'  => __('Per-unit prices may be wrong, review units before editing prices'),
+            ];
+        }
+
 
         $tradeUnits = $this->getTradeUnitsWithPackingData($product);
 

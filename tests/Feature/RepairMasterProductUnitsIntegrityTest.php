@@ -88,7 +88,8 @@ test('product stale vs self-consistent master is fixed only with price proof', f
 
     $this->repair->handle($this->masterAsset->refresh(), fix: true);
     expect((float) $this->product->refresh()->units)->toBe(8.0)
-        ->and($this->repair->handle($this->masterAsset->refresh()))->toBeEmpty();
+        ->and($this->repair->handle($this->masterAsset->refresh()))->toBeEmpty()
+        ->and($this->product->refresh()->units_review)->toBeNull();
 });
 
 test('product stale is not fixed when price diverges or is missing', function () {
@@ -98,7 +99,8 @@ test('product stale is not fixed when price diverges or is missing', function ()
     $findings = $this->repair->handle($this->masterAsset->refresh(), fix: true);
     expect($findings[0]['bucket'])->toBe('product_stale_pivot_price_divergent')
         ->and($findings[0]['suggested'])->toBeNull()
-        ->and((float) $this->product->refresh()->units)->toBe(80.0);
+        ->and((float) $this->product->refresh()->units)->toBe(80.0)
+        ->and($this->product->units_review)->toBe('price_divergent');
 
     $this->masterAsset->updateQuietly(['master_prices' => []]);
     $this->product->updateQuietly(['price' => 100]);
@@ -127,7 +129,8 @@ test('master stale consensus is not fixed when price diverges or is missing', fu
 
     $findings = $this->repair->handle($this->masterAsset->refresh(), fix: true);
     expect($findings[0]['bucket'])->toBe('master_stale_consensus_price_divergent')
-        ->and((float) $this->masterAsset->refresh()->units)->toBe(0.071);
+        ->and((float) $this->masterAsset->refresh()->units)->toBe(0.071)
+        ->and($this->masterAsset->units_review)->toBe('price_divergent');
 
     $this->masterAsset->updateQuietly(['master_prices' => []]);
     $this->product->updateQuietly(['price' => 100]);
@@ -157,7 +160,8 @@ test('different trade unit composition is never fixed', function () {
     $findings = $this->repair->handle($this->masterAsset->refresh(), fix: true);
     expect($findings)->toHaveCount(1)
         ->and($findings[0]['bucket'])->toBe('diff_trade_units')
-        ->and((float) $this->product->refresh()->units)->toBe(4.0);
+        ->and((float) $this->product->refresh()->units)->toBe(4.0)
+        ->and($this->product->units_review)->toBe('diff_trade_units');
 });
 
 test('products with not_follow_master_trade_units are ignored', function () {

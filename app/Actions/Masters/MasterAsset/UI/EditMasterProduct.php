@@ -156,6 +156,18 @@ class EditMasterProduct extends OrgAction
 
         $currenciesRate = GetMasterShopCurrenciesRate::run($masterProduct->masterShop);
 
+        $unitsReview = [
+            'master'   => $masterProduct->units_review,
+            'products' => $masterProduct->products()
+                ->whereNotNull('units_review')
+                ->join('shops', 'shops.id', 'products.shop_id')
+                ->pluck('products.units_review', 'shops.code')
+                ->all(),
+        ];
+        if (!$unitsReview['master'] && !$unitsReview['products']) {
+            $unitsReview = null;
+        }
+
         return [
             [
                 'label'  => __('Id'),
@@ -253,6 +265,7 @@ class EditMasterProduct extends OrgAction
                         'currencies'    => $currenciesRate,
                         'value'         => $masterProduct->master_prices,
                         'masterAsset'   => $masterProduct->id,
+                        'unitsReview'   => $unitsReview,
                         'type_input'          => 'price'
                     ],
                     'master_rrps'            => [
@@ -262,6 +275,7 @@ class EditMasterProduct extends OrgAction
                         'currencies'    => $currenciesRate,
                         'value'         => $masterProduct->master_rrps,
                         'masterAsset'   => $masterProduct->id,
+                        'unitsReview'   => $unitsReview,
                         'type_input'          => 'rrp'
                     ],
                 ]

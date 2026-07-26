@@ -39,7 +39,27 @@ const props = defineProps<{
     visibleCurrencyCodes?: string[]
     masterAsset: number | string
     type_input : string
+    unitsReview?: {
+        master: string | null
+        products: Record<string, string>
+    } | null
 }>()
+
+const unitsReviewSummary = computed(() => {
+    if (!props.unitsReview) {
+        return null
+    }
+
+    const parts: string[] = []
+    if (props.unitsReview.master) {
+        parts.push(`master: ${props.unitsReview.master}`)
+    }
+    for (const [shopCode, bucket] of Object.entries(props.unitsReview.products ?? {})) {
+        parts.push(`${shopCode}: ${bucket}`)
+    }
+
+    return parts.join(', ')
+})
 
 const emits = defineEmits<{
     (e: 'update:modelValue', value: Record<string, CurrencyPrice>): void
@@ -206,6 +226,20 @@ const saveRebel = async (rebel: PriceRebel) => {
 
 <template>
     <div>
+        <div
+            v-if="unitsReviewSummary"
+            class="mb-2 flex items-center gap-x-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-700"
+        >
+            <FontAwesomeIcon
+                :icon="faExclamationTriangle"
+                class="shrink-0"
+                fixed-width
+                v-tooltip="unitsReviewSummary"
+                aria-hidden="true"
+            />
+            {{ ctrans('Units mismatch detected — per-unit prices may be wrong, review units before editing') }}
+        </div>
+
         <div v-if="baseCurrency" class="relative py-1 pl-8">
             <span class="absolute bottom-0 left-3 top-1/2 w-px bg-gray-200" aria-hidden="true" />
             <span class="absolute left-2 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-gray-300" v-tooltip="'Base Ratio'" aria-hidden="true" />

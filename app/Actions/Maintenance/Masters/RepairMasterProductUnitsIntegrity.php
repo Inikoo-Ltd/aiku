@@ -54,6 +54,8 @@ class RepairMasterProductUnitsIntegrity
 
         $mismatched = $products->filter(fn (Product $product) => $this->round($product->units) !== $masterUnits);
         if ($mismatched->isEmpty()) {
+            $this->syncReviewFlags($masterAsset, $products, null, []);
+
             return [];
         }
 
@@ -65,6 +67,8 @@ class RepairMasterProductUnitsIntegrity
         $masterSelfConsistent = $masterPivotQ !== null && $masterUnits === $masterPivotQ;
 
         $findings           = [];
+        $productFlags       = [];
+        $masterFlag         = null;
         $sameSignatureCount = 0;
 
         /** @var Product $product */
@@ -72,12 +76,14 @@ class RepairMasterProductUnitsIntegrity
             $productSignature = $this->signature($productTradeUnits->get($product->id, collect()));
 
             if ($productSignature !== $masterSignature) {
-                $findings[] = $this->finding($masterAsset, 'diff_trade_units', null, $this->productDetail($product, $masterPivotQ), false);
+                $productFlags[$product->id] = 'diff_trade_units';
+                $findings[]                 = $this->finding($masterAsset, 'diff_trade_units', null, $this->productDetail($product, $masterPivotQ), false);
                 continue;
             }
 
             if ($masterTradeUnits->count() !== 1) {
-                $findings[] = $this->finding($masterAsset, 'bundle', null, $this->productDetail($product, $masterPivotQ), false);
+                $productFlags[$product->id] = 'bundle';
+                $findings[]                 = $this->finding($masterAsset, 'bundle', null, $this->productDetail($product, $masterPivotQ), false);
                 continue;
             }
 
@@ -85,7 +91,8 @@ class RepairMasterProductUnitsIntegrity
                 $priceVerdict = $this->priceVerdict($masterAsset, collect([$product]));
 
                 if ($priceVerdict !== 'ok') {
-                    $findings[] = $this->finding($masterAsset, 'product_stale_pivot_price_'.$priceVerdict, null, $this->productDetail($product, $masterPivotQ), false);
+                    $productFlags[$product->id] = 'price_'.$priceVerdict;
+                    $findings[]                 = $this->finding($masterAsset, 'product_stale_pivot_price_'.$priceVerdict, null, $this->productDetail($product, $masterPivotQ), false);
                     continue;
                 }
 
@@ -102,10 +109,37 @@ class RepairMasterProductUnitsIntegrity
         }
 
         if ($sameSignatureCount > 0) {
-            $findings[] = $this->masterLevelFinding($masterAsset, $products, $masterPivotQ, $fix);
+            $masterFinding = $this->masterLevelFinding($masterAsset, $products, $masterPivotQ, $fix);
+            $findings[]    = $masterFinding;
+
+            if ($masterFinding['suggested'] === null && !$masterFinding['fixed']) {
+                $masterFlag = str_replace('master_stale_consensus_', '', $masterFinding['bucket']);
+            }
         }
 
+        $this->syncReviewFlags($masterAsset, $products, $masterFlag, $productFlags);
+
         return $findings;
+    }
+
+    /**
+     * Persists review flags for humans: findings that can't be auto-fixed mark their side's
+     * units_review with the bucket, healthy or fixed rows get cleared.
+     *
+     * @param array<int, string> $productFlags product id => bucket
+     */
+    private function syncReviewFlags(MasterAsset $masterAsset, Collection $products, ?string $masterFlag, array $productFlags): void
+    {
+        if ($masterAsset->units_review !== $masterFlag) {
+            $masterAsset->updateQuietly(['units_review' => $masterFlag]);
+        }
+
+        foreach ($products as $product) {
+            $flag = $productFlags[$product->id] ?? null;
+            if ($product->units_review !== $flag) {
+                $product->updateQuietly(['units_review' => $flag]);
+            }
+        }
     }
 
     private function masterLevelFinding(MasterAsset $masterAsset, Collection $products, ?float $masterPivotQ, bool $fix): array
