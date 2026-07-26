@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -85,11 +86,16 @@ class GetMasterProductsPricingSales extends OrgAction
         ];
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): array
     {
         $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($this->validatedData['ids'], $this->validatedData['interval']);
+        $masterAssetIDs = MasterAsset::whereIn('id', $this->validatedData['ids'])
+            ->where('group_id', $this->group->id)
+            ->where('master_shop_id', $masterProductCategory->master_shop_id)
+            ->pluck('id')
+            ->all();
+
+        return $this->handle($masterAssetIDs, $this->validatedData['interval']);
     }
 }

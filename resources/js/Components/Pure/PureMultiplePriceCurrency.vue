@@ -350,13 +350,26 @@ const recalculateDerivedPrices = (changedCode: string) => {
     })
 }
 
+// Stored values must respect the currency's own decimal places (e.g. HUF has 0),
+// otherwise a derived value like 5137.5 is displayed rounded but charged as-is
+const roundToCurrency = (code: string, value: number | null): number | null => {
+    const digits = currencyList.value.find(currency => currency.code === code)?.fraction_digits
+    if (value == null || digits == null || digits >= 2) {
+        return value
+    }
+
+    const factor = Math.pow(10, digits)
+
+    return Math.round(value * factor) / factor
+}
+
 const onUpdate = (changedCode: string) => {
     recalculateDerivedPrices(changedCode)
     emits('update:modelValue', Object.fromEntries(
         Object.entries(prices.value).map(([code, entry]) => [code, {
             value: entry.value === originalPrices.value[code]?.value
-                ? (originalStoredValues.value[code] ?? toStored(entry.value))
-                : toStored(entry.value),
+                ? (originalStoredValues.value[code] ?? roundToCurrency(code, toStored(entry.value)))
+                : roundToCurrency(code, toStored(entry.value)),
             // majors are forced independent for display only — persist the stored
             // flag so a future major→minor demotion still makes it a follower
             independent: isAlwaysIndependent(code)

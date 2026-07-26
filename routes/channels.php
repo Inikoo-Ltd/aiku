@@ -12,6 +12,7 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -64,7 +65,7 @@ Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $
 });
 
 Broadcast::channel('grp.master-asset.{masterAssetId}', function (User $user, int $masterAssetId) {
-    return true;
+    return MasterAsset::where('id', $masterAssetId)->value('group_id') === $user->group_id;
 });
 
 Broadcast::channel('grp.download-progress.{userID}', function (User $user, int $userID) {

@@ -1455,10 +1455,26 @@ test('bulk update master assets prices applies per-unit rrp and skips independen
     ]);
     $assetB->updateQuietly(['units' => 2, 'master_rrps' => ['EUR' => ['value' => 5, 'independent' => false]]]);
 
+    $foreignAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BLKPR-X-'.uniqid(),
+        'name'    => 'Bulk Foreign',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $foreignGroup = \App\Actions\SysAdmin\Group\StoreGroup::make()->action(
+        \App\Models\SysAdmin\Group::factory()->definition()
+    );
+    $foreignAsset->updateQuietly([
+        'group_id'    => $foreignGroup->id,
+        'master_rrps' => ['EUR' => ['value' => 5, 'independent' => false]],
+    ]);
+
     Queue::fake();
 
     \App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices::make()->action([
-        'ids'          => [$assetA->id, $assetB->id],
+        'ids'          => [$assetA->id, $assetB->id, $foreignAsset->id],
         'rrp_per_unit' => true,
         'master_rrps'  => [
             'EUR' => ['value' => 2, 'independent' => false],
@@ -1475,7 +1491,8 @@ test('bulk update master assets prices applies per-unit rrp and skips independen
         ->and(data_get($assetA->master_rrps, 'PLN.independent'))->toBeTrue()
         ->and(data_get($assetA->master_rrps, 'HUF'))->toBeNull()
         ->and(data_get($assetB->master_rrps, 'EUR.value'))->toEqual(4)
-        ->and(data_get($assetB->master_rrps, 'PLN.value'))->toEqual(198);
+        ->and(data_get($assetB->master_rrps, 'PLN.value'))->toEqual(198)
+        ->and(data_get($foreignAsset->refresh()->master_rrps, 'EUR.value'))->toBe(5);
 
     Queue::assertPushed(
         \Lorisleiva\Actions\Decorators\JobDecorator::class,

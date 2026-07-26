@@ -28,7 +28,7 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
     {
         $rrpPerUnit = Arr::pull($modelData, 'rrp_per_unit', false);
 
-        foreach (MasterAsset::whereIn('id', $masterAssetIDs)->get() as $masterAsset) {
+        foreach (MasterAsset::whereIn('id', $masterAssetIDs)->where('group_id', $this->group->id)->get() as $masterAsset) {
             $dataToUpdate = [];
 
             foreach (['master_prices', 'master_rrps'] as $field) {
