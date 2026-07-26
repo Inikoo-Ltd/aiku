@@ -46,7 +46,9 @@ use App\Actions\Masters\MasterShop\HydrateMasterShop;
 use App\Actions\Masters\MasterShop\HydrateMasterShopSales;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
+use App\Actions\Masters\MasterAssetTimeSeries\ProcessMasterAssetTimeSeriesRecords;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -2157,4 +2159,63 @@ test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from mast
         ->and($rates['EUR']['is_major'])->toBeFalse()
         ->and($rates['EUR']['ratio_eur'])->toBe(1.18)
         ->and($rates['EUR']['major'])->toBe('GBP');
+});
+
+test('reprocessing a master asset time series with a mid period window keeps the whole period total', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'TS-DEP-'.uniqid(),
+        'name' => 'Time Series Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'TS-FAM-'.uniqid(),
+        'name' => 'Time Series Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'TS-AST-'.uniqid(),
+        'name'    => 'Time Series Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $customer      = createCustomer($this->shop);
+    $taxCategoryId = DB::table('tax_categories')->value('id');
+    $monthStart    = now()->subMonth()->startOfMonth();
+
+    foreach ([[2, 100], [20, 250]] as [$dayOffset, $amount]) {
+        DB::table('invoice_transactions')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'tax_category_id' => $taxCategoryId,
+            'master_asset_id' => $masterAsset->id,
+            'date'            => $monthStart->copy()->addDays($dayOffset),
+            'quantity'        => 1,
+            'net_amount'      => $amount,
+            'grp_net_amount'  => $amount,
+            'data'            => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+    }
+
+    ProcessMasterAssetTimeSeriesRecords::run(
+        $masterAsset->id,
+        TimeSeriesFrequencyEnum::MONTHLY,
+        $monthStart->toDateString(),
+        $monthStart->copy()->addDays(2)->toDateString()
+    );
+
+    $record = DB::table('master_asset_time_series as ts')
+        ->join('master_asset_time_series_records as r', 'r.master_asset_time_series_id', '=', 'ts.id')
+        ->where('ts.master_asset_id', $masterAsset->id)
+        ->where('ts.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+        ->where('r.period', $monthStart->format('Y-m'))
+        ->first();
+
+    expect((float) $record->sales_grp_currency_external)->toBe(350.0)
+        ->and((int) $record->sold)->toBe(2);
 });

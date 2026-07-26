@@ -32,8 +32,7 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $customerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $customer = Customer::find($customerId);
 

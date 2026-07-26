@@ -38,6 +38,9 @@ use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\Accounting\TopUp\UpdateTopUp;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
+use Illuminate\Support\Facades\DB;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\SysAdmin\GetSectionRoute;
@@ -2202,4 +2205,45 @@ test('UI refund action endpoints create tax finalise and delete', function () {
         'deleted_note' => 'test delete',
     ])->assertRedirect();
     expect($taxRefund->refresh()->trashed())->toBeTrue();
+});
+
+test('a single day customer redo keeps the whole period totals in the organisation time series', function () {
+    $customer   = createCustomer($this->shop);
+    $monthStart = now()->subMonth()->startOfMonth();
+
+    foreach ([[3, 100], [21, 250]] as [$dayOffset, $amount]) {
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => DB::table('tax_categories')->value('id'),
+            'slug'            => 'ts-inv-'.uniqid(),
+            'reference'       => 'TS-INV-'.uniqid(),
+            'type'            => 'invoice',
+            'in_process'      => false,
+            'date'            => $monthStart->copy()->addDays($dayOffset),
+            'net_amount'      => $amount,
+            'grp_net_amount'  => $amount,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+    }
+
+    $registrationDay = $monthStart->copy()->addDays(3)->toDateString();
+
+    RedoOrganisationTimeSeries::make()->handle($this->organisation->id, $registrationDay, $registrationDay);
+
+    $record = DB::table('organisation_time_series as ts')
+        ->join('organisation_time_series_records as r', 'r.organisation_time_series_id', '=', 'ts.id')
+        ->where('ts.organisation_id', $this->organisation->id)
+        ->where('ts.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+        ->where('r.period', $monthStart->format('Y-m'))
+        ->first();
+
+    expect((float) $record->sales_grp_currency_external)->toBe(350.0)
+        ->and((int) $record->invoices)->toBe(2);
 });
