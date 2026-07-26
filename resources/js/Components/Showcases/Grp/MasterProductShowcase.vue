@@ -403,51 +403,48 @@ const isModalProductForSale = ref(false)
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mx-3 lg:mx-0 mt-2">
-		<!-- Sidebar -->
-		<div class="space-y-4 lg:space-y-6">
-			<!-- Master Product Tags -->
-			<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
-				<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
-					class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
-					{{ tag.name }}
-				</span>
-			</dd>
-			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white p-4 lg:p-5">
-				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
-					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
-					<!-- <div class="text-sm italic text-gray-500">
-						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">images</span>
-					</div> -->
-				</div>
-				<div v-else>
-					<div
-						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
-						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+	<!-- The right sidebar (prices, analytics) always keeps its width; the content area
+	     gets the rest, with the image beside the summary only when there is room -->
+	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mx-0 lg:grid-cols-[minmax(0,1fr)_minmax(385px,420px)]">
+		<!-- Content: image + summary. The summary is capped; spare width goes first to
+		     the image column (up to its own cap), the rest stays as breathing room -->
+		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
+			<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]">
+				<!-- Master Product Tags -->
+				<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
+					<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
+						class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+						{{ tag.name }}
+					</span>
+				</dd>
+				<!-- Image Preview & Thumbnails -->
+				<div class="bg-white p-4 lg:p-5">
+					<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
+						<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
 					</div>
-					<!-- <div class="mt-2 text-sm italic text-gray-500">
-						Manage images in tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div> -->
+					<div v-else>
+						<div
+							class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+							<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+							<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+						</div>
+					</div>
 				</div>
+			</div>
+
+			<!-- Product Summary -->
+			<div class="min-w-0 flex-1 max-w-2xl">
+				<TradeUnitMasterProductSummary
+					:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
+					:gpsr="data.gpsr"
+					:properties="data.properties"
+					:attachments="data.attachment_box"
+				/>
 			</div>
 		</div>
 
-		<!-- Product Summary - spans 2 columns -->
-		<div class="lg:col-span-2">
-			<TradeUnitMasterProductSummary
-				:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
-				:gpsr="data.gpsr"
-				:properties="data.properties"
-				:attachments="data.attachment_box"
-			/>
-		</div>
-
         <!-- Sales Analytics - right sidebar -->
-        <div>
+        <div class="min-w-0">
 			<div class="grid justify-items-end pr-3 pb-2 gap-2">
 				<ReuseMasterPriceBlock
 					:title="trans('Price / Outer')"
