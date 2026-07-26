@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Web\Webpage\BanVarnishWebpage;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Cache;
@@ -45,6 +46,8 @@ class BreakProductInWebpagesCache
             Cache::forget($key);
             $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
             Cache::forget($key);
+
+            BanVarnishWebpage::run($webpage);
         }
 
     }

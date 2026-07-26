@@ -232,7 +232,14 @@ const recalculateDerivedPrices = () => {
 
 const emitUpdate = () => {
     const snapshot = Object.entries(prices.value).reduce((acc, [code, entry]) => {
-        acc[code] = { value: entry.value, independent: entry.independent }
+        acc[code] = {
+            value: entry.value,
+            // majors are forced independent for display only — persist the stored
+            // flag so a future major→minor demotion still makes it a follower
+            independent: isAlwaysIndependent(code)
+                ? (props.modelValue?.[code]?.independent ?? false)
+                : entry.independent
+        }
 
         return acc
     }, {} as Record<string, CurrencyPrice>)

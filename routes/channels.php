@@ -63,6 +63,10 @@ Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $
     return true;
 });
 
+Broadcast::channel('grp.master-asset.{masterAssetId}', function (User $user, int $masterAssetId) {
+    return true;
+});
+
 Broadcast::channel('grp.download-progress.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });

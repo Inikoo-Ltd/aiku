@@ -8,8 +8,6 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
-use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -26,6 +24,8 @@ class UpdateMasterAssetPrices extends OrgAction
     use WithActionUpdate;
     use WithMastersEditAuthorisation;
 
+    public const int SYNC_CASCADE_MAX_PRODUCTS = 5;
+
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
         if ($eurPrice = data_get($modelData, 'master_prices.EUR.value')) {
@@ -37,13 +37,16 @@ class UpdateMasterAssetPrices extends OrgAction
 
         $masterAsset = $this->update($masterAsset, $modelData);
 
-        if ($masterAsset->wasChanged(['master_prices', 'master_rrps', 'price', 'rrp'])) {
-            MasterAssetHydrateMasterPricesRRPtoChild::run($masterAsset, skipWebpageCacheBreak: true);
+        $changedPrices = $masterAsset->wasChanged(['master_prices', 'price']);
+        $changedRRPs   = $masterAsset->wasChanged(['master_rrps', 'rrp']);
 
-            foreach ($masterAsset->products()->with('webpage')->get() as $product) {
-                if ($product->webpage) {
-                    BreakProductInWebpagesCache::run($product);
-                }
+        if ($changedPrices || $changedRRPs) {
+            $type = $changedPrices && $changedRRPs ? 'both' : ($changedPrices ? 'price' : 'rrp');
+
+            if ($masterAsset->products()->count() <= self::SYNC_CASCADE_MAX_PRODUCTS) {
+                CascadeMasterAssetPricesToChildren::run($masterAsset, $type);
+            } else {
+                CascadeMasterAssetPricesToChildren::dispatch($masterAsset, $type);
             }
         }
 

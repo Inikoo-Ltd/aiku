@@ -155,7 +155,14 @@ const recalculateDerivedPrices = () => {
 const onUpdate = () => {
     recalculateDerivedPrices()
     emits('update:modelValue', Object.fromEntries(
-        Object.entries(prices.value).map(([code, price]) => [code, { ...price }])
+        Object.entries(prices.value).map(([code, price]) => [code, {
+            value: price.value,
+            // majors are forced independent for display only — persist the stored
+            // flag so a future major→minor demotion still makes it a follower
+            independent: isAlwaysIndependent(code)
+                ? (props.modelValue?.[code]?.independent ?? false)
+                : price.independent
+        }])
     ))
 }
 

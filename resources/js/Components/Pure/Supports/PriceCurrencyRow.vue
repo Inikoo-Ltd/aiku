@@ -75,6 +75,7 @@ const displayValue = computed({
         />
 
         <div class="w-8 shrink-0">
+            <slot name="action" />
             <button
                 v-if="showIndependent"
                 v-tooltip="model.independent ? ctrans('Independent price') : ctrans('Linked to exchange rate')"

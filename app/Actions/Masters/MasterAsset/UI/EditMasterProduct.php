@@ -274,6 +274,7 @@ class EditMasterProduct extends OrgAction
                         'masterAsset'   => $masterProduct->id,
                         'unitsReview'   => $unitsReview,
                         'updateRoute'   => $pricesUpdateRoute,
+                        'noSaveButton'  => true,
                         'type_input'          => 'price'
                     ],
                     'master_rrps'            => [
@@ -285,6 +286,7 @@ class EditMasterProduct extends OrgAction
                         'masterAsset'   => $masterProduct->id,
                         'unitsReview'   => $unitsReview,
                         'updateRoute'   => $pricesUpdateRoute,
+                        'noSaveButton'  => true,
                         'perUnits'      => (float) $masterProduct->units,
                         'type_input'          => 'rrp'
                     ],

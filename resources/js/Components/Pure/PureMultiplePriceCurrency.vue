@@ -1,14 +1,14 @@
 <script setup lang='ts'>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronDown, faExclamationTriangle, faSave as falSave , faStarfighter} from '@fal'
+import { faCheck, faChevronDown, faExclamationTriangle, faSave as falSave , faStarfighter} from '@fal'
 import { faSave as fadSave, faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PriceCurrencyRow from '@/Components/Pure/Supports/PriceCurrencyRow.vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import axios from 'axios'
-library.add(faChevronDown, faExclamationTriangle, falSave, fadSave, faSpinnerThird)
+library.add(faCheck, faChevronDown, faExclamationTriangle, falSave, fadSave, faSpinnerThird)
 
 interface CurrencyRate {
     currency: string
@@ -46,6 +46,8 @@ const props = defineProps<{
         products: Record<string, string>
     } | null
     perUnits?: number
+    form?: any
+    submitForm?: () => void
 }>()
 
 // DB stores values per outer; when perUnits is set the user edits per unit,
@@ -190,6 +192,10 @@ const isDirty = (code: string) => {
         && (current.value !== original.value || current.independent !== original.independent)
 }
 
+const hasDirtyHiddenCurrency = computed(
+    () => hiddenCurrencies.value.some(currency => isDirty(currency.code))
+)
+
 const showHiddenCurrencies = ref(false)
 
 // Hovering a derived minor highlights the major it follows; hovering a major
@@ -264,7 +270,11 @@ const onUpdate = (changedCode: string) => {
     emits('update:modelValue', Object.fromEntries(
         Object.entries(prices.value).map(([code, entry]) => [code, {
             value: toStored(entry.value),
-            independent: entry.independent
+            // majors are forced independent for display only — persist the stored
+            // flag so a future major→minor demotion still makes it a follower
+            independent: isAlwaysIndependent(code)
+                ? (props.modelValue?.[code]?.independent ?? false)
+                : entry.independent
         }])
     ))
 }
@@ -280,6 +290,28 @@ const originalRebelValues = ref<Record<number, number | null>>({})
 const isRebelEdited = (rebel: PriceRebel) => {
     return rebel.value !== originalRebelValues.value[rebel.shop_id]
 }
+
+// Cascade progress broadcast by CascadeMasterAssetPricesToChildren after a save:
+// "n/total products updated" while running, then "Website updated".
+const cascadeProgress = ref<{ state: string, done: number, total: number } | null>(null)
+
+onMounted(() => {
+    if (window.Echo) {
+        window.Echo.private(`grp.master-asset.${props.masterAsset}`)
+            .listen('.prices-cascade-progress', (event: { state: string, type?: string, done: number, total: number }) => {
+                if (event.type && event.type !== 'both' && event.type !== props.type_input) {
+                    return
+                }
+                cascadeProgress.value = event
+            })
+    }
+})
+
+onUnmounted(() => {
+    if (window.Echo) {
+        window.Echo.leave(`grp.master-asset.${props.masterAsset}`)
+    }
+})
 
 onMounted(async () => {
     try {
@@ -338,6 +370,34 @@ const saveRebel = async (rebel: PriceRebel) => {
 <template>
     <div>
         <div
+            class="flex h-5 items-center justify-end gap-x-1.5 pr-11 text-xs"
+            :class="cascadeProgress?.state === 'done' && !form?.processing ? 'text-green-600' : 'text-gray-500'"
+        >
+            <template v-if="form?.processing">
+                <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+            </template>
+            <template v-else-if="cascadeProgress">
+                <FontAwesomeIcon
+                    v-if="cascadeProgress.state !== 'done'"
+                    icon="fad fa-spinner-third"
+                    class="animate-spin"
+                    fixed-width
+                    aria-hidden="true"
+                />
+                <FontAwesomeIcon v-else :icon="faCheck" fixed-width aria-hidden="true" />
+                <span v-if="cascadeProgress.state !== 'done'">
+                    {{ cascadeProgress.done }}/{{ cascadeProgress.total }} {{ ctrans('products updated') }}
+                </span>
+                <span v-else-if="cascadeProgress.total > 1">
+                    {{ ctrans('Websites updated') }} ({{ cascadeProgress.total }} {{ ctrans('products') }})
+                </span>
+                <span v-else>
+                    {{ ctrans('Website updated') }}
+                </span>
+            </template>
+        </div>
+
+        <div
             v-if="unitsReviewSummary"
             class="mb-2 flex items-center gap-x-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm text-amber-700"
         >
@@ -373,7 +433,34 @@ const saveRebel = async (rebel: PriceRebel) => {
                 required
                 :highlighted="highlightedMajorCode === baseCurrency.code"
                 @change="onUpdate(baseCurrency.code)"
-            />
+            >
+                <template v-if="form && submitForm" #action>
+                    <button
+                        type="button"
+                        class="w-full text-center disabled:cursor-not-allowed"
+                        :disabled="form.processing || !form.isDirty"
+                        v-tooltip="ctrans('Save')"
+                        @click="submitForm()"
+                    >
+                        <FontAwesomeIcon
+                            v-if="form.processing"
+                            icon="fad fa-spinner-third"
+                            class="animate-spin text-xl"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                        <FontAwesomeIcon
+                            v-else
+                            icon="fad fa-save"
+                            class="text-xl"
+                            :class="{ 'text-gray-300': !form.isDirty }"
+                            :style="form.isDirty ? { '--fa-secondary-color': 'rgb(0, 255, 4)' } : undefined"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                    </button>
+                </template>
+            </PriceCurrencyRow>
         </div>
 
         <div
@@ -456,6 +543,12 @@ const saveRebel = async (rebel: PriceRebel) => {
                     />
                     {{ ctrans('Minor currencies') }}
                     <span class="text-gray-400">({{ hiddenCurrencies.length }})</span>
+                    <span
+                        v-if="!showHiddenCurrencies && hasDirtyHiddenCurrency"
+                        v-tooltip="ctrans('Unsaved changes inside')"
+                        class="h-2 w-2 rounded-full bg-amber-400"
+                        aria-hidden="true"
+                    />
                 </button>
             </div>
 
@@ -558,5 +651,6 @@ const saveRebel = async (rebel: PriceRebel) => {
                 </PopoverPanel>
             </transition>
         </Popover>
+
     </div>
 </template>
