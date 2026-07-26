@@ -26,7 +26,7 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $queue = 'urgent';
+    public string $jobQueue = 'urgent';
 
     public function getJobUniqueId(?int $orderID): string
     {
