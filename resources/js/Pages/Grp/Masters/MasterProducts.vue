@@ -63,6 +63,14 @@ const props = defineProps<{
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
+// pricingCurrencies/pricingCostRates are optional props (skipped unless the page
+// loads directly on the pricing tab) — fetch them once when the tab is first opened
+watch(currentTab, (tab) => {
+    if (tab === 'pricing' && !props.pricingCurrencies) {
+        router.reload({ only: ['pricingCurrencies', 'pricingCostRates'] })
+    }
+})
+
 const pricingBulkField = ref<'master_prices' | 'master_rrps' | null>(null)
 
 const component = computed(() => {

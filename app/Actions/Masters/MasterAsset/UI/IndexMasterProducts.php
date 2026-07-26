@@ -318,6 +318,23 @@ class IndexMasterProducts extends OrgAction
             ->withQueryString();
     }
 
+    /**
+     * The pricing tab's support props cost ~16 queries, so they are only computed when
+     * the pricing tab is actually shown: eager on a full pricing-tab load, optional
+     * otherwise (fetched by the page via partial reload when switching to the tab).
+     */
+    protected function wrapPricingSupportProp(\Closure $value): mixed
+    {
+        return $this->tab === MasterProductsTabsEnum::PRICING->value ? $value() : Inertia::optional($value);
+    }
+
+    private ?Collection $pricingCurrenciesRate = null;
+
+    protected function getPricingCurrenciesRate(): Collection
+    {
+        return $this->pricingCurrenciesRate ??= GetMasterShopCurrenciesRate::run($this->parent->masterShop);
+    }
+
     public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $sales = false, $sortByIndex = false): \Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $sales, $sortByIndex) {
@@ -542,20 +559,22 @@ class IndexMasterProducts extends OrgAction
                         ->values()
                     : null,
                 'pricingCurrencies'       => $this->parent instanceof MasterProductCategory
-                    ? GetMasterShopCurrenciesRate::run($this->parent->masterShop)
+                    ? $this->wrapPricingSupportProp(fn () => $this->getPricingCurrenciesRate())
                     : null,
                 'pricingCostRates'        => $this->parent instanceof MasterProductCategory
-                    ? GetMasterShopCurrenciesRate::run($this->parent->masterShop)
-                        ->keys()
-                        ->mapWithKeys(function (string $currencyCode) {
-                            $currency = Currency::where('code', $currencyCode)->first();
+                    ? $this->wrapPricingSupportProp(
+                        fn () => $this->getPricingCurrenciesRate()
+                            ->keys()
+                            ->mapWithKeys(function (string $currencyCode) {
+                                $currency = Currency::where('code', $currencyCode)->first();
 
-                            return [
-                                $currencyCode => $currency
-                                    ? GetCurrencyExchange::run($this->parent->group->currency, $currency)
-                                    : null
-                            ];
-                        })
+                                return [
+                                    $currencyCode => $currency
+                                        ? GetCurrencyExchange::run($this->parent->group->currency, $currency)
+                                        : null
+                                ];
+                            })
+                    )
                     : null,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
