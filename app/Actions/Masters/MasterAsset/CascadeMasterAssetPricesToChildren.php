@@ -33,7 +33,7 @@ class CascadeMasterAssetPricesToChildren
     use AsAction;
     use WithVarnishBan;
 
-    public string $jobQueue = 'price_change_control';
+    public string $jobQueue = 'price_change';
 
     public function handle(MasterAsset $masterAsset, string $type = 'both'): void
     {
