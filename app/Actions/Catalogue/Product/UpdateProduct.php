@@ -62,6 +62,8 @@ class UpdateProduct extends OrgAction
 
     public bool $bulkPriceUpdate = false;
 
+    public bool $skipWebpageCacheBreak = false;
+
     public function handle(Product $product, array $modelData): Product
     {
         // Note laravel wasChanged do not work! for this action, no idea why need to use $oldData
@@ -314,6 +316,7 @@ class UpdateProduct extends OrgAction
         );
 
         if (!$this->bulkPriceUpdate
+            && !$this->skipWebpageCacheBreak
             && $product->webpage
             && (Arr::hasAny(
                 $changed,

@@ -168,6 +168,13 @@ class EditMasterProduct extends OrgAction
             $unitsReview = null;
         }
 
+        $pricesUpdateRoute = [
+            'name'       => 'grp.models.master_asset.prices.update',
+            'parameters' => [
+                'masterAsset' => $masterProduct->id
+            ]
+        ];
+
         return [
             [
                 'label'  => __('Id'),
@@ -266,6 +273,7 @@ class EditMasterProduct extends OrgAction
                         'value'         => $masterProduct->master_prices,
                         'masterAsset'   => $masterProduct->id,
                         'unitsReview'   => $unitsReview,
+                        'updateRoute'   => $pricesUpdateRoute,
                         'type_input'          => 'price'
                     ],
                     'master_rrps'            => [
@@ -276,6 +284,7 @@ class EditMasterProduct extends OrgAction
                         'value'         => $masterProduct->master_rrps,
                         'masterAsset'   => $masterProduct->id,
                         'unitsReview'   => $unitsReview,
+                        'updateRoute'   => $pricesUpdateRoute,
                         'perUnits'      => (float) $masterProduct->units,
                         'type_input'          => 'rrp'
                     ],

@@ -68,7 +68,9 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -1903,6 +1905,73 @@ test('update master shop price exchange recalculates minor prices', function () 
         'major'    => 'SEK',
         'exchange' => 0.09,
     ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('updating master prices cascades to children, updates baskets and breaks webpage cache', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'CASCDEP-'.uniqid(),
+        'name' => 'Cascade Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'CASCFAM-'.uniqid(),
+        'name' => 'Cascade Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'CASCAST-'.uniqid(),
+        'name'    => 'Cascade Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $currencyCode = $this->shop->currency->code;
+
+    $website = createWebsite($this->shop);
+    $webpage = \App\Actions\Web\Webpage\StoreWebpage::make()->action(
+        $website->storefront,
+        \App\Models\Web\Webpage::factory()->definition()
+    );
+
+    $this->shop->updateQuietly(['master_shop_id' => $masterShop->id]);
+    $product->updateQuietly([
+        'master_product_id' => $masterAsset->id,
+        'units'             => 1,
+    ]);
+    $webpage->updateQuietly([
+        'model_type' => 'Product',
+        'model_id'   => $product->id,
+    ]);
+
+    $cacheKeyIn  = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
+    $cacheKeyOut = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
+    Cache::put($cacheKeyIn, 'cached-page', 600);
+    Cache::put($cacheKeyOut, 'cached-page', 600);
+
+    Queue::fake();
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [$currencyCode => ['value' => 123.45, 'independent' => false]],
+        'master_rrps'   => [$currencyCode => ['value' => 199.99, 'independent' => false]],
+    ]);
+
+    $product->refresh();
+    expect((float) $product->price)->toBe(123.45)
+        ->and((float) $product->rrp)->toBe(199.99)
+        ->and(Cache::has($cacheKeyIn))->toBeFalse()
+        ->and(Cache::has($cacheKeyOut))->toBeFalse();
+
+    Queue::assertPushed(
+        \Lorisleiva\Actions\Decorators\UniqueJobDecorator::class,
+        fn ($job) => $job->displayName() === \App\Actions\Catalogue\Product\UpdateOrdersInBasketsAfterProductUpdated::class
+    );
+    Queue::assertNotPushed(
+        \Lorisleiva\Actions\Decorators\JobDecorator::class,
+        fn ($job) => $job->displayName() === \App\Actions\Catalogue\Product\BreakProductInWebpagesCache::class
+    );
 });
 
 test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from master shop price_exchanges', function () {
