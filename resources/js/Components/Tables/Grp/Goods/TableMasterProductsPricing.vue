@@ -110,7 +110,7 @@ const cascadeByAsset = ref<Record<number, { state: string, type?: string, done: 
 const subscribedAssetIds = ref<Set<number>>(new Set())
 
 const subscribeCascade = (masterAssetId: number) => {
-    if (!window.Echo) {
+    if (!window.Echo || !masterAssetId || subscribedAssetIds.value.has(masterAssetId)) {
         return
     }
 
@@ -243,15 +243,9 @@ const openBulkEdit = (field: 'master_prices' | 'master_rrps') => {
 }
 
 const closeEdit = () => {
-    const closedAssetId = editingProduct.value?.id
     editingProduct.value = null
     editForm.value = null
     bulkMode.value = false
-
-    // the modal component leaves the shared channel on unmount — resubscribe
-    if (closedAssetId) {
-        setTimeout(() => subscribeCascade(closedAssetId), 100)
-    }
 }
 
 const submitEdit = () => {

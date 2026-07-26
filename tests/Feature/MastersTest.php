@@ -2145,6 +2145,8 @@ test('updating master prices cascades to children, updates baskets and breaks we
     Cache::put($cacheKeyOut, 'cached-page', 600);
 
     Queue::fake();
+    config(['iris.cache.varnish' => true, 'iris.cache.varnish_hosts' => ['http://varnish.test']]);
+    \Illuminate\Support\Facades\Http::fake();
 
     \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
         'master_prices' => [$currencyCode => ['value' => 123.45, 'independent' => false]],
@@ -2156,6 +2158,11 @@ test('updating master prices cascades to children, updates baskets and breaks we
         ->and((float) $product->rrp)->toBe(199.99)
         ->and(Cache::has($cacheKeyIn))->toBeFalse()
         ->and(Cache::has($cacheKeyOut))->toBeFalse();
+
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+    \Illuminate\Support\Facades\Http::assertSent(
+        fn ($request) => $request->hasHeader('x-ban-webpage', (string) $webpage->id)
+    );
 
     Queue::assertPushed(
         \Lorisleiva\Actions\Decorators\UniqueJobDecorator::class,

@@ -10,9 +10,11 @@ namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
+use App\Actions\Traits\WithVarnishBan;
 use App\Events\MasterAssetPricesCascadeProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
+use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -20,23 +22,34 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * webpage cache right after its update and broadcasting progress so the edit UI can
  * show "n/total products updated" live. Run synchronously for small fan-outs, dispatch
  * for large ones (see UpdateMasterAssetPrices).
+ *
+ * App cache keys are forgotten per product as the cascade advances (instant, Redis),
+ * while varnish bans are deduplicated across the whole cascade — shared family and
+ * department pages would otherwise be banned once per product — and sent as a single
+ * concurrent round at the end, so a slow varnish costs one timeout, not one per page.
  */
 class CascadeMasterAssetPricesToChildren
 {
     use AsAction;
+    use WithVarnishBan;
 
     public string $jobQueue = 'price_change_control';
 
     public function handle(MasterAsset $masterAsset, string $type = 'both'): void
     {
-        $done = 0;
+        $done     = 0;
+        $webpages = collect();
+
+        $cacheBreaker = BreakProductInWebpagesCache::make();
 
         MasterAssetHydrateMasterPricesRRPtoChild::run(
             $masterAsset,
             skipWebpageCacheBreak: true,
-            afterEachProduct: function (Product $product, int $doneSoFar, int $total) use ($masterAsset, $type, &$done) {
+            afterEachProduct: function (Product $product, int $doneSoFar, int $total) use ($masterAsset, $type, $cacheBreaker, &$done, &$webpages) {
                 if ($product->webpage) {
-                    BreakProductInWebpagesCache::run($product);
+                    $productWebpages = $cacheBreaker->getWebpages($product);
+                    $productWebpages->each(fn (Webpage $webpage) => $cacheBreaker->forgetCacheKeys($webpage));
+                    $webpages = $webpages->union($productWebpages);
                 }
                 $done = $doneSoFar;
                 MasterAssetPricesCascadeProgressEvent::dispatch($masterAsset, [
@@ -46,6 +59,10 @@ class CascadeMasterAssetPricesToChildren
                     'total' => $total,
                 ]);
             }
+        );
+
+        $this->sendVarnishBansHttpPool(
+            $webpages->map(fn (Webpage $webpage) => ['x-ban-webpage' => $webpage->id])->values()->all()
         );
 
         MasterAssetPricesCascadeProgressEvent::dispatch($masterAsset, [

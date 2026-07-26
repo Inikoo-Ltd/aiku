@@ -395,25 +395,34 @@ const isRebelEdited = (rebel: PriceRebel) => {
 // "n/total products updated" while running, then "Website updated".
 const cascadeProgress = ref<{ state: string, done: number, total: number } | null>(null)
 
+// Named handler so unmount detaches only this component's listener: the pricing
+// table listens on the same channel, and Echo.leave() would kill its subscription too
+const onCascadeProgress = (event: { state: string, type?: string, done: number, total: number }) => {
+    if (event.type && event.type !== 'both' && event.type !== props.type_input) {
+        return
+    }
+    cascadeProgress.value = event
+}
+
 onMounted(() => {
-    if (window.Echo) {
+    if (window.Echo && props.masterAsset) {
         window.Echo.private(`grp.master-asset.${props.masterAsset}`)
-            .listen('.prices-cascade-progress', (event: { state: string, type?: string, done: number, total: number }) => {
-                if (event.type && event.type !== 'both' && event.type !== props.type_input) {
-                    return
-                }
-                cascadeProgress.value = event
-            })
+            .listen('.prices-cascade-progress', onCascadeProgress)
     }
 })
 
 onUnmounted(() => {
-    if (window.Echo) {
-        window.Echo.leave(`grp.master-asset.${props.masterAsset}`)
+    if (window.Echo && props.masterAsset) {
+        window.Echo.private(`grp.master-asset.${props.masterAsset}`)
+            .stopListening('.prices-cascade-progress', onCascadeProgress)
     }
 })
 
 onMounted(async () => {
+    if (!props.masterAsset) {
+        return
+    }
+
     try {
         const { data } = await axios.post(
             route('grp.json.master_products.get_price_rebels', {

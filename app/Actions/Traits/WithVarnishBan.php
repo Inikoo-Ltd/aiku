@@ -14,6 +14,41 @@ use Sentry;
 
 trait WithVarnishBan
 {
+    /**
+     * Sends many BANs in one concurrent round instead of sequentially, so a slow or
+     * down varnish costs one timeout for the whole batch rather than one per ban.
+     *
+     * @param array<int, array<string, mixed>> $banExpressions header sets, one per ban
+     */
+    protected function sendVarnishBansHttpPool(array $banExpressions): void
+    {
+        if (!config('iris.cache.varnish') || !$banExpressions) {
+            return;
+        }
+
+        $hosts = array_filter(config('iris.cache.varnish_hosts'));
+        if (!$hosts) {
+            return;
+        }
+
+        $responses = Http::pool(function ($pool) use ($hosts, $banExpressions) {
+            $requests = [];
+            foreach ($hosts as $varnishHost) {
+                foreach ($banExpressions as $banExpression) {
+                    $requests[] = $pool->timeout(3)->withHeaders($banExpression)->send('BAN', $varnishHost);
+                }
+            }
+
+            return $requests;
+        });
+
+        foreach ($responses as $response) {
+            if ($response instanceof \Throwable) {
+                Sentry::captureException($response);
+            }
+        }
+    }
+
     protected function sendVarnishBanHttp(array $banExpression, ?Command $command = null): void
     {
         if (!config('iris.cache.varnish')) {
