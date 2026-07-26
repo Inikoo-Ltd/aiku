@@ -13,6 +13,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Events\MasterShopPriceExchangeProgressEvent;
 use App\Models\Masters\MasterShop;
+use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -101,6 +102,42 @@ class RecalculateMasterShopMinorCurrencyPrices
         }
     }
 
+    public string $commandSignature = 'master_shop:recalculate_minor_prices {masterShop : master shop slug} {currency? : currency code, all minors if omitted}';
+
+    public function asCommand(Command $command): int
+    {
+        $masterShop = MasterShop::where('slug', $command->argument('masterShop'))->firstOrFail();
+
+        $currencyCodes = $command->argument('currency')
+            ? [strtoupper($command->argument('currency'))]
+            : collect($masterShop->price_exchanges ?? [])
+                ->filter(fn (array $exchangeData) => !($exchangeData['is_major'] ?? false))
+                ->keys()
+                ->all();
+
+        foreach ($currencyCodes as $currencyCode) {
+            $exchangeData = data_get($masterShop->price_exchanges, $currencyCode);
+            if (!$exchangeData || ($exchangeData['is_major'] ?? false)) {
+                $command->error("$currencyCode is not a minor currency of $masterShop->slug, skipped");
+                continue;
+            }
+            if (static::getProgress($masterShop, $currencyCode)) {
+                $command->warn("$currencyCode recalculation already running, skipped");
+                continue;
+            }
+
+            static::setProgress($masterShop, $currencyCode, [
+                'state' => 'queued',
+                'done'  => 0,
+                'total' => 0,
+            ]);
+            static::dispatch($masterShop, $currencyCode);
+            $command->info("$masterShop->slug $currencyCode: recalculation dispatched (1 {$exchangeData['major']} = {$exchangeData['exchange']} $currencyCode)");
+        }
+
+        return 0;
+    }
+
     public function handle(MasterShop $masterShop, string $currencyCode, ?int $userID = null): void
     {
         $exchangeData = data_get($masterShop->price_exchanges, $currencyCode);
@@ -152,7 +189,7 @@ class RecalculateMasterShopMinorCurrencyPrices
 
         $singles = $assetIDs->take(static::NUMBER_SINGLE_ASSET_CHUNKS)->chunk(1);
         $chunks  = $singles->concat(
-            $assetIDs->slice(static::NUMBER_SINGLE_ASSET_CHUNKS)->chunk(static::CHUNK_SIZE)
+            $assetIDs->slice(static::NUMBER_SINGLE_ASSET_CHUNKS)->chunk(static::CHUNK_SIZE)->all()
         );
 
         if ($chunks->isEmpty()) {
