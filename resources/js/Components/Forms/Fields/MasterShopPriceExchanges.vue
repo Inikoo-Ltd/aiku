@@ -191,10 +191,7 @@ const exchangeChangePct = (row: typeof rows[0]): { pct: number, estimated: boole
     let estimated = false
 
     if (original.is_major || !original.exchange) {
-        const real = affectedShops(row.code)?.real_exchanges?.[row.major || '']
-        if (!real) return null
-        ratio = Number(row.exchange) / real
-        estimated = true
+        return null
     } else {
         ratio = Number(row.exchange) / Number(original.exchange)
         if (original.major !== row.major) {
