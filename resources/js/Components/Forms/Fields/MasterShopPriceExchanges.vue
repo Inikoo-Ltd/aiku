@@ -119,20 +119,29 @@ const setMinor = (row: typeof rows[0]) => {
 const invalidReason = (row: typeof rows[0]) => {
     if (row.is_major) return null
     if (!row.major) return trans("Select a major currency to follow")
-    if (!(Number(row.exchange) > 0)) return trans("Cannot save: no exchange rate set")
+    if (parseExchange(row.exchange) === null) return trans("Cannot save: no valid exchange rate set")
     return null
 }
 
 const isDirty = (row: typeof rows[0]) =>
     JSON.stringify(rowPayload(row)) !== JSON.stringify(rowPayload({ ...JSON.parse(row.original), code: row.code }))
 
-const rowPayload = (row: { code: string, is_major: boolean, major?: string | null, exchange?: number | null }) =>
+const parseExchange = (raw: unknown): number | null => {
+    const str = String(raw ?? '').trim().replace(/\s/g, '')
+    if (!str) return null
+    const normalized = str.replace(',', '.')
+    if ((normalized.match(/\./g) || []).length > 1 || !/^\d*\.?\d+$/.test(normalized)) return null
+    const value = Number(normalized)
+    return value > 0 ? value : null
+}
+
+const rowPayload = (row: { code: string, is_major: boolean, major?: string | null, exchange?: number | string | null }) =>
     row.is_major
         ? { currency: row.code, is_major: true }
-        : { currency: row.code, is_major: false, major: row.major, exchange: Number(row.exchange) }
+        : { currency: row.code, is_major: false, major: row.major, exchange: parseExchange(row.exchange) }
 
 const rowIsValid = (row: typeof rows[0]) =>
-    row.is_major || (row.major && majorCodes.value.includes(row.major) && Number(row.exchange) > 0)
+    row.is_major || (row.major && majorCodes.value.includes(row.major) && parseExchange(row.exchange) !== null)
 
 const affectedShops = (code: string) => props.fieldData.currencies_shops?.[code] ?? null
 
@@ -143,8 +152,9 @@ const realExchange = (row: typeof rows[0]) =>
 
 const realExchangeDiffPct = (row: typeof rows[0]) => {
     const real = realExchange(row)
-    if (!real || !(Number(row.exchange) > 0)) return null
-    return (Number(row.exchange) / real - 1) * 100
+    const parsed = parseExchange(row.exchange)
+    if (!real || parsed === null) return null
+    return (parsed / real - 1) * 100
 }
 
 const confirmingRow = ref<typeof rows[0] | null>(null)
@@ -169,6 +179,12 @@ const majorChanged = (row: typeof rows[0]) => {
 
 const becomingMajor = (row: typeof rows[0]) => row.is_major && !(JSON.parse(row.original) as PriceExchange).is_major
 
+const modalSeverityPct = (row: /* typeof rows[0] */ any): number => {
+    const impact = exchangeChangePct(row)
+    const deviation = realExchangeDiffPct(row)
+    return Math.max(impact ? Math.abs(impact.pct) : 0, deviation !== null ? Math.abs(deviation) : 0)
+}
+
 const impactSeverityClass = (absPct: number) => {
     if (absPct < 2) return 'border-gray-300 bg-gray-50 text-gray-700'
     if (absPct < 4) return 'border-yellow-300 bg-yellow-50 text-yellow-700'
@@ -185,7 +201,7 @@ const impactSeverityTextClass = (absPct: number) => {
 
 const exchangeChangePct = (row: typeof rows[0]): { pct: number, estimated: boolean } | null => {
     const original: PriceExchange = JSON.parse(row.original)
-    if (row.is_major || !row.exchange) return null
+    if (row.is_major || parseExchange(row.exchange) === null) return null
 
     let ratio: number
     let estimated = false
@@ -193,7 +209,7 @@ const exchangeChangePct = (row: typeof rows[0]): { pct: number, estimated: boole
     if (original.is_major || !original.exchange) {
         return null
     } else {
-        ratio = Number(row.exchange) / Number(original.exchange)
+        ratio = (parseExchange(row.exchange) ?? 0) / Number(original.exchange)
         if (original.major !== row.major) {
             const realOld = affectedShops(row.code)?.real_exchanges?.[original.major || '']
             const realNew = affectedShops(row.code)?.real_exchanges?.[row.major || '']
@@ -290,9 +306,18 @@ const save = () => {
                         <span v-else class="text-gray-400">—</span>
                     </td>
                     <td class="py-2 pr-4">
-                        <input v-if="!row.is_major" v-model="row.exchange" type="number" min="0" step="any"
+                        <input v-if="!row.is_major" v-model="row.exchange" type="text" inputmode="decimal"
                             :disabled="isRunning(row.code)"
-                            class="rounded border-gray-300 text-sm py-1 w-28 tabular-nums disabled:opacity-50" />
+                            class="rounded border-gray-300 text-sm py-1 w-28 tabular-nums disabled:opacity-50"
+                            :class="{ 'border-red-400': row.exchange && parseExchange(row.exchange) === null }" />
+                        <div v-if="!row.is_major && String(row.exchange ?? '').includes(',') && parseExchange(row.exchange) !== null"
+                            class="text-[10px] text-gray-400 mt-0.5">
+                            = {{ parseExchange(row.exchange) }}
+                        </div>
+                        <div v-else-if="!row.is_major && row.exchange && parseExchange(row.exchange) === null"
+                            class="text-[10px] text-red-500 mt-0.5">
+                            {{ trans("Invalid number") }}
+                        </div>
                     </td>
                     <td class="py-2 text-right">
                         <button v-if="isRunning(row.code)" type="button"
@@ -451,7 +476,7 @@ const save = () => {
                         {{ trans(":currency will follow :major with exchange 1 :major = :exchange :currency.", {
                             currency: confirmingRow.code,
                             major: confirmingRow.major || '',
-                            exchange: String(confirmingRow.exchange)
+                            exchange: String(parseExchange(confirmingRow.exchange))
                         }) }}
                     </p>
                     <template v-if="!confirmingRow.is_major">
@@ -479,7 +504,11 @@ const save = () => {
                                 }})
                             </span>
                         </div>
-                        <div v-if="realExchange(confirmingRow)" class="rounded border border-gray-200 bg-gray-50 px-3 py-2 space-y-0.5">
+                        <div v-if="realExchange(confirmingRow)"
+                            class="rounded border px-3 py-2 space-y-0.5"
+                            :class="realExchangeDiffPct(confirmingRow) !== null
+                                ? impactSeverityClass(Math.abs(realExchangeDiffPct(confirmingRow)!))
+                                : 'border-gray-200 bg-gray-50'">
                             <div class="text-gray-600">
                                 {{ trans("Real exchange today: 1 :major = :rate :currency", {
                                     major: confirmingRow.major || '',
@@ -487,8 +516,7 @@ const save = () => {
                                     currency: confirmingRow.code
                                 }) }}
                             </div>
-                            <div v-if="realExchangeDiffPct(confirmingRow) !== null"
-                                :class="impactSeverityTextClass(Math.abs(realExchangeDiffPct(confirmingRow)!))">
+                            <div v-if="realExchangeDiffPct(confirmingRow) !== null" class="font-medium">
                                 {{ realExchangeDiffPct(confirmingRow)! >= 0
                                     ? trans("Your rate is :pct% ABOVE the real exchange", { pct: realExchangeDiffPct(confirmingRow)!.toFixed(1) })
                                     : trans("Your rate is :pct% BELOW the real exchange", { pct: Math.abs(realExchangeDiffPct(confirmingRow)!).toFixed(1) })
