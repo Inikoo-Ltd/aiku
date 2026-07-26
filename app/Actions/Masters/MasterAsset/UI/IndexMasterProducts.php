@@ -22,6 +22,7 @@ use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
+use App\Http\Resources\Masters\MasterProductsPricingResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
@@ -409,7 +410,7 @@ class IndexMasterProducts extends OrgAction
         $shopsData       = null;
         $modelNavigation = [];
 
-        $exception       = [MasterProductsTabsEnum::INDEX_ORDERING];
+        $exception       = [MasterProductsTabsEnum::INDEX_ORDERING, MasterProductsTabsEnum::PRICING];
 
         if ($this->parent instanceof Group) {
             $model      = '';
@@ -444,6 +445,7 @@ class IndexMasterProducts extends OrgAction
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $subNavigation   = $this->getMasterDepartmentSubNavigation($this->parent);
                 $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
+                $exception       = [MasterProductsTabsEnum::INDEX_ORDERING];
 
                 $title           = $this->parent->name;
                 $icon            = [
@@ -500,7 +502,7 @@ class IndexMasterProducts extends OrgAction
         }
 
 
-        return Inertia::render(
+        $response = Inertia::render(
             'Masters/MasterProducts',
             [
                 'breadcrumbs'             => $this->getBreadcrumbs(
@@ -530,6 +532,12 @@ class IndexMasterProducts extends OrgAction
                 ],
                 'variantSlugs'            => $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'masterProductCategoryId' => $this->parent->id,
+                'pricingMajorCurrencies'  => $this->parent instanceof MasterProductCategory
+                    ? collect($this->parent->masterShop->price_exchanges ?? [])
+                        ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
+                        ->keys()
+                        ->values()
+                    : null,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
                 'hide_bulk_edit'          => false,
@@ -549,11 +557,25 @@ class IndexMasterProducts extends OrgAction
                     fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))
                     : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))),
 
+                MasterProductsTabsEnum::PRICING->value => $this->parent instanceof MasterProductCategory
+                    ? ($this->tab == MasterProductsTabsEnum::PRICING->value ?
+                        fn () => MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($this->parent, MasterProductsTabsEnum::PRICING->value))
+                        : Inertia::optional(fn () => MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($this->parent, MasterProductsTabsEnum::PRICING->value))))
+                    : null,
+
             ]
         )
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX_ORDERING->value, sortByIndex: true))
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true));
+
+        if ($this->parent instanceof MasterProductCategory) {
+            $response->table(
+                IndexMasterProductsPricing::make()->tableStructure($this->parent, prefix: MasterProductsTabsEnum::PRICING->value)
+            );
+        }
+
+        return $response;
     }
 
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array

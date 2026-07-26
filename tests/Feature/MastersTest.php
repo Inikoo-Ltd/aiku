@@ -1369,6 +1369,53 @@ test('UI Index Master Products Bulk Edit', function (MasterShop $masterShop) {
     );
 })->depends('create master shop');
 
+test('UI Index Master Products in family has pricing tab', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PRTAB-DEP-'.uniqid(),
+        'name' => 'Pricing Tab Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PRTAB-FAM-'.uniqid(),
+        'name' => 'Pricing Tab Family',
+    ]);
+    StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PRTAB-AST-'.uniqid(),
+        'name'    => 'Pricing Tab Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 12.5,
+        'rrp'     => 30,
+        'stocks'  => [],
+    ]);
+
+    $response = get(route('grp.masters.master_shops.show.master_families.master_products.index', [
+        $masterFamily->masterShop->slug,
+        $masterFamily->slug,
+        'tab' => 'pricing',
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Masters/MasterProducts')
+            ->has('tabs.navigation.pricing')
+            ->has('pricing.data')
+            ->has(
+                'pricing.data.0',
+                fn (AssertableInertia $row) => $row
+                    ->has('code')
+                    ->has('name')
+                    ->has('price')
+                    ->has('rrp')
+                    ->has('currency_code')
+                    ->etc()
+            )
+            ->etc()
+    );
+});
+
 test('UI Edit Master Product with a trade unit not linked to a stock', function () {
     $masterShop       = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
