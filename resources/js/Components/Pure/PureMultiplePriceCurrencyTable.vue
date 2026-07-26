@@ -17,6 +17,7 @@ interface CurrencyRate {
     currency_id: number
     ratio_gbp: number | null
     ratio_eur: number | null
+    is_major?: boolean
 }
 
 interface CurrencyPrice {
@@ -55,8 +56,6 @@ const props = withDefaults(defineProps<{
     unitsPerOuter: 1,
     autoFromCost: false,
     autoMultiplier: 2.4,
-    visibleCurrencyCodes: () => ['GBP', 'EUR'],
-    alwaysIndependentCurrencyCodes: () => ['GBP'],
     selfCostCurrencyCodes: () => []
 })
 
@@ -99,18 +98,35 @@ const currencyList = computed(
         code: rate.currency,
         symbol: rate.currency_symbol,
         ratio_gbp: rate.ratio_gbp,
-        ratio_eur: rate.ratio_eur
+        ratio_eur: rate.ratio_eur,
+        is_major: rate.is_major ?? false
     }))
 )
 
-const baseCurrencyCode = ref('EUR')
+// Major currencies come from the master shop's own price_exchanges config
+// (see GetMasterShopCurrenciesRate). They're entered independently, never derived.
+const majorCurrencyCodes = computed(
+    () => currencyList.value.filter(currency => currency.is_major).map(currency => currency.code)
+)
 
-const isAlwaysIndependent = (code: string) => props.alwaysIndependentCurrencyCodes.includes(code)
+const baseCurrencyCode = computed(
+    () => majorCurrencyCodes.value[0] ?? currencyList.value[0]?.code
+)
+
+const effectiveAlwaysIndependentCurrencyCodes = computed(
+    () => props.alwaysIndependentCurrencyCodes ?? majorCurrencyCodes.value.filter(code => code !== baseCurrencyCode.value)
+)
+
+const effectiveVisibleCurrencyCodes = computed(
+    () => props.visibleCurrencyCodes ?? majorCurrencyCodes.value
+)
+
+const isAlwaysIndependent = (code: string) => effectiveAlwaysIndependentCurrencyCodes.value.includes(code)
 
 const isSelfCost = (code: string) => props.selfCostCurrencyCodes.includes(code)
 
 const visibleCurrencies = computed(
-    () => currencyList.value.filter(currency => props.visibleCurrencyCodes.includes(currency.code))
+    () => currencyList.value.filter(currency => effectiveVisibleCurrencyCodes.value.includes(currency.code))
 )
 
 const baseCurrency = computed(
@@ -121,8 +137,19 @@ const derivedVisibleCurrencies = computed(
     () => visibleCurrencies.value.filter(currency => currency.code !== baseCurrencyCode.value)
 )
 
+const minorCurrencies = computed(
+    () => currencyList.value.filter(currency => !effectiveVisibleCurrencyCodes.value.includes(currency.code))
+)
+
+// A minor currency the user has manually detached from the ratio is now their
+// responsibility to maintain, same as a major — always show its row instead
+// of burying it behind the collapsed "Minor currencies" toggle.
+const independentMinorCurrencies = computed(
+    () => minorCurrencies.value.filter(currency => prices.value[currency.code]?.independent)
+)
+
 const hiddenCurrencies = computed(
-    () => currencyList.value.filter(currency => !props.visibleCurrencyCodes.includes(currency.code))
+    () => minorCurrencies.value.filter(currency => !prices.value[currency.code]?.independent)
 )
 
 const buildPrices = (): Record<string, CurrencyPrice> => {
@@ -219,10 +246,6 @@ watch(() => props.costs, () => {
 
 const showHiddenCurrencies = ref(false)
 
-const filledHiddenCurrenciesCount = computed(
-    () => hiddenCurrencies.value.filter(currency => prices.value[currency.code]?.independent).length
-)
-
 type CurrencyListItem = {
     code: string
     symbol?: string
@@ -238,6 +261,7 @@ const rows = computed(() => {
     }
 
     derivedVisibleCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
+    independentMinorCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
 
     if (showHiddenCurrencies.value) {
         hiddenCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
@@ -319,14 +343,8 @@ const rows = computed(() => {
                                 fixed-width
                                 aria-hidden="true"
                             />
-                            {{ showHiddenCurrencies ? ctrans('Hide other currencies') : ctrans('Other currencies') }}
+                            {{ showHiddenCurrencies ? ctrans('Hide minor currencies') : ctrans('Minor currencies') }}
                             <span class="text-gray-400">({{ hiddenCurrencies.length }})</span>
-                            <span
-                                v-if="filledHiddenCurrenciesCount"
-                                class="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-600 ring-1 ring-green-200"
-                            >
-                                {{ filledHiddenCurrenciesCount }} {{ ctrans('independent') }}
-                            </span>
                         </button>
                     </td>
                 </tr>

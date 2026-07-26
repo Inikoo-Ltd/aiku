@@ -40,6 +40,7 @@ use App\Actions\Masters\MasterProductCategory\UpdateMasterFamilyMasterSubDepartm
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentsMasterDepartment;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\GetMasterShopTimeSeriesStats;
 use App\Actions\Masters\MasterShop\HydrateMasterShop;
 use App\Actions\Masters\MasterShop\HydrateMasterShopSales;
@@ -65,6 +66,7 @@ use App\Models\Masters\MasterShopOrderingStats;
 use App\Models\Masters\MasterShopStats;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Currency;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
@@ -1901,4 +1903,32 @@ test('update master shop price exchange recalculates minor prices', function () 
         'major'    => 'SEK',
         'exchange' => 0.09,
     ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from master shop price_exchanges', function () {
+    $masterShop = createFreshMasterShop();
+
+    $gbp = Currency::where('code', 'GBP')->firstOrFail();
+    $eur = Currency::where('code', 'EUR')->firstOrFail();
+
+    // Reflects a shop where GBP (not EUR) is the configured major currency.
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $this->shop->updateQuietly(['master_shop_id' => $masterShop->id, 'currency_id' => $gbp->id]);
+
+    $eurShop = \App\Actions\Catalogue\Shop\StoreShop::run(
+        $this->organisation,
+        array_merge(Shop::factory()->definition(), ['code' => 'EURSHOP'])
+    );
+    $eurShop->updateQuietly(['master_shop_id' => $masterShop->id, 'currency_id' => $eur->id]);
+
+    $rates = GetMasterShopCurrenciesRate::run($masterShop);
+
+    expect($rates['GBP']['is_major'])->toBeTrue()
+        ->and($rates['GBP']['ratio_eur'])->toBe(1.0)
+        ->and($rates['EUR']['is_major'])->toBeFalse()
+        ->and($rates['EUR']['ratio_eur'])->toBe(1.18);
 });

@@ -7,7 +7,6 @@
 
 namespace App\Actions\Masters\MasterShop;
 
-use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterShop;
@@ -25,17 +24,20 @@ class GetMasterShopCurrenciesRate
             ->distinct()
             ->get();
 
+        $priceExchanges = $masterShop->price_exchanges ?? [];
+        $currencies     = Currency::whereIn('id', $shopCurrencies)->get();
 
-        $baseEuro   = Currency::where('code', 'EUR')->first();// todo, this is wrong, this should come from a UI selected `seeder shop` stored in `master_shop`, if null you cuould use the first currency in the shop
-        $currencies = Currency::whereIn('id', $shopCurrencies)->get();
+        return $currencies->mapWithKeys(function (Currency $currency) use ($priceExchanges) {
+            $exchangeData = $priceExchanges[$currency->code] ?? null;
+            $isMajor      = (bool)($exchangeData['is_major'] ?? false);
 
-        return $currencies->mapWithKeys(function (Currency $currency) use ($baseEuro) {
             return [
                 $currency->code => [
-                    'ratio_eur'       => GetCurrencyExchange::run($baseEuro, $currency),
+                    'ratio_eur'       => $isMajor ? 1.0 : ($exchangeData['exchange'] ?? null),
                     'currency'        => $currency->code,
                     'currency_symbol' => $currency->symbol,
                     'currency_id'     => $currency->id,
+                    'is_major'        => $isMajor,
                 ]
             ];
         });

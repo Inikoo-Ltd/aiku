@@ -16,6 +16,7 @@ interface CurrencyRate {
     currency_id: number
     ratio_gbp: number | null
     ratio_eur: number | null
+    is_major?: boolean
 }
 
 interface CurrencyPrice {
@@ -31,16 +32,14 @@ interface PriceRebel {
     value: number | null
 }
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
     modelValue: Record<string, CurrencyPrice> | null
     currencies: Record<string, CurrencyRate>
     readonly?: boolean
     visibleCurrencyCodes?: string[]
     masterAsset: number | string
     type_input : string
-}>(), {
-    visibleCurrencyCodes: () => ['GBP', 'EUR']
-})
+}>()
 
 const emits = defineEmits<{
     (e: 'update:modelValue', value: Record<string, CurrencyPrice>): void
@@ -51,18 +50,33 @@ const currencyList = computed(
         code: rate.currency,
         symbol: rate.currency_symbol,
         ratio_gbp: rate.ratio_gbp,
-        ratio_eur: rate.ratio_eur
+        ratio_eur: rate.ratio_eur,
+        is_major: rate.is_major ?? false
     }))
 )
 
-const baseCurrencyCode = ref('EUR')
+// Major currencies come from the master shop's own price_exchanges config
+// (see GetMasterShopCurrenciesRate). They're entered independently, never derived.
+const majorCurrencyCodes = computed(
+    () => currencyList.value.filter(currency => currency.is_major).map(currency => currency.code)
+)
 
-const alwaysIndependentCurrencyCodes = ['GBP']
+const baseCurrencyCode = computed(
+    () => majorCurrencyCodes.value[0] ?? currencyList.value[0]?.code
+)
 
-const isAlwaysIndependent = (code: string) => alwaysIndependentCurrencyCodes.includes(code)
+const alwaysIndependentCurrencyCodes = computed(
+    () => majorCurrencyCodes.value.filter(code => code !== baseCurrencyCode.value)
+)
+
+const isAlwaysIndependent = (code: string) => alwaysIndependentCurrencyCodes.value.includes(code)
+
+const effectiveVisibleCurrencyCodes = computed(
+    () => props.visibleCurrencyCodes ?? majorCurrencyCodes.value
+)
 
 const visibleCurrencies = computed(
-    () => currencyList.value.filter(currency => props.visibleCurrencyCodes.includes(currency.code))
+    () => currencyList.value.filter(currency => effectiveVisibleCurrencyCodes.value.includes(currency.code))
 )
 
 const baseCurrency = computed(
@@ -73,8 +87,19 @@ const derivedVisibleCurrencies = computed(
     () => visibleCurrencies.value.filter(currency => currency.code !== baseCurrencyCode.value)
 )
 
+const minorCurrencies = computed(
+    () => currencyList.value.filter(currency => !effectiveVisibleCurrencyCodes.value.includes(currency.code))
+)
+
+// A minor currency the user has manually detached from the ratio is now their
+// responsibility to maintain, same as a major — show it as its own block
+// instead of burying it inside the collapsed "Minor currencies" list.
+const independentMinorCurrencies = computed(
+    () => minorCurrencies.value.filter(currency => prices.value[currency.code]?.independent)
+)
+
 const hiddenCurrencies = computed(
-    () => currencyList.value.filter(currency => !props.visibleCurrencyCodes.includes(currency.code))
+    () => minorCurrencies.value.filter(currency => !prices.value[currency.code]?.independent)
 )
 
 const buildPrices = (): Record<string, CurrencyPrice> => {
@@ -123,10 +148,6 @@ const onUpdate = () => {
 }
 
 watch(baseCurrencyCode, onUpdate)
-
-const filledHiddenCurrenciesCount = computed(
-    () => hiddenCurrencies.value.filter(currency => prices.value[currency.code]?.independent).length
-)
 
 const priceRebels = ref<Record<string, PriceRebel>>({})
 
@@ -223,6 +244,24 @@ const saveRebel = async (rebel: PriceRebel) => {
             />
         </div>
 
+        <div v-if="independentMinorCurrencies.length" class="relative py-1 pl-8">
+            <span class="absolute inset-y-0 left-3 w-px bg-gray-200" aria-hidden="true" />
+
+            <div
+                v-for="currency in independentMinorCurrencies"
+                :key="currency.code"
+                class="relative py-1"
+            >
+                <PriceCurrencyRow
+                    v-model="prices[currency.code]"
+                    :currency="currency"
+                    :readonly="readonly"
+                    :showIndependent="true"
+                    @change="onUpdate"
+                />
+            </div>
+        </div>
+
         <Disclosure v-if="hiddenCurrencies.length" as="div" v-slot="{ open }">
             <div class="relative py-1 pl-8">
                 <span class="absolute inset-y-0 left-3 w-px bg-gray-200" aria-hidden="true" />
@@ -236,14 +275,8 @@ const saveRebel = async (rebel: PriceRebel) => {
                         fixed-width
                         aria-hidden="true"
                     />
-                    {{ ctrans('Other currencies') }}
+                    {{ ctrans('Minor currencies') }}
                     <span class="text-gray-400">({{ hiddenCurrencies.length }})</span>
-                    <span
-                        v-if="filledHiddenCurrenciesCount"
-                        class="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-600 ring-1 ring-green-200"
-                    >
-                        {{ filledHiddenCurrenciesCount }} {{ ctrans('independent') }}
-                    </span>
                 </DisclosureButton>
             </div>
 

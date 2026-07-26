@@ -1,13 +1,13 @@
 <script setup lang='ts'>
 import { computed, ref, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronDown, faExclamationTriangle, faUnlink, faSave as falSave, faStarfighter } from '@fal'
+import { faChevronDown, faExclamationTriangle, faSave as falSave, faStarfighter } from '@fal'
 import { faSave as fadSave, faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import PriceCurrencyRow from '@/Components/Pure/Supports/PriceCurrencyRow.vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import axios from 'axios'
-library.add(faChevronDown, faExclamationTriangle, faUnlink, falSave, fadSave, faSpinnerThird, faStarfighter)
+library.add(faChevronDown, faExclamationTriangle, falSave, fadSave, faSpinnerThird, faStarfighter)
 
 interface CurrencyRate {
     currency: string
@@ -15,6 +15,7 @@ interface CurrencyRate {
     currency_id: number
     ratio_gbp: number | null
     ratio_eur: number | null
+    is_major?: boolean
 }
 
 interface CurrencyPrice {
@@ -30,16 +31,14 @@ interface PriceRebel {
     value: number | null
 }
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
     modelValue: Record<string, CurrencyPrice> | null
     currencies: Record<string, CurrencyRate>
     readonly?: boolean
     visibleCurrencyCodes?: string[]
     masterAsset: number | string
     type_input: string
-}>(), {
-    visibleCurrencyCodes: () => ['GBP', 'EUR']
-})
+}>()
 
 const emits = defineEmits<{
     (e: 'update:modelValue', value: Record<string, CurrencyPrice>): void
@@ -50,18 +49,33 @@ const currencyList = computed(
         code: rate.currency,
         symbol: rate.currency_symbol,
         ratio_gbp: rate.ratio_gbp,
-        ratio_eur: rate.ratio_eur
+        ratio_eur: rate.ratio_eur,
+        is_major: rate.is_major ?? false
     }))
 )
 
-const baseCurrencyCode = ref('EUR')
+// Major currencies come from the master shop's own price_exchanges config
+// (see GetMasterShopCurrenciesRate). They're entered independently, never derived.
+const majorCurrencyCodes = computed(
+    () => currencyList.value.filter(currency => currency.is_major).map(currency => currency.code)
+)
 
-const alwaysIndependentCurrencyCodes = ['GBP']
+const baseCurrencyCode = computed(
+    () => majorCurrencyCodes.value[0] ?? currencyList.value[0]?.code
+)
 
-const isAlwaysIndependent = (code: string) => alwaysIndependentCurrencyCodes.includes(code)
+const alwaysIndependentCurrencyCodes = computed(
+    () => majorCurrencyCodes.value.filter(code => code !== baseCurrencyCode.value)
+)
+
+const isAlwaysIndependent = (code: string) => alwaysIndependentCurrencyCodes.value.includes(code)
+
+const effectiveVisibleCurrencyCodes = computed(
+    () => props.visibleCurrencyCodes ?? majorCurrencyCodes.value
+)
 
 const visibleCurrencies = computed(
-    () => currencyList.value.filter(currency => props.visibleCurrencyCodes.includes(currency.code))
+    () => currencyList.value.filter(currency => effectiveVisibleCurrencyCodes.value.includes(currency.code))
 )
 
 const baseCurrency = computed(
@@ -72,8 +86,19 @@ const derivedVisibleCurrencies = computed(
     () => visibleCurrencies.value.filter(currency => currency.code !== baseCurrencyCode.value)
 )
 
+const minorCurrencies = computed(
+    () => currencyList.value.filter(currency => !effectiveVisibleCurrencyCodes.value.includes(currency.code))
+)
+
+// A minor currency the user has manually detached from the ratio is now their
+// responsibility to maintain, same as a major — show it as its own block
+// instead of burying it inside the collapsed "Minor currencies" list.
+const independentMinorCurrencies = computed(
+    () => minorCurrencies.value.filter(currency => prices.value[currency.code]?.independent)
+)
+
 const hiddenCurrencies = computed(
-    () => currencyList.value.filter(currency => !props.visibleCurrencyCodes.includes(currency.code))
+    () => minorCurrencies.value.filter(currency => !prices.value[currency.code]?.independent)
 )
 
 const buildPrices = (): Record<string, CurrencyPrice> => {
@@ -124,10 +149,6 @@ const onUpdate = () => {
 }
 
 watch(baseCurrencyCode, onUpdate)
-
-const filledHiddenCurrenciesCount = computed(
-    () => hiddenCurrencies.value.filter(currency => prices.value[currency.code]?.independent).length
-)
 
 const priceRebels = ref<Record<string, PriceRebel>>({})
 
@@ -222,21 +243,22 @@ const saveRebel = async (rebel: PriceRebel) => {
                 :disabled="!prices[currency.code].independent" required :showIndependent="!isAlwaysIndependent(currency.code)" @change="onUpdate" />
         </div>
 
+        <div v-if="independentMinorCurrencies.length" class="relative py-px pl-8">
+            <div v-for="currency in independentMinorCurrencies" :key="currency.code" class="py-px">
+                <PriceCurrencyRow v-model="prices[currency.code]" :currency="currency" :readonly="readonly"
+                    :showIndependent="true" @change="onUpdate" />
+            </div>
+        </div>
+
         <div class="mt-0.5 flex items-center gap-x-2 pl-8">
             <VDropdown v-if="hiddenCurrencies.length" :distance="6" placement="bottom-start">
                 <template #default="{ shown }">
                     <button type="button"
-                        v-tooltip="`${ctrans('Other currencies')} (${hiddenCurrencies.length})`"
+                        v-tooltip="`${ctrans('Minor currencies')} (${hiddenCurrencies.length})`"
                         class="flex items-center gap-x-1 rounded px-1 py-0.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700">
                         <FontAwesomeIcon :icon="faChevronDown" class="text-[0.6rem] transition-transform duration-200"
                             :class="{ '-rotate-90': !shown }" fixed-width aria-hidden="true" />
                         <span class="text-[0.7rem]">{{ hiddenCurrencies.length }}</span>
-
-                        <span v-if="filledHiddenCurrenciesCount"
-                            v-tooltip="`${filledHiddenCurrenciesCount} ${ctrans('independent')}`"
-                            class="text-green-600">
-                            <FontAwesomeIcon :icon="faUnlink" class="text-[0.6rem]" fixed-width aria-hidden="true" />
-                        </span>
                     </button>
                 </template>
 
