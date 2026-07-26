@@ -54,12 +54,19 @@ class MasterAssetHydrateEffectiveCost
 
                 $perOrg[$orgStock->organisation_id]['cost'] = ($perOrg[$orgStock->organisation_id]['cost'] ?? 0)
                     + $unitCost * $tradeUnitQuantity;
-                // ponytail: weight from summed sku availability, exact sellable-outers per
-                // multi trade unit bundle not worth the maths here
-                $perOrg[$orgStock->organisation_id]['weight'] = ($perOrg[$orgStock->organisation_id]['weight'] ?? 0)
-                    + max(0, (float) $orgStock->quantity_available);
+                $perOrg[$orgStock->organisation_id]['availability'][$tradeUnit->id]
+                    = ($perOrg[$orgStock->organisation_id]['availability'][$tradeUnit->id] ?? 0)
+                    + max(0, (float) $orgStock->quantity_available) / ($tradeUnitQuantity ?: 1);
             }
         }
+
+        // An org's weight is the sellable outers it can actually assemble: for a multi
+        // trade unit bundle that is bounded by the scarcest component, not the sum of
+        // all components' stock (which double-counts bundles vs single-unit assets)
+        foreach ($perOrg as &$orgData) {
+            $orgData['weight'] = min($orgData['availability']);
+        }
+        unset($orgData);
 
         if (!$perOrg) {
             if ($masterAsset->effective_cost !== null) {
