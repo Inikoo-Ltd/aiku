@@ -22,9 +22,6 @@ import { router } from '@inertiajs/vue3'
 import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue'
 import PureInput from '../Pure/PureInput.vue'
 import { RouteParams } from 'ziggy-js'
-import PureMultiplePriceCurrencyUsePopover from '../Pure/PureMultiplePriceCurrencyUsePopover.vue'
-import PureAvgOrgCost from '../Pure/PureAvgOrgCost.vue'
-import PureProfitMargin from '../Pure/PureProfitMargin.vue'
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 
 library.add(faSearch, faColumns)
@@ -35,9 +32,7 @@ library.add(faSearch, faColumns)
 //     ProductService.getProducts().then((data) => (products.value = data))
 // })
 
-const props = defineProps<{
-    currencies? : any
-}>()
+defineProps<{}>()
 
 const layout = inject('layout', layoutStructure)
 
@@ -136,7 +131,7 @@ const rowClass = (xxx: any) => {
 
 
 // Section: multiselect columns selector
-const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'master_prices', 'master_rrps', 'units', 'unit', 'gross_weight', 'family_id', 'avg_org_cost', 'profit_margin', 'rrp_margin' ])
+const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'units', 'unit', 'gross_weight', 'family_id' ])
 const groupedColumnList = ref([
     {
         label: 'General',
@@ -145,16 +140,6 @@ const groupedColumnList = ref([
             { label: 'Image', value: 'image' },
             { label: 'Description', value: 'description' },
             { label: 'Is For Sale?', value: 'is_for_sale' }
-        ]
-    },
-    {
-        label: 'Pricing',
-        items: [
-            { label: 'Avg org cost', value: 'avg_org_cost' },
-            { label: 'Profit margin', value: 'profit_margin' },
-            { label: 'RRP margin', value: 'rrp_margin' },
-            { label: 'Outer Price', value: 'master_prices' },
-            { label: 'RRP/Unit', value: 'master_rrps' },
         ]
     },
     {
@@ -187,7 +172,7 @@ watch(selectedColumns, (e) => {  // To avoid 'name' to be unselected
 
 // Section: Submit data
 const isLoadingSave = ref(false)
-const editableFields = ['id', 'name', 'description', 'is_for_sale', 'unit', 'gross_weight', 'master_family_id', 'master_prices', 'master_rrps']
+const editableFields = ['id', 'name', 'description', 'is_for_sale', 'unit', 'gross_weight', 'master_family_id']
 const onSave = async () => {
     const payload = productsList.value.map((product: any) => pick(product, editableFields))
     try {
@@ -433,60 +418,6 @@ const tradeUnitRoute = (tradeUnit) => {
                             fluid
                             :disabled="true"
                         /> -->
-                    </template>
-                </Column>
-
-                  <!-- Column: Profit avg_org_cost -->
-                 <Column v-if="selectedColumns.includes('avg_org_cost')" field="avg_org_cost" header="Avg org cost" style="min-width: 12rem" >
-                    <template #body="slotProps">
-                        <PureAvgOrgCost
-                            :avgOrgCost="slotProps.data.avg_org_cost"
-                            :orgData="slotProps.data.org_data"
-                            :currencies="currencies"
-                        />
-                    </template>
-                </Column>
-
-
-
-                <!-- Column: Price -->
-                <Column v-if="selectedColumns.includes('master_prices')" field="price" header="Outer Price" sortable style="min-width: 18rem">
-                    <template #body="slotProps">
-                        <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_prices" :masterAsset="slotProps.data.id" :type_input="'price'" :currencies="currencies" />
-                    </template>
-                </Column>
-
-
-                  <!-- Column: Profit margin -->
-                <Column v-if="selectedColumns.includes('profit_margin')" field="profit_margin" header="Profit margin" style="min-width: 12rem" >
-                    <template #body="slotProps">
-                        <PureProfitMargin
-                            :avgOrgCost="slotProps.data.avg_org_cost"
-                            :prices="slotProps.data.master_prices"
-                            :currencies="currencies"
-                        />
-                    </template>
-                </Column>
-
-
-
-
-                <!-- Column: RRP -->
-                <Column v-if="selectedColumns.includes('master_rrps')" field="rrp" header="RRP/Unit" sortable style="min-width: 18rem" >
-                    <template #body="slotProps">
-                         <PureMultiplePriceCurrencyUsePopover  v-model="slotProps.data.master_rrps" :masterAsset="slotProps.data.id" :type_input="'rrp'" :currencies="currencies" />
-                    </template>
-                </Column>
-
-                <!-- Column: RRP margin -->
-                <Column v-if="selectedColumns.includes('rrp_margin')" field="rrp_margin" header="RRP margin" style="min-width: 12rem" >
-                    <template #body="slotProps">
-                        <PureProfitMargin
-                            :avgOrgCost="slotProps.data.avg_org_cost"
-                            :prices="slotProps.data.master_rrps"
-                            :costPrices="slotProps.data.master_prices"
-                            :currencies="currencies"
-                        />
                     </template>
                 </Column>
 

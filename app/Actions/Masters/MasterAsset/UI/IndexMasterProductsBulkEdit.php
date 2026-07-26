@@ -11,7 +11,6 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -45,8 +44,6 @@ class IndexMasterProductsBulkEdit extends OrgAction
     {
         $title = __('Bulk edit Master Products');
 
-        $currenciesRate = GetMasterShopCurrenciesRate::run($parent);
-
         return Inertia::render(
             'Masters/MasterProductsBulkEdit',
             [
@@ -55,7 +52,6 @@ class IndexMasterProductsBulkEdit extends OrgAction
                     'model'         => __('Master Products'),
                     'title'         => __('Bulk Edit'),
                 ],
-                'currencies'        => $currenciesRate,
             ]
         );
     }

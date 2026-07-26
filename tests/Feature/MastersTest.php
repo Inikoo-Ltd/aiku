@@ -1364,7 +1364,6 @@ test('UI Index Master Products Bulk Edit', function (MasterShop $masterShop) {
     $response->assertInertia(
         fn (AssertableInertia $page) => $page
             ->component('Masters/MasterProductsBulkEdit')
-            ->has('currencies')
             ->etc()
     );
 })->depends('create master shop');
