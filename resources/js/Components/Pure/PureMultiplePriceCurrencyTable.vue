@@ -55,8 +55,7 @@ const props = withDefaults(defineProps<{
     showCost: false,
     unitsPerOuter: 1,
     autoFromCost: false,
-    autoMultiplier: 2.4,
-    selfCostCurrencyCodes: () => []
+    autoMultiplier: 2.4
 })
 
 const emits = defineEmits<{
@@ -136,7 +135,11 @@ const effectiveVisibleCurrencyCodes = computed(
 
 const isAlwaysIndependent = (code: string) => effectiveAlwaysIndependentCurrencyCodes.value.includes(code)
 
-const isSelfCost = (code: string) => props.selfCostCurrencyCodes.includes(code)
+const effectiveSelfCostCurrencyCodes = computed(
+    () => props.selfCostCurrencyCodes ?? majorCurrencyCodes.value.filter(code => code !== baseCurrencyCode.value)
+)
+
+const isSelfCost = (code: string) => effectiveSelfCostCurrencyCodes.value.includes(code)
 
 const visibleCurrencies = computed(
     () => currencyList.value.filter(currency => effectiveVisibleCurrencyCodes.value.includes(currency.code))

@@ -62,7 +62,9 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
 
         $openShopsQuery = $masterShop->shops()->where('state', ShopStateEnum::OPEN);
 
-        $baseCurrency = Currency::where('code', 'EUR')->first();
+        $priceExchanges = $masterShop->price_exchanges ?? [];
+        $baseCurrency   = Currency::where('code', $this->getBaseCurrencyCode($priceExchanges))->first()
+            ?? Currency::where('code', 'EUR')->first();
 
         $openOrganisations = Organisation::whereIn('id', $openShopsQuery->pluck('organisation_id'))->get();
 
@@ -91,15 +93,20 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
         }
 
         $currencies     = Currency::whereIn('id', $openShopsQuery->pluck('currency_id'))->get()->keyBy('id');
-        $currenciesRate = $currencies->mapWithKeys(function ($currency) use ($baseCurrency) {
-            $ratioEuro = GetCurrencyExchange::run($baseCurrency, $currency);
+        $currenciesRate = $currencies->mapWithKeys(function ($currency) use ($baseCurrency, $priceExchanges) {
+            $ratioToBase  = GetCurrencyExchange::run($baseCurrency, $currency);
+            $exchangeData = $priceExchanges[$currency->code] ?? null;
+            $isMajor      = (bool)($exchangeData['is_major'] ?? false);
 
             return [
                 $currency->code => [
-                    'ratio_eur'       => $ratioEuro,
+                    'ratio_eur'       => $ratioToBase,
                     'currency'        => $currency->code,
                     'currency_symbol' => $currency->symbol,
                     'currency_id'     => $currency->id,
+                    'fraction_digits' => $currency->fraction_digits,
+                    'is_major'        => $isMajor,
+                    'major'           => $isMajor ? null : ($exchangeData['major'] ?? null),
                 ]
             ];
         });
@@ -159,6 +166,31 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
         data_set($finalData, 'avg_org_cost', $avgCost);
 
         return $finalData;
+    }
+
+    public function getBaseCurrencyCode(array $priceExchanges): string
+    {
+        $followCounts = [];
+        foreach ($priceExchanges as $exchangeData) {
+            if (!empty($exchangeData['major'])) {
+                $followCounts[$exchangeData['major']] = ($followCounts[$exchangeData['major']] ?? 0) + 1;
+            }
+        }
+        arsort($followCounts);
+
+        foreach (array_keys($followCounts) as $code) {
+            if ($priceExchanges[$code]['is_major'] ?? false) {
+                return $code;
+            }
+        }
+
+        foreach ($priceExchanges as $code => $exchangeData) {
+            if ($exchangeData['is_major'] ?? false) {
+                return $code;
+            }
+        }
+
+        return 'EUR';
     }
 
     public function getOrgStockData(Organisation $organisation, array $tradeUnitsDatum): array
