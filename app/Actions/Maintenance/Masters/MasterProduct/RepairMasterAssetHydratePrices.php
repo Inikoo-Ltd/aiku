@@ -16,33 +16,38 @@ class RepairMasterAssetHydratePrices
     use AsAction;
 
     /**
-     * @param Collection<int, Shop> $baseShops           one shop per currency, base currency first
-     * @param array<int, array<int, float|null>>  $baseCurrenciesExchange  [fromShopId][toShopId] => rate
+     * Hydrates master_prices/master_rrps from child products, following the master shop's
+     * price_exchanges config: major currencies are sourced from a real product in a shop of that
+     * currency (live-rate fallback between majors only), minor currencies are always derived from
+     * their configured major using the official exchange rate — never live market rates.
+     *
+     * @param Collection<string, Shop> $majorShops currency code => shop, first entry is the base major
+     * @param array<string, array<string, float|null>> $majorExchanges [fromCode][toCode] => live rate (majors only)
      */
-    public function handle(MasterAsset $masterAsset, Collection $baseShops, array $baseCurrenciesExchange, bool $dryRun = false, ?Command $command = null): void
+    public function handle(MasterAsset $masterAsset, Collection $majorShops, array $majorExchanges, array $priceExchanges, bool $dryRun = false, ?Command $command = null): void
     {
         $baseProducts = $masterAsset
             ->products
-            ->whereIn('shop_id', $baseShops->pluck('id'))
+            ->whereIn('shop_id', $majorShops->pluck('id'))
             ->sortBy(fn ($product) => [$product->state == ProductStateEnum::DISCONTINUED, $product->id])
             ->groupBy('shop_id')
             ->map->first();
 
         if ($baseProducts->isEmpty()) {
-            $command?->info("Master Asset: [{$masterAsset->code}] Skipped, no base product");
+            $command?->info("Master Asset: [{$masterAsset->code}] Skipped, no product in any major currency shop");
 
             return;
         }
 
-        $sourceShop    = $baseShops->first(fn ($shop) => $baseProducts->has($shop->id));
-        $sourceProduct = $baseProducts->get($sourceShop->id);
+        $sourceCurrencyCode = $majorShops->keys()->first(fn (string $code) => $baseProducts->has($majorShops[$code]->id));
+        $sourceProduct      = $baseProducts->get($majorShops[$sourceCurrencyCode]->id);
 
         $prices = [];
         $rrps   = [];
 
-        foreach ($baseShops as $shop) {
+        foreach ($majorShops as $currencyCode => $shop) {
             $product = $baseProducts->get($shop->id);
-            $rate    = $product ? 1 : $baseCurrenciesExchange[$sourceShop->id][$shop->id] ?? null;
+            $rate    = $product ? 1 : $majorExchanges[$sourceCurrencyCode][$currencyCode] ?? null;
 
             if (!$rate) {
                 continue;
@@ -50,18 +55,31 @@ class RepairMasterAssetHydratePrices
 
             $price = formatPrice($rate, ($product ?? $sourceProduct)->price);
             if ($price > 0) {
-                $prices[$shop->currency->code] = [
-                    'value'       => $price,
-                    'independent' => false
-                ];
+                $prices[$currencyCode] = ['value' => $price, 'independent' => false];
             }
 
             $rrp = formatPrice($rate, ($product ?? $sourceProduct)->rrp);
             if ($rrp > 0) {
-                $rrps[$shop->currency->code] = [
-                    'value'       => $rrp,
-                    'independent' => false
-                ];
+                $rrps[$currencyCode] = ['value' => $rrp, 'independent' => false];
+            }
+        }
+
+        foreach ($priceExchanges as $currencyCode => $exchangeData) {
+            if ($exchangeData['is_major'] ?? false) {
+                continue;
+            }
+
+            $majorCode = $exchangeData['major'] ?? null;
+            $exchange  = $exchangeData['exchange'] ?? null;
+            if (!$majorCode || !$exchange) {
+                continue;
+            }
+
+            if ($majorPrice = data_get($prices, "$majorCode.value")) {
+                $prices[$currencyCode] = ['value' => formatPrice($majorPrice, $exchange), 'independent' => false];
+            }
+            if ($majorRRP = data_get($rrps, "$majorCode.value")) {
+                $rrps[$currencyCode] = ['value' => formatPrice($majorRRP, $exchange), 'independent' => false];
             }
         }
 
@@ -70,19 +88,21 @@ class RepairMasterAssetHydratePrices
             'master_rrps'   => $rrps
         ];
 
-        if ($eurPrice = data_get($prices, 'EUR.value')) {
-            $modelData['price'] = $eurPrice;
+        $baseCurrencyCode = $majorShops->keys()->first();
+
+        if ($price = data_get($prices, 'EUR.value') ?? data_get($prices, "$baseCurrencyCode.value")) {
+            $modelData['price'] = $price;
         }
 
-        if ($eurRRP = data_get($rrps, 'EUR.value')) {
-            $modelData['rrp'] = $eurRRP;
+        if ($rrp = data_get($rrps, 'EUR.value') ?? data_get($rrps, "$baseCurrencyCode.value")) {
+            $modelData['rrp'] = $rrp;
         }
 
         if (!$dryRun) {
             $masterAsset->updateQuietly($modelData);
         }
 
-        $expected       = $baseShops->count();
+        $expected       = count($priceExchanges);
         $additionalText = '';
         if (count($prices) < $expected) {
             $additionalText .= '| PRICE NOT FULLY HYDRATED ('.count($prices)."/$expected)";
@@ -106,44 +126,63 @@ class RepairMasterAssetHydratePrices
             $command->warn('DRY RUN: no changes will be written');
         }
 
-        $baseShops = Shop::where('master_shop_id', $masterShop->id)
-            ->with('currency')
-            ->orderBy('id')
-            ->get()
-            ->unique('currency_id')
-            ->sortBy(fn ($shop) => $shop->currency->code != 'EUR')
-            ->values();
+        $priceExchanges = $masterShop->price_exchanges ?? [];
+        $majorCodes     = collect($priceExchanges)
+            ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
+            ->keys();
 
-        if ($baseShops->isEmpty()) {
-            $command->error("Master shop [{$masterShop->slug}] has no shops");
+        if ($majorCodes->isEmpty()) {
+            $command->error("Master shop [{$masterShop->slug}] has no major currencies in price_exchanges, configure them first");
 
             return 1;
         }
 
-        $command->info('Preparing currency exchange (Eager Loading): '.$baseShops->pluck('currency.code')->join(', '));
+        $shopsByCurrency = Shop::where('master_shop_id', $masterShop->id)
+            ->with('currency')
+            ->orderBy('id')
+            ->get()
+            ->unique('currency_id')
+            ->keyBy(fn (Shop $shop) => $shop->currency->code);
 
-        $baseCurrenciesExchange = [];
-        foreach ($baseShops as $from) {
-            foreach ($baseShops as $to) {
-                if ($from->id === $to->id) {
+        $unconfigured = $shopsByCurrency->keys()->diff(array_keys($priceExchanges));
+        if ($unconfigured->isNotEmpty()) {
+            $command->warn('Shop currencies not in price_exchanges, skipped: '.$unconfigured->join(', '));
+        }
+
+        $majorShops = $majorCodes
+            ->mapWithKeys(fn (string $code) => [$code => $shopsByCurrency->get($code)])
+            ->filter();
+
+        if ($majorShops->isEmpty()) {
+            $command->error("Master shop [{$masterShop->slug}] has no shops in any major currency");
+
+            return 1;
+        }
+
+        $command->info('Majors (from price_exchanges): '.$majorShops->keys()->join(', ').' | Minors: '.collect($priceExchanges)->filter(fn ($exchangeData) => !($exchangeData['is_major'] ?? false))->keys()->join(', '));
+
+        $majorExchanges = [];
+        foreach ($majorShops as $fromCode => $fromShop) {
+            foreach ($majorShops as $toCode => $toShop) {
+                if ($fromCode === $toCode) {
                     continue;
                 }
 
-                $rate = GetCurrencyExchange::run($from->currency, $to->currency);
+                $rate = GetCurrencyExchange::run($fromShop->currency, $toShop->currency);
                 if (!$rate) {
-                    $command->warn("No exchange rate {$from->currency->code} → {$to->currency->code}, those prices will be left out");
+                    $command->warn("No live exchange rate $fromCode → $toCode, those major prices will be left out when no product exists");
                 }
 
-                $baseCurrenciesExchange[$from->id][$to->id] = $rate;
+                $majorExchanges[$fromCode][$toCode] = $rate;
             }
         }
 
         MasterAsset::where('master_shop_id', $masterShop->id)
             ->with('products')
             ->orderBy('id')
-            ->chunkById(250, function ($chunks) use ($baseShops, $baseCurrenciesExchange, $dryRun, $command) {
+            ->chunkById(250, function ($chunks) use ($majorShops, $majorExchanges, $priceExchanges, $dryRun, $command) {
                 foreach ($chunks as $masterAsset) {
-                    $this->handle($masterAsset, $baseShops, $baseCurrenciesExchange, $dryRun, $command);
+                    $this->handle($masterAsset, $majorShops, $majorExchanges, $priceExchanges, $dryRun, $command);
                 }
             });
 
