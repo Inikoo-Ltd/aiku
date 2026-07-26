@@ -202,7 +202,6 @@ class IndexMasterProducts extends OrgAction
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
-                includeLY: true,
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -213,12 +212,6 @@ class IndexMasterProducts extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
-
-        // comment label sku
-        // else {
-        //     $queryBuilder
-        //        ->with('tradeUnits.stocks');
-        // }
 
         $queryBuilder->select($selects);
 
@@ -359,11 +352,13 @@ class IndexMasterProducts extends OrgAction
                 $table->column('master_family_code', __('Family'), sortable: !$sortByIndex);
             }
 
+
+
             if ($sales) {
                 $table
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: !$sortByIndex, searchable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: !$sortByIndex, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: !$sortByIndex, align: 'right')
+                    ->column(key: 'dropshippers', label: __('Customer Listings'), sortable: !$sortByIndex, align: 'right')
+                    ->column(key: 'listings', label: __('Total Listings'), sortable: !$sortByIndex, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: !$sortByIndex, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: !$sortByIndex, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: !$sortByIndex, searchable: true, align: 'right')
@@ -379,10 +374,16 @@ class IndexMasterProducts extends OrgAction
 
                 $table
                     ->column(key: 'name', label: __('Name'), sortable: !$sortByIndex)
-                    ->column(key: 'unit', label: __('Unit'), sortable: !$sortByIndex)
-                    ->column(key: 'master_department_code', label: __('M. Department'), sortable: !$sortByIndex)
-                    ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), sortable: !$sortByIndex)
-                    ->column(key: 'master_family_code', label: __('M. Family'), sortable: !$sortByIndex)
+                    ->column(key: 'unit', label: __('Unit'), sortable: !$sortByIndex);
+
+                if (! $parent instanceof MasterProductCategory) {
+                    $table
+                        ->column(key: 'master_department_code', label: __('M. Department'), sortable: !$sortByIndex)
+                        ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), sortable: !$sortByIndex)
+                        ->column(key: 'master_family_code', label: __('M. Family'), sortable: !$sortByIndex);
+                }
+
+                $table
                     ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), sortable: !$sortByIndex)
                     ->column(key: 'actions', label: __('Actions'), sortable: false)
                     ->defaultSort('code');
@@ -407,7 +408,7 @@ class IndexMasterProducts extends OrgAction
         $familyId        = null;
         $shopsData       = null;
         $modelNavigation = [];
-        $hideBulkEdit    = false;
+
         $exception       = [MasterProductsTabsEnum::INDEX_ORDERING];
 
         if ($this->parent instanceof Group) {
@@ -440,7 +441,6 @@ class IndexMasterProducts extends OrgAction
             $shopsData     = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         } elseif ($this->parent instanceof MasterProductCategory) {
             $masterShop = $this->parent->masterShop;
-            // $hideBulkEdit = true;
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $subNavigation   = $this->getMasterDepartmentSubNavigation($this->parent);
                 $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
@@ -532,7 +532,7 @@ class IndexMasterProducts extends OrgAction
                 'masterProductCategoryId' => $this->parent->id,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
-                'hide_bulk_edit'          => $hideBulkEdit,
+                'hide_bulk_edit'          => false,
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => MasterProductsTabsEnum::navigationExcept($exception),
@@ -595,21 +595,7 @@ class IndexMasterProducts extends OrgAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index'   =>
-            array_merge(
-                ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters,
-                    ],
-                    $suffix
-                ),
-            ),
-            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
-            'grp.masters.master_shops.show.master_families.master_products.index',
-            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
-            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index', 'grp.masters.master_shops.show.master_families.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
                 ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
