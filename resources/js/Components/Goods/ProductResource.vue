@@ -240,7 +240,7 @@ const getIcon = (type?: string) => {
                         <div>
                             <dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
                             <ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-                                <li v-for="ingredient in data?.specifications?.ingredients" :key="ingredient.id">
+                                <li v-for="ingredient in properties.ingredients" :key="ingredient.id">
                                     {{ ingredient }}
                                 </li>
                             </ul>

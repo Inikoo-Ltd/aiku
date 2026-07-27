@@ -220,6 +220,8 @@ const SaveOrder = () => {
 }
 
 watch(() => currentTab.value, (tab) => {
+    selectedProductsId.value = {}
+
     if (tab === 'index' || tab === 'index_ordering' || tab === 'sales') {
         localData.value = (props as any)[tab] || props.data
     } else {
@@ -265,6 +267,7 @@ watch(() => currentTab.value, (tab) => {
                     :disabled="!compSelectedProductsId.length"
                     type="primary"
                     icon="fal fa-pencil"
+                    :key="currentTab"
                 />
                 <Button
                     @click="() => pricingBulkField = 'master_rrps'"
@@ -272,6 +275,7 @@ watch(() => currentTab.value, (tab) => {
                     :disabled="!compSelectedProductsId.length"
                     type="primary"
                     icon="fal fa-pencil"
+                    :key="currentTab"
                 />
             </template>
             <Button
@@ -282,6 +286,7 @@ watch(() => currentTab.value, (tab) => {
                 type="primary"
                 icon="fal fa-pencil"
                 :loading="isLoadingVisit"
+                :key="currentTab"
             />
             <div v-if="routes?.dataList">
                 <Button

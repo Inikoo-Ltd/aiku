@@ -24,6 +24,7 @@ import { notify } from "@kyvg/vue3-notification"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
+import type { OrderingLevel } from "@/Composables/useOrderingLevel"
 import { capitalize } from "@/Composables/capitalize"
 
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -218,6 +219,10 @@ const costBlocks = computed(() => {
 })
 
 const currentTab = ref(props.tabs.current)
+
+const currentLevel = ref<OrderingLevel>("cartons")
+
+const isOrderingLevelTab = computed(() => ["items", "products"].includes(currentTab.value))
 
 const isModalProductListOpen = ref(false)
 const currentAction = ref<any>(null)
@@ -798,12 +803,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	<div class="pb-12">
 		<component
 			:is="component"
+			:key="currentTab"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:state="data.data.state"
 			:isOrgAgent="isOrgAgent"
 			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
+			v-bind="isOrderingLevelTab ? {
+				level: currentLevel,
+				'onUpdate:level': (value: OrderingLevel) => currentLevel = value,
+			} : {}"
 			@update:tab="handleTabUpdate"
 		/>
 	</div>
@@ -816,6 +826,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:current="currentTab"
 		v-model:currentTab="currentTab"
 		:typeModel="'purchase_order'"
+		v-model:level="currentLevel"
 	/>
 
 	<ConfirmDialog group="purchase-order">

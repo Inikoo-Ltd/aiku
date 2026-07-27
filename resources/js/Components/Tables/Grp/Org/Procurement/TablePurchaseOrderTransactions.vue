@@ -14,6 +14,7 @@ import Table from '@/Components/Table/Table.vue'
 import Image from '@common/Components/Image.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { useLocaleStore } from '@/Stores/locale'
+import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox } from '@fal'
@@ -45,31 +46,18 @@ function supplierRoute(item: any): string {
     ])
 }
 
-const locale = useLocaleStore()
+const currentLevel = defineModel<OrderingLevel>('level', { default: 'cartons' })
 
-type Level = 'cartons' | 'skos' | 'units'
+const locale = useLocaleStore()
 
 const isInProcess = computed(() => props.state === 'in_process')
 
-const levels = computed(() => [
-    { key: 'cartons' as Level, icon: 'fal fa-pallet', tab: trans('Ordering Cartons'), description: trans('Carton description'), quantity: trans('Cartons'), cost: trans('Carton cost') },
-    { key: 'skos' as Level, icon: 'fal fa-box', tab: trans('Ordering SKOs'), description: trans('SKO description'), quantity: trans('SKOs'), cost: trans('SKO cost') },
-    { key: 'units' as Level, icon: 'fal fa-stop-circle', tab: trans('Ordering Units'), description: trans('Unit description'), quantity: trans('Units'), cost: trans('Unit cost') },
-])
-
-const currentLevel = ref<Level>('cartons')
+const levels = computed(() => getOrderingLevels())
 
 const level = computed(() => levels.value.find(l => l.key === currentLevel.value) ?? levels.value[0])
 
 function unitsPerLevel(item: any) {
-    if (currentLevel.value === 'cartons') {
-        return Number(item.units_per_carton) || 1
-    }
-    if (currentLevel.value === 'skos') {
-        return Number(item.units_per_pack) || 1
-    }
-
-    return 1
+    return unitsPerOrderingLevel(item, currentLevel.value)
 }
 
 function skosPerCarton(item: any) {
@@ -354,7 +342,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(quantity)="{ item }">
-            <div v-if="isInProcess" class="flex justify-end items-center gap-2">
+            <div v-if="isInProcess" class="flex justify-end items-center">
                 <NumberWithButtonSave
                     :key="`${item.id}-${currentLevel}`"
                     :modelValue="quantityAtLevel(item)"
@@ -362,6 +350,12 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     :isLoading="savingId === item.id"
                     @onSave="(form) => onSaveQuantity(item, form)"
                 />
+            </div>
+            <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
+        </template>
+
+        <template #cell(actions)="{ item }">
+            <div class="flex justify-end items-center">
                 <button
                     v-if="item.deleteRoute"
                     v-tooltip="trans('Remove')"
@@ -378,7 +372,6 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     />
                 </button>
             </div>
-            <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
         </template>
 
         <template #cell(weight)="{ item }">
@@ -407,15 +400,19 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             {{ amount(item) }}
         </template>
 
+        <template #cell(state_icon)="{ item }">
+            <FontAwesomeIcon
+                v-if="item.state_icon"
+                v-tooltip="item.state_icon.tooltip"
+                :icon="item.state_icon.icon"
+                :class="item.state_icon.class"
+                aria-hidden="true"
+                fixed-width
+            />
+        </template>
+
         <template #cell(state)="{ item }">
             <div class="flex items-center gap-1.5">
-                <FontAwesomeIcon
-                    v-tooltip="item.state_icon?.tooltip"
-                    :icon="item.state_icon?.icon"
-                    :class="item.state_icon?.class"
-                    aria-hidden="true"
-                    fixed-width
-                />
                 <span>{{ item.state_label }}</span>
                 <button
                     v-if="state === 'submitted' && item.cancelRoute"
