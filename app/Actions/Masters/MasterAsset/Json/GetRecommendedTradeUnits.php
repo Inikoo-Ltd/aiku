@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -22,11 +22,11 @@ use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetRecommendedTradeUnits extends GrpAction
+class GetRecommendedTradeUnits extends OrgAction
 {
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisationFromGroup($masterProductCategory->group, $request);
 
         return $this->handle(parent: $masterProductCategory);
     }
@@ -34,7 +34,7 @@ class GetRecommendedTradeUnits extends GrpAction
     public function inExternal(Product $product, ActionRequest $request): LengthAwarePaginator
     {
         $parent = $product;
-        $this->initialisation($parent->group, $request);
+        $this->initialisationFromGroup($parent->group, $request);
 
         return $this->handle(parent: $parent);
     }

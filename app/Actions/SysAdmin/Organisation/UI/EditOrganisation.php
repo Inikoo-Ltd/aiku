@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Organisation\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
@@ -17,7 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditOrganisation extends GrpAction
+class EditOrganisation extends OrgAction
 {
     public function handle(Organisation $organisation): Organisation
     {
@@ -31,7 +31,7 @@ class EditOrganisation extends GrpAction
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($organisation);
     }

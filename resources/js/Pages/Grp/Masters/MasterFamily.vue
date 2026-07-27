@@ -82,7 +82,6 @@ const props = defineProps<{
     mini_breadcrumbs?: any[]
     variants?:object
     isPerfectFamily: boolean
-    price_rrp_warning_ratio : number
     mismatch_detected?: boolean
     related_products? : object
     related_product_category? : object
@@ -209,7 +208,6 @@ const showDialog = ref(false);
         :shopsData="shopsData"
         :masterProductCategoryId="masterProductCategoryId"
         :is_dropship="route().params['masterShop'] == 'ds'"
-        :price_rrp_warning_ratio="price_rrp_warning_ratio"
     />
 
 

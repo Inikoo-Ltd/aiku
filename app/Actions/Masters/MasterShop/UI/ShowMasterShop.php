@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterShop\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterShop\WithMasterShopNavigation;
 use App\Actions\Masters\UI\ShowMastersDashboard;
@@ -18,16 +18,17 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterShop extends GrpAction
+class ShowMasterShop extends OrgAction
 {
+    use WithMastersAuthorisation;
     use WithMasterCatalogueSubNavigation;
     use WithMasterShopNavigation;
-
 
     public function handle(MasterShop $masterShop): MasterShop
     {
@@ -37,7 +38,7 @@ class ShowMasterShop extends GrpAction
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterShop
     {
         $group = group();
-        $this->initialisation($group, $request)->withTab(MasterShopTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterShopTabsEnum::values());
 
         return $this->handle($masterShop);
     }
@@ -66,7 +67,7 @@ class ShowMasterShop extends GrpAction
                         'icon'  => 'fal fa-store-alt'
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
+                    'actions'       => $this->canEdit ? [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -76,7 +77,7 @@ class ShowMasterShop extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
-                    ],
+                    ] : [],
                 ],
                 'tabs'     => [
                     'current'    => $this->tab,

@@ -48,8 +48,7 @@ class ProcessMasterAssetTimeSeriesRecords implements ShouldBeUnique
             return;
         }
 
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $timeSeries = MasterAssetTimeSeries::where('master_asset_id', $masterAsset->id)->where('frequency', $frequency->value)->first();
 

@@ -7,14 +7,14 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateMarketingIngredients;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Models\Goods\Ingredient;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
-class SyncIngredientsToTradeUnit extends GrpAction
+class SyncIngredientsToTradeUnit extends OrgAction
 {
     use WithGoodsEditAuthorisation;
 
@@ -58,7 +58,7 @@ class SyncIngredientsToTradeUnit extends GrpAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($tradeUnit->group, $modelData);
+        $this->initialisationFromGroup($tradeUnit->group, $modelData);
 
         return $this->handle($tradeUnit, $this->validatedData);
     }

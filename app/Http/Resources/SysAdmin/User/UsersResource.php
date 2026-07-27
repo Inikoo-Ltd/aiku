@@ -62,6 +62,9 @@ class UsersResource extends JsonResource
             'contact_name'              => $this->contact_name,
             'has_2fa'                   => $this->has_2fa,
             'is_two_factor_required'    => $this->is_two_factor_required,
+            'can_use_mcp'               => (bool) $this->can_use_mcp,
+            'has_mcp_queries'           => (bool) $this->has_mcp_queries,
+            'last_active'               => $this->last_active,
         ];
     }
 }

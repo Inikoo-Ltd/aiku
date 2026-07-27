@@ -88,6 +88,11 @@ class EditUser extends OrgAction
                                 "label"       => __("Can login"),
                                 "value"       => $user->status,
                             ],
+                            "can_use_mcp" => [
+                                "type"        => "toggle",
+                                "label"       => __("Can connect AI assistant"),
+                                "value"       => $user->can_use_mcp,
+                            ],
                         ],
                     ],
                     [

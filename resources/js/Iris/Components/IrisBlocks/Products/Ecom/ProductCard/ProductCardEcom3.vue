@@ -26,6 +26,7 @@ import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
 const layout = inject('layout', retinaLayoutStructure)
+const isPriceVisible = computed(() => Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price))
 
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
@@ -87,6 +88,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
 const onClickVariant = (product: ProductResource, event: Event) => {
     emits('onVariantClick', product.variant, event)
 
+}
+
+const goToLogin = () => {
+    window.location.href = urlLoginWithRedirect()
 }
 
 
@@ -297,6 +302,13 @@ defineExpose({
                     </div>
                 </div>
 
+                <!-- Section: Login (overlay at the bottom of the image) -->
+                <div v-if="!layout?.iris?.is_logged_in && !hideLogin" class="absolute inset-x-0 bottom-2 z-10 px-3">
+                    <Button :label="trans('Login or Register for Wholesale Prices')"
+                        class="w-full rounded-none text-[9px] md:text-[10px] py-1 leading-tight" full
+                        :injectStyle="buttonStyleLogin" @click.prevent.stop="goToLogin" />
+                </div>
+
             </component>
 
             <div class="mt-2">
@@ -316,7 +328,7 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <section v-if="layout?.iris?.is_logged_in">
+            <section v-if="isPriceVisible">
                   <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket/>
             </section>
             <section v-else class="text-xs leading-tight space-y-1">
@@ -328,11 +340,7 @@ defineExpose({
                      {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
                     </span>
 
-                </div> 
-                <a  v-if="!hideLogin" :href="urlLoginWithRedirect()" class="block w-full">
-                    <Button :label="trans('Login or Register for Wholesale Prices')"
-                        class="w-full rounded-none text-xs py-2" full :injectStyle="buttonStyleLogin" />
-                </a>
+                </div>
 
             </section>
         </div>

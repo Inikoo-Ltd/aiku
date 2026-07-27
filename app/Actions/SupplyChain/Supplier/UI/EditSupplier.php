@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
@@ -19,8 +20,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditSupplier extends GrpAction
+class EditSupplier extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     // todo: authorisation
 
     public function handle(Supplier $supplier): Supplier
@@ -32,7 +34,7 @@ class EditSupplier extends GrpAction
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
         $group = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
         return $this->handle($supplier);
     }
 
@@ -41,7 +43,7 @@ class EditSupplier extends GrpAction
     public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
     {
         $group = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
         return $this->handle($supplier);
     }
 

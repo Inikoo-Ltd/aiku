@@ -25,7 +25,7 @@ export const blueprint = [
                 key: ['fields', 'text_transition_1'],
                 type: "multi_editorhtml",
                 props_data: {
-                    toogle: [
+                    toggle: [
                         'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', "fontFamily",
                         'alignLeft', 'alignRight', "link",
                         'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'

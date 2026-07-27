@@ -8,11 +8,11 @@
 
 namespace App\Actions\Helpers\History;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Helpers\History;
 
-class UpdateHistory extends GrpAction
+class UpdateHistory extends OrgAction
 {
     use WithActionUpdate;
 
@@ -38,7 +38,7 @@ class UpdateHistory extends GrpAction
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($history->group, $modelData);
+        $this->initialisationFromGroup($history->group, $modelData);
 
         return $this->handle($history, $this->validatedData);
     }

@@ -130,8 +130,8 @@ class IndexUsers extends OrgAction
 
         return $queryBuilder
             ->defaultSort('username')
-            ->select(['users.username', 'users.email', 'users.slug', 'users.contact_name', 'users.image_id', 'users.status', 'user_stats.*', DB::raw("NULLIF(users.google2fa_secret, '') IS NOT NULL AS has_2fa"), 'users.is_two_factor_required'])
-            ->allowedSorts(['username', 'email', 'contact_name', 'has_2fa', 'is_two_factor_required'])
+            ->select(['users.username', 'users.email', 'users.slug', 'users.contact_name', 'users.image_id', 'users.status', 'user_stats.*', DB::raw("NULLIF(users.google2fa_secret, '') IS NOT NULL AS has_2fa"), 'users.is_two_factor_required', 'users.can_use_mcp', DB::raw('EXISTS(SELECT 1 FROM mcp_requests WHERE mcp_requests.user_id = users.id) AS has_mcp_queries'), DB::raw('(SELECT max(date) FROM user_requests WHERE user_requests.user_id = users.id) AS last_active')])
+            ->allowedSorts(['username', 'email', 'contact_name', 'has_2fa', 'is_two_factor_required', 'can_use_mcp', 'last_active'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -164,8 +164,10 @@ class IndexUsers extends OrgAction
                 ->column(key: 'image', label: ['data' => ['fal', 'fa-user-circle'], 'type' => 'icon', 'tooltip' => __('Avatar')], type: 'avatar')
                 ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'last_active', label: __('Last active'), sortable: true, align: 'right')
                 ->column(key: 'has_2fa', label: ['data' => ['far', 'fa-shield-alt'], 'type' => 'icon', 'tooltip' => __('Has 2FA Enabled')], type: 'icon', sortable: true)
                 ->column(key: 'is_two_factor_required', label: ['data' => ['far', 'fa-user-shield'], 'type' => 'icon', 'tooltip' => __('Is Required to have 2FA')], type: 'icon', sortable: true)
+                ->column(key: 'can_use_mcp', label: ['data' => ['fal', 'fa-robot'], 'type' => 'icon', 'tooltip' => __('AI assistant')], type: 'icon', sortable: true)
                 ->defaultSort('username');
         };
     }

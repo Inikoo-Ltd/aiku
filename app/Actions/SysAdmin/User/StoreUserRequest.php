@@ -8,13 +8,13 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUserRequests;
 use App\Models\Analytics\UserRequest;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreUserRequest extends GrpAction
+class StoreUserRequest extends OrgAction
 {
     public function handle(User $user, array $modelData): UserRequest
     {
@@ -55,7 +55,7 @@ class StoreUserRequest extends GrpAction
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
-        $this->initialisation($user->group, $modelData);
+        $this->initialisationFromGroup($user->group, $modelData);
 
         return $this->handle($user, $this->validatedData);
     }

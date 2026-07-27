@@ -8,14 +8,14 @@
 
 namespace App\Helpers;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterAsset\Slack\NewMasterAssetCreated;
 use App\Actions\Masters\MasterProductCategory\Slack\NewMasterProductCategoryCreated;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Notifications\AnonymousNotifiable;
 
-class SendSlackNotification extends GrpAction
+class SendSlackNotification extends OrgAction
 {
     public function handle(MasterAsset|MasterProductCategory $parent): void
     {

@@ -187,6 +187,21 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'price_change'         => [
+            'connection'      => 'redis',
+            'queue'           => ['price_change_control', 'price_change'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 10,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 3,
+            'timeout'         => 3600,
+            'retry_after'     => 2,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'common'               => [
             'connection'      => 'redis',
             'queue'           => ['common'],
@@ -522,6 +537,9 @@ return [
             'normal'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 6),
             ],
+            'price_change'         => [
+                'maxProcesses' => env('HORIZON_PRICE_CHANGE_WORKERS', 10),
+            ],
             'common'               => [
                 'maxProcesses' => env('HORIZON_COMMON_WORKERS', 2),
             ],
@@ -655,6 +673,9 @@ return [
         'local'      => [
             'normal'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 3),
+            ],
+            'price_change'         => [
+                'maxProcesses' => env('HORIZON_PRICE_CHANGE_WORKERS', 10),
             ],
             'common'               => [
                 'maxProcesses' => env('HORIZON_COMMON_WORKERS', 1),

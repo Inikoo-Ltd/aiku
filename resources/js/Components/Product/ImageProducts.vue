@@ -107,7 +107,7 @@ const enableLoop = computed(() => totalSlides.value > 1)
           class=" w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
           @click="openImageModal(index)">
           <Image :src="image.source" :alt="image.alt" class="w-full h-full flex items-center justify-center"
-            :style="{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
+            :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
         </div>
       </SwiperSlide>
 
@@ -132,7 +132,7 @@ const enableLoop = computed(() => totalSlides.value > 1)
         <div class="aspect-square w-full">
           <Image :src="image.source" :alt="image.alt || `Thumbnail ${index + 1}`"
             class="w-full h-full flex items-center justify-center"
-            :style="{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
+            :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />
         </div>
       </SwiperSlide>
 

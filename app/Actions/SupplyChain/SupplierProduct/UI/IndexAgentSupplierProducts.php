@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
 use App\Actions\Inventory\UI\ShowAgentInventoryDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Http\Resources\SupplyChain\SupplierProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -29,6 +30,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexAgentSupplierProducts extends OrgAction
 {
+    use WithSupplyChainAuthorisation;
     protected function getElementGroups(Agent $agent): array
     {
         return [

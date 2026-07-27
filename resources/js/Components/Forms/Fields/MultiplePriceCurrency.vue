@@ -15,6 +15,7 @@ defineProps<{
     form: any
     fieldName: string
     options?: any
+    submit?: () => void
     fieldData?: {
         type: string
         readonly?: boolean
@@ -37,6 +38,8 @@ defineProps<{
             :readonly="fieldData?.readonly"
             :visibleCurrencyCodes="fieldData?.visibleCurrencyCodes"
             v-model="form[fieldName]"
+            :form="form"
+            :submitForm="submit"
             v-bind="fieldData"
         />
         <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">

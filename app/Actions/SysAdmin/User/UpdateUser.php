@@ -75,6 +75,7 @@ class UpdateUser extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'can_use_mcp'    => ['sometimes', 'boolean'],
             'username'       => [
                 'sometimes',
                 'required',

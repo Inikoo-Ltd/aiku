@@ -9,13 +9,13 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DeleteImageFromCollection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteImageFromMasterCollection extends GrpAction
+class DeleteImageFromMasterCollection extends OrgAction
 {
     public function handle(MasterCollection $masterCollection, Media $media, bool $updateDependants = false): MasterCollection
     {
@@ -59,7 +59,7 @@ class DeleteImageFromMasterCollection extends GrpAction
 
     public function asController(MasterCollection $masterCollection, Media $media, ActionRequest $request): void
     {
-        $this->initialisation($masterCollection->group, $request);
+        $this->initialisationFromGroup($masterCollection->group, $request);
 
         $this->handle($masterCollection, $media, true);
     }

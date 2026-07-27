@@ -291,9 +291,6 @@ Route::name("master_shops")->prefix('master-shops')
                 });
             });
 
-            // Route::prefix('/master-products-bulk-edit')->as('.bulk-edit')->group(function () {
-
-            // })
             Route::get('/master-products-bulk-edit', IndexMasterProductsBulkEdit::class)->name('.bulk-edit');
             Route::post('/master-products-bulk-edit/selectedProducts/', GetSelectedMasterProductDetails::class)->name('.bulk-edit.selected_list');
             Route::post('/master-products-bulk-edit/update', UpdateMasterProductsBulkEdit::class)->name('.bulk-edit.update');

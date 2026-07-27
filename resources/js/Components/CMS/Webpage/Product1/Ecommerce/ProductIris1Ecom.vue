@@ -130,6 +130,9 @@ const emits = defineEmits<{
 const product = ref(props.product)
 const layout = inject("layout", {})
 const webpage_id = inject("webpage_id", {})
+const isPriceVisible = computed(() =>
+    Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price)
+)
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 
@@ -323,7 +326,7 @@ onMounted(async () => {
                 <!-- PRICE -->
 
                 <ProductPrices2
-                    v-if="layout?.iris?.is_logged_in"
+                    v-if="isPriceVisible"
                     :field-value="fieldValue"
                     :product="product"
                     :key="product.code"
@@ -551,15 +554,16 @@ onMounted(async () => {
         </div>
 
         <!-- PRICE / OFFERS / PROFIT -->
-        <div v-if="layout?.iris?.is_logged_in" class="mt-3 space-y-2">
+        <div class="mt-3 space-y-2">
 
-            <ProductPrices2
+            <ProductPrices2   
+                v-if="isPriceVisible"             
                 :field-value="fieldValue"
                 :product="product"
                 :key="product.code"
             />
 
-            <div class="flex justify-between items-start">
+            <div v-if="layout?.iris?.is_logged_in"  class="flex justify-between items-start">
 
                 <!-- OFFERS -->
                 <div v-if="product.offers_data?.number_offers > 0" class="flex flex-col gap-1 offers">

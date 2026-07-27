@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Group\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
 use App\Models\SysAdmin\Group;
@@ -19,7 +19,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
-class EditGroupSettings extends GrpAction
+class EditGroupSettings extends OrgAction
 {
     use WithSysAdminAuthorization;
 
@@ -32,7 +32,7 @@ class EditGroupSettings extends GrpAction
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         return $this->handle($this->group);
     }
 

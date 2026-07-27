@@ -202,7 +202,7 @@ export default {
                 },
                 {
                     name: ["common", "centralStage", "style", "textShadow"],
-                    type: "toogle",
+                    type: "toggle",
                     label: trans("Text Shadow"),
                     value: ["common", "centralStage", "style", "TextShadow"],
                 },

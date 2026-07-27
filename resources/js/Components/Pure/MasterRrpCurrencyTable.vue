@@ -37,7 +37,6 @@ defineEmits<{
         edit-on="unit"
         margin-label="Margin"
         :always-independent-currency-codes="[]"
-        :self-cost-currency-codes="['GBP']"
         auto-from-cost
         :auto-multiplier="2.4"
         @update:model-value="$emit('update:modelValue', $event)"

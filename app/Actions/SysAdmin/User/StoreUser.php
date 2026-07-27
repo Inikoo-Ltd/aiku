@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
@@ -24,7 +24,7 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreUser extends GrpAction
+class StoreUser extends OrgAction
 {
     private Employee|Guest $parent;
 
@@ -163,7 +163,7 @@ class StoreUser extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->parent         = $parent;
 
-        $this->initialisation($parent->group, $modelData);
+        $this->initialisationFromGroup($parent->group, $modelData);
 
         return $this->handle($parent, $this->validatedData);
     }

@@ -12,6 +12,8 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -57,6 +59,14 @@ Broadcast::channel('magento.{amazonUserId}.upload-product.{portfolioId}', functi
 
 Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
+});
+
+Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {
+    return MasterShop::where('id', $masterShopId)->value('group_id') === $user->group_id;
+});
+
+Broadcast::channel('grp.master-asset.{masterAssetId}', function (User $user, int $masterAssetId) {
+    return MasterAsset::where('id', $masterAssetId)->value('group_id') === $user->group_id;
 });
 
 Broadcast::channel('grp.download-progress.{userID}', function (User $user, int $userID) {

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
 use App\Models\Masters\MasterProductCategory;
@@ -19,11 +19,11 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetMasterDepartmentAndMasterSubDepartments extends GrpAction
+class GetMasterDepartmentAndMasterSubDepartments extends OrgAction
 {
     public function asController(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterShop);
     }

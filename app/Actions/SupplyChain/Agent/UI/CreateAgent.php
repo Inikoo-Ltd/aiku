@@ -8,14 +8,16 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\SupplyChain\HasSupplyChainFields;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateAgent extends GrpAction
+class CreateAgent extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use HasSupplyChainFields;
 
     public function htmlResponse(ActionRequest $request): Response
@@ -49,15 +51,10 @@ class CreateAgent extends GrpAction
         );
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo('supply-chain.edit');
-    }
-
 
     public function asController(ActionRequest $request): ActionRequest
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $request;
     }

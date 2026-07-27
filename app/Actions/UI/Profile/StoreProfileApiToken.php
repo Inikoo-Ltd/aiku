@@ -24,6 +24,11 @@ class StoreProfileApiToken extends OrgAction
         ];
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return (bool) $request->user()->can_use_mcp;
+    }
+
     public function rules(): array
     {
         return [

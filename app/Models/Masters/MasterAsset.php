@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -81,7 +82,6 @@ use App\Models\Traits\HasSearch;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property numeric|null $cost_price_ratio
  * @property int|null $front_image_id
  * @property int|null $34_image_id
  * @property int|null $left_image_id
@@ -234,7 +234,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
         'master_prices'           => 'array',
-        'master_rrps'           => 'array',
+        'master_rrps'             => 'array',
     ];
 
     protected $attributes = [
@@ -291,12 +291,12 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->slugsShouldBeNoLongerThan(128);
     }
 
-    public function getPricefromCurrency(Currency $currency): float
+    public function getPriceFromCurrency(Currency $currency): float
     {
         return data_get($this->master_prices, "{$currency->code}.value", 0);
     }
 
-    public function getRRPfromCurrency(Currency $currency): float
+    public function getRrpFromCurrency(Currency $currency): float
     {
         return data_get($this->master_rrps, "{$currency->code}.value", 0);
     }
@@ -449,6 +449,15 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return Tag::whereHas('tradeUnits', function ($query) {
             $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
         })->get();
+    }
+
+    public function getStockPackedInByTradeUnit(): array
+    {
+        return DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->whereIn('trade_unit_id', $this->tradeUnits->pluck('id'))
+            ->pluck('quantity', 'trade_unit_id')
+            ->toArray();
     }
 
     public function getBrand(): ?Brand
