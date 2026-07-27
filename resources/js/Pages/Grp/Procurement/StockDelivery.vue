@@ -236,6 +236,7 @@ const confirm = useConfirm()
 const deleteLoading = ref(false)
 const dispatchLoading = ref(false)
 const undispatchLoading = ref(false)
+const receiveLoading = ref(false)
 
 const confirmDispatchStockDelivery = (action: any) => {
 	confirm.require({
@@ -275,6 +276,29 @@ const confirmUndispatchStockDelivery = (action: any) => {
 					notify({
 						title: trans("Something went wrong"),
 						text: trans("Failed to unmark stock delivery as dispatched"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmReceiveStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to mark this stock delivery as received? This can not be reverted."),
+		header: trans("Receive Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Mark as Received"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { receiveLoading.value = true },
+				onFinish: () => { receiveLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to receive stock delivery"),
 						type: "error",
 					})
 				},
@@ -338,6 +362,17 @@ const confirmDeleteStockDelivery = (action: any) => {
 				:tooltip="action.tooltip"
 				:loading="undispatchLoading"
 				@click="() => confirmUndispatchStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-receive-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="receiveLoading"
+				@click="() => confirmReceiveStockDelivery(action)"
 			/>
 		</template>
 

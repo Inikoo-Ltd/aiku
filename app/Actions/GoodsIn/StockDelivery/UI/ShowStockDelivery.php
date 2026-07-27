@@ -195,6 +195,21 @@ class ShowStockDelivery extends OrgAction
                     ],
                 ],
                 [
+                    'label'   => __('Mark as Received'),
+                    'tooltip' => __('Mark Stock Delivery as Received'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-check',
+                    'key'     => 'receive_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.receive',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+                [
                     'label'   => __('Delete'),
                     'tooltip' => __('Delete Stock Delivery'),
                     'type'    => 'button',
@@ -221,6 +236,21 @@ class ShowStockDelivery extends OrgAction
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.stock-delivery.undispatch',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+                [
+                    'label'   => __('Mark as Received'),
+                    'tooltip' => __('Mark Stock Delivery as Received'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-check',
+                    'key'     => 'receive_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.receive',
                         'parameters' => [
                             'stockDelivery' => $stockDelivery->id,
                         ],
