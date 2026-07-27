@@ -41,6 +41,10 @@ const getIcon = (type: string) => {
     }
 }
 
+const countriesOfOrigin = computed(() =>
+    (props.product?.specifications?.countries_of_origin || []).filter(country => country?.code)
+)
+
 const groupedAttachments = computed(() => {
     const allFiles = [
         ...(props.product.attachments || []),
@@ -99,10 +103,10 @@ const groupedAttachments = computed(() => {
         </div>
 
         <!-- Section: countries_of_origin -->
-        <div v-if="product?.specifications?.countries_of_origin?.length" class="grid grid-cols-2 border-b border-gray-300">
+        <div v-if="countriesOfOrigin.length" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Origin Country') }}</div>
             <div class="p-2 flex flex-col gap-1">
-                <div v-for="country in product.specifications.countries_of_origin" :key="country.code"
+                <div v-for="country in countriesOfOrigin" :key="country.code"
                     class="flex items-center gap-2">
                     <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name" :title="country.name"
                         class="h-4 w-auto inline-block" />
