@@ -15,6 +15,8 @@ use Laravel\Mcp\Server\Tool;
 
 abstract class AikuOrganisationTool extends Tool
 {
+    use WithMcpPermissions;
+
     abstract protected function permission(): OrganisationPermissionsEnum;
 
     protected function authorisedOrganisation(Request $request): ?Organisation
@@ -27,6 +29,6 @@ abstract class AikuOrganisationTool extends Tool
 
         $permissionName = OrganisationPermissionsEnum::getPermissionName($this->permission()->value, $organisation);
 
-        return $request->user()->authTo($permissionName) ? $organisation : null;
+        return $this->userCan($request, $permissionName) ? $organisation : null;
     }
 }

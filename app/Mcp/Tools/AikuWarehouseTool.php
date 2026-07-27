@@ -15,6 +15,8 @@ use Laravel\Mcp\Server\Tool;
 
 abstract class AikuWarehouseTool extends Tool
 {
+    use WithMcpPermissions;
+
     abstract protected function permission(): WarehousePermissionsEnum;
 
     protected function authorisedWarehouse(Request $request): ?Warehouse
@@ -27,6 +29,6 @@ abstract class AikuWarehouseTool extends Tool
 
         $permissionName = WarehousePermissionsEnum::getPermissionName($this->permission()->value, $warehouse);
 
-        return $request->user()->authTo($permissionName) ? $warehouse : null;
+        return $this->userCan($request, $permissionName) ? $warehouse : null;
     }
 }
