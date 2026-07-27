@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from "@/Components/Table/Table.vue"
 import { routeType } from "@/types/route"
 import { remove as loRemove } from "lodash-es"
@@ -116,6 +117,12 @@ function openOnlineModal(event: MouseEvent, item: any) {
     })
 }
 
+
+function collectionHref(collection: Collection) {
+    const bucket = route().current()?.match(/\.collections\.(active|inactive|in_process)\.index$/)?.[1]
+
+    return collectionRoute(collection) + bucketQuery(bucket)
+}
 
 function collectionRoute(collection: Collection) {
     const currentRoute = route().current()
@@ -368,7 +375,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
                 </Link>
 
-                <Link :href="collectionRoute(collection) as string" class="primaryLink">
+                <Link :href="collectionHref(collection) as string" class="primaryLink">
                     {{ collection["code"] }}
                 </Link>
 

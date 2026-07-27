@@ -20,6 +20,7 @@ use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -541,6 +542,41 @@ test('UI show collection', function () {
             )
             ->has('tabs');
     });
+});
+
+test('UI show collection navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeCollection = function (string $code, CollectionStateEnum $state) {
+        $collection = StoreCollection::make()->action($this->shop, [
+            'code'        => $code,
+            'name'        => $code.' name',
+            'description' => $code.' description',
+        ]);
+        $collection->update(['state' => $state]);
+
+        return $collection->refresh();
+    };
+
+    $first    = $makeCollection('NAVCOLA', CollectionStateEnum::ACTIVE);
+    $inactive = $makeCollection('NAVCOLB', CollectionStateEnum::INACTIVE);
+    $middle   = $makeCollection('NAVCOLC', CollectionStateEnum::ACTIVE);
+    $last     = $makeCollection('NAVCOLD', CollectionStateEnum::ACTIVE);
+
+    $showRoute = fn ($collection) => route('grp.org.shops.show.catalogue.collections.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $collection->slug
+    ]);
+
+    get($showRoute($middle).'?bucket=active')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->code.' - '.$first->name)
+            ->where('navigation.next.label', $last->code.' - '.$last->name)
+            ->etc()
+    );
+
+    expect($inactive->state)->toBe(CollectionStateEnum::INACTIVE);
 });
 
 test('UI edit collection', function () {
