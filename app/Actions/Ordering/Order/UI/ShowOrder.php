@@ -27,10 +27,13 @@ use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -55,7 +58,11 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\SysAdmin\Organisation;
+use BackedEnum;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -798,24 +805,135 @@ class ShowOrder extends OrgAction
 
     public function getPrevious(Order $order, ActionRequest $request): ?array
     {
-        $previous = Order::where('reference', '<', $order->reference)->when(true, function ($query) use ($order, $request) {
-            if ($request->route()->getName() == 'shops.show.orders.show') {
-                $query->where('orders.shop_id', $order->shop_id);
-            }
-        })->orderBy('reference', 'desc')->first();
+        if ($bucket = $this->backlogBucket($request)) {
+            $previous = $this->getBucketNeighbour($order, $request, $bucket, forward: false);
+        } else {
+            $previous = Order::where('reference', '<', $order->reference)->when(true, function ($query) use ($order, $request) {
+                if ($request->route()->getName() == 'shops.show.orders.show') {
+                    $query->where('orders.shop_id', $order->shop_id);
+                }
+            })->orderBy('reference', 'desc')->first();
+        }
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(Order $order, ActionRequest $request): ?array
     {
-        $next = Order::where('reference', '>', $order->reference)->when(true, function ($query) use ($order, $request) {
-            if ($request->route()->getName() == 'shops.show.orders.show') {
-                $query->where('orders.shop_id', $order->shop_id);
-            }
-        })->orderBy('reference')->first();
+        if ($bucket = $this->backlogBucket($request)) {
+            $next = $this->getBucketNeighbour($order, $request, $bucket, forward: true);
+        } else {
+            $next = Order::where('reference', '>', $order->reference)->when(true, function ($query) use ($order, $request) {
+                if ($request->route()->getName() == 'shops.show.orders.show') {
+                    $query->where('orders.shop_id', $order->shop_id);
+                }
+            })->orderBy('reference')->first();
+        }
 
         return $this->getNavigation($next, $request->route()->getName());
+    }
+
+    private function getBucketNeighbour(Order $order, ActionRequest $request, string $bucket, bool $forward): ?Order
+    {
+        [$column, $isDescending] = $this->bucketNavigationSort($request->input('bucket_sort'));
+
+        $value = $this->bucketNavigationSortValue($order, $column);
+
+        if ($value === null) {
+            [$column, $isDescending] = ['orders.date', true];
+            $value                   = $order->date;
+        }
+
+        $walkingDown = $forward == $isDescending;
+        $operator    = $walkingDown ? '<' : '>';
+        $direction   = $walkingDown ? 'desc' : 'asc';
+
+        $query = $this->bucketNavigationQuery($order, $bucket, $request->input('bucket_scope'));
+
+        if ($column == 'customers.name') {
+            $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
+        }
+
+        return $query->select('orders.*')
+            ->whereRaw("($column, orders.id) $operator (?, ?)", [$value, $order->id])
+            ->orderBy($column, $direction)
+            ->orderBy('orders.id', $direction)
+            ->first();
+    }
+
+    /**
+     * @return array{0: string, 1: bool} whitelisted sort column and whether it is descending
+     */
+    private function bucketNavigationSort(?string $sort): array
+    {
+        $column = Arr::get(
+            [
+                'reference'              => 'orders.reference',
+                'date'                   => 'orders.date',
+                'submitted_at'           => 'orders.submitted_at',
+                'dispatched_at'          => 'orders.dispatched_at',
+                'updated_by_customer_at' => 'orders.updated_by_customer_at',
+                'net_amount'             => 'orders.net_amount',
+                'pay_detailed_status'    => 'orders.pay_detailed_status',
+                'customer_name'          => 'customers.name',
+                'id'                     => 'orders.id',
+            ],
+            ltrim((string)$sort, '-')
+        );
+
+        if (!$column) {
+            return ['orders.date', true];
+        }
+
+        return [$column, str_starts_with((string)$sort, '-')];
+    }
+
+    private function bucketNavigationSortValue(Order $order, string $column): mixed
+    {
+        if ($column == 'customers.name') {
+            return $order->customer?->name;
+        }
+
+        $value = $order->getAttribute(Str::after($column, 'orders.'));
+
+        return $value instanceof BackedEnum ? $value->value : $value;
+    }
+
+    private function backlogBucket(ActionRequest $request): ?string
+    {
+        $bucket = $request->input('bucket');
+
+        return in_array($bucket, OrdersBacklogTabsEnum::values()) ? $bucket : null;
+    }
+
+    /**
+     * Mirrors the bucket filters and default sort of IndexOrders so the arrows walk the list the order was opened from.
+     */
+    private function bucketNavigationQuery(Order $order, string $bucket, ?string $scope): Builder
+    {
+        $query = Order::query();
+
+        match ($scope) {
+            'group'        => $query->where('orders.group_id', $order->group_id)
+                ->whereRelation('shop', 'state', ShopStateEnum::OPEN),
+            'organisation' => $query->where('orders.organisation_id', $order->organisation_id)
+                ->whereRelation('shop', 'state', ShopStateEnum::OPEN),
+            default        => $query->where('orders.shop_id', $order->shop_id),
+        };
+
+        if ($bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
+            $query->where('orders.state', OrderStateEnum::SUBMITTED)
+                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED]);
+        } elseif ($bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
+            $query->where('orders.state', OrderStateEnum::SUBMITTED)
+                ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN]);
+        } elseif ($bucket == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value) {
+            $query->whereDate('orders.dispatched_at', Carbon::today());
+        } else {
+            $query->where('orders.state', $order->state);
+        }
+
+        return $query;
     }
 
     private function getNavigation(?Order $order, string $routeName): ?array
