@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Aggregated sales by stock family across a whole organisation (all shops) over a date range, in organisation currency. Sort best-first or worst-first.')]
+#[IsReadOnly]
 class OrgFamilySalesTool extends AikuOrganisationTool
 {
     protected function permission(): OrganisationPermissionsEnum

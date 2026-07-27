@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Counts of delivery notes by state for a warehouse over a date range.')]
+#[IsReadOnly]
 class DeliveryNotesSummaryTool extends AikuWarehouseTool
 {
     protected function permission(): WarehousePermissionsEnum

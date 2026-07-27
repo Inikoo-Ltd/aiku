@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Offers for a shop with usage stats: which are currently active and which performed best (orders and revenue attributed).')]
+#[IsReadOnly]
 class OffersOverviewTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum

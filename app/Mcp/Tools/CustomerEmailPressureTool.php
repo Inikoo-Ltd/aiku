@@ -15,8 +15,10 @@ use Illuminate\Support\Facades\DB;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Email pressure for a shop\'s customers: how many marketing emails each received over a date range.')]
+#[IsReadOnly]
 class CustomerEmailPressureTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum

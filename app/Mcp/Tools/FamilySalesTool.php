@@ -16,8 +16,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Sales by product family for a shop over a date range, sorted worst-first to surface underperforming families. Families with no sales in the range are included.')]
+#[IsReadOnly]
 class FamilySalesTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum

@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Organisation-wide sales per stock item (SKU) over a date range combined with current stock on hand, in organisation currency. Sort by best or worst sales; each row includes quantity and value in warehouse, so it can surface best sellers running low or overstocked slow movers.')]
+#[IsReadOnly]
 class OrgStockSalesTool extends AikuOrganisationTool
 {
     protected function permission(): OrganisationPermissionsEnum

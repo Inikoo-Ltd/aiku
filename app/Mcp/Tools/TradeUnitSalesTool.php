@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Sales per trade unit aggregated across ALL organisations in the group over a date range, in group currency. Sort best-first or worst-first.')]
+#[IsReadOnly]
 class TradeUnitSalesTool extends AikuGroupTool
 {
     protected function permission(): GroupPermissionsEnum

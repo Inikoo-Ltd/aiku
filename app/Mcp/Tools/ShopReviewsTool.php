@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Customer review sentiment for a shop: rating distribution, average rating, and the most recent review messages.')]
+#[IsReadOnly]
 class ShopReviewsTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum

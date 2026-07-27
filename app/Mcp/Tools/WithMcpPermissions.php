@@ -29,6 +29,17 @@ trait WithMcpPermissions
 
         setPermissionsTeamId($user->group_id);
 
+        \Illuminate\Support\Facades\Log::info('MCPDEBUG', [
+            'permission'  => $permission,
+            'user_id'     => $user->id,
+            'user_class'  => get_class($user),
+            'group_id'    => $user->group_id,
+            'team_id'     => getPermissionsTeamId(),
+            'hasPerm'     => $user->hasPermissionTo($permission),
+            'authTo'      => $user->authTo($permission),
+            'roles_count' => $user->roles()->count(),
+        ]);
+
         return $user->authTo($permission);
     }
 }

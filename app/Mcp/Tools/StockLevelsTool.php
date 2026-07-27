@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Search stock items in a warehouse by code or name, returning quantity on hand and value.')]
+#[IsReadOnly]
 class StockLevelsTool extends AikuWarehouseTool
 {
     protected function permission(): WarehousePermissionsEnum

@@ -13,10 +13,12 @@ use Illuminate\Support\Facades\DB;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tool;
 use Throwable;
 
 #[Description('Run a read-only SQL SELECT against the Aiku PostgreSQL database. Only available to users with SQL access enabled. The database is PostgreSQL; discover the schema by querying information_schema.columns. Always add your own LIMIT.')]
+#[IsReadOnly]
 class SqlQueryTool extends Tool
 {
     use WithMcpSqlAccess;

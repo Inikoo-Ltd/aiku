@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Attendance and timesheet summary for one employee over a date range. Returns days with timesheets and total working duration.')]
+#[IsReadOnly]
 class EmployeeAttendanceTool extends AikuOrganisationTool
 {
     protected function permission(): OrganisationPermissionsEnum

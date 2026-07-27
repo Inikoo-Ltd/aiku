@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Notes recorded against a customer, newest first, optionally filtered by search text.')]
+#[IsReadOnly]
 class CustomerNotesTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum

@@ -13,9 +13,11 @@ use Illuminate\Support\Facades\DB;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tool;
 
 #[Description('Describe the Aiku database schema: list tables matching a name, or get columns, types and foreign keys for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
+#[IsReadOnly]
 class DescribeTablesTool extends Tool
 {
     use WithMcpSqlAccess;
