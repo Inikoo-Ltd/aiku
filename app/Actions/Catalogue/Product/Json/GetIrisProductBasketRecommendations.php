@@ -64,6 +64,7 @@ class GetIrisProductBasketRecommendations extends IrisAction
             return $recommendations;
         }
 
+        /** @var array $widenedRecommendations */
         $widenedRecommendations = $this->getDiversifiedRecommendations(
             $shop,
             $basketProductIds,
