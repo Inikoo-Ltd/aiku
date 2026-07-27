@@ -15,6 +15,7 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -175,6 +176,11 @@ class ShowStockDelivery extends OrgAction
 
     public function getActions(StockDelivery $stockDelivery): array
     {
+        $hasPlacements = $stockDelivery->items()
+            ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
+            ->where('unit_quantity_placed', '>', 0)
+            ->exists();
+
         return match ($stockDelivery->state) {
             StockDeliveryStateEnum::IN_PROCESS,
             StockDeliveryStateEnum::CONFIRMED,
@@ -257,6 +263,55 @@ class ShowStockDelivery extends OrgAction
                     ],
                 ],
             ],
+            StockDeliveryStateEnum::RECEIVED => [
+                [
+                    'label'   => __('Unmark as Received'),
+                    'tooltip' => __('Revert Stock Delivery to its previous state'),
+                    'type'    => 'button',
+                    'style'   => 'cancel',
+                    'icon'    => 'fal fa-undo',
+                    'key'     => 'unreceive_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.unreceive',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+                [
+                    'label'   => __('Cancel'),
+                    'tooltip' => __('Cancel Stock Delivery'),
+                    'type'    => 'button',
+                    'style'   => 'delete',
+                    'icon'    => 'fal fa-times-circle',
+                    'key'     => 'cancel_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.cancel',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+            ],
+            StockDeliveryStateEnum::CHECKED => $hasPlacements ? [] : [
+                [
+                    'label'   => __('Cancel'),
+                    'tooltip' => __('Cancel Stock Delivery'),
+                    'type'    => 'button',
+                    'style'   => 'delete',
+                    'icon'    => 'fal fa-times-circle',
+                    'key'     => 'cancel_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.cancel',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+            ],
             default => [],
         };
     }
@@ -296,6 +351,9 @@ class ShowStockDelivery extends OrgAction
                 'total_items'                  => $stockDelivery->number_stock_delivery_items,
                 'total_received_checked_items' => $stockDelivery->number_stock_delivery_items_state_received + $stockDelivery->number_stock_delivery_items_state_checked,
                 'total_placed_items'           => $stockDelivery->number_stock_delivery_items_state_placed,
+                'show_delivery_discrepancy'    => $stockDelivery->checked_at !== null,
+                'total_under_delivered_items'  => $stockDelivery->number_stock_delivery_items_under_delivered,
+                'total_over_delivered_items'   => $stockDelivery->number_stock_delivery_items_over_delivered,
                 'weight'                       => Arr::get($weightAndVolume, 'gross_weight'),
                 'volume'                       => Arr::get($weightAndVolume, 'volume'),
                 'is_weight_partial'            => Arr::get($weightAndVolume, 'is_weight_partial'),
@@ -336,10 +394,16 @@ class ShowStockDelivery extends OrgAction
                 StockDeliveryStateEnum::IN_PROCESS    => $stockDelivery->created_at,
                 StockDeliveryStateEnum::CONFIRMED     => Arr::get($stockDelivery->data, 'confirmed_at'),
                 StockDeliveryStateEnum::READY_TO_SHIP => Arr::get($stockDelivery->data, 'ready_to_ship_at'),
+                StockDeliveryStateEnum::BOOKING_IN    => Arr::get($stockDelivery->data, 'booking_in_at'),
+                StockDeliveryStateEnum::BOOKED_IN     => Arr::get($stockDelivery->data, 'booked_in_at'),
                 default                               => $stockDelivery->{$case->snake() . '_at'} ?: null
             };
 
             if (in_array($case, $hiddenUnlessCurrent, true) && $stockDelivery->state != $case && !$timestamp) {
+                continue;
+            }
+
+            if ($stockDelivery->state === StockDeliveryStateEnum::CANCELLED && $case !== StockDeliveryStateEnum::CANCELLED && !$timestamp) {
                 continue;
             }
 
