@@ -360,6 +360,39 @@ test("UI Show TradeUnit", function () {
     });
 });
 
+test("UI show trade unit navigation stays in the bucket and the group", function () {
+    $this->withoutExceptionHandling();
+
+    $makeTradeUnit = function (string $code, TradeUnitStatusEnum $status, $group) {
+        $tradeUnit = TradeUnit::factory()->create([
+            'group_id' => $group->id,
+            'code'     => $code,
+            'name'     => $code.' name',
+            'status'   => $status,
+        ]);
+        $tradeUnit->stats()->create();
+
+        return $tradeUnit;
+    };
+
+    $first        = $makeTradeUnit('NAVTUA', TradeUnitStatusEnum::ACTIVE, $this->group);
+    $discontinued = $makeTradeUnit('NAVTUB', TradeUnitStatusEnum::DISCONTINUED, $this->group);
+    $middle       = $makeTradeUnit('NAVTUC', TradeUnitStatusEnum::ACTIVE, $this->group);
+    $last         = $makeTradeUnit('NAVTUD', TradeUnitStatusEnum::ACTIVE, $this->group);
+
+    $otherGroup = \App\Actions\SysAdmin\Group\StoreGroup::make()->action(\App\Models\SysAdmin\Group::factory()->definition());
+    $makeTradeUnit('NAVTUB2', TradeUnitStatusEnum::ACTIVE, $otherGroup);
+
+    get(route("grp.trade_units.units.show", [$middle->slug]).'?bucket=active')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    expect($discontinued->status)->toBe(TradeUnitStatusEnum::DISCONTINUED);
+});
+
 test("UI Edit Trade Unit", function () {
     $tradeUnit = TradeUnit::first();
     if (!$tradeUnit) {
