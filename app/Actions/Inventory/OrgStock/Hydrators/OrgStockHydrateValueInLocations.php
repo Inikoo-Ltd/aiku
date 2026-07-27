@@ -39,7 +39,7 @@ class OrgStockHydrateValueInLocations implements ShouldBeUnique
         $updated = DB::update("
             UPDATE org_stocks
             SET value_in_locations = COALESCE(quantity_in_locations, 0) * COALESCE(sku_value, 0)
-            WHERE value_in_locations IS DISTINCT FROM COALESCE(quantity_in_locations, 0) * COALESCE(sku_value, 0)
+            WHERE value_in_locations IS DISTINCT FROM ROUND(COALESCE(quantity_in_locations, 0) * COALESCE(sku_value, 0), 2)
         ");
 
         $command->info("Org stocks value_in_locations updated: $updated");
