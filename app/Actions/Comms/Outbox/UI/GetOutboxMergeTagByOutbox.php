@@ -34,6 +34,21 @@ class GetOutboxMergeTagByOutbox extends OrgAction
                     OutboxMergeTagsEnum::GOLD_REWARD_DEADLINE,
                     OutboxMergeTagsEnum::UNSUBSCRIBE
                 ]);
+            case OutboxCodeEnum::ORDER_CONFIRMATION:
+                return OutboxMergeTagsEnum::filterTags([
+                    OutboxMergeTagsEnum::CUSTOMER_NAME,
+                    OutboxMergeTagsEnum::INVOICE_ADDRESS,
+                    OutboxMergeTagsEnum::DELIVERY_ADDRESS,
+                    OutboxMergeTagsEnum::ORDER,
+                    OutboxMergeTagsEnum::PAY_INFO,
+                    OutboxMergeTagsEnum::CUSTOMER_NOTE
+                ]);
+            case OutboxCodeEnum::DELIVERY_CONFIRMATION:
+                return OutboxMergeTagsEnum::filterTags([
+                        OutboxMergeTagsEnum::CUSTOMER_NAME,
+                        OutboxMergeTagsEnum::ORDER_NUMBER,
+                        OutboxMergeTagsEnum::ORDER,
+                    ]);
             default:
                 return GetMailshotMergeTags::run();
         }

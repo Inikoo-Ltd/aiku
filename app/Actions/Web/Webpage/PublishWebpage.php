@@ -119,7 +119,7 @@ class PublishWebpage extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'comment' => ['sometimes', 'required', 'string', 'max:1024'],
+            'comment' => ['sometimes', 'nullable', 'string', 'max:1024'],
             'layout'  => ['sometimes', 'required', 'array'],
         ];
 

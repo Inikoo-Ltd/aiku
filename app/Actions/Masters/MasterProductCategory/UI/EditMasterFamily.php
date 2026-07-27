@@ -146,7 +146,7 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toggle'  => [
-                                        'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                        'bold', 'italic','fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description
                                 ],
@@ -157,7 +157,7 @@ class EditMasterFamily extends OrgAction
                                         'counter' => true,
                                     ],
                                     'toggle'  => [
-                                        'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                        'bold', 'italic','fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description_extra
                                 ],

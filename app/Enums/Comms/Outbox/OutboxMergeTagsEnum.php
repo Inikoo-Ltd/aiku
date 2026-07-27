@@ -40,6 +40,11 @@ enum OutboxMergeTagsEnum: string
     case DOWNLOAD_INVOICE_PDF = 'Download Invoice Pdf';
     case LAST_INVOICE_DATE = 'Last Invoice Date';
     case GOLD_REWARD_DEADLINE = 'Gold Reward Deadline';
+    case ORDER = 'Order';
+    case ORDER_NUMBER = 'Order Number';
+    case CUSTOMER_NOTE = 'Customer Note';
+    case DELIVERY_ADDRESS = 'Delivery Address';
+    case INVOICE_ADDRESS = 'Invoice Address';
 
 
     public static function tags(): array
@@ -153,7 +158,26 @@ enum OutboxMergeTagsEnum: string
                 'name' => __('Gold Reward Deadline'),
                 'value' => '[Gold Reward Deadline]'
             ],
-
+            [
+                'name' => __('Order'),
+                'value' => '[Order]'
+            ],
+            [
+                'name' => __('Order Number'),
+                'value' => '[Order Number]'
+            ],
+            [
+                'name' => __('Customer Note'),
+                'value' => '[Customer Note]'
+            ],
+            [
+                'name' => __('Delivery Address'),
+                'value' => '[Delivery Address]'
+            ],
+            [
+                'name' => __('Invoice Address'),
+                'value' => '[Invoice Address]'
+            ],
 
         ];
     }

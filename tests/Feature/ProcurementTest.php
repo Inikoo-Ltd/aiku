@@ -11,9 +11,7 @@
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
-use App\Actions\GoodsIn\StockDelivery\UpdateStateToCheckedStockDelivery;
-use App\Actions\GoodsIn\StockDelivery\UpdateStateToDispatchStockDelivery;
-use App\Actions\GoodsIn\StockDelivery\UpdateStateToSettledStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
@@ -587,28 +585,13 @@ test('create supplier delivery items by selected purchase order', function (Stoc
 test('change supplier delivery state to dispatch from creating', function (StockDelivery $stockDelivery) {
     expect($stockDelivery)->toBeInstanceOf(StockDelivery::class)
         ->and($stockDelivery->state)->toBe(StockDeliveryStateEnum::IN_PROCESS);
-    $stockDelivery = UpdateStateToDispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
     expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::DISPATCHED);
 })->depends('create supplier delivery');
 
 test('change state to received from dispatch supplier delivery', function (StockDelivery $stockDelivery) {
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
     expect($stockDelivery->state)->toEqual(StockDeliveryStateEnum::RECEIVED);
-})->depends('create supplier delivery');
-
-test('change state to checked from dispatch supplier delivery', function (StockDelivery $stockDelivery) {
-    $stockDelivery = UpdateStateToCheckedStockDelivery::make()->action($stockDelivery);
-    expect($stockDelivery->state)->toEqual(StockDeliveryStateEnum::CHECKED);
-})->depends('create supplier delivery');
-
-test('change state to settled from checked supplier delivery', function (StockDelivery $stockDelivery) {
-    $stockDelivery = UpdateStateToSettledStockDelivery::make()->action($stockDelivery);
-    expect($stockDelivery->state)->toEqual(StockDeliveryStateEnum::PLACED);
-})->depends('create supplier delivery');
-
-test('change state to checked from settled supplier delivery', function (StockDelivery $stockDelivery) {
-    $stockDelivery = UpdateStateToCheckedStockDelivery::make()->action($stockDelivery);
-    expect($stockDelivery->state)->toEqual(StockDeliveryStateEnum::CHECKED);
 })->depends('create supplier delivery');
 
 test('change state to received from checked supplier delivery', function ($stockDelivery) {
