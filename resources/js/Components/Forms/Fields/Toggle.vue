@@ -18,6 +18,7 @@ const props = defineProps<{
 	form: any
 	fieldName: string
 	options?: any
+	submit?: Function
 	fieldData?: {
 		type: string
 		placeholder: string
@@ -29,6 +30,7 @@ const props = defineProps<{
 		suffixImage?: string
 		warningText?: string
 		warnTitle?: string
+		submitOnConfirm?: boolean
 		description?: string | string[]
 		descriptionLinks?: {   // EditShop
             [key: string]: {
@@ -187,6 +189,10 @@ const getDescriptionSegments = (description: string) => {
 						() => {
 							value = !value
 							closeModal()
+							if (fieldData?.submitOnConfirm) {
+								updateFormValue(value)
+								props.submit?.()
+							}
 						}
 					"
 					type="negative"

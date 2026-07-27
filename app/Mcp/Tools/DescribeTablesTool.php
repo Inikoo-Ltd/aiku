@@ -1,0 +1,99 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 27 Jul 2026 12:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Mcp\Tools;
+
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Facades\DB;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
+use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tool;
+
+#[Description('Describe the Aiku database schema: list tables matching a name, or get columns, types and foreign keys for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
+class DescribeTablesTool extends Tool
+{
+    public function handle(Request $request): Response
+    {
+        $request->validate([
+            'tables' => ['sometimes', 'array', 'max:10'],
+            'search' => ['sometimes', 'string', 'max:64'],
+        ]);
+
+        if (!$request->user()?->can_use_mcp_sql) {
+            return Response::error('SQL access is not enabled for this user.');
+        }
+
+        $tables = $request->get('tables', []);
+
+        if (empty($tables)) {
+            $search = (string) $request->string('search');
+
+            if ($search === '') {
+                return Response::error('Provide either tables (array of table names) or search (text to match table names).');
+            }
+
+            $matches = DB::connection('aiku_read_only')
+                ->table('information_schema.tables')
+                ->where('table_schema', 'public')
+                ->where('table_name', 'like', '%'.$search.'%')
+                ->orderBy('table_name')
+                ->limit(60)
+                ->pluck('table_name');
+
+            return Response::json([
+                'matching_tables' => $matches,
+                'hint'            => 'Call again with tables: [...] to see columns and foreign keys.',
+            ]);
+        }
+
+        $columns = DB::connection('aiku_read_only')
+            ->table('information_schema.columns')
+            ->whereIn('table_name', $tables)
+            ->where('table_schema', 'public')
+            ->orderBy('table_name')
+            ->orderBy('ordinal_position')
+            ->get(['table_name', 'column_name', 'data_type', 'is_nullable']);
+
+        $foreignKeys = DB::connection('aiku_read_only')->select("
+            SELECT tc.table_name, kcu.column_name, ccu.table_name AS references_table
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+            JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+            WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public' AND tc.table_name = ANY(?)
+        ", ['{'.implode(',', $tables).'}']);
+
+        $schema = [];
+        foreach ($columns as $column) {
+            $schema[$column->table_name]['columns'][] = [
+                'name'     => $column->column_name,
+                'type'     => $column->data_type,
+                'nullable' => $column->is_nullable === 'YES',
+            ];
+        }
+        foreach ($foreignKeys as $foreignKey) {
+            $schema[$foreignKey->table_name]['foreign_keys'][] = $foreignKey->column_name.' → '.$foreignKey->references_table;
+        }
+
+        return Response::json([
+            'tables'    => $schema,
+            'not_found' => array_values(array_diff($tables, array_keys($schema))),
+        ]);
+    }
+
+    /**
+     * @return array<string, JsonSchema>
+     */
+    public function schema(JsonSchema $schema): array
+    {
+        return [
+            'tables' => $schema->array()->description('Table names to describe, max 10')->items($schema->string()),
+            'search' => $schema->string()->description('Text to match against table names when you do not know the exact name'),
+        ];
+    }
+}

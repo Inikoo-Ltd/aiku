@@ -90,9 +90,22 @@ class EditUser extends OrgAction
                             ],
                             "can_use_mcp" => [
                                 "type"        => "toggle",
+                                "icon"        => "fal fa-robot",
                                 "label"       => __("Can connect AI assistant"),
                                 "value"       => $user->can_use_mcp,
                             ],
+                            ...($user->can_use_mcp ? [
+                                "can_use_mcp_sql" => [
+                                    "type"            => "toggle",
+                                    "icon"            => "fal fa-user-visor",
+                                    "label"           => __("AI full data access"),
+                                    "value"           => $user->can_use_mcp_sql,
+                                    "noSaveButton"    => true,
+                                    "submitOnConfirm" => true,
+                                    "warnTitle"       => __("Give this person full data access?"),
+                                    "warningText"     => __("Their AI assistant will be able to read everything in Aiku: every shop, every customer, every order, staff and payment information. It can only read, it can never change or delete anything. Only turn this on for people you trust with all the company data."),
+                                ],
+                            ] : []),
                         ],
                     ],
                     [

@@ -10,7 +10,7 @@ import { trans } from 'laravel-vue-i18n'
 import PermissionsPictogram from '@/Components/DataDisplay/PermissionsPictogram.vue'
 import Toggle from '@/Components/Pure/Toggle.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheck, faRobot, faSkull, faTimes } from '@fal'
+import { faCheck, faRobot, faUserVisor, faSkull, faTimes, } from '@fal'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -53,6 +53,7 @@ const props = defineProps<{
             }
             mcp?: {
                 enabled: boolean
+                full_data_access: boolean
                 number_queries: number
                 last_used_at?: string
                 tools_used: number
@@ -174,6 +175,9 @@ const force2FA = async () => {
                         {{ data.data.mcp.tools_used }} {{ trans("different questions types") }},
                         {{ trans("last used") }} {{ data.data.mcp.last_used_at ? useFormatTime(data.data.mcp.last_used_at) : '-' }}
                     </template>
+                    <div v-if="data?.data?.mcp?.full_data_access" class="mt-1 text-orange-600">
+                        <FontAwesomeIcon :icon="faUserVisor" class="mr-1" fixed-width aria-hidden="true" />{{ trans("Full data access: can query the whole database") }}
+                    </div>
                 </dd>
             </div>
 

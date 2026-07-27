@@ -13,12 +13,12 @@ import Image from "@common/Components/Image.vue"
 import Icon from '@/Components/Icon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
-import { faCheck, faTimes, faUserCircle, faYinYang, faKey, faRobot, faCheckCircle, faTimesCircle } from "@fal"
+import { faCheck, faTimes, faUserCircle, faYinYang, faKey, faRobot, faCheckCircle, faTimesCircle, faUserVisor } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faShieldAlt, faUserShield } from "@far"
 
-library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey, faRobot, faUserShield, faShieldAlt)
+library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey, faRobot, faUserShield, faShieldAlt, faUserVisor)
 
 defineProps<{
     data: {}
@@ -77,6 +77,13 @@ function userRoute(user: User) {
                 v-tooltip="trans('AI assistant allowed, not used yet')" fixed-width />
             <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500"
                 v-tooltip="trans('AI assistant not allowed')" fixed-width />
+        </template>
+
+        <template #cell(can_use_mcp_sql)="{ item: user }">
+            <FontAwesomeIcon v-if="user.can_use_mcp_sql" :icon="faUserVisor" class="text-green-500"
+                v-tooltip="trans('AI full data access')" fixed-width />
+            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500"
+                v-tooltip="trans('No AI full data access')" fixed-width />
         </template>
 
         <template #cell(last_active)="{ item: user }">

@@ -13,13 +13,13 @@ import axios from 'axios'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Field form list
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSave as fadSave, } from '@fad'
-import { faSave as falSave, faInfoCircle } from '@fal'
+import { faSave as falSave, faInfoCircle, faUserVisor, faRobot } from '@fal'
 import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Modal from '../Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '../Elements/Buttons/Button.vue'
-library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk)
+library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faUserVisor, faRobot)
 
 const props = defineProps<{
     field: string
@@ -27,6 +27,7 @@ const props = defineProps<{
     fieldData: {
         type: string
         label: string
+        icon?: string
         verification?: {
             route: routeType
             state: string
@@ -140,6 +141,7 @@ const isModalConfirmation = ref(false)
             <!-- Title -->
             <dt v-if="!fieldData.noTitle && fieldData.label" class="qwezxctext-sm font-medium text-gray-400">
                 <div class="inline-flex items-start leading-none">
+                    <FontAwesomeIcon v-if="fieldData.icon" :icon="fieldData.icon" class="mr-1" fixed-width aria-hidden="true" />
                     {{ fieldData.label }}
                     <FontAwesomeIcon v-if="fieldData.required" icon="fas fa-asterisk" class="font-light text-[12px] text-red-400 mr-1"/>
                     <div v-if="fieldData.information" v-tooltip="fieldData.information" class="opacity-50 hover:opacity-100 cursor-pointer ml-1">
