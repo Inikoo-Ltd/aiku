@@ -17,6 +17,7 @@ const props = defineProps<{
     web_block_family?: {
         fieldValue?: Record<string, any>
     }
+    web_block_family_code?: string
 }>()
 
 // console.log("PROP web_block_family", props.web_block_family);
@@ -253,7 +254,11 @@ onMounted(() => {
         <div class="md:mt-4 min-h-44" :style="{
             fontFamily: layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily
         }">
-            <SearchInternalResultPage v-if="isInternalSearch" />
+            <SearchInternalResultPage
+                v-if="isInternalSearch"
+                :fieldValue="web_block_family?.fieldValue"
+                :code="web_block_family_code"
+            />
 
             <div v-else id="luigi_result_search" class="h-40 mb-4">
                 <div class="flex gap-x-4 h-full">

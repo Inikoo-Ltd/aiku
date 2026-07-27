@@ -7,14 +7,16 @@
 
 namespace App\Actions\Search;
 
+use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Tag;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\QueryBuilder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 class SearchIrisCataloguePage extends IrisAction
 {
     use WithRawSearchResults;
+    use WithIrisProductsInWebpage;
 
     /**
      * @param array{q: string, categories?: array<int, int>, page?: int, per_page?: int, sort?: string|null} $modelData
@@ -63,7 +66,13 @@ class SearchIrisCataloguePage extends IrisAction
             ];
         }
 
-        $productsQuery = Product::query()->whereIn('id', $matchedIds);
+        $productsQuery = $this->getBaseQuery('all');
+        $productsQuery->whereIn('products.id', $matchedIds);
+        $productsQuery->where(function ($query) {
+            $query
+                ->whereNull('products.variant_id')
+                ->orWhere('products.is_variant_leader', true);
+        });
         $this->applyCategoryFilters($productsQuery, $categoryIds);
 
         if (!empty($brandIds)) {
@@ -73,40 +82,29 @@ class SearchIrisCataloguePage extends IrisAction
             $productsQuery->whereHas('tags', fn ($tagQuery) => $tagQuery->whereIn('tags.id', $tagIds));
         }
         if ($priceMin !== null && $priceMin !== '') {
-            $productsQuery->where('price', '>=', (float) $priceMin);
+            $productsQuery->where('products.price', '>=', (float) $priceMin);
         }
         if ($priceMax !== null && $priceMax !== '') {
-            $productsQuery->where('price', '<=', (float) $priceMax);
+            $productsQuery->where('products.price', '<=', (float) $priceMax);
         }
 
-        $total    = (clone $productsQuery)->count();
+        $total    = $productsQuery->count();
         $lastPage = max(1, (int) ceil($total / $perPage));
 
         if ($sort === 'price_amount:asc' || $sort === 'price_amount:desc') {
-            $productsQuery->orderBy('price', $sort === 'price_amount:asc' ? 'asc' : 'desc');
+            $productsQuery->orderBy('products.price', $sort === 'price_amount:asc' ? 'asc' : 'desc');
         } else {
             $productsQuery->orderByRaw('array_position(ARRAY['.implode(',', $matchedIds).']::bigint[], products.id)');
         }
 
-        $showPrice = auth()->check();
-
-        $products = $productsQuery
-            ->with(['webpage' => fn ($webpageQuery) => $webpageQuery->where('website_id', $this->website->id)->with('shop')])
-            ->forPage($pageNumber, $perPage)
-            ->get()
-            ->map(fn (Product $product) => [
-                'id'    => $product->id,
-                'code'  => $product->code,
-                'name'  => $product->name,
-                'image' => $product->imageSources(200, 200),
-                'url'   => $product->webpage?->getCanonicalUrl() ?: null,
-                'stock' => $product->available_quantity,
-                'units' => $product->units,
-                'unit'  => $product->unit,
-                'price' => $showPrice ? $product->price : null,
-            ])
-            ->values()
-            ->all();
+        $products = IrisAuthenticatedProductsInWebpageResource::collection(
+            $productsQuery
+                ->select($this->getSelect([
+                    DB::raw('products.variant_id IS NOT NULL as is_variant')
+                ]))
+                ->forPage($pageNumber, $perPage)
+                ->get()
+        )->resolve();
 
         return [
             'results' => [
@@ -144,7 +142,7 @@ class SearchIrisCataloguePage extends IrisAction
      *
      * @param array<int, int> $categoryIds
      */
-    private function applyCategoryFilters(Builder $productsQuery, array $categoryIds): void
+    private function applyCategoryFilters(QueryBuilder $productsQuery, array $categoryIds): void
     {
         if (empty($categoryIds)) {
             return;
@@ -164,7 +162,7 @@ class SearchIrisCataloguePage extends IrisAction
         foreach ($columnByType as $type => $column) {
             $ids = $selectedByType->get($type)?->pluck('id')->all();
             if ($ids) {
-                $productsQuery->whereIn($column, $ids);
+                $productsQuery->whereIn('products.'.$column, $ids);
             }
         }
     }
@@ -341,5 +339,17 @@ class SearchIrisCataloguePage extends IrisAction
         $this->initialisation($request);
 
         return $this->handle($this->validatedData);
+    }
+
+    /**
+     * Overrides WithIrisProductsInWebpage::jsonResponse, this action already returns the payload.
+     *
+     * @param array<string, mixed> $results
+     *
+     * @return array<string, mixed>
+     */
+    public function jsonResponse(array $results): array
+    {
+        return $results;
     }
 }

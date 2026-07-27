@@ -1,25 +1,16 @@
 <script setup lang='ts'>
-import { inject, ref, computed, watch, onBeforeMount } from 'vue'
+import { inject, ref, computed, watch, onBeforeMount, onMounted, onBeforeUnmount } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import axios from 'axios'
+import { get } from 'lodash-es'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { useLocaleStore } from '@/Stores/locale'
 import { ctrans } from '@/Composables/useTrans'
+import { getStyles } from '@/Composables/styles'
 import Image from '@common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
-import LoadingOverlay2 from '@/Components/Utils/LoadingOverlay2.vue'
-
-interface InternalProduct {
-    id: number
-    code: string
-    name: string
-    image: any
-    price?: number | string | null
-    stock?: number | null
-    units?: number | string | null
-    unit?: string | null
-    url?: string
-}
+import RenderProduct from '@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue'
+import { ProductResource } from '@/types/Iris/Products'
 
 interface InternalCatalogueItem {
     id: number
@@ -55,6 +46,15 @@ const emptyFacets = (): InternalFacets => ({
     price: { min: null, max: null },
 })
 
+// Section: product card, `code` is the website's products web block (products-1 / products-2) and
+// `fieldValue` its settings, both taken from the family page so the cards render identically
+const props = defineProps<{
+    fieldValue?: Record<string, any>
+    code?: string
+}>()
+
+const productCardCode = computed(() => props.code || 'products-1')
+
 const layout = inject('layout', retinaLayoutStructure)
 
 const page = usePage()
@@ -63,7 +63,7 @@ const searchQuery = computed(() => {
     return new URLSearchParams(queryString).get('q') ?? ''
 })
 
-const products = ref<InternalProduct[]>([])
+const products = ref<ProductResource[]>([])
 const facets = ref<InternalFacets>(emptyFacets())
 const collections = ref<InternalCatalogueItem[]>([])
 const totalResults = ref(0)
@@ -244,30 +244,19 @@ const formatPrice = (price?: number | string | null) => {
     return localeStore.currencyFormat(layout.iris?.currency?.code, Number(price))
 }
 
-// Method: from 'Gemstone Obelisk Points approx 5cm - African Amethyst' to '[5x] Gemstone Obelisk Points approx 5cm - African Amethyst'
-const getProductName = (product: { name: string; units?: number | string | null }): string => {
-    const units = Number(product.units) || 1
-    if (units === 1) {
-        return product.name
-    } else {
-        return `[${units}x] ${product.name}`
-    }
-}
+// Section: product cards (same grid settings as the family page block)
+const screenType = inject('screenType', 'desktop') as 'mobile' | 'tablet' | 'desktop'
 
-// Price sent from the backend is for the whole pack of `units`; show the per-unit price.
-const getProductPrice = (product: { price?: number | string | null; unit?: string | null; units?: number | string | null }): string | null => {
-    if (product.price === null || product.price === undefined || product.price === '') {
-        return null
-    }
+// const gridColsVars = computed(() => {
+//     const perRow = props.fieldValue?.settings?.per_row ?? {}
+//     const basketOpen = layout.rightbasket?.show
 
-    const units = Number(product.units) || 1
-    const price = formatPrice(Number(product.price) / units)
-    if (!price) return null
-    if (product.unit) {
-        return `${price}/${product.unit}`
-    }
-    return `${price}`
-}
+//     return {
+//         '--cols-mobile': basketOpen ? 2 : (perRow.mobile ?? 2),
+//         '--cols-tablet': basketOpen ? 3 : (perRow.tablet ?? 3),
+//         '--cols-desktop': basketOpen ? 3 : (perRow.desktop ?? 4),
+//     }
+// })
 
 // Section: quick searches (Luigi's Box lookalike tabs + card rail)
 type RailItem = InternalFacetItem | InternalCatalogueItem
@@ -311,8 +300,6 @@ const scrollRail = (event: Event, direction: number) => {
 }
 
 const isMobileFilterOpen = ref(false)
-
-const visitingProductId = ref<number | null>(null)
 </script>
 
 <template>
@@ -390,7 +377,7 @@ const visitingProductId = ref<number | null>(null)
                 </aside>
 
                 <!-- Section: Results -->
-                <main class="box-border md:w-[72%] md:pl-5 lg:pl-[60px] flex-1 min-w-0">
+                <main class="box-border md:w-[72%] md:pl-5 lg:pl-7 flex-1 min-w-0">
                     <div class="text-[22px] md:text-[26px] leading-none font-normal mb-[30px]">
                         {{ ctrans('Results for') }}
                         <strong class="text-[var(--theme-color-0)]">{{ searchQuery }}</strong>
@@ -488,8 +475,7 @@ const visitingProductId = ref<number | null>(null)
                     </div>
 
                     <!-- Section: Loading skeleton -->
-                    <div v-if="isInternalLoading"
-                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <div v-if="isInternalLoading" xstyle="gridColsVars" class="xproducts-grid grid-cols-4 grid gap-x-6 gap-y-10">
                         <div v-for="i in 10" :key="i">
                             <div class="aspect-square skeleton rounded mb-2"></div>
                             <div class="h-4 w-4/5 skeleton rounded mb-1.5"></div>
@@ -497,57 +483,21 @@ const visitingProductId = ref<number | null>(null)
                         </div>
                     </div>
 
-                    <!-- Section: Results -->
-                    <div v-else-if="products.length"
-                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 transition-opacity"
+                    <!-- Section: Results (same product card as the family page) -->
+                    <div v-else-if="products.length" xstyle="gridColsVars"
+                        class="xproducts-grid grid-cols-4 grid gap-x-4 gap-y-10 transition-opacity bg-gray-100 p-4 rounded-md"
                         :class="isResultsRefreshing ? 'opacity-60 pointer-events-none' : ''">
-                        <LinkIris v-for="product in products" :key="product.id" :href="product.url"
-                            class="relative group text-gray-800 isolate h-full flex flex-col flex-grow no-underline"
-                            @start="visitingProductId = product.id"
-                            @error="visitingProductId = null"
-                            @finish="visitingProductId = null"
-                        >
-                            <LoadingOverlay2 v-if="visitingProductId === product.id" class="z-20 rounded" />
-                            <!-- Product detail: image -->
-                            <div class="relative block w-full mb-1 rounded overflow-hidden aspect-square bg-white">
-                                <Image v-if="product.image" :src="product.image"
-                                    xass="w-full h-full object-contain object-center"
-                                    cclass="product.stock === 0
-                                        ? 'grayscale opacity-60'
-                                        : ''
-                                    "
-                                />
-                                <div v-else class="w-full h-full flex items-center justify-center text-gray-400 font-bold uppercase text-4xl"> {{ product.code?.slice(0, 3) }}</div>
-                                <div v-if="product.stock === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                                    <span class="w-full bg-white/95 border border-red-500 rounded-sm text-red-500 text-xs font-bold uppercase tracking-wider py-1 text-center shadow-sm">{{ ctrans('Out of stock') }}</span>
-                                </div>
-                            </div>
-
-                            <!-- Product detail: code and name -->
-                            <div class="mt-2 flex-1 flex flex-col border-b border-gray-200 pb-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs text-gray-500">{{ product.code }}</span>
-                                    <span class="shrink-0 font-medium leading-snug text-[0.85rem]" :class="product.stock === 0 ? 'text-[#ea1414]' : 'text-[#10ad29]'">●</span>
-                                </div>
-                                <div class="font-bold !text-sm leading-4 mt-1 line-clamp-2 text-justify group-hover:underline">
-                                    {{ getProductName(product) }}
-                                </div>
-                            </div>
-                            
-                            <!-- Product detail: price -->
-                            <div class="font-sans mt-2 mb-1 tabular-nums leading-none text-[11px] lg:text-[12px]">
-                                <div v-if="getProductPrice(product)" class="grid grid-cols-[auto_1fr] items-center gap-x-2">
-                                    <div class="font-semibold whitespace-nowrap">{{ ctrans('Price') }}</div>
-                                    <div class="font-bold text-right min-w-0 whitespace-nowrap">
-                                        {{ formatPrice(Number(product.price)) }}
-                                        <span v-if="Number(product.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(product) }})</span>
-                                    </div>
-                                </div>
-                                <a v-else-if="!layout.iris?.is_logged_in" href="/app/login" class="block text-[0.7rem] underline text-[var(--theme-color-0)]">
-                                    {{ ctrans('Login for prices') }}
-                                </a>
-                            </div>
-                        </LinkIris>
+                        <div v-for="product in products" :key="product.id"
+                            :style="getStyles(fieldValue?.card_product?.properties, screenType)"
+                            class="relative rounded flex md:flex-1 justify-center">
+                            <RenderProduct :code="productCardCode" :product="product"
+                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
+                                :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
+                                :button="fieldValue?.button"
+                                :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])"
+                                :bestSeller="fieldValue?.bestseller" :screenType />
+                        </div>
                     </div>
 
                     <div v-else class="flex h-40 items-center justify-center text-[#767676] bg-[#ececec] rounded-sm p-2.5 md:p-5 transition-opacity"
@@ -572,3 +522,21 @@ const visitingProductId = ref<number | null>(null)
         </div>
     </div>
 </template>
+
+<style scoped>
+.products-grid {
+    grid-template-columns: repeat(var(--cols-mobile), minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-tablet), minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(var(--cols-desktop), minmax(0, 1fr));
+    }
+}
+</style>
