@@ -10,6 +10,7 @@ import { Textarea } from 'primevue'
 import { ref, computed, onMounted } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
+import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import {formatDistanceStrict} from 'date-fns/formatDistanceStrict'
 import { notify } from '@kyvg/vue3-notification'
@@ -24,6 +25,7 @@ const props = defineProps<{
         quantity: number
         isAudited?: boolean
         audited_at?: string | null
+        packed_in?: number
     }[],
     replenishment_data: Record<number, {
         replenishment_stock?: number
@@ -91,8 +93,7 @@ const selectSource = (location: any) => {
     if (isSource(location)) {
         moveStock.value.from = null
         moveStock.value.isActive = false
-        moveStock.value.quantity = 0
-        inputKey.value++
+        resetMoveQuantity()
         syncForm()
         return
     }
@@ -112,16 +113,14 @@ const selectSource = (location: any) => {
 
     moveStock.value.from = location
     moveStock.value.isActive = true
-    moveStock.value.quantity = 0
-    inputKey.value++
+    resetMoveQuantity()
     syncForm()
 }
 
 const selectTarget = (location: any) => {
     if (isTarget(location)) {
         moveStock.value.to = null
-        moveStock.value.quantity = 0
-        inputKey.value++
+        resetMoveQuantity()
         syncForm()
         return
     }
@@ -145,8 +144,7 @@ const selectTarget = (location: any) => {
         moveStock.value.from = swappedSource
         moveStock.value.to = location
         moveStock.value.isActive = true
-        moveStock.value.quantity = 0
-        inputKey.value++
+        resetMoveQuantity()
         syncForm()
         return
     }
@@ -163,6 +161,8 @@ const closeMoveStock = () => {
         quantity: 0,
         isActive: false
     }
+    wholeQuantity.value = 0
+    fractionQuantity.value = 0
     inputKey.value++
     form.moveStock = null
 }
@@ -173,33 +173,106 @@ const roundQuantity = (value: number) => Math.round(Number(value) * 1e6) / 1e6
 // programmatically (move-all, replenishment, source/target reset).
 const inputKey = ref(0)
 
-const displayQty = (value: number) => String(roundQuantity(Number(value ?? 0)))
+// packed_in is uniform across all locations of the same org stock: a stock packed in 6 is
+// stored in sixths, so 0.166… means 1/6 of a unit.
+const packedIn = computed(() => {
+    const value = Number(props.part_locations?.[0]?.packed_in ?? 1)
+    return value > 1 ? value : 1
+})
 
-// Only whole units can be moved, so the typed/stepped value is floored and clamped into [0, max].
-const updateMoveQuantity = (value: number) => {
-    const maxQuantity = getMaxQuantity()
-    let validValue = Math.floor(Number(value || 0))
+const isPackedStock = computed(() => packedIn.value > 1)
 
-    if (validValue < 0) {
-        validValue = 0
-    } else if (validValue > maxQuantity) {
-        validValue = maxQuantity
+// Fraction data shape expected by FractionDisplay: [whole, [numerator, denominator]]
+const toFractionData = (value: number): [number, [number, number]] => {
+    const rounded = roundQuantity(Number(value ?? 0))
+
+    if (!isPackedStock.value) {
+        return [Math.round(rounded), [0, 1]]
     }
 
-    moveStock.value.quantity = validValue
+    const sign = rounded < 0 ? -1 : 1
+    const units = Math.round(Math.abs(rounded) * packedIn.value)
+    const whole = Math.trunc(units / packedIn.value)
+
+    return [sign * whole, [sign * (units - whole * packedIn.value), packedIn.value]]
+}
+
+// A packed stock is moved with two inputs: whole units, plus the fraction of a unit on top of
+// them. Both are bound as real quantities, so 3/8 is held as 0.375.
+const wholeQuantity = ref(0)
+const fractionQuantity = ref(0)
+
+const getMaxQuantity = () => {
+    return moveStock.value.from ? roundQuantity(Number(moveStock.value.from.stock)) : 0
+}
+
+const getMaxWholeQuantity = () => Math.floor(getMaxQuantity())
+
+// A stock of 4 3/8 can only give away 3/8 as a fraction, never 4/8 or more.
+const getMaxFractionQuantity = () => roundQuantity(getMaxQuantity() - getMaxWholeQuantity())
+
+const hasFractionalStock = computed(() => isPackedStock.value && getMaxFractionQuantity() > 0)
+
+const snapToFraction = (value: number) => {
+    return roundQuantity(Math.round(Number(value || 0) * packedIn.value) / packedIn.value)
+}
+
+const storeQuantity = (value: number) => {
+    moveStock.value.quantity = value
 
     if (form.moveStock) {
-        form.moveStock.quantity = moveStock.value.quantity
+        form.moveStock.quantity = value
     }
+}
+
+const splitQuantityIntoInputs = (value: number) => {
+    if (!isPackedStock.value) {
+        wholeQuantity.value = Math.round(value)
+        fractionQuantity.value = 0
+        return
+    }
+
+    const units = Math.round(value * packedIn.value)
+    const whole = Math.trunc(units / packedIn.value)
+
+    wholeQuantity.value = whole
+    fractionQuantity.value = roundQuantity(value - whole)
+}
+
+// Both inputs together can ask for more than the source holds, so clamp the total and
+// mirror the clamped amount back into the inputs.
+const updateQuantityFromInputs = () => {
+    const requested = roundQuantity(wholeQuantity.value + fractionQuantity.value)
+    const validValue = Math.min(Math.max(requested, 0), getMaxQuantity())
+
+    storeQuantity(validValue)
+
+    if (validValue !== requested) {
+        splitQuantityIntoInputs(validValue)
+        inputKey.value++
+    }
+}
+
+const updateWholeQuantity = (value: number) => {
+    wholeQuantity.value = Math.max(0, Math.floor(Number(value || 0)))
+    updateQuantityFromInputs()
+}
+
+const updateFractionQuantity = (value: number) => {
+    fractionQuantity.value = Math.min(Math.max(snapToFraction(value), 0), getMaxFractionQuantity())
+    updateQuantityFromInputs()
 }
 
 const setMoveQuantity = (value: number) => {
-    updateMoveQuantity(value)
+    const validValue = Math.min(Math.max(roundQuantity(Number(value || 0)), 0), getMaxQuantity())
+
+    storeQuantity(validValue)
+    splitQuantityIntoInputs(validValue)
     inputKey.value++
 }
 
-const getMaxQuantity = () => {
-    return moveStock.value.from ? Math.floor(Number(moveStock.value.from.stock)) : 0
+const resetMoveQuantity = () => {
+    setMoveQuantity(0)
 }
 
 const getCalculatedStock = (warehouse: { stock: number; id: any }) => {
@@ -360,12 +433,12 @@ onMounted(() => {
                     </div>
                     <div v-if="moveStock.from" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
                         <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
-                            {{ displayQty(moveStock.from.stock) }}
+                            <FractionDisplay :fractionData="toFractionData(moveStock.from.stock)" />
                         </span>
                         <template v-if="moveStock.quantity > 0">
                             <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                             <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-green-700">
-                                {{ displayQty(getCalculatedStock(moveStock.from)) }}
+                                <FractionDisplay :fractionData="toFractionData(getCalculatedStock(moveStock.from))" />
                             </span>
                         </template>
                     </div>
@@ -375,8 +448,9 @@ onMounted(() => {
 
                 <div class="text-center">
                     <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Quantity') }}</div>
-                    <div class="font-medium tabular-nums text-gray-700" xclass="moveStock.quantity ? '' : ' border-b border-dashed border-gray-400'">
-                        {{ moveStock.quantity ? displayQty(moveStock.quantity) : '......' }}
+                    <div class="font-medium tabular-nums text-gray-700 flex justify-center">
+                        <FractionDisplay v-if="moveStock.quantity" :fractionData="toFractionData(moveStock.quantity)" />
+                        <template v-else>......</template>
                     </div>
                 </div>
 
@@ -398,12 +472,12 @@ onMounted(() => {
                     </div>
                     <div v-if="moveStock.to" class="mt-0.5 tabular-nums text-xs flex items-center justify-center gap-x-1">
                         <span v-tooltip="trans('Current stock in this location')" class="text-gray-500">
-                            {{ displayQty(moveStock.to.stock) }}
+                            <FractionDisplay :fractionData="toFractionData(moveStock.to.stock)" />
                         </span>
                         <template v-if="moveStock.quantity > 0">
                             <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                             <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-blue-700">
-                                {{ displayQty(getCalculatedStock(moveStock.to)) }}
+                                <FractionDisplay :fractionData="toFractionData(getCalculatedStock(moveStock.to))" />
                             </span>
                         </template>
                     </div>
@@ -509,21 +583,35 @@ onMounted(() => {
                                 isSource(form) ? 'cursor-pointer hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition' : ''
                             ]"
                             @click="isSource(form) && setMoveQuantity(getMaxQuantity())"
-                        >{{ displayQty(form.stock) }}</span>
+                        ><FractionDisplay :fractionData="toFractionData(form.stock)" /></span>
                         <span v-if="isSource(form)" class="text-red-500 font-semibold">−</span>
-                        <div v-if="isSource(form)" class="shrink-0">
+                        <div v-if="isSource(form)" class="shrink-0 flex items-center gap-x-1">
                             <NumberWithButtonSave
-                                :key="inputKey"
-                                :modelValue="moveStock.quantity"
-                                @update:modelValue="(val: number) => updateMoveQuantity(val)"
+                                :key="`whole-${inputKey}`"
+                                v-tooltip="ctrans('Whole units to move')"
+                                :modelValue="wholeQuantity"
+                                @update:modelValue="(val: number) => updateWholeQuantity(val)"
                                 :min="0"
-                                :max="getMaxQuantity()"
+                                :max="getMaxWholeQuantity()"
+                                noSaveButton
+                                noUndoButton
+                            />
+                            <NumberWithButtonSave
+                                v-if="hasFractionalStock"
+                                :key="`fraction-${inputKey}`"
+                                v-tooltip="ctrans('Fraction of a unit to move (:packedIn per unit)', { packedIn: packedIn })"
+                                :modelValue="fractionQuantity"
+                                @update:modelValue="(val: number) => updateFractionQuantity(val)"
+                                :min="0"
+                                :max="getMaxFractionQuantity()"
+                                :denominator="packedIn"
                                 noSaveButton
                                 noUndoButton
                             />
                         </div>
-                        <span v-else :class="getStockChangeIndicator(form) > 0 ? 'text-green-600' : 'text-red-500'">
-                            {{ getStockChangeIndicator(form) > 0 ? '+' : '−' }}{{ displayQty(Math.abs(getStockChangeIndicator(form))) }}
+                        <span v-else class="flex items-center" :class="getStockChangeIndicator(form) > 0 ? 'text-green-600' : 'text-red-500'">
+                            {{ getStockChangeIndicator(form) > 0 ? '+' : '−' }}
+                            <FractionDisplay :fractionData="toFractionData(Math.abs(getStockChangeIndicator(form)))" />
                         </span>
                         <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
                         <span
@@ -531,7 +619,7 @@ onMounted(() => {
                             class="font-semibold"
                             :class="isSource(form) ? 'text-green-700' : 'text-blue-700'"
                         >
-                            {{ displayQty(getCalculatedStock(form)) }}
+                            <FractionDisplay :fractionData="toFractionData(getCalculatedStock(form))" />
                         </span>
                     </span>
 
@@ -541,7 +629,7 @@ onMounted(() => {
                         v-tooltip="trans('Stock in this location')"
                         class="tabular-nums text-xs border rounded px-1.5 py-0.5 border-gray-300 text-gray-600"
                     >
-                        {{ displayQty(form.stock) }}
+                        <FractionDisplay :fractionData="toFractionData(form.stock)" />
                     </span>
                 </div>
 
