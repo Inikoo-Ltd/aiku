@@ -39,10 +39,8 @@ class IndexPurchaseOrderTransactions extends OrgAction
 
     protected function showDeliveryState(PurchaseOrder $purchaseOrder): bool
     {
-        return $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
-            && $purchaseOrder->stockDeliveries()
-                ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
-                ->exists();
+        return in_array($purchaseOrder->state, [PurchaseOrderStateEnum::CONFIRMED, PurchaseOrderStateEnum::SETTLED], true)
+            && $purchaseOrder->stockDeliveries()->exists();
     }
 
     protected function getElementGroups(PurchaseOrder $purchaseOrder): array
@@ -167,10 +165,10 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
-                ->column(key: 'state_icon', label: ['fal', 'fa-yin-yang'], canBeHidden: false, type: 'icon');
+                ->column(key: 'state_icon', label: ['fal', 'fa-clipboard-list'], canBeHidden: false, type: 'icon');
 
             if ($this->showDeliveryState($purchaseOrder)) {
-                $table->column(key: 'delivery_state', label: __('Delivery State'), canBeHidden: false, align: 'center');
+                $table->column(key: 'delivery_state', label: ['fal', 'fa-people-arrows'], canBeHidden: false, type: 'icon');
             }
 
             $table
