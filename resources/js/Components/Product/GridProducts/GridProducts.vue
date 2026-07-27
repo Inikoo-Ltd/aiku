@@ -217,7 +217,6 @@ const hasData = computed(() => {
     }
     return props.basketTransactions[product.id] || null
 } */
-console.log("basketTransactions", props.basketTransactions)
 
 // ============================================================================
 // SEARCH & FILTER FUNCTIONS

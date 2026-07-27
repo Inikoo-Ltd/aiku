@@ -21,6 +21,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/RenderProductDropshiping.vue";
 import Image from "@common/Components/Image.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue";
+import PureInput from "@/Components/Pure/PureInput.vue";
+import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue";
 
 library.add(faFileDownload)
 
