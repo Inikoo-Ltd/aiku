@@ -88,6 +88,15 @@ class StoreSowing extends OrgAction
 
     public function rules(): array
     {
+        if ($this->parent instanceof StockDeliveryItem) {
+            return [
+                'location_org_stock_id' => ['sometimes', Rule::Exists('location_org_stocks', 'id')],
+                'quantity'              => ['required', 'numeric', 'gt:0'],
+                'sower_user_id'         => ['sometimes', Rule::Exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+                'type'                  => ['sometimes', Rule::enum(SowingTypeEnum::class)],
+            ];
+        }
+
         if ($this->parent instanceof DeliveryNoteItem) {
             $warehouseId = $this->parent->deliveryNote->warehouse_id;
         } else {
@@ -125,13 +134,18 @@ class StoreSowing extends OrgAction
         $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(ReturnDeliveryNoteItem|DeliveryNoteItem $deliveryNoteItem, ?User $user, array $modelData): Sowing
+    public function action(ReturnDeliveryNoteItem|DeliveryNoteItem|StockDeliveryItem $parent, ?User $user, array $modelData): Sowing
     {
         $this->asAction = true;
         $this->user     = $user;
-        $this->parent   = $deliveryNoteItem;
-        $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
+        $this->parent   = $parent;
 
-        return $this->handle($deliveryNoteItem, $this->validatedData);
+        if ($parent instanceof StockDeliveryItem) {
+            $this->initialisation($parent->organisation, $modelData);
+        } else {
+            $this->initialisationFromShop($parent->shop, $modelData);
+        }
+
+        return $this->handle($parent, $this->validatedData);
     }
 }
