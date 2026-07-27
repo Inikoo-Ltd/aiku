@@ -34,6 +34,7 @@ use App\Enums\UI\Fulfilment\PalletDeliveryTabsEnum;
 use App\Enums\UI\Fulfilment\StoredItemTabsEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Billables\Rental;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
@@ -356,6 +357,51 @@ test('show pallet', function () {
             )
             ->has('tabs');
     });
+});
+
+test('show pallet navigation stays inside its status bucket', function () {
+    $this->withoutExceptionHandling();
+    actingAs($this->webUser, 'retina');
+
+    $fulfilmentCustomer = $this->webUser->customer->fulfilmentCustomer;
+
+    $storing = Pallet::where('fulfilment_customer_id', $fulfilmentCustomer->id)
+        ->whereNotNull('slug')
+        ->take(3)
+        ->get();
+
+    expect($storing)->not->toBeEmpty();
+
+    Pallet::whereIn('id', $storing->pluck('id'))->update(['status' => PalletStatusEnum::STORING]);
+
+    $other = Pallet::where('fulfilment_customer_id', $fulfilmentCustomer->id)
+        ->whereNotIn('id', $storing->pluck('id'))
+        ->whereNotNull('slug')
+        ->first();
+
+    if ($other) {
+        $other->update(['status' => PalletStatusEnum::RETURNED]);
+    }
+
+    $storingSlugs = Pallet::whereIn('id', $storing->pluck('id'))->pluck('slug')->all();
+
+    foreach ($storing as $pallet) {
+        $response = $this->get(route('retina.fulfilment.storage.pallets.show', [$pallet->slug]).'?bucket=storing');
+
+        $response->assertInertia(function (AssertableInertia $page) use ($storingSlugs, $other) {
+            $navigation = $page->toArray()['props']['navigation'];
+
+            foreach (['previous', 'next'] as $direction) {
+                if ($navigation[$direction]) {
+                    expect($navigation[$direction]['label'])->toBeIn($storingSlugs);
+
+                    if ($other) {
+                        expect($navigation[$direction]['label'])->not->toBe($other->slug);
+                    }
+                }
+            }
+        });
+    }
 });
 
 test('edit pallet', function () {
