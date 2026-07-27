@@ -66,6 +66,7 @@ export interface StocksManagementTS {
         [key: string]: {
             icon_state: IconTS
             value: number
+            value_fractional?: [number, [number, number]]
         }
     }
     stock_cost : {
@@ -76,4 +77,5 @@ export interface StocksManagementTS {
     }
     locations: StockLocation[]
     qty_in_location: number
+    qty_in_location_fractional?: [number, [number, number]]
 }
