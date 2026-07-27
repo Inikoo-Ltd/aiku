@@ -2,8 +2,6 @@ import type { Component } from "vue"
 import { defineAsyncComponent } from "vue"
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
-import InternalLastSeen1Iris from "@/Iris/Components/IrisBlocks/InternalLastSeen1Iris.vue"
-import InternalItemAlternatives1Iris from "@/Iris/Components/IrisBlocks/InternalItemAlternatives1Iris.vue"
 /* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
@@ -31,6 +29,8 @@ const ProductIris1Ecom = async(() => import("@/Components/CMS/Webpage/Product1/E
 const LuigiTrends1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue"))
 const LuigiLastSeen1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiLastSeen1Iris.vue"))
 const LuigiItemAlternatives1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiItemAlternatives1Iris.vue"))
+const InternalLastSeen1Iris = async(() => import("@/Iris/Components/IrisBlocks/InternalLastSeen1Iris.vue"))
+const InternalItemAlternatives1Iris = async(() => import("@/Iris/Components/IrisBlocks/InternalItemAlternatives1Iris.vue"))
 const AnnouncementInformation1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformation1.vue"))
 const AnnouncementPromo1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo1Iris.vue"))
 const AnnouncementPromo2Countdown = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementPromo2Countdown.vue"))
@@ -114,7 +114,14 @@ const TabsIris = async(() => import("@/Iris/Components/IrisBlocks/TabsIris.vue")
 const FaqDepartment = async(() => import("@/Iris/Components/IrisBlocks/FaqDepartment.vue"))
 const TopFamiliesIris = async(() => import("@/Iris/Components/IrisBlocks/TopFamiliesIris.vue"))
 
-const components = (shop_type?: string): Record<string, Component> => {
+interface IrisComponentOptions {
+	search_model?: string // 'luigi' | 'internal'
+}
+
+const components = (shop_type?: string, options: IrisComponentOptions = {}): Record<string, Component> => {
+	const isInternalSearchModel = options.search_model === "internal"
+
+
 	return {
 		//topBar
 		"top-bar-1": Topbar1Iris,
@@ -177,10 +184,8 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 		// Luigi
 		"luigi-trends-1": LuigiTrends1Iris,
-		"luigi-last-seen-1": LuigiLastSeen1Iris,
-		// "luigi-last-seen-1": InternalLastSeen1Iris,  // TODO: to replace Luigi
-		"luigi-item-alternatives-1": LuigiItemAlternatives1Iris,
-		// "luigi-item-alternatives-1": InternalItemAlternatives1Iris,  // TODO: to replace Luigi
+		"luigi-last-seen-1": isInternalSearchModel ? InternalLastSeen1Iris : LuigiLastSeen1Iris,
+		"luigi-item-alternatives-1": isInternalSearchModel ? InternalItemAlternatives1Iris : LuigiItemAlternatives1Iris,
 		"recommendation-customer-recently-bought-1": RecommendationCRB1Iris,
 
 		"cta-image-background": CtaImageBackroundIris,
@@ -229,11 +234,11 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 export const getIrisComponent = (
 	componentName: string,
-	options?: {
+	options?: IrisComponentOptions & {
 		shop_type?: string // 'b2b' | 'dropshipping'
 	}
 ) => {
-	return components(options?.shop_type)[componentName] ?? NotFoundComponent
+	return components(options?.shop_type, { search_model: options?.search_model })[componentName] ?? NotFoundComponent
 }
 
 export const getProductsRenderDropshippingComponent = (

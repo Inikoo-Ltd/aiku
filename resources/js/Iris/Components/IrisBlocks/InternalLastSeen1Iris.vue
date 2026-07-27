@@ -62,7 +62,6 @@ const isProductLoading = (productId: string) => {
 const webpageId = inject<number | null>('webpage_id', null)
 
 const fetchProductsLastSeen = async () => {
-    console.log('qqqqqqqqqqqqqq', webpageId)
     if (!webpageId) {
         isFetched.value = true
         return
@@ -77,7 +76,7 @@ const fetchProductsLastSeen = async () => {
 
         listProducts.value = response.data.data
         
-        console.log(`LLS (${response.data.data?.length}): `, response.data.data)
+        console.log(`LLS Internal (${response.data.data?.length}): `, response.data.data)
 
     } catch (error: any) {
         console.error('Error on fetching products last seen:', error)
@@ -105,7 +104,7 @@ onMounted(() => {
                 <div class="text-3xl font-semibold">
                     <!-- <div v-html="fieldValue.title"></div> -->
                     <div>
-                        <p style="text-align: center">{{ trans("Last seen") }}</p>
+                        <p style="text-align: center">{{ trans("Last seen") }}<span v-if="layout.app.environment === 'local'" class="ml-2 bg-red-500">(Internal)</span></p>
                     </div>
                 </div>
             </div>

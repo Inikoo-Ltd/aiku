@@ -77,8 +77,11 @@ const fetchProductAlternatives = async () => {
         const response = await axios.get(
             route('iris.json.product.alternatives', { product: productId })
         )
-        console.log('Internal IALJFKLDJSFLKDS', response.data.data)
+        
         listProducts.value = response.data.data
+
+        console.log(`LIA Internal (${response.data.data?.length}): `, response.data.data)
+        
     } catch (error: any) {
         console.error('Error on fetching product alternatives:', error)
     } finally {
@@ -104,7 +107,7 @@ onMounted(() => {
         <div v-if="!isFetched || (isFetched && listProducts?.length)" class="px-3 py-6 pb-2">
             <div class="text-2xl md:text-3xl font-semibold">
                 <div>
-                    <p style="text-align: center">{{ trans("You may also like") }}</p>
+                    <p style="text-align: center">{{ trans("You may also like") }}<span v-if="layout.app.environment === 'local'" class="ml-2 bg-red-500">(Internal)</span></p>
                 </div>
             </div>
         </div>

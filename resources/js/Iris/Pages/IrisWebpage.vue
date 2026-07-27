@@ -134,6 +134,7 @@ console.log('props',props)
                 <IrisBlockRenderer
                     :type="web_block_data.type"
                     :shopType="layout.retina.type"
+                    :searchModel="layout?.iris?.iris_search_model"
                     :screenType="screenType"
                     :code="web_block_data.type"
                     :fieldValue="web_block_data?.web_block?.layout?.data?.fieldValue || web_block_data.structure"
