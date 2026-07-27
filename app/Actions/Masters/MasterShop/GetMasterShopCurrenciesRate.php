@@ -7,6 +7,7 @@
 
 namespace App\Actions\Masters\MasterShop;
 
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterShop;
@@ -41,9 +42,16 @@ class GetMasterShopCurrenciesRate
         return $mostFollowed ?? $majorCodes->first();
     }
 
-    public function handle(MasterShop $masterShop): Collection
+    /**
+     * @param bool $onlyOpenShops restrict the currency set to open shops. Master product creation
+     *                            seeds prices for shops that will actually sell, while the edit,
+     *                            bulk edit and family pages expose every currency the master shop
+     *                            has ever had a shop for, so a closed shop's prices stay editable.
+     */
+    public function handle(MasterShop $masterShop, bool $onlyOpenShops = false): Collection
     {
         $shopCurrencies = Shop::where('master_shop_id', $masterShop->id)
+            ->when($onlyOpenShops, fn ($query) => $query->where('state', ShopStateEnum::OPEN))
             ->select('currency_id')
             ->distinct()
             ->get();

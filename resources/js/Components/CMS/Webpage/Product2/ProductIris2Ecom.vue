@@ -144,6 +144,10 @@ const groupedAttachments = computed(() => {
     }, {})
 })
 
+const countriesOfOrigin = computed(() =>
+    (product.value?.specifications?.countries_of_origin || []).filter((country: any) => country?.code)
+)
+
 const toggleExpanded = () => {
     expanded.value = !expanded.value
 }
@@ -458,11 +462,11 @@ onMounted(() => {
                             </div>
 
                             <!-- Origin Country -->
-                            <div v-if="product?.specifications?.countries_of_origin?.length" class="grid grid-cols-2">
+                            <div v-if="countriesOfOrigin.length" class="grid grid-cols-2">
                                 <div class="p-2 text-sm font-thin">{{ trans('Origin Country') }}</div>
 
                                 <div class="p-2 flex flex-col gap-1 font-thin text-sm">
-                                    <div v-for="country in product.specifications.countries_of_origin" :key="country.code"
+                                    <div v-for="country in countriesOfOrigin" :key="country.code"
                                         class="flex items-center gap-2">
                                         <img :src="'/flags/' + country.code.toLowerCase() + '.png'"
                                             :alt="country.name" :title="country.name" class="h-4 w-auto" />
@@ -697,11 +701,11 @@ onMounted(() => {
                             </div>
 
                             <!-- Origin Country -->
-                            <div v-if="product?.specifications?.countries_of_origin?.length" class="grid grid-cols-2">
+                            <div v-if="countriesOfOrigin.length" class="grid grid-cols-2">
                                 <div class="p-2 text-sm font-thin">{{ trans('Origin Country') }}</div>
 
                                 <div class="p-2 flex flex-col gap-1 font-thin text-sm">
-                                    <div v-for="country in product.specifications.countries_of_origin" :key="country.code"
+                                    <div v-for="country in countriesOfOrigin" :key="country.code"
                                         class="flex items-center gap-2">
                                         <img :src="'/flags/' + country.code.toLowerCase() + '.png'"
                                             :alt="country.name" :title="country.name" class="h-4 w-auto" />

@@ -17,6 +17,7 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\PurchaseOrderTabsEnum;
@@ -328,7 +329,7 @@ class ShowPurchaseOrder extends OrgAction
                     ],
                 ],
             ],
-            PurchaseOrderStateEnum::CONFIRMED => $purchaseOrder->stockDeliveries()->exists() ? [] : [
+            PurchaseOrderStateEnum::CONFIRMED => $this->hasActiveStockDelivery($purchaseOrder) ? [] : [
                 [
                     'label'   => __('New Delivery'),
                     'tooltip' => __('Create Stock Delivery from this Purchase Order'),
@@ -405,10 +406,24 @@ class ShowPurchaseOrder extends OrgAction
             }
         }
 
-        if (
-            in_array($state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED], true)
-            || ($state === PurchaseOrderStateEnum::CONFIRMED && !$purchaseOrder->stockDeliveries()->exists())
-        ) {
+        $deliveryProgression = [
+            PurchaseOrderDeliveryStateEnum::IN_PROCESS->value,
+            PurchaseOrderDeliveryStateEnum::CONFIRMED->value,
+            PurchaseOrderDeliveryStateEnum::READY_TO_SHIP->value,
+            PurchaseOrderDeliveryStateEnum::DISPATCHED->value,
+            PurchaseOrderDeliveryStateEnum::RECEIVED->value,
+            PurchaseOrderDeliveryStateEnum::CHECKED->value,
+            PurchaseOrderDeliveryStateEnum::PLACED->value,
+        ];
+
+        $deliveryRank   = array_search($purchaseOrder->delivery_state->value, $deliveryProgression, true);
+        $dispatchedRank = array_search(PurchaseOrderDeliveryStateEnum::DISPATCHED->value, $deliveryProgression, true);
+        $receivedRank   = array_search(PurchaseOrderDeliveryStateEnum::RECEIVED->value, $deliveryProgression, true);
+
+        $hasDispatched = $deliveryRank !== false && $deliveryRank >= $dispatchedRank;
+        $hasReceived   = $deliveryRank !== false && $deliveryRank >= $receivedRank;
+
+        if (!$hasDispatched) {
             // TODO: Default should come from the Supplier/Agent "Production waiting time (days)"
             // (no such field yet). While the purchase order is not confirmed, only a sub label should
             // show (e.g. "Estimated X days after confirmation"); once confirmed, the default timestamp
@@ -425,22 +440,31 @@ class ShowPurchaseOrder extends OrgAction
             ];
         }
 
-        // TODO: Default should come from the Supplier/Agent "Delivery time (days)" (no such field yet).
-        // While the purchase order is not confirmed, only a sub label should show
-        // (e.g. "Estimated 30 days after confirmation"); once confirmed, the default timestamp is
-        // calculated as estimated dispatch + delivery days, and once dispatched it becomes the
-        // stock delivery estimated received date.
-        $estimatedReceivingDate = Arr::get($purchaseOrder->data, 'estimated_receiving_date');
+        if (!$hasReceived) {
+            // TODO: Default should come from the Supplier/Agent "Delivery time (days)" (no such field yet).
+            // While the purchase order is not confirmed, only a sub label should show
+            // (e.g. "Estimated 30 days after confirmation"); once confirmed, the default timestamp is
+            // calculated as estimated dispatch + delivery days, and once dispatched it becomes the
+            // stock delivery estimated received date.
+            $estimatedReceivingDate = Arr::get($purchaseOrder->data, 'estimated_receiving_date');
 
-        $timeline['estimated_delivery'] = [
-            'label'     => __('Estimated delivery'),
-            'tooltip'   => __('Estimated delivery'),
-            'key'       => 'estimated_delivery',
-            'sub_label' => $estimatedReceivingDate ? null : __('No estimated delivery date'),
-            'timestamp' => $estimatedReceivingDate,
-        ];
+            $timeline['estimated_delivery'] = [
+                'label'     => __('Estimated delivery'),
+                'tooltip'   => __('Estimated delivery'),
+                'key'       => 'estimated_delivery',
+                'sub_label' => $estimatedReceivingDate ? null : __('No estimated delivery date'),
+                'timestamp' => $estimatedReceivingDate,
+            ];
+        }
 
         return $timeline;
+    }
+
+    private function hasActiveStockDelivery(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->stockDeliveries()
+            ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
+            ->exists();
     }
 
     public function getDeliveryStats(PurchaseOrder $purchaseOrder): array
@@ -456,7 +480,7 @@ class ShowPurchaseOrder extends OrgAction
         ];
 
         $rank = array_search($purchaseOrder->delivery_state->value, $progression, true);
-        $hasStockDelivery = $purchaseOrder->stockDeliveries()->exists();
+        $hasStockDelivery = $this->hasActiveStockDelivery($purchaseOrder);
 
         return [
             'total_delivery_items'     => $hasStockDelivery ? (int) $purchaseOrder->stockDeliveries()->sum('number_stock_delivery_items_except_cancelled') : null,
@@ -468,7 +492,9 @@ class ShowPurchaseOrder extends OrgAction
 
     public function getStockDeliveryTimelines(PurchaseOrder $purchaseOrder): array
     {
-        return $purchaseOrder->stockDeliveries()->get()->map(fn (StockDelivery $stockDelivery) => [
+        return $purchaseOrder->stockDeliveries()
+            ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
+            ->get()->map(fn (StockDelivery $stockDelivery) => [
             'reference' => $stockDelivery->reference,
             'state'     => $stockDelivery->state->value,
             'route'     => [

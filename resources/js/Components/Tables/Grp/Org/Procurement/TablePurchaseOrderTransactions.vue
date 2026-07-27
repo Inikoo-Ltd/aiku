@@ -13,15 +13,17 @@ import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
 import Image from '@common/Components/Image.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
+import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox } from '@fal'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox, faPeopleArrows } from '@fal'
 import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle, faPeopleArrows)
 
 const confirm = useConfirm()
 
@@ -45,31 +47,18 @@ function supplierRoute(item: any): string {
     ])
 }
 
-const locale = useLocaleStore()
+const currentLevel = defineModel<OrderingLevel>('level', { default: 'cartons' })
 
-type Level = 'cartons' | 'skos' | 'units'
+const locale = useLocaleStore()
 
 const isInProcess = computed(() => props.state === 'in_process')
 
-const levels = computed(() => [
-    { key: 'cartons' as Level, icon: 'fal fa-pallet', tab: trans('Ordering Cartons'), description: trans('Carton description'), quantity: trans('Cartons'), cost: trans('Carton cost') },
-    { key: 'skos' as Level, icon: 'fal fa-box', tab: trans('Ordering SKOs'), description: trans('SKO description'), quantity: trans('SKOs'), cost: trans('SKO cost') },
-    { key: 'units' as Level, icon: 'fal fa-stop-circle', tab: trans('Ordering Units'), description: trans('Unit description'), quantity: trans('Units'), cost: trans('Unit cost') },
-])
-
-const currentLevel = ref<Level>('cartons')
+const levels = computed(() => getOrderingLevels())
 
 const level = computed(() => levels.value.find(l => l.key === currentLevel.value) ?? levels.value[0])
 
 function unitsPerLevel(item: any) {
-    if (currentLevel.value === 'cartons') {
-        return Number(item.units_per_carton) || 1
-    }
-    if (currentLevel.value === 'skos') {
-        return Number(item.units_per_pack) || 1
-    }
-
-    return 1
+    return unitsPerOrderingLevel(item, currentLevel.value)
 }
 
 function skosPerCarton(item: any) {
@@ -354,31 +343,49 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(quantity)="{ item }">
-            <div v-if="isInProcess" class="flex justify-end items-center gap-2">
+            <div v-if="isInProcess" class="flex justify-end items-center">
                 <NumberWithButtonSave
                     :key="`${item.id}-${currentLevel}`"
+                    isWithRefreshModel
                     :modelValue="quantityAtLevel(item)"
                     :min="0"
                     :isLoading="savingId === item.id"
                     @onSave="(form) => onSaveQuantity(item, form)"
                 />
-                <button
-                    v-if="item.deleteRoute"
-                    v-tooltip="trans('Remove')"
-                    type="button"
-                    class="flex items-center justify-center text-gray-400 hover:text-red-500 disabled:text-gray-300"
-                    :disabled="deletingId === item.id"
-                    @click="confirmDeleteItem($event, item)"
-                >
-                    <FontAwesomeIcon
-                        :icon="deletingId === item.id ? 'fas fa-spinner' : 'fal fa-trash-alt'"
-                        :spin="deletingId === item.id"
-                        aria-hidden="true"
-                        fixed-width
-                    />
-                </button>
             </div>
             <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
+        </template>
+
+        <template #cell(actions)="{ item }">
+            <div class="flex justify-end items-center gap-2">
+                <Button
+                    v-if="item.deleteRoute && state === 'in_process'"
+                    :label="trans('Remove')"
+                    :tooltip="trans('Remove this product from the purchase order')"
+                    icon="fal fa-trash-alt"
+                    type="delete"
+                    size="xs"
+                    :loading="deletingId === item.id"
+                    :disabled="deletingId === item.id"
+                    @click="confirmDeleteItem($event, item)"
+                />
+
+                <Button
+                    v-if="state === 'submitted' && item.cancelRoute"
+                    :label="trans('Cancel')"
+                    :tooltip="trans('Cancel this item')"
+                    icon="fas fa-minus-circle"
+                    type="delete"
+                    size="xs"
+                    :loading="cancellingId === item.id"
+                    :disabled="cancellingId === item.id"
+                    @click="confirmCancelItem($event, item)"
+                />
+
+                <span v-if="!item.deleteRoute && !item.cancelRoute" class="text-gray-400 text-sm">
+                    {{ trans('No actions needed') }}
+                </span>
+            </div>
         </template>
 
         <template #cell(weight)="{ item }">
@@ -408,43 +415,27 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(state)="{ item }">
-            <div class="flex items-center gap-1.5">
-                <FontAwesomeIcon
-                    v-tooltip="item.state_icon?.tooltip"
-                    :icon="item.state_icon?.icon"
-                    :class="item.state_icon?.class"
+            <div class="flex items-center gap-1.5">                
+                 <FontAwesomeIcon
+                    v-if="item.state_icon"
+                    v-tooltip="item.state_icon.tooltip"
+                    :icon="item.state_icon.icon"
+                    :class="item.state_icon.class"
                     aria-hidden="true"
                     fixed-width
                 />
-                <span>{{ item.state_label }}</span>
-                <button
-                    v-if="state === 'submitted' && item.cancelRoute"
-                    v-tooltip="trans('Cancel this item')"
-                    type="button"
-                    class="flex items-center justify-center text-red-500 hover:text-red-700 disabled:text-gray-300"
-                    :disabled="cancellingId === item.id"
-                    @click="confirmCancelItem($event, item)"
-                >
-                    <FontAwesomeIcon
-                        :icon="cancellingId === item.id ? 'fas fa-spinner' : 'fas fa-minus-circle'"
-                        :spin="cancellingId === item.id"
-                        aria-hidden="true"
-                        fixed-width
-                    />
-                </button>
             </div>
         </template>
 
         <template #cell(delivery_state)="{ item }">
-            <div class="flex items-center gap-1.5">
+            <div class="flex justify-center items-center gap-1.5">
                 <FontAwesomeIcon
                     v-tooltip="item.delivery_state_icon?.tooltip"
                     :icon="item.delivery_state_icon?.icon"
                     :class="item.delivery_state_icon?.class"
                     aria-hidden="true"
                     fixed-width
-                />
-                <span>{{ item.delivery_state_label }}</span>
+                />                
             </div>
         </template>
     </Table>

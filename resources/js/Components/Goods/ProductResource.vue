@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
@@ -121,6 +121,10 @@ library.add(
 const showFullWarnings = ref(false)
 const showFullInstructions = ref(false)
 
+const countriesOfOrigin = computed(() =>
+    (props.properties?.countries_of_origin || []).filter(country => country?.code)
+)
+
 
 const hazardDefinitions = ref([
     { key: "acuteToxicity", name: "Acute Toxicity", icon: "toxic-icon.png" },
@@ -236,17 +240,17 @@ const getIcon = (type?: string) => {
                         <div>
                             <dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
                             <ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-                                <li v-for="ingredient in data?.specifications?.ingredients" :key="ingredient.id">
+                                <li v-for="ingredient in properties.ingredients" :key="ingredient.id">
                                     {{ ingredient }}
                                 </li>
                             </ul>
                         </div>
 
                         <div class="flex justify-between">
-                            <dt class="text-gray-500">{{ ctrans("Countries of origin") }} <span v-if="properties?.countries_of_origin?.length > 0">({{ properties?.countries_of_origin?.length }})</span></dt>
+                            <dt class="text-gray-500">{{ ctrans("Countries of origin") }} <span v-if="countriesOfOrigin.length > 0">({{ countriesOfOrigin.length }})</span></dt>
                             <dd class="font-medium">
-                                <template v-if="properties?.countries_of_origin?.length">
-                                    <div v-for="country in properties?.countries_of_origin" :key="country.code" class="text-right">
+                                <template v-if="countriesOfOrigin.length">
+                                    <div v-for="country in countriesOfOrigin" :key="country.code" class="text-right">
                                         <img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
                                             :src="'/flags/' + country.code.toLowerCase() + '.png'"
                                             loading="lazy" />

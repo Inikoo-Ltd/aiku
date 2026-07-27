@@ -8,8 +8,8 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
-import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faInboxIn, faInboxOut, faInfoCircle, faMapSigns, faPersonCarry, faQuestionCircle, faTilde, faTruckLoading } from "@fal";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faHorizontalRule, faInboxIn, faInboxOut, faInfoCircle, faMapSigns, faPersonCarry, faQuestionCircle, faRampLoading, faTilde, faTruckLoading } from "@fal";
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -89,8 +89,8 @@ const locationRoute = (orgStockMovement, extraData = {}) => {
   })
 }
 
-function deliveryNoteRoute(orgStockMovement) {
-    return route("grp.majordomo.redirect_delivery_notes", [orgStockMovement.delivery_note_id])
+function parentRoute(orgStockMovement) {
+    return route("grp.majordomo.redirect_org_stock_movement_parent", [orgStockMovement.id])
 }
 
 const isNoteModalOpen = ref(false);
@@ -132,13 +132,25 @@ function noteColor(movement) {
     </template>
     
     <template #cell(type)="{ item: orgStockMovement }">
-      <span v-if="orgStockMovement.delivery_note_reference && orgStockMovement.delivery_note_id">
-        <Link class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold" :href="deliveryNoteRoute(orgStockMovement)">
-          <FontAwesomeIcon 
-            :icon="faTruckLoading"
-            class="pr-1"
-          />
-          {{ orgStockMovement.delivery_note_reference }}
+      <span v-if="orgStockMovement.parent_reference">
+        <Link
+          v-tooltip="orgStockMovement.type_label"
+          class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold" 
+          :href="parentRoute(orgStockMovement)"
+        >
+          <FontAwesomeLayers
+            class="mr-1"
+          >
+            <FontAwesomeIcon 
+              :icon="orgStockMovement.parent_type == 'DeliveryNote' ? faTruckLoading : faRampLoading"
+            />
+            <FontAwesomeIcon
+              v-if="orgStockMovement.type == 'cancel-return-picked' || orgStockMovement.type == 'cancel-picked'"
+              :icon="faHorizontalRule"
+              class="rotate-[45deg] text-red-500 text-md"
+            />
+          </FontAwesomeLayers>
+          {{ orgStockMovement.parent_reference }}
         </Link>
       </span>
       <span v-else-if="orgStockMovement.is_migration_point" v-tooltip="ctrans('Anchor point. From where data is migrated from Aurora')">

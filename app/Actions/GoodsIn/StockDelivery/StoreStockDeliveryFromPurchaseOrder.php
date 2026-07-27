@@ -4,6 +4,7 @@ namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -11,6 +12,7 @@ use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Models\GoodsIn\StockDelivery;
@@ -81,6 +83,13 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                 ], $this->getExchanges($purchaseOrderTransaction))
             );
         }
+
+        $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)
+            ->where('delivery_state', '!=', PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS)
+            ->update(['delivery_state' => PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS]);
+
+        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 
         StockDeliveriesHydrateItems::dispatch($stockDelivery);
 

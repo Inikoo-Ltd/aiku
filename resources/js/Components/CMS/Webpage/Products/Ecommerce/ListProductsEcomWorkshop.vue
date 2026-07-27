@@ -19,7 +19,7 @@ const props = defineProps<{
   screenType: "mobile" | "tablet" | "desktop";
   code: string
 }>();
-
+console.log('List Products',props)
 const layout: any = inject("layout", {});
 
 /* layout.app.theme = layout.iris.theme */
@@ -32,8 +32,11 @@ const showFilters = ref(false);
 const showAside = ref(false);
 
 const dummyProducts = computed(() => {
-  return props.modelValue?.products?.data?.length
-    ? props.modelValue.products.data
+  const products = props.modelValue?.products
+  const productList = Array.isArray(products) ? products : products?.data
+
+  return productList?.length
+    ? productList
     : Array.from({ length: 8 }).map((_, i) => ({
       id: i + 1,
       name: `Product ${i + 1}`,
@@ -166,10 +169,12 @@ watch(
               :button="modelValue?.button" :screenType />
           </div>
 
+        
           <div v-for="(card, cardIndex) in (modelValue?.cards ?? []).filter((item: any) => item?.visible)"
             :key="card.ulid ?? cardIndex" class="relative rounded-2xl overflow-hidden min-h-80">
-            <Image v-if="card?.image?.source" :src="card.image.source"
-              class="absolute inset-0 w-full h-full object-cover" />
+            <Image v-if="card?.image?.source" :src="card.image.source" :imageCover="true"
+              :alt="card?.image?.alt ?? 'card image'"
+              class="absolute inset-0 w-full h-full" />
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
             <!-- Center Content -->
             <div class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">

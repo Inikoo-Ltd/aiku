@@ -32,11 +32,23 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
 
         $items = (int) $stateCounts->sum();
 
+        $itemsNet = $stockDelivery->items()->sum('net_amount');
+        $extras   = (float) $stockDelivery->cost_extra
+            + (float) $stockDelivery->cost_shipping
+            + (float) $stockDelivery->cost_duties
+            + (float) $stockDelivery->cost_tax;
+
+        $discrepancy = $this->getDeliveryDiscrepancy($stockDelivery);
+
         $stats = [
             'number_stock_delivery_items'                  => $items,
             'number_stock_delivery_items_except_cancelled' => $items - (int) Arr::get($stateCounts, StockDeliveryItemStateEnum::CANCELLED->value, 0),
+            'number_stock_delivery_items_under_delivered'  => $discrepancy['under_delivered'],
+            'number_stock_delivery_items_over_delivered'   => $discrepancy['over_delivered'],
             'gross_weight'                                 => $weights['gross_weight'],
             'net_weight'                                   => $weights['net_weight'],
+            'cost_items'                                   => $itemsNet,
+            'cost_total'                                   => $itemsNet + $extras,
         ];
 
         foreach (StockDeliveryItemStateEnum::cases() as $case) {
@@ -46,12 +58,26 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
         $checkedItemsCount = (int) Arr::get($stateCounts, StockDeliveryItemStateEnum::CHECKED->value, 0);
 
         if (($checkedItemsCount === $items) && ($items > 0)) {
-            $stats['state']                              = StockDeliveryStateEnum::CHECKED;
-            $stats['checked_at']                         = now();
-            $stats[$stockDelivery->state->value . '_at'] = null;
+            $stats['state']      = StockDeliveryStateEnum::CHECKED;
+            $stats['checked_at'] = now();
         }
 
         $stockDelivery->update($stats);
+    }
+
+    private function getDeliveryDiscrepancy(StockDelivery $stockDelivery): array
+    {
+        $counts = $stockDelivery->items()
+            ->whereNotNull('checked_at')
+            ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
+            ->selectRaw('count(*) filter (where unit_quantity_checked < unit_quantity) as under_delivered')
+            ->selectRaw('count(*) filter (where unit_quantity_checked > unit_quantity) as over_delivered')
+            ->first();
+
+        return [
+            'under_delivered' => (int) $counts->under_delivered,
+            'over_delivered'  => (int) $counts->over_delivered,
+        ];
     }
 
     private function getWeights(StockDelivery $stockDelivery): array

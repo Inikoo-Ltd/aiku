@@ -16,19 +16,15 @@ enum PurchaseOrderTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE     = 'showcase';
     case ITEMS        = 'items';
     case PRODUCTS     = 'products';
+    case SHOWCASE     = 'showcase';
     case HISTORY      = 'history';
     // case ATTACHMENTS  = 'attachments';
 
     public function blueprint(): array
     {
         return match ($this) {
-            PurchaseOrderTabsEnum::SHOWCASE => [
-                'title' => __('Data'),
-                'icon'  => 'fal fa-database',
-            ],
             PurchaseOrderTabsEnum::ITEMS    => [
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
@@ -36,6 +32,10 @@ enum PurchaseOrderTabsEnum: string
             PurchaseOrderTabsEnum::PRODUCTS => [
                 'title' => __("All supplier's products"),
                 'icon'  => 'fal fa-th-list',
+            ],
+            PurchaseOrderTabsEnum::SHOWCASE => [
+                'title' => __('Data'),
+                'icon'  => 'fal fa-database',
             ],
             PurchaseOrderTabsEnum::HISTORY  => [
                 'title' => __('History'),

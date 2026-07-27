@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
@@ -38,7 +39,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
 
     protected function showDeliveryState(PurchaseOrder $purchaseOrder): bool
     {
-        return $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
+        return in_array($purchaseOrder->state, [PurchaseOrderStateEnum::CONFIRMED, PurchaseOrderStateEnum::SETTLED], true)
             && $purchaseOrder->stockDeliveries()->exists();
     }
 
@@ -164,6 +165,13 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
+                ->column(key: 'state_icon', label: ['fal', 'fa-clipboard-list'], canBeHidden: false, type: 'icon');
+
+            if ($this->showDeliveryState($purchaseOrder)) {
+                $table->column(key: 'delivery_state', label: ['fal', 'fa-people-arrows'], canBeHidden: false, type: 'icon');
+            }
+
+            $table
                 ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'image_thumbnail', label: __('Image'), canBeHidden: false);
 
@@ -171,18 +179,19 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 $table
                     ->column(key: 'description', label: __('Description'), canBeHidden: false)
                     ->column(key: 'subtotals', label: __('Subtotals'), canBeHidden: false)
-                    ->column(key: 'quantity', label: __('Units'), canBeHidden: false, align: 'right');
+                    ->column(key: 'quantity', label: __('Units'), canBeHidden: false, align: 'right')
+                    ->column(key: 'actions', label: 'Actions', canBeHidden: false, align: 'right');
             } else {
                 $table
                     ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
                     ->column(key: 'quantity', label: __('Qty'), canBeHidden: false)
                     ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
-                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false)
-                    ->column(key: 'state', label: __('State'), canBeHidden: false);
+                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
+                // ->column(key: 'state', label: __('State'), canBeHidden: false);
 
-                if ($this->showDeliveryState($purchaseOrder)) {
-                    $table->column(key: 'delivery_state', label: __('Delivery State'), canBeHidden: false);
+                if ($purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED) {
+                    $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
                 }
             }
 

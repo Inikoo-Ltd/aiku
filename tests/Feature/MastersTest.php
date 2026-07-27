@@ -54,6 +54,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetOrderingIntervals;
@@ -2311,4 +2312,131 @@ test('reprocessing a master asset time series with a mid period window keeps the
 
     expect((float) $record->sales_grp_currency_external)->toBe(350.0)
         ->and((int) $record->sold)->toBe(2);
+});
+
+test('master product creation seeds minor prices from the official exchange, not live FX', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $gbp = Currency::where('code', 'GBP')->firstOrFail();
+    $eur = Currency::where('code', 'EUR')->firstOrFail();
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $gbp->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $eurShop = \App\Actions\Catalogue\Shop\StoreShop::run(
+        $this->organisation,
+        array_merge(Shop::factory()->definition(), ['code' => 'EFX'.substr(uniqid(), -4)])
+    );
+    $eurShop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $eur->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'FXDEP-'.uniqid(),
+        'name' => 'FX Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'FXFAM-'.uniqid(),
+        'name' => 'FX Family',
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    $data = \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily,
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    // The minor must follow the master shop's agreed rate, never a live market rate.
+    expect(data_get($data, 'currencies.EUR.ratio_eur'))->toBe(1.18)
+        ->and(data_get($data, 'currencies.EUR.is_major'))->toBeFalse()
+        ->and(data_get($data, 'currencies.EUR.major'))->toBe('GBP')
+        ->and(data_get($data, 'currencies.GBP.ratio_eur'))->toBe(1.0)
+        ->and(data_get($data, 'currencies.GBP.is_major'))->toBeTrue();
+});
+
+test('minor currency recalculation includes variant master assets', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'SEK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 11],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'VARDEP-'.uniqid(),
+        'name' => 'Variant Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'VARFAM-'.uniqid(),
+        'name' => 'Variant Family',
+    ]);
+
+    $variant = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'VARAST-'.uniqid(),
+        'name'    => 'Variant Asset',
+        'is_main' => false,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $variant->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 10, 'independent' => false],
+            'SEK' => ['value' => 999, 'independent' => false],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices::run($masterShop, 'SEK');
+
+    $variant->refresh();
+
+    expect(data_get($variant->master_prices, 'SEK.value'))->toBe('110');
+});
+
+test('master shop currencies rate can restrict to open shops only', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $gbp = Currency::where('code', 'GBP')->firstOrFail();
+    $eur = Currency::where('code', 'EUR')->firstOrFail();
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $gbp->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $closedEurShop = \App\Actions\Catalogue\Shop\StoreShop::run(
+        $this->organisation,
+        array_merge(Shop::factory()->definition(), ['code' => 'CLS'.substr(uniqid(), -4)])
+    );
+    $closedEurShop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $eur->id,
+        'state'          => ShopStateEnum::CLOSED,
+    ]);
+
+    $allShops  = GetMasterShopCurrenciesRate::run($masterShop);
+    $openShops = GetMasterShopCurrenciesRate::run($masterShop, onlyOpenShops: true);
+
+    // Edit / bulk edit / family pages keep a closed shop's currency editable.
+    expect($allShops->keys()->all())->toContain('GBP', 'EUR')
+        ->and($allShops['EUR']['ratio_eur'])->toBe(1.18)
+        // Master product creation only seeds currencies of shops that will actually sell.
+        ->and($openShops->keys()->all())->toContain('GBP')
+        ->and($openShops->keys()->all())->not->toContain('EUR');
 });

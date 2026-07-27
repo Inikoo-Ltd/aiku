@@ -9,9 +9,10 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
-use App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement;
+use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\Picking;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
@@ -30,9 +31,22 @@ class DeletePicking extends OrgAction
 
         $deliveryNoteItem = DB::transaction(function () use ($picking, $orgStockMovement, $deliveryNoteItem, $user) {
             $quantity = $picking->quantity;
-            $picking->delete();
+
             if ($orgStockMovement) {
-                DeleteOrgStockMovement::run($orgStockMovement);
+                $location           = $orgStockMovement->location;
+                $orgStock           = $orgStockMovement->orgStock;
+
+                StoreOrgStockMovement::run(
+                    $orgStock,
+                    $location,
+                    [
+                        'quantity' => abs($picking->quantity),
+                        'type'     => OrgStockMovementTypeEnum::CANCEL_PICKED,
+                        'user_id'  => $user?->id,
+                    ],
+                    $picking
+                );
+
                 if (app()->environment('production')) {
                     DeletePickingInAurora::dispatch(
                         $picking->id,
@@ -43,6 +57,7 @@ class DeletePicking extends OrgAction
                 }
             }
 
+            $picking->delete();
 
             if ($deliveryNoteItem->state == DeliveryNoteItemStateEnum::HANDLING_BLOCKED && $quantity > 0) {
                 SetAsWaitingWarehouse::make()->action(

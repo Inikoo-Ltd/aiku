@@ -175,7 +175,6 @@ class RecalculateMasterShopMinorCurrencyPrices
         }
 
         $assetIDs = $masterShop->masterAssets()
-            ->where('is_main', true)
             ->where('status', true)
             ->pluck('id');
 
