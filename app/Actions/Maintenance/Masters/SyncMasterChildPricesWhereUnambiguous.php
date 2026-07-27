@@ -110,9 +110,13 @@ class SyncMasterChildPricesWhereUnambiguous
             ->where('state', OrderStateEnum::CREATING)
             ->pluck('id');
 
-        $command?->info('Repricing '.$orderIDs->count().' basket(s)');
+        // RecalculateTotalsOrdersInBasket defaults to the 'urgent' queue, which is sized for
+        // latency-sensitive customer work, not for a backfill of tens of thousands of baskets.
+        // Dispatching this volume there parks real urgent jobs behind it, so send it to the slave
+        // queue instead - the same thing the action itself does for its bulk cascade.
+        $command?->info('Repricing '.$orderIDs->count().' basket(s) on the sales_slave queue');
         foreach ($orderIDs as $orderID) {
-            RecalculateTotalsOrdersInBasket::dispatch($orderID);
+            RecalculateTotalsOrdersInBasket::dispatch($orderID)->onQueue('sales_slave');
         }
     }
 
