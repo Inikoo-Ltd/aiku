@@ -3,6 +3,7 @@ import { defineAsyncComponent } from "vue"
 
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import InternalLastSeen1Iris from "@/Iris/Components/IrisBlocks/InternalLastSeen1Iris.vue"
+import InternalItemAlternatives1Iris from "@/Iris/Components/IrisBlocks/InternalItemAlternatives1Iris.vue"
 /* import ImageIris from '@/Iris/Components/IrisBlocks/ImageIris.vue'
 import TextContentIris from "@/Iris/Components/IrisBlocks/TextContentIris.vue"
 import WowsbarBannerIris from "@/Iris/Components/IrisBlocks/WowsbarBannerIris.vue" */
@@ -179,6 +180,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"luigi-last-seen-1": LuigiLastSeen1Iris,
 		// "luigi-last-seen-1": InternalLastSeen1Iris,  // TODO: to replace Luigi
 		"luigi-item-alternatives-1": LuigiItemAlternatives1Iris,
+		// "luigi-item-alternatives-1": InternalItemAlternatives1Iris,  // TODO: to replace Luigi
 		"recommendation-customer-recently-bought-1": RecommendationCRB1Iris,
 
 		"cta-image-background": CtaImageBackroundIris,

@@ -20,6 +20,7 @@ class GetIrisWebBlockLuigiRecommendations
     public function handle(Webpage $webpage, array $webBlock): array
     {
         if ($webpage->model instanceof Product) {
+            data_set($webBlock, 'web_block.layout.data.fieldValue.product.id', $webpage->model->id);
             data_set($webBlock, 'web_block.layout.data.fieldValue.product.luigi_identity', $webpage->model->getLuigiIdentity());
         }
 
