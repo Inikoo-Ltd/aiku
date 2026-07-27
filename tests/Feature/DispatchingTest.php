@@ -2288,3 +2288,43 @@ test('UI show pallet return navigation follows the bucket it was opened from', f
             ->etc()
     );
 });
+
+test('UI show pallet return navigation orders the new bucket by its latest activity', function () {
+    $this->withoutExceptionHandling();
+
+    PalletReturn::query()->update(['state' => PalletReturnStateEnum::DISPATCHED]);
+
+    $makeReturn = function (PalletReturnStateEnum $state, array $timestamps) {
+        $palletReturn = createPalletReturnWithPallet($this);
+        $palletReturn->update(array_merge(['state' => $state, 'date' => null], $timestamps));
+
+        return $palletReturn->refresh();
+    };
+
+    $confirmed = $makeReturn(PalletReturnStateEnum::CONFIRMED, [
+        'confirmed_at' => '2026-07-20 10:00:00',
+        'submitted_at' => '2026-07-14 10:00:00',
+    ]);
+
+    $submitted = $makeReturn(PalletReturnStateEnum::SUBMITTED, [
+        'confirmed_at' => null,
+        'submitted_at' => '2026-07-19 10:00:00',
+    ]);
+
+    $inProcess = $makeReturn(PalletReturnStateEnum::IN_PROCESS, [
+        'confirmed_at' => null,
+        'submitted_at' => null,
+    ]);
+    $inProcess->forceFill(['created_at' => '2026-07-18 10:00:00'])->saveQuietly();
+
+    $showRoute = fn (PalletReturn $palletReturn) => route('grp.org.warehouses.show.dispatching.pallet-returns.show', [
+        $this->organisation->slug, $this->warehouse->slug, $palletReturn->slug,
+    ]);
+
+    get($showRoute($submitted).'?bucket=new')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $confirmed->reference)
+            ->where('navigation.next.label', $inProcess->reference)
+            ->etc()
+    );
+});
