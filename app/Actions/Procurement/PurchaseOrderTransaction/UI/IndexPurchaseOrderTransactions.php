@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
@@ -39,7 +40,9 @@ class IndexPurchaseOrderTransactions extends OrgAction
     protected function showDeliveryState(PurchaseOrder $purchaseOrder): bool
     {
         return $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
-            && $purchaseOrder->stockDeliveries()->exists();
+            && $purchaseOrder->stockDeliveries()
+                ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
+                ->exists();
     }
 
     protected function getElementGroups(PurchaseOrder $purchaseOrder): array
