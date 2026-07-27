@@ -72,7 +72,7 @@ class ShopReviewsTool extends AikuTool
     {
         return [
             'shop'  => $schema->string()->description('Shop slug')->required(),
-            'limit' => $schema->integer()->description('Maximum recent review messages to return, default 10')->minimum(1)->maximum(50),
+            'limit' => $schema->integer()->description('Maximum recent review messages to return, default 10')->min(1)->max(50),
         ];
     }
 }

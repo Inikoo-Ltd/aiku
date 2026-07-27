@@ -81,7 +81,7 @@ class TopProductsTool extends AikuTool
             'shop'  => $schema->string()->description('Shop slug')->required(),
             'from'  => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'    => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
-            'limit' => $schema->integer()->description('Maximum products to return, default 10')->minimum(1)->maximum(50),
+            'limit' => $schema->integer()->description('Maximum products to return, default 10')->min(1)->max(50),
         ];
     }
 }

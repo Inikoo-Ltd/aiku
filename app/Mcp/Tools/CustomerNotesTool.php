@@ -79,7 +79,7 @@ class CustomerNotesTool extends AikuTool
             'shop'     => $schema->string()->description('Shop slug')->required(),
             'customer' => $schema->string()->description('Customer slug')->required(),
             'search'   => $schema->string()->description('Optional text to search within notes'),
-            'limit'    => $schema->integer()->description('Maximum notes to return, default 10')->minimum(1)->maximum(50),
+            'limit'    => $schema->integer()->description('Maximum notes to return, default 10')->min(1)->max(50),
         ];
     }
 }

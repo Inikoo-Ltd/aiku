@@ -86,7 +86,7 @@ class OrgFamilySalesTool extends AikuOrganisationTool
             'from'         => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'           => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
             'sort'         => $schema->string()->description('best (highest sales first, default) or worst (lowest first)'),
-            'limit'        => $schema->integer()->description('Maximum families to return, default 15')->minimum(1)->maximum(50),
+            'limit'        => $schema->integer()->description('Maximum families to return, default 15')->min(1)->max(50),
         ];
     }
 }
