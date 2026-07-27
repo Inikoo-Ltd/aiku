@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 import Icon from "@/Components/Icon.vue"
@@ -134,6 +135,10 @@ function onCancel(item) {
     delete editingValues.value[item.id]
 }
 
+
+function productHref(product: Product) {
+    return productRoute(product) + bucketQuery()
+}
 
 function productRoute(product: Product) {
     if (!product.slug) {
@@ -896,7 +901,7 @@ const repairTradeUnitFromChildren = async (product) => {
                     :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                 <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
                 </Link>
-                <Link :href="productRoute(product)" class="primaryLink">
+                <Link :href="productHref(product)" class="primaryLink">
                     {{ product["code"] }}
                 </Link>
             </div>
@@ -916,7 +921,7 @@ const repairTradeUnitFromChildren = async (product) => {
                         <FontAwesomeIcon icon="fab fa-octopus-deploy" class="text-indigo-700" />
                     </Link>
 
-                    <Link :href="productRoute(product)" class="primaryLink">
+                    <Link :href="productHref(product)" class="primaryLink">
                         {{ product.code }}
                     </Link>
                 </div>

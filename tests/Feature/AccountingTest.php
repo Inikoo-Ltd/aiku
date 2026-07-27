@@ -54,6 +54,7 @@ use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\CreditTransaction;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Accounting\InvoiceTransaction;
@@ -1303,6 +1304,42 @@ test('UI show invoice in Shop', function () {
             )
             ->has('invoice');
     });
+});
+
+test('UI show invoice navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $makeInvoice = function (string $date, InvoicePayStatusEnum $payStatus) use ($customer) {
+        $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $invoice->update(['date' => $date, 'pay_status' => $payStatus, 'in_process' => false]);
+
+        return $invoice->refresh();
+    };
+
+    $newest = $makeInvoice('2026-07-20 10:00:00', InvoicePayStatusEnum::UNPAID);
+    $paid   = $makeInvoice('2026-07-19 12:00:00', InvoicePayStatusEnum::PAID);
+    $middle = $makeInvoice('2026-07-19 10:00:00', InvoicePayStatusEnum::UNPAID);
+    $oldest = $makeInvoice('2026-07-18 10:00:00', InvoicePayStatusEnum::UNPAID);
+
+    $showRoute = fn ($invoice) => route('grp.org.shops.show.dashboard.invoices.show', [$this->organisation->slug, $this->shop->slug, $invoice->slug]);
+
+    get($showRoute($middle).'?bucket=unpaid')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket=unpaid&bucket_sort=date')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    expect($paid->pay_status)->toBe(InvoicePayStatusEnum::PAID);
 });
 
 test('Delete invoice', function () {

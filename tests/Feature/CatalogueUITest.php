@@ -317,6 +317,43 @@ test('UI Index catalogue product in current', function () {
     });
 });
 
+test('UI show product navigation follows the list sort', function () {
+    $this->withoutExceptionHandling();
+
+    $makeProduct = function (string $code) {
+        $productData = \App\Models\Catalogue\Product::factory()->definition();
+        data_set($productData, 'code', $code);
+        data_set($productData, 'trade_units', [['id' => $this->product->tradeUnits()->first()->id, 'quantity' => 1]]);
+        data_set($productData, 'price', 100);
+
+        return \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->family, $productData);
+    };
+
+    $first  = $makeProduct('NAVA01');
+    $middle = $makeProduct('NAVB02');
+    $last   = $makeProduct('NAVC03');
+
+    $showRoute = fn ($product) => route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $product->slug
+    ]);
+
+    get($showRoute($middle).'?bucket_sort=code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket_sort=-code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $last->name)
+            ->where('navigation.next.label', $first->name)
+            ->etc()
+    );
+});
+
 test('UI Index catalogue product all', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.all_products.index', [
         $this->organisation->slug,
