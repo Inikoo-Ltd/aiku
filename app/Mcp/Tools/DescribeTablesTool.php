@@ -18,6 +18,8 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Describe the Aiku database schema: list tables matching a name, or get columns, types and foreign keys for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
 class DescribeTablesTool extends Tool
 {
+    use WithMcpSqlAccess;
+
     public function handle(Request $request): Response
     {
         $request->validate([
@@ -25,8 +27,8 @@ class DescribeTablesTool extends Tool
             'search' => ['sometimes', 'string', 'max:64'],
         ]);
 
-        if (!$request->user()?->can_use_mcp_sql) {
-            return Response::error('SQL access is not enabled for this user.');
+        if ($denied = $this->deniedSqlAccess($request)) {
+            return $denied;
         }
 
         $tables = $request->get('tables', []);

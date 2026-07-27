@@ -26,6 +26,18 @@ beforeEach(function () {
     setPermissionsTeamId($this->group->id);
 
     $this->user->update(['can_use_mcp' => true, 'can_use_mcp_sql' => true]);
+
+    config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
+});
+
+test('sql tools refuse to run without a dedicated read only database user', function () {
+    config()->set('mcp.sql_read_only_user', null);
+
+    $response = AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, [
+        'search' => 'invoices',
+    ]);
+
+    $response->assertHasErrors(['SQL access is disabled: this environment has no dedicated read-only database user configured.']);
 });
 
 test('user without sql access is denied schema introspection', function () {
