@@ -13,6 +13,7 @@ import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
 import Image from '@common/Components/Image.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -355,22 +356,30 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(actions)="{ item }">
-            <div class="flex justify-end items-center">
-                <button
-                    v-if="item.deleteRoute"
-                    v-tooltip="trans('Remove')"
-                    type="button"
-                    class="flex items-center justify-center text-gray-400 hover:text-red-500 disabled:text-gray-300"
+            <div class="flex justify-end items-center gap-2">
+                <Button
+                    v-if="item.deleteRoute && state === 'in_process'"
+                    :label="trans('Remove')"
+                    :tooltip="trans('Remove this product from the purchase order')"
+                    icon="fal fa-trash-alt"
+                    type="delete"
+                    size="xs"
+                    :loading="deletingId === item.id"
                     :disabled="deletingId === item.id"
                     @click="confirmDeleteItem($event, item)"
-                >
-                    <FontAwesomeIcon
-                        :icon="deletingId === item.id ? 'fas fa-spinner' : 'fal fa-trash-alt'"
-                        :spin="deletingId === item.id"
-                        aria-hidden="true"
-                        fixed-width
-                    />
-                </button>
+                />
+
+                <Button
+                    v-if="state === 'submitted' && item.cancelRoute"
+                    :label="trans('Cancel')"
+                    :tooltip="trans('Cancel this item')"
+                    icon="fas fa-minus-circle"
+                    type="delete"
+                    size="xs"
+                    :loading="cancellingId === item.id"
+                    :disabled="cancellingId === item.id"
+                    @click="confirmCancelItem($event, item)"
+                />
             </div>
         </template>
 
@@ -412,36 +421,27 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(state)="{ item }">
-            <div class="flex items-center gap-1.5">
-                <span>{{ item.state_label }}</span>
-                <button
-                    v-if="state === 'submitted' && item.cancelRoute"
-                    v-tooltip="trans('Cancel this item')"
-                    type="button"
-                    class="flex items-center justify-center text-red-500 hover:text-red-700 disabled:text-gray-300"
-                    :disabled="cancellingId === item.id"
-                    @click="confirmCancelItem($event, item)"
-                >
-                    <FontAwesomeIcon
-                        :icon="cancellingId === item.id ? 'fas fa-spinner' : 'fas fa-minus-circle'"
-                        :spin="cancellingId === item.id"
-                        aria-hidden="true"
-                        fixed-width
-                    />
-                </button>
+            <div class="flex items-center gap-1.5">                
+                 <FontAwesomeIcon
+                    v-if="item.state_icon"
+                    v-tooltip="item.state_icon.tooltip"
+                    :icon="item.state_icon.icon"
+                    :class="item.state_icon.class"
+                    aria-hidden="true"
+                    fixed-width
+                />
             </div>
         </template>
 
         <template #cell(delivery_state)="{ item }">
-            <div class="flex items-center gap-1.5">
+            <div class="flex justify-center items-center gap-1.5">
                 <FontAwesomeIcon
                     v-tooltip="item.delivery_state_icon?.tooltip"
                     :icon="item.delivery_state_icon?.icon"
                     :class="item.delivery_state_icon?.class"
                     aria-hidden="true"
                     fixed-width
-                />
-                <span>{{ item.delivery_state_label }}</span>
+                />                
             </div>
         </template>
     </Table>

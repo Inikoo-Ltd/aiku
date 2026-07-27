@@ -164,7 +164,13 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
-                ->column(key: 'state_icon', label: '', canBeHidden: false)
+                ->column(key: 'state_icon', label: '', canBeHidden: false);
+
+            if ($this->showDeliveryState($purchaseOrder)) {
+                $table->column(key: 'delivery_state', label: __('Delivery State'), canBeHidden: false, align: 'center');
+            }
+
+            $table
                 ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'image_thumbnail', label: __('Image'), canBeHidden: false);
 
@@ -180,11 +186,11 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     ->column(key: 'quantity', label: __('Qty'), canBeHidden: false)
                     ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
-                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false)
-                    ->column(key: 'state', label: __('State'), canBeHidden: false);
+                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
+                // ->column(key: 'state', label: __('State'), canBeHidden: false);
 
-                if ($this->showDeliveryState($purchaseOrder)) {
-                    $table->column(key: 'delivery_state', label: __('Delivery State'), canBeHidden: false);
+                if ($purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED) {
+                    $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
                 }
             }
 
