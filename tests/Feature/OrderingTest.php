@@ -1774,3 +1774,23 @@ test('transaction import marks rows with missing code or quantity as failed', fu
     expect($missingQuantityRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
         ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
 });
+
+test('recalculating basket totals skips orders that are no longer baskets', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 111.11, 'total_amount' => 111.11]);
+
+    // A bulk run selects baskets when it queues the jobs, but drains for hours. An order submitted
+    // in the meantime must not be repriced from current prices after the fact.
+    \App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket::make()->handle($order->id);
+
+    expect((float) $order->refresh()->net_amount)->toBe(111.11)
+        ->and((float) $order->total_amount)->toBe(111.11)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
