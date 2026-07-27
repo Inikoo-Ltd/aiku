@@ -43,7 +43,7 @@ class GetMasterProductShowcase
 
         $properties = [
             'countries_of_origin' => $countriesOrigin,
-            'ingredients'       => $masterAsset->marketing_ingredients,
+            'ingredients'       => $masterAsset->marketing_ingredients ? explode(', ', $masterAsset->marketing_ingredients) : [],
             'tariff_code'       => $masterAsset->tariff_code,
             'duty_rate'         => $masterAsset->duty_rate,
             'hts_us'            => $masterAsset->hts_us,
