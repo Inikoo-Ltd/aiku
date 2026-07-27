@@ -19,6 +19,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -38,7 +39,7 @@ class SyncMasterChildPricesWhereUnambiguous
 {
     use AsAction;
 
-    public string $commandSignature = 'repair:master_child_prices {master_shop : master shop slug} {--currency=EUR : shop currency to reconcile} {--shop= : limit to one shop code, all shops of that currency if omitted} {--fix : Write corrections (default is report only)}';
+    public string $commandSignature = 'repair:master_child_prices {master_shop : master shop slug} {--currency=EUR : shop currency to reconcile} {--shop= : limit to one shop code, all shops of that currency if omitted} {--fix : Write corrections (default is report only)} {--finalise-only : Skip the sync and only run the closing cache break, reindex and basket recalculation}';
 
     /** @var array<int, int> shop ids that actually had a product corrected */
     private array $touchedShopIDs = [];
@@ -60,10 +61,24 @@ class SyncMasterChildPricesWhereUnambiguous
             }, 'products.id', 'id');
 
         if ($fix && $this->touchedShopIDs) {
-            $this->finalise($command);
+            $this->finalise(Shop::whereIn('id', $this->touchedShopIDs)->get(), $command);
         }
 
         return $counts;
+    }
+
+    /**
+     * Every shop the sync could have written to. Used by --finalise-only, where there is no run to
+     * collect touched shops from: an interrupted --fix leaves the prices written but the closing
+     * sequence never executed, and re-running --fix cannot recover it because it finds nothing left
+     * to correct and so never reaches finalise().
+     */
+    public function targetShops(MasterShop $masterShop, string $currencyCode, ?string $shopCode = null): Collection
+    {
+        return Shop::where('master_shop_id', $masterShop->id)
+            ->whereHas('currency', fn ($query) => $query->where('code', $currencyCode))
+            ->when($shopCode, fn ($query) => $query->where('code', $shopCode))
+            ->get();
     }
 
     /**
@@ -72,9 +87,11 @@ class SyncMasterChildPricesWhereUnambiguous
      * one varnish ban per product. Those have to happen once at the end instead, for the shops that
      * actually changed - same closing sequence as FinaliseRecalculateMasterShopMinorCurrencyPrices.
      */
-    private function finalise(?Command $command): void
+    public function finalise(Collection $shops, ?Command $command = null): void
     {
-        $shops = Shop::whereIn('id', $this->touchedShopIDs)->get();
+        if ($shops->isEmpty()) {
+            return;
+        }
 
         $command?->info('Breaking website caches for '.$shops->count().' shop(s)');
         RecalculateMasterShopMinorCurrencyPrices::breakWebsitesCache($shops, CrawlTriggerEnum::WEBSITE_UPDATE);
@@ -188,6 +205,15 @@ class SyncMasterChildPricesWhereUnambiguous
             $command->error("No shop with code $shopCode");
 
             return 1;
+        }
+
+        if ($command->option('finalise-only')) {
+            $shops = $this->targetShops($masterShop, $currencyCode, $shopCode);
+            $command->info('Finalising '.$shops->count().' '.$currencyCode.' shop(s) without syncing prices');
+            $this->finalise($shops, $command);
+            $command->info('Done: finalisation dispatched');
+
+            return 0;
         }
 
         if (!$fix) {
