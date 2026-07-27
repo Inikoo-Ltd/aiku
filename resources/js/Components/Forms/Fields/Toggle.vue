@@ -29,7 +29,11 @@ const props = defineProps<{
 		noIcon?: boolean
 		suffixImage?: string
 		warningText?: string
+		warningTextHtml?: string
+		warningBox?: string
 		warnTitle?: string
+		confirmLabel?: string
+		warnOnEnableOnly?: boolean
 		submitOnConfirm?: boolean
 		description?: string | string[]
 		descriptionLinks?: {   // EditShop
@@ -92,7 +96,13 @@ watch(value, (newValue) => {
 
 const clearAndWarn = () => {
 	props.form.errors[props.fieldName] = null
-	if (!props.fieldData?.warningText) return false
+	if (
+		!props.fieldData?.warningText &&
+		!props.fieldData?.warningTextHtml &&
+		!props.fieldData?.warningBox
+	) {
+		return false
+	}
 	return true
 }
 
@@ -142,14 +152,34 @@ const getDescriptionSegments = (description: string) => {
 				fieldData?.warningText ?? trans('Enabling this would have direct consequences')
 			"
 			hideCancel>
+			<template v-if="fieldData?.warningTextHtml || fieldData?.warningBox" #description>
+				<div class="mt-2 space-y-3">
+					<!-- warningTextHtml is blueprint copy authored in PHP, never user input -->
+					<p
+						v-if="fieldData?.warningTextHtml"
+						class="text-sm text-gray-500"
+						v-html="fieldData.warningTextHtml"></p>
+					<p v-else class="text-sm text-gray-500">{{ fieldData?.warningText }}</p>
+					<div
+						v-if="fieldData?.warningBox"
+						class="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+						{{ fieldData.warningBox }}
+					</div>
+				</div>
+			</template>
 			<template #default="{ isOpenModal, changeModel }">
 				<Switch
 					v-model="value"
 					@update:modelValue="
 						() => {
-							if (clearAndWarn()) {
+							if (clearAndWarn() && !(fieldData?.warnOnEnableOnly && !value)) {
 								value = !value
 								changeModel()
+								return
+							}
+							if (fieldData?.submitOnConfirm) {
+								updateFormValue(value)
+								submit?.()
 							}
 						}
 					"
@@ -184,7 +214,7 @@ const getDescriptionSegments = (description: string) => {
 			</template>
 			<template #btn-yes="{ closeModal }">
 				<Button
-					:label="trans('Confirm')"
+					:label="fieldData?.confirmLabel ?? trans('Confirm')"
 					@click="
 						() => {
 							value = !value

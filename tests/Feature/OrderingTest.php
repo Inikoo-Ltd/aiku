@@ -1775,6 +1775,26 @@ test('transaction import marks rows with missing code or quantity as failed', fu
         ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
 });
 
+test('recalculating basket totals skips orders that are no longer baskets', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 111.11, 'total_amount' => 111.11]);
+
+    // A bulk run selects baskets when it queues the jobs, but drains for hours. An order submitted
+    // in the meantime must not be repriced from current prices after the fact.
+    \App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket::make()->handle($order->id);
+
+    expect((float) $order->refresh()->net_amount)->toBe(111.11)
+        ->and((float) $order->total_amount)->toBe(111.11)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
 test('bulk basket recalculation skips orders submitted while the job was waiting', function () {
     $billingAddress  = new Address(Address::factory()->definition());
     $deliveryAddress = new Address(Address::factory()->definition());
@@ -1786,8 +1806,8 @@ test('bulk basket recalculation skips orders submitted while the job was waiting
     $order = StoreOrder::make()->action($this->customer, $modelData);
     $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 222.22, 'total_amount' => 222.22]);
 
-    // Offer activation lists baskets then queues one job each with up to 2h of delay. An order
-    // submitted inside that window must be left alone by both halves of the recalculation.
+    // Offer activation lists baskets then queues one job each with a delay. An order submitted
+    // inside that window must be left alone by both halves of the recalculation.
     \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()
         ->handle($order, true, true, false, true, true);
     \App\Actions\Ordering\Order\CalculateOrderDiscounts::make()->handle($order, true);
