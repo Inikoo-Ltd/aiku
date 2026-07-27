@@ -93,14 +93,13 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
         }
 
         $currencies     = Currency::whereIn('id', $openShopsQuery->pluck('currency_id'))->get()->keyBy('id');
-        $currenciesRate = $currencies->mapWithKeys(function ($currency) use ($baseCurrency, $priceExchanges) {
-            $ratioToBase  = GetCurrencyExchange::run($baseCurrency, $currency);
+        $currenciesRate = $currencies->mapWithKeys(function ($currency) use ($priceExchanges) {
             $exchangeData = $priceExchanges[$currency->code] ?? null;
             $isMajor      = (bool)($exchangeData['is_major'] ?? false);
 
             return [
                 $currency->code => [
-                    'ratio_eur'       => $ratioToBase,
+                    'ratio_eur'       => $isMajor ? 1.0 : ($exchangeData['exchange'] ?? null),
                     'currency'        => $currency->code,
                     'currency_symbol' => $currency->symbol,
                     'currency_id'     => $currency->id,
