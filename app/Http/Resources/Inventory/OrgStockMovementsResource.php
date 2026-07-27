@@ -88,6 +88,8 @@ class OrgStockMovementsResource extends JsonResource
             'reason'                                    => $orgStockMovement->reason,
             'reason_label'                              => $orgStockMovement->reason?->label(),
             'note'                                      => $orgStockMovement->note,
+            'parent_type'                               => $orgStockMovement->parent_type,
+            'parent_reference'                          => $orgStockMovement->parent_reference,
         ];
     }
 }

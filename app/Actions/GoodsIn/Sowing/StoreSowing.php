@@ -43,7 +43,7 @@ class StoreSowing extends OrgAction
         if ($parent instanceof DeliveryNoteItem) {
             data_set($modelData, 'shop_id', $parent->shop_id);
             data_set($modelData, 'delivery_note_id', $parent->delivery_note_id);
-            $orgStockMovement = OrgStockMovementTypeEnum::RETURN_PICKED;
+            $orgStockMovement = OrgStockMovementTypeEnum::CANCEL_PICKED;
         } elseif ($parent instanceof ReturnDeliveryNoteItem) {
             data_set($modelData, 'shop_id', $parent->shop_id);
             data_set($modelData, 'return_id', $parent->return_delivery_note_id);
@@ -77,12 +77,9 @@ class StoreSowing extends OrgAction
                     'quantity' => $sowing->quantity,
                     'type'     => $orgStockMovement,
                     'user_id'          => $this->user?->id,
-                ]
+                ],
+                $sowing
             );
-
-            $sowing->update([
-                'org_stock_movement_id' => $orgStockMovement->id,
-            ]);
         }
 
 
