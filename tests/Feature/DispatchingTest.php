@@ -2234,6 +2234,7 @@ test('UI show delivery note navigation follows the bucket it was opened from', f
     get($showRoute($middle))->assertInertia(
         fn (AssertableInertia $page) => $page->has('navigation')->etc()
     );
+
 });
 
 test('UI show pallet return navigation follows the bucket it was opened from', function () {
@@ -2272,5 +2273,14 @@ test('UI show pallet return navigation follows the bucket it was opened from', f
 
     get($showRoute($middle))->assertInertia(
         fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+
+    PalletReturn::whereIn('id', [$oldest->id, $middle->id, $newest->id])->update(['date' => null]);
+
+    get($showRoute($middle).'?bucket=confirmed')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
     );
 });

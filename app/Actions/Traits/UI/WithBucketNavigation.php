@@ -34,17 +34,21 @@ trait WithBucketNavigation
         [$columns, $isDescending] = $this->resolveBucketSort($sort, $sortColumns, $defaultSort);
 
         $values = $this->getBucketSortValues($model, $columns, $sortValues);
+        $key    = $model->getTable().'.'.$model->getKeyName();
 
         if (in_array(null, $values, true)) {
             [$columns, $isDescending] = [Arr::wrap($defaultSort[0]), $defaultSort[1]];
             $values                   = $this->getBucketSortValues($model, $columns, $sortValues);
         }
 
+        if (in_array(null, $values, true)) {
+            $columns = [];
+            $values  = [];
+        }
+
         $walkingDown = $forward == $isDescending;
         $operator    = $walkingDown ? '<' : '>';
         $direction   = $walkingDown ? 'desc' : 'asc';
-
-        $key       = $model->getTable().'.'.$model->getKeyName();
         $cursor    = implode(', ', [...$columns, $key]);
         $bindings  = [...$values, $model->getKey()];
         $questions = implode(', ', array_fill(0, count($bindings), '?'));
