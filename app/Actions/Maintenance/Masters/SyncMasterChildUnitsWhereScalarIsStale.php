@@ -74,6 +74,16 @@ class SyncMasterChildUnitsWhereScalarIsStale
      */
     private function staleScalarProducts(MasterShop $masterShop, ?string $shopCode): array
     {
+        /**
+         * The shop filter is appended rather than passed as a nullable parameter: an
+         * `(cast(? as text) is null or shop_code = ?)` condition makes Postgres plan the whole
+         * statement generically and it never returns on the production catalogue. Note it can only
+         * narrow which deviants are corrected, never which siblings are counted - the majority has
+         * to be measured across every shop or it is not a majority.
+         */
+        $shopCondition = $shopCode ? 'and c.shop_code = ?' : '';
+        $bindings      = $shopCode ? [$masterShop->id, $shopCode] : [$masterShop->id];
+
         return DB::select(
             "
             with child as (
@@ -123,10 +133,10 @@ class SyncMasterChildUnitsWhereScalarIsStale
             where c.p_units <> a.m_units
               and pp.lines = 1
               and pp.qty = a.m_units
-              and (cast(? as text) is null or c.shop_code = cast(? as text))
+              $shopCondition
             order by c.shop_code, c.product_code
             ",
-            [$masterShop->id, $shopCode, $shopCode]
+            $bindings
         );
     }
 

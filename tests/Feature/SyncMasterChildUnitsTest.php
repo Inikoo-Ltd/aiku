@@ -128,3 +128,43 @@ test('fixes a stale units scalar but never a product whose composition really di
     expect((float) DB::table('model_has_trade_units')->where('model_type', 'Product')->where('model_id', $staleScalar->id)->value('quantity'))->toBe(4.0)
         ->and((float) DB::table('model_has_trade_units')->where('model_type', 'Product')->where('model_id', $differentPack->id)->value('quantity'))->toBe(1.0);
 });
+
+test('shop option narrows which deviants are corrected without breaking the majority', function () {
+    $masterAsset = StoreMasterAsset::make()->action($this->masterFamily, [
+        'code'    => 'UNITS-SHOP',
+        'name'    => 'units shop asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $masterAsset->updateQuietly(['units' => 4]);
+    DB::table('model_has_trade_units')->insert([
+        'model_type'    => 'MasterAsset',
+        'model_id'      => $masterAsset->id,
+        'trade_unit_id' => $this->tradeUnitId,
+        'quantity'      => 4,
+        'created_at'    => now(),
+        'updated_at'    => now(),
+    ]);
+
+    unitsTestChild($this->shop, $masterAsset, $this->tradeUnitId, 4, 4);
+    unitsTestChild($this->shop, $masterAsset, $this->tradeUnitId, 4, 4);
+    unitsTestChild($this->shop, $masterAsset, $this->tradeUnitId, 4, 4);
+    $stale = unitsTestChild($this->shop, $masterAsset, $this->tradeUnitId, 1, 4);
+
+    // A shop that owns none of them must correct nothing.
+    Artisan::call('repair:master_child_units', [
+        'master_shop' => $this->masterShop->slug,
+        '--shop'      => 'NOSUCHSHOP',
+        '--fix'       => true,
+    ]);
+    expect((float) $stale->refresh()->units)->toBe(1.0);
+
+    Artisan::call('repair:master_child_units', [
+        'master_shop' => $this->masterShop->slug,
+        '--shop'      => $this->shop->code,
+        '--fix'       => true,
+    ]);
+    expect((float) $stale->refresh()->units)->toBe(4.0);
+});
