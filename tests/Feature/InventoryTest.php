@@ -1190,13 +1190,14 @@ test('OrgStockHydrateQuantityInLocations recomputes quantities and short-circuit
     $orgStock         = OrgStock::first();
     $expectedQuantity = (float) $orgStock->locationOrgStocks()->sum('quantity');
 
-    $orgStock->update(['quantity_in_locations' => 9999, 'quantity_available' => 9999]);
+    $orgStock->update(['quantity_in_locations' => 9999, 'quantity_available' => 9999, 'sku_value' => 7, 'value_in_locations' => 0]);
 
     OrgStockHydrateQuantityInLocations::run($orgStock->id);
 
     $orgStock->refresh();
     expect((float) $orgStock->quantity_in_locations)->toBe($expectedQuantity)
-        ->and((float) $orgStock->quantity_available)->toBe($expectedQuantity);
+        ->and((float) $orgStock->quantity_available)->toBe($expectedQuantity)
+        ->and((float) $orgStock->value_in_locations)->toBe($expectedQuantity * 7);
 
     // Guard clauses: null id and missing id return early without throwing
     OrgStockHydrateQuantityInLocations::run(null);
