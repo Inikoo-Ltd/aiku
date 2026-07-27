@@ -26,6 +26,7 @@ beforeEach(function () {
     setPermissionsTeamId($this->group->id);
 
     config(['database.connections.aiku_read_only' => config('database.connections.'.config('database.default'))]);
+    config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
 });
 
 test('user without sql access is denied', function () {
