@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'paths' => ['app/api/*','api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['app/api/*','api/*', 'sanctum/csrf-cookie', 'mcp/*', 'oauth/*', '.well-known/*'],
 
     'allowed_methods' => ['*'],
 
@@ -25,7 +25,7 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => ['x-inertia', 'x-inertia-location'],
+    'exposed_headers' => ['x-inertia', 'x-inertia-location', 'MCP-Session-Id'],
 
     'max_age' => 0,
 
