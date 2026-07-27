@@ -16,8 +16,10 @@ use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
@@ -594,10 +596,22 @@ test('change state to received from dispatch supplier delivery', function (Stock
     expect($stockDelivery->state)->toEqual(StockDeliveryStateEnum::RECEIVED);
 })->depends('create supplier delivery');
 
-test('change state to received from checked supplier delivery', function ($stockDelivery) {
+test('change state to received from checked supplier delivery', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'CHECKED-TO-RECEIVED', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
-    expect($stockDelivery->state)->toEqual(StockDeliveryStateEnum::RECEIVED);
-})->depends('create supplier delivery');
+
+    SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), [
+        'unit_quantity_checked' => 10
+    ]);
+
+    expect($stockDelivery->fresh()->state)->toEqual(StockDeliveryStateEnum::CHECKED);
+
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery->fresh());
+
+    expect($stockDelivery->state)->toEqual(StockDeliveryStateEnum::RECEIVED)
+        ->and($stockDelivery->checked_at)->toBeNull();
+});
 
 test('check supplier delivery items not correct', function (StockDelivery $stockDelivery) {
     /** @var StockDeliveryItem $stockDeliveryItem */
@@ -605,7 +619,9 @@ test('check supplier delivery items not correct', function (StockDelivery $stock
     $stockDeliveryItem = UpdateStateToCheckedStockDeliveryItem::make()->action($stockDeliveryItem, [
         'unit_quantity_checked' => 2
     ]);
-    expect($stockDeliveryItem->stockDelivery->state)->toEqual(StockDeliveryStateEnum::RECEIVED);
+
+    expect($stockDeliveryItem->state)->toEqual(StockDeliveryItemStateEnum::CHECKED)
+        ->and($stockDeliveryItem->stockDelivery->fresh()->state)->toEqual(StockDeliveryStateEnum::CHECKED);
 })->depends('create supplier delivery items');
 
 test('check supplier delivery items all correct', function ($stockDeliveryItems) {
@@ -939,3 +955,83 @@ test('UI edit stock delivery', function () {
             ->has('breadcrumbs', 3);
     });
 });
+
+function createStockDeliveryWithItems($test, string $code, array $unitQuantities): StockDelivery
+{
+    $supplier    = StoreSupplier::make()->action(parent: $test->group, modelData: Supplier::factory()->definition());
+    $orgSupplier = StoreOrgSupplier::make()->action($test->organisation, $supplier);
+
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => $code,
+        'name'             => $code,
+        'cost'             => 100,
+        'stock_id'         => $test->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+
+    StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+
+    $stockDelivery = StoreStockDelivery::make()->action($orgSupplier, [
+        'reference' => $code,
+        'date'      => date('Y-m-d'),
+    ]);
+
+    foreach ($unitQuantities as $index => $unitQuantity) {
+        StoreStockDeliveryItem::make()->action(
+            $stockDelivery,
+            $supplierProduct->historicSupplierProduct,
+            $test->orgStocks[$index],
+            ['unit_quantity' => $unitQuantity]
+        );
+    }
+
+    return $stockDelivery->refresh();
+}
+
+test('stock delivery counts under and over delivered items', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'UNDER-OVER', [10, 10, 10]);
+    $items         = $stockDelivery->items()->orderBy('id')->get();
+
+    $under   = SetStockDeliveryItemCheckedQuantity::make()->action($items[0], ['unit_quantity_checked' => 8]);
+    $over    = SetStockDeliveryItemCheckedQuantity::make()->action($items[1], ['unit_quantity_checked' => 12]);
+    $missing = SetStockDeliveryItemCheckedQuantity::make()->action($items[2], ['unit_quantity_checked' => 0]);
+
+    expect((float) $under->unit_quantity_checked)->toBe(8.0)
+        ->and((float) $over->unit_quantity_checked)->toBe(12.0)
+        ->and($under->state)->toBe(StockDeliveryItemStateEnum::CHECKED)
+        ->and($over->state)->toBe(StockDeliveryItemStateEnum::CHECKED)
+        ->and($missing->state)->toBe(StockDeliveryItemStateEnum::NOT_RECEIVED)
+        ->and($missing->not_received_at)->not->toBeNull();
+
+    $stockDelivery->refresh();
+
+    expect($stockDelivery->number_stock_delivery_items_under_delivered)->toBe(2)
+        ->and($stockDelivery->number_stock_delivery_items_over_delivered)->toBe(1);
+});
+
+test('under delivered stock delivery item is placed and books in the delivery', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'UNDER-PLACED', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = $stockDelivery->items()->first();
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['unit_quantity_checked' => 8]);
+
+    expect($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::CHECKED)
+        ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::CHECKED);
+
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 8]);
+
+    expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(8.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED)
+        ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
+});
+
+test('stock delivery item can not be placed beyond the checked quantity', function () {
+    $stockDelivery     = createStockDeliveryWithItems($this, 'OVER-PLACED', [10]);
+    $stockDeliveryItem = $stockDelivery->items()->first();
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['unit_quantity_checked' => 8]);
+
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 9]);
+})->throws(ValidationException::class);
