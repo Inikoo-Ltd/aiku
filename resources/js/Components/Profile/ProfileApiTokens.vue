@@ -94,19 +94,109 @@ const onCopySnippet = (key: string, text: string) => {
 
 <template>
     <div class="p-6 max-w-3xl space-y-6">
-        <div>
-            <h2 class="text-lg font-semibold">{{ trans('AI access keys') }}</h2>
-            <p class="text-sm text-gray-500">
-                {{ trans('A key lets your AI assistant (like Claude) look things up in Aiku for you. It sees only what you can see, and works like a password — keep it to yourself.') }}
+        <div class="space-y-3">
+            <h2 class="text-lg font-semibold">{{ trans('Connect Aiku to your AI assistant') }}</h2>
+            <p class="text-sm text-gray-600">
+                {{ trans('This lets your AI assistant answer questions using Aiku data, for example "What were the sales in my shop last month?". It can only see what you can see in Aiku, and it can never change anything.') }}
+            </p>
+            <p class="text-sm text-gray-600">
+                {{ trans('You only need the address below. Your assistant will ask you to sign in to Aiku and approve it — no key to copy. (Perplexity is the exception: it asks for a key, see Access keys at the bottom.)') }}
+            </p>
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-500">{{ trans('Address') }}:</span>
+                <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs select-all">{{ mcpUrl }}</code>
+                <Button
+                    :label="copiedSnippet === 'url' ? trans('Copied!') : trans('Copy')"
+                    icon="fal fa-copy"
+                    type="tertiary"
+                    size="xs"
+                    @click="onCopySnippet('url', mcpUrl)"
+                />
+            </div>
+
+            <details class="rounded-md border border-gray-200">
+                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
+                    Claude
+                </summary>
+                <ol class="list-decimal space-y-1.5 px-4 pb-4 pl-9 pt-1 text-sm text-gray-600">
+                    <li>{{ trans('Open claude.ai and click your initials (bottom left), then') }} <span class="font-medium">{{ trans('Settings') }}</span></li>
+                    <li>{{ trans('Click') }} <span class="font-medium">{{ trans('Connectors') }}</span>, {{ trans('then') }} <span class="font-medium">{{ trans('Add custom connector') }}</span></li>
+                    <li>{{ trans('Name: type') }} <span class="font-medium">Aiku</span>. {{ trans('URL: paste the address above') }}</li>
+                    <li>{{ trans('Click Connect — a page from Aiku opens. Sign in with your normal Aiku username and password and click Approve') }}</li>
+                    <li>{{ trans('Start a new chat and ask something, for example: "How many orders did my shop get this week?"') }}</li>
+                    <li class="text-gray-500">{{ trans('If Aiku is already listed from an earlier attempt, remove it first and add it again') }}</li>
+                </ol>
+            </details>
+
+            <details class="rounded-md border border-gray-200">
+                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
+                    Perplexity
+                </summary>
+                <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
+                    <p class="text-xs text-amber-600">{{ trans('Only works on paid Perplexity plans.') }}</p>
+                    <ol class="list-decimal space-y-1.5 pl-5">
+                        <li>{{ trans('Open Perplexity and go to') }} <span class="font-medium">{{ trans('Settings') }}</span>, {{ trans('then') }} <span class="font-medium">{{ trans('Connectors') }}</span></li>
+                        <li>{{ trans('Click') }} <span class="font-medium">{{ trans('+ Custom connector') }}</span> {{ trans('and choose') }} <span class="font-medium">{{ trans('Remote') }}</span></li>
+                        <li>{{ trans('Name: type') }} <span class="font-medium">Aiku</span>. {{ trans('Server URL: paste the address above') }}</li>
+                        <li>{{ trans('For authentication choose') }} <span class="font-medium">{{ trans('API Key') }}</span> {{ trans('and paste your key') }}</li>
+                        <li>{{ trans('Accept the confirmation messages and you are done') }}</li>
+                    </ol>
+                </div>
+            </details>
+
+            <details class="rounded-md border border-gray-200">
+                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
+                    ChatGPT
+                </summary>
+                <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
+                    <p class="text-xs text-amber-600">{{ trans('Needs a paid ChatGPT plan. No key needed — you will sign in with your normal Aiku login instead.') }}</p>
+                    <ol class="list-decimal space-y-1.5 pl-5">
+                        <li>{{ trans('Open ChatGPT and click your name (bottom left), then') }} <span class="font-medium">{{ trans('Settings') }}</span></li>
+                        <li>{{ trans('Go to') }} <span class="font-medium">{{ trans('Connectors') }}</span>. {{ trans('If you do not see a create option, open') }} <span class="font-medium">{{ trans('Advanced') }}</span> {{ trans('and switch on') }} <span class="font-medium">{{ trans('Developer mode') }}</span></li>
+                        <li>{{ trans('Click') }} <span class="font-medium">{{ trans('Create') }}</span>, {{ trans('name it') }} <span class="font-medium">Aiku</span> {{ trans('and paste the address above') }}</li>
+                        <li>{{ trans('Choose OAuth as authentication if asked, then click through — a page from Aiku will open') }}</li>
+                        <li>{{ trans('Sign in with your normal Aiku username and password and click Approve') }}</li>
+                        <li>{{ trans('In a new chat, enable the Aiku connector and ask your question') }}</li>
+                    </ol>
+                </div>
+            </details>
+
+            <details class="rounded-md border border-gray-200">
+                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
+                    Google Gemini
+                </summary>
+                <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
+                    <p class="text-xs text-amber-600">{{ trans('Only works with a personal Google account — not a work or school account. No key needed.') }}</p>
+                    <ol class="list-decimal space-y-1.5 pl-5">
+                        <li>{{ trans('Open gemini.google.com, click') }} <span class="font-medium">{{ trans('Settings & help') }}</span> ({{ trans('bottom left') }}), {{ trans('then') }} <span class="font-medium">{{ trans('Connected apps') }}</span></li>
+                        <li>{{ trans('Under custom apps, click to add one and paste the address above') }}</li>
+                        <li>{{ trans('Follow the steps on screen — when an Aiku page opens, sign in with your Aiku username and password and click Approve') }}</li>
+                        <li>{{ trans('Ask Gemini something like "How many orders did my shop get this week?"') }}</li>
+                    </ol>
+                </div>
+            </details>
+
+            <p class="text-xs text-gray-500">
+                {{ trans('Your AI can only read Aiku, it can never change or delete anything. It sees exactly what you can see, nothing more.') }}
             </p>
         </div>
+
+            <details class="rounded-md border border-gray-200 mt-6">
+                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
+                    {{ trans('Access keys') }}
+                    <span class="font-normal text-gray-400">— {{ trans('only if your assistant asks for one, like Perplexity') }}</span>
+                </summary>
+                <div class="space-y-4 px-4 pb-4 pt-2">
+        <p class="text-sm text-gray-500">
+            {{ trans('A key works like a password: anyone who has it can read your Aiku data. Only create one if your assistant asks for a key instead of letting you sign in.') }}
+        </p>
 
         <form class="flex gap-2" @submit.prevent="onCreateToken">
             <input
                 v-model="newTokenName"
                 type="text"
                 maxlength="64"
-                :placeholder="trans('Give your key a name, e.g. Claude')"
+                :placeholder="trans('Give your key a name, e.g. Perplexity')"
                 class="flex-1 rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
             <Button
@@ -164,93 +254,9 @@ const onCopySnippet = (key: string, text: string) => {
             </tbody>
         </table>
         <div v-else class="text-sm text-gray-400 italic">
-            {{ trans('No tokens yet.') }}
+            {{ trans('No keys yet.') }}
         </div>
-
-        <div class="space-y-3 pt-4 border-t">
-            <h3 class="text-base font-semibold">{{ trans('Connect Aiku to your AI assistant') }}</h3>
-            <p class="text-sm text-gray-600">
-                {{ trans('This lets your AI assistant answer questions using Aiku data, for example "What were the sales in my shop last month?". It can only see what you can see in Aiku, and it can never change anything.') }}
-            </p>
-            <p class="text-sm text-gray-600">
-                {{ trans('Everyone needs the address below. Claude and Perplexity also need a key (create one above with the button). ChatGPT and Gemini need no key — they will ask you to sign in to Aiku instead.') }}
-            </p>
-            <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-500">{{ trans('Address') }}:</span>
-                <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs select-all">{{ mcpUrl }}</code>
-                <Button
-                    :label="copiedSnippet === 'url' ? trans('Copied!') : trans('Copy')"
-                    icon="fal fa-copy"
-                    type="tertiary"
-                    size="xs"
-                    @click="onCopySnippet('url', mcpUrl)"
-                />
-            </div>
-
-            <details class="rounded-md border border-gray-200">
-                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
-                    Claude
-                </summary>
-                <ol class="list-decimal space-y-1.5 px-4 pb-4 pl-9 pt-1 text-sm text-gray-600">
-                    <li>{{ trans('Open claude.ai and click your initials (bottom left), then') }} <span class="font-medium">{{ trans('Settings') }}</span></li>
-                    <li>{{ trans('Click') }} <span class="font-medium">{{ trans('Connectors') }}</span>, {{ trans('then') }} <span class="font-medium">{{ trans('Add custom connector') }}</span></li>
-                    <li>{{ trans('Name: type') }} <span class="font-medium">Aiku</span>. {{ trans('URL: paste the address above') }}</li>
-                    <li>{{ trans('Where it asks for authentication, paste your key') }}</li>
-                    <li>{{ trans('Start a new chat and ask something, for example: "How many orders did my shop get this week?"') }}</li>
-                </ol>
-            </details>
-
-            <details class="rounded-md border border-gray-200">
-                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
-                    Perplexity
-                </summary>
-                <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
-                    <p class="text-xs text-amber-600">{{ trans('Only works on paid Perplexity plans.') }}</p>
-                    <ol class="list-decimal space-y-1.5 pl-5">
-                        <li>{{ trans('Open Perplexity and go to') }} <span class="font-medium">{{ trans('Settings') }}</span>, {{ trans('then') }} <span class="font-medium">{{ trans('Connectors') }}</span></li>
-                        <li>{{ trans('Click') }} <span class="font-medium">{{ trans('+ Custom connector') }}</span> {{ trans('and choose') }} <span class="font-medium">{{ trans('Remote') }}</span></li>
-                        <li>{{ trans('Name: type') }} <span class="font-medium">Aiku</span>. {{ trans('Server URL: paste the address above') }}</li>
-                        <li>{{ trans('For authentication choose') }} <span class="font-medium">{{ trans('API Key') }}</span> {{ trans('and paste your key') }}</li>
-                        <li>{{ trans('Accept the confirmation messages and you are done') }}</li>
-                    </ol>
                 </div>
             </details>
-
-            <details class="rounded-md border border-gray-200">
-                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
-                    ChatGPT
-                </summary>
-                <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
-                    <p class="text-xs text-amber-600">{{ trans('Needs a paid ChatGPT plan. No key needed — you will sign in with your normal Aiku login instead.') }}</p>
-                    <ol class="list-decimal space-y-1.5 pl-5">
-                        <li>{{ trans('Open ChatGPT and click your name (bottom left), then') }} <span class="font-medium">{{ trans('Settings') }}</span></li>
-                        <li>{{ trans('Go to') }} <span class="font-medium">{{ trans('Connectors') }}</span>. {{ trans('If you do not see a create option, open') }} <span class="font-medium">{{ trans('Advanced') }}</span> {{ trans('and switch on') }} <span class="font-medium">{{ trans('Developer mode') }}</span></li>
-                        <li>{{ trans('Click') }} <span class="font-medium">{{ trans('Create') }}</span>, {{ trans('name it') }} <span class="font-medium">Aiku</span> {{ trans('and paste the address above') }}</li>
-                        <li>{{ trans('Choose OAuth as authentication if asked, then click through — a page from Aiku will open') }}</li>
-                        <li>{{ trans('Sign in with your normal Aiku username and password and click Approve') }}</li>
-                        <li>{{ trans('In a new chat, enable the Aiku connector and ask your question') }}</li>
-                    </ol>
-                </div>
-            </details>
-
-            <details class="rounded-md border border-gray-200">
-                <summary class="cursor-pointer select-none px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
-                    Google Gemini
-                </summary>
-                <div class="space-y-2 px-4 pb-4 pt-1 text-sm text-gray-600">
-                    <p class="text-xs text-amber-600">{{ trans('Only works with a personal Google account — not a work or school account. No key needed.') }}</p>
-                    <ol class="list-decimal space-y-1.5 pl-5">
-                        <li>{{ trans('Open gemini.google.com, click') }} <span class="font-medium">{{ trans('Settings & help') }}</span> ({{ trans('bottom left') }}), {{ trans('then') }} <span class="font-medium">{{ trans('Connected apps') }}</span></li>
-                        <li>{{ trans('Under custom apps, click to add one and paste the address above') }}</li>
-                        <li>{{ trans('Follow the steps on screen — when an Aiku page opens, sign in with your Aiku username and password and click Approve') }}</li>
-                        <li>{{ trans('Ask Gemini something like "How many orders did my shop get this week?"') }}</li>
-                    </ol>
-                </div>
-            </details>
-
-            <p class="text-xs text-gray-500">
-                {{ trans('Your key works like a password: anyone who has it can read your Aiku data. Do not share it or send it by email. If you think someone else has it, click Revoke next to it above and create a new one.') }}
-            </p>
-        </div>
     </div>
 </template>
