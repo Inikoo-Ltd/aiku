@@ -164,6 +164,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
+                ->column(key: 'state_icon', label: '', canBeHidden: false)
                 ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'image_thumbnail', label: __('Image'), canBeHidden: false);
 
@@ -171,7 +172,8 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 $table
                     ->column(key: 'description', label: __('Description'), canBeHidden: false)
                     ->column(key: 'subtotals', label: __('Subtotals'), canBeHidden: false)
-                    ->column(key: 'quantity', label: __('Units'), canBeHidden: false, align: 'right');
+                    ->column(key: 'quantity', label: __('Units'), canBeHidden: false, align: 'right')
+                    ->column(key: 'actions', label: 'Actions', canBeHidden: false, align: 'right');
             } else {
                 $table
                     ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
