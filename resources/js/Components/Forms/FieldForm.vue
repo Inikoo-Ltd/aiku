@@ -13,13 +13,13 @@ import axios from 'axios'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Field form list
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSave as fadSave, } from '@fad'
-import { faSave as falSave, faInfoCircle, faUserVisor, faRobot } from '@fal'
+import { faSave as falSave, faInfoCircle, faRobot } from '@fal'
 import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Modal from '../Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
 import Button from '../Elements/Buttons/Button.vue'
-library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faUserVisor, faRobot)
+library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faRobot)
 
 const props = defineProps<{
     field: string

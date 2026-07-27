@@ -168,7 +168,7 @@ class IndexUsers extends OrgAction
                 ->column(key: 'has_2fa', label: ['data' => ['far', 'fa-shield-alt'], 'type' => 'icon', 'tooltip' => __('Has 2FA Enabled')], type: 'icon', sortable: true)
                 ->column(key: 'is_two_factor_required', label: ['data' => ['far', 'fa-user-shield'], 'type' => 'icon', 'tooltip' => __('Is Required to have 2FA')], type: 'icon', sortable: true)
                 ->column(key: 'can_use_mcp', label: ['data' => ['fal', 'fa-robot'], 'type' => 'icon', 'tooltip' => __('AI assistant')], type: 'icon', sortable: true)
-                ->column(key: 'can_use_mcp_sql', label: ['data' => ['fal', 'fa-user-visor'], 'type' => 'icon', 'tooltip' => __('AI full data access')], type: 'icon', sortable: true)
+                ->column(key: 'can_use_mcp_sql', label: '🧠', sortable: true)
                 ->defaultSort('username');
         };
     }
