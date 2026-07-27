@@ -59,7 +59,7 @@ class IrisProductTrendResource extends JsonResource
             'rrp_per_unit'               => $rrpPerUnit,
             'margin'                     => $margin,
             'web_images'                 => $this->web_images,
-            'url'                        => $canonicalUrl ? $canonicalUrl : $this->url,
+            'url'                        => $canonicalUrl ?: $this->url,
             'canonical_url'              => $canonicalUrl,
             'webpage_id'                 => $this->webpage_id,
             'unit'                       => $this->unit,
