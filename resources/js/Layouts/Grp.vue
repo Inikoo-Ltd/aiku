@@ -108,7 +108,7 @@ watch(
 
 // Method: listen if app recently deployed
 const isLoadingRefreshPage = ref(false)
-const isModalNeedToRefresh = ref(true)
+const isModalNeedToRefresh = ref(false)
 interface DeploymentInfo {
     semantic_version: string | null
     change_log: string | null
