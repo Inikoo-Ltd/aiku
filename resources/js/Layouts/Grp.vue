@@ -23,7 +23,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Modal from "@/Components/Utils/Modal.vue"
+import Dialog from "primevue/dialog"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
@@ -108,7 +108,7 @@ watch(
 
 // Method: listen if app recently deployed
 const isLoadingRefreshPage = ref(false)
-const isModalNeedToRefresh = ref(false)
+const isModalNeedToRefresh = ref(true)
 interface DeploymentInfo {
     semantic_version: string | null
     change_log: string | null
@@ -268,125 +268,114 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
     <Footer />
 
-    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
-        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-            <div
-                class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
-                <div>
-                    <div
-                        class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
-                        <FontAwesomeIcon
-                            v-if="selectedModal?.status == 'error'"
-                            icon="fal fa-times"
-                            class="text-red-500 text-2xl"
-                            fixed-width
-                            aria-hidden="true" />
-                        <FontAwesomeIcon
-                            v-if="selectedModal?.status == 'success'"
-                            icon="fal fa-check"
-                            class="text-green-500 text-2xl"
-                            fixed-width
-                            aria-hidden="true" />
-                        <FontAwesomeIcon
-                            v-if="selectedModal?.status == 'warning'"
-                            icon="fas fa-exclamation"
-                            class="text-orange-500 text-2xl"
-                            fixed
-                            aria-hidden="true" />
-                        <FontAwesomeIcon
-                            v-if="selectedModal?.status == 'info'"
-                            icon="fas fa-info"
-                            class="text-gray-500 text-2xl"
-                            fixed-width
-                            aria-hidden="true" />
-                    </div>
+    <Dialog
+        v-model:visible="isModalOpen"
+        modal
+        dismissableMask
+        :showHeader="false"
+        :style="{ width: '32rem' }"
+        :breakpoints="{ '640px': '90vw' }">
+        <div class="pt-8 pb-4">
+            <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
+                <FontAwesomeIcon
+                    v-if="selectedModal?.status == 'error'"
+                    icon="fal fa-times"
+                    class="text-red-500 text-2xl"
+                    fixed-width
+                    aria-hidden="true" />
+                <FontAwesomeIcon
+                    v-if="selectedModal?.status == 'success'"
+                    icon="fal fa-check"
+                    class="text-green-500 text-2xl"
+                    fixed-width
+                    aria-hidden="true" />
+                <FontAwesomeIcon
+                    v-if="selectedModal?.status == 'warning'"
+                    icon="fas fa-exclamation"
+                    class="text-orange-500 text-2xl"
+                    fixed
+                    aria-hidden="true" />
+                <FontAwesomeIcon
+                    v-if="selectedModal?.status == 'info'"
+                    icon="fas fa-info"
+                    class="text-gray-500 text-2xl"
+                    fixed-width
+                    aria-hidden="true" />
+            </div>
 
-                    <div class="mt-3 text-center sm:mt-5">
-                        <div as="h3" class="font-semibold text-2xl">
-                            {{ selectedModal?.title }}
-                        </div>
-                        <div class="mt-2 text-sm text-gray-500">
-                            {{ selectedModal?.description }}
-                        </div>
-                    </div>
+            <div class="mt-3 text-center sm:mt-5">
+                <div class="font-semibold text-2xl">
+                    {{ selectedModal?.title }}
                 </div>
-                <div class="mt-5 sm:mt-6">
-                    <Button
-                        @click="() => (isModalOpen = false)"
-                        :label="ctrans('Ok, Get it')"
-                        full />
+                <div class="mt-2 text-sm text-gray-500">
+                    {{ selectedModal?.description }}
                 </div>
             </div>
+
+            <div class="mt-5 sm:mt-6">
+                <Button
+                    @click="() => (isModalOpen = false)"
+                    :label="ctrans('Ok, Get it')"
+                    full />
+            </div>
         </div>
-    </Modal>
+    </Dialog>
 
-    <Modal
-        :isOpen="isModalNeedToRefresh"
-        width="w-full max-w-lg">
-        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-            <div
-                class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
-                <div>
-                    <!-- <div
-                        class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
-                        <FontAwesomeIcon
-                            icon="fal fa-smile"
-                            class="text-green-500 text-2xl"
-                            fixed-width
-                            aria-hidden="true" />
-                    </div> -->
+    <Dialog
+        v-model:visible="isModalNeedToRefresh"
+        modal
+        :closable="false"
+        :closeOnEscape="false"
+        :showHeader="false"
+        :style="{ width: '32rem' }"
+        :breakpoints="{ '640px': '90vw' }">
+        <div class="pt-8 pb-4">
+            <div class="text-center">
+                <div v-if="deploymentInfo?.semantic_version" class="font-semibold text-2xl">
+                    🚀<span class="mx-2">{{ deploymentInfo.semantic_version }}</span>💥
+                </div>
+                <div v-else class="font-semibold text-2xl">
+                    {{ ctrans("Hey, sorry for your inconvenience.") }}
+                </div>
 
-                    <div class="mt-3 text-center sm:mt-5">
-                        <div v-if="deploymentInfo?.semantic_version" as="h3" class="font-semibold text-2xl">
-                            🚀<span class="mx-2">{{ deploymentInfo.semantic_version }}</span>💥
-                        </div>
-                        <div v-else as="h3" class="font-semibold text-2xl">
-                            {{ ctrans("Hey, sorry for your inconvenience.") }}
-                        </div>
+                <div
+                    v-if="deploymentInfo?.change_log"
+                    class="mt-3 max-h-48 overflow-y-auto rounded-md bg-gray-50 p-3 text-left text-xs text-gray-600 whitespace-pre-line">
+                    {{ deploymentInfo.change_log }}
+                </div>
 
-                        
+                <div v-else class="mt-2 text-sm text-gray-500">
+                    {{
+                        ctrans(
+                            "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
+                        )
+                    }}
+                </div>
+
+                <div v-if="deploymentInfo?.committers?.length" class="mt-3 flex items-center justify-center -space-x-2">
+                    <template v-for="committer in deploymentInfo.committers" :key="committer.email">
+                        <img
+                            v-if="committer.avatar"
+                            :src="committer.avatar"
+                            :alt="committer.name"
+                            :title="committer.name"
+                            class="size-7 rounded-full ring-2 ring-white" />
                         <div
-                            v-if="deploymentInfo?.change_log"
-                            class="mt-3 max-h-48 overflow-y-auto rounded-md bg-gray-50 p-3 text-left text-xs text-gray-600 whitespace-pre-line">
-                            {{ deploymentInfo.change_log }}
+                            v-else
+                            :title="committer.name"
+                            class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
+                            {{ committer.name.charAt(0).toUpperCase() }}
                         </div>
-                        
-                        <div v-else class="mt-2 text-sm text-gray-500">
-                            {{
-                                ctrans(
-                                    "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
-                                )
-                            }}
-                        </div>
-                        <!-- <div v-if="deploymentInfo?.semantic_version" class="mt-2 text-xs text-gray-400">
-                            {{ ctrans("New version") }}: {{ deploymentInfo.semantic_version }}
-                        </div> -->
-                        <div v-if="deploymentInfo?.committers?.length" class="mt-3 flex items-center justify-center -space-x-2">
-                            <template v-for="committer in deploymentInfo.committers" :key="committer.email">
-                                <img
-                                    v-if="committer.avatar"
-                                    :src="committer.avatar"
-                                    :alt="committer.name"
-                                    :title="committer.name"
-                                    class="size-7 rounded-full ring-2 ring-white" />
-                                <div
-                                    v-else
-                                    :title="committer.name"
-                                    class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
-                                    {{ committer.name.charAt(0).toUpperCase() }}
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-5 sm:mt-6 flex flex-col gap-4">
-                    <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
-                    <Button @click="() => onDismissRefreshModal()" :label="ctrans('Dismiss')" full type="tertiary" />
+                    </template>
                 </div>
             </div>
+
+            <div class="mt-5 sm:mt-6 flex flex-col gap-4">
+                <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
+                <Button @click="() => onDismissRefreshModal()" :label="ctrans('Dismiss')" full type="tertiary" />
+            </div>
         </div>
-    </Modal>
+    </Dialog>
 
     <!-- Global declaration: Notification -->
     <notifications
