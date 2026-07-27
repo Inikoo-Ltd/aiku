@@ -268,6 +268,41 @@ test("UI Show Stocks", function () {
     });
 });
 
+test("UI show stock navigation follows the bucket and sort", function () {
+    $this->withoutExceptionHandling();
+
+    $makeStock = function (string $code, StockStateEnum $state) {
+        $stock = StoreStock::make()->action(
+            $this->group,
+            array_merge(Stock::factory()->definition(), ['code' => $code])
+        );
+        $stock->update(['state' => $state]);
+
+        return $stock->refresh();
+    };
+
+    $first        = $makeStock('NAVSKOA', StockStateEnum::ACTIVE);
+    $discontinued = $makeStock('NAVSKOB', StockStateEnum::DISCONTINUED);
+    $middle       = $makeStock('NAVSKOC', StockStateEnum::ACTIVE);
+    $last         = $makeStock('NAVSKOD', StockStateEnum::ACTIVE);
+
+    get(route("grp.goods.stocks.active_stocks.show", [$middle->slug]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    get(route("grp.goods.stocks.active_stocks.show", [$middle->slug]).'?bucket_sort=-code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $last->name)
+            ->where('navigation.next.label', $first->name)
+            ->etc()
+    );
+
+    expect($discontinued->state)->toBe(StockStateEnum::DISCONTINUED);
+});
+
 test("UI Index Trade Units", function () {
     $response = get(
         route("grp.trade_units.units.index")

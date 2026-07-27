@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3";
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
 import { computed, inject } from "vue";
@@ -43,6 +44,10 @@ const getIntervalStateColor = (isPositive: boolean) => {
     return isPositive ? "text-green-500" : "text-red-500";
 };
 
+function stockHref(stock: Stock) {
+	return stockRoute(stock) + bucketQuery()
+}
+
 function stockRoute(stock: Stock) {
     switch (route().current()) {
         case "grp.goods.stocks.active_stocks.index":
@@ -71,7 +76,7 @@ function stockFamilyRoute(stock: Stock) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: stock }">
-            <Link :href="stockRoute(stock)" class="primaryLink">
+            <Link :href="stockHref(stock)" class="primaryLink">
                 {{ stock["code"] }}
             </Link>
         </template>
