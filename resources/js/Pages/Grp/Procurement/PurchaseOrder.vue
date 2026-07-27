@@ -718,7 +718,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             <!-- Todo: Create Purchase Order Export as PDF -->
 
             <div class="flex justify-center gap-4">
-                <div class="flex items-center">
+                <div class="flex items-center gap-1">
                     <FontAwesomeIcon
                         v-tooltip="trans('Items')"
         				icon="fas fa-bars"
@@ -729,7 +729,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                 </div>
 
                 <div
-                    class="flex items-center"
+                    class="flex items-center gap-1"
                     :class="box_stats.second_block.is_delivery_items_active ? '' : 'text-gray-300'"
                 >
                     <FontAwesomeIcon
@@ -742,7 +742,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                 </div>
 
                 <div
-                    class="flex items-center"
+                    class="flex items-center gap-1"
                     :class="box_stats.second_block.is_placed_items_active ? '' : 'text-gray-300'"
                 >
                     <FontAwesomeIcon

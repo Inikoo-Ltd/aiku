@@ -101,7 +101,7 @@ class StoreLocationOrgStock extends OrgAction
             'data'             => ['sometimes', 'array'],
             'settings'         => ['sometimes', 'array'],
             'notes'            => ['sometimes', 'nullable', 'string', 'max:255'],
-            'picking_priority' => ['sometimes', 'integer'],
+            'picking_priority' => ['sometimes', 'nullable', 'integer'],
             'type'             => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
             'date'             => ['sometimes', 'date_format:Y-m-d H:i:s.u']
         ];

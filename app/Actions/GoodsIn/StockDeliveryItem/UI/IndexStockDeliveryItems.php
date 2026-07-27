@@ -9,6 +9,7 @@
 namespace App\Actions\GoodsIn\StockDeliveryItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\GoodsIn\StockDelivery;
@@ -107,6 +108,7 @@ class IndexStockDeliveryItems extends OrgAction
             ->selectRaw('round(sp.cbm * stock_delivery_items.unit_quantity / nullif(sp.units_per_carton, 0), 2) as volume')
             ->allowedSorts([
                 AllowedSort::field('code', 'sp.code'),
+                AllowedSort::field('part', 'org_stocks.code'),
                 'org_stock_code',
                 'org_stock_name',
                 'unit_quantity',
@@ -140,15 +142,32 @@ class IndexStockDeliveryItems extends OrgAction
                     'icon'  => 'fal fa-bars',
                 ]);
 
-            $table
-                ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
-                ->column(key: 'quantity', label: __('Qty'), canBeHidden: false)
-                ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
-                ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
-                ->column(key: 'amount', label: __('Amount'), canBeHidden: false)
-                ->column(key: 'state', label: __('State'), canBeHidden: false)
-                ->defaultSort('code');
+            $goodsInStates = [
+                StockDeliveryStateEnum::RECEIVED,
+                StockDeliveryStateEnum::CHECKED,
+                StockDeliveryStateEnum::BOOKING_IN,
+                StockDeliveryStateEnum::BOOKED_IN,
+            ];
+
+            if (in_array($stockDelivery->state, $goodsInStates, true)) {
+                $table
+                    ->column(key: 'part', label: __('Part'), canBeHidden: false, sortable: true)
+                    ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
+                    ->column(key: 'delivered_quantity', label: __('Delivered Quantity'), canBeHidden: false)
+                    ->column(key: 'checked_unit', label: __('Checked Unit'), canBeHidden: false)
+                    ->column(key: 'placement', label: __('Placement'), canBeHidden: false)
+                    ->defaultSort('part');
+            } else {
+                $table
+                    ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
+                    ->column(key: 'quantity', label: __('Qty'), canBeHidden: false)
+                    ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
+                    ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
+                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false)
+                    ->column(key: 'state', label: __('State'), canBeHidden: false)
+                    ->defaultSort('code');
+            }
         };
     }
 }

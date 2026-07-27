@@ -8,9 +8,12 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Models\GoodsIn\Sowing;
 use App\Models\GoodsIn\StockDeliveryItem;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
 
 class StockDeliveryItemResource extends JsonResource
 {
@@ -20,6 +23,39 @@ class StockDeliveryItemResource extends JsonResource
         $item = $this->resource;
 
         $supplierProduct = $item->supplierProduct;
+
+        $locations = DB::table('location_org_stocks')
+            ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
+            ->where('location_org_stocks.org_stock_id', $item->org_stock_id)
+            ->select([
+                'location_org_stocks.id',
+                'location_org_stocks.quantity',
+                'locations.id as location_id',
+                'locations.code as location_code',
+                'locations.slug as location_slug',
+            ])
+            ->orderBy('locations.code')
+            ->get();
+
+        $sowings = $item->sowings()
+            ->where('type', SowingTypeEnum::SOW)
+            ->with('location')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Sowing $sowing) => [
+                'id'            => $sowing->id,
+                'quantity'      => $sowing->quantity,
+                'location_code' => $sowing->location?->code,
+                'undo_route'    => [
+                    'name'       => 'grp.models.sowing.delete',
+                    'parameters' => ['sowing' => $sowing->id],
+                    'method'     => 'delete',
+                ],
+            ])->all();
+
+        $checked  = (float) $item->unit_quantity_checked;
+        $placed   = (float) $item->unit_quantity_placed;
+        $canPlace = $checked >= 1 && $placed < $checked && $item->state !== StockDeliveryItemStateEnum::CANCELLED;
 
         return [
             'id'                    => $item->id,
@@ -52,6 +88,19 @@ class StockDeliveryItemResource extends JsonResource
             ] : null,
             'readyToShipRoute'      => $item->state === StockDeliveryItemStateEnum::CONFIRMED ? [
                 'name'       => 'grp.models.stock-delivery-item.ready-to-ship',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
+            'checkedRoute'          => in_array($item->state, [StockDeliveryItemStateEnum::RECEIVED, StockDeliveryItemStateEnum::CHECKED, StockDeliveryItemStateEnum::NOT_RECEIVED], true) ? [
+                'name'       => 'grp.models.stock-delivery-item.set-checked',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
+            'placement_remaining'   => max(0, $checked - $placed),
+            'locations'             => $locations,
+            'sowings'               => $sowings,
+            'placedRoute'           => $canPlace ? [
+                'name'       => 'grp.models.stock-delivery-item.place',
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
