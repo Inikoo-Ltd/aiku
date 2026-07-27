@@ -210,6 +210,23 @@ class ShowStockDelivery extends OrgAction
                     ],
                 ],
             ],
+            StockDeliveryStateEnum::DISPATCHED => [
+                [
+                    'label'   => __('Unmark as Dispatched'),
+                    'tooltip' => __('Revert Stock Delivery to its previous state'),
+                    'type'    => 'button',
+                    'style'   => 'cancel',
+                    'icon'    => 'fal fa-undo',
+                    'key'     => 'undispatch_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.undispatch',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+            ],
             default => [],
         };
     }

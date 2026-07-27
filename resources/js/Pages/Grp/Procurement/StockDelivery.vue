@@ -235,6 +235,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const confirm = useConfirm()
 const deleteLoading = ref(false)
 const dispatchLoading = ref(false)
+const undispatchLoading = ref(false)
 
 const confirmDispatchStockDelivery = (action: any) => {
 	confirm.require({
@@ -251,6 +252,29 @@ const confirmDispatchStockDelivery = (action: any) => {
 					notify({
 						title: trans("Something went wrong"),
 						text: trans("Failed to dispatch stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmUndispatchStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to unmark this stock delivery as dispatched? It will be reverted to its previous state."),
+		header: trans("Unmark as Dispatched"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Unmark as Dispatched"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { undispatchLoading.value = true },
+				onFinish: () => { undispatchLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to unmark stock delivery as dispatched"),
 						type: "error",
 					})
 				},
@@ -303,6 +327,17 @@ const confirmDeleteStockDelivery = (action: any) => {
 				:tooltip="action.tooltip"
 				:loading="dispatchLoading"
 				@click="() => confirmDispatchStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-undispatch-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="undispatchLoading"
+				@click="() => confirmUndispatchStockDelivery(action)"
 			/>
 		</template>
 
