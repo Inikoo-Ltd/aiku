@@ -7,6 +7,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
@@ -61,10 +62,12 @@ class RedoProductTimeSeries
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
+                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

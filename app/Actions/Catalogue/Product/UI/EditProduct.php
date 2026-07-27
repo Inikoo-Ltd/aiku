@@ -304,11 +304,22 @@ class EditProduct extends OrgAction
                             'minFractionDigits' => 0,
                             'maxFractionDigits' => 2,
                         ],
-                        'value'    => ($product->rrp / trimDecimalZeros($product->units)),
+                        'value'    => $product->units > 0 ? ($product->rrp / trimDecimalZeros($product->units)) : $product->rrp,
                         'min'      => 0.01
                     ],
                 ]
             );
+        }
+
+        if ($product->units_review) {
+            $pricingFields['units'] = [
+                'type'         => 'input_with_warning',
+                'label'        => __('Units'),
+                'value'        => $product->units,
+                'showWarning'  => true,
+                'warningTitle' => __('Units mismatch with master product').' ('.$product->units_review.')',
+                'warningBody'  => __('Per-unit prices may be wrong, review units before editing prices'),
+            ];
         }
 
 
@@ -357,7 +368,7 @@ class EditProduct extends OrgAction
                                 'website' => $product->shop->website?->slug
                             ]
                     ],
-                    'toogle'        => [
+                    'toggle'        => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -395,7 +406,7 @@ class EditProduct extends OrgAction
                                 'website' => $product->shop->website?->slug
                             ]
                     ],
-                    'toogle'      => [
+                    'toggle'      => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -439,7 +450,7 @@ class EditProduct extends OrgAction
                                 'website' => $product->shop->website?->slug
                             ]
                     ],
-                    'toogle'        => [
+                    'toggle'        => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -479,7 +490,7 @@ class EditProduct extends OrgAction
                                 'website' => $product->shop->website?->slug
                             ]
                     ],
-                    'toogle'      => [
+                    'toggle'      => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -582,19 +593,6 @@ class EditProduct extends OrgAction
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => $pricingFields
-                    // [
-                    //     // 'cost_price_ratio' => [
-                    //     //     'type'        => 'input_number',
-                    //     //     'bind'        => [
-                    //     //         'maxFractionDigits' => 3
-                    //     //     ],
-                    //     //     'label'       => __('Pricing ratio'),
-                    //     //     'placeholder' => __('Cost price ratio'),
-                    //     //     'required'    => true,
-                    //     //     'value'       => $product->cost_price_ratio,
-                    //     //     'min'         => 0.01
-                    //     // ],
-                    // ]
                 ],
                 $product->is_single_trade_unit
                     ? []

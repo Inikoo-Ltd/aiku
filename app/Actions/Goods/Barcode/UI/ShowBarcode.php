@@ -10,7 +10,7 @@
 namespace App\Actions\Goods\Barcode\UI;
 
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\Goods\BarcodeTabsEnum;
@@ -22,13 +22,13 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowBarcode extends GrpAction
+class ShowBarcode extends OrgAction
 {
     use WithGoodsAuthorisation;
 
     public function asController(Barcode $barcode, ActionRequest $request): Barcode
     {
-        $this->initialisation(group(), $request)->withTab(BarcodeTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(BarcodeTabsEnum::values());
 
         return $this->handle($barcode);
     }

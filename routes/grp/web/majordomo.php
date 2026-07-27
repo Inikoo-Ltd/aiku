@@ -49,6 +49,7 @@ use App\Actions\Helpers\Redirects\RedirectOfferLink;
 use App\Actions\Helpers\Redirects\RedirectServiceLink;
 use App\Actions\Helpers\Redirects\RedirectShippingZoneSchemaLink;
 use App\Actions\Helpers\Redirects\RedirectSupplierLink;
+use App\Actions\Helpers\Redirects\RedirectSupplierProductLink;
 use App\Actions\Helpers\Redirects\RedirectTradeUnitFamilyLink;
 use App\Actions\Helpers\Redirects\RedirectTradeUnitLink;
 use App\Actions\Helpers\Redirects\RedirectWebpageLink;
@@ -72,6 +73,7 @@ Route::get('redirect-stock-family/{stockFamily:id}', RedirectStockFamilyLink::cl
 Route::get('redirect-trade-unit/{tradeUnit:id}', RedirectTradeUnitLink::class)->name('redirect_trade_unit');
 Route::get('redirect-trade-unit-family/{tradeUnitFamily:id}', RedirectTradeUnitFamilyLink::class)->name('redirect_trade_unit_family');
 Route::get('redirect-supplier/{supplier:id}', RedirectSupplierLink::class)->name('redirect_supplier');
+Route::get('redirect-supplier-product/{supplierProduct:id}', RedirectSupplierProductLink::class)->name('redirect_supplier_product');
 Route::get('redirect-prospect/{prospect:id}', RedirectProspectLink::class)->name('redirect_prospect');
 Route::get('redirect-charge/{charge:id}', RedirectChargeLink::class)->name('redirect_charge');
 Route::get('redirect-service/{service:id}', RedirectServiceLink::class)->name('redirect_service');

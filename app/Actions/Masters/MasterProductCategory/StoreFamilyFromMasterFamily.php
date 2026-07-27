@@ -12,7 +12,7 @@ use App\Actions\Catalogue\ProductCategory\CloneProductCategoryImagesFromMaster;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
@@ -24,7 +24,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 
-class StoreFamilyFromMasterFamily extends GrpAction
+class StoreFamilyFromMasterFamily extends OrgAction
 {
     /**
      * @throws \Throwable
@@ -150,7 +150,7 @@ class StoreFamilyFromMasterFamily extends GrpAction
 
         $group = $masterProductCategory->group;
 
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         $this->handle($masterProductCategory, $this->validatedData);
     }

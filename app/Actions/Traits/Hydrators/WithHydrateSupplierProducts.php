@@ -29,6 +29,11 @@ trait WithHydrateSupplierProducts
             ])->where('is_available', true)->count(),
         ];
 
+        if ($model instanceof Group) {
+            $stats['number_supplier_products_in_agents']   = $model->supplierProducts()->whereNotNull('agent_id')->count();
+            $stats['number_independent_supplier_products'] = $stats['number_supplier_products'] - $stats['number_supplier_products_in_agents'];
+        }
+
         $stats = array_merge(
             $stats,
             $this->getEnumStats(

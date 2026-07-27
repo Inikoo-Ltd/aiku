@@ -8,10 +8,11 @@ import { Head, useForm } from "@inertiajs/vue3"
 import { computed, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue"
+import TableMasterProductsPricing from "@/Components/Tables/Grp/Goods/TableMasterProductsPricing.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from '@/Components/Utils/Modal.vue'
-import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faPencil, faMinus } from "@fal"
+import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faPencil, faMinus, faMoneyBill } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
@@ -29,7 +30,7 @@ import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
 import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 
 
-library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus)
+library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faMoneyBill)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -41,6 +42,7 @@ const props = defineProps<{
     index?: {}
     index_ordering?: {}
     sales?: {}
+    pricing?: {}
     data: {}
     routes?: {
         master_families_route: routeType
@@ -53,16 +55,30 @@ const props = defineProps<{
     currency?: any
     variantSlugs?: Record<string, string>
     hide_bulk_edit?: boolean
+    pricingMajorCurrencies?: string[]
+    pricingCurrencies?: Record<string, any>
+    pricingCostRates?: Record<string, number | null>
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+// pricingCurrencies/pricingCostRates are optional props (skipped unless the page
+// loads directly on the pricing tab) — fetch them once when the tab is first opened
+watch(currentTab, (tab) => {
+    if (tab === 'pricing' && !props.pricingCurrencies) {
+        router.reload({ only: ['pricingCurrencies', 'pricingCostRates'] })
+    }
+})
+
+const pricingBulkField = ref<'master_prices' | 'master_rrps' | null>(null)
 
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
         index_ordering: SetOrderingPositionOfProduct,
         sales: TableMasterProducts,
+        pricing: TableMasterProductsPricing,
     }
 
     return components[currentTab.value]
@@ -242,12 +258,28 @@ watch(() => currentTab.value, (tab) => {
         </template>
 
         <template #other>
+            <template v-if="currentTab === 'pricing'">
+                <Button
+                    @click="() => pricingBulkField = 'master_prices'"
+                    :label="trans('Bulk edit prices') + ` (${compSelectedProductsId?.length})`"
+                    :disabled="!compSelectedProductsId.length"
+                    type="primary"
+                    icon="fal fa-pencil"
+                />
+                <Button
+                    @click="() => pricingBulkField = 'master_rrps'"
+                    :label="trans('Bulk edit RRPs') + ` (${compSelectedProductsId?.length})`"
+                    :disabled="!compSelectedProductsId.length"
+                    type="primary"
+                    icon="fal fa-pencil"
+                />
+            </template>
             <Button
-                v-if="!hide_bulk_edit"
+                v-if="!hide_bulk_edit && currentTab !== 'pricing'"
                 @click="() => onVisit()"
                 :label="trans('Bulk edit products') + ` (${compSelectedProductsId?.length})`"
                 :disabled="!compSelectedProductsId.length"
-                type="secondary"
+                type="primary"
                 icon="fal fa-pencil"
                 :loading="isLoadingVisit"
             />
@@ -292,6 +324,12 @@ watch(() => currentTab.value, (tab) => {
         :key="currentTab"
         :tab="currentTab"
         :data="currentTab == 'index_ordering' ?  localData : props[currentTab]"
+        :majorCurrencies="pricingMajorCurrencies"
+        :pricingCurrencies="pricingCurrencies"
+        :bulkEditField="pricingBulkField"
+        :pricingCostRates="pricingCostRates"
+        @bulkEditHandled="pricingBulkField = null"
+        :masterProductCategoryId="masterProductCategoryId"
         :variant-slugs="variantSlugs"
         :isCheckBox="!hide_bulk_edit"
         :routes="routes"

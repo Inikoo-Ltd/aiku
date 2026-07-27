@@ -189,6 +189,15 @@ class Kernel extends ConsoleKernel
 
 
             $this->logSchedule(
+                $schedule->command('master_assets:hydrate_effective_cost')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'MasterAssetHydrateEffectiveCost',
+                ),
+                name: 'MasterAssetHydrateEffectiveCost',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->onOneServer()->timezone('UTC')->sentryMonitor(
                     monitorSlug: 'FulfilmentCustomersHydrateStatus'
                 ),

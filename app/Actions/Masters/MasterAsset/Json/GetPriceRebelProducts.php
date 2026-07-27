@@ -9,11 +9,11 @@
 
 namespace App\Actions\Masters\MasterAsset\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetPriceRebelProducts extends GrpAction
+class GetPriceRebelProducts extends OrgAction
 {
     public function handle(MasterAsset $masterAsset, array $modelData): array
     {
@@ -37,6 +37,7 @@ class GetPriceRebelProducts extends GrpAction
                             'shop_code'         => $shop->code,
                             'currency_code'     => $product->currency?->code ?? $shop->currency->code,
                             'value'             => $getPrice ? $product->price : $product->rrp,
+                            'units'             => (float) $product->units,
                             'currency_symbol'   => $product->currency?->symbol ?? $shop->currency->symbol,
                         ]
                     ];
@@ -62,7 +63,7 @@ class GetPriceRebelProducts extends GrpAction
 
     public function asController(MasterAsset $masterAsset, ActionRequest $request): array
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterAsset, $this->validatedData);
     }

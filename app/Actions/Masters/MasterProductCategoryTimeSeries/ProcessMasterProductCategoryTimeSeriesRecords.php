@@ -49,8 +49,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
             return;
         }
 
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $timeSeries = MasterProductCategoryTimeSeries::where('master_product_category_id', $masterProductCategoryId)->where('frequency', $frequency->value)->first();
 

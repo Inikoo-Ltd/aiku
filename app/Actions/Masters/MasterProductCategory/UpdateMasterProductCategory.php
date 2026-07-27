@@ -306,7 +306,6 @@ class UpdateMasterProductCategory extends OrgAction
                 'min:1',
                 'max:100'
             ],
-            'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
             'faq'                           => ['sometimes', 'array'],
             'faq.*.question'                => ['sometimes', 'nullable', 'string'],

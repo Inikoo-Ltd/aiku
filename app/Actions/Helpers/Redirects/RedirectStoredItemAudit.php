@@ -9,13 +9,13 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Fulfilment\StoredItemAudit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class RedirectStoredItemAudit extends GrpAction
+class RedirectStoredItemAudit extends OrgAction
 {
     public function handle(StoredItemAudit $storedItemAudit): ?RedirectResponse
     {
@@ -31,7 +31,7 @@ class RedirectStoredItemAudit extends GrpAction
 
     public function asController(StoredItemAudit $storedItemAudit, ActionRequest $request): RedirectResponse
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($storedItemAudit);
     }

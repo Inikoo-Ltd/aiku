@@ -20,7 +20,6 @@ library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    currencies : any
 }>()
 
 
@@ -33,7 +32,7 @@ const props = defineProps<{
     <!-- Page Heading with slot button -->
     <PageHeading :data="pageHead">
     </PageHeading>
-    <TableMasterProductsEdit :currencies/>
+    <TableMasterProductsEdit />
     
 </template>
 

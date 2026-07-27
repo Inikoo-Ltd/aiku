@@ -8,13 +8,13 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Goods\StockFamily;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class RedirectStockFamilyLink extends GrpAction
+class RedirectStockFamilyLink extends OrgAction
 {
     public function handle(StockFamily $stockFamily): RedirectResponse
     {
@@ -23,7 +23,7 @@ class RedirectStockFamilyLink extends GrpAction
 
     public function asController(StockFamily $stockFamily, ActionRequest $request): RedirectResponse
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($stockFamily);
     }

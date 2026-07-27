@@ -8,13 +8,13 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 
-class ShowUnsubscribeError extends GrpAction
+class ShowUnsubscribeError extends OrgAction
 {
     use AsController;
 

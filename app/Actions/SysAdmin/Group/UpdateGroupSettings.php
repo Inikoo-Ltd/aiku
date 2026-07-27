@@ -9,7 +9,7 @@
 namespace App\Actions\SysAdmin\Group;
 
 use App\Actions\Audits\DispatchSimpleAudit;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Ses\SesRegionEnum;
@@ -22,7 +22,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateGroupSettings extends GrpAction
+class UpdateGroupSettings extends OrgAction
 {
     use WithActionUpdate;
 
@@ -204,7 +204,7 @@ class UpdateGroupSettings extends GrpAction
     public function action(Group $group, array $modelData): Group
     {
         $this->asAction = true;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
 
         return $this->handle($group, $this->validatedData);
@@ -212,7 +212,7 @@ class UpdateGroupSettings extends GrpAction
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group, $this->validatedData);
     }

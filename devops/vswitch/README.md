@@ -30,7 +30,7 @@ Verify (from any host, payload sized for MTU 1400):
 ## 3. neon: NFS server
 
     apt install -y nfs-kernel-server
-    mkdir -p /srv/nfs/shared
+    mkdir -p /plaza2
     cp devops/vswitch/exports /etc/exports
     exportfs -ra
     ufw allow from 10.0.1.0/24 to any port 2049 proto tcp
@@ -39,10 +39,10 @@ Verify (from any host, payload sized for MTU 1400):
 ## 4. helio, boro, litio: NFS clients
 
     apt install -y nfs-common
-    mkdir -p /mnt/shared
-    echo '10.0.1.4:/srv/nfs/shared /mnt/shared nfs4 defaults,_netdev,noatime,nofail 0 0' >> /etc/fstab
+    mkdir -p /plaza2
+    echo '10.0.1.4:/plaza2 /plaza2 nfs4 defaults,_netdev,noatime,nofail 0 0' >> /etc/fstab
     systemctl daemon-reload
-    mount /mnt/shared
+    mount /plaza2
 
 ## Notes
 

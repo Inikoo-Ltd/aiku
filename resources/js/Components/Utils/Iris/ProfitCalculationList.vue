@@ -97,7 +97,7 @@ const locale = inject('locale', aikuLocaleStructure)
         </tbody>
 
         <!-- Discounted Profit -->
-        <tbody v-if="layout.iris.website.slug != 'acar'" class="bg-white">
+        <tbody v-if="layout.iris.website.slug != 'acar' && product.discounted_price < product.price" class="bg-white">
           <tr>
             <td class="pt-1.5 sm:pt-3 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
               <div class="flex items-center gap-0.5 sm:gap-1 text-slate-800">
@@ -106,21 +106,11 @@ const locale = inject('locale', aikuLocaleStructure)
               </div>
             </td>
             <td class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-[#E87928]">
-              {{
-                locale.currencyFormat(
-                  layout?.iris?.currency?.code,
-                  product.rrp - product.discounted_price
-                )
-              }}
+              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_profit) }}
               <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
             </td>
             <td v-if="product.units > 1" class="pt-1.5 sm:pt-3 pr-2.5 sm:pr-6 font-semibold text-[#E87928]">
-              {{
-                locale.currencyFormat(
-                  layout?.iris?.currency?.code,
-                  product.discounted_price_per_unit
-                )
-              }}
+              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.discounted_profit_per_unit) }}
               <span class="font-normal text-slate-500">/{{ product.unit }}</span>
             </td>
             <td class="pt-1.5 sm:pt-3 pr-1.5 sm:pr-3 text-right align-middle">

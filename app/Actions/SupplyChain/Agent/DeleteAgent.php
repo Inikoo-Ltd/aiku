@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Agent;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -16,8 +17,9 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class DeleteAgent extends GrpAction
+class DeleteAgent extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use AsController;
     use WithAttributes;
 
@@ -26,14 +28,6 @@ class DeleteAgent extends GrpAction
         $agent->delete();
 
         return $agent;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-        return $request->user()->authTo("procurement.edit");
     }
 
     public function action(Agent $agent): Agent

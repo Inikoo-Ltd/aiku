@@ -9,7 +9,7 @@
 
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -17,7 +17,7 @@ use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateAgentSupplierPurchaseOrder extends GrpAction
+class UpdateAgentSupplierPurchaseOrder extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -89,7 +89,7 @@ class UpdateAgentSupplierPurchaseOrder extends GrpAction
         $this->strict                     = $strict;
         $this->agentSupplierPurchaseOrder = $agentSupplierPurchaseOrder;
         $this->hydratorsDelay             = $hydratorsDelay;
-        $this->initialisation($agentSupplierPurchaseOrder->group, $modelData);
+        $this->initialisationFromGroup($agentSupplierPurchaseOrder->group, $modelData);
 
 
         return $this->handle($agentSupplierPurchaseOrder, $this->validatedData);

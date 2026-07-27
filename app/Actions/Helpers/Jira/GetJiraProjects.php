@@ -7,14 +7,14 @@
 
 namespace App\Actions\Helpers\Jira;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Jira\Traits\WithJiraApiRequest;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsCommand;
 
-class GetJiraProjects extends GrpAction
+class GetJiraProjects extends OrgAction
 {
     use WithJiraApiRequest;
     use AsCommand;
@@ -45,7 +45,7 @@ class GetJiraProjects extends GrpAction
     public function action(Group $group): array
     {
         $this->asAction = true;
-        $this->initialisation($group, []);
+        $this->initialisationFromGroup($group, []);
 
         return $this->handle($group);
     }
@@ -55,7 +55,7 @@ class GetJiraProjects extends GrpAction
      */
     public function asController(ActionRequest $request): array
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($this->group);
     }

@@ -10,7 +10,7 @@ namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Enums\UI\SupplyChain\TradeUnitFamilyTabsEnum;
@@ -21,7 +21,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowTradeUnitFamily extends GrpAction
+class ShowTradeUnitFamily extends OrgAction
 {
     use WithGoodsAuthorisation;
     use HasBucketAttachment;
@@ -34,7 +34,7 @@ class ShowTradeUnitFamily extends GrpAction
 
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): TradeUnitFamily
     {
-        $this->initialisation(group(), $request)->withTab(TradeUnitFamilyTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(TradeUnitFamilyTabsEnum::values());
 
         return $this->handle($tradeUnitFamily);
     }

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterCollection;
@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class AttachModelsToMasterCollection extends GrpAction
+class AttachModelsToMasterCollection extends OrgAction
 {
     public function handle(MasterCollection $masterCollection, array $modelData): MasterCollection
     {
@@ -63,14 +63,14 @@ class AttachModelsToMasterCollection extends GrpAction
     public function action(MasterCollection $masterCollection, $modelData): MasterCollection
     {
         $this->asAction = true;
-        $this->initialisation($masterCollection->group, $modelData);
+        $this->initialisationFromGroup($masterCollection->group, $modelData);
 
         return $this->handle($masterCollection, $modelData);
     }
 
     public function asController(MasterCollection $masterCollection, ActionRequest $request): MasterCollection
     {
-        $this->initialisation($masterCollection->group, $request);
+        $this->initialisationFromGroup($masterCollection->group, $request);
 
         return $this->handle($masterCollection, $this->validatedData);
     }

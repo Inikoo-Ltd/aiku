@@ -96,6 +96,7 @@ import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
 import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
 import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
 import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
+import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -192,7 +193,8 @@ export const componentsList: { [key: string]: Component } = {
     'tags': TagsInput,
     'banned-countries': BannedCountries,
 	field_group: FieldGroup,
-    'multiple_price_currency' : MultiplePriceCurrency
+    'multiple_price_currency' : MultiplePriceCurrency,
+    'master_shop_price_exchanges' : MasterShopPriceExchanges
 }
 
 export const getComponent = (componentName: string) => {

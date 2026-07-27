@@ -45,8 +45,7 @@ class ProcessOfferTimeSeriesRecords implements ShouldBeUnique
             return;
         }
 
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $timeSeries = OfferTimeSeries::where('offer_id', $offer->id)->where('frequency', $frequency->value)->first();
 

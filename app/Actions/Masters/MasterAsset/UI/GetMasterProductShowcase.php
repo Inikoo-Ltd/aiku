@@ -10,7 +10,10 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
+use App\Models\Helpers\Currency;
 use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
@@ -20,7 +23,6 @@ use App\Helpers\NaturalLanguage;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 
 class GetMasterProductShowcase
 {
@@ -67,7 +69,7 @@ class GetMasterProductShowcase
 
         $dataTradeUnits = [];
         if ($masterAsset->tradeUnits) {
-            $dataTradeUnits = $this->getDataTradeUnit($masterAsset->tradeUnits);
+            $dataTradeUnits = $this->getDataTradeUnit($masterAsset);
         }
 
         $product = $masterAsset
@@ -91,6 +93,11 @@ class GetMasterProductShowcase
         return [
             'images'              => $this->getImagesData($masterAsset),
             'main_image'          => $masterAsset->imageSources(),
+            'majorCurrencies'     => collect($masterAsset->masterShop?->price_exchanges ?? [])
+                ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
+                ->keys()
+                ->values(),
+            'pricingCosts'        => $this->getPricingCosts($masterAsset),
             'masterProduct'       => MasterProductResource::make($masterAsset)->resolve(),
             'properties'          => $properties,
             'trade_units'         => $dataTradeUnits,
@@ -113,15 +120,36 @@ class GetMasterProductShowcase
         ];
     }
 
-    private function getDataTradeUnit($tradeUnits): array
+    /**
+     * Effective cost (group currency, per outer) converted into every shop currency,
+     * so the UI can show margin vs cost next to each price — same maths as the
+     * pricing tab and the master product edit blueprint.
+     *
+     * @return array<string, float|null>|null
+     */
+    private function getPricingCosts(MasterAsset $masterAsset): ?array
     {
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        if ($masterAsset->effective_cost === null || !$masterAsset->masterShop) {
+            return null;
+        }
 
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
+        $groupCurrency = $masterAsset->group->currency;
+
+        return GetMasterShopCurrenciesRate::run($masterAsset->masterShop)
+            ->map(function ($rate, string $currencyCode) use ($masterAsset, $groupCurrency) {
+                $currency = Currency::where('code', $currencyCode)->first();
+                $exchange = $currency ? GetCurrencyExchange::run($groupCurrency, $currency) : null;
+
+                return $exchange ? round((float) $masterAsset->effective_cost * $exchange, 2) : null;
+            })
+            ->all();
+    }
+
+    private function getDataTradeUnit(MasterAsset $masterAsset): array
+    {
+        $packedIn = $masterAsset->getStockPackedInByTradeUnit();
+
+        return $masterAsset->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) { //louis need fix it
             return array_merge(
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / Arr::get($packedIn, $tradeUnit->id, 1))), Arr::get($packedIn, $tradeUnit->id, 1))],
                 GetTradeUnitShowcase::run($tradeUnit)

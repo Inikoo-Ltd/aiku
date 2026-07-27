@@ -10,7 +10,7 @@ namespace App\Actions\Chat\ChatSession\UI;
 
 use App\Actions\Chat\ChatSession\GetChatDashboardData;
 use App\Actions\Chat\ChatSession\GetGroupChatDashboardData;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Group;
@@ -21,7 +21,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowGroupChatDashboard extends GrpAction
+class ShowGroupChatDashboard extends OrgAction
 {
     use AsAction;
     use WithInertia;
@@ -33,7 +33,7 @@ class ShowGroupChatDashboard extends GrpAction
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group);
     }
