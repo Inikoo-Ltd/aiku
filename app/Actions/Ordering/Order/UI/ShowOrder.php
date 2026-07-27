@@ -25,6 +25,7 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
@@ -58,11 +59,9 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\SysAdmin\Organisation;
-use BackedEnum;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -72,6 +71,7 @@ class ShowOrder extends OrgAction
     use IsOrder;
     use WithOrderingAuthorisation;
     use WithOrderForbiddenCountryCheck;
+    use WithBucketNavigation;
 
     private Shop|Customer|CustomerClient|Purge|CustomerSalesChannel $parent;
     private CustomerSalesChannel $customerSalesChannel;
@@ -806,7 +806,7 @@ class ShowOrder extends OrgAction
     public function getPrevious(Order $order, ActionRequest $request): ?array
     {
         if ($bucket = $this->backlogBucket($request)) {
-            $previous = $this->getBucketNeighbour($order, $request, $bucket, forward: false);
+            $previous = $this->getOrderBucketNeighbour($order, $request, $bucket, forward: false);
         } else {
             $previous = Order::where('reference', '<', $order->reference)->when(true, function ($query) use ($order, $request) {
                 if ($request->route()->getName() == 'shops.show.orders.show') {
@@ -821,7 +821,7 @@ class ShowOrder extends OrgAction
     public function getNext(Order $order, ActionRequest $request): ?array
     {
         if ($bucket = $this->backlogBucket($request)) {
-            $next = $this->getBucketNeighbour($order, $request, $bucket, forward: true);
+            $next = $this->getOrderBucketNeighbour($order, $request, $bucket, forward: true);
         } else {
             $next = Order::where('reference', '>', $order->reference)->when(true, function ($query) use ($order, $request) {
                 if ($request->route()->getName() == 'shops.show.orders.show') {
@@ -833,41 +833,19 @@ class ShowOrder extends OrgAction
         return $this->getNavigation($next, $request->route()->getName());
     }
 
-    private function getBucketNeighbour(Order $order, ActionRequest $request, string $bucket, bool $forward): ?Order
+    private function getOrderBucketNeighbour(Order $order, ActionRequest $request, string $bucket, bool $forward): ?Order
     {
-        [$column, $isDescending] = $this->bucketNavigationSort($request->input('bucket_sort'));
-
-        $value = $this->bucketNavigationSortValue($order, $column);
-
-        if ($value === null) {
-            [$column, $isDescending] = ['orders.date', true];
-            $value                   = $order->date;
-        }
-
-        $walkingDown = $forward == $isDescending;
-        $operator    = $walkingDown ? '<' : '>';
-        $direction   = $walkingDown ? 'desc' : 'asc';
-
         $query = $this->bucketNavigationQuery($order, $bucket, $request->input('bucket_scope'));
 
-        if ($column == 'customers.name') {
+        if (ltrim((string)$request->input('bucket_sort'), '-') == 'customer_name') {
             $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
         }
 
-        return $query->select('orders.*')
-            ->whereRaw("($column, orders.id) $operator (?, ?)", [$value, $order->id])
-            ->orderBy($column, $direction)
-            ->orderBy('orders.id', $direction)
-            ->first();
-    }
-
-    /**
-     * @return array{0: string, 1: bool} whitelisted sort column and whether it is descending
-     */
-    private function bucketNavigationSort(?string $sort): array
-    {
-        $column = Arr::get(
-            [
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $order,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
                 'reference'              => 'orders.reference',
                 'date'                   => 'orders.date',
                 'submitted_at'           => 'orders.submitted_at',
@@ -878,25 +856,10 @@ class ShowOrder extends OrgAction
                 'customer_name'          => 'customers.name',
                 'id'                     => 'orders.id',
             ],
-            ltrim((string)$sort, '-')
+            defaultSort: ['orders.date', true],
+            forward: $forward,
+            sortValues: ['customers.name' => $order->customer?->name]
         );
-
-        if (!$column) {
-            return ['orders.date', true];
-        }
-
-        return [$column, str_starts_with((string)$sort, '-')];
-    }
-
-    private function bucketNavigationSortValue(Order $order, string $column): mixed
-    {
-        if ($column == 'customers.name') {
-            return $order->customer?->name;
-        }
-
-        $value = $order->getAttribute(Str::after($column, 'orders.'));
-
-        return $value instanceof BackedEnum ? $value->value : $value;
     }
 
     private function backlogBucket(ActionRequest $request): ?string
