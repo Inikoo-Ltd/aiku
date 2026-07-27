@@ -98,8 +98,14 @@ class FinaliseRecalculateMasterShopMinorCurrencyPrices
         Cache::put(RecalculateMasterShopMinorCurrencyPrices::basketsDoneKey($masterShop, $currencyCode), 0, RecalculateMasterShopMinorCurrencyPrices::COUNTERS_TTL_SECONDS);
         Cache::put(RecalculateMasterShopMinorCurrencyPrices::basketsRemainingKey($masterShop, $currencyCode), $orderIDs->count(), RecalculateMasterShopMinorCurrencyPrices::COUNTERS_TTL_SECONDS);
 
+        // RecalculateTotalsOrdersInBasket defaults to the 'urgent' queue, which is sized for
+        // latency-sensitive customer work. A currency recalculation reprices every open basket in
+        // the affected shops - tens of thousands of jobs - so sending them to urgent parks real
+        // urgent work behind the backfill. sales_slave is where the action puts its own bulk
+        // cascade. Baskets now finish later, so the progress bar sits in repricing_baskets longer.
         foreach ($orderIDs as $orderID) {
-            RecalculateTotalsOrdersInBasket::dispatch($orderID, null, $masterShop->id, $currencyCode);
+            RecalculateTotalsOrdersInBasket::dispatch($orderID, null, $masterShop->id, $currencyCode)
+                ->onQueue('sales_slave');
         }
 
         if ($userID) {
