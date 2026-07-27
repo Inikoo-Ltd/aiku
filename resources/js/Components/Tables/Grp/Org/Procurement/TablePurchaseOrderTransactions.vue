@@ -402,9 +402,10 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
         <template #cell(state_icon)="{ item }">
             <FontAwesomeIcon
-                v-tooltip="item.state_icon?.tooltip"
-                :icon="item.state_icon?.icon"
-                :class="item.state_icon?.class"
+                v-if="item.state_icon"
+                v-tooltip="item.state_icon.tooltip"
+                :icon="item.state_icon.icon"
+                :class="item.state_icon.class"
                 aria-hidden="true"
                 fixed-width
             />

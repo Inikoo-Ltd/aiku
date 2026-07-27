@@ -803,6 +803,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	<div class="pb-12">
 		<component
 			:is="component"
+			:key="currentTab"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
 			:state="data.data.state"

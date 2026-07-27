@@ -101,6 +101,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 'purchase_order_transactions.org_net_amount as org_net_amount',
                 'purchase_order_transactions.org_exchange as org_exchange',
                 'purchase_order_transactions.id as purchase_order_transaction_id',
+                'purchase_order_transactions.state as transaction_state',
                 'suppliers.name as supplier_name',
                 'org_suppliers.slug as supplier_slug',
             ])
@@ -128,6 +129,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
+                ->column(key: 'state_icon', label: '', canBeHidden: false)
                 ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'image_thumbnail', label: __('Image'), canBeHidden: false)
                 ->column(key: 'description', label: __('Description'), canBeHidden: false)
