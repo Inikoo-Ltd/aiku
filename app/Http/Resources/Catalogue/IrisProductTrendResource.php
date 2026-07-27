@@ -39,7 +39,7 @@ class IrisProductTrendResource extends JsonResource
         $bestPercentageOffOfferFactor = 1 - (float) $bestPercentageOff;
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
-        [$marginDiscounted, , $profitDiscounted, $profitPerUnitDiscounted, , $pricePerUnitDiscounted] = $this->getPriceMetrics($this->rrp, $bestPercentageOffOfferFactor * $this->price, $this->units);
+        [$marginDiscounted, $profitDiscounted, $profitPerUnitDiscounted, $pricePerUnitDiscounted] = $this->getPriceMetrics($this->rrp, $bestPercentageOffOfferFactor * $this->price, $this->units);
 
         $canonicalUrl = $this->canonical_url;
         if ($canonicalUrl && !app()->environment('production')) {
