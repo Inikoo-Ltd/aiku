@@ -35,6 +35,9 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandl
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\OrgStock\RepairIal01OrgStockConsumables;
+use App\Actions\Inventory\OrgStock\RetireIal01OrgStocks;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Actions\Maintenance\Catalogue\RemoveIal01FromBillsOfMaterials;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use Illuminate\Routing\Route;
@@ -2126,4 +2129,65 @@ test('ial01 bom removal is blocked until a consumable replaces the instruction',
     $done = $action->handle(apply: true);
     expect($done['blocked'])->toBeFalse()
         ->and($product->fresh()->tradeUnits->pluck('id'))->not->toContain($tradeUnit->id);
+});
+
+test('ial01 org stock retirement is blocked until boms are clear and labels are picked', function () {
+    $tradeUnit = TradeUnit::where('code', 'IAL01')->firstOr(fn () => StoreTradeUnit::make()->action($this->group, array_merge(
+        TradeUnit::factory()->definition(),
+        ['code' => 'IAL01', 'name' => 'Import Address Labels']
+    )));
+
+    /** @var DeliveryNoteItem $deliveryNoteItem */
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('org_stock_id')->firstOrFail();
+    $labelOrgStock    = $deliveryNoteItem->orgStock;
+
+    $labelOrgStock->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+    $labelOrgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action($labelOrgStock, $location, [
+        'quantity'   => 500,
+        'type'       => LocationStockTypeEnum::PICKING,
+        'fetched_at' => now(),
+    ], strict: false);
+
+    $action = new RetireIal01OrgStocks();
+
+    // A bill of materials line still naming the label blocks the write off.
+    $product = $deliveryNoteItem->transaction->model;
+    $product->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+
+    expect($action->handle(apply: true)['blocked'])->toBeTrue()
+        ->and($locationOrgStock->refresh()->quantity)->toEqual(500);
+
+    $product->tradeUnits()->detach($tradeUnit->id);
+
+    // A label still waiting to be picked blocks it too, a picker cannot pick from an empty location.
+    $deliveryNoteItem->update(['quantity_required' => 5, 'quantity_picked' => 1]);
+    $deliveryNoteItem->deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING]);
+
+    expect($action->countUnpickedLabels($tradeUnit))->toEqual(4.0)
+        ->and($action->handle(apply: true)['blocked'])->toBeTrue()
+        ->and($locationOrgStock->refresh()->quantity)->toEqual(500);
+
+    // Once picked, the stock is written off through an audited movement and the SKO discontinued.
+    $deliveryNoteItem->update(['quantity_picked' => 5]);
+
+    $movementsBefore = $labelOrgStock->orgStockMovements()->count();
+    $result          = $action->handle(apply: true);
+
+    expect($result['blocked'])->toBeFalse()
+        ->and($result['written_off'])->toBeGreaterThan(0)
+        ->and($locationOrgStock->refresh()->quantity)->toEqual(0)
+        ->and($labelOrgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUED)
+        ->and($labelOrgStock->orgStockMovements()->count())->toBe($movementsBefore + $result['written_off']);
+
+    $movement = $labelOrgStock->orgStockMovements()
+        ->where('location_id', $locationOrgStock->location_id)
+        ->latest('id')
+        ->first();
+
+    expect($movement->reason)->toBe(OrgStockMovementReasonEnum::DATA_FIX)
+        ->and((float) $movement->quantity)->toEqual(-500.0)
+        ->and((float) $movement->audited_quantity)->toEqual(0.0);
 });
