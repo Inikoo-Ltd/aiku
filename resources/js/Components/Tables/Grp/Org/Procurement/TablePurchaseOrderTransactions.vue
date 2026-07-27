@@ -409,17 +409,6 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             {{ amount(item) }}
         </template>
 
-        <template #cell(state_icon)="{ item }">
-            <FontAwesomeIcon
-                v-if="item.state_icon"
-                v-tooltip="item.state_icon.tooltip"
-                :icon="item.state_icon.icon"
-                :class="item.state_icon.class"
-                aria-hidden="true"
-                fixed-width
-            />
-        </template>
-
         <template #cell(state)="{ item }">
             <div class="flex items-center gap-1.5">                
                  <FontAwesomeIcon

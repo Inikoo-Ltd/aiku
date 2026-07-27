@@ -164,7 +164,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
-                ->column(key: 'state_icon', label: '', canBeHidden: false);
+                ->column(key: 'state_icon', label: ['fal', 'fa-yin-yang'], canBeHidden: false, type: 'icon');
 
             if ($this->showDeliveryState($purchaseOrder)) {
                 $table->column(key: 'delivery_state', label: __('Delivery State'), canBeHidden: false, align: 'center');
