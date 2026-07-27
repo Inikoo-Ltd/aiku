@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import {Link} from '@inertiajs/vue3';
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from '@/Components/Table/Table.vue';
 import {SupplierProduct} from "@/types/supplier-product";
 
@@ -14,6 +15,12 @@ const props = defineProps<{
     tab?: string
 }>()
 
+
+function supplierProductHref(supplierProduct: SupplierProduct) {
+  const bucket = route().current()?.match(/^grp\.supply-chain\.supplier_products\.(free|in_agents)$/)?.[1]
+
+  return supplierProductRoute(supplierProduct) + bucketQuery(bucket)
+}
 
 function supplierProductRoute(supplierProduct: SupplierProduct) {
     switch (route().current()) {
@@ -56,7 +63,7 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: supplier_product }">
-            <Link :href="supplierProductRoute(supplier_product)" class="primaryLink">
+            <Link :href="supplierProductHref(supplier_product)" class="primaryLink">
                 {{ supplier_product['code'] }}
             </Link>
         </template>
