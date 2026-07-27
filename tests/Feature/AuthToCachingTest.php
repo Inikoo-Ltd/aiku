@@ -7,6 +7,7 @@
  */
 
 use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
+use App\Models\SysAdmin\Role;
 use Illuminate\Support\Facades\Cache;
 
 beforeAll(function () {
@@ -56,10 +57,55 @@ test('a permission granted after a denial takes effect immediately', function ()
     expect($this->user->authTo($permission))->toBeTrue('a denial must not linger in the cache');
 });
 
-test('a denial with no team bound is not cached either', function () {
+test('a check with no team bound binds the user group instead of denying', function () {
     setPermissionsTeamId(null);
+    $this->user->unsetRelation('permissions')->unsetRelation('roles');
 
-    expect($this->user->authTo($this->permission))->toBeFalse()
-        ->and(Cache::tags('auth-user:'.$this->user->id)->get('can:'.$this->permission))
-        ->toBeNull('an unbound request must not leave a denial behind for bound ones');
+    expect($this->user->authTo($this->permission))->toBeTrue('an unbound request must not deny a granted permission')
+        ->and(getPermissionsTeamId())->toBe($this->user->group_id);
+});
+
+test('a check bound to another group rebinds to the user group', function () {
+    setPermissionsTeamId($this->group->id + 999);
+    $this->user->hasPermissionTo($this->permission);
+
+    expect($this->user->authTo($this->permission))->toBeTrue('a foreign team must not poison the check')
+        ->and(getPermissionsTeamId())->toBe($this->user->group_id);
+});
+
+test('losing a role drops the cached true', function () {
+    expect($this->user->authTo($this->permission))->toBeTrue();
+
+    foreach ($this->user->roles as $role) {
+        $this->user->removeRole($role);
+    }
+    $this->user->revokePermissionTo($this->permission);
+
+    expect(Cache::tags('auth-user:'.$this->user->id)->get('can:'.$this->permission))->toBeNull()
+        ->and($this->user->authTo($this->permission))->toBeFalse('a revoked permission must not survive in the cache');
+});
+
+test('taking a permission off a role drops the cached true of its holders', function () {
+    foreach ($this->user->roles as $role) {
+        $this->user->removeRole($role);
+    }
+    $this->user->revokePermissionTo($this->permission);
+
+    $role = Role::create([
+        'name'       => 'auth-to-caching-test.'.$this->shop->id,
+        'guard_name' => 'web',
+        'scope_type' => 'Shop',
+        'scope_id'   => $this->shop->id,
+        'group_id'   => $this->group->id,
+    ]);
+    $role->givePermissionTo($this->permission);
+    $this->user->assignRole($role);
+
+    expect($this->user->authTo($this->permission))->toBeTrue();
+
+    $role->syncPermissions([]);
+    $this->user->unsetRelation('permissions')->unsetRelation('roles');
+
+    expect(Cache::tags('auth-user:'.$this->user->id)->get('can:'.$this->permission))->toBeNull()
+        ->and($this->user->authTo($this->permission))->toBeFalse('a role change must not survive in the holders cache');
 });
