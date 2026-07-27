@@ -1774,3 +1774,29 @@ test('transaction import marks rows with missing code or quantity as failed', fu
     expect($missingQuantityRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
         ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
 });
+
+test('bulk basket recalculation skips orders submitted while the job was waiting', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 222.22, 'total_amount' => 222.22]);
+
+    // Offer activation lists baskets then queues one job each with up to 2h of delay. An order
+    // submitted inside that window must be left alone by both halves of the recalculation.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()
+        ->handle($order, true, true, false, true, true);
+    \App\Actions\Ordering\Order\CalculateOrderDiscounts::make()->handle($order, true);
+
+    expect((float) $order->refresh()->net_amount)->toBe(222.22)
+        ->and((float) $order->total_amount)->toBe(222.22);
+
+    // Without the flag the same call still works on a submitted order, as other callers rely on.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()->handle($order);
+
+    expect((float) $order->refresh()->total_amount)->not->toBe(222.22);
+});
