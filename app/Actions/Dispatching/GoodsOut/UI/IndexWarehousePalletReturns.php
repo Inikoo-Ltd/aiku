@@ -313,7 +313,7 @@ class IndexWarehousePalletReturns extends OrgAction
             }
         }
 
-        $queryBuilder->defaultSort('-date');
+        $queryBuilder->defaultSort('-confirmed_at');
 
         return $queryBuilder
             ->select([

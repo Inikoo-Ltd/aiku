@@ -64,7 +64,7 @@ trait WithPalletReturnBucketNavigation
                 'picked_at'          => 'pallet_returns.picked_at',
                 'confirmed_at'       => 'pallet_returns.confirmed_at',
             ],
-            defaultSort: ['pallet_returns.date', true],
+            defaultSort: ['pallet_returns.confirmed_at', true],
             forward: $forward
         );
     }

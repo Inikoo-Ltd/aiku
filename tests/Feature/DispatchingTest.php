@@ -2240,9 +2240,13 @@ test('UI show delivery note navigation follows the bucket it was opened from', f
 test('UI show pallet return navigation follows the bucket it was opened from', function () {
     $this->withoutExceptionHandling();
 
-    $makeReturnOn = function (string $date) {
+    $makeReturnOn = function (string $confirmedAt) {
         $palletReturn = createPalletReturnWithPallet($this);
-        $palletReturn->update(['state' => PalletReturnStateEnum::CONFIRMED, 'date' => $date]);
+        $palletReturn->update([
+            'state'        => PalletReturnStateEnum::CONFIRMED,
+            'confirmed_at' => $confirmedAt,
+            'date'         => $confirmedAt,
+        ]);
 
         return $palletReturn->refresh();
     };
@@ -2275,7 +2279,7 @@ test('UI show pallet return navigation follows the bucket it was opened from', f
         fn (AssertableInertia $page) => $page->has('navigation')->etc()
     );
 
-    PalletReturn::whereIn('id', [$oldest->id, $middle->id, $newest->id])->update(['date' => null]);
+    PalletReturn::whereIn('id', [$oldest->id, $middle->id, $newest->id])->update(['confirmed_at' => null, 'date' => null]);
 
     get($showRoute($middle).'?bucket=confirmed')->assertInertia(
         fn (AssertableInertia $page) => $page
