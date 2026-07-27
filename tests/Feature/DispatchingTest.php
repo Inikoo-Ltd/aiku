@@ -102,6 +102,7 @@ use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dispatching\Trolley;
 use App\Models\Fulfilment\Pallet;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Goods\Stock;
 use App\Models\Helpers\Address;
@@ -2036,4 +2037,86 @@ test('marks record as failed with a clear message when sku is not found', functi
 
     expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::FAILED->value)
         ->and($uploadRecord->errors)->toContain("SKO 'NON-EXISTENT-SKU' not found.");
+});
+
+test('UI show delivery note navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeNoteOn = function (string $date, bool $isPremiumDispatch = false) {
+        $deliveryNote = makeDeliveryNote($this);
+        $deliveryNote->update([
+            'state'               => DeliveryNoteStateEnum::UNASSIGNED,
+            'date'                => $date,
+            'is_premium_dispatch' => $isPremiumDispatch,
+        ]);
+
+        return $deliveryNote->refresh();
+    };
+
+    DeliveryNote::query()->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+
+    $oldest  = $makeNoteOn('2026-07-18 10:00:00');
+    $middle  = $makeNoteOn('2026-07-19 10:00:00');
+    $premium = $makeNoteOn('2026-07-20 10:00:00', isPremiumDispatch: true);
+
+    $showRoute = fn (DeliveryNote $deliveryNote) => route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
+        $this->organisation->slug, $this->warehouse->slug, $deliveryNote->slug,
+    ]);
+
+    get($showRoute($oldest).'?bucket=unassigned')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $premium->reference)
+            ->where('navigation.next.label', $middle->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket=unassigned&bucket_sort=-reference')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('navigation.previous')
+            ->has('navigation.next')
+            ->etc()
+    );
+
+    get($showRoute($middle))->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+});
+
+test('UI show pallet return navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeReturnOn = function (string $date) {
+        $palletReturn = createPalletReturnWithPallet($this);
+        $palletReturn->update(['state' => PalletReturnStateEnum::CONFIRMED, 'date' => $date]);
+
+        return $palletReturn->refresh();
+    };
+
+    PalletReturn::query()->update(['state' => PalletReturnStateEnum::DISPATCHED]);
+
+    $oldest = $makeReturnOn('2026-07-18 10:00:00');
+    $middle = $makeReturnOn('2026-07-19 10:00:00');
+    $newest = $makeReturnOn('2026-07-20 10:00:00');
+
+    $showRoute = fn (PalletReturn $palletReturn) => route('grp.org.warehouses.show.dispatching.pallet-returns.show', [
+        $this->organisation->slug, $this->warehouse->slug, $palletReturn->slug,
+    ]);
+
+    get($showRoute($middle).'?bucket=confirmed')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket=confirmed&bucket_sort=date')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle))->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
 });

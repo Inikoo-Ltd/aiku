@@ -31,6 +31,33 @@ const props = defineProps<{
 
 const layout = inject('layout', layoutStructure)
 
+function returnHref(palletReturn: PalletDelivery) {
+    const url = palletReturn.type === 'pallet' ? palletReturnRoute(palletReturn) : storedItemReturnRoute(palletReturn)
+
+    return url ? url + bucketQuery() : ''
+}
+
+function bucketQuery() {
+    const bucket = route().current()?.match(/\.pallet-returns\.([^.]+)\.index$/)?.[1]
+
+    if (!bucket) return ''
+
+    const current = new URLSearchParams(location.search)
+    const query = new URLSearchParams({ bucket })
+    const sort = current.get('sort')
+    const type = current.get('filter[type]')
+
+    if (type) {
+        query.set('filter[type]', type)
+    }
+
+    if (sort) {
+        query.set('bucket_sort', sort)
+    }
+
+    return `?${query.toString()}`
+}
+
 function palletReturnRoute(palletReturn: PalletDelivery) {
     switch (route().current()) {
         case 'grp.org.warehouses.show.dispatching.pallet-returns.index':
@@ -270,11 +297,11 @@ const locale = inject('locale', aikuLocaleStructure)
         <!-- Column: Reference -->
         <template #cell(reference)="{ item: palletReturn }">
             <div class="flex flex-col items-start gap-1">
-                <Link v-if="palletReturn.type === 'pallet' && palletReturnRoute(palletReturn)" :href="palletReturnRoute(palletReturn)" class="primaryLink">
+                <Link v-if="palletReturn.type === 'pallet' && palletReturnRoute(palletReturn)" :href="returnHref(palletReturn)" class="primaryLink">
                     {{ palletReturn['reference'] }}
                 </Link>
 
-                <Link v-else-if="palletReturn.type === 'stored_item' && storedItemReturnRoute(palletReturn)" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
+                <Link v-else-if="palletReturn.type === 'stored_item' && storedItemReturnRoute(palletReturn)" :href="returnHref(palletReturn)" class="primaryLink">
                     {{ palletReturn['reference'] }}
                 </Link>
 
