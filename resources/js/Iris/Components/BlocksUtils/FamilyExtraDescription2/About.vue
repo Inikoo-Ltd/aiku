@@ -230,18 +230,13 @@ onBeforeUnmount(() => {
             grid
             w-full
             gap-3
-
             grid-cols-1
             auto-rows-[220px]
-
             md:grid-cols-[1.35fr_1fr]
             md:grid-rows-[260px_220px]
-
             lg:grid-cols-[1.45fr_1fr]
             lg:grid-rows-[360px_210px]
-
             xl:grid-rows-[400px_230px]
-
             2xl:grid-rows-[440px_260px]
         ">
                 <!-- TOP LEFT LARGE IMAGE -->
@@ -251,7 +246,8 @@ onBeforeUnmount(() => {
                 h-full
             ">
                     <template v-if="hasImage(displayImages[0])">
-                        <Image :src="displayImages[0]?.original" :srcset="displayImages[0]?.srcset" sizes="(min-width: 1024px) 40vw, 90vw" :image-cover="true" class="w-full h-full object-cover"
+                        <Image :src="displayImages[0]?.original" :srcset="displayImages[0]?.srcset"
+                            sizes="(min-width: 1024px) 42vw, (min-width: 768px) 55vw, 95vw" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 
@@ -264,10 +260,8 @@ onBeforeUnmount(() => {
                 <div class="
                 grid
                 gap-3
-
                 grid-cols-2
                 h-[180px]
-
                 md:grid-cols-1
                 md:grid-rows-2
                 md:h-full
@@ -275,7 +269,8 @@ onBeforeUnmount(() => {
                     <!-- TOP RIGHT -->
                     <div class="overflow-hidden rounded-[8px] h-full">
                         <template v-if="hasImage(displayImages[1])">
-                            <Image :src="displayImages[1]?.original" :srcset="displayImages[1]?.srcset" sizes="(min-width: 1024px) 20vw, 45vw" :image-cover="true"
+                            <Image :src="displayImages[1]?.original" :srcset="displayImages[1]?.srcset"
+                                sizes="(min-width: 1024px) 22vw, (min-width: 768px) 40vw, 50vw" :image-cover="true"
                                 class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
                         </template>
 
@@ -287,7 +282,8 @@ onBeforeUnmount(() => {
                     <!-- BOTTOM RIGHT -->
                     <div class="overflow-hidden rounded-[8px] h-full">
                         <template v-if="hasImage(displayImages[2])">
-                            <Image :src="displayImages[2]?.original" :srcset="displayImages[2]?.srcset" sizes="(min-width: 1024px) 20vw, 45vw" :image-cover="true"
+                            <Image :src="displayImages[2]?.original" :srcset="displayImages[2]?.srcset"
+                                sizes="(min-width: 1024px) 22vw, (min-width: 768px) 40vw, 50vw" :image-cover="true"
                                 class="w-full h-full object-cover" :alt="fieldValue?.family?.name" />
                         </template>
 
@@ -302,18 +298,16 @@ onBeforeUnmount(() => {
                 relative
                 overflow-hidden
                 rounded-[8px]
-
                 h-[220px]
-
                 md:col-span-2
                 md:h-[220px]
-
                 lg:h-[210px]
                 xl:h-[230px]
                 2xl:h-[260px]
             ">
                     <template v-if="hasImage(displayImages[3])">
-                        <Image :src="displayImages[3]?.original" :srcset="displayImages[3]?.srcset" sizes="(min-width: 1024px) 20vw, 45vw" :image-cover="true" class="w-full h-full object-cover"
+                        <Image :src="displayImages[3]?.original" :srcset="displayImages[3]?.srcset"
+                            sizes="(min-width: 1024px) 45vw, 95vw" :image-cover="true" class="w-full h-full object-cover"
                             :alt="fieldValue?.family?.name" />
                     </template>
 

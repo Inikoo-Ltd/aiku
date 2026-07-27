@@ -550,10 +550,11 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                             />
                         </div>
 
-                         <div v-if="fieldValue?.cards"
-                                v-for="card in fieldValue?.cards.filter((item) => item.visible)"
+                         <div v-for="(card, cardIndex) in (fieldValue?.cards ?? []).filter((item: any) => item?.visible)"
+                                :key="card.ulid ?? cardIndex"
                                 class="relative rounded-2xl overflow-hidden min-h-80">
-                                <Image :src="card.image.source" class="absolute inset-0 w-full h-full object-cover" />
+                                <Image v-if="card?.image?.source" :src="card.image.source"
+                                    class="absolute inset-0 w-full h-full object-cover" />
                                 <div
                                     class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
                                 </div>

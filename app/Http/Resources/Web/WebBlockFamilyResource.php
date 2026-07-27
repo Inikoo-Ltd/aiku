@@ -22,6 +22,8 @@ class WebBlockFamilyResource extends JsonResource
     use HasSelfCall;
     use WithIrisImageVariants;
 
+    public const array SRCSET_WIDTHS = [360, 720, 1440];
+
     public function toArray($request): array
     {
         /** @var ProductCategory $family */
@@ -54,7 +56,7 @@ class WebBlockFamilyResource extends JsonResource
 
     /**
      * Description image slots store whatever urls existed when the family was saved,
-     * including unresized originals; rebuild them capped at 1200px.
+     * including unresized originals; rebuild them capped at 1440px.
      *
      * @return array<string, string>|null
      */
@@ -75,18 +77,18 @@ class WebBlockFamilyResource extends JsonResource
         }
 
         $formats = [
-            'original' => GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)),
+            'original' => GetImgProxyUrl::run($media->getImage()->resize(1440, 1440)),
         ];
         if (in_array('avif', config('img-proxy.formats')) && !$media->is_animated) {
-            $formats['avif'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('avif'));
+            $formats['avif'] = GetImgProxyUrl::run($media->getImage()->resize(1440, 1440)->extension('avif'));
         }
         if (in_array('webp', config('img-proxy.formats'))) {
-            $formats['webp'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('webp'));
+            $formats['webp'] = GetImgProxyUrl::run($media->getImage()->resize(1440, 1440)->extension('webp'));
         }
 
         $resized = [
             'original' => $formats,
-            'srcset'   => $this->getWidthSrcSets($media, [360, 720, 1200]),
+            'srcset'   => $this->getWidthSrcSets($media, self::SRCSET_WIDTHS),
         ];
         if (Arr::has($slot, 'alt')) {
             $resized['alt'] = Arr::get($slot, 'alt');
