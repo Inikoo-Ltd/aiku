@@ -24,7 +24,6 @@ const props = defineProps<{
         quantity: number
         isAudited?: boolean
         audited_at?: string | null
-        packed_in?: number
     }[],
     replenishment_data: Record<number, {
         replenishment_stock?: number
@@ -56,18 +55,10 @@ const form = useForm({
         id: item.id,
         name: item.code,
         stock: Number(item.quantity ?? 0),
-        packed_in: Number(item.packed_in ?? 1),
         isAudited: item.isAudited,
         audited_at: item.audited_at
     })),
     moveStock: null
-})
-
-// packed_in is uniform across all locations of the same org stock. When > 1 the stock
-// is fractional (e.g. packed_in = 6 means the base movable unit is 1/6), otherwise integer.
-const denominator = computed<number | undefined>(() => {
-    const packedIn = Number(props.part_locations?.[0]?.packed_in ?? 1)
-    return packedIn > 1 ? packedIn : undefined
 })
 
 const selectedReason = ref('')
@@ -182,22 +173,13 @@ const roundQuantity = (value: number) => Math.round(Number(value) * 1e6) / 1e6
 // programmatically (move-all, replenishment, source/target reset).
 const inputKey = ref(0)
 
-// Renders a quantity as a "numerator/denominator" fraction when the stock is packed,
-// otherwise as a plain (rounded) decimal.
-const displayQty = (value: number) => {
-    const rounded = roundQuantity(Number(value ?? 0))
-    if (denominator.value) {
-        return `${Math.round(rounded * denominator.value)}/${denominator.value}`
-    }
-    return String(rounded)
-}
+const displayQty = (value: number) => String(roundQuantity(Number(value ?? 0)))
 
+// Only whole units can be moved, so the typed/stepped value is floored and clamped into [0, max].
 const updateMoveQuantity = (value: number) => {
-    const maxQuantity = roundQuantity(Number(getMaxQuantity()))
-    let validValue = roundQuantity(Number(value || 0))
+    const maxQuantity = getMaxQuantity()
+    let validValue = Math.floor(Number(value || 0))
 
-    // Clamp into [0, max]. The fractional stepper can overshoot max by up to 1/denominator
-    // (it rounds max up to the nearest fraction), so clamp instead of resetting to 0.
     if (validValue < 0) {
         validValue = 0
     } else if (validValue > maxQuantity) {
@@ -217,7 +199,7 @@ const setMoveQuantity = (value: number) => {
 }
 
 const getMaxQuantity = () => {
-    return moveStock.value.from ? moveStock.value.from.stock : 0
+    return moveStock.value.from ? Math.floor(Number(moveStock.value.from.stock)) : 0
 }
 
 const getCalculatedStock = (warehouse: { stock: number; id: any }) => {
@@ -526,7 +508,7 @@ onMounted(() => {
                                 'border rounded px-1.5 py-0.5 border-gray-300 text-gray-600',
                                 isSource(form) ? 'cursor-pointer hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition' : ''
                             ]"
-                            @click="isSource(form) && setMoveQuantity(Number(form.stock))"
+                            @click="isSource(form) && setMoveQuantity(getMaxQuantity())"
                         >{{ displayQty(form.stock) }}</span>
                         <span v-if="isSource(form)" class="text-red-500 font-semibold">−</span>
                         <div v-if="isSource(form)" class="shrink-0">
@@ -536,7 +518,6 @@ onMounted(() => {
                                 @update:modelValue="(val: number) => updateMoveQuantity(val)"
                                 :min="0"
                                 :max="getMaxQuantity()"
-                                :denominator="denominator"
                                 noSaveButton
                                 noUndoButton
                             />
