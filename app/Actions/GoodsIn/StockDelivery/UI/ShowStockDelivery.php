@@ -180,6 +180,36 @@ class ShowStockDelivery extends OrgAction
             StockDeliveryStateEnum::CONFIRMED,
             StockDeliveryStateEnum::READY_TO_SHIP => [
                 [
+                    'label'   => __('Mark as Dispatched'),
+                    'tooltip' => __('Mark Stock Delivery as Dispatched'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-truck',
+                    'key'     => 'dispatch_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.dispatch',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+                [
+                    'label'   => __('Mark as Received'),
+                    'tooltip' => __('Mark Stock Delivery as Received'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-check',
+                    'key'     => 'receive_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.receive',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+                [
                     'label'   => __('Delete'),
                     'tooltip' => __('Delete Stock Delivery'),
                     'type'    => 'button',
@@ -189,6 +219,38 @@ class ShowStockDelivery extends OrgAction
                     'route'   => [
                         'method'     => 'delete',
                         'name'       => 'grp.models.stock-delivery.delete',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+            ],
+            StockDeliveryStateEnum::DISPATCHED => [
+                [
+                    'label'   => __('Unmark as Dispatched'),
+                    'tooltip' => __('Revert Stock Delivery to its previous state'),
+                    'type'    => 'button',
+                    'style'   => 'cancel',
+                    'icon'    => 'fal fa-undo',
+                    'key'     => 'undispatch_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.undispatch',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+                [
+                    'label'   => __('Mark as Received'),
+                    'tooltip' => __('Mark Stock Delivery as Received'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-check',
+                    'key'     => 'receive_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.receive',
                         'parameters' => [
                             'stockDelivery' => $stockDelivery->id,
                         ],

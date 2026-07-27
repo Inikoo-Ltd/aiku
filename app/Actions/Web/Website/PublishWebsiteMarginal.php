@@ -192,7 +192,7 @@ class PublishWebsiteMarginal extends OrgAction
     public function rules(): array
     {
         return [
-            'comment'        => ['sometimes', 'required', 'string', 'max:1024'],
+            'comment'        => ['sometimes', 'nullable', 'string', 'max:1024'],
             'publisher_id'   => ['sometimes'],
             'publisher_type' => ['sometimes', 'string'],
             'layout'         => ['sometimes', 'array']

@@ -65,11 +65,14 @@ const bestOffer = computed(() => {
 })
 
 
-const titleRef = ref<HTMLElement | null>(null)
-const titleState = ref<'single' | 'double' | 'truncated'>('single')
 const descriptionContentRef = ref<HTMLElement | null>(null)
+const imagesRef = ref<HTMLElement | null>(null)
+const offersRef = ref<HTMLElement | null>(null)
+const titleRef = ref<HTMLElement | null>(null)
+const actionsRef = ref<HTMLElement | null>(null)
 const expanded = ref(false)
 const showReadMore = ref(false)
+const collapsedHeight = ref(0)
 let resizeObserver: ResizeObserver | null = null
 
 const COLLAPSED_HEIGHTS = [
@@ -78,64 +81,32 @@ const COLLAPSED_HEIGHTS = [
   { minWidth: 0, height: 260 },
 ]
 
-const getCollapsedHeight = (): number => {
+const READ_MORE_ROW_HEIGHT = 26
+const MIN_COLLAPSED_HEIGHT = 120
+
+const getFallbackCollapsedHeight = (): number => {
   const width = window.innerWidth
 
   return COLLAPSED_HEIGHTS.find((entry) => width >= entry.minWidth)!.height
 }
 
-const titleStyles = computed(() => ({
-  fontSize: titleState.value === 'single' ? '32px' : '25px',
-  lineHeight: '1',
-}))
+const isSideBySide = (): boolean =>
+  Boolean(imagesRef.value) && !layout.rightbasket?.show && window.innerWidth >= 1024
 
-const measureLines = (el: HTMLElement, fontSize: string): number => {
-  const clone = el.cloneNode(true) as HTMLElement
-
-  clone.style.position = 'fixed'
-  clone.style.visibility = 'hidden'
-  clone.style.pointerEvents = 'none'
-  clone.style.left = '-9999px'
-  clone.style.top = '0'
-  clone.style.width = `${el.clientWidth}px`
-  clone.style.whiteSpace = 'normal'
-  clone.style.fontSize = fontSize
-  clone.style.lineHeight = getComputedStyle(el).lineHeight
-  clone.style.padding = '0'
-  clone.style.margin = '0'
-  clone.style.border = 'none'
-  clone.style.boxSizing = 'border-box'
-  clone.style.overflow = 'visible'
-
-  document.body.appendChild(clone)
-
-  const lineHeight = parseFloat(getComputedStyle(clone).lineHeight)
-  const lines = Math.max(1, Math.round(clone.scrollHeight / lineHeight))
-
-  document.body.removeChild(clone)
-
-  return lines
-}
-
-const updateTitleSize = () => {
-  const el = titleRef.value
-
-  if (!el) {
-    return
+const getCollapsedHeight = (): number => {
+  if (!isSideBySide()) {
+    return getFallbackCollapsedHeight()
   }
 
-  requestAnimationFrame(() => {
-    const linesAt36 = measureLines(el, '32px')
+  const siblingsHeight = [offersRef, titleRef, actionsRef].reduce(
+    (total, element) => total + (element.value?.offsetHeight ?? 0),
+    READ_MORE_ROW_HEIGHT
+  )
 
-    if (linesAt36 <= 1) {
-      titleState.value = 'single'
-      return
-    }
-
-    const linesAt25 = measureLines(el, '25px')
-
-    titleState.value = linesAt25 <= 2 ? 'double' : 'truncated'
-  })
+  return Math.max(
+    MIN_COLLAPSED_HEIGHT,
+    imagesRef.value!.offsetHeight - siblingsHeight
+  )
 }
 
 const calculateDescriptionHeight = async () => {
@@ -143,17 +114,17 @@ const calculateDescriptionHeight = async () => {
 
   if (!descriptionContentRef.value) return
 
+  collapsedHeight.value = getCollapsedHeight()
+
   showReadMore.value =
-    descriptionContentRef.value.scrollHeight > getCollapsedHeight()
+    descriptionContentRef.value.scrollHeight > collapsedHeight.value
 }
 
 const onWindowResize = () => {
-  updateTitleSize()
   calculateDescriptionHeight()
 }
 
 onMounted(() => {
-  updateTitleSize()
   calculateDescriptionHeight()
 
   resizeObserver = new ResizeObserver(() => {
@@ -162,6 +133,14 @@ onMounted(() => {
 
   if (descriptionContentRef.value) {
     resizeObserver.observe(descriptionContentRef.value)
+  }
+
+  if (imagesRef.value) {
+    resizeObserver.observe(imagesRef.value)
+  }
+
+  if (titleRef.value) {
+    resizeObserver.observe(titleRef.value)
   }
 
   window.addEventListener('resize', onWindowResize)
@@ -183,7 +162,6 @@ watch(
     props.fieldValue?.family?.description_image,
   ],
   () => {
-    updateTitleSize()
     calculateDescriptionHeight()
   }
 )
@@ -210,12 +188,11 @@ const contentClass = computed(() =>
         <!-- 2 images -> large + small top-right                          -->
         <!-- 3 images -> large + small top-right + small bottom-right     -->
         <!-- ============================================================= -->
-        <div v-if="hasImage(0)" class="flex shrink-0 items-start justify-center gap-[6px]">
+        <div v-if="hasImage(0)" ref="imagesRef" class="flex shrink-0 items-start justify-center gap-[6px]">
           <!-- IMAGE 1 (large) -->
           <Image :src="images[0].original" :srcset="images[0].srcset"
             sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
-            :imageCover="true" :alt="images[0]?.alt || 'family image'"
-            class="
+            :imageCover="true" :alt="images[0]?.alt || 'family image'" class="
               h-[280px]
               w-[220px]
               object-cover
@@ -230,8 +207,8 @@ const contentClass = computed(() =>
           <div v-if="hasImage(1)" class="flex flex-col gap-[6px]">
             <!-- IMAGE 2 (small, top-right) -->
             <Image :src="images[1].original" :srcset="images[1].srcset"
-                sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
-                :imageCover="true" :alt="images[1]?.alt || 'family image'" class="
+              sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px" :imageCover="true"
+              :alt="images[1]?.alt || 'family image'" class="
                 h-[137px]
                 w-[105px]
                 object-cover
@@ -244,8 +221,8 @@ const contentClass = computed(() =>
 
             <!-- IMAGE 3 (small, bottom-right) only when there is a 3rd image -->
             <Image v-if="hasImage(2)" :src="images[2].original" :srcset="images[2].srcset"
-                sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
-                :imageCover="true" :alt="images[2]?.alt || 'family image'" class="
+              sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px" :imageCover="true"
+              :alt="images[2]?.alt || 'family image'" class="
                 h-[137px]
                 w-[105px]
                 object-cover
@@ -260,7 +237,7 @@ const contentClass = computed(() =>
 
         <!-- CONTENT -->
         <div class="flex min-w-0 flex-1 flex-col">
-          <div class="
+          <div ref="offersRef" class="
               flex
               flex-col
               gap-4
@@ -268,20 +245,10 @@ const contentClass = computed(() =>
               lg:text-left
               lg:flex-row
               lg:items-start
-              lg:justify-between
-              mb-2
+              lg:justify-start
             ">
-            <div class="min-w-16 flex-1">
-              <h1 ref="titleRef" :style="titleStyles" :class="[
-                'font-bold break-words',
-                titleState === 'truncated' ? 'title--truncated' : ''
-              ]">
-                {{ fieldValue.family?.name }}
-              </h1>
-            </div>
-
             <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
-              class="flex gap-x-1 gap-y-1 offer flex-wrap lg:justify-end">
+              class="flex gap-x-1 gap-y-1 mb-2 offer flex-wrap justify-center lg:justify-end">
               <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type == 'Category Quantity Ordered Order Interval'
                 ? 'active-inactive-gr-v2'
                 : 'max_discount_2'
@@ -295,8 +262,22 @@ const contentClass = computed(() =>
             </div>
           </div>
 
-          <!-- Description fills remaining space -->
-          <div class="
+          <div ref="descriptionContentRef" class="px-3 lg:px-0">
+            <div ref="titleRef" class="pb-2 2xl:pb-3">
+              <h1 class="
+                title
+                break-words
+                
+                font-bold
+                tracking-tight
+                text-[#1d2430]
+                text-left
+              ">
+                {{ fieldValue.family?.name }}
+              </h1>
+            </div>
+
+            <div class="
     relative
     flex-1
     min-h-0
@@ -306,11 +287,12 @@ const contentClass = computed(() =>
     text-[#1d2430]
     2xl:space-y-2
     overflow-hidden
-  " ref="descriptionContentRef" :class="!expanded ? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]' : ''">
-            <div v-html="cleanedDescription"></div>
+  " :class="!expanded && !collapsedHeight ? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]' : ''"
+              :style="!expanded && collapsedHeight ? { maxHeight: `${collapsedHeight}px` } : {}">
+              <div v-html="cleanedDescription"></div>
 
-            <!-- Fade overlay -->
-            <div v-if="!expanded && showReadMore" class="
+              <!-- Fade overlay -->
+              <div v-if="!expanded && showReadMore" class="
       absolute
       bottom-0
       left-0
@@ -322,7 +304,13 @@ const contentClass = computed(() =>
       via-white/90
       to-transparent
     " />
+            </div>
+
           </div>
+
+
+          <!-- Description fills remaining space -->
+
 
           <div v-if="showReadMore" class="mt-2 flex justify-end">
             <button type="button" class="text-xs italic underline  " @click="expanded = !expanded">
@@ -331,7 +319,7 @@ const contentClass = computed(() =>
           </div>
 
           <!-- Always bottom -->
-          <div class="
+          <div ref="actionsRef" class="
       mt-auto
       pt-1
       flex
@@ -342,7 +330,8 @@ const contentClass = computed(() =>
       justify-center
       lg:justify-start
     ">
-            <a v-if="fieldValue.family.description_extra || layout?.iris?.is_logged_in" href="#family-2-extra-description" class="shrink-0">
+            <a v-if="fieldValue.family.description_extra || layout?.iris?.is_logged_in"
+              href="#family-2-extra-description" class="shrink-0">
               <button class="
           h-[38px]
           rounded-xl
@@ -428,24 +417,11 @@ const contentClass = computed(() =>
 .title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-
-  font-size: 2rem;
-  line-height: 1.15;
-}
-
-.title--truncated {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-}
 
-@container (max-height: 4.6em) {
-  .title {
-    font-size: 1.75rem;
-  }
+  font-size: clamp(1.375rem, 1.1rem + 1.2vw, 2rem);
+  line-height: 1.25;
 }
 </style>

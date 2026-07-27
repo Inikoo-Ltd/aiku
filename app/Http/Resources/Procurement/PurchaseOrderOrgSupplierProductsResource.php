@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -31,6 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property float|null $org_exchange
  * @property float|null $po_org_exchange
  * @property float|null $quantity_ordered
+ * @property string|null $transaction_state
  * @property float|null $net_amount
  * @property float|null $org_net_amount
  */
@@ -80,6 +82,13 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
 
             'weight'           => null,
             'volume'           => null,
+
+            'state_icon'       => $this->transaction_state
+                ? PurchaseOrderTransactionStateEnum::stateIcon()[$this->transaction_state]
+                : null,
+            'state_label'      => $this->transaction_state
+                ? PurchaseOrderTransactionStateEnum::labels()[$this->transaction_state]
+                : null,
 
             'purchase_order_transaction_id' => $this->purchase_order_transaction_id,
             'purchase_order_id'             => $this->purchase_order_id,

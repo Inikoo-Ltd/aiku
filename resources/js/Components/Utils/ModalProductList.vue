@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Modal from "@/Components/Utils/Modal.vue"
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import IconField from "primevue/iconfield"
@@ -12,13 +12,14 @@ import { routeType } from "@/types/route"
 import axios from "axios"
 import { debounce } from "lodash-es"
 import { useForm } from "@inertiajs/vue3"
-import { faCloud, faCompressWide, faExpandArrowsAlt, faSearch, faSpinner } from "@fal"
+import { faBox, faCloud, faCompressWide, faExpandArrowsAlt, faPallet, faSearch, faSpinner, faStopCircle } from "@fal"
 import { faMinus, faPlus, faSave, faUndo } from "@fas"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "../NumberWithButtonSave.vue"
 import LoadingIcon from "./LoadingIcon.vue"
+import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from "@/Composables/useOrderingLevel"
 
 library.add(
 	faSearch,
@@ -29,7 +30,10 @@ library.add(
 	faUndo,
 	faExpandArrowsAlt,
 	faSave,
-	faCompressWide
+	faCompressWide,
+	faPallet,
+	faBox,
+	faStopCircle
 )
 
 const props = defineProps<{
@@ -39,6 +43,23 @@ const props = defineProps<{
 	typeModel: string
 	currentTab: string
 }>()
+
+const activeLevel = defineModel<OrderingLevel>("level", { default: "units" })
+
+const levels = getOrderingLevels()
+
+const isOrderingByLevel = computed(() => props.typeModel === "purchase_order")
+
+const level = computed(() => levels.find((l) => l.key === activeLevel.value) ?? levels[0])
+
+const unitsPerLevel = (row: any) => unitsPerOrderingLevel(row, activeLevel.value)
+
+const quantityAtLevel = (row: any) => Number(row.quantity_ordered ?? 0) / unitsPerLevel(row)
+
+const onLevelQuantityChange = (slotProps: any, value: number) => {
+	slotProps.data.quantity_ordered = Number(value) * unitsPerLevel(slotProps.data)
+	debSubmitProducts(props.action, slotProps)
+}
 
 const emits = defineEmits<{
 	(e: "optionsList", value: any[]): void
@@ -430,30 +451,47 @@ watch(() => model.value, async (newValue) => {
 								scrollHeight="400px"
 								:loading="isLoading === 'fetchProduct'">
 								<template #header>
-									<div class="flex justify-between items-center">
-										<div class="flex items-center">
-											<FontAwesomeIcon
-												@click="onClickProduct('products')"
-												icon="fal fa-compress-wide"
-												v-tooltip="'maximize '"
-												class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" />
+									<div class="flex flex-col gap-2">
+										<div class="flex justify-between items-center">
+											<div class="flex items-center">
+												<FontAwesomeIcon
+													@click="onClickProduct('products')"
+													icon="fal fa-compress-wide"
+													v-tooltip="'maximize '"
+													class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" />
+											</div>
+
+											<div class="flex items-center gap-2">
+												<IconField>
+													<InputIcon>
+														<FontAwesomeIcon
+															icon="fal fa-search"
+															class="text-gray-500"
+															fixed-width
+															aria-hidden="true" />
+													</InputIcon>
+													<InputText
+														v-model="searchQuery"
+														:placeholder="trans('Search products')"
+														@input="onSearchQuery(searchQuery)"
+														class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
+												</IconField>
+											</div>
 										</div>
 
-										<div class="flex items-center gap-2">
-											<IconField>
-												<InputIcon>
-													<FontAwesomeIcon
-														icon="fal fa-search"
-														class="text-gray-500"
-														fixed-width
-														aria-hidden="true" />
-												</InputIcon>
-												<InputText
-													v-model="searchQuery"
-													:placeholder="trans('Search products')"
-													@input="onSearchQuery(searchQuery)"
-													class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
-											</IconField>
+										<div v-if="isOrderingByLevel" class="flex items-end gap-1 border-b border-gray-200">
+											<button
+												v-for="item in levels"
+												:key="item.key"
+												type="button"
+												class="px-3 py-1.5 text-sm border-b-2 -mb-px transition"
+												:class="item.key === activeLevel
+													? 'border-indigo-500 text-indigo-600 font-medium'
+													: 'border-transparent text-gray-500 hover:text-gray-700'"
+												@click="activeLevel = item.key">
+												<FontAwesomeIcon :icon="item.icon" aria-hidden="true" fixed-width />
+												{{ item.tab }}
+											</button>
 										</div>
 									</div>
 								</template>
@@ -475,19 +513,36 @@ watch(() => model.value, async (newValue) => {
 									</template>
 								</Column>
 								<Column field="code" header="Code"></Column>
-								<Column field="name" header="Name">
+								<Column field="name" :header="isOrderingByLevel ? level.description : 'Name'">
 									<template #body="slotProps">
 										<div>
-											<div>{{ slotProps.data?.name }}</div>
+											<div>
+												<span v-if="isOrderingByLevel && activeLevel !== 'units'" class="font-medium">
+													{{ unitsPerLevel(slotProps.data) }}x
+												</span>
+												{{ slotProps.data?.name }}
+											</div>
 											<div v-if="typeModel !== 'purchase_order'" class="opacity-60 text-sm italic" :class="slotProps.data?.available_quantity ? '' : 'text-red-500'">
 												{{ trans("Available quantity") }}: {{ slotProps.data?.available_quantity }}
 											</div>
 										</div>
 									</template>
 								</Column>
-								<Column header="" style="width: 8%">
+								<Column :header="isOrderingByLevel ? level.quantity : ''" style="width: 8%">
 									<template #body="slotProps">
 											<NumberWithButtonSave
+												v-if="isOrderingByLevel"
+												:key="`${slotProps.data.id}-${activeLevel}`"
+												isWithRefreshModel
+												:modelValue="quantityAtLevel(slotProps.data)"
+												:min="0"
+												:isLoading="isXxLoading === slotProps.data.id"
+												@update:modelValue="(value) => onLevelQuantityChange(slotProps, value)"
+												noUndoButton
+												noSaveButton
+											/>
+											<NumberWithButtonSave
+												v-else
 												:key="slotProps.data.id"
 												isWithRefreshModel
 												v-model="slotProps.data.quantity_ordered"

@@ -255,6 +255,9 @@ use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UndispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToReadyToShipStockDeliveryItem;
@@ -1200,6 +1203,9 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
 
 Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->group(function () {
     Route::patch('update', UpdateStockDelivery::class)->name('update');
+    Route::patch('dispatch', DispatchStockDelivery::class)->name('dispatch');
+    Route::patch('undispatch', UndispatchStockDelivery::class)->name('undispatch');
+    Route::patch('receive', ReceiveStockDelivery::class)->name('receive');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inStockDelivery'])->name('attachment.detach')->withoutScopedBindings();

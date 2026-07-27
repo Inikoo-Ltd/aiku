@@ -513,7 +513,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         max: Math.min(itemValue.quantity, itemValue.quantity_required)
                     }"
                     :additionalData="{
-                        location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id,
+                        location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))?.id,
                         // picking_id: itemValue.pickings.find(picking => picking.location_id == findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_id)?.id,
                     }"
                     autoSave
@@ -523,7 +523,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                     <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                         <div class="flex gap-x-8 w-fit">
                             <ButtonWithLink
-                                v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
+                                v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))?.location_code || '-' })"
                                 icon="fal fa-check"
                                 :size="screenType != 'mobile' ? 'xs' : 'md'"
                                 type="positive"
@@ -531,7 +531,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                                 class="py-0"
                                 :routeTarget="itemValue.set_all_returned_route"
                                 :body="{
-                                    location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).id
+                                    location_org_stock_id: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null))?.id
                                 }"
                                 :bind-to-link="{
                                     preserveScroll: true,

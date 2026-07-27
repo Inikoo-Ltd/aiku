@@ -185,7 +185,7 @@ const saveDescription = debounce(async (key: string, value: string) => {
              <div :class="layoutClasses.description" class="text-[#334155]">
                 <EditorV2 :model-value="props.fieldValue?.family?.description_extra"
                     @update:model-value="(e) => saveDescription('description_extra', e)"
-                    :toggle="['bold', 'italic', 'underline', 'bulletList', 'customLink', 'undo', 'redo', 'highlight', 'color', 'clear']" />
+                    :toggle="['bold', 'italic', 'underline', 'fontSize', 'bulletList', 'customLink', 'undo', 'redo', 'highlight', 'color', 'clear']" />
             </div>
 
             <div class="mt-8 md:mt-10">
