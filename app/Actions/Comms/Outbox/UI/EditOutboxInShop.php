@@ -154,6 +154,7 @@ class EditOutboxInShop extends OrgAction
                             ['value' => 30, 'label' => __('30 minutes')],
                             ['value' => 60, 'label' => __('1 hour')],
                             ['value' => 120, 'label' => __('2 hours')],
+                            ['value' => 1440, 'label' => __('1 day')],
                         ],
                         'value' => $outbox->interval ?? 5,
                     ],

@@ -14,7 +14,7 @@ use App\Models\Comms\Outbox;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 
-class RunPriceChangeEmailBulkRuns
+class RunPriceChangeEmailBulkRunsToSubscribers
 {
     use AsAction;
 
@@ -45,7 +45,7 @@ class RunPriceChangeEmailBulkRuns
 
         /** @var Outbox $outbox */
         foreach ($outboxes as $outbox) {
-            ProcessPriceChangePerOutbox::dispatch($outbox);
+            ProcessPriceChangeToSubscribersPerOutbox::dispatch($outbox);
         }
     }
 
