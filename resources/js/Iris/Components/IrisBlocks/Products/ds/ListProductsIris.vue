@@ -529,16 +529,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border p-3 relative rounded bg-white"
                             :class="{ 'max-lg:hidden': isMobileCollapsed && index >= MOBILE_INITIAL_PRODUCTS }">
-                           <!--   <component 
-                                :is="getProductsRenderDropshippingComponent(code)" 
-                                :product="product" 
-                                :key="index" 
-                                :bestSeller="fieldValue.bestseller"
-                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :productHasPortfolio="productHasPortfolio.list[product.id]"
-                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" 
-                                :screenType
-                            /> -->
+                          
                             <RenderProductDropshiping 
                                 :product="product" 
                                 :key="index" 
@@ -551,25 +542,25 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                             />
                         </div>
 
-                         <div v-for="(card, cardIndex) in (fieldValue?.cards ?? []).filter((item: any) => item?.visible)"
-                                :key="card.ulid ?? cardIndex"
-                                class="relative rounded-2xl overflow-hidden min-h-80">
-                                <Image v-if="card?.image?.source" :src="card.image.source"
-                                    class="absolute inset-0 w-full h-full object-cover" />
-                                <div
-                                    class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
-                                </div>
-                                <!-- Center Content -->
-                                <div
-                                    class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
-                                    <div v-html="card.text"></div>
-                                      <LinkIris :href="card.button.link.href" :canonical_url="card.button.link.canonical_url" :target="card.button.link.target" >
-                                        <Button class="mt-4"
-                                            :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
-                                            :label="card?.button?.text" />
-                                    </LinkIris>
-                                </div>
+                        <div v-for="(card, cardIndex) in (fieldValue?.cards ?? []).filter((item: any) => item?.visible)"
+                            :key="card.ulid ?? cardIndex" class="relative rounded-2xl overflow-hidden min-h-80">
+                            <Image v-if="card?.image?.source" :src="card.image.source" :imageCover="true"
+                                :alt="card?.image?.alt ?? 'card image'"
+                                class="absolute inset-0 w-full h-full" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
                             </div>
+                            <div
+                                class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
+                                <div v-html="card.text"></div>
+                                <LinkIris :href="card.button.link.href" :canonical_url="card.button.link.canonical_url" :target="card.button.link.target" >
+                                     <Button class="mt-4"
+                                        :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
+                                        :label="card?.button?.text" 
+                                    />
+                                </LinkIris>
+                               
+                            </div>
+                        </div>
                     </template>
 
                     <template v-else>

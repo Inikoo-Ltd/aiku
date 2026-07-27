@@ -519,7 +519,6 @@ watch(
 
                     <template v-else-if="products.length">
                         <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
-                        <!-- <pre>{{ get(layout, ['family_quantity_ordered'], []) }}</pre> -->
                         <div v-for="(product, index) in products" :key="`${renderKey}-${index}`"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class=" relative rounded flex md:flex-1 justify-center"
