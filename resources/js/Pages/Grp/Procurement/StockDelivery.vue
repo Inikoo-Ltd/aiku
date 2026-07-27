@@ -234,6 +234,30 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const confirm = useConfirm()
 const deleteLoading = ref(false)
+const dispatchLoading = ref(false)
+
+const confirmDispatchStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to mark this stock delivery as dispatched?"),
+		header: trans("Dispatch Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Mark as Dispatched"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { dispatchLoading.value = true },
+				onFinish: () => { dispatchLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to dispatch stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
 
 const confirmDeleteStockDelivery = (action: any) => {
 	confirm.require({
@@ -268,6 +292,17 @@ const confirmDeleteStockDelivery = (action: any) => {
 				label="Attach"
 				icon="upload"
 				@click="() => (isModalUploadOpen = true)"
+			/>
+		</template>
+
+		<template #button-dispatch-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="dispatchLoading"
+				@click="() => confirmDispatchStockDelivery(action)"
 			/>
 		</template>
 

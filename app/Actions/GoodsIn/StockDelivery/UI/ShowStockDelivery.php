@@ -180,6 +180,21 @@ class ShowStockDelivery extends OrgAction
             StockDeliveryStateEnum::CONFIRMED,
             StockDeliveryStateEnum::READY_TO_SHIP => [
                 [
+                    'label'   => __('Mark as Dispatched'),
+                    'tooltip' => __('Mark Stock Delivery as Dispatched'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-truck',
+                    'key'     => 'dispatch_stock_delivery',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.dispatch',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+                [
                     'label'   => __('Delete'),
                     'tooltip' => __('Delete Stock Delivery'),
                     'type'    => 'button',
