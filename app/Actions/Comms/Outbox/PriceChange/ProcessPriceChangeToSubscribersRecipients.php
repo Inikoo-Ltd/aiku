@@ -23,7 +23,6 @@ use App\Models\Comms\OutBoxHasSubscriber;
 use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessPriceChangeToSubscribersRecipients
@@ -133,14 +132,12 @@ class ProcessPriceChangeToSubscribersRecipients
         $masterAssets = MasterAsset::whereIn('id', array_keys($grouped))->get()->keyBy('id');
 
         $dataProducts = Product::whereIn('id', Arr::flatten($grouped))
-            ->with(['currency', 'webpage'])
+            ->with(['currency', 'organisation', 'shop'])
             ->orderBy('id')
             ->get()
             ->keyBy('id');
 
-        $date = Carbon::now()->format('d M y');
-
-        $html = '';
+        $rows = '';
 
         foreach ($grouped as $masterAssetId => $productIds) {
             $masterAsset = $masterAssets->get($masterAssetId);
@@ -149,38 +146,10 @@ class ProcessPriceChangeToSubscribersRecipients
                 continue;
             }
 
-            $html .= '
-            <div style="margin-bottom:28px;">
-                <div style="font-family: Helvetica, Arial, sans-serif;
-                            font-size:15px;
-                            font-weight:700;
-                            color:#111827;
-                            padding-bottom:4px;">'
-                . $masterAsset->name .
-                '</div>
-                <div style="font-family: Helvetica, Arial, sans-serif;
-                            font-size:13px;
-                            color:#6b7280;
-                            padding-bottom:10px;">'
-                . __('Master asset updated on :date. The products below do not follow it and need rechecking.', ['date' => $date]) .
-                '</div>';
-
-            $html .= '<table width="100%" cellpadding="8" cellspacing="0"
-            style="font-family: Helvetica, Arial, sans-serif;
-                   font-size: 14px;
-                   border-collapse: collapse;">';
-
-            $html .= '
-            <tr style="border-bottom:1px solid #e5e7eb;">
-                <th align="left" style="color:#555;">' . __('Product') . '</th>
-                <th align="center" style="color:#555;">' . __('Master Price') . '</th>
-                <th align="center" style="color:#555;">' . __('Product Price') . '</th>
-            </tr>';
-
             foreach ($productIds as $productId) {
                 $dataProduct = $dataProducts->get($productId);
 
-                if (!$dataProduct || !$dataProduct->webpage) {
+                if (!$dataProduct) {
                     continue;
                 }
 
@@ -192,15 +161,26 @@ class ProcessPriceChangeToSubscribersRecipients
 
                 $productPrice = $dataProduct->price ?? 0;
 
+                $masterRrp = $dataProduct->currency
+                    ? $masterAsset->getRrpFromCurrency($dataProduct->currency)
+                    : $masterAsset->rrp;
+
+                $productRrp = $dataProduct->rrp ?? 0;
+
                 $productImage = Arr::get(
                     $dataProduct->imageSources(200, 200),
                     'png'
                 );
 
-                $url  = $dataProduct->webpage->getCanonicalUrl();
+                $url = route('grp.org.shops.show.catalogue.products.all_products.show', [
+                    'organisation' => $dataProduct->organisation->slug,
+                    'shop'         => $dataProduct->shop->slug,
+                    'product'      => $dataProduct->slug,
+                ]);
+
                 $name = $dataProduct->name;
 
-                $html .= '
+                $rows .= '
                 <tr style="border-bottom:1px solid #f1f5f9;">
                     <td style="vertical-align:middle;">
                         <table cellpadding="0" cellspacing="0">
@@ -208,7 +188,7 @@ class ProcessPriceChangeToSubscribersRecipients
                                 <td style="padding-right:12px;">';
 
                 if ($productImage) {
-                    $html .= '
+                    $rows .= '
                     <img src="' . $productImage . '"
                          width="60"
                          height="60"
@@ -217,7 +197,7 @@ class ProcessPriceChangeToSubscribersRecipients
                                 object-fit:cover;" />';
                 }
 
-                $html .= '
+                $rows .= '
                                 </td>
                                 <td style="vertical-align:middle;">
                                     <a ses:no-track href="' . $url . '"
@@ -242,12 +222,36 @@ class ProcessPriceChangeToSubscribersRecipients
                                color:#dc2626;">'
                     . $currencySymbol . ' ' . number_format((float) $productPrice, 2) .
                     '</td>
+
+                    <td align="center"
+                        style="font-weight:600;
+                               color:#16a34a;">'
+                    . $currencySymbol . ' ' . number_format((float) $masterRrp, 2) .
+                    '</td>
+
+                    <td align="center"
+                        style="font-weight:600;
+                               color:#dc2626;">'
+                    . $currencySymbol . ' ' . number_format((float) $productRrp, 2) .
+                    '</td>
                 </tr>';
             }
-
-            $html .= '</table></div>';
         }
 
-        return $html;
+        if ($rows === '') {
+            return '';
+        }
+
+        return '<table width="100%" cellpadding="8" cellspacing="0"
+            style="font-family: Helvetica, Arial, sans-serif;
+                   font-size: 14px;
+                   border-collapse: collapse;">
+            <tr style="border-bottom:1px solid #e5e7eb;">
+                <th align="left" style="color:#555;">' . __('Product') . '</th>
+                <th align="center" style="color:#555;">' . __('Master Price') . '</th>
+                <th align="center" style="color:#555;">' . __('Product Price') . '</th>
+                <th align="center" style="color:#555;">' . __('Master RRP') . '</th>
+                <th align="center" style="color:#555;">' . __('Product RRP') . '</th>
+            </tr>' . $rows . '</table>';
     }
 }

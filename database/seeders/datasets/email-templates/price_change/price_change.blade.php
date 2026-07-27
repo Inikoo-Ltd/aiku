@@ -94,7 +94,7 @@
                             <td class="alert alert-warning"
                                 style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 16px; vertical-align: top; color: #fff; font-weight: 500; text-align: center; border-radius: 3px 3px 0 0; background-color:#3498DB; margin: 0; padding: 20px;"
                                 align="center" bgcolor="#3498DB" valign="top">
-                                Master Asset Updated &mdash; Products To Recheck
+                                Master Product Updated  Products To Recheck
                             </td>
                         </tr>
                         <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
@@ -104,9 +104,8 @@
                                         <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                                             valign="top">
                                             <p style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; color: #4b5563; margin: 0 0 20px;">
-                                                The master assets below have been updated. The products listed under each
-                                                one do not follow their master asset's pricing, so their prices were not
-                                                updated. Please recheck them.
+                                                The products below do not follow their master asset's pricing, so their
+                                                prices were not updated. Please recheck them.
                                             </p>
 
                                             [products]
