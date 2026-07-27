@@ -7,6 +7,7 @@
 
 namespace App\Actions\Goods\TradeUnitFamily;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -64,10 +65,12 @@ class RedoTradeUnitFamilyTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessTradeUnitFamilyTimeSeriesRecords::dispatch($tradeUnitFamily->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessTradeUnitFamilyTimeSeriesRecords::dispatch($tradeUnitFamily->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessTradeUnitFamilyTimeSeriesRecords::run($tradeUnitFamily->id, $frequency, $from, $to);
+                ProcessTradeUnitFamilyTimeSeriesRecords::run($tradeUnitFamily->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

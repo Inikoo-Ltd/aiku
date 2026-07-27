@@ -10,7 +10,7 @@
 namespace App\Actions\Goods\Ingredient\UI;
 
 use App\Actions\Goods\UI\ShowGoodsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Goods\IngredientsResource;
 use App\InertiaTable\InertiaTable;
@@ -25,14 +25,14 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexIngredients extends GrpAction
+class IndexIngredients extends OrgAction
 {
     use WithGoodsAuthorisation;
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
 
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($this->group);
     }

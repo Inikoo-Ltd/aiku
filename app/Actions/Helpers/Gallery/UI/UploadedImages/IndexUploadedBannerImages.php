@@ -8,7 +8,7 @@
 
 namespace App\Actions\Helpers\Gallery\UI\UploadedImages;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\ImageResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\Media;
@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Services\QueryBuilder;
 
-class IndexUploadedBannerImages extends GrpAction
+class IndexUploadedBannerImages extends OrgAction
 {
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
@@ -71,7 +71,7 @@ class IndexUploadedBannerImages extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
         return $this->handle($this->group);
     }
 

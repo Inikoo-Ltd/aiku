@@ -22,6 +22,11 @@ class DeleteProfileApiToken extends OrgAction
         return (bool) $user->tokens()->whereKey($tokenId)->delete();
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return (bool) $request->user()->can_use_mcp;
+    }
+
     public function asController(int $tokenId, ActionRequest $request): array
     {
         $this->initialisationFromGroup(group(), $request);

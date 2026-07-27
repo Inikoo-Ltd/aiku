@@ -21,7 +21,6 @@ const props = withDefaults(defineProps<{
     currency: {
         code: string
         symbol?: string
-        ratio_gbp?: number | null
         ratio_eur?: number | null
     }
     columns: PriceColumn[]

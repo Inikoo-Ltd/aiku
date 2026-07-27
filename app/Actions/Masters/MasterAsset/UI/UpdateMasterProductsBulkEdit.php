@@ -44,20 +44,10 @@ class UpdateMasterProductsBulkEdit extends OrgAction
             'data.*.name'                   =>  ['sometimes', 'string'],
             'data.*.description'            =>  ['sometimes', 'string', 'nullable'],
             'data.*.is_for_sale'            =>  ['sometimes', 'boolean'],
-            'data.*.price'                  =>  ['sometimes', 'numeric'],
-            'data.*.rrp'                    =>  ['sometimes', 'numeric'],
             'data.*.units'                  =>  ['sometimes', 'numeric'],
             'data.*.unit'                   =>  ['sometimes', 'required', 'string'],
             'data.*.gross_weight'           =>  ['sometimes', 'numeric'],
             'data.*.master_family_id'       =>  ['sometimes', 'nullable'],
-            // Master Prices
-            'data.*.master_prices'                => ['sometimes', 'array'],
-            'data.*.master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
-            'data.*.master_prices.*.independent'  => ['sometimes', 'boolean'],
-            // Master RRPs | This is per unit btw
-            'data.*.master_rrps'                   => ['sometimes', 'array'],
-            'data.*.master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
-            'data.*.master_rrps.*.independent'     => ['sometimes', 'boolean'],
         ];
     }
 
@@ -65,8 +55,6 @@ class UpdateMasterProductsBulkEdit extends OrgAction
     {
         return [
             'data.*.name.string'                =>  __('Product Name cannot be empty'),
-            'data.*.price.numeric'              =>  __('Product Price must be a number and cannot be empty'),
-            'data.*.rrp.numeric'                =>  __('Product RRP must be a number and cannot be empty'),
             'data.*.units.numeric'              =>  __('Product Units must be a number and cannot be empty'),
             'data.*.unit.required'              =>  __('Product Unit cannot be empty'),
             'data.*.unit.string'                =>  __('Product Unit cannot be empty'),

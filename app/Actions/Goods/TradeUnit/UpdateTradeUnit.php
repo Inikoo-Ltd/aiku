@@ -25,7 +25,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
@@ -41,7 +41,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateTradeUnit extends GrpAction
+class UpdateTradeUnit extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -194,7 +194,11 @@ class UpdateTradeUnit extends GrpAction
 
         if ($tradeUnit->wasChanged('marketing_ingredients')) {
             foreach ($tradeUnit->products as $product) {
-                ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
+                ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
+            }
+
+            foreach ($tradeUnit->masterAssets as $masterAsset) {
+                ProductHydrateMarketingIngredientsFromTradeUnits::run($masterAsset);
             }
         }
 
@@ -370,14 +374,14 @@ class UpdateTradeUnit extends GrpAction
         $this->tradeUnit = $tradeUnit;
 
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($tradeUnit->group, $modelData);
+        $this->initialisationFromGroup($tradeUnit->group, $modelData);
         return $this->handle($tradeUnit, $this->validatedData);
     }
 
     public function asController(TradeUnit $tradeUnit, ActionRequest $request): TradeUnit
     {
         $this->tradeUnit = $tradeUnit;
-        $this->initialisation($tradeUnit->group, $request);
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
         return $this->handle($tradeUnit, $this->validatedData);
     }

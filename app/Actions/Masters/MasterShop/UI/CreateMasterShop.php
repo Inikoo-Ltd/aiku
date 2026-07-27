@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterShop\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Inertia\Inertia;
@@ -16,13 +16,13 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 
-class CreateMasterShop extends GrpAction
+class CreateMasterShop extends OrgAction
 {
     use WithMastersEditAuthorisation;
 
     public function asController(ActionRequest $request): Response
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($request);
     }

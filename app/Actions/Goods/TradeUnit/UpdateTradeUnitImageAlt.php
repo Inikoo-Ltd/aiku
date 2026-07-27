@@ -8,12 +8,12 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateTradeUnitImageAlt extends GrpAction
+class UpdateTradeUnitImageAlt extends OrgAction
 {
     public function handle(TradeUnit $tradeUnit, Media $media, array $modelData): TradeUnit
     {
@@ -34,7 +34,7 @@ class UpdateTradeUnitImageAlt extends GrpAction
 
     public function asController(TradeUnit $tradeUnit, Media $media, ActionRequest $request): void
     {
-        $this->initialisation($tradeUnit->group, $request);
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
         $this->handle($tradeUnit, $media, $this->validatedData);
     }

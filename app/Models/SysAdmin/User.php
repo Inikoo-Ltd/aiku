@@ -82,6 +82,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_two_factor_required
  * @property array<array-key, mixed> $bookmarks
  * @property int|null $employed_in_organisation_id
+ * @property bool $can_use_mcp
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedDigitalAgencyOrganisations

@@ -151,7 +151,6 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $master_product_id
  * @property Carbon|null $mark_for_discontinued_at
  * @property Carbon|null $discontinued_at
- * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property int|null $art1_image_id

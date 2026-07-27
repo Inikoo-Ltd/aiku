@@ -8,21 +8,23 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
-use App\Actions\GrpAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\OrgAction;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\MorphPivot;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
-use App\Models\Catalogue\Shop;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
-class EditMasterProduct extends GrpAction
+class EditMasterProduct extends OrgAction
 {
     use WithMasterProductNavigation;
 
@@ -33,14 +35,14 @@ class EditMasterProduct extends GrpAction
 
     public function asController(MasterShop $masterShop, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }
 
     public function inGroup(MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterProduct->group, $request);
+        $this->initialisationFromGroup($masterProduct->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -48,7 +50,7 @@ class EditMasterProduct extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartment(MasterAsset $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterProduct->group, $request);
+        $this->initialisationFromGroup($masterProduct->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -56,7 +58,7 @@ class EditMasterProduct extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -64,7 +66,7 @@ class EditMasterProduct extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle($masterProduct);
     }
@@ -78,10 +80,10 @@ class EditMasterProduct extends GrpAction
             'EditModel',
             [
                 'title'       => __('Editing master product').': '.$masterAsset->code,
-                'warning'     => $masterAsset->products ? [
+                'warning'     => $masterAsset->units_review ? [
                     'type'  => 'warning',
-                    'title' => __('Important'),
-                    'text'  => __('Changes to this master name or descriptions will overwrite child product names and descriptions where “Follow Master” is enabled.'),
+                    'title' => __('Units need review'),
+                    'text'  => __('This master product has a units mismatch with its shop products (:bucket) — per-unit prices may be wrong, review before editing.', ['bucket' => $masterAsset->units_review]),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -134,43 +136,58 @@ class EditMasterProduct extends GrpAction
      */
     public function getBlueprint(MasterAsset $masterProduct): array
     {
-        $barcodes = $masterProduct->tradeUnits->pluck('barcode')->filter()->unique();
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        $packedIn = $masterProduct->getStockPackedInByTradeUnit();
 
-        $tradeUnits = $masterProduct->tradeUnits->map(function ($t) use ($packedIn) {
+        $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
+            /** @var MorphPivot $pivot */
+            $pivot            = $tradeUnit->getRelationValue('pivot');
+            $quantity         = $pivot->getAttribute('quantity');
+            $packedInQuantity = Arr::get($packedIn, $tradeUnit->id, 1);
+            $fraction         = $quantity / $packedInQuantity;
+
             return array_merge(
-                ['quantity' => (int)$t->pivot->quantity],
-                ['fraction' => $t->pivot->quantity / $packedIn[$t->id]],
-                ['packed_in' => $packedIn[$t->id]],
-                ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($t->pivot->quantity / $packedIn[$t->id])), $packedIn[$t->id])],
-                $t->toArray()
+                [
+                    'quantity'        => (int)$quantity,
+                    'packed_in'       => $packedInQuantity,
+                    'fraction'        => $fraction,
+                    'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($fraction)), $packedInQuantity),
+                ],
+                $tradeUnit->toArray()
             );
         });
 
-        $masterShop = $masterProduct->masterShop;
-        $shopCurrencies = Shop::where('master_shop_id', $masterShop->id)
-            ->select('currency_id')
-            ->distinct()
-            ->get();
+        $currenciesRate = GetMasterShopCurrenciesRate::run($masterProduct->masterShop);
 
-        $baseEuro   = Currency::where('code', 'EUR')->first();
-        $currencies = Currency::whereIn('id', $shopCurrencies)->get();
-        $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseEuro) {
-            $ratioEuro  = GetCurrencyExchange::run($baseEuro, $currency);
+        $costs = null;
+        if ($masterProduct->effective_cost !== null) {
+            $groupCurrency = $masterProduct->group->currency;
+            $currencies    = Currency::whereIn('code', $currenciesRate->keys())->get()->keyBy('code');
 
-            return [
-                $currency->code => [
-                    'ratio_eur'     => $ratioEuro,
-                    'currency'      => $currency->code,
-                    'currency_symbol'  => $currency->symbol,
-                    'currency_id'      => $currency->id,
-                ]
-            ];
-        });
+            $costs = $currenciesRate->map(function ($rate, $currencyCode) use ($masterProduct, $groupCurrency, $currencies) {
+                $exchange = GetCurrencyExchange::run($groupCurrency, $currencies[$currencyCode]);
+
+                return $exchange ? round((float) $masterProduct->effective_cost * $exchange, 2) : null;
+            });
+        }
+
+        $unitsReview = [
+            'master'   => $masterProduct->units_review,
+            'products' => $masterProduct->products()
+                ->whereNotNull('units_review')
+                ->join('shops', 'shops.id', 'products.shop_id')
+                ->pluck('products.units_review', 'shops.code')
+                ->all(),
+        ];
+        if (!$unitsReview['master'] && !$unitsReview['products']) {
+            $unitsReview = null;
+        }
+
+        $pricesUpdateRoute = [
+            'name'       => 'grp.models.master_asset.prices.update',
+            'parameters' => [
+                'masterAsset' => $masterProduct->id
+            ]
+        ];
 
         return [
             [
@@ -196,14 +213,6 @@ class EditMasterProduct extends GrpAction
                         ],
                         'value'   => $masterProduct->name
                     ],
-                    /*  'description_title' => [
-                         'type'    => 'input',
-                         'label'   => __('Description title'),
-                         'options' => [
-                             'counter' => true,
-                         ],
-                         'value'   => $masterProduct->description_title
-                     ], */
                     'description'       => [
                         'type'    => 'textEditor',
                         'label'   => __('Description'),
@@ -211,7 +220,7 @@ class EditMasterProduct extends GrpAction
                             'counter' => true,
                         ],
                         'value'   => $masterProduct->description,
-                        'toogle'  => [
+                        'toggle'  => [
                             'heading2',
                             'heading3',
                             'fontSize',
@@ -241,7 +250,7 @@ class EditMasterProduct extends GrpAction
                             'counter' => true,
                         ],
                         'value'   => $masterProduct->description_extra,
-                        'toogle'  => [
+                        'toggle'  => [
                             'heading2',
                             'heading3',
                             'fontSize',
@@ -266,33 +275,6 @@ class EditMasterProduct extends GrpAction
                     ],
                 ]
             ],
-            /* [
-                'label'  => __('Pricing'),
-                'icon'   => 'fa-light fa-money-bill',
-                'fields' => [
-                    'price'            => [
-                        'type'     => 'input_number',
-                        'label'    => __('Price').'/'.__('outer'),
-                        'required' => true,
-                        'bind'     => [
-                            'minFractionDigits' => 0,
-                            'maxFractionDigits' => 2,
-                        ],
-                        'value'    => $masterProduct->price,
-                    ],
-                    'rrp_per_unit'  => [
-                        'type'     => 'input_number',
-                        'label'    => __('RRP').'/'.__('unit'),
-                        'required' => true,
-                        'bind'     => [
-                            'minFractionDigits' => 0,
-                            'maxFractionDigits' => 2,
-                        ],
-                        'value'    => ($masterProduct->rrp / trimDecimalZeros($masterProduct->units)),
-                        'min'      => 0.01
-                    ],
-                ]
-            ], */
             [
                 'label'  => __('Pricing'),
                 'icon'   => 'fa-light fa-money-bill',
@@ -304,6 +286,10 @@ class EditMasterProduct extends GrpAction
                         'currencies'    => $currenciesRate,
                         'value'         => $masterProduct->master_prices,
                         'masterAsset'   => $masterProduct->id,
+                        'unitsReview'   => $unitsReview,
+                        'updateRoute'   => $pricesUpdateRoute,
+                        'noSaveButton'  => true,
+                        'costs'         => $costs,
                         'type_input'          => 'price'
                     ],
                     'master_rrps'            => [
@@ -313,6 +299,11 @@ class EditMasterProduct extends GrpAction
                         'currencies'    => $currenciesRate,
                         'value'         => $masterProduct->master_rrps,
                         'masterAsset'   => $masterProduct->id,
+                        'unitsReview'   => $unitsReview,
+                        'updateRoute'   => $pricesUpdateRoute,
+                        'noSaveButton'  => true,
+                        'perUnits'      => (float) $masterProduct->units,
+                        'counterpartRecord' => $masterProduct->master_prices,
                         'type_input'          => 'rrp'
                     ],
                 ]
@@ -326,15 +317,6 @@ class EditMasterProduct extends GrpAction
                         'type'  => 'input',
                         'label' => __('Unit label'),
                         'value' => $masterProduct->unit,
-                    ],
-                    'barcode' => [
-                        'type'     => 'select',
-                        'label'    => __('Barcode'),
-                        'value'    => $masterProduct->barcode,
-                        'readonly' => $masterProduct->tradeUnits->count() == 1,
-                        'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                            return [$barcode => $barcode];
-                        })->toArray()
                     ],
 
                 ]

@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { faEdit, faRobot } from "@far";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
-import { InputNumber } from "primevue";
 import { inject, computed, watch } from "vue";
 
 // Interfaces
@@ -62,7 +59,6 @@ const emits = defineEmits<{
 const props = defineProps<{
     currency: string;
     form: any;
-    price_rrp_warning_ratio: number
 }>();
 
 const locale = inject("locale", {});
@@ -313,20 +309,6 @@ function roundDown2(num: number) {
                     <!-- PRICE BLOCK -->
                     <td class="px-3 py-2 bg-blue-50 border-l-2 border-blue-400">
                         {{ locale.currencyFormat(item.product?.shop_currency ?? currency, item.product?.price ) }}
-                        <!-- <InputNumber v-model="item.product.price" mode="currency"
-                            :disabled="!item.product.create_in_shop"
-                            :currency="item?.product?.shop_currency ?? currency" :step="0.25" :showButtons="true"
-                            inputClass="w-full" :min="0.01" @input="emits('change', modelValue)" />
-                        <span v-if="form?.errors[`shop_products.${item.id}.price`]" class="text-xs text-red-500">{{
-                            form?.errors[`shop_products.${item.id}.price`] }}</span>
-                        <span v-if="item.product.org_cost
-                            && item.product.price
-                            && price_rrp_warning_ratio
-                            && item.product.price < item.product.org_cost * (1 + price_rrp_warning_ratio / 100)"
-                            class="text-xxs text-yellow-500">
-                            Price should be at least {{ (item.product.org_cost * (1 + price_rrp_warning_ratio /
-                                100)).toFixed(2) }} ({{ price_rrp_warning_ratio }}% above cost).
-                        </span> -->
                     </td>
 
                     <td class="px-3 py-2 text-right bg-blue-50">
@@ -356,30 +338,6 @@ function roundDown2(num: number) {
 
                     <td class="px-3 py-2 text-right bg-purple-50">
                           {{ locale.currencyFormat(item.product?.shop_currency ?? currency, item.product.rrp ) }}
-                       <!--  <div class="flex justify-end gap-2 text-xs">
-                            <div class="w-32" v-if="item.product?.useCustomRrp">
-                                <InputNumber v-model="item.product.rrp" mode="currency"
-                                    :disabled="!item.product.create_in_shop"
-                                    :currency="item?.product?.shop_currency ?? currency" :step="0.25"
-                                    :showButtons="true" inputClass="w-full" :min="0.01"
-                                    @input="emits('change', modelValue)" />
-                            </div>
-
-                            <span v-else>
-                                {{ locale.currencyFormat(item.product?.shop_currency ?? currency,
-                                    roundDown2(Number(item.product.price / (props.form.trade_units.length == 1 ?
-                                        parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4)) }}
-                            </span>
-
-                            <button class="text-[10px] rounded border bg-gray-50 hover:bg-gray-100"
-                                :disabled="!item.product.create_in_shop"
-                                @click="item.product.useCustomRrp = !item.product.useCustomRrp">
-                                <FontAwesomeIcon :icon="item.product?.useCustomRrp ? faRobot : faEdit"
-                                    :title="item.product?.useCustomRrp ? 'Auto RRP' : 'Manual RRP'" />
-                            </button>
-                        </div>
-                        <span v-if="form?.errors[`shop_products.${item.id}.rrp`]" class="text-xs text-red-500">{{
-                            form?.errors[`shop_products.${item.id}.rrp`] }}</span> -->
                     </td>
 
                     <td class="px-3 py-2 text-right bg-purple-50 border-r-2 border-purple-400">

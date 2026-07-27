@@ -22,7 +22,7 @@ import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
-
+import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
@@ -324,7 +324,6 @@ onMounted(async () => {
                 </div>       
 
                 <!-- PRICE -->
-
                 <ProductPrices2
                     v-if="isPriceVisible"
                     :field-value="fieldValue"
@@ -391,7 +390,16 @@ onMounted(async () => {
 
                 </div>
 
-                
+                <!-- Section: Step discount (buy more, save more) -->
+                <StepDiscountOffer
+                    v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+                    class="mt-3"
+                    :stepDiscount="product.step_discount"
+                    :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+                    :originalPrice="product.price"
+                    :unit="product.unit"
+                />
+
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
                     <!-- ONLY show when NOT coming soon -->
@@ -671,6 +679,16 @@ onMounted(async () => {
             </span>
         </button>
 
+        <!-- Section: Step discount (buy more, save more) -->
+        <StepDiscountOffer
+            v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+            class="mt-4"
+            :stepDiscount="product.step_discount"
+            :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+            :originalPrice="product.price"
+            :unit="product.unit"
+        />
+        
         <!-- ADD TO CART -->
         <div class="mt-5 space-y-2">
             <EcomAddToBasketv2

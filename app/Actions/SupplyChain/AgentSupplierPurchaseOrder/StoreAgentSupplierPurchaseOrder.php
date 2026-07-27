@@ -9,7 +9,7 @@
 
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -22,7 +22,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreAgentSupplierPurchaseOrder extends GrpAction
+class StoreAgentSupplierPurchaseOrder extends OrgAction
 {
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
@@ -106,7 +106,7 @@ class StoreAgentSupplierPurchaseOrder extends GrpAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->supplier       = $supplier;
-        $this->initialisation($supplier->group, $modelData);
+        $this->initialisationFromGroup($supplier->group, $modelData);
 
 
         return $this->handle($purchaseOrder, $supplier, $this->validatedData);

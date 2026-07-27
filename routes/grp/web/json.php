@@ -105,6 +105,7 @@ use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
 use App\Actions\CRM\Customer\Json\GetCustomersInShop;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
+use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\Goods\Stock\JSON\ValidateStockTradeUnitChanges;
 use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
@@ -296,6 +297,7 @@ Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::
 Route::get('get-pick-fractional', GetPickFractional::class)->name('product.get-pick-fractional')->withoutScopedBindings();
 
 Route::post('{masterAsset:id}/get-price-rebels', GetPriceRebelProducts::class)->name('master_products.get_price_rebels')->withoutScopedBindings();
+Route::post('master-product-category/{masterProductCategory:id}/pricing-sales', GetMasterProductsPricingSales::class)->name('master_product_category.pricing_sales')->withoutScopedBindings();
 
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
 

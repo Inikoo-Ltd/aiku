@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
 use App\Models\Masters\MasterProductCategory;
@@ -18,11 +18,11 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetFamiliesInMasterProductCategory extends GrpAction
+class GetFamiliesInMasterProductCategory extends OrgAction
 {
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisationFromGroup($masterProductCategory->group, $request);
 
         return $this->handle($masterProductCategory);
     }

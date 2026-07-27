@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
@@ -22,7 +22,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class DetachMasterModelFromMasterCollection extends GrpAction
+class DetachMasterModelFromMasterCollection extends OrgAction
 {
     public function handle(MasterCollection $masterCollection, MasterAsset|MasterProductCategory|MasterCollection $model, bool $detachChildren = true): MasterCollection
     {
@@ -80,14 +80,14 @@ class DetachMasterModelFromMasterCollection extends GrpAction
     public function action(MasterCollection $masterCollection, MasterAsset|MasterProductCategory|MasterCollection $model): MasterCollection
     {
         $this->asAction = true;
-        $this->initialisation($masterCollection->group, []);
+        $this->initialisationFromGroup($masterCollection->group, []);
 
         return $this->handle($masterCollection, $model);
     }
 
     public function asController(MasterCollection $masterCollection, ActionRequest $request): MasterCollection
     {
-        $this->initialisation($masterCollection->group, $request);
+        $this->initialisationFromGroup($masterCollection->group, $request);
 
         $modelData = $this->validatedData;
         $model     = null;

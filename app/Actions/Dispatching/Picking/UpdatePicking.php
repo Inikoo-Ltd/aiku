@@ -17,6 +17,7 @@ use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,17 +31,20 @@ class UpdatePicking extends OrgAction
     use WithActionUpdate;
 
     private Picking $picking;
+    private ?User $user = null;
 
     /**
      * @throws \Throwable
      */
-    public function handle(Picking $picking, array $modelData): Picking|bool
+    public function handle(Picking $picking, array $modelData, ?User $user = null): Picking|bool
     {
+        $this->user ??= $user;
+
         $oldQuantity = $picking->quantity;
         $oldType = $picking->type;
 
         if (Arr::has($modelData, 'quantity') && Arr::get($modelData, 'quantity') == 0) {
-            return DeletePicking::make()->action($picking, null);
+            return DeletePicking::make()->action($picking, $this->user);
         }
 
         $picking = $this->update($picking, $modelData);
@@ -82,6 +86,7 @@ class UpdatePicking extends OrgAction
      */
     public function asController(Picking $picking, ActionRequest $request): void
     {
+        $this->user = $request->user();
         $this->picking = $picking;
         $this->initialisationFromShop($picking->shop, $request);
 

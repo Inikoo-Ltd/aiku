@@ -74,6 +74,21 @@ class TimeSeriesPeriodCalculator
         };
     }
 
+    /**
+     * A period record always stores the aggregate of its whole period, so a processing window
+     * that starts or ends mid period must be widened to the period boundaries, otherwise
+     * reprocessing an old date overwrites the record with a partial sum.
+     *
+     * @return array{0: string, 1: string}
+     */
+    public static function expandWindowToFullPeriods(TimeSeriesFrequencyEnum $frequency, string $from, string $to): array
+    {
+        return [
+            self::resolvePeriodFromDate(Carbon::parse($from), $frequency)['periodFrom']->toDateTimeString(),
+            self::resolvePeriodFromDate(Carbon::parse($to), $frequency)['periodTo']->toDateTimeString(),
+        ];
+    }
+
     public static function getNonInvoicePeriods(
         TimeSeriesFrequencyEnum $frequency,
         string $from,

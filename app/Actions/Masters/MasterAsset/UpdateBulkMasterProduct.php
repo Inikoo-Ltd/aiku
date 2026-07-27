@@ -9,14 +9,14 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateBulkMasterProduct extends GrpAction
+class UpdateBulkMasterProduct extends OrgAction
 {
     use WithActionUpdate;
     use WithMastersEditAuthorisation;
@@ -48,7 +48,7 @@ class UpdateBulkMasterProduct extends GrpAction
 
     public function asController(ActionRequest $request): void
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         $this->handle($this->validatedData);
     }

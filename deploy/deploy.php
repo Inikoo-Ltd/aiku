@@ -123,7 +123,11 @@ desc('Refresh vue after deployment');
 task('deploy:refresh-vue', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
-        invoke('artisan:refresh_vue');
+        try {
+            invoke('artisan:refresh_vue');
+        } catch (\Throwable $e) {
+            writeln('<comment>refresh_vue broadcast skipped (soketi unreachable): '.$e->getMessage().'</comment>');
+        }
     } else {
         writeln('Skipping refresh vue: no changes detected');
     }

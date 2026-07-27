@@ -280,7 +280,7 @@ class IndexMasterCollections extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
+                    'actions'       => $this->canEdit ? [
                         [
                             'type'    => 'button',
                             'style'   => 'create',
@@ -294,7 +294,7 @@ class IndexMasterCollections extends OrgAction
                                 ]
                             }
                         ],
-                    ],
+                    ] : [],
                 ],
                 'data'        => MasterCollectionsResource::collection($masterCollections),
 

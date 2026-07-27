@@ -51,7 +51,6 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.marketing?.co
                             ↓
                         </span>
                     </button>
-
                 </a>
 
             </div>

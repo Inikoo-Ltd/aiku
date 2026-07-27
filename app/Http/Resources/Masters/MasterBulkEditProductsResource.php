@@ -10,7 +10,6 @@ namespace App\Http\Resources\Masters;
 */
 
 use App\Actions\Traits\HasBucketImages;
-use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Helpers\NaturalLanguage;

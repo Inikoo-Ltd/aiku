@@ -44,6 +44,7 @@ use App\Stubs\Migrations\HasProductInformation;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -59,6 +60,10 @@ class UpdateProduct extends OrgAction
 
     private Product $product;
 
+    public bool $bulkPriceUpdate = false;
+
+    public bool $skipWebpageCacheBreak = false;
+
     public function handle(Product $product, array $modelData): Product
     {
         // Note laravel wasChanged do not work! for this action, no idea why need to use $oldData
@@ -71,7 +76,11 @@ class UpdateProduct extends OrgAction
         if (Arr::has($modelData, 'rrp_per_unit')) {
             $rrpPerUnit = Arr::pull($modelData, 'rrp_per_unit');
             $rrp        = $rrpPerUnit * trimDecimalZeros($product->units);
-            data_set($modelData, 'rrp', $rrp);
+            if ($rrp >= 1e9) {
+                Log::warning("Skip rrp update for product $product->code: computed rrp $rrp overflows, source data looks corrupt");
+            } else {
+                data_set($modelData, 'rrp', $rrp);
+            }
         }
 
         if (Arr::has($modelData, 'webpage_title')) {
@@ -258,7 +267,9 @@ class UpdateProduct extends OrgAction
                 ]
             );
 
-            UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+            if (!$this->bulkPriceUpdate) {
+                UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+            }
         }
 
 
@@ -286,7 +297,8 @@ class UpdateProduct extends OrgAction
             'price',
         ];
 
-        if ($product->webpage
+        if (!$this->bulkPriceUpdate
+            && $product->webpage
             && (Arr::hasAny(
                 $changed,
                 $fieldsUsedInLuigi
@@ -303,7 +315,9 @@ class UpdateProduct extends OrgAction
             $this->getProductInformationFieldNames()
         );
 
-        if ($product->webpage
+        if (!$this->bulkPriceUpdate
+            && !$this->skipWebpageCacheBreak
+            && $product->webpage
             && (Arr::hasAny(
                 $changed,
                 $fieldsUsedInWebpages
@@ -339,7 +353,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if ($oldHistoricProduct != $product->current_historic_asset_id) {
+        if (!$this->bulkPriceUpdate && $oldHistoricProduct != $product->current_historic_asset_id) {
             UpdateHistoricProductInBasketTransactions::dispatch($product);
         }
 
@@ -403,7 +417,6 @@ class UpdateProduct extends OrgAction
             'state'                     => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
             'trade_config'              => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
             'follow_master'             => ['sometimes', 'boolean'],
-            'cost_price_ratio'          => ['sometimes', 'numeric', 'min:0'],
             'family_id'                 => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
             'master_product_id'         => ['sometimes', 'nullable', 'integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
             'barcode'                   => [

@@ -9,21 +9,25 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\UI\GetMasterDepartmentNavigation;
 use App\Actions\Masters\MasterProductCategory\UI\GetMasterFamilyNavigation;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
+use App\Http\Resources\Masters\MasterProductsPricingResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -40,7 +44,7 @@ use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use Illuminate\Support\Collection;
 
-class IndexMasterProducts extends GrpAction
+class IndexMasterProducts extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
@@ -202,7 +206,6 @@ class IndexMasterProducts extends GrpAction
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
                 prefix: $prefix,
-                includeLY: true,
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -213,12 +216,6 @@ class IndexMasterProducts extends GrpAction
             $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
-
-        // comment label sku
-        // else {
-        //     $queryBuilder
-        //        ->with('tradeUnits.stocks');
-        // }
 
         $queryBuilder->select($selects);
 
@@ -321,6 +318,23 @@ class IndexMasterProducts extends GrpAction
             ->withQueryString();
     }
 
+    /**
+     * The pricing tab's support props cost ~16 queries, so they are only computed when
+     * the pricing tab is actually shown: eager on a full pricing-tab load, optional
+     * otherwise (fetched by the page via partial reload when switching to the tab).
+     */
+    protected function wrapPricingSupportProp(\Closure $value): mixed
+    {
+        return $this->tab === MasterProductsTabsEnum::PRICING->value ? $value() : Inertia::optional($value);
+    }
+
+    private ?Collection $pricingCurrenciesRate = null;
+
+    protected function getPricingCurrenciesRate(): Collection
+    {
+        return $this->pricingCurrenciesRate ??= GetMasterShopCurrenciesRate::run($this->parent->masterShop);
+    }
+
     public function tableStructure(Group|MasterShop|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $sales = false, $sortByIndex = false): \Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $sales, $sortByIndex) {
@@ -359,11 +373,13 @@ class IndexMasterProducts extends GrpAction
                 $table->column('master_family_code', __('Family'), sortable: !$sortByIndex);
             }
 
+
+
             if ($sales) {
                 $table
                     ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: !$sortByIndex, searchable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: !$sortByIndex, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: !$sortByIndex, align: 'right')
+                    ->column(key: 'dropshippers', label: __('Customer Listings'), sortable: !$sortByIndex, align: 'right')
+                    ->column(key: 'listings', label: __('Total Listings'), sortable: !$sortByIndex, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: !$sortByIndex, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: !$sortByIndex, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: !$sortByIndex, searchable: true, align: 'right')
@@ -379,10 +395,16 @@ class IndexMasterProducts extends GrpAction
 
                 $table
                     ->column(key: 'name', label: __('Name'), sortable: !$sortByIndex)
-                    ->column(key: 'unit', label: __('Unit'), sortable: !$sortByIndex)
-                    ->column(key: 'master_department_code', label: __('M. Department'), sortable: !$sortByIndex)
-                    ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), sortable: !$sortByIndex)
-                    ->column(key: 'master_family_code', label: __('M. Family'), sortable: !$sortByIndex)
+                    ->column(key: 'unit', label: __('Unit'), sortable: !$sortByIndex);
+
+                if (! $parent instanceof MasterProductCategory) {
+                    $table
+                        ->column(key: 'master_department_code', label: __('M. Department'), sortable: !$sortByIndex)
+                        ->column(key: 'master_sub_department_code', label: __('M. Sub-department'), sortable: !$sortByIndex)
+                        ->column(key: 'master_family_code', label: __('M. Family'), sortable: !$sortByIndex);
+                }
+
+                $table
                     ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), sortable: !$sortByIndex)
                     ->column(key: 'actions', label: __('Actions'), sortable: false)
                     ->defaultSort('code');
@@ -407,8 +429,8 @@ class IndexMasterProducts extends GrpAction
         $familyId        = null;
         $shopsData       = null;
         $modelNavigation = [];
-        $hideBulkEdit    = false;
-        $exception       = [MasterProductsTabsEnum::INDEX_ORDERING];
+
+        $exception       = [MasterProductsTabsEnum::INDEX_ORDERING, MasterProductsTabsEnum::PRICING];
 
         if ($this->parent instanceof Group) {
             $model      = '';
@@ -440,10 +462,10 @@ class IndexMasterProducts extends GrpAction
             $shopsData     = OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'));
         } elseif ($this->parent instanceof MasterProductCategory) {
             $masterShop = $this->parent->masterShop;
-            // $hideBulkEdit = true;
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $subNavigation   = $this->getMasterDepartmentSubNavigation($this->parent);
                 $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
+                $exception       = [MasterProductsTabsEnum::INDEX_ORDERING];
 
                 $title           = $this->parent->name;
                 $icon            = [
@@ -500,7 +522,7 @@ class IndexMasterProducts extends GrpAction
         }
 
 
-        return Inertia::render(
+        $response = Inertia::render(
             'Masters/MasterProducts',
             [
                 'breadcrumbs'             => $this->getBreadcrumbs(
@@ -530,9 +552,33 @@ class IndexMasterProducts extends GrpAction
                 ],
                 'variantSlugs'            => $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'masterProductCategoryId' => $this->parent->id,
+                'pricingMajorCurrencies'  => $this->parent instanceof MasterProductCategory
+                    ? collect($this->parent->masterShop->price_exchanges ?? [])
+                        ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
+                        ->keys()
+                        ->values()
+                    : null,
+                'pricingCurrencies'       => $this->parent instanceof MasterProductCategory
+                    ? $this->wrapPricingSupportProp(fn () => $this->getPricingCurrenciesRate())
+                    : null,
+                'pricingCostRates'        => $this->parent instanceof MasterProductCategory
+                    ? $this->wrapPricingSupportProp(
+                        fn () => $this->getPricingCurrenciesRate()
+                            ->keys()
+                            ->mapWithKeys(function (string $currencyCode) {
+                                $currency = Currency::where('code', $currencyCode)->first();
+
+                                return [
+                                    $currencyCode => $currency
+                                        ? GetCurrencyExchange::run($this->parent->group->currency, $currency)
+                                        : null
+                                ];
+                            })
+                    )
+                    : null,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
-                'hide_bulk_edit'          => $hideBulkEdit,
+                'hide_bulk_edit'          => false,
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => MasterProductsTabsEnum::navigationExcept($exception),
@@ -549,11 +595,25 @@ class IndexMasterProducts extends GrpAction
                     fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))
                     : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))),
 
+                MasterProductsTabsEnum::PRICING->value => $this->parent instanceof MasterProductCategory
+                    ? ($this->tab == MasterProductsTabsEnum::PRICING->value ?
+                        fn () => MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($this->parent, MasterProductsTabsEnum::PRICING->value))
+                        : Inertia::optional(fn () => MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($this->parent, MasterProductsTabsEnum::PRICING->value))))
+                    : null,
+
             ]
         )
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX_ORDERING->value, sortByIndex: true))
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true));
+
+        if ($this->parent instanceof MasterProductCategory) {
+            $response->table(
+                IndexMasterProductsPricing::make()->tableStructure($this->parent, prefix: MasterProductsTabsEnum::PRICING->value)
+            );
+        }
+
+        return $response;
     }
 
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, ?string $suffix = null): array
@@ -595,21 +655,7 @@ class IndexMasterProducts extends GrpAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index'   =>
-            array_merge(
-                ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters,
-                    ],
-                    $suffix
-                ),
-            ),
-            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
-            'grp.masters.master_shops.show.master_families.master_products.index',
-            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
-            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index', 'grp.masters.master_shops.show.master_families.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
                 ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
@@ -644,7 +690,7 @@ class IndexMasterProducts extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($group, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -653,7 +699,7 @@ class IndexMasterProducts extends GrpAction
     {
         $group        = group();
         $this->parent = $masterShop;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterShop, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -664,7 +710,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -675,7 +721,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -686,7 +732,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -697,7 +743,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterFamily, prefix: MasterProductsTabsEnum::INDEX->value);
     }
@@ -708,7 +754,7 @@ class IndexMasterProducts extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle(parent: $masterFamily, prefix: MasterProductsTabsEnum::INDEX->value, filterInVariant: $filterInVariant);
     }
@@ -717,7 +763,7 @@ class IndexMasterProducts extends GrpAction
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
-        $this->initialisation($masterDepartment->group, $request)->withTab(MasterProductsTabsEnum::values());
+        $this->initialisationFromGroup($masterDepartment->group, $request)->withTab(MasterProductsTabsEnum::values());
 
         return $this->handle($masterDepartment, prefix: MasterProductsTabsEnum::INDEX->value);
     }

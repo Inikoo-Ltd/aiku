@@ -151,9 +151,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property bool $registration_needs_approval
  * @property array<array-key, mixed>|null $extra_languages
  * @property bool $is_aiku
- * @property numeric $cost_price_ratio
  * @property array<array-key, mixed>|null $forbidden_dispatch_countries
- * @property numeric $price_rrp_ratio
  * @property bool $is_migrating_to_aiku
  * @property array<array-key, mixed>|null $offers_data
  * @property ShopEngineEnum $engine

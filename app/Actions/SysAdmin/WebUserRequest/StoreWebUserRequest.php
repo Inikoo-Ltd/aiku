@@ -11,7 +11,7 @@
 namespace App\Actions\SysAdmin\WebUserRequest;
 
 use App\Actions\CRM\WebUser\Hydrators\WebUserHydrateWebUserRequests;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUserRequests;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUserRequests;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateWebUserRequests;
@@ -20,7 +20,7 @@ use App\Models\Analytics\WebUserRequest;
 use App\Models\CRM\WebUser;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreWebUserRequest extends GrpAction
+class StoreWebUserRequest extends OrgAction
 {
     public function handle(WebUser $webUser, array $modelData): WebUserRequest
     {
@@ -70,7 +70,7 @@ class StoreWebUserRequest extends GrpAction
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
-        $this->initialisation($webUser->group, $modelData);
+        $this->initialisationFromGroup($webUser->group, $modelData);
 
         return $this->handle($webUser, $this->validatedData);
     }

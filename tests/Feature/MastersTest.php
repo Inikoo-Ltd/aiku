@@ -40,15 +40,22 @@ use App\Actions\Masters\MasterProductCategory\UpdateMasterFamilyMasterSubDepartm
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentsMasterDepartment;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\GetMasterShopTimeSeriesStats;
 use App\Actions\Masters\MasterShop\HydrateMasterShop;
 use App\Actions\Masters\MasterShop\HydrateMasterShopSales;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
+use App\Actions\Masters\MasterAssetTimeSeries\ProcessMasterAssetTimeSeriesRecords;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetOrderingIntervals;
 use App\Models\Masters\MasterAssetStats;
@@ -60,12 +67,13 @@ use App\Models\Masters\MasterProductCategoryStats;
 use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterShopOrderingStats;
 use App\Models\Masters\MasterShopStats;
-use App\Actions\Maintenance\Masters\MasterProduct\RepairMasterAssetHydratePrices;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Currency;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -244,10 +252,6 @@ test('UI Edit Master Shop', function (MasterShop $masterShop) {
                     ->has('blueprint.0.fields.name')
                     ->where('blueprint.0.fields.name.type', 'input')
                     ->where('blueprint.0.fields.name.value', $masterShop->name)
-                    ->has('blueprint.1.fields.cost_price_ratio')
-                    ->where('blueprint.1.fields.cost_price_ratio.type', 'input_number')
-                    ->has('blueprint.1.fields.price_rrp_ratio')
-                    ->where('blueprint.1.fields.price_rrp_ratio.type', 'input_number')
                     ->has('args.updateRoute')
                     ->where('args.updateRoute.name', 'grp.models.master_shops.update')
                     ->where('args.updateRoute.parameters.masterShop', $masterShop->id)
@@ -527,6 +531,30 @@ test("UI Show master shop", function (MasterShop $masterShop) {
                     ->etc()
             )
             ->has("tabs");
+    });
+})->depends('create master shop');
+
+test("UI Show master shop showcase has price exchanges", function (MasterShop $masterShop) {
+    $masterShop->update([
+        'price_exchanges' => [
+            'GBP' => ['is_major' => true],
+            'EUR' => ['is_major' => true],
+            'SEK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 11],
+        ]
+    ]);
+
+    $response = get(
+        route("grp.masters.master_shops.show", [$masterShop->slug])
+    );
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Masters/MasterShop")
+            ->has("showcase.price_exchanges", 3)
+            ->where("showcase.price_exchanges.0.is_major", true)
+            ->where("showcase.price_exchanges.2.code", "SEK")
+            ->where("showcase.price_exchanges.2.major", "EUR")
+            ->where("showcase.price_exchanges.2.exchange", 11)
+            ->etc();
     });
 })->depends('create master shop');
 
@@ -1298,9 +1326,12 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
         ])
     );
 
-    $response->assertInertia(function (AssertableInertia $page) use ($masterAsset) {
+    $expectsWarning = $masterAsset->stats->number_assets > 0;
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterAsset, $expectsWarning) {
         $page
             ->component('EditModel')
+            ->where('warning', fn ($warning) => $expectsWarning === ($warning !== null))
             ->has('breadcrumbs')
             ->has(
                 'pageHead',
@@ -1329,6 +1360,261 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
             );
     });
 })->depends('create master asset');
+
+test('UI Index Master Products Bulk Edit', function (MasterShop $masterShop) {
+    $response = get(route('grp.masters.master_shops.show.bulk-edit', [$masterShop->slug]));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Masters/MasterProductsBulkEdit')
+            ->etc()
+    );
+})->depends('create master shop');
+
+test('UI Index Master Products in family has pricing tab', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PRTAB-DEP-'.uniqid(),
+        'name' => 'Pricing Tab Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PRTAB-FAM-'.uniqid(),
+        'name' => 'Pricing Tab Family',
+    ]);
+    StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PRTAB-AST-'.uniqid(),
+        'name'    => 'Pricing Tab Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 12.5,
+        'rrp'     => 30,
+        'stocks'  => [],
+    ]);
+
+    $response = get(route('grp.masters.master_shops.show.master_families.master_products.index', [
+        $masterFamily->masterShop->slug,
+        $masterFamily->slug,
+        'tab' => 'pricing',
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('Masters/MasterProducts')
+            ->has('tabs.navigation.pricing')
+            ->has('pricing.data')
+            ->has(
+                'pricing.data.0',
+                fn (AssertableInertia $row) => $row
+                    ->has('code')
+                    ->has('name')
+                    ->has('price')
+                    ->has('rrp')
+                    ->has('currency_code')
+                    ->etc()
+            )
+            ->etc()
+    );
+});
+
+test('bulk update master assets prices applies per-unit rrp and skips independents', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'BLKPR-DEP-'.uniqid(),
+        'name' => 'Bulk Prices Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'BLKPR-FAM-'.uniqid(),
+        'name' => 'Bulk Prices Family',
+    ]);
+
+    $assetA = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BLKPR-A-'.uniqid(),
+        'name'    => 'Bulk A',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $assetB = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BLKPR-B-'.uniqid(),
+        'name'    => 'Bulk B',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $assetA->updateQuietly([
+        'units'       => 16,
+        'master_rrps' => [
+            'EUR' => ['value' => 10, 'independent' => false],
+            'PLN' => ['value' => 300, 'independent' => true],
+        ],
+    ]);
+    $assetB->updateQuietly(['units' => 2, 'master_rrps' => ['EUR' => ['value' => 5, 'independent' => false]]]);
+
+    $foreignAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BLKPR-X-'.uniqid(),
+        'name'    => 'Bulk Foreign',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $foreignGroup = \App\Actions\SysAdmin\Group\StoreGroup::make()->action(
+        \App\Models\SysAdmin\Group::factory()->definition()
+    );
+    $foreignAsset->updateQuietly([
+        'group_id'    => $foreignGroup->id,
+        'master_rrps' => ['EUR' => ['value' => 5, 'independent' => false]],
+    ]);
+
+    Queue::fake();
+
+    \App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices::make()->action([
+        'ids'          => [$assetA->id, $assetB->id, $foreignAsset->id],
+        'rrp_per_unit' => true,
+        'master_rrps'  => [
+            'EUR' => ['value' => 2, 'independent' => false],
+            'PLN' => ['value' => 99, 'independent' => false],
+            'HUF' => ['value' => null, 'independent' => false],
+        ],
+    ]);
+
+    $assetA->refresh();
+    $assetB->refresh();
+
+    expect(data_get($assetA->master_rrps, 'EUR.value'))->toEqual(32)
+        ->and(data_get($assetA->master_rrps, 'PLN.value'))->toBe(300)
+        ->and(data_get($assetA->master_rrps, 'PLN.independent'))->toBeTrue()
+        ->and(data_get($assetA->master_rrps, 'HUF'))->toBeNull()
+        ->and(data_get($assetB->master_rrps, 'EUR.value'))->toEqual(4)
+        ->and(data_get($assetB->master_rrps, 'PLN.value'))->toEqual(198)
+        ->and(data_get($foreignAsset->refresh()->master_rrps, 'EUR.value'))->toBe(5);
+
+    Queue::assertPushed(
+        \Lorisleiva\Actions\Decorators\JobDecorator::class,
+        2,
+    );
+});
+
+test('hydrate effective cost weights org costs by available stock', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'EFC-DEP-'.uniqid(),
+        'name' => 'Effective Cost Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'EFC-FAM-'.uniqid(),
+        'name' => 'Effective Cost Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'EFC-AST-'.uniqid(),
+        'name'    => 'Effective Cost Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits()->first();
+    $masterAsset->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 2]]);
+
+    $orgStock = $this->organisation->orgStocks()->first();
+    $tradeUnit->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+    $orgStock->updateQuietly([
+        'current_supplier_sku_cost' => 6,
+        'packed_in'                 => 2,
+        'quantity_available'        => 50,
+    ]);
+
+    \App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost::run($masterAsset->refresh());
+
+    $exchange = \App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange::run(
+        $this->organisation->currency,
+        $this->organisation->group->currency
+    );
+
+    expect((float) $masterAsset->refresh()->effective_cost)
+        ->toBe(round(6 / 2 * 2 * $exchange, 4));
+});
+
+test('effective cost hydrator is scheduled nightly and queued low-priority', function () {
+    expect(\App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost::make()->jobQueue)
+        ->toBe('low-priority');
+
+    config(['app.master' => true]);
+    $schedule = new \Illuminate\Console\Scheduling\Schedule();
+    $kernel   = app(\App\Console\Kernel::class);
+    (function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        $this->schedule($schedule);
+    })->call($kernel, $schedule);
+
+    expect(
+        collect($schedule->events())->contains(
+            fn ($event) => str_contains($event->command ?? '', 'master_assets:hydrate_effective_cost')
+                && $event->expression === '30 2 * * *'
+        )
+    )->toBeTrue();
+});
+
+test('UI Edit Master Product with a trade unit not linked to a stock', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'NOSTK-DEPT-'.uniqid(),
+        'name' => 'No Stock Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'NOSTK-FAM-'.uniqid(),
+        'name' => 'No Stock Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'NOSTK-AST-'.uniqid(),
+        'name'    => 'No Stock Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+    $masterAsset->tradeUnits()->attach($tradeUnit->id, ['quantity' => 3]);
+
+    expect(
+        DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->where('trade_unit_id', $tradeUnit->id)
+            ->exists()
+    )->toBeFalse();
+
+    $response = get(
+        route('grp.masters.master_shops.show.master_families.master_products.edit', [
+            'masterShop'    => $masterShop->slug,
+            'masterFamily'  => $masterFamily->slug,
+            'masterProduct' => $masterAsset->slug,
+        ])
+    );
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page->where(
+            'formData.blueprint.5.fields.trade_units.value',
+            fn ($tradeUnits) => collect($tradeUnits)->count() === 1
+                && collect($tradeUnits)->every(fn ($tradeUnit) => $tradeUnit['packed_in'] == 1)
+        )->etc()
+    );
+
+    $masterAsset->load('tradeUnits');
+    $showcase = GetMasterProductShowcase::run($masterAsset);
+
+    expect($showcase['trade_units'])->toHaveCount(1)
+        ->and($showcase['trade_units'][0])->toHaveKey('pick_fractional');
+});
 
 
 // ADDITIONAL MASTER ASSET ACTIONS
@@ -1736,3 +2022,421 @@ test('HydrateMasterShopSales hydrates orders stats for a master shop', function 
     expect($masterShop->refresh())->toBeInstanceOf(MasterShop::class);
 });
 
+test('master shop price exchanges default and seeder', function () {
+    $masterShop = StoreMasterShop::make()->action($this->group, [
+        'code' => 'AW',
+        'name' => 'Ancient Wisdom Master',
+        'type' => ShopTypeEnum::B2B,
+    ]);
+
+    expect($masterShop->price_exchanges)->toBe([]);
+
+    (new \Database\Seeders\MasterShopPriceExchangesSeeder())->run();
+    $masterShop->refresh();
+
+    expect($masterShop->price_exchanges)->toHaveKeys(['GBP', 'EUR', 'PLN', 'CZK', 'HUF', 'RON', 'SEK', 'UAH'])
+        ->and($masterShop->price_exchanges['EUR']['is_major'])->toBeTrue()
+        ->and($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11])
+        ->and($masterShop->price_exchanges['PLN']['exchange'])->toBe(4.3);
+});
+
+test('update master shop price exchange recalculates minor prices', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PXDEP-'.uniqid(),
+        'name' => 'Price Exchange Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PXFAM-'.uniqid(),
+        'name' => 'Price Exchange Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PXAST-'.uniqid(),
+        'name'    => 'Price Exchange Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'master_prices' => [
+            'EUR' => ['value' => 10, 'independent' => false],
+            'SEK' => ['value' => 100, 'independent' => false],
+        ]
+    ]);
+
+    $masterShop->update(['price_exchanges' => ['EUR' => ['is_major' => true]]]);
+
+    $masterShop = \App\Actions\Masters\MasterShop\UpdateMasterShopPriceExchange::make()->action($masterShop, [
+        'currency' => 'SEK',
+        'is_major' => false,
+        'major'    => 'EUR',
+        'exchange' => 11,
+    ]);
+
+    $masterAsset->refresh();
+
+    expect($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11])
+        ->and(data_get($masterAsset->master_prices, 'SEK.value'))->toBe('110');
+
+    $masterAsset->updateQuietly([
+        'master_prices' => [
+            'EUR' => ['value' => 10, 'independent' => false],
+            'SEK' => ['value' => 200, 'independent' => true],
+        ]
+    ]);
+
+    \App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices::run($masterShop, 'SEK');
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'SEK.value'))->toBe(200);
+
+    expect(fn () => \App\Actions\Masters\MasterShop\UpdateMasterShopPriceExchange::make()->action($masterShop, [
+        'currency' => 'EUR',
+        'is_major' => false,
+        'major'    => 'SEK',
+        'exchange' => 0.09,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('updating master prices cascades to children, updates baskets and breaks webpage cache', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'CASCDEP-'.uniqid(),
+        'name' => 'Cascade Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'CASCFAM-'.uniqid(),
+        'name' => 'Cascade Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'CASCAST-'.uniqid(),
+        'name'    => 'Cascade Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $currencyCode = $this->shop->currency->code;
+
+    $website = createWebsite($this->shop);
+    $webpage = \App\Actions\Web\Webpage\StoreWebpage::make()->action(
+        $website->storefront,
+        \App\Models\Web\Webpage::factory()->definition()
+    );
+
+    $this->shop->updateQuietly(['master_shop_id' => $masterShop->id]);
+    $product->updateQuietly([
+        'master_product_id' => $masterAsset->id,
+        'units'             => 1,
+    ]);
+    $webpage->updateQuietly([
+        'model_type' => 'Product',
+        'model_id'   => $product->id,
+    ]);
+
+    $cacheKeyIn  = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
+    $cacheKeyOut = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
+    Cache::put($cacheKeyIn, 'cached-page', 600);
+    Cache::put($cacheKeyOut, 'cached-page', 600);
+
+    Queue::fake();
+    config(['iris.cache.varnish' => true, 'iris.cache.varnish_hosts' => ['http://varnish.test']]);
+    \Illuminate\Support\Facades\Http::fake();
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [$currencyCode => ['value' => 123.45, 'independent' => false]],
+        'master_rrps'   => [$currencyCode => ['value' => 199.99, 'independent' => false]],
+    ]);
+
+    $product->refresh();
+    expect((float) $product->price)->toBe(123.45)
+        ->and((float) $product->rrp)->toBe(199.99)
+        ->and(Cache::has($cacheKeyIn))->toBeFalse()
+        ->and(Cache::has($cacheKeyOut))->toBeFalse();
+
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+    \Illuminate\Support\Facades\Http::assertSent(
+        fn ($request) => $request->hasHeader('x-ban-webpage', (string) $webpage->id)
+    );
+
+    Queue::assertPushed(
+        \Lorisleiva\Actions\Decorators\UniqueJobDecorator::class,
+        fn ($job) => $job->displayName() === \App\Actions\Catalogue\Product\UpdateOrdersInBasketsAfterProductUpdated::class
+    );
+    Queue::assertNotPushed(
+        \Lorisleiva\Actions\Decorators\JobDecorator::class,
+        fn ($job) => $job->displayName() === \App\Actions\Catalogue\Product\BreakProductInWebpagesCache::class
+    );
+});
+
+test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from master shop price_exchanges', function () {
+    $masterShop = createFreshMasterShop();
+
+    $gbp = Currency::where('code', 'GBP')->firstOrFail();
+    $eur = Currency::where('code', 'EUR')->firstOrFail();
+
+    // Reflects a shop where GBP (not EUR) is the configured major currency.
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $this->shop->updateQuietly(['master_shop_id' => $masterShop->id, 'currency_id' => $gbp->id]);
+
+    $eurShop = \App\Actions\Catalogue\Shop\StoreShop::run(
+        $this->organisation,
+        array_merge(Shop::factory()->definition(), ['code' => 'EURSHOP'])
+    );
+    $eurShop->updateQuietly(['master_shop_id' => $masterShop->id, 'currency_id' => $eur->id]);
+
+    $rates = GetMasterShopCurrenciesRate::run($masterShop);
+
+    expect($rates['GBP']['is_major'])->toBeTrue()
+        ->and($rates['GBP']['ratio_eur'])->toBe(1.0)
+        ->and($rates['GBP']['major'])->toBeNull()
+        ->and($rates['EUR']['is_major'])->toBeFalse()
+        ->and($rates['EUR']['ratio_eur'])->toBe(1.18)
+        ->and($rates['EUR']['major'])->toBe('GBP');
+});
+
+test('updating master prices merges per currency, skips nulls and syncs legacy columns from the base major', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'MRGDEP-'.uniqid(),
+        'name' => 'Merge Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'MRGFAM-'.uniqid(),
+        'name' => 'Merge Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'MRGAST-'.uniqid(),
+        'name'    => 'Merge Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'master_prices' => [
+            'GBP' => ['value' => 10, 'independent' => false],
+            'EUR' => ['value' => 11.8, 'independent' => false],
+            'PLN' => ['value' => 50, 'independent' => true],
+        ],
+    ]);
+
+    expect(\App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate::baseCurrencyCode($masterShop->price_exchanges))->toBe('GBP');
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [
+            'GBP' => ['value' => 20, 'independent' => false],
+            'EUR' => ['value' => null, 'independent' => false],
+        ],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'GBP.value'))->toBe(20)
+        ->and(data_get($masterAsset->master_prices, 'EUR.value'))->toBe(11.8)
+        ->and(data_get($masterAsset->master_prices, 'PLN.value'))->toBe(50)
+        ->and(data_get($masterAsset->master_prices, 'PLN.independent'))->toBeTrue()
+        ->and((float) $masterAsset->price)->toBe(20.0);
+});
+
+test('reprocessing a master asset time series with a mid period window keeps the whole period total', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'TS-DEP-'.uniqid(),
+        'name' => 'Time Series Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'TS-FAM-'.uniqid(),
+        'name' => 'Time Series Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'TS-AST-'.uniqid(),
+        'name'    => 'Time Series Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $customer      = createCustomer($this->shop);
+    $taxCategoryId = DB::table('tax_categories')->value('id');
+    $monthStart    = now()->subMonth()->startOfMonth();
+
+    foreach ([[2, 100], [20, 250]] as [$dayOffset, $amount]) {
+        DB::table('invoice_transactions')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'tax_category_id' => $taxCategoryId,
+            'master_asset_id' => $masterAsset->id,
+            'date'            => $monthStart->copy()->addDays($dayOffset),
+            'quantity'        => 1,
+            'net_amount'      => $amount,
+            'grp_net_amount'  => $amount,
+            'data'            => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+    }
+
+    ProcessMasterAssetTimeSeriesRecords::run(
+        $masterAsset->id,
+        TimeSeriesFrequencyEnum::MONTHLY,
+        $monthStart->toDateString(),
+        $monthStart->copy()->addDays(2)->toDateString()
+    );
+
+    $record = DB::table('master_asset_time_series as ts')
+        ->join('master_asset_time_series_records as r', 'r.master_asset_time_series_id', '=', 'ts.id')
+        ->where('ts.master_asset_id', $masterAsset->id)
+        ->where('ts.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+        ->where('r.period', $monthStart->format('Y-m'))
+        ->first();
+
+    expect((float) $record->sales_grp_currency_external)->toBe(350.0)
+        ->and((int) $record->sold)->toBe(2);
+});
+
+test('master product creation seeds minor prices from the official exchange, not live FX', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $gbp = Currency::where('code', 'GBP')->firstOrFail();
+    $eur = Currency::where('code', 'EUR')->firstOrFail();
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $gbp->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $eurShop = \App\Actions\Catalogue\Shop\StoreShop::run(
+        $this->organisation,
+        array_merge(Shop::factory()->definition(), ['code' => 'EFX'.substr(uniqid(), -4)])
+    );
+    $eurShop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $eur->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'FXDEP-'.uniqid(),
+        'name' => 'FX Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'FXFAM-'.uniqid(),
+        'name' => 'FX Family',
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    $data = \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily,
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    // The minor must follow the master shop's agreed rate, never a live market rate.
+    expect(data_get($data, 'currencies.EUR.ratio_eur'))->toBe(1.18)
+        ->and(data_get($data, 'currencies.EUR.is_major'))->toBeFalse()
+        ->and(data_get($data, 'currencies.EUR.major'))->toBe('GBP')
+        ->and(data_get($data, 'currencies.GBP.ratio_eur'))->toBe(1.0)
+        ->and(data_get($data, 'currencies.GBP.is_major'))->toBeTrue();
+});
+
+test('minor currency recalculation includes variant master assets', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'SEK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 11],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'VARDEP-'.uniqid(),
+        'name' => 'Variant Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'VARFAM-'.uniqid(),
+        'name' => 'Variant Family',
+    ]);
+
+    $variant = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'VARAST-'.uniqid(),
+        'name'    => 'Variant Asset',
+        'is_main' => false,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $variant->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 10, 'independent' => false],
+            'SEK' => ['value' => 999, 'independent' => false],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices::run($masterShop, 'SEK');
+
+    $variant->refresh();
+
+    expect(data_get($variant->master_prices, 'SEK.value'))->toBe('110');
+});
+
+test('master shop currencies rate can restrict to open shops only', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $gbp = Currency::where('code', 'GBP')->firstOrFail();
+    $eur = Currency::where('code', 'EUR')->firstOrFail();
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $gbp->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $closedEurShop = \App\Actions\Catalogue\Shop\StoreShop::run(
+        $this->organisation,
+        array_merge(Shop::factory()->definition(), ['code' => 'CLS'.substr(uniqid(), -4)])
+    );
+    $closedEurShop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $eur->id,
+        'state'          => ShopStateEnum::CLOSED,
+    ]);
+
+    $allShops  = GetMasterShopCurrenciesRate::run($masterShop);
+    $openShops = GetMasterShopCurrenciesRate::run($masterShop, onlyOpenShops: true);
+
+    // Edit / bulk edit / family pages keep a closed shop's currency editable.
+    expect($allShops->keys()->all())->toContain('GBP', 'EUR')
+        ->and($allShops['EUR']['ratio_eur'])->toBe(1.18)
+        // Master product creation only seeds currencies of shops that will actually sell.
+        ->and($openShops->keys()->all())->toContain('GBP')
+        ->and($openShops->keys()->all())->not->toContain('EUR');
+});

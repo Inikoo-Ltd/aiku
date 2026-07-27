@@ -88,7 +88,6 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
- * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property bool|null $is_name_reviewed

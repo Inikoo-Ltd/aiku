@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Agent;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
@@ -22,8 +23,9 @@ use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateAgent extends GrpAction
+class UpdateAgent extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use WithActionUpdate;
 
 
@@ -56,15 +58,6 @@ class UpdateAgent extends GrpAction
         }
 
         return $agent;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->action = true) {
-            return true;
-        }
-
-        return $request->user()->authTo("supply-chain.".$this->group->id.".edit");
     }
 
     public function rules(): array
@@ -114,8 +107,8 @@ class UpdateAgent extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
         $this->agent          = $agent;
-        $this->action         = true;
-        $this->initialisation($agent->group, $modelData);
+        $this->asAction       = true;
+        $this->initialisationFromGroup($agent->group, $modelData);
 
         return $this->handle($agent, $this->validatedData);
     }
@@ -123,7 +116,7 @@ class UpdateAgent extends GrpAction
     public function asController(Agent $agent, ActionRequest $request): Agent
     {
         $this->agent = $agent;
-        $this->initialisation($agent->group, $request);
+        $this->initialisationFromGroup($agent->group, $request);
 
         return $this->handle($agent, $this->validatedData);
     }

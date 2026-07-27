@@ -8,7 +8,7 @@
 
 namespace App\Actions\Search\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Search\GetSearchAnalytics;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Http\Resources\SysAdmin\SearchLogsResource;
@@ -25,7 +25,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexSearchLogs extends GrpAction
+class IndexSearchLogs extends OrgAction
 {
     protected function getElementGroups(Group $group): array
     {
@@ -244,7 +244,7 @@ class IndexSearchLogs extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($this->group);
     }

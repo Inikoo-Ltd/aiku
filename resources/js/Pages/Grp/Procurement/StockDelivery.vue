@@ -35,8 +35,8 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle } from "@fal"
-import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle } from "@fas"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen } from "@fal"
+import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull } from "@fas"
 
 library.add(
 	faInventory,
@@ -57,7 +57,9 @@ library.add(
 	faShare,
 	faArrowCircleRight,
 	faArrowCircleLeft,
-	faExclamationCircle
+	faExclamationCircle,
+	faBoxOpen,
+	faBoxFull
 )
 
 const props = defineProps<{
@@ -89,6 +91,9 @@ const props = defineProps<{
 			total_items: number
 			total_received_checked_items: number
 			total_placed_items: number
+			show_delivery_discrepancy: boolean
+			total_under_delivered_items: number
+			total_over_delivered_items: number
 			weight: number | null
 			volume: number | null
 			is_weight_partial: boolean
@@ -234,6 +239,126 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const confirm = useConfirm()
 const deleteLoading = ref(false)
+const dispatchLoading = ref(false)
+const undispatchLoading = ref(false)
+const receiveLoading = ref(false)
+const unreceiveLoading = ref(false)
+const cancelLoading = ref(false)
+
+const confirmDispatchStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to mark this stock delivery as dispatched?"),
+		header: trans("Dispatch Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Mark as Dispatched"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { dispatchLoading.value = true },
+				onFinish: () => { dispatchLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to dispatch stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmUndispatchStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to unmark this stock delivery as dispatched? It will be reverted to its previous state."),
+		header: trans("Unmark as Dispatched"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Unmark as Dispatched"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { undispatchLoading.value = true },
+				onFinish: () => { undispatchLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to unmark stock delivery as dispatched"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmReceiveStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to mark this stock delivery as received? This can not be reverted."),
+		header: trans("Receive Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Mark as Received"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { receiveLoading.value = true },
+				onFinish: () => { receiveLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to receive stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmUnreceiveStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to unmark this stock delivery as received? It will be reverted to its previous state."),
+		header: trans("Unmark as Received"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Unmark as Received"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { unreceiveLoading.value = true },
+				onFinish: () => { unreceiveLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to unmark stock delivery as received"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmCancelStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to cancel this stock delivery? Its items will be emptied and the purchase order will allow a new delivery."),
+		header: trans("Cancel Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Cancel Stock Delivery"), severity: "danger" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { cancelLoading.value = true },
+				onFinish: () => { cancelLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to cancel stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
 
 const confirmDeleteStockDelivery = (action: any) => {
 	confirm.require({
@@ -268,6 +393,61 @@ const confirmDeleteStockDelivery = (action: any) => {
 				label="Attach"
 				icon="upload"
 				@click="() => (isModalUploadOpen = true)"
+			/>
+		</template>
+
+		<template #button-dispatch-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="dispatchLoading"
+				@click="() => confirmDispatchStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-undispatch-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="undispatchLoading"
+				@click="() => confirmUndispatchStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-receive-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="receiveLoading"
+				@click="() => confirmReceiveStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-unreceive-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="unreceiveLoading"
+				@click="() => confirmUnreceiveStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-cancel-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="cancelLoading"
+				@click="() => confirmCancelStockDelivery(action)"
 			/>
 		</template>
 
@@ -425,7 +605,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 				</div>
 
 				<div class="flex items-center gap-1">
-					<FontAwesomeIcon v-tooltip="trans('Costing done')" icon="fas fa-inventory" aria-hidden="true" fixed-width />
+					<FontAwesomeIcon v-tooltip="trans('Placed items')" icon="fas fa-inventory" aria-hidden="true" fixed-width />
 					<span>{{ box_stats.second_block.total_placed_items }}</span>
 				</div>
 			</div>
@@ -446,6 +626,34 @@ const confirmDeleteStockDelivery = (action: any) => {
 						fixed-width
 					/>
 					<span>{{ metric.text }}</span>
+				</div>
+			</div>
+
+			<div v-if="box_stats.second_block.show_delivery_discrepancy" class="mt-2 flex justify-center gap-4">
+				<div
+					class="flex items-center gap-1"
+					:class="box_stats.second_block.total_under_delivered_items ? 'text-orange-500' : ''"
+				>
+					<FontAwesomeIcon
+						v-tooltip="trans('Items under delivered')"
+						icon="fal fa-box-open"
+						aria-hidden="true"
+						fixed-width
+					/>
+					<span>{{ box_stats.second_block.total_under_delivered_items }}</span>
+				</div>
+
+				<div
+					class="flex items-center gap-1"
+					:class="box_stats.second_block.total_over_delivered_items ? 'text-orange-500' : ''"
+				>
+					<FontAwesomeIcon
+						v-tooltip="trans('Items over delivered')"
+						icon="fas fa-box-full"
+						aria-hidden="true"
+						fixed-width
+					/>
+					<span>{{ box_stats.second_block.total_over_delivered_items }}</span>
 				</div>
 			</div>
 		</BoxStatPallet>

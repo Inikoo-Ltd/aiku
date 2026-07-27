@@ -13,6 +13,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 
 import { faYinYang, faDotCircle, faCheck,} from "@fal";
 import Image from "@common/Components/Image.vue";
+import Icon from "@/Components/Icon.vue";
+import Tag from "@/Components/Tag.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExternalLink } from "@far";
 import { GridProducts } from "@/Components/Product"

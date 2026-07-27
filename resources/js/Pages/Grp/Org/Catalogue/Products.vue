@@ -272,14 +272,14 @@ const replaceProps = (updatedData) => {
         :key="currentTab + key"
         :tab="currentTab"
         :data="localData[currentTab]"
-        :isCheckboxProducts="props.editable_table"
-        :editable_table="props.editable_table"
+        :isCheckboxProducts="false"
         :selectedProductsId="selectedProductsId"
         @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
         :variantSlugs="variantSlugs"
         :mismatch_trade_unit_with_master="mismatch_trade_unit_with_master"
         :hide_sku_in_name_column="hide_sku_in_name_column"
         @update:data="(updatedData) => replaceProps(updatedData)"
+        :editable_table="false"
     />
 
     <!-- MODAL -->

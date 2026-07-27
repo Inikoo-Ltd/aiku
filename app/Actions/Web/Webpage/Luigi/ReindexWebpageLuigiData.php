@@ -36,6 +36,13 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
      */
     public function handle(int|null $webpageId): array
     {
+        if (app()->environment('local') && !config('app.sandbox.luigisbox.run_on_local')) {
+            return [
+                'status'  => 'skipped',
+                'message' => 'Luigi reindex skipped on local environment, set LS_RUN_ON_LOCAL=true to enable.'
+            ];
+        }
+
         if ($webpageId == null) {
             return [
                 'status'  => 'error',

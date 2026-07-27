@@ -29,12 +29,12 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faIdCard, faClipboardListCheck, faRabbitFast, faSlidersV, faKey } from '@fal'
+import { faIdCard, faClipboardListCheck, faRabbitFast, faSlidersV, faRobot } from '@fal'
 import { faInfoCircle } from '@fas'
 import { faSpinnerThird } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { useLogoutAuth } from '@/Composables/useAppMethod'
-library.add(faIdCard, faClipboardListCheck, faRabbitFast, faSlidersV, faKey, faSpinnerThird, faInfoCircle)
+library.add(faIdCard, faClipboardListCheck, faRabbitFast, faSlidersV, faRobot, faSpinnerThird, faInfoCircle)
 
 
 

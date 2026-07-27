@@ -8,13 +8,13 @@
 
 namespace App\Actions\SysAdmin\JobPositionCategory;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Models\SysAdmin\JobPositionCategory;
 use Illuminate\Validation\Rule;
 
-class UpdateJobPositionCategory extends GrpAction
+class UpdateJobPositionCategory extends OrgAction
 {
     use WithActionUpdate;
 
@@ -38,7 +38,7 @@ class UpdateJobPositionCategory extends GrpAction
 
     public function action(JobPositionCategory $jobPositionCategory, array $modelData): JobPositionCategory
     {
-        $this->initialisation($jobPositionCategory->group, $modelData);
+        $this->initialisationFromGroup($jobPositionCategory->group, $modelData);
 
         return $this->handle($jobPositionCategory, $this->validatedData);
     }

@@ -9,7 +9,7 @@
 
 namespace App\Actions\SysAdmin\AikuSection;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Models\Analytics\AikuSection;
 use App\Models\SysAdmin\Group;
@@ -17,7 +17,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreAikuSection extends GrpAction
+class StoreAikuSection extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -41,7 +41,7 @@ class StoreAikuSection extends GrpAction
 
     public function action(Group $group, array $modelData): AikuSection
     {
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $modelData);
     }

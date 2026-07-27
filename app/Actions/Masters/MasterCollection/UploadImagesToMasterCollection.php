@@ -8,13 +8,13 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Masters\MasterCollection;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
 
-class UploadImagesToMasterCollection extends GrpAction
+class UploadImagesToMasterCollection extends OrgAction
 {
     use WithAttachMediaToModel;
     use WithUploadModelImages;
@@ -52,7 +52,7 @@ class UploadImagesToMasterCollection extends GrpAction
 
     public function asController(MasterCollection $masterCollection, ActionRequest $request): void
     {
-        $this->initialisation($masterCollection->group, $request);
+        $this->initialisationFromGroup($masterCollection->group, $request);
 
         $this->handle($masterCollection, 'image', $this->validatedData, true);
     }

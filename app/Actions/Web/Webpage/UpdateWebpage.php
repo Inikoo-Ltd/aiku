@@ -133,7 +133,7 @@ class UpdateWebpage extends OrgAction
             data_set($modelData, 'settings.webpage.title_suffix', Arr::pull($modelData, 'webpage_title_suffix', null));
         }
 
-        if(Arr::has($modelData, 'show_price')) {
+        if (Arr::has($modelData, 'show_price')) {
             data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
         }
 

@@ -61,3 +61,27 @@ test('user cannot revoke another users token', function () {
     expect($deleted)->toBeFalse()
         ->and($this->user->tokens()->whereKey($token->id)->exists())->toBeTrue();
 });
+
+test('can_use_mcp can be toggled via UpdateUser', function () {
+    expect($this->user->can_use_mcp)->toBeFalse();
+
+    App\Actions\SysAdmin\User\UpdateUser::make()->action($this->user, ['can_use_mcp' => true]);
+
+    expect($this->user->refresh()->can_use_mcp)->toBeTrue();
+});
+
+test('user showcase reports mcp usage stats', function () {
+    $this->user->update(['can_use_mcp' => true]);
+    App\Models\SysAdmin\McpRequest::create([
+        'group_id'  => $this->group->id,
+        'user_id'   => $this->user->id,
+        'tool'      => 'shop-sales',
+        'arguments' => ['shop' => 'x'],
+    ]);
+
+    $showcase = App\Http\Resources\SysAdmin\User\UserShowcaseResource::make($this->user->refresh())->resolve();
+
+    expect($showcase['mcp']['enabled'])->toBeTrue()
+        ->and($showcase['mcp']['number_queries'])->toBeGreaterThanOrEqual(1)
+        ->and($showcase['mcp']['last_used_at'])->not()->toBeNull();
+});

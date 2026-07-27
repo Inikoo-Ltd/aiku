@@ -4,10 +4,9 @@ import { ref, computed, inject, watch } from "vue";
 import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import PureInput from "@/Components/Pure/PureInput.vue";
 import { getStyles } from "@/Composables/styles";
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Image from "@/Common/Components/Image.vue";
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -170,9 +169,11 @@ watch(
             />
           </div>
 
-            <div v-if="modelValue?.cards" v-for="card in modelValue?.cards.filter((item) => item.visible)"
-            class="relative rounded-2xl overflow-hidden min-h-80">
-            <Image :src="card.image.source" class="absolute inset-0 w-full h-full object-cover" />
+            <div v-for="(card, cardIndex) in (modelValue?.cards ?? []).filter((item: any) => item?.visible)"
+            :key="card.ulid ?? cardIndex" class="relative rounded-2xl overflow-hidden min-h-80">
+            <Image v-if="card?.image?.source" :src="card.image.source" :imageCover="true"
+              :alt="card?.image?.alt ?? 'card image'"
+              class="absolute inset-0 w-full h-full" />
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
             <!-- Center Content -->
             <div class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">

@@ -10,7 +10,7 @@
 
 namespace App\Actions\SysAdmin\Group\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Http\Resources\History\HistoryResource;
 use App\InertiaTable\InertiaTable;
@@ -24,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Models\Audit;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexHistoryInGroup extends GrpAction
+class IndexHistoryInGroup extends OrgAction
 {
     public function handle(Group $group, $prefix = null): LengthAwarePaginator|array|bool
     {
@@ -55,7 +55,7 @@ class IndexHistoryInGroup extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group);
     }

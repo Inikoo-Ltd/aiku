@@ -97,7 +97,11 @@ class UndoPickingPalletFromReturn extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("fulfilment.{$this->warehouse->id}.edit");
+        return $request->user()->authTo([
+            "fulfilment.{$this->warehouse->id}.edit",
+            "supervisor-incoming.{$this->warehouse->id}",
+            "supervisor-fulfilment.{$this->warehouse->id}",
+        ]);
     }
 
     public function asController(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItem

@@ -7,6 +7,7 @@
  */
 
 use App\Actions\UI\Profile\StoreProfileApiToken;
+use App\Models\SysAdmin\McpRequest;
 
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
@@ -25,6 +26,24 @@ beforeEach(function () {
     $this->group = $this->organisation->group;
     app()->instance('group', $this->group);
     setPermissionsTeamId($this->group->id);
+
+    $this->user->update(['can_use_mcp' => true]);
+});
+
+test('user without can_use_mcp flag is rejected with 403', function () {
+    $this->user->update(['can_use_mcp' => false]);
+    $plainTextToken = $this->user->createToken('NoMcpFlag')->plainTextToken;
+
+    postJson('/mcp/aiku', [
+        'jsonrpc' => '2.0',
+        'id'      => 1,
+        'method'  => 'ping',
+    ], [
+        'Accept'        => 'application/json, text/event-stream',
+        'Authorization' => 'Bearer '.$plainTextToken,
+    ])->assertForbidden();
+
+    $this->user->update(['can_use_mcp' => true]);
 });
 
 test('oauth discovery endpoints are published', function () {
@@ -82,4 +101,47 @@ test('mcp endpoint still accepts sanctum tokens', function () {
         'Accept'        => 'application/json, text/event-stream',
         'Authorization' => 'Bearer '.$plainTextToken,
     ])->assertOk();
+});
+
+test('tool calls are logged with user tool and arguments', function () {
+    $plainTextToken = StoreProfileApiToken::make()->handle($this->user, 'McpLogTest')['token'];
+
+    $countBefore = McpRequest::count();
+
+    postJson('/mcp/aiku', [
+        'jsonrpc' => '2.0',
+        'id'      => 2,
+        'method'  => 'tools/call',
+        'params'  => [
+            'name'      => 'shop-sales',
+            'arguments' => ['shop' => $this->shop->slug, 'from' => '2026-01-01', 'to' => '2026-01-31'],
+        ],
+    ], [
+        'Accept'        => 'application/json, text/event-stream',
+        'Authorization' => 'Bearer '.$plainTextToken,
+    ])->assertOk();
+
+    expect(McpRequest::count())->toBe($countBefore + 1);
+
+    $logged = McpRequest::latest('id')->first();
+    expect($logged->user_id)->toBe($this->user->id)
+        ->and($logged->tool)->toBe('shop-sales')
+        ->and($logged->arguments['shop'])->toBe($this->shop->slug);
+});
+
+test('ping requests are not logged', function () {
+    $plainTextToken = StoreProfileApiToken::make()->handle($this->user, 'McpPingTest')['token'];
+
+    $countBefore = McpRequest::count();
+
+    postJson('/mcp/aiku', [
+        'jsonrpc' => '2.0',
+        'id'      => 3,
+        'method'  => 'ping',
+    ], [
+        'Accept'        => 'application/json, text/event-stream',
+        'Authorization' => 'Bearer '.$plainTextToken,
+    ])->assertOk();
+
+    expect(McpRequest::count())->toBe($countBefore);
 });

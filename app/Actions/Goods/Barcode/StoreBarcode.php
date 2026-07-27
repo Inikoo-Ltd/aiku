@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\Barcode;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Enums\Helpers\Barcode\BarcodeTypeEnum;
 use App\Models\Helpers\Barcode;
@@ -16,7 +16,7 @@ use App\Models\SysAdmin\Group;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreBarcode extends GrpAction
+class StoreBarcode extends OrgAction
 {
     public function handle(Group $group, $modelData): Barcode
     {
@@ -62,7 +62,7 @@ class StoreBarcode extends GrpAction
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }

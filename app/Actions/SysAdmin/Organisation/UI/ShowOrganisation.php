@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Organisation\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Enums\UI\Organisation\OrgTabsEnum;
 use App\Http\Resources\History\HistoryResource;
@@ -18,7 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowOrganisation extends GrpAction
+class ShowOrganisation extends OrgAction
 {
     public function handle(Organisation $organisation): Organisation
     {
@@ -32,7 +32,7 @@ class ShowOrganisation extends GrpAction
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
-        $this->initialisation(app('group'), $request)->withTab(OrgTabsEnum::values());
+        $this->initialisationFromGroup(app('group'), $request)->withTab(OrgTabsEnum::values());
 
         return $this->handle($organisation);
     }
