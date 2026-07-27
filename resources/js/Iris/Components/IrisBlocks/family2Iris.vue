@@ -245,7 +245,7 @@ const contentClass = computed(() =>
               lg:text-left
               lg:flex-row
               lg:items-start
-              lg:justify-end
+              lg:justify-start
             ">
             <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
               class="flex gap-x-1 gap-y-1 mb-2 offer flex-wrap justify-center lg:justify-end">
@@ -262,16 +262,16 @@ const contentClass = computed(() =>
             </div>
           </div>
 
-          <div ref="descriptionContentRef">
+          <div ref="descriptionContentRef" class="px-3 lg:px-0">
             <div ref="titleRef" class="pb-2 2xl:pb-3">
               <h1 class="
                 title
                 break-words
-                text-center
+                
                 font-bold
                 tracking-tight
                 text-[#1d2430]
-                lg:text-left
+                text-left
               ">
                 {{ fieldValue.family?.name }}
               </h1>
