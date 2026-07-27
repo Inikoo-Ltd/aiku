@@ -19,8 +19,9 @@ use Lorisleiva\Actions\ActionRequest;
  * department, family, brand or collection so the same recommender serves the homepage (whole shop),
  * a product listing (this category/brand only) and the product detail page (e.g. popular products of
  * the same collection). Popularity is measured against the product's sales interval, so a shorter
- * window surfaces what is trending right now while the default all-time window surfaces evergreen
- * best sellers. The ranking attribute is configurable: instead of popularity the products can be
+ * window surfaces what is trending right now while a wider one surfaces evergreen best sellers.
+ * Short windows are sparse, so the requested one only decides the primary ranking and every wider
+ * window breaks its ties. The ranking attribute is configurable: instead of popularity the products can be
  * ordered by price or by their best discount, which is useful when the block is used to promote the
  * cheapest or the most heavily discounted popular products.
  */
@@ -32,32 +33,59 @@ class GetIrisProductTrends extends IrisAction
     public const string ORDER_PRICE      = 'price';
     public const string ORDER_DISCOUNT   = 'discount';
 
+    public const string DEFAULT_PERIOD = '1d';
+
+    /**
+     * Narrowest first: a period also acts as the entry point of the fallback chain below it.
+     */
     private const array SALES_PERIOD_COLUMNS = [
-        'all' => 'sales_all',
-        '1y'  => 'sales_1y',
-        '1q'  => 'sales_1q',
-        '1m'  => 'sales_1m',
-        '1w'  => 'sales_1w',
         '1d'  => 'sales_1d',
+        '1w'  => 'sales_1w',
+        '1m'  => 'sales_1m',
+        '1q'  => 'sales_1q',
+        '1y'  => 'sales_1y',
+        'all' => 'sales_all',
     ];
 
     private const string DISCOUNT_EXPRESSION = "coalesce((products.offers_data -> 'best_percentage_off' ->> 'percentage_off')::float8, 0)";
 
     public function handle(Shop $shop, array $modelData = []): Collection
     {
-        $orderBy     = $modelData['order_by'] ?? self::ORDER_POPULARITY;
-        $direction   = ($modelData['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
-        $salesColumn = self::SALES_PERIOD_COLUMNS[$modelData['period'] ?? 'all'] ?? self::SALES_PERIOD_COLUMNS['all'];
-        $limit       = max(1, min((int) ($modelData['limit'] ?? self::MAX_PRODUCTS), self::MAX_PRODUCTS));
+        $orderBy      = $modelData['order_by'] ?? self::ORDER_POPULARITY;
+        $direction    = ($modelData['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $salesColumns = $this->getSalesColumns($modelData['period'] ?? self::DEFAULT_PERIOD);
+        $limit        = max(1, min((int) ($modelData['limit'] ?? self::MAX_PRODUCTS), self::MAX_PRODUCTS));
 
-        $queryBuilder = $this->getScopedProducts($shop, $modelData, $salesColumn);
+        $queryBuilder = $this->getScopedProducts($shop, $modelData, $salesColumns[0]);
 
-        $this->applyOrder($queryBuilder, $orderBy, $direction, $salesColumn);
+        $this->applyOrder($queryBuilder, $orderBy, $direction, $salesColumns);
 
         return $queryBuilder->limit($limit)->get();
     }
 
-    private function applyOrder(Builder $queryBuilder, string $orderBy, string $direction, string $salesColumn): void
+    /**
+     * The requested period followed by every wider one. Short periods are sparse: on a quiet day
+     * hardly any product has sales_1d, and ordering by it alone collapses the ranking onto the
+     * tiebreakers, which reads as a fixed list rather than as trending products. Products with no
+     * sales in the requested period are ranked by the next wider period instead.
+     *
+     * @return array<int, string>
+     */
+    private function getSalesColumns(string $period): array
+    {
+        $offset = array_search($period, array_keys(self::SALES_PERIOD_COLUMNS), true);
+
+        if ($offset === false) {
+            $offset = array_search(self::DEFAULT_PERIOD, array_keys(self::SALES_PERIOD_COLUMNS), true);
+        }
+
+        return array_values(array_slice(self::SALES_PERIOD_COLUMNS, $offset));
+    }
+
+    /**
+     * @param array<int, string> $salesColumns
+     */
+    private function applyOrder(Builder $queryBuilder, string $orderBy, string $direction, array $salesColumns): void
     {
         switch ($orderBy) {
             case self::ORDER_PRICE:
@@ -65,16 +93,26 @@ class GetIrisProductTrends extends IrisAction
                 break;
             case self::ORDER_DISCOUNT:
                 $queryBuilder->orderByRaw(self::DISCOUNT_EXPRESSION.' '.$direction);
-                $queryBuilder->orderByRaw('coalesce(asset_sales_intervals.'.$salesColumn.', 0) desc');
+                $this->applySalesOrder($queryBuilder, $salesColumns, 'desc');
                 break;
             default:
-                $queryBuilder->orderByRaw('coalesce(asset_sales_intervals.'.$salesColumn.', 0) '.$direction);
+                $this->applySalesOrder($queryBuilder, $salesColumns, $direction);
                 $queryBuilder->orderByRaw('products.top_seller asc nulls last');
                 break;
         }
 
         $queryBuilder->orderByDesc('products.available_quantity')
             ->orderBy('products.id');
+    }
+
+    /**
+     * @param array<int, string> $salesColumns
+     */
+    private function applySalesOrder(Builder $queryBuilder, array $salesColumns, string $direction): void
+    {
+        foreach ($salesColumns as $salesColumn) {
+            $queryBuilder->orderByRaw('coalesce(asset_sales_intervals.'.$salesColumn.', 0) '.$direction);
+        }
     }
 
     private function getScopedProducts(Shop $shop, array $modelData, string $salesColumn): Builder
