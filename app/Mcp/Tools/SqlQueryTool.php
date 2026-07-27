@@ -19,14 +19,16 @@ use Throwable;
 #[Description('Run a read-only SQL SELECT against the Aiku PostgreSQL database. Only available to users with SQL access enabled. The database is PostgreSQL; discover the schema by querying information_schema.columns. Always add your own LIMIT.')]
 class SqlQueryTool extends Tool
 {
+    use WithMcpSqlAccess;
+
     public function handle(Request $request): Response
     {
         $request->validate([
             'sql' => ['required', 'string'],
         ]);
 
-        if (!$request->user()?->can_use_mcp_sql) {
-            return Response::error('SQL access is not enabled for this user.');
+        if ($denied = $this->deniedSqlAccess($request)) {
+            return $denied;
         }
 
         $sql = trim(rtrim(trim($request->string('sql')), ';'));
