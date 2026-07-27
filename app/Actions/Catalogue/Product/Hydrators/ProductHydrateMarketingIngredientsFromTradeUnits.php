@@ -50,7 +50,7 @@ class ProductHydrateMarketingIngredientsFromTradeUnits implements ShouldBeUnique
         // For multiple trade units, we'll use the dimensions from the first trade unit that has them
         foreach ($tradeUnits as $tradeUnit) {
             if ($tradeUnit->marketing_ingredients) {
-                if ($product instanceof MasterAsset) dd($product);
+                if ($product instanceof MasterAsset);
                 $product->updateQuietly([
                     'marketing_ingredients' => $tradeUnit->marketing_ingredients,
                 ]);

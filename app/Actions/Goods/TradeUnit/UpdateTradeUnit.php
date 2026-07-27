@@ -194,11 +194,11 @@ class UpdateTradeUnit extends OrgAction
 
         if ($tradeUnit->wasChanged('marketing_ingredients')) {
             foreach ($tradeUnit->products as $product) {
-                ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
+                ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
             }
 
             foreach ($tradeUnit->masterAssets as $masterAsset) {
-                ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($masterAsset);
+                ProductHydrateMarketingIngredientsFromTradeUnits::run($masterAsset);
             }
         }
 
