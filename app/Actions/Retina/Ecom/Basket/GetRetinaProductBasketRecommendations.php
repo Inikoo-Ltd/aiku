@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Actions\Catalogue\Product\Json;
+namespace App\Actions\Retina\Ecom\Basket;
 
-use App\Actions\IrisAction;
+use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Http\Resources\Catalogue\IrisProductBasketRecommendationResource;
 use App\Models\Catalogue\Product;
@@ -27,7 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
  * the block offers variety instead of a wall of near-identical products. When strict diversity leaves
  * too few products the cap per family is relaxed until the minimum is met.
  */
-class GetIrisProductBasketRecommendations extends IrisAction
+class GetRetinaProductBasketRecommendations extends RetinaAction
 {
     public const int MAX_PRODUCTS = 12;
     public const int MIN_PRODUCTS = 6;
@@ -226,7 +226,7 @@ class GetIrisProductBasketRecommendations extends IrisAction
             return array_map('intval', $productIds);
         }
 
-        $basket = $request->user()?->customer?->orderInBasket;
+        $basket = $this->customer?->orderInBasket;
 
         if (!$basket) {
             return [];

@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactions;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProduct;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInProductCategory;
-use App\Actions\Catalogue\Product\Json\GetIrisProductBasketRecommendations;
 use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisLastOrderedProducts;
@@ -78,7 +77,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::post('product-last-seen/{webpage:id}', StoreIrisProductLastSeen::class)->name('product_last_seen.store')->withoutScopedBindings();
     Route::get('product/{product:id}/alternatives', GetIrisProductAlternatives::class)->name('product.alternatives')->withoutScopedBindings()->whereNumber('product');
     Route::get('product-trends', GetIrisProductTrends::class)->name('product_trends.index');
-    Route::get('basket-recommendations', GetIrisProductBasketRecommendations::class)->name('basket_recommendations.index');
 
     Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue');
     Route::get('search/catalogue-page', SearchIrisCataloguePage::class)->name('search.catalogue_page');
