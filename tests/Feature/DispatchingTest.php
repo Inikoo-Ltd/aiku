@@ -31,6 +31,12 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
+use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
+use App\Actions\Inventory\OrgStock\RepairIal01OrgStockConsumables;
+use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use Illuminate\Routing\Route;
+use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
@@ -2036,4 +2042,55 @@ test('marks record as failed with a clear message when sku is not found', functi
 
     expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::FAILED->value)
         ->and($uploadRecord->errors)->toContain("SKO 'NON-EXISTENT-SKU' not found.");
+});
+
+test('org stock notes and consumables reach the picking screen', function () {
+    /** @var DeliveryNoteItem $deliveryNoteItem */
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+
+    UpdateOrgStock::make()->action(
+        orgStock: $deliveryNoteItem->orgStock,
+        modelData: [
+            'note_to_pickers' => 'Include :qty import address label(s)',
+            'note_to_packers' => 'Fold the label inside the box',
+            'consumables'     => "IAL01 x 1\nLEAF-02 x 2",
+        ]
+    );
+
+    expect($deliveryNoteItem->orgStock->refresh()->consumables)->toEqual([
+        ['code' => 'IAL01', 'quantity' => 1.0],
+        ['code' => 'LEAF-02', 'quantity' => 2.0],
+    ]);
+
+    $deliveryNoteItem->update(['quantity_picked' => $deliveryNoteItem->quantity_required]);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $items = IndexDeliveryNoteItemsStateHandling::run(
+        $deliveryNoteItem->deliveryNote,
+        deliveryNoteItemId: $deliveryNoteItem->id
+    );
+
+    $item = DeliveryNoteItemsStateHandlingResource::collection($items)->resolve()[0];
+
+    $quantityOrdered = (int) $deliveryNoteItem->transaction->quantity_ordered;
+
+    expect($item['note_to_pickers'])->toBe("Include $quantityOrdered import address label(s)")
+        ->and($item['note_to_packers'])->toBe('Fold the label inside the box')
+        ->and(GetDeliveryNoteConsumables::run($deliveryNoteItem->deliveryNote))->toEqual([
+            ['code' => 'IAL01', 'quantity' => (float) $quantityOrdered],
+            ['code' => 'LEAF-02', 'quantity' => 2.0 * $quantityOrdered],
+        ]);
+
+    $deliveryNoteItem->update(['quantity_picked' => 0]);
+
+    expect(GetDeliveryNoteConsumables::run($deliveryNoteItem->deliveryNote))
+        ->toBe([]);
+});
+
+test('repair ial01 org stock consumables dry run writes nothing', function () {
+    $result = RepairIal01OrgStockConsumables::run(apply: false);
+
+    expect($result['org_stocks'])->toBe(0)
+        ->and($result['written'])->toBe(0);
 });

@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
@@ -1054,7 +1055,8 @@ class ShowDeliveryNote extends OrgAction
             ],
             'shop'                               => [
                 'type' => $deliveryNote->shop?->type?->value,
-            ]
+            ],
+            'consumables'                        => GetDeliveryNoteConsumables::run($deliveryNote)
 
 
         ];
