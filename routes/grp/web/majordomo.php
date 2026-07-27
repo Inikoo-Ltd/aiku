@@ -46,6 +46,7 @@ use App\Actions\Helpers\Redirects\RedirectCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectMailshotLink;
 use App\Actions\Helpers\Redirects\RedirectOfferCampaignLink;
 use App\Actions\Helpers\Redirects\RedirectOfferLink;
+use App\Actions\Helpers\Redirects\RedirectOrgStockMovementParentLink;
 use App\Actions\Helpers\Redirects\RedirectServiceLink;
 use App\Actions\Helpers\Redirects\RedirectShippingZoneSchemaLink;
 use App\Actions\Helpers\Redirects\RedirectSupplierLink;
@@ -62,6 +63,8 @@ Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustom
 
 Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
 Route::get('redirect-return-note/{returnDeliveryNote:id}', RedirectReturnDeliveryNotesLink::class)->name('redirect_return_notes');
+
+Route::get('redirect-org-stock-movement-parent/{orgStockMovement:id}', RedirectOrgStockMovementParentLink::class)->name('redirect_org_stock_movement_parent');
 
 Route::get('redirect-invoice-in-accounting/{invoice:id}', RedirectInvoiceInAccounting::class)->name('redirect_invoice_in_accounting');
 

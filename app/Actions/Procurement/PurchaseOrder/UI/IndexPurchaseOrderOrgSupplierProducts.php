@@ -133,6 +133,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 ->column(key: 'description', label: __('Description'), canBeHidden: false)
                 ->column(key: 'subtotals', label: __('Subtotals'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('Units'), canBeHidden: false, align: 'right')
+                ->column(key: 'actions', label: 'Actions', canBeHidden: false, align: 'right')
                 ->defaultSort('code');
         };
     }

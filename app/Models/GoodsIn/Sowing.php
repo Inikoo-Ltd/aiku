@@ -113,6 +113,11 @@ class Sowing extends Model
         return $this->belongsTo(ReturnDeliveryNoteItem::class, 'return_item_id');
     }
 
+    public function stockDeliveryItem(): BelongsTo
+    {
+        return $this->belongsTo(StockDeliveryItem::class);
+    }
+
     public function return(): BelongsTo
     {
         return $this->belongsTo(ReturnDeliveryNote::class, 'return_id');

@@ -18,12 +18,12 @@ import { useLocaleStore } from '@/Stores/locale'
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox } from '@fal'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox, faPeopleArrows } from '@fal'
 import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle, faPeopleArrows)
 
 const confirm = useConfirm()
 
@@ -346,6 +346,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             <div v-if="isInProcess" class="flex justify-end items-center">
                 <NumberWithButtonSave
                     :key="`${item.id}-${currentLevel}`"
+                    isWithRefreshModel
                     :modelValue="quantityAtLevel(item)"
                     :min="0"
                     :isLoading="savingId === item.id"
@@ -380,6 +381,10 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     :disabled="cancellingId === item.id"
                     @click="confirmCancelItem($event, item)"
                 />
+
+                <span v-if="!item.deleteRoute && !item.cancelRoute" class="text-gray-400 text-sm">
+                    {{ trans('No actions needed') }}
+                </span>
             </div>
         </template>
 
@@ -407,17 +412,6 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
         <template #cell(amount)="{ item }">
             {{ amount(item) }}
-        </template>
-
-        <template #cell(state_icon)="{ item }">
-            <FontAwesomeIcon
-                v-if="item.state_icon"
-                v-tooltip="item.state_icon.tooltip"
-                :icon="item.state_icon.icon"
-                :class="item.state_icon.class"
-                aria-hidden="true"
-                fixed-width
-            />
         </template>
 
         <template #cell(state)="{ item }">
