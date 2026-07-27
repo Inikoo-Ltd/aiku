@@ -2403,3 +2403,40 @@ test('minor currency recalculation includes variant master assets', function () 
 
     expect(data_get($variant->master_prices, 'SEK.value'))->toBe('110');
 });
+
+test('master shop currencies rate can restrict to open shops only', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'GBP' => ['is_major' => true],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+    ]]);
+
+    $gbp = Currency::where('code', 'GBP')->firstOrFail();
+    $eur = Currency::where('code', 'EUR')->firstOrFail();
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $gbp->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $closedEurShop = \App\Actions\Catalogue\Shop\StoreShop::run(
+        $this->organisation,
+        array_merge(Shop::factory()->definition(), ['code' => 'CLS'.substr(uniqid(), -4)])
+    );
+    $closedEurShop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => $eur->id,
+        'state'          => ShopStateEnum::CLOSED,
+    ]);
+
+    $allShops  = GetMasterShopCurrenciesRate::run($masterShop);
+    $openShops = GetMasterShopCurrenciesRate::run($masterShop, onlyOpenShops: true);
+
+    // Edit / bulk edit / family pages keep a closed shop's currency editable.
+    expect($allShops->keys()->all())->toContain('GBP', 'EUR')
+        ->and($allShops['EUR']['ratio_eur'])->toBe(1.18)
+        // Master product creation only seeds currencies of shops that will actually sell.
+        ->and($openShops->keys()->all())->toContain('GBP')
+        ->and($openShops->keys()->all())->not->toContain('EUR');
+});
