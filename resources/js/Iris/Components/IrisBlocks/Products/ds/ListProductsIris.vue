@@ -20,6 +20,7 @@ import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/RenderProductDropshiping.vue";
 import Image from "@common/Components/Image.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue";
 
 library.add(faFileDownload)
 
@@ -562,9 +563,11 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                                 <div
                                     class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
                                     <div v-html="card.text"></div>
-                                    <Button class="mt-4"
-                                        :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
-                                        :label="card?.button?.text" />
+                                      <LinkIris :href="card.button.link.href" :canonical_url="card.button.link.canonical_url" :target="card.button.link.target" >
+                                        <Button class="mt-4"
+                                            :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
+                                            :label="card?.button?.text" />
+                                    </LinkIris>
                                 </div>
                             </div>
                     </template>

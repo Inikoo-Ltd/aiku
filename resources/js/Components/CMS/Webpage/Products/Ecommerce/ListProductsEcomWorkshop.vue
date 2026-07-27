@@ -19,7 +19,7 @@ const props = defineProps<{
   screenType: "mobile" | "tablet" | "desktop";
   code: string
 }>();
-
+console.log('List Products',props)
 const layout: any = inject("layout", {});
 
 /* layout.app.theme = layout.iris.theme */
@@ -32,8 +32,11 @@ const showFilters = ref(false);
 const showAside = ref(false);
 
 const dummyProducts = computed(() => {
-  return props.modelValue?.products?.data?.length
-    ? props.modelValue.products.data
+  const products = props.modelValue?.products
+  const productList = Array.isArray(products) ? products : products?.data
+
+  return productList?.length
+    ? productList
     : Array.from({ length: 8 }).map((_, i) => ({
       id: i + 1,
       name: `Product ${i + 1}`,
