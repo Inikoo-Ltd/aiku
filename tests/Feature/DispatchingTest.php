@@ -33,7 +33,9 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToIn
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\OrgStock\RepairIal01OrgStockConsumables;
+use App\Actions\Maintenance\Catalogue\RemoveIal01FromBillsOfMaterials;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use Illuminate\Routing\Route;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
@@ -102,6 +104,7 @@ use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\Box;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Goods\TradeUnit;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dispatching\Shipment;
@@ -2093,4 +2096,34 @@ test('repair ial01 org stock consumables dry run writes nothing', function () {
 
     expect($result['org_stocks'])->toBe(0)
         ->and($result['written'])->toBe(0);
+});
+
+test('ial01 bom removal is blocked until a consumable replaces the instruction', function () {
+    /** @var DeliveryNoteItem $deliveryNoteItem */
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+    $orgStock         = $deliveryNoteItem->orgStock;
+    $product          = $deliveryNoteItem->transaction->model;
+
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, array_merge(
+        TradeUnit::factory()->definition(),
+        ['code' => 'IAL01', 'name' => 'Import Address Labels']
+    ));
+
+    $product->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock->update(['consumables' => null]);
+
+    $action = new RemoveIal01FromBillsOfMaterials();
+
+    expect($action->getProductIds($tradeUnit))->toContain($product->id);
+
+    $blocked = $action->handle(apply: true);
+    expect($blocked['blocked'])->toBeTrue()
+        ->and($product->fresh()->tradeUnits->pluck('id'))->toContain($tradeUnit->id);
+
+    $product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+    $orgStock->update(['consumables' => [['code' => 'IAL01', 'quantity' => 1]]]);
+
+    $done = $action->handle(apply: true);
+    expect($done['blocked'])->toBeFalse()
+        ->and($product->fresh()->tradeUnits->pluck('id'))->not->toContain($tradeUnit->id);
 });
