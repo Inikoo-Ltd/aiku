@@ -166,6 +166,7 @@ watch(
               :button="modelValue?.button" :screenType />
           </div>
 
+        
           <div v-for="(card, cardIndex) in (modelValue?.cards ?? []).filter((item: any) => item?.visible)"
             :key="card.ulid ?? cardIndex" class="relative rounded-2xl overflow-hidden min-h-80">
             <Image v-if="card?.image?.source" :src="card.image.source"
