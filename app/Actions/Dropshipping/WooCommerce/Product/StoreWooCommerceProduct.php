@@ -17,6 +17,7 @@ use App\Actions\Traits\HasBucketAttachment;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
+use App\Helpers\PlatformResponseFormatter;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -179,7 +180,7 @@ class StoreWooCommerceProduct extends RetinaAction
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
             if (is_string(Arr::get($result, '0'))) {
-                if (json_decode(Arr::get($result, '0', ''), true)['code'] === 'product_invalid_sku') {
+                if (Arr::get(json_decode(Arr::get($result, '0', ''), true), 'code') === 'product_invalid_sku') {
 
                     $duplicatedProducts = $wooCommerceUser->getWooCommerceProducts([
                         'sku' => $portfolio->sku
@@ -199,10 +200,20 @@ class StoreWooCommerceProduct extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => null
+                ]);
+
                 UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             } else {
+                $errorMessage = PlatformResponseFormatter::make()->message($result);
+
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => $errorMessage ? ['message' => $errorMessage] : null
+                ]);
+
                 UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $result
