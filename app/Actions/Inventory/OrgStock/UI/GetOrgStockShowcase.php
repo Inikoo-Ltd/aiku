@@ -156,18 +156,21 @@ class GetOrgStockShowcase
             ->orderByDesc('date')
             ->limit(5)
             ->get()
-            ->map(function (OrgStockMovement $orgStockMovement) {
+            ->map(function (OrgStockMovement $orgStockMovement) use ($orgStock) {
                 return [
-                    'id'                         => $orgStockMovement->id,
-                    'date'                       => $orgStockMovement->date,
-                    'type_label'                 => $orgStockMovement->type->label(),
-                    'class_icon'                 => $orgStockMovement->class->icon(),
-                    'quantity'                   => trimDecimalZeros($orgStockMovement->quantity),
-                    'is_negative'                => ($orgStockMovement->quantity ?? 0) < 0,
-                    'running_quantity_org_stock' => trimDecimalZeros($orgStockMovement->running_quantity_org_stock),
-                    'location_code'              => $orgStockMovement->location?->code,
-                    'user_name'                  => $orgStockMovement->user?->contact_name,
-                    'reason_label'               => $orgStockMovement->reason?->label(),
+                    'id'                                    => $orgStockMovement->id,
+                    'date'                                  => $orgStockMovement->date,
+                    'type_label'                            => $orgStockMovement->type->label(),
+                    'class_icon'                            => $orgStockMovement->class->icon(),
+                    'quantity'                              => trimDecimalZeros($orgStockMovement->quantity),
+                    'quantity_fractional'                   => $this->getFractionalQuantity(abs($orgStockMovement->quantity ?? 0), $orgStock->packed_in),
+                    'is_negative'                           => ($orgStockMovement->quantity ?? 0) < 0,
+                    'running_quantity_org_stock'            => trimDecimalZeros($orgStockMovement->running_quantity_org_stock),
+                    'running_quantity_org_stock_fractional' => $this->getFractionalQuantity(abs($orgStockMovement->running_quantity_org_stock ?? 0), $orgStock->packed_in),
+                    'is_running_negative'                   => ($orgStockMovement->running_quantity_org_stock ?? 0) < 0,
+                    'location_code'                         => $orgStockMovement->location?->code,
+                    'user_name'                             => $orgStockMovement->user?->contact_name,
+                    'reason_label'                          => $orgStockMovement->reason?->label(),
                 ];
             })->toArray();
     }

@@ -31,6 +31,8 @@ export interface StockLocation {
     id: number
     code: string
     quantity: string | number
+    packed_in?: number
+    quantity_fractional?: [number, [number, number]]
     value: string
     audited_at: string
     commercial_value: string
