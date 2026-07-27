@@ -2026,6 +2026,37 @@ test('UI invoice edit and refund pages render', function () {
     get(route('grp.org.accounting.invoices.show.refunds.index', [$this->organisation->slug, $invoice->slug]))->assertOk();
 });
 
+test('UI show refund navigation walks refunds only', function () {
+    $this->withoutExceptionHandling();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $makeRefund = function (string $date) use ($customer) {
+        $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $refund  = StoreRefund::make()->action($invoice, []);
+        $refund->update(['date' => $date]);
+
+        return $refund->refresh();
+    };
+
+    $newest = $makeRefund('2026-07-20 10:00:00');
+    $middle = $makeRefund('2026-07-19 10:00:00');
+    $oldest = $makeRefund('2026-07-18 10:00:00');
+
+    get(route('grp.org.accounting.refunds.show', [$this->organisation->slug, $middle->slug]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    expect(Invoice::whereIn('reference', [
+        $newest->reference,
+        $middle->reference,
+        $oldest->reference
+    ])->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(3);
+});
+
 /*
 |--------------------------------------------------------------------------
 | UI: payment account customers/shops sub-pages
