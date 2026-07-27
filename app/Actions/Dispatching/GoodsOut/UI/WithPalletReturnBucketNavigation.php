@@ -53,10 +53,6 @@ trait WithPalletReturnBucketNavigation
 
         $activityAt = IndexWarehousePalletReturns::RETURN_ACTIVITY_AT;
 
-        $defaultSort = $bucket == 'new'
-            ? [$activityAt, true]
-            : ['pallet_returns.confirmed_at', true];
-
         $sortValues = [
             $activityAt => $palletReturn->confirmed_at ?? $palletReturn->submitted_at ?? $palletReturn->created_at,
         ];
@@ -76,7 +72,7 @@ trait WithPalletReturnBucketNavigation
                 'confirmed_at'       => 'pallet_returns.confirmed_at',
                 'activity_at'        => $activityAt,
             ],
-            defaultSort: $defaultSort,
+            defaultSort: [$activityAt, true],
             forward: $forward
         );
     }

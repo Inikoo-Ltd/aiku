@@ -316,7 +316,7 @@ class IndexWarehousePalletReturns extends OrgAction
             }
         }
 
-        $queryBuilder->defaultSort(in_array($this->restriction, ['new', 'all']) ? '-activity_at' : '-confirmed_at');
+        $queryBuilder->defaultSort('-activity_at');
 
         return $queryBuilder
             ->select([
