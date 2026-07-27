@@ -10,6 +10,10 @@ import { getStyles } from '@/Composables/styles'
 import Image from '@common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import RenderProduct from '@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue'
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { FreeMode } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/free-mode'
 import { ProductResource } from '@/types/Iris/Products'
 
 interface InternalCatalogueItem {
@@ -306,16 +310,27 @@ const onRailItemClick = (item: RailItem) => {
     }
 }
 
-// Reuse the global rail helpers from app-iris.blade.php (lb-qs / data-lb-rail hooks)
-const scrollRail = (event: Event, direction: number) => {
-    const button = event.currentTarget as HTMLElement
-    const lbQuickSearchScroll = (window as any).lbQuickSearchScroll
-    if (typeof lbQuickSearchScroll === 'function') {
-        lbQuickSearchScroll(button, direction)
-        return
+// The rail is a free mode Swiper: draggable, with arrows that disable themselves at both ends
+const railSwiper = ref<any>(null)
+const railAtStart = ref(true)
+const railAtEnd = ref(false)
+
+const updateRailEdges = (swiper: any) => {
+    railAtStart.value = swiper.isBeginning
+    railAtEnd.value = swiper.isEnd
+}
+
+const onRailSwiper = (swiper: any) => {
+    railSwiper.value = swiper
+    updateRailEdges(swiper)
+}
+
+const scrollRail = (direction: number) => {
+    if (direction < 0) {
+        railSwiper.value?.slidePrev()
+    } else {
+        railSwiper.value?.slideNext()
     }
-    const rail = button.closest('.lb-qs')?.querySelector('[data-lb-rail]')
-    rail?.scrollBy({ left: direction * 300, behavior: 'smooth' })
 }
 
 const isMobileFilterOpen = ref(false)
@@ -417,11 +432,11 @@ const isMobileFilterOpen = ref(false)
                             </div>
 
                             <!-- Section: Slider result of box categories, collections, etc -->
-                            <div v-if="activeRailItems.length" class="lb-qs relative mt-3">
+                            <div v-if="activeRailItems.length" class="relative mt-3">
                                 <!-- Left arrow -->
-                                <button type="button" aria-label="Scroll left"
-                                    class="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white/90 shadow-sm hover:bg-white hover:shadow transition disabled:opacity-40 disabled:hover:shadow-sm disabled:hover:bg-white/90"
-                                    @click="scrollRail($event, -1)">
+                                <button type="button" aria-label="Scroll left" :disabled="railAtStart"
+                                    class="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white/90 shadow-sm hover:bg-white hover:shadow transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:hover:bg-white/90"
+                                    @click="scrollRail(-1)">
                                     <svg viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 text-gray-700">
                                         <path fill-rule="evenodd"
                                             d="M12.707 15.707a1 1 0 0 1-1.414 0l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 1 1 1.414 1.414L8.414 10l4.293 4.293a1 1 0 0 1 0 1.414z"
@@ -430,9 +445,9 @@ const isMobileFilterOpen = ref(false)
                                 </button>
 
                                 <!-- Right arrow -->
-                                <button type="button" aria-label="Scroll right"
-                                    class="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white/90 shadow-sm hover:bg-white hover:shadow transition disabled:opacity-40 disabled:hover:shadow-sm disabled:hover:bg-white/90"
-                                    @click="scrollRail($event, 1)">
+                                <button type="button" aria-label="Scroll right" :disabled="railAtEnd"
+                                    class="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white/90 shadow-sm hover:bg-white hover:shadow transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:hover:bg-white/90"
+                                    @click="scrollRail(1)">
                                     <svg viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 text-gray-700">
                                         <path fill-rule="evenodd"
                                             d="M7.293 4.293a1 1 0 0 1 1.414 0l5 5a1 1 0 0 1 0 1.414l-5 5a1 1 0 1 1-1.414-1.414L11.586 10 7.293 5.707a1 1 0 0 1 0-1.414z"
@@ -441,38 +456,47 @@ const isMobileFilterOpen = ref(false)
                                 </button>
 
                                 <!-- Rail -->
-                                <div data-lb-rail role="list"
-                                    class="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory px-1 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-10">
-                                    <component
-                                        v-for="item in activeRailItems" :key="item.id"
-                                        :is="item.url ? LinkIris : 'button'"
-                                        :href="item.url || undefined"
-                                        :type="item.url ? undefined : 'button'"
-                                        role="listitem"
-                                        class="snap-start shrink-0 w-[200px] overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-md transition text-left"
-                                        :class="!item.url && isFacetSelected('tags', item.id)
-                                            ? 'border-[var(--theme-color-0)] ring-1 ring-[var(--theme-color-0)]'
-                                            : 'border-gray-200'"
-                                        @click="onRailItemClick(item)">
-                                        <!-- Image (full cover, square) -->
-                                        <div class="relative w-full aspect-square">
-                                            <Image v-if="item.image" :src="item.image"
-                                                class="absolute inset-0 h-full w-full object-cover" />
-                                            <span v-else
-                                                class="absolute inset-0 flex items-center justify-center opacity-30 text-3xl md:text-5xl">
-                                                <svg class="h-[1em] w-[1em]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor">
-                                                    <path d="M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm16 336c0 8.822-7.178 16-16 16H48c-8.822 0-16-7.178-16-16V112c0-8.822 7.178-16 16-16h416c8.822 0 16 7.178 16 16v288zM112 232c30.928 0 56-25.072 56-56s-25.072-56-56-56-56 25.072-56 56 25.072 56 56 56zm0-80c13.234 0 24 10.766 24 24s-10.766 24-24 24-24-10.766-24-24 10.766-24 24-24zm207.029 23.029L224 270.059l-31.029-31.029c-9.373-9.373-24.569-9.373-33.941 0l-88 88A23.998 23.998 0 0 0 64 344v28c0 6.627 5.373 12 12 12h360c6.627 0 12-5.373 12-12v-92c0-6.365-2.529-12.47-7.029-16.971l-88-88c-9.373-9.372-24.569-9.372-33.942 0zM416 352H96v-4.686l80-80 48 48 112-112 80 80V352z"/>
-                                                </svg>
-                                            </span>
-                                        </div>
+                                <Swiper
+                                    :key="activeQuickSearch"
+                                    slides-per-view="auto"
+                                    :space-between="16"
+                                    :free-mode="true"
+                                    :modules="[FreeMode]"
+                                    class="w-full px-1 pb-2 sm:px-10"
+                                    @swiper="onRailSwiper"
+                                    @progress="updateRailEdges"
+                                    @slide-change="updateRailEdges"
+                                    @resize="updateRailEdges">
+                                    <SwiperSlide v-for="item in activeRailItems" :key="item.id" class="!w-[200px]">
+                                        <component
+                                            :is="item.url ? LinkIris : 'button'"
+                                            :href="item.url || undefined"
+                                            :type="item.url ? undefined : 'button'"
+                                            class="block w-full overflow-hidden rounded-lg border bg-white shadow-sm hover:shadow-md transition text-left"
+                                            :class="!item.url && isFacetSelected('tags', item.id)
+                                                ? 'border-[var(--theme-color-0)] ring-1 ring-[var(--theme-color-0)]'
+                                                : 'border-gray-200'"
+                                            @click="onRailItemClick(item)">
+                                            <!-- Image (full cover, square) -->
+                                            <div class="relative w-full aspect-square">
+                                                <Image v-if="item.image" :src="item.image"
+                                                    class="absolute inset-0 h-full w-full object-cover" />
+                                                <span v-else
+                                                    class="absolute inset-0 flex items-center justify-center opacity-30 text-3xl md:text-5xl">
+                                                    <svg class="h-[1em] w-[1em]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor">
+                                                        <path d="M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm16 336c0 8.822-7.178 16-16 16H48c-8.822 0-16-7.178-16-16V112c0-8.822 7.178-16 16-16h416c8.822 0 16 7.178 16 16v288zM112 232c30.928 0 56-25.072 56-56s-25.072-56-56-56-56 25.072-56 56 25.072 56 56 56zm0-80c13.234 0 24 10.766 24 24s-10.766 24-24 24-24-10.766-24-24 10.766-24 24-24zm207.029 23.029L224 270.059l-31.029-31.029c-9.373-9.373-24.569-9.373-33.941 0l-88 88A23.998 23.998 0 0 0 64 344v28c0 6.627 5.373 12 12 12h360c6.627 0 12-5.373 12-12v-92c0-6.365-2.529-12.47-7.029-16.971l-88-88c-9.373-9.372-24.569-9.372-33.942 0zM416 352H96v-4.686l80-80 48 48 112-112 80 80V352z"/>
+                                                    </svg>
+                                                </span>
+                                            </div>
 
-                                        <!-- Title bar (no white gap, centered) -->
-                                        <div
-                                            class="bg-gray-100 px-3 text-sm font-semibold text-gray-800 text-center flex items-center justify-center h-[52px] leading-snug">
-                                            <span class="line-clamp-2">{{ item.name }}</span>
-                                        </div>
-                                    </component>
-                                </div>
+                                            <!-- Title bar (no white gap, centered) -->
+                                            <div
+                                                class="bg-gray-100 px-3 text-sm font-semibold text-gray-800 text-center flex items-center justify-center h-[52px] leading-snug">
+                                                <span class="line-clamp-2">{{ item.name }}</span>
+                                            </div>
+                                        </component>
+                                    </SwiperSlide>
+                                </Swiper>
                             </div>
                         </div>
 
