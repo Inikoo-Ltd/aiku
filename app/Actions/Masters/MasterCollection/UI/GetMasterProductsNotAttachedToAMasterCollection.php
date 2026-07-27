@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterCollection;
@@ -19,7 +19,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetMasterProductsNotAttachedToAMasterCollection extends GrpAction
+class GetMasterProductsNotAttachedToAMasterCollection extends OrgAction
 {
     public function handle(MasterShop $parent, MasterCollection $collection, $prefix = null): LengthAwarePaginator
     {
@@ -62,7 +62,7 @@ class GetMasterProductsNotAttachedToAMasterCollection extends GrpAction
 
     public function asController(MasterShop $masterShop, MasterCollection $masterCollection, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle(parent: $masterShop, collection: $masterCollection);
     }

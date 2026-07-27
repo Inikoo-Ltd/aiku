@@ -221,22 +221,34 @@ const detectMyLocation = () => {
 
 	isDetectingLocation.value = true
 
-	navigator.geolocation.getCurrentPosition(
-		(pos) => {
-			lat.value = pos.coords.latitude
-			lng.value = pos.coords.longitude
-			isDetectingLocation.value = false
-		},
-		(err) => {
-			errorMsg.value = getGeolocationErrorMessage(err)
-			isDetectingLocation.value = false
-		},
-		{
-			enableHighAccuracy: true,
-			timeout: 10000,
-			maximumAge: 0,
+	const onSuccess = (pos) => {
+		lat.value = pos.coords.latitude
+		lng.value = pos.coords.longitude
+		isDetectingLocation.value = false
+	}
+
+	const onError = (err) => {
+		errorMsg.value = getGeolocationErrorMessage(err)
+		isDetectingLocation.value = false
+	}
+
+	const onHighAccuracyError = (err) => {
+		if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
+			navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+				enableHighAccuracy: false,
+				timeout: 15000,
+				maximumAge: 60000,
+			})
+			return
 		}
-	)
+		onError(err)
+	}
+
+	navigator.geolocation.getCurrentPosition(onSuccess, onHighAccuracyError, {
+		enableHighAccuracy: true,
+		timeout: 15000,
+		maximumAge: 30000,
+	})
 }
 
 const startCamera = async () => {

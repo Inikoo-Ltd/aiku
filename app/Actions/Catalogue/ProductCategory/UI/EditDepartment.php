@@ -153,7 +153,7 @@ class EditDepartment extends OrgAction
                                                     'website' => $department->shop->website?->slug
                                                 ]
                                             ],
-                                            'toogle'        => [
+                                            'toggle'        => [
                                                'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
@@ -222,7 +222,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'        => [
+                                                'toggle'        => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -260,7 +260,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'  => [
+                                                'toggle'  => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -302,7 +302,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website->slug
                                                     ]
                                                 ],
-                                                'toogle'        => [
+                                                'toggle'        => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -340,7 +340,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'  => [
+                                                'toggle'  => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -364,23 +364,6 @@ class EditDepartment extends OrgAction
                                                 ],
                                             ],
                                         ...$this->seoFields($department),
-                                    ]
-                                ],
-                                [
-                                    'label'  => __('Pricing'),
-                                    'icon'   => 'fa-light fa-money-bill',
-                                    'fields' => [
-                                        'cost_price_ratio' => [
-                                            'type'        => 'input_number',
-                                            'bind'        => [
-                                                'maxFractionDigits' => 3
-                                            ],
-                                            'label'       => __('Pricing ratio'),
-                                            'placeholder' => __('Cost price ratio'),
-                                            'required'    => true,
-                                            'value'       => $department->cost_price_ratio,
-                                            'min'         => 0
-                                        ],
                                     ]
                                 ],
                                 [

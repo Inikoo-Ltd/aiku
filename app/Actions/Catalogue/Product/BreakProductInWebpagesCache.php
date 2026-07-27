@@ -8,10 +8,12 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Web\Webpage\BanVarnishWebpage;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Cache;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class BreakProductInWebpagesCache
@@ -20,33 +22,46 @@ class BreakProductInWebpagesCache
 
     public function handle(Product $product): void
     {
-        $this->breakCache($product->webpage);
+        foreach ($this->getWebpages($product) as $webpage) {
+            $this->breakCache($webpage);
+        }
+    }
 
-        if ($product->family && $product->family->webpage) {
-            $this->breakCache($product->family->webpage);
-        }
-        if ($product->department && $product->department->webpage) {
-            $this->breakCache($product->department->webpage);
-        }
-        if ($product->subDepartment && $product->subDepartment->webpage) {
-            $this->breakCache($product->subDepartment->webpage);
-        }
-
-        foreach ($product->containedByCollections as $collection) {
-            $this->breakCache($collection->webpage);
-        }
-
+    /**
+     * Every webpage whose content shows this product: its own page plus the
+     * family/department/sub-department listings and any collections it is in.
+     *
+     * @return Collection<int, Webpage> keyed by webpage id
+     */
+    public function getWebpages(Product $product): Collection
+    {
+        return collect([
+            $product->webpage,
+            $product->family?->webpage,
+            $product->department?->webpage,
+            $product->subDepartment?->webpage,
+        ])
+            ->concat($product->containedByCollections->map(fn (\App\Models\Catalogue\Collection $collection) => $collection->webpage)->all())
+            ->filter()
+            ->keyBy('id');
     }
 
     public function breakCache(?Webpage $webpage): void
     {
         if ($webpage) {
-            $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
-            Cache::forget($key);
-            $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
-            Cache::forget($key);
+            $this->forgetCacheKeys($webpage);
+
+            BanVarnishWebpage::run($webpage);
         }
 
+    }
+
+    public function forgetCacheKeys(Webpage $webpage): void
+    {
+        $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
+        Cache::forget($key);
+        $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
+        Cache::forget($key);
     }
 
     protected function commandSignature(): string

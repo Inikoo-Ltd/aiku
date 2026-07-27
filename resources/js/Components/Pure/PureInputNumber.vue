@@ -95,14 +95,14 @@ defineExpose({
                 @input="onChange"
                 @change="onChange"
                 @keyup.enter="(event) => emits('onEnter', event.target.value)"
-                :placeholder="placeholder || '0'" 
+                :placeholder="placeholder ?? '0'"
                 :autofocus="autofocus" 
                 :min="minValue" 
                 :max="maxValue" 
                 :required="required"
                 :disabled
                 :step="step"
-                class="disabled:bg-gray-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none remove-arrows-input block w-full text-gray-600 sm:text-sm placeholder:text-gray-400 border-transparent focus:ring-0 focus:ring-gray-500 focus:outline-0 focus:border-transparent disabled:ring-0 disabled:ring-transparent disabled:focus:border-transparent disabled:focus:border-gray-300 disabled:text-gray-500" 
+                class="disabled:bg-gray-100 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none remove-arrows-input block w-full text-gray-600 sm:text-sm placeholder:text-gray-400 border-transparent focus:ring-0 focus:ring-gray-500 focus:outline-0 focus:border-transparent disabled:ring-0 disabled:ring-transparent disabled:focus:border-transparent disabled:focus:border-gray-300 disabled:text-gray-500"
             />
             <slot v-if="suffix" name="suffix">
                 <Transition name="spin-to-down">

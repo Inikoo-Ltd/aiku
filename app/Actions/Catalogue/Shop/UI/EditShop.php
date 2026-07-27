@@ -295,28 +295,6 @@ class EditShop extends OrgAction
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => [
-                        'cost_price_ratio'                => [
-                            'type'        => 'input_number',
-                            'bind'        => [
-                                'maxFractionDigits' => 3
-                            ],
-                            'label'       => __('Pricing ratio'),
-                            'placeholder' => __('Cost price ratio'),
-                            'required'    => true,
-                            'value'       => $shop->cost_price_ratio,
-                            'min'         => 0
-                        ],
-                        'price_rrp_ratio'                 => [
-                            'type'        => 'input_number',
-                            'bind'        => [
-                                'maxFractionDigits' => 3
-                            ],
-                            'label'       => __('RRP ratio'),
-                            'placeholder' => __('price rrp ratio'),
-                            'required'    => true,
-                            'value'       => $shop->price_rrp_ratio,
-                            'min'         => 0
-                        ],
                         'follow_master_pricing'           => [
                             'label'       => __('Follow Master Pricing'),
                             'type'        => 'toggle',

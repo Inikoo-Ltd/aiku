@@ -27,7 +27,7 @@ library.add(faBold, faQuoteRight, faMarker, faHorizontalRule, faItalic, faUnderl
 
 const props = withDefaults(defineProps<{
     modelValue: string,
-    toogle?: string[],
+    toggle?: string[],
     type?: string,
     editable?: boolean
     placeholder?: any | String
@@ -35,7 +35,7 @@ const props = withDefaults(defineProps<{
     editable: true,
     type: 'Bubble',
     placeholder: '',
-    toogle: () => [
+    toggle: () => [
         'heading', 'fontSize', 'bold', 'italic', 'underline', 'bulletList',
         'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight',
         'alignCenter', 'link', 'undo', 'redo', 'highlight', 'color', 'clear',
@@ -187,7 +187,7 @@ const onEditorClick = () => {
 
 onMounted(() => {
     nextTick(() => {
-        toggleList.value = toggleList.value.filter(item => props.toogle?.includes(item.key))
+        toggleList.value = toggleList.value.filter(item => props.toggle?.includes(item.key))
         if (editor.value) editor.value.commands.selectAll()
     })
 })

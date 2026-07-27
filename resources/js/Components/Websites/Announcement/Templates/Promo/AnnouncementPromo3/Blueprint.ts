@@ -7,7 +7,7 @@ const textBlueprint = [
         key: ["text"],
         type: "editorhtml",
         props_data: {
-            toogle: [
+            toggle: [
                 "heading", "fontSize", "bold", "italic", "underline", "fontFamily",
                 "alignLeft", "alignRight", "link",
                 "alignCenter", "undo", "redo", "highlight", "color", "clear"
@@ -67,7 +67,7 @@ export const blueprint = [
                 type: "countdown",
                 props_data: {
                     noToday: true,
-                    toogle: textBlueprint[0].props_data.toogle
+                    toggle: textBlueprint[0].props_data.toggle
                 }
             },
             {

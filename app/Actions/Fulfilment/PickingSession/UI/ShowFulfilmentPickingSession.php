@@ -4,7 +4,6 @@ namespace App\Actions\Fulfilment\PickingSession\UI;
 
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
-use App\Actions\UI\WithInertia;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnBoxStats;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
@@ -24,7 +23,6 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPackingFulfilmentPickingSession;
 use App\Http\Resources\Fulfilment\FulfilmentPickingSessionPalletReturnsGroupedResource;
@@ -32,7 +30,6 @@ use App\Http\Resources\Fulfilment\FulfilmentPickingSessionStoredItemsGroupedReso
 
 class ShowFulfilmentPickingSession extends OrgAction
 {
-
     public function handle(PickingSession $pickingSession): PickingSession
     {
         new AutoFinishPickingFulfilmentPickingSession()->action($pickingSession);

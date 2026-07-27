@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
@@ -23,7 +23,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreMasterProductFromTradeUnits extends GrpAction
+class StoreMasterProductFromTradeUnits extends OrgAction
 {
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
@@ -227,7 +227,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
         $this->asAction       = true;
         $this->strict         = $strict;
 
-        $this->initialisation($masterFamily->group, $modelData);
+        $this->initialisationFromGroup($masterFamily->group, $modelData);
 
         return $this->handle($masterFamily, $this->validatedData);
     }
@@ -240,7 +240,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
         $this->masterFamily = $masterFamily;
 
-        $this->initialisation($masterFamily->group, $request);
+        $this->initialisationFromGroup($masterFamily->group, $request);
 
         return $this->handle($masterFamily, $this->validatedData);
     }

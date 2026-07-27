@@ -7,6 +7,7 @@
 
 namespace App\Actions\Ordering\SalesChannel;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -64,10 +65,12 @@ class RedoSalesChannelTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessSalesChannelTimeSeriesRecords::dispatch($salesChannel->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessSalesChannelTimeSeriesRecords::dispatch($salesChannel->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessSalesChannelTimeSeriesRecords::run($salesChannel->id, $frequency, $from, $to);
+                ProcessSalesChannelTimeSeriesRecords::run($salesChannel->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

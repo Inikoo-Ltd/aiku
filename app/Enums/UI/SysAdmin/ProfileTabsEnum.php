@@ -45,7 +45,7 @@ enum ProfileTabsEnum: string
             ProfileTabsEnum::API_TOKENS => [
                 'title'   => __('AI access'),
                 'tooltip' => __('Connect your AI assistant to Aiku'),
-                'icon'    => 'fal fa-key',
+                'icon'    => 'fal fa-robot',
             ],
 
             ProfileTabsEnum::TODO => [

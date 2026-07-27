@@ -21,7 +21,8 @@ export const blueprintCard = {
 							type: "image-cropped",
 							props_data: {
 								stencilProps: {
-									aspectRatio: [null],
+									aspectRatio: [3 / 4, 1, 4 / 5, null],
+									width: 600,
 									movable: true,
 									scalable: true,
 									resizable: true,
@@ -151,9 +152,11 @@ export const Mainbluprint = {
                 can_delete: true,
                 can_add: true,
                 new_value_data: {
-                    card: {
-                        text: "<h2>STARTER<br>GIFT SET</h2>",
-                        image: null
+                    visible: true,
+                    text: "<h2>STARTER<br>GIFT SET</h2>",
+                    image: {
+                        source: null,
+                        alt: "Image"
                     }
                 }
             }

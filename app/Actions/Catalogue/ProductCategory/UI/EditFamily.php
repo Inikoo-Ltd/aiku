@@ -178,7 +178,7 @@ class EditFamily extends OrgAction
                                             'languages'     => $languages,
                                             'mode'          => 'single',
                                             'value'         => $family->faq,
-                                            'toogle'        => [
+                                            'toggle'        => [
                                                'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
@@ -249,8 +249,9 @@ class EditFamily extends OrgAction
                                                         'website' => $family->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
-                                                  'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+
+                                            'toggle'  => [
+                                                  'bold', 'italic', 'fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
                                         : [
@@ -268,8 +269,8 @@ class EditFamily extends OrgAction
                                                         'website' => $family->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
-                                                  'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            'toggle'  => [
+                                                  'bold', 'italic','fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
                                     'description_extra' => $family->masterProductCategory
@@ -291,8 +292,8 @@ class EditFamily extends OrgAction
                                                         'website' => $family->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
-                                               'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            'toggle'  => [
+                                               'bold', 'italic', 'fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
                                         : [
@@ -310,8 +311,8 @@ class EditFamily extends OrgAction
                                                         'website' => $family->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
-                                                 'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                            'toggle'  => [
+                                                 'bold', 'italic', 'fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ],
                                     ...$this->seoFields($family),

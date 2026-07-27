@@ -36,7 +36,7 @@ import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
 import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
-import { pushServerGtmEvent } from "@/Composables/useGtm"
+import { pushServerGtmEvent, pushServerGtmEventOnce } from "@/Composables/useGtm"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
 
@@ -112,24 +112,10 @@ watch(() => usePage().props?.flash?.confetti, (newVal) => {
 })
 
 // Flash: GTM
-const processedGtmTransactionKeys = new Set<string>()
 watch(() => usePage().props?.flash?.gtm, (newValue) => {
-    console.log('gtm ret', newValue)
     if (!newValue?.event) return
 
-    const transactionId = newValue?.data_to_submit?.ecommerce?.transaction_id    
-    if (transactionId) {
-        const itemIds = (newValue?.data_to_submit?.ecommerce?.items ?? [])
-            .map((item: any) => item?.item_id ?? '')
-            .join(',')
-        
-        const gtmTransactionKey = `${newValue.event}:${transactionId}:${itemIds}`
-
-        if (processedGtmTransactionKeys.has(gtmTransactionKey)) return
-        processedGtmTransactionKeys.add(gtmTransactionKey)
-    }
-
-    pushServerGtmEvent(newValue.event, newValue.data_to_submit)
+    pushServerGtmEventOnce(newValue.event, newValue.data_to_submit)
 }, {
     deep: true,
     immediate: true

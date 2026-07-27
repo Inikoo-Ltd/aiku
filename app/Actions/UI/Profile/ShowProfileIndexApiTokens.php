@@ -18,6 +18,11 @@ class ShowProfileIndexApiTokens extends OrgAction
 {
     use AsAction;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return (bool) $request->user()->can_use_mcp;
+    }
+
     public function asController(ActionRequest $request): User
     {
         $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());

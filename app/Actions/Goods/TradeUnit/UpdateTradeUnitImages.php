@@ -10,7 +10,7 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterAsset\CloneMasterAssetImagesFromTradeUnits;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithImageUpdate;
@@ -20,7 +20,7 @@ use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateTradeUnitImages extends GrpAction
+class UpdateTradeUnitImages extends OrgAction
 {
     use WithActionUpdate;
     use WithImageUpdate;
@@ -77,7 +77,7 @@ class UpdateTradeUnitImages extends GrpAction
 
     public function asController(TradeUnit $tradeUnit, ActionRequest $request): void
     {
-        $this->initialisation($tradeUnit->group, $request);
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
         $this->handle($tradeUnit, $this->validatedData, true);
     }

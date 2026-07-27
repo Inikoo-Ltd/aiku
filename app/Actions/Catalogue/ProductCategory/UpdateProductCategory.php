@@ -177,9 +177,14 @@ class UpdateProductCategory extends OrgAction
             'name',
             'type',
             'state',
-            'name_i8n'
+            'name_i8n',
+            'faq',
         ])) {
             $this->productCategoryHydrators($productCategory);
+
+            if ($productCategory->webpage) {
+                BreakWebpageCache::dispatch($productCategory->webpage, true);
+            }
 
             if ($productCategory->webpage_id) {
                 ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60);
@@ -282,7 +287,6 @@ class UpdateProductCategory extends OrgAction
             'url'                           => ['sometimes', 'nullable', 'string', 'max:250'],
             'images'                        => ['sometimes', 'array'],
             'master_product_category_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
-            'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
             'name_i8n'                      => ['sometimes', 'array'],
             'description_title_i8n'         => ['sometimes', 'array'],
             'description_i8n'               => ['sometimes', 'array'],

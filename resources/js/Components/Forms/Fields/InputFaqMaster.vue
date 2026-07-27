@@ -19,7 +19,7 @@ const props = defineProps<{
     form: Record<string, any>
     fieldName: string
     fieldData: {
-        toogle?: string[]
+        toggle?: string[]
         routeGetInternalLink?: routeType
     }
 }>()
@@ -61,7 +61,7 @@ watch(
     { deep: true }
 )
 
-const answerToggle = props.fieldData.toogle || [
+const answerToggle = props.fieldData.toggle || [
     "heading2", "heading3", "bold", "italic", "underline", "bulletList",
     "orderedList", "blockquote", "alignLeft", "alignCenter", "alignRight",
     "undo", "redo", "clear",
@@ -113,7 +113,7 @@ const removeFaq = (index: number) => {
                     <EditorV2
                         v-model="faq.answer"
                         :key="answerKeyMap[index]"
-                        :toogle="answerToggle"
+                        :toggle="answerToggle"
                         :routeGetInternalLink="fieldData.routeGetInternalLink"
                     >
                         <template #editor-content="{ editor }">

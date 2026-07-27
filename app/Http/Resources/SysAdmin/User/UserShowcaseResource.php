@@ -15,6 +15,7 @@ use App\Http\Resources\Api\Dropshipping\ShopResource;
 use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Http\Resources\Inventory\WarehouseResource;
 use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
+use App\Models\SysAdmin\McpRequest;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
@@ -23,6 +24,32 @@ use JsonSerializable;
 
 class UserShowcaseResource extends JsonResource
 {
+    /**
+     * @return array{enabled: bool, number_queries: int, last_used_at: string|null, tools_used: int}
+     */
+    private function getMcpData(User $user): array
+    {
+        if (!$user->can_use_mcp) {
+            return [
+                'enabled'        => false,
+                'number_queries' => 0,
+                'last_used_at'   => null,
+                'tools_used'     => 0,
+            ];
+        }
+
+        $stats = McpRequest::where('user_id', $user->id)
+            ->selectRaw('count(*) as number_queries, max(created_at) as last_used_at, count(distinct tool) as tools_used')
+            ->first();
+
+        return [
+            'enabled'        => true,
+            'number_queries' => (int) $stats->number_queries,
+            'last_used_at'   => $stats->last_used_at,
+            'tools_used'     => (int) $stats->tools_used,
+        ];
+    }
+
     public function toArray($request): array|Arrayable|JsonSerializable
     {
         /** @var User $user */
@@ -70,7 +97,8 @@ class UserShowcaseResource extends JsonResource
             'last_active_at'          => $user->stats->last_active_at,
             'last_login'              => [
                 'ip'          => $user->stats->last_login_ip
-            ]
+            ],
+            'mcp'                     => $this->getMcpData($user->resource)
         ];
     }
 }

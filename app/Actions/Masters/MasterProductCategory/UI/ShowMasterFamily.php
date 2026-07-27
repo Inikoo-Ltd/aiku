@@ -14,12 +14,12 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
-use App\Actions\GrpAction;
-use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\GetRelatedMasterProducts;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\MasterVariant\IndexMasterVariant;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -29,8 +29,6 @@ use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Masters\MasterProductCategoryTimeSeriesResource;
 use App\Http\Resources\Masters\MasterVariantsResource;
-use App\Models\Catalogue\Shop;
-use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -38,7 +36,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterFamily extends GrpAction
+class ShowMasterFamily extends OrgAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -58,7 +56,7 @@ class ShowMasterFamily extends GrpAction
         $this->parent = $masterShop;
         $group        = group();
 
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -67,7 +65,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -76,7 +74,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -86,7 +84,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -96,7 +94,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -106,7 +104,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -170,26 +168,7 @@ class ShowMasterFamily extends GrpAction
             ];
         }
 
-        $masterShop = $masterFamily->masterShop;
-        $shopCurrencies = Shop::where('master_shop_id', $masterShop->id)
-            ->select('currency_id')
-            ->distinct()
-            ->get();
-
-        $baseEuro   = Currency::where('code', 'EUR')->first();
-        $currencies = Currency::whereIn('id', $shopCurrencies)->get();
-        $currenciesRate   = $currencies->mapWithKeys(function ($currency) use ($baseEuro) {
-            $ratioEuro  = GetCurrencyExchange::run($baseEuro, $currency);
-
-            return [
-                $currency->code => [
-                    'ratio_eur'     => $ratioEuro,
-                    'currency'      => $currency->code,
-                    'currency_symbol'  => $currency->symbol,
-                    'currency_id'      => $currency->id,
-                ]
-            ];
-        });
+        $currenciesRate = GetMasterShopCurrenciesRate::run($masterFamily->masterShop);
 
 
         return Inertia::render(
@@ -303,7 +282,6 @@ class ShowMasterFamily extends GrpAction
                 ],
                 'isPerfectFamily'         => true,
                 'masterProductCategoryId' => $masterFamily->id,
-                'price_rrp_warning_ratio' => $masterFamily->masterShop->price_rrp_warning_ratio,
                 'shopsData'               => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
                 'vol_gr_reward'           => [
                     'show_gr_vol'                   => $masterFamily->masterShop->gold_reward_eligible && $masterFamily->has_gr_vol_discount,

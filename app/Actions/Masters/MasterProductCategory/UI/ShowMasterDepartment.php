@@ -11,7 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
@@ -30,7 +30,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterDepartment extends GrpAction
+class ShowMasterDepartment extends OrgAction
 {
     use WithMasterDepartmentSubNavigation;
     use WithMastersAuthorisation;
@@ -50,7 +50,7 @@ class ShowMasterDepartment extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterDepartmentTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterDepartmentTabsEnum::values());
 
         return $this->handle($masterDepartment);
     }
@@ -59,7 +59,7 @@ class ShowMasterDepartment extends GrpAction
     {
         $this->parent = $masterShop;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterDepartmentTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterDepartmentTabsEnum::values());
 
         return $this->handle($masterDepartment);
     }

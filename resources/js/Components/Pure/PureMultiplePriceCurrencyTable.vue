@@ -15,8 +15,9 @@ interface CurrencyRate {
     currency: string
     currency_symbol?: string
     currency_id: number
-    ratio_gbp: number | null
     ratio_eur: number | null
+    is_major?: boolean
+    major?: string | null
 }
 
 interface CurrencyPrice {
@@ -54,10 +55,7 @@ const props = withDefaults(defineProps<{
     showCost: false,
     unitsPerOuter: 1,
     autoFromCost: false,
-    autoMultiplier: 2.4,
-    visibleCurrencyCodes: () => ['GBP', 'EUR'],
-    alwaysIndependentCurrencyCodes: () => ['GBP'],
-    selfCostCurrencyCodes: () => []
+    autoMultiplier: 2.4
 })
 
 const emits = defineEmits<{
@@ -98,19 +96,53 @@ const currencyList = computed(
     () => Object.values(props.currencies ?? {}).map(rate => ({
         code: rate.currency,
         symbol: rate.currency_symbol,
-        ratio_gbp: rate.ratio_gbp,
-        ratio_eur: rate.ratio_eur
+        ratio_eur: rate.ratio_eur,
+        is_major: rate.is_major ?? false,
+        major: rate.major ?? null
     }))
 )
 
-const baseCurrencyCode = ref('EUR')
+// Major currencies come from the master shop's own price_exchanges config
+// (see GetMasterShopCurrenciesRate). They're entered independently, never derived.
+const majorCurrencyCodes = computed(
+    () => currencyList.value.filter(currency => currency.is_major).map(currency => currency.code)
+)
 
-const isAlwaysIndependent = (code: string) => props.alwaysIndependentCurrencyCodes.includes(code)
+// The base is the major the minors actually follow, so edits to it recalculate
+// them live; other majors are edited independently and drive nothing.
+const baseCurrencyCode = computed(() => {
+    const followCounts: Record<string, number> = {}
+    currencyList.value.forEach(currency => {
+        if (currency.major) {
+            followCounts[currency.major] = (followCounts[currency.major] ?? 0) + 1
+        }
+    })
 
-const isSelfCost = (code: string) => props.selfCostCurrencyCodes.includes(code)
+    const mostFollowed = Object.entries(followCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
+
+    return (mostFollowed && majorCurrencyCodes.value.includes(mostFollowed))
+        ? mostFollowed
+        : (majorCurrencyCodes.value[0] ?? currencyList.value[0]?.code)
+})
+
+const effectiveAlwaysIndependentCurrencyCodes = computed(
+    () => props.alwaysIndependentCurrencyCodes ?? majorCurrencyCodes.value.filter(code => code !== baseCurrencyCode.value)
+)
+
+const effectiveVisibleCurrencyCodes = computed(
+    () => props.visibleCurrencyCodes ?? majorCurrencyCodes.value
+)
+
+const isAlwaysIndependent = (code: string) => effectiveAlwaysIndependentCurrencyCodes.value.includes(code)
+
+const effectiveSelfCostCurrencyCodes = computed(
+    () => props.selfCostCurrencyCodes ?? majorCurrencyCodes.value.filter(code => code !== baseCurrencyCode.value)
+)
+
+const isSelfCost = (code: string) => effectiveSelfCostCurrencyCodes.value.includes(code)
 
 const visibleCurrencies = computed(
-    () => currencyList.value.filter(currency => props.visibleCurrencyCodes.includes(currency.code))
+    () => currencyList.value.filter(currency => effectiveVisibleCurrencyCodes.value.includes(currency.code))
 )
 
 const baseCurrency = computed(
@@ -121,8 +153,19 @@ const derivedVisibleCurrencies = computed(
     () => visibleCurrencies.value.filter(currency => currency.code !== baseCurrencyCode.value)
 )
 
+const minorCurrencies = computed(
+    () => currencyList.value.filter(currency => !effectiveVisibleCurrencyCodes.value.includes(currency.code))
+)
+
+// A minor currency the user has manually detached from the ratio is now their
+// responsibility to maintain, same as a major — always show its row instead
+// of burying it behind the collapsed "Minor currencies" toggle.
+const independentMinorCurrencies = computed(
+    () => minorCurrencies.value.filter(currency => prices.value[currency.code]?.independent)
+)
+
 const hiddenCurrencies = computed(
-    () => currencyList.value.filter(currency => !props.visibleCurrencyCodes.includes(currency.code))
+    () => minorCurrencies.value.filter(currency => !prices.value[currency.code]?.independent)
 )
 
 const buildPrices = (): Record<string, CurrencyPrice> => {
@@ -149,10 +192,6 @@ watch(() => props.currencies, () => {
     }
 })
 
-const getRatio = (currency: { ratio_gbp: number | null, ratio_eur: number | null }) => {
-    return currency.ratio_eur
-}
-
 const recalculateDerivedPrices = () => {
     const baseEntry = prices.value[baseCurrencyCode.value]
 
@@ -163,8 +202,6 @@ const recalculateDerivedPrices = () => {
             ? null
             : Math.round(baseCost * props.autoMultiplier * 100) / 100
     }
-
-    const basePrice = baseEntry?.value
 
     currencyList.value.forEach(currency => {
         const entry = prices.value[currency.code]
@@ -183,17 +220,29 @@ const recalculateDerivedPrices = () => {
             return
         }
 
-        const ratio = getRatio(currency)
+        if (!currency.major) {
+            return
+        }
 
-        entry.value = basePrice == null || ratio == null
+        const majorPrice = prices.value[currency.major]?.value
+        const ratio      = currency.ratio_eur
+
+        entry.value = majorPrice == null || ratio == null
             ? null
-            : Math.round(basePrice * ratio * 100) / 100
+            : Math.round(majorPrice * ratio * 100) / 100
     })
 }
 
 const emitUpdate = () => {
     const snapshot = Object.entries(prices.value).reduce((acc, [code, entry]) => {
-        acc[code] = { value: entry.value, independent: entry.independent }
+        acc[code] = {
+            value: entry.value,
+            // majors are forced independent for display only — persist the stored
+            // flag so a future major→minor demotion still makes it a follower
+            independent: isAlwaysIndependent(code)
+                ? (props.modelValue?.[code]?.independent ?? false)
+                : entry.independent
+        }
 
         return acc
     }, {} as Record<string, CurrencyPrice>)
@@ -219,14 +268,9 @@ watch(() => props.costs, () => {
 
 const showHiddenCurrencies = ref(false)
 
-const filledHiddenCurrenciesCount = computed(
-    () => hiddenCurrencies.value.filter(currency => prices.value[currency.code]?.independent).length
-)
-
 type CurrencyListItem = {
     code: string
     symbol?: string
-    ratio_gbp: number | null
     ratio_eur: number | null
 }
 
@@ -238,6 +282,7 @@ const rows = computed(() => {
     }
 
     derivedVisibleCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
+    independentMinorCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
 
     if (showHiddenCurrencies.value) {
         hiddenCurrencies.value.forEach(currency => list.push({ currency, isBase: false }))
@@ -319,14 +364,8 @@ const rows = computed(() => {
                                 fixed-width
                                 aria-hidden="true"
                             />
-                            {{ showHiddenCurrencies ? ctrans('Hide other currencies') : ctrans('Other currencies') }}
+                            {{ showHiddenCurrencies ? ctrans('Hide minor currencies') : ctrans('Minor currencies') }}
                             <span class="text-gray-400">({{ hiddenCurrencies.length }})</span>
-                            <span
-                                v-if="filledHiddenCurrenciesCount"
-                                class="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-600 ring-1 ring-green-200"
-                            >
-                                {{ filledHiddenCurrenciesCount }} {{ ctrans('independent') }}
-                            </span>
                         </button>
                     </td>
                 </tr>

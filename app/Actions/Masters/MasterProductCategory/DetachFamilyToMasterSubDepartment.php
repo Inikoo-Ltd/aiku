@@ -8,14 +8,14 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Masters\MasterProductCategory;
 
-class DetachFamilyToMasterSubDepartment extends GrpAction
+class DetachFamilyToMasterSubDepartment extends OrgAction
 {
     use WithActionUpdate;
 

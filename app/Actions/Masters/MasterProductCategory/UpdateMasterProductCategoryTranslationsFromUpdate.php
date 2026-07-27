@@ -2,13 +2,13 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
+class UpdateMasterProductCategoryTranslationsFromUpdate extends OrgAction
 {
     use asAction;
 
@@ -125,7 +125,7 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
 
     public function action(MasterProductCategory $masterProductCategory, array $modelData): void
     {
-        $this->initialisation($masterProductCategory->group, $modelData);
+        $this->initialisationFromGroup($masterProductCategory->group, $modelData);
         $this->handle($masterProductCategory, $this->validatedData);
     }
 

@@ -8,13 +8,13 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\ActionRequest;
 
-class UploadImagesToMasterProductCategory extends GrpAction
+class UploadImagesToMasterProductCategory extends OrgAction
 {
     use WithAttachMediaToModel;
     use WithUploadModelImages;
@@ -52,7 +52,7 @@ class UploadImagesToMasterProductCategory extends GrpAction
 
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): void
     {
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisationFromGroup($masterProductCategory->group, $request);
 
         $this->handle($masterProductCategory, 'image', $this->validatedData, true);
     }

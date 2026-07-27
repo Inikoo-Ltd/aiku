@@ -2,6 +2,7 @@
 
 namespace App\Actions\Helpers\Brand;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -80,10 +81,12 @@ class RedoBrandTimeSeries implements ShouldBeUnique
 
         foreach ($shopIds as $shopId) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
                 if ($async) {
-                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
                 } else {
-                    ProcessBrandTimeSeriesRecords::run($brand->id, $shopId, $frequency, $from, $to);
+                    ProcessBrandTimeSeriesRecords::run($brand->id, $shopId, $frequency, $periodFrom, $periodTo);
                 }
             }
         }

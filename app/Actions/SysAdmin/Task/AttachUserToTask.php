@@ -8,14 +8,14 @@
 
 namespace App\Actions\SysAdmin\Task;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Task\TaskStatusEnum;
 use App\Models\SysAdmin\Task;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class AttachUserToTask extends GrpAction
+class AttachUserToTask extends OrgAction
 {
     public function handle(Task $task, $user, array $pivotData): void
     {
@@ -34,7 +34,7 @@ class AttachUserToTask extends GrpAction
 
     public function asController(Task $task, User $user, ActionRequest $request): void
     {
-        $this->initialisation($task->group, $request);
+        $this->initialisationFromGroup($task->group, $request);
         $this->handle($task, $user, $this->validatedData);
     }
 }

@@ -9,7 +9,7 @@
 namespace App\Actions\SysAdmin\Organisation;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
@@ -50,7 +50,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
-class StoreOrganisation extends GrpAction
+class StoreOrganisation extends OrgAction
 {
     use WithModelAddressActions;
 
@@ -246,7 +246,7 @@ class StoreOrganisation extends GrpAction
      */
     public function action(Group $group, $modelData): Organisation
     {
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }
@@ -256,7 +256,7 @@ class StoreOrganisation extends GrpAction
      */
     public function asController(Group $group, ActionRequest $request): Organisation
     {
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->validatedData);
     }

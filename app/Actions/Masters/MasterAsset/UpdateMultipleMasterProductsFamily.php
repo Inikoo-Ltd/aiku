@@ -9,7 +9,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\WithMasterProductCategoryAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterProductCategory;
@@ -17,7 +17,7 @@ use App\Models\Masters\MasterAsset;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMultipleMasterProductsFamily extends GrpAction
+class UpdateMultipleMasterProductsFamily extends OrgAction
 {
     use WithActionUpdate;
     use WithMasterProductCategoryAction;
@@ -58,7 +58,7 @@ class UpdateMultipleMasterProductsFamily extends GrpAction
     {
         $this->masterFamily = $masterFamily;
         $this->masterProductCategory = $masterFamily;
-        $this->initialisation($masterFamily->group, $request);
+        $this->initialisationFromGroup($masterFamily->group, $request);
 
         $this->handle($masterFamily, $this->validatedData);
     }

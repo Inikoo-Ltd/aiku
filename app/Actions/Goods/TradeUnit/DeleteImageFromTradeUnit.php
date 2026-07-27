@@ -8,13 +8,13 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithImageColumns;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteImageFromTradeUnit extends GrpAction
+class DeleteImageFromTradeUnit extends OrgAction
 {
     use WithImageColumns;
 
@@ -43,7 +43,7 @@ class DeleteImageFromTradeUnit extends GrpAction
 
     public function asController(TradeUnit $tradeUnit, Media $media, ActionRequest $request): void
     {
-        $this->initialisation($tradeUnit->group, $request);
+        $this->initialisationFromGroup($tradeUnit->group, $request);
 
         $this->handle($tradeUnit, $media, true);
     }
