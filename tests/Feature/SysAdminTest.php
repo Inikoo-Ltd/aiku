@@ -1531,6 +1531,32 @@ test('UI sysadmin search analytics index', function (User $user) {
     });
 })->depends('SetUserAuthorisedModels command');
 
+test('UI sysadmin ai analytics index', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    \App\Models\SysAdmin\McpRequest::create([
+        'group_id'    => group()->id,
+        'user_id'     => $user->id,
+        'tool'        => 'shop-sales-tool',
+        'arguments'   => ['shop' => 'eu'],
+        'is_error'    => false,
+        'duration_ms' => 120,
+    ]);
+
+    $response = get(route('grp.sysadmin.mcp.index'));
+    $response->assertInertia(function (AssertableInertia $page) use ($user) {
+        $page
+            ->component('SysAdmin/McpAnalytics')
+            ->has('insights')
+            ->where('insights.calls', 1)
+            ->has('data.data', 1)
+            ->has('users.data', 1)
+            ->where('users.data.0.username', $user->username)
+            ->where('users.data.0.calls', 1);
+    });
+})->depends('SetUserAuthorisedModels command');
+
 test('UI sysadmin guest show and edit', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);

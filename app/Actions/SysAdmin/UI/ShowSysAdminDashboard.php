@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\McpRequest;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -60,6 +61,11 @@ class ShowSysAdminDashboard extends OrgAction
                         'name'  => __('Guests'),
                         'stat'  => $group->sysadminStats->number_guests_status_active,
                         'route' => ['name' => 'grp.sysadmin.guests.index']
+                    ],
+                    [
+                        'name'  => __('AI queries (30d)'),
+                        'stat'  => McpRequest::where('group_id', $group->id)->where('created_at', '>=', now()->subDays(30))->count(),
+                        'route' => ['name' => 'grp.sysadmin.mcp.index']
                     ]
                 ]
             ]
