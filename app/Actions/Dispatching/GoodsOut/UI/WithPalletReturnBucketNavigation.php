@@ -52,6 +52,7 @@ trait WithPalletReturnBucketNavigation
         }
 
         $activityAt = IndexWarehousePalletReturns::RETURN_ACTIVITY_AT;
+        $sortColumn = IndexWarehousePalletReturns::returnSortColumn($bucket);
 
         $sortValues = [
             $activityAt => $palletReturn->confirmed_at ?? $palletReturn->submitted_at ?? $palletReturn->created_at,
@@ -70,9 +71,11 @@ trait WithPalletReturnBucketNavigation
                 'picking_at'         => 'pallet_returns.picking_at',
                 'picked_at'          => 'pallet_returns.picked_at',
                 'confirmed_at'       => 'pallet_returns.confirmed_at',
+                'cancel_at'          => 'pallet_returns.cancel_at',
+                'dispatched_at'      => 'pallet_returns.dispatched_at',
                 'activity_at'        => $activityAt,
             ],
-            defaultSort: [$activityAt, true],
+            defaultSort: [$sortColumn, true],
             forward: $forward
         );
     }

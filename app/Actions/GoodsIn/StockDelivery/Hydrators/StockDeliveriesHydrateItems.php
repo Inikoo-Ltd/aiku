@@ -47,9 +47,12 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
             'number_stock_delivery_items_over_delivered'   => $discrepancy['over_delivered'],
             'gross_weight'                                 => $weights['gross_weight'],
             'net_weight'                                   => $weights['net_weight'],
-            'cost_items'                                   => $itemsNet,
-            'cost_total'                                   => $itemsNet + $extras,
         ];
+
+        if (!$stockDelivery->is_costed) {
+            $stats['cost_items'] = $itemsNet;
+            $stats['cost_total'] = $itemsNet + $extras;
+        }
 
         foreach (StockDeliveryItemStateEnum::cases() as $case) {
             $stats['number_stock_delivery_items_state_'.$case->snake()] = (int) Arr::get($stateCounts, $case->value, 0);

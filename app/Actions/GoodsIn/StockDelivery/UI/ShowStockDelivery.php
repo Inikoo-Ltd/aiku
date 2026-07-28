@@ -23,6 +23,7 @@ use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
+use App\Http\Resources\Procurement\StockDeliveryItemCostResource;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Http\Resources\Procurement\StockDeliveryUnderOverDeliveredItemResource;
@@ -31,6 +32,7 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -105,10 +107,9 @@ class ShowStockDelivery extends OrgAction
                 'box_stats'        => $this->getBoxStats($stockDelivery, $request),
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => $this->hasUnderOverDeliveredTab($stockDelivery)
-                        ? StockDeliveryTabsEnum::navigation()
-                        : StockDeliveryTabsEnum::navigationExcept([StockDeliveryTabsEnum::UNDER_OVER_DELIVERED]),
+                    'navigation' => $this->getTabsNavigation($stockDelivery),
                 ],
+                'costing'          => $this->getCosting($stockDelivery),
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.stock-delivery.attachment.attach',
@@ -130,8 +131,8 @@ class ShowStockDelivery extends OrgAction
                     : Inertia::optional(fn () => GetStockDeliveryData::run($stockDelivery)),
 
                 StockDeliveryTabsEnum::ITEMS->value => $this->tab == StockDeliveryTabsEnum::ITEMS->value ?
-                    fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value))
-                    : Inertia::optional(fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value))),
+                    fn () => $this->getItems($stockDelivery)
+                    : Inertia::optional(fn () => $this->getItems($stockDelivery)),
 
                 StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value => $this->tab == StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value ?
                     fn () => StockDeliveryUnderOverDeliveredItemResource::collection(IndexStockDeliveryUnderOverDeliveredItems::run($stockDelivery, StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))
@@ -321,6 +322,37 @@ class ShowStockDelivery extends OrgAction
                     ],
                 ],
             ],
+            StockDeliveryStateEnum::BOOKED_IN => [
+                $stockDelivery->is_costed ? [
+                    'label'   => __('Finish costing'),
+                    'tooltip' => __('Finish the costing, this stock delivery will be final'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-check-double',
+                    'key'     => 'finish_stock_delivery_costing',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.finish-costing',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ] : [
+                    'label'   => __('Start checking costs'),
+                    'tooltip' => __('Start checking the costs of this stock delivery'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-box-usd',
+                    'key'     => 'start_stock_delivery_costing',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.start-costing',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+            ],
             default => [],
         };
     }
@@ -375,7 +407,10 @@ class ShowStockDelivery extends OrgAction
                 'org_currency' => $stockDelivery->organisation?->currency?->code,
                 'org_exchange' => $stockDelivery->org_exchange,
                 'items'        => $stockDelivery->cost_items,
-                'extra'        => $stockDelivery->cost_extra + $stockDelivery->cost_shipping + $stockDelivery->cost_duties + $stockDelivery->cost_tax,
+                'extra'        => $stockDelivery->cost_extra,
+                'shipping'     => $stockDelivery->cost_shipping,
+                'duties'       => $stockDelivery->cost_duties,
+                'tax'          => $stockDelivery->cost_tax,
                 'total'        => $stockDelivery->cost_total,
                 'org_items'    => $stockDelivery->items()->sum('org_net_amount'),
             ],
@@ -467,6 +502,42 @@ class ShowStockDelivery extends OrgAction
                 ],
             ],
         );
+    }
+
+    private function getItems(StockDelivery $stockDelivery): AnonymousResourceCollection
+    {
+        $items = IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value);
+
+        return $stockDelivery->is_costed
+            ? StockDeliveryItemCostResource::collection($items)
+            : StockDeliveryItemResource::collection($items);
+    }
+
+    private function getCosting(StockDelivery $stockDelivery): array
+    {
+        return [
+            'is_costed'                  => $stockDelivery->is_costed,
+            'currency'                   => $stockDelivery->currency?->code,
+            'distributeExtraCostRoute'   => $stockDelivery->is_costed && $stockDelivery->state === StockDeliveryStateEnum::BOOKED_IN ? [
+                'name'       => 'grp.models.stock-delivery.distribute-extra-cost',
+                'parameters' => ['stockDelivery' => $stockDelivery->id],
+                'method'     => 'patch',
+            ] : null,
+        ];
+    }
+
+    private function getTabsNavigation(StockDelivery $stockDelivery): array
+    {
+        $navigation = $this->hasUnderOverDeliveredTab($stockDelivery)
+            ? StockDeliveryTabsEnum::navigation()
+            : StockDeliveryTabsEnum::navigationExcept([StockDeliveryTabsEnum::UNDER_OVER_DELIVERED]);
+
+        if ($stockDelivery->is_costed) {
+            $navigation[StockDeliveryTabsEnum::ITEMS->value]['title'] = __('Items (costing)');
+            $navigation[StockDeliveryTabsEnum::ITEMS->value]['icon']  = 'fal fa-box-usd';
+        }
+
+        return $navigation;
     }
 
     private function hasUnderOverDeliveredTab(StockDelivery $stockDelivery): bool

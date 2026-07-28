@@ -261,7 +261,11 @@ use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UndispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UnreceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\FinishStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\DistributeStockDeliveryExtraCost;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToReadyToShipStockDeliveryItem;
@@ -1212,6 +1216,9 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::patch('receive', ReceiveStockDelivery::class)->name('receive');
     Route::patch('unreceive', UnreceiveStockDelivery::class)->name('unreceive');
     Route::patch('cancel', CancelStockDelivery::class)->name('cancel');
+    Route::patch('start-costing', StartStockDeliveryCosting::class)->name('start-costing');
+    Route::patch('finish-costing', FinishStockDeliveryCosting::class)->name('finish-costing');
+    Route::patch('distribute-extra-cost', DistributeStockDeliveryExtraCost::class)->name('distribute-extra-cost');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inStockDelivery'])->name('attachment.detach')->withoutScopedBindings();
@@ -1222,6 +1229,7 @@ Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryI
     Route::patch('ready-to-ship', UpdateStateToReadyToShipStockDeliveryItem::class)->name('ready-to-ship')->withoutScopedBindings();
     Route::patch('set-checked', SetStockDeliveryItemCheckedQuantity::class)->name('set-checked')->withoutScopedBindings();
     Route::patch('place', UpsertStockDeliveryItemPlaced::class)->name('place')->withoutScopedBindings();
+    Route::patch('update-cost', UpdateStockDeliveryItemCost::class)->name('update-cost')->withoutScopedBindings();
 });
 
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {

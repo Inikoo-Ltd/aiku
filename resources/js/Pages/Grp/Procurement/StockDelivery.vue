@@ -105,8 +105,11 @@ const props = defineProps<{
 			currency: string | null
 			org_currency: string | null
 			org_exchange: number | string | null
-			items: number | string
-			extra: number | string
+			items: number | string | null
+			extra: number | string | null
+			shipping: number | string | null
+			duties: number | string | null
+			tax: number | string | null
 			total: number | string
 			org_items: number | string
 		}
@@ -118,6 +121,11 @@ const props = defineProps<{
 	attachmentRoutes: {
 		attachRoute: routeType
 		detachRoute: routeType
+	}
+	costing: {
+		is_costed: boolean
+		currency: string | null
+		distributeExtraCostRoute: routeType | null
 	}
 	items?: {}
 	under_over_delivered?: {}
@@ -195,8 +203,20 @@ const orgPerOrder = computed(() => {
 	return Number(org_exchange) || null
 })
 
+const costRows = computed(() => {
+	const { items, extra, shipping, duties, tax } = props.box_stats.third_block
+
+	return [
+		{ key: "items", label: trans("Items"), amount: Number(items) || 0, alwaysShown: true },
+		{ key: "extra", label: trans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
+		{ key: "shipping", label: trans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
+		{ key: "duties", label: trans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
+		{ key: "tax", label: trans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
+	].filter(row => row.alwaysShown || row.amount !== 0)
+})
+
 const costBlocks = computed(() => {
-	const { currency, org_currency, items, extra, total, org_items } = props.box_stats.third_block
+	const { currency, org_currency, items, total, org_items } = props.box_stats.third_block
 
 	const money = (code: string | null, amount: number) => locale.currencyFormat(code ?? "", amount)
 
@@ -204,8 +224,7 @@ const costBlocks = computed(() => {
 		key: "supplier",
 		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
 		rows: [
-			{ label: trans("Items"), value: money(currency, Number(items)) },
-			{ label: trans("Extra costs"), value: money(currency, Number(extra)) },
+			...costRows.value.map(row => ({ label: row.label, value: money(currency, row.amount) })),
 			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
 		],
 	}
@@ -213,8 +232,11 @@ const costBlocks = computed(() => {
 	const sameCurrency = !org_currency || org_currency === currency
 	const orgCurrency = org_currency || currency
 	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
-	const orgItems = sameCurrency ? Number(items) : Number(org_items)
-	const orgExtra = Number(extra) * rate
+
+	const orgAmount = (row: { key: string; amount: number }) =>
+		row.key === "items" && !sameCurrency ? Number(org_items) : row.amount * rate
+
+	const orgTotal = costRows.value.reduce((sum, row) => sum + orgAmount(row), 0)
 
 	const orderPerOrg = rate ? 1 / rate : null
 	const rateLabel = sameCurrency
@@ -229,9 +251,8 @@ const costBlocks = computed(() => {
 			key: "org",
 			title: rateLabel,
 			rows: [
-				{ label: trans("Items"), value: money(orgCurrency, orgItems) },
-				{ label: trans("Extra costs"), value: money(orgCurrency, orgExtra) },
-				{ label: trans("Total"), value: money(orgCurrency, orgItems + orgExtra), isTotal: true },
+				...costRows.value.map(row => ({ label: row.label, value: money(orgCurrency, orgAmount(row)) })),
+				{ label: trans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
 			],
 		},
 	]
@@ -362,6 +383,55 @@ const confirmCancelStockDelivery = (action: any) => {
 	})
 }
 
+const startCostingLoading = ref(false)
+const finishCostingLoading = ref(false)
+
+const confirmStartStockDeliveryCosting = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to start checking the costs of this stock delivery?"),
+		header: trans("Start checking costs"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Start checking costs"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { startCostingLoading.value = true },
+				onFinish: () => { startCostingLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to start checking the costs"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmFinishStockDeliveryCosting = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to finish the costing? This stock delivery will be final and can not be changed anymore."),
+		header: trans("Finish costing"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Finish costing"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { finishCostingLoading.value = true },
+				onFinish: () => { finishCostingLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to finish the costing"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
 const confirmDeleteStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
@@ -450,6 +520,28 @@ const confirmDeleteStockDelivery = (action: any) => {
 				:tooltip="action.tooltip"
 				:loading="cancelLoading"
 				@click="() => confirmCancelStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-start-stock-delivery-costing="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="startCostingLoading"
+				@click="() => confirmStartStockDeliveryCosting(action)"
+			/>
+		</template>
+
+		<template #button-finish-stock-delivery-costing="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="finishCostingLoading"
+				@click="() => confirmFinishStockDeliveryCosting(action)"
 			/>
 		</template>
 
@@ -690,6 +782,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		:key="currentTab"
 		:data="props[currentTab]"
 		:tab="currentTab"
+		:costing="currentTab === 'items' ? costing : undefined"
 		:detachRoute="attachmentRoutes.detachRoute"
 	/>
 

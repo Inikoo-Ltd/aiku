@@ -415,6 +415,10 @@ const locale = inject('locale', aikuLocaleStructure)
             {{ useFormatTime(palletReturn.cancel_at, { localeCode: locale.language.code, formatTime: "hm" })}}
         </template>
 
+        <template #cell(activity_at)="{ item: palletReturn }">
+            {{ useFormatTime(palletReturn.activity_at, { localeCode: locale.language.code, formatTime: "aiku" })}}
+        </template>
+
         <template #cell(date)="{ item: palletReturn }">
             {{ useFormatTime(palletReturn.date, { localeCode: locale.language.code, formatTime: "aiku" })}}
         </template>

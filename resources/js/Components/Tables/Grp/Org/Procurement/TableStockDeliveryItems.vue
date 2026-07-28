@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
@@ -13,19 +13,25 @@ import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { routeType } from '@/types/route'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faExclamationCircle as falExclamationCircle } from '@fal'
+import { faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, faExclamationCircle as falExclamationCircle } from '@fal'
 import { faExclamationCircle, faSpinner } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, falExclamationCircle)
+library.add(faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, falExclamationCircle)
 
 const props = defineProps<{
-    data: object,
-    tab?: string
+    data: { data?: any[] },
+    tab?: string,
+    costing?: {
+        is_costed: boolean
+        currency: string | null
+        distributeExtraCostRoute: routeType | null
+    }
 }>()
 
 const locale = useLocaleStore()
@@ -35,7 +41,7 @@ const changingId = ref<number | null>(null)
 
 function reloadStockDelivery() {
     router.reload({
-        only: [props.tab ?? 'items', 'timelines', 'stock_delivery', 'box_stats', 'pageHead', 'tabs', 'queryBuilderProps'],
+        only: [props.tab ?? 'items', 'timelines', 'stock_delivery', 'box_stats', 'pageHead', 'tabs', 'queryBuilderProps', 'costing'],
     })
 }
 
@@ -149,6 +155,86 @@ function placedAdditionalData(item: any) {
     return { location_org_stock_id: selectedLocation[item.id] ?? null }
 }
 
+const costFields = ['cost_items', 'cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax'] as const
+
+const costDraft = reactive<Record<number, Record<string, number>>>({})
+const savingCostId = ref<number | null>(null)
+const extraCostToDistribute = ref<number>(0)
+const distributingType = ref<string | null>(null)
+
+watch(() => props.data?.data, (items) => {
+    for (const id of Object.keys(costDraft)) {
+        delete costDraft[Number(id)]
+    }
+
+    for (const item of items ?? []) {
+        if (!item.updateCostRoute) {
+            continue
+        }
+
+        costDraft[item.id] = Object.fromEntries(costFields.map(field => [field, Number(item[field] ?? 0)]))
+    }
+}, { immediate: true })
+
+function money(item: any, value: number | string | null) {
+    return locale.currencyFormat(item.currency ?? props.costing?.currency ?? 'EUR', Number(value ?? 0))
+}
+
+function rowTotal(item: any) {
+    const draft = costDraft[item.id]
+
+    if (!draft) {
+        return Number(item.cost_total ?? 0)
+    }
+
+    return costFields.reduce((total, field) => total + (Number(draft[field]) || 0), 0)
+}
+
+async function saveCost(item: any) {
+    savingCostId.value = item.id
+
+    try {
+        await axios.patch(route(item.updateCostRoute.name, item.updateCostRoute.parameters), costDraft[item.id])
+        notify({ title: trans('Success'), text: trans('Item costs updated'), type: 'success' })
+        reloadStockDelivery()
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to update item costs'),
+            type: 'error',
+        })
+    } finally {
+        savingCostId.value = null
+    }
+}
+
+async function distributeExtraCost(type: 'equally' | 'by_value') {
+    const distributeRoute = props.costing?.distributeExtraCostRoute
+
+    if (!distributeRoute) {
+        return
+    }
+
+    distributingType.value = type
+
+    try {
+        await axios.patch(route(distributeRoute.name, distributeRoute.parameters), {
+            amount: Number(extraCostToDistribute.value) || 0,
+            type,
+        })
+        notify({ title: trans('Success'), text: trans('Extra costs distributed'), type: 'success' })
+        reloadStockDelivery()
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to distribute the extra costs'),
+            type: 'error',
+        })
+    } finally {
+        distributingType.value = null
+    }
+}
+
 async function undoSowing(sowing: any) {
     try {
         await axios.delete(route(sowing.undo_route.name, sowing.undo_route.parameters))
@@ -166,6 +252,64 @@ async function undoSowing(sowing: any) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #before-table>
+            <div v-if="costing?.distributeExtraCostRoute" class="flex flex-wrap items-center gap-3 px-6 py-3">
+                <label for="extra-cost-to-distribute" class="text-sm text-gray-600">
+                    {{ trans('Set extra costs') }} <span v-if="costing.currency">({{ costing.currency }})</span>
+                </label>
+                <input
+                    id="extra-cost-to-distribute"
+                    v-model="extraCostToDistribute"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    class="border border-gray-300 rounded text-sm py-1 px-2 w-32"
+                />
+
+                <span class="text-sm text-gray-600">{{ trans('Distribute') }}:</span>
+
+                <Button
+                    :tooltip="trans('Distribute equally each items')"
+                    icon="fal fa-equals"
+                    type="tertiary"
+                    size="xs"
+                    :loading="distributingType === 'equally'"
+                    :disabled="distributingType !== null"
+                    @click="distributeExtraCost('equally')"
+                />
+
+                <Button
+                    :tooltip="trans('Distribute depending on value')"
+                    icon="fal fa-dollar-sign"
+                    type="tertiary"
+                    size="xs"
+                    :loading="distributingType === 'by_value'"
+                    :disabled="distributingType !== null"
+                    @click="distributeExtraCost('by_value')"
+                />
+            </div>
+        </template>
+
+        <template #cell(units_in)="{ item }">
+            <span class="text-gray-500">{{ formatQuantity(Number(item.unit_quantity_placed)) }}</span>
+        </template>
+
+        <template v-for="field in costFields" :key="field" #[`cell(${field})`]="{ item }">
+            <input
+                v-if="costDraft[item.id]"
+                v-model="costDraft[item.id][field]"
+                type="number"
+                step="0.01"
+                min="0"
+                class="border border-gray-300 rounded text-sm py-1 px-2 w-28"
+            />
+            <span v-else>{{ money(item, item[field]) }}</span>
+        </template>
+
+        <template #cell(cost_total)="{ item }">
+            <span class="font-semibold text-gray-700">{{ money(item, rowTotal(item)) }}</span>
+        </template>
+
         <template #cell(code)="{ item }">
             <div class="flex items-center gap-1.5">
                 <Link
@@ -232,7 +376,19 @@ async function undoSowing(sowing: any) {
         <template #cell(actions)="{ item }">
             <div class="flex justify-end items-center gap-2">
                 <Button
-                    v-if="item.confirmRoute"
+                    v-if="item.updateCostRoute"
+                    :label="trans('Save')"
+                    :tooltip="trans('Save the costs of this item')"
+                    icon="fal fa-save"
+                    type="save"
+                    size="xs"
+                    :loading="savingCostId === item.id"
+                    :disabled="savingCostId === item.id"
+                    @click="saveCost(item)"
+                />
+
+                <Button
+                    v-else-if="item.confirmRoute"
                     :label="trans('Confirm')"
                     :tooltip="trans('Confirm item')"
                     icon="fal fa-spell-check"
@@ -255,7 +411,7 @@ async function undoSowing(sowing: any) {
                     @click="confirmChangeState($event, item, item.readyToShipRoute, trans('Set this item as ready to ship?'), trans('Ready to ship'))"
                 />
 
-                <span v-if="!item.confirmRoute && !item.readyToShipRoute" class="text-gray-400 text-sm">
+                <span v-if="!item.updateCostRoute && !item.confirmRoute && !item.readyToShipRoute" class="text-gray-400 text-sm">
                     {{ trans('No actions needed') }}
                 </span>
             </div>
