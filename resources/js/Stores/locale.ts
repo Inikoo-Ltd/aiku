@@ -42,7 +42,7 @@ export const useLocaleStore = defineStore("locale", () => {
 	}
 
 	// ponytail: mirrors the master shop price_exchanges fraction_digits config, keep in sync
-	const WHOLE_NUMBER_PRACTICE_CURRENCIES = ["CZK", "HUF", "UAH"]
+	const WHOLE_NUMBER_PRACTICE_CURRENCIES = ["CZK", "HUF", "UAH", "SEK"]
 
 	// RRP is a recommended shelf price, so in whole-number countries it is rounded up
 	// for display; stored values and exact unit rates (price/units) keep their decimals.

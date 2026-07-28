@@ -2036,7 +2036,7 @@ test('master shop price exchanges default and seeder', function () {
 
     expect($masterShop->price_exchanges)->toHaveKeys(['GBP', 'EUR', 'PLN', 'CZK', 'HUF', 'RON', 'SEK', 'UAH'])
         ->and($masterShop->price_exchanges['EUR']['is_major'])->toBeTrue()
-        ->and($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11])
+        ->and($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11, 'fraction_digits' => 0])
         ->and($masterShop->price_exchanges['PLN']['exchange'])->toBe(4.3);
 });
 

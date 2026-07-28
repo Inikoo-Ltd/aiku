@@ -22,7 +22,7 @@ class MasterShopPriceExchangesSeeder extends Seeder
             'CZK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 25.5, 'fraction_digits' => 0],
             'HUF' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 375, 'fraction_digits' => 0],
             'RON' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 5],
-            'SEK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 11],
+            'SEK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 11, 'fraction_digits' => 0],
             'UAH' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 51, 'fraction_digits' => 0],
         ],
         'ds'    => [
