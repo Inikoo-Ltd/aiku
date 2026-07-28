@@ -898,9 +898,12 @@ class ShowDeliveryNote extends OrgAction
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
         }
 
+        $allowScanToPack = (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false);
+
         $scanToPack = null;
         if (
-            $deliveryNote->state == DeliveryNoteStateEnum::PACKING
+            $allowScanToPack
+            && $deliveryNote->state == DeliveryNoteStateEnum::PACKING
             && $isEditable
             && $allowAction
             && $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING

@@ -34,11 +34,16 @@ class PackDeliveryNoteItemByScan extends OrgAction
     private DeliveryNote $deliveryNote;
 
     /**
-     * Packing through a scan must be gated by the same rule that decides whether the packing UI is
-     * shown at all, so the endpoint cannot be used to pack a delivery note somebody else is handling.
+     * Gated by the same two rules that decide whether the scan panel is rendered at all: the
+     * organisation has opted into scanning, and this user is the one handling the delivery note.
+     * Without the first check the endpoint would stay live for organisations that never enabled it.
      */
     public function authorize(ActionRequest $request): bool
     {
+        if (!data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false)) {
+            return false;
+        }
+
         return $this->canHandleDeliveryNote($this->deliveryNote);
     }
 
