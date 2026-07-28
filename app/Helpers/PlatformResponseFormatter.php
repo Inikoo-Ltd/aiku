@@ -162,9 +162,29 @@ class PlatformResponseFormatter
             ]];
         }
 
+        $entries = $this->extractFromEmbeddedJson($value, $depth);
+
+        if ($entries !== []) {
+            return $entries;
+        }
+
         $message = $this->tidy($value);
 
         return $message === '' ? [] : [['message' => $message, 'code' => null]];
+    }
+
+    /**
+     * @return array<int, array{message: string, code: string|null}>
+     */
+    private function extractFromEmbeddedJson(string $value, int $depth): array
+    {
+        if (!preg_match('/^[^:{\[]{1,60}:\s*([\[{].*[]}])$/s', $value, $matches)) {
+            return [];
+        }
+
+        $decoded = json_decode($matches[1], true);
+
+        return is_array($decoded) ? $this->extractEntries($decoded, $depth + 1) : [];
     }
 
     /**

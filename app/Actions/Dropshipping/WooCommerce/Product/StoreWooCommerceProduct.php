@@ -11,13 +11,13 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
-use App\Helpers\PlatformResponseFormatter;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -31,6 +31,7 @@ class StoreWooCommerceProduct extends RetinaAction
     use AsAction;
     use WithAttributes;
     use HasBucketAttachment;
+    use WithPortfolioErrorResponse;
 
     /**
      * @throws \Exception
@@ -208,10 +209,8 @@ class StoreWooCommerceProduct extends RetinaAction
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             } else {
-                $errorMessage = PlatformResponseFormatter::make()->message($result);
-
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => $errorMessage ? ['message' => $errorMessage] : null
+                    'errors_response' => $this->portfolioErrorResponse($result)
                 ]);
 
                 UpdatePlatformPortfolioLog::dispatch($logs, [
@@ -225,9 +224,7 @@ class StoreWooCommerceProduct extends RetinaAction
             // Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [
-                    'message' => $e->getMessage()
-                ]
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
             ]);
 
             if ($logs) {

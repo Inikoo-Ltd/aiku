@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Traits\WithActionUpdate;
@@ -25,6 +26,7 @@ use Sentry;
 class UpdateShopifyProduct extends RetinaAction
 {
     use WithActionUpdate;
+    use WithPortfolioErrorResponse;
     use HasBucketAttachment;
 
     public function handle(Portfolio $portfolio): array
@@ -45,7 +47,7 @@ class UpdateShopifyProduct extends RetinaAction
         if (!$portfolio->platform_product_id) {
             $errorMessage = 'Product not found in Shopify. Please create the product first.';
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [$errorMessage]
+                'errors_response' => $this->portfolioErrorResponse($errorMessage)
             ]);
 
             return [false, $errorMessage];
@@ -115,7 +117,7 @@ class UpdateShopifyProduct extends RetinaAction
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors']);
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => [$errorMessage]
+                    'errors_response' => $this->portfolioErrorResponse($errorMessage)
                 ]);
                 Log::error("Product update failed: ".$errorMessage);
 
@@ -129,7 +131,7 @@ class UpdateShopifyProduct extends RetinaAction
                 $errors       = $body['data']['productUpdate']['userErrors'];
                 $errorMessage = 'User errors: '.json_encode($errors);
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => [$errorMessage]
+                    'errors_response' => $this->portfolioErrorResponse($errorMessage)
                 ]);
                 Log::error("Product update failed: ".$errorMessage);
 
@@ -141,7 +143,7 @@ class UpdateShopifyProduct extends RetinaAction
 
             if (!$updatedProduct) {
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => ['No product data in response']
+                    'errors_response' => $this->portfolioErrorResponse('No product data in response')
                 ]);
                 Log::error("Product update failed: No product data in response");
 
@@ -158,7 +160,7 @@ class UpdateShopifyProduct extends RetinaAction
         } catch (Exception $e) {
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [$e->getMessage()]
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
             ]);
 
             return [false, $e->getMessage()];
