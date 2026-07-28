@@ -51,10 +51,17 @@ trait WithPalletReturnBucketNavigation
             $query->where('pallet_returns.type', $type);
         }
 
+        $activityAt = IndexWarehousePalletReturns::RETURN_ACTIVITY_AT;
+
+        $sortValues = [
+            $activityAt => $palletReturn->confirmed_at ?? $palletReturn->submitted_at ?? $palletReturn->created_at,
+        ];
+
         return $this->getBucketNeighbour(
             query: $query,
             model: $palletReturn,
             sort: $request->input('bucket_sort'),
+            sortValues: $sortValues,
             sortColumns: [
                 'reference'          => 'pallet_returns.reference',
                 'customer_reference' => 'pallet_returns.customer_reference',
@@ -63,8 +70,9 @@ trait WithPalletReturnBucketNavigation
                 'picking_at'         => 'pallet_returns.picking_at',
                 'picked_at'          => 'pallet_returns.picked_at',
                 'confirmed_at'       => 'pallet_returns.confirmed_at',
+                'activity_at'        => $activityAt,
             ],
-            defaultSort: ['pallet_returns.date', true],
+            defaultSort: [$activityAt, true],
             forward: $forward
         );
     }

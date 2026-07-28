@@ -26,6 +26,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -36,6 +37,8 @@ class IndexWarehousePalletReturns extends OrgAction
     use WithPalletReturnSubNavigation;
     use WithFulfilmentWarehouseAuthorisation;
 
+
+    public const RETURN_ACTIVITY_AT = 'coalesce(pallet_returns.confirmed_at, pallet_returns.submitted_at, pallet_returns.created_at)';
 
     private ?string $restriction = null;
     private ?string $type = null;
@@ -313,7 +316,7 @@ class IndexWarehousePalletReturns extends OrgAction
             }
         }
 
-        $queryBuilder->defaultSort('-date');
+        $queryBuilder->defaultSort('-activity_at');
 
         return $queryBuilder
             ->select([
@@ -350,6 +353,7 @@ class IndexWarehousePalletReturns extends OrgAction
                     ->limit(1)
                     ->select('ps.slug');
             }, 'picking_session_slug')
+            ->addSelect(DB::raw(self::RETURN_ACTIVITY_AT.' as activity_at'))
             ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'picking_at', 'picked_at', 'confirmed_at', 'number_stored_items', 'platform_name', 'cust_name', 'picker_name', 'packer_name'])
             ->allowedFilters([$globalSearch, 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
