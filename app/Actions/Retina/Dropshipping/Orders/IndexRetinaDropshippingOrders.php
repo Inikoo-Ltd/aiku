@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
+use App\Enums\Helpers\Export\ExportTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Fulfilment\RetinaDropshippingOrdersInCustomerSalesChannelResources;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -150,7 +151,39 @@ class IndexRetinaDropshippingOrders extends RetinaAction
                     'afterTitle' => [
                         'label' => '@'.$this->customerSalesChannel->name,
                     ],
-                    'actions'    => $actions
+                    'actions'    => $actions,
+                    'exports'    => [
+                        [
+                            'routes' => [
+                                [
+                                    'label'   => 'Excel',
+                                    'key'     => 'xlsx',
+                                    'icon'    => ['fal', 'fa-file-excel'],
+                                    'popover' => false,
+                                    'route'   => [
+                                        'name'       => 'retina.dropshipping.customer_sales_channels.orders.export',
+                                        'parameters' => [
+                                            'customerSalesChannel' => $this->customerSalesChannel->slug,
+                                            'type'                 => ExportTypeEnum::XLSX->value
+                                        ]
+                                    ],
+                                ],
+                                [
+                                    'label'          => 'CSV',
+                                    'key'            => 'csv',
+                                    'icon'           => ['fal', 'fa-file-csv'],
+                                    'inside_popover' => true,
+                                    'route'          => [
+                                        'name'       => 'retina.dropshipping.customer_sales_channels.orders.export',
+                                        'parameters' => [
+                                            'customerSalesChannel' => $this->customerSalesChannel->slug,
+                                            'type'                 => ExportTypeEnum::CSV->value
+                                        ]
+                                    ],
+                                ],
+                            ]
+                        ]
+                    ]
                 ],
 
                 'is_platform_connected' => $this->checkStatus($this->customerSalesChannel) === 'connected',
