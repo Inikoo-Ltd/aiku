@@ -2078,7 +2078,7 @@ test('update master shop price exchange recalculates minor prices', function () 
 
     $masterAsset->refresh();
 
-    expect($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11])
+    expect($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11, 'fraction_digits' => 2])
         ->and(data_get($masterAsset->master_prices, 'SEK.value'))->toBe('110');
 
     $masterAsset->updateQuietly([
@@ -2402,6 +2402,55 @@ test('minor currency recalculation includes variant master assets', function () 
     $variant->refresh();
 
     expect(data_get($variant->master_prices, 'SEK.value'))->toBe('110');
+});
+
+test('minor currency with zero fraction digits rounds converted prices up to whole numbers', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'CZK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 25.5, 'fraction_digits' => 0],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'CZKDEP-'.uniqid(),
+        'name' => 'CZK Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'CZKFAM-'.uniqid(),
+        'name' => 'CZK Family',
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'CZKAST-'.uniqid(),
+        'name'    => 'CZK Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 9.76,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 9.76, 'independent' => false],
+            'CZK' => ['value' => 248.88, 'independent' => false],
+        ],
+        'master_rrps'   => [
+            'EUR' => ['value' => 19.98, 'independent' => false],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices::run($masterShop, 'CZK');
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'CZK.value'))->toBe('249')
+        ->and(data_get($masterAsset->master_rrps, 'CZK.value'))->toBe('509.49');
+
+    expect(formatPrice(9.76, 25.5))->toBe('248.88')
+        ->and(formatPrice(9.76, 25.5, 0))->toBe('249')
+        ->and(formatPrice(10, 25.5, 0))->toBe('255')
+        ->and(formatPrice(1, 3, 0))->toBe('3');
 });
 
 test('master shop currencies rate can restrict to open shops only', function () {
