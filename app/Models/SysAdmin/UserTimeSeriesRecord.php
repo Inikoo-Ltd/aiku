@@ -22,6 +22,11 @@ class UserTimeSeriesRecord extends Model
 
     protected $guarded = [];
 
-
-
+    protected function casts(): array
+    {
+        return [
+            'from' => 'datetime',
+            'to'   => 'datetime',
+        ];
+    }
 }

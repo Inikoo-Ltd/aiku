@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin;
 
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -38,16 +39,19 @@ class GetUsersInsights
             ->distinct('user_id')
             ->count('user_id');
 
-        $logins = DB::table('user_logins')
-            ->join('users', 'users.id', '=', 'user_logins.user_id')
+        $records = DB::table('user_time_series_records')
+            ->join('user_time_series', 'user_time_series.id', '=', 'user_time_series_records.user_time_series_id')
+            ->join('users', 'users.id', '=', 'user_time_series.user_id')
             ->where('users.group_id', $group->id)
-            ->where('user_logins.date', '>=', now()->subDays($days))
-            ->count();
+            ->where('user_time_series.frequency', TimeSeriesFrequencyEnum::DAILY->value)
+            ->where('user_time_series_records.from', '>=', now()->subDays($days));
 
-        $topUsers = (clone $base)
-            ->join('users', 'users.id', '=', 'user_requests.user_id')
-            ->selectRaw('users.username, users.slug, count(*) as requests, max(user_requests.date) as last_active_at')
+        $logins = (int) (clone $records)->sum('number_logins');
+
+        $topUsers = (clone $records)
+            ->selectRaw('users.username, users.slug, sum(number_requests) as requests, max(user_time_series_records.to) filter (where number_requests > 0) as last_active_at')
             ->groupBy('users.username', 'users.slug')
+            ->havingRaw('sum(number_requests) > 0')
             ->orderByDesc('requests')
             ->limit(10)
             ->get();

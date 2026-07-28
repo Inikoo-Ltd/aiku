@@ -1895,3 +1895,34 @@ test('process user request stores a request', function (User $user) {
     );
     expect($search)->toBeNull();
 })->depends('SetUserAuthorisedModels command');
+
+test('user time series records aggregate requests and logins', function (User $user) {
+    app()->instance('group', $user->group);
+    setPermissionsTeamId($user->group->id);
+
+    \Illuminate\Support\Facades\DB::table('user_logins')->insert([
+        'user_id' => $user->id,
+        'date'    => now(),
+    ]);
+
+    \App\Actions\SysAdmin\User\ProcessUserTimeSeriesRecords::run(
+        \App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum::DAILY,
+        now()->toDateString(),
+        now()->toDateString()
+    );
+
+    $timeSeries = $user->timeSeries()->where('frequency', 'daily')->first();
+    expect($timeSeries)->not->toBeNull()
+        ->and($timeSeries->number_records)->toBeGreaterThan(0);
+
+    $record = $timeSeries->records()->where('period', now()->format('Y-m-d'))->first();
+    expect($record)->not->toBeNull()
+        ->and($record->number_requests)->toBeGreaterThan(0)
+        ->and($record->number_logins)->toBeGreaterThanOrEqual(1)
+        ->and($record->number_active_days)->toBe(1);
+
+    \Illuminate\Support\Facades\Cache::forget("sysadmin-users-insights-{$user->group->id}-30");
+    $insights = \App\Actions\SysAdmin\GetUsersInsights::run($user->group);
+    expect($insights['logins'])->toBeGreaterThanOrEqual(1)
+        ->and(collect($insights['top_users'])->pluck('username'))->toContain($user->username);
+})->depends('SetUserAuthorisedModels command', 'process user request stores a request');
