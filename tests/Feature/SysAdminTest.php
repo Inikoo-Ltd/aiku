@@ -1065,6 +1065,9 @@ test('can show hr dashboard', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('SysAdmin/SysAdminDashboard')
+            ->has('users_insights')
+            ->has('search_insights')
+            ->has('ai_insights')
             ->has('breadcrumbs', 2);
     });
 });
