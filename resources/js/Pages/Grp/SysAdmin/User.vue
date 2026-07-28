@@ -33,7 +33,6 @@ import { trans } from "laravel-vue-i18n";
 import axios from "axios";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import { useCopyText } from "@/Composables/useCopyText"
 
 library.add(faIdCard, faUser, faClock, faDatabase, faEnvelope, faHexagon, faFile, faRoad, faShieldCheck, faUserTag, faExclamationTriangle, faKey, faCopy);
@@ -77,13 +76,8 @@ const component = computed(() => {
 
 const newToken = ref("");
 const isLoadingGenerate = ref(false);
-// const isNewRegenerate = ref(false);
 const onGenerateApiToken = async () => {
     isLoadingGenerate.value = true;
-
-    // if (isRegenerate) {
-    //     isNewRegenerate.value = true;
-    // }
 
     try {
         const data = await axios.post(
@@ -111,7 +105,6 @@ const onGenerateApiToken = async () => {
         });
     } finally {
         isLoadingGenerate.value = false;
-        // isNewRegenerate.value = false;
     }
 }
 
@@ -176,11 +169,6 @@ const onClickCopyButton = async (text: string) => {
                         </div>
                     </div>
 
-
-                    <!-- <div @click="() => onGenerateApiToken(true)" v-tooltip="trans('Regenerate API Token')" class="text-gray-400 hover:text-gray-700 cursor-pointer">
-                        <LoadingIcon v-if="isNewRegenerate" />
-                        <FontAwesomeIcon v-else icon="fal fa-sync-alt" class="" fixed-width aria-hidden="true" />
-                    </div> -->
                 </div>
 
                 <div class="mt-2 text-amber-500 text-sm items-center gap-x-2 text-center">
