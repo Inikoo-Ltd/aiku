@@ -2447,6 +2447,17 @@ test('minor currency with zero fraction digits rounds converted prices up to who
     expect(data_get($masterAsset->master_prices, 'CZK.value'))->toBe('249')
         ->and(data_get($masterAsset->master_rrps, 'CZK.value'))->toBe('509.49');
 
+    $this->artisan('master_shop:price_exchange', [
+        'master_shop'       => $masterShop->slug,
+        'currency'          => 'CZK',
+        '--fraction-digits' => '2',
+        '--force'           => true,
+    ])->assertExitCode(0);
+
+    $masterShop->refresh();
+    expect($masterShop->price_exchanges['CZK'])
+        ->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 25.5, 'fraction_digits' => 2]);
+
     expect(formatPrice(9.76, 25.5))->toBe('248.88')
         ->and(formatPrice(9.76, 25.5, 0))->toBe('249')
         ->and(formatPrice(10, 25.5, 0))->toBe('255')
