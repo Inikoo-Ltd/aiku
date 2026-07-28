@@ -457,7 +457,7 @@ watch(
             <!-- Main Content -->
             <div class="flex-1">
                 <!-- Search & Sort -->
-                <div class="pt-3 pb-2 flex gap-4 px-0 2xl:px-[50px]" :class="layout.rightbasket?.show
+                <div class="flex gap-4 px-0 2xl:px-[50px]" :class="layout.rightbasket?.show
                     ? 'flex-col items-start'
                     : 'flex-col md:flex-row items-center justify-between'">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
@@ -466,7 +466,7 @@ watch(
                                 aria-label="Open Filters"
                                 :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             <!-- Sidebar Toggle for Desktop -->
-                            <div v-else class="py-3">
+                            <div v-else class="">
                                 <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-2 !w-auto"
                                     aria-label="Open Filters"
                                     :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
