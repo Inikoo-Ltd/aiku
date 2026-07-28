@@ -18,6 +18,7 @@ use App\Mcp\Tools\EmployeeDirectoryTool;
 use App\Mcp\Tools\FamilySalesTool;
 use App\Mcp\Tools\GroupSalesTool;
 use App\Mcp\Tools\MailshotPerformanceTool;
+use App\Mcp\Tools\MyAccessTool;
 use App\Mcp\Tools\OffersOverviewTool;
 use App\Mcp\Tools\OrderStatusTool;
 use App\Mcp\Tools\OrgFamilySalesTool;
@@ -39,13 +40,14 @@ use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Aiku')]
 #[Version('1.0.0')]
-#[Instructions('Read-only access to Aiku commerce data. Every tool is scoped by the authenticated user\'s permissions: a tool call against a shop the user cannot view returns a permission error.')]
+#[Instructions('Read-only access to Aiku commerce data. Every tool is scoped by the authenticated user\'s permissions: a tool call against a shop the user cannot view returns a permission error. Tools identify shops, organisations and warehouses by slug, never by their display name — when a question names one in words, call my-access-tool first to get the slugs this user can reach, and never guess a slug.')]
 class AikuServer extends Server
 {
     /**
      * @var array<int, class-string<\Laravel\Mcp\Server\Tool>>
      */
     protected array $tools = [
+        MyAccessTool::class,
         ShopSalesTool::class,
         TopProductsTool::class,
         OrderStatusTool::class,
