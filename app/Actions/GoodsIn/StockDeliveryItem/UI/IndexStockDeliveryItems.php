@@ -155,7 +155,7 @@ class IndexStockDeliveryItems extends OrgAction
                 StockDeliveryStateEnum::READY_TO_SHIP,
             ];
 
-            $table->column(key: 'state_icon', label: ['fal', 'fa-clipboard-list'], canBeHidden: false, type: 'icon');
+            $table->column(key: 'state_icon', label: ['fal', 'fa-yin-yang'], canBeHidden: false, type: 'icon');
 
             if (in_array($stockDelivery->state, $goodsInStates, true)) {
                 $table
