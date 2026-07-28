@@ -251,7 +251,7 @@ async function undoSowing(sowing: any) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5" :useTopPagination="true">
         <template #before-table>
             <div v-if="costing?.distributeExtraCostRoute" class="flex flex-wrap items-center gap-3 px-6 py-3">
                 <label for="extra-cost-to-distribute" class="text-sm text-gray-600">

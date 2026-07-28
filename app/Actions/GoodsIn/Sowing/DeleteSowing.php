@@ -34,12 +34,14 @@ class DeleteSowing extends OrgAction
             $location           = $sowing->orgStockMovement->location;
             $orgStock           = $sowing->orgStockMovement->orgStock;
 
+            $type = $sowing->stock_delivery_id ? OrgStockMovementTypeEnum::CANCEL_PURCHASE : OrgStockMovementTypeEnum::CANCEL_RETURN_PICKED;
+
             StoreOrgStockMovement::run(
                 $orgStock,
                 $location,
                 [
                     'quantity' => -$sowing->quantity,
-                    'type'     => OrgStockMovementTypeEnum::CANCEL_RETURN_PICKED,
+                    'type'     => $type,
                     'user_id'  => $user?->id,
                 ],
                 $sowing
