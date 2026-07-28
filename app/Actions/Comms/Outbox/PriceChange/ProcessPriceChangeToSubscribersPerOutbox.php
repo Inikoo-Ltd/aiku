@@ -30,12 +30,18 @@ class ProcessPriceChangeToSubscribersPerOutbox
             return;
         }
 
-        $interval = $outbox->interval ?? 0;
-
         $currentDateTime = Carbon::now()->utc();
-        $lastCheckInMinuties = Carbon::now()->utc()->subMinutes($interval);
 
-        $lastOutBoxSent = $outbox->last_sent_at;
+        $lastOutBoxSent = $outbox->last_sent_at ??  null;
+        $interval = $outbox->interval ?? 10; // by default 10 minutes
+
+        // Check if enough time has passed since last outbox was sent
+        if ($lastOutBoxSent && Carbon::parse($lastOutBoxSent)->diffInMinutes($currentDateTime) < $interval) {
+            return;
+        }
+
+        $lastOutBoxSent = $lastOutBoxSent ?? $currentDateTime->copy()->subHours(24);
+
 
         // products of the shop (rebels that do not follow master pricing) whose master asset
         // price/rrp changed within the window, from the audit trail
@@ -50,18 +56,12 @@ class ProcessPriceChangeToSubscribersPerOutbox
         $baseQuery->whereNull('products.deleted_at');
         $baseQuery->whereNotNull('products.master_product_id');
 
-        $baseQuery->join('audits', function ($join) use ($lastCheckInMinuties, $lastOutBoxSent) {
+        $baseQuery->join('audits', function ($join) use ($lastOutBoxSent) {
             $join->on('audits.auditable_id', '=', 'products.master_product_id')
                 ->where('audits.auditable_type', 'MasterAsset')
                 ->where('audits.event', 'updated')
-                ->where('audits.created_at', '>', $lastCheckInMinuties)
-                // ponytail: only scalar price/rrp keys, per-currency-only changes written to
-                // master_prices/master_rrps jsonb won't trigger. Widen the jsonb_exists if that matters.
+                ->where('audits.created_at', '>', $lastOutBoxSent)
                 ->whereRaw("(jsonb_exists(audits.new_values, 'price') OR jsonb_exists(audits.new_values, 'rrp'))");
-
-            if ($lastOutBoxSent) {
-                $join->where('audits.created_at', '>', $lastOutBoxSent);
-            }
         });
 
         $baseQuery->select('products.id', 'products.master_product_id');

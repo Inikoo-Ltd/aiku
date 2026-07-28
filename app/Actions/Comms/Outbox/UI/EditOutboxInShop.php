@@ -148,15 +148,14 @@ class EditOutboxInShop extends OrgAction
                         'required' => true,
                         'mode' => 'single',
                         'options' => [
-                            ['value' => 0, 'label' => __('Immediately')],
-                            ['value' => 5, 'label' => __('5 minutes')],
                             ['value' => 10, 'label' => __('10 minutes')],
+                            ['value' => 20, 'label' => __('20 minutes')],
                             ['value' => 30, 'label' => __('30 minutes')],
                             ['value' => 60, 'label' => __('1 hour')],
                             ['value' => 120, 'label' => __('2 hours')],
                             ['value' => 1440, 'label' => __('1 day')],
                         ],
-                        'value' => $outbox->interval ?? 5,
+                        'value' => $outbox->interval ?? 10,
                     ],
                 ]
             ];

@@ -25,6 +25,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
+//TODO: Need to the price changes, related to curency
 class ProcessPriceChangeToSubscribersRecipients
 {
     use AsAction;

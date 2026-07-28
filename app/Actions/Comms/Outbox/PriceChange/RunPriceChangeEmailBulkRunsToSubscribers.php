@@ -27,7 +27,7 @@ class RunPriceChangeEmailBulkRunsToSubscribers
         $queryOutbox->whereIn('code', [OutboxCodeEnum::PRICE_CHANGE]);
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->whereNotNull('shop_id');
-        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at');
+        $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.last_sent_at', 'outboxes.interval');
         $queryOutbox->where(
             function ($query) {
                 $query->whereNull('outboxes.interval')
