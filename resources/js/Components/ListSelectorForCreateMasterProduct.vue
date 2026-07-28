@@ -38,10 +38,12 @@ const props = withDefaults(defineProps<{
     tabs?: Array<{ label: string, routeFetch: routeType }>
     is_dropship?:boolean
     showSKOLabel: boolean
+    singleSelect?: boolean
 }>(), {
     key_quantity: 'quantity_selected',
     head_label: 'Selected Products',
-    no_data_label: 'No Data Available'
+    no_data_label: 'No Data Available',
+    singleSelect: false
 })
 
 const emits = defineEmits<{
@@ -140,13 +142,15 @@ const selectProduct = (item: Portfolio) => {
     const exists = selectedProduct.value.find(p => p.id === item.id)
     if (exists) {
         selectedProduct.value = selectedProduct.value.filter(p => p.id !== item.id)
-    } else {
-        const newItem: any = { ...item }
-        if (props.withQuantity && !newItem[props.key_quantity]) {
-            newItem[props.key_quantity] = 1
-        }
-        selectedProduct.value = [...selectedProduct.value, newItem]
+        return
     }
+
+    const newItem: any = { ...item }
+    if (props.withQuantity && !newItem[props.key_quantity]) {
+        newItem[props.key_quantity] = 1
+    }
+
+    selectedProduct.value = props.singleSelect ? [newItem] : [...selectedProduct.value, newItem]
 }
 
 
@@ -394,7 +398,7 @@ defineExpose({
                                 {{ props.label_result ?? trans("Result") }} ({{ locale?.number(meta?.total || 0) }})
                             </div>
                             <div class="flex gap-2">
-                                <div @click="selectAllProducts"
+                                <div v-if="!singleSelect" @click="selectAllProducts"
                                     :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
                                     {{ trans("Select :number products in this page", { number: list.length }) }}
                                 </div>

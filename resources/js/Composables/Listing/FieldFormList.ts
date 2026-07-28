@@ -97,7 +97,7 @@ import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
 import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
 import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
 import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
-import ListSelectorTradeUnitForStock from '@/Components/Forms/Fields/ListSelectorTradeUnitForStock.vue'
+/* import ListSelectorTradeUnitForStock from '@/Components/Forms/Fields/ListSelectorTradeUnitForStock.vue' */
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -170,7 +170,7 @@ export const componentsList: { [key: string]: Component } = {
     'email_subscriptions': WrapperEmailSubscribetion,
     'set_json_by_form': InputJsonByForm,
     'list-selector-trade-unit': ListSelectorTradeUnit,
-    'list-selector-trade-unit-stock': ListSelectorTradeUnitForStock,
+   /*  'list-selector-trade-unit-stock': ListSelectorTradeUnitForStock, */
     'file_upload': FileUpload,
     'input-variant' : VariantsField,
     'editOffer' : EditOffer,

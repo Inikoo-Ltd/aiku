@@ -96,13 +96,14 @@ class EditStock extends OrgAction
                             'fields' => [
                                 'trade_units' => [
                                     'label'                 => __('Trade units'),
-                                    'type'                  => 'list-selector-trade-unit-stock',
+                                    'type'                  => 'list-selector-trade-unit',
                                     'key_quantity'          => 'quantity',
                                     'showSKOLabel'          => false,
                                     'withQuantity'          => true,
                                     'full'                  => true,
                                     'noSaveButton'          => true,
                                     'use_confirm'           => true,
+                                    'singleSelect'          => true,
                                     'warn_modal_route'      => [
                                         'name'          => 'grp.json.validate-stock-trade-unit-changes',
                                         'parameters'    => [
