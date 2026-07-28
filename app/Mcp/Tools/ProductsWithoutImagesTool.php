@@ -35,7 +35,7 @@ class ProductsWithoutImagesTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return Response::error('No shop matching that slug is available to you. Call my-access-tool to list the shops you can query, then use the slug exactly as given there. Do not guess slugs.');
         }
 
         $limit = $request->integer('limit', 20);

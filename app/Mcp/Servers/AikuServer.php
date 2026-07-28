@@ -40,7 +40,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Aiku')]
 #[Version('1.0.0')]
-#[Instructions('Read-only access to Aiku commerce data. Every tool is scoped by the authenticated user\'s permissions: a tool call against a shop the user cannot view returns a permission error. Tools identify shops, organisations and warehouses by slug, never by their display name — when a question names one in words, call my-access-tool first to get the slugs this user can reach, and never guess a slug.')]
+#[Instructions('Read-only access to Aiku commerce data. Every tool is scoped by the authenticated user\'s permissions: a tool call against a shop the user cannot view returns a permission error. Tools identify shops, organisations and warehouses by slug, never by their display name — when a question names one in words, call my-access-tool first to get the slugs this user can reach, and never guess a slug. Users with SQL access also have sql-query-tool and describe-tables-tool: prefer a purpose-built tool when one fits the question, and fall back to SQL for anything they do not cover.')]
 class AikuServer extends Server
 {
     /**

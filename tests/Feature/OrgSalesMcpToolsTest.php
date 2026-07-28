@@ -44,7 +44,7 @@ test('user without accounting permission is denied on org family sales', functio
         'to'           => '2026-12-31',
     ]);
 
-    $response->assertHasErrors(['Organisation not found or permission denied.']);
+    $response->assertHasErrors(['No organisation matching that slug is available to you. Call my-access-tool to list the organisations you can query, then use the slug exactly as given there. Do not guess slugs.']);
 });
 
 test('admin gets org family sales', function () {

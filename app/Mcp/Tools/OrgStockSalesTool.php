@@ -38,7 +38,7 @@ class OrgStockSalesTool extends AikuOrganisationTool
 
         $organisation = $this->authorisedOrganisation($request);
         if (!$organisation) {
-            return Response::error('Organisation not found or permission denied.');
+            return Response::error('No organisation matching that slug is available to you. Call my-access-tool to list the organisations you can query, then use the slug exactly as given there. Do not guess slugs.');
         }
 
         $direction = (string) $request->string('sort', 'best') === 'worst' ? 'asc' : 'desc';

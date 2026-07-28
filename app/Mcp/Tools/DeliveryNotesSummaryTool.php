@@ -35,7 +35,7 @@ class DeliveryNotesSummaryTool extends AikuWarehouseTool
 
         $warehouse = $this->authorisedWarehouse($request);
         if (!$warehouse) {
-            return Response::error('Warehouse not found or permission denied.');
+            return Response::error('No warehouse matching that slug is available to you. Call my-access-tool to list the warehouses you can query, then use the slug exactly as given there. Do not guess slugs.');
         }
 
         $notes = DeliveryNote::where('warehouse_id', $warehouse->id)

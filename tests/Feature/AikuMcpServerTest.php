@@ -54,7 +54,7 @@ test('user without orders permission is denied', function () {
         'to'   => '2026-12-31',
     ]);
 
-    $response->assertHasErrors(['Shop not found or permission denied.']);
+    $response->assertHasErrors(['No shop matching that slug is available to you. Call my-access-tool to list the shops you can query, then use the slug exactly as given there. Do not guess slugs.']);
 });
 
 test('admin user gets shop sales from time series', function () {

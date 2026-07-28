@@ -44,7 +44,7 @@ test('user without stocks permission is denied', function () {
         'query'     => 'x',
     ]);
 
-    $response->assertHasErrors(['Warehouse not found or permission denied.']);
+    $response->assertHasErrors(['No warehouse matching that slug is available to you. Call my-access-tool to list the warehouses you can query, then use the slug exactly as given there. Do not guess slugs.']);
 });
 
 test('admin user can search stock levels', function () {
