@@ -352,7 +352,7 @@ const contentClass = computed(() =>
 
 					<div
 						ref="offersRef"
-						class="flex flex-col gap-4 text-center items-center lg:text-left lg:flex-row"
+						class="flex flex-col-reverse gap-4 text-center items-center lg:text-left lg:flex-row"
 						:class="
 							isTitleTruncated
 								? 'lg:items-end lg:justify-end'
