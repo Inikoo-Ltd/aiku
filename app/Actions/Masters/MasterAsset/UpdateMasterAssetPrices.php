@@ -95,15 +95,21 @@ class UpdateMasterAssetPrices extends OrgAction
         $masterAsset->auditEvent = 'updated_master_prices';
         $masterAsset->isCustomEvent = true;
 
+        $oldAudit = [];
+        $newAudit = [];
+
         if ($changedPrices) {
-            $masterAsset->auditCustomOld = $this->getMasterPricesAudit($oldMasterAsset->master_prices);
-            $masterAsset->auditCustomNew = $this->getMasterPricesAudit($masterAsset->master_prices);
+            $oldAudit = array_merge($oldAudit, $this->getMasterPricesAudit($oldMasterAsset->master_prices));
+            $newAudit = array_merge($newAudit, $this->getMasterPricesAudit($masterAsset->master_prices));
         }
 
         if ($changedRRPs) {
-            $masterAsset->auditCustomOld = $this->getMasterPricesAudit($oldMasterAsset->master_rrps, 'RRP');
-            $masterAsset->auditCustomNew = $this->getMasterPricesAudit($masterAsset->master_rrps, 'RRP');
+            $oldAudit = array_merge($oldAudit, $this->getMasterPricesAudit($oldMasterAsset->master_rrps, 'RRP'));
+            $newAudit = array_merge($newAudit, $this->getMasterPricesAudit($masterAsset->master_rrps, 'RRP'));
         }
+
+        $masterAsset->auditCustomOld = $oldAudit;
+        $masterAsset->auditCustomNew = $newAudit;
         
         Event::dispatch(new AuditCustom($masterAsset));
 

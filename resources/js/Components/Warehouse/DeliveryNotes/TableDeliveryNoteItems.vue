@@ -826,6 +826,23 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
             <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
         </template>
 
+        <!-- Column: Batch Codes -->
+        <template #cell(batch_codes)="{ item }">
+            <div v-if="item.batch_codes?.length" class="flex flex-wrap gap-1">
+                <span
+                    v-for="code in item.batch_codes"
+                    :key="code"
+                    class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
+                >
+                    <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                    {{ code }}
+                </span>
+            </div>
+            <span v-else class="text-gray-400 italic text-xs">
+                {{ trans("No batch code set") }}
+            </span>
+        </template>
+
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
 

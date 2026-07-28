@@ -18,6 +18,7 @@ interface PriceExchange {
     major?: string | null
     exchange?: number | null
     fraction_digits?: number
+    increment?: number
 }
 
 const props = defineProps<{
@@ -101,6 +102,7 @@ const rows = reactive(
             major: exchangeData.major ?? null,
             exchange: exchangeData.exchange ?? null,
             fraction_digits: exchangeData.fraction_digits ?? 2,
+            increment: exchangeData.increment ?? null,
             original: JSON.stringify(exchangeData),
         }))
 )
@@ -137,10 +139,30 @@ const parseExchange = (raw: unknown): number | null => {
     return value > 0 ? value : null
 }
 
-const rowPayload = (row: { code: string, is_major: boolean, major?: string | null, exchange?: number | string | null, fraction_digits?: number }) =>
+const rowPayload = (row: { code: string, is_major: boolean, major?: string | null, exchange?: number | string | null, fraction_digits?: number, increment?: number | null }) =>
     row.is_major
         ? { currency: row.code, is_major: true }
-        : { currency: row.code, is_major: false, major: row.major, exchange: parseExchange(row.exchange), fraction_digits: row.fraction_digits ?? 2 }
+        : {
+            currency: row.code,
+            is_major: false,
+            major: row.major,
+            exchange: parseExchange(row.exchange),
+            fraction_digits: row.fraction_digits ?? 2,
+            ...(row.increment ? { increment: row.increment } : {}),
+        }
+
+const roundingValue = (row: { fraction_digits?: number, increment?: number | null }) =>
+    row.increment ? `step:${row.increment}` : String(row.fraction_digits ?? 2)
+
+const setRounding = (row: { fraction_digits?: number, increment?: number | null }, value: string) => {
+    if (value.startsWith('step:')) {
+        row.fraction_digits = 2
+        row.increment = Number(value.slice(5))
+    } else {
+        row.fraction_digits = Number(value)
+        row.increment = null
+    }
+}
 
 const rowIsValid = (row: typeof rows[0]) =>
     row.is_major || (row.major && majorCodes.value.includes(row.major) && parseExchange(row.exchange) !== null)
@@ -323,11 +345,13 @@ const save = () => {
                         </div>
                     </td>
                     <td class="py-2 pr-4">
-                        <select v-if="!row.is_major" v-model.number="row.fraction_digits" :disabled="isRunning(row.code)"
+                        <select v-if="!row.is_major" :value="roundingValue(row)" :disabled="isRunning(row.code)"
                             class="rounded border-gray-300 text-sm py-1 disabled:opacity-50"
-                            v-tooltip="trans('Whole numbers: converted prices are rounded up, e.g. 248.88 becomes 249')">
-                            <option :value="2">{{ trans("0.00") }}</option>
-                            <option :value="0">{{ trans("Whole numbers") }}</option>
+                            v-tooltip="trans('Converted prices are rounded up: whole numbers e.g. 248.88 → 249, steps of 0.05 e.g. 25.67 → 25.70')"
+                            @change="setRounding(row, ($event.target as HTMLSelectElement).value)">
+                            <option value="2">{{ trans("0.00") }}</option>
+                            <option value="0">{{ trans("Whole numbers") }}</option>
+                            <option value="step:0.05">{{ trans("Steps of 0.05") }}</option>
                         </select>
                         <span v-else class="text-gray-400">—</span>
                     </td>
@@ -494,6 +518,9 @@ const save = () => {
                     <template v-if="!confirmingRow.is_major">
                         <p v-if="confirmingRow.fraction_digits === 0" class="font-medium">
                             {{ trans(":currency prices will be whole numbers: converted prices are rounded up, e.g. 248.88 becomes 249.", { currency: confirmingRow.code }) }}
+                        </p>
+                        <p v-else-if="confirmingRow.increment" class="font-medium">
+                            {{ trans(":currency prices and RRPs will move in steps of :step: converted values are rounded up, e.g. 25.67 becomes 25.70.", { currency: confirmingRow.code, step: String(confirmingRow.increment) }) }}
                         </p>
                         <p v-if="majorChanged(confirmingRow)" class="font-medium">
                             {{ trans(":currency will stop following :from and will follow :to instead.", {
