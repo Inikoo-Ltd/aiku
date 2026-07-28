@@ -16,6 +16,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Audits\DispatchSimpleAudit;
@@ -40,9 +41,17 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
 
         $oldPackedQuantity = (float)($deliveryNoteItem->getOriginal('quantity_packed') ?? 0);
 
-        $quantity = $this->resolveQuantityToPack($deliveryNoteItem, $quantity);
+        // Quantities accumulate, so reading what is left and writing the new packing has to be
+        // atomic. Two packers scanning the same item would otherwise both see the same remainder
+        // and pack it twice.
+        DB::transaction(function () use ($deliveryNoteItem, $user, $quantity) {
+            DeliveryNoteItem::whereKey($deliveryNoteItem->id)->lockForUpdate()->first();
 
-        StorePacking::make()->action($deliveryNoteItem, $user, ['quantity' => $quantity]);
+            $quantity = $this->resolveQuantityToPack($deliveryNoteItem, $quantity);
+
+            StorePacking::make()->action($deliveryNoteItem, $user, ['quantity' => $quantity]);
+        });
+
         $deliveryNoteItem->refresh();
 
         $newPackedQuantity = (float)$deliveryNoteItem->quantity_packed;

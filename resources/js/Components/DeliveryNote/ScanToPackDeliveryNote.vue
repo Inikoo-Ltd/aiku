@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -48,11 +48,9 @@ type ScanOutcome = {
     remaining_to_pack: number
 }
 
-type PendingScan = { code: string; quantity: number | null }
-
-// 'all' finishes the item in one scan, which suits the common case. 'unit' adds one per scan, which
-// is how a packer handles an item they only want to pack part of: scan as many times as packed.
-type PackMode = "all" | "unit"
+// quantity null means "everything still left on the item", which is what the pack-the-rest button
+// sends. itemId pins that follow up to the line that was actually scanned.
+type PendingScan = { code: string; quantity: number | null; itemId?: number }
 
 type ScanLogEntry = ScanOutcome & { key: number }
 
@@ -64,14 +62,9 @@ const IDLE_SUBMIT_DELAY_MS = 120
 const MIN_MACHINE_CODE_LENGTH = 3
 const MAX_LOG_ENTRIES = 8
 
-const PACK_MODE_STORAGE_KEY = "delivery-note:packScanMode"
-
 const buffer = ref("")
 const inputElement = ref<HTMLInputElement | null>(null)
 const isListening = ref(true)
-const packModes: PackMode[] = ["all", "unit"]
-const packMode = ref<PackMode>(localStorage.getItem(PACK_MODE_STORAGE_KEY) === "unit" ? "unit" : "all")
-const nextScanQuantity = ref<number | null>(null)
 const isProcessing = ref(false)
 const queuedCount = ref(0)
 const packedCount = ref(0)
@@ -154,22 +147,24 @@ const flushBuffer = () => {
         return
     }
 
-    // The quantity is captured here rather than at submit time, so a burst of scans does not all
-    // consume the same one-shot quantity while they sit in the queue.
-    pendingScans.push({ code, quantity: consumeQuantityForNextScan() })
+    // One scan is one physical item, which is what makes partial packing natural: scan as many times
+    // as went into the box, and use the pack-the-rest button to finish the line in one go.
+    pendingScans.push({ code, quantity: 1 })
     queuedCount.value = pendingScans.length
     drainQueue()
 }
 
-const consumeQuantityForNextScan = (): number | null => {
-    if (nextScanQuantity.value && nextScanQuantity.value > 0) {
-        const quantity = nextScanQuantity.value
-        nextScanQuantity.value = null
+const packRestOfLastScannedItem = () => {
+    const outcome = lastOutcome.value
 
-        return quantity
+    if (!outcome?.item || outcome.item.quantity_to_pack <= 0) {
+        return
     }
 
-    return packMode.value === "unit" ? 1 : null
+    pendingScans.push({ code: outcome.scanned, quantity: null, itemId: outcome.item.id })
+    queuedCount.value = pendingScans.length
+    inputElement.value?.focus()
+    drainQueue()
 }
 
 const drainQueue = async () => {
@@ -188,7 +183,7 @@ const drainQueue = async () => {
     isDraining = false
 }
 
-const submitScan = async ({ code, quantity }: PendingScan) => {
+const submitScan = async ({ code, quantity, itemId }: PendingScan) => {
     isProcessing.value = true
 
     try {
@@ -196,6 +191,7 @@ const submitScan = async ({ code, quantity }: PendingScan) => {
             barcode: code,
             tab: props.tab,
             ...(quantity === null ? {} : { quantity }),
+            ...(itemId === undefined ? {} : { delivery_note_item_id: itemId }),
         })
 
         applyOutcome(data as ScanOutcome)
@@ -276,8 +272,6 @@ const onKeydown = (event: KeyboardEvent) => {
     inputElement.value?.focus()
 }
 
-watch(packMode, (mode) => localStorage.setItem(PACK_MODE_STORAGE_KEY, mode))
-
 onMounted(() => {
     window.addEventListener("keydown", onKeydown)
     inputElement.value?.focus()
@@ -321,36 +315,6 @@ onBeforeUnmount(() => {
                     </span>
                 </div>
 
-                <!-- How much one scan packs -->
-                <div class="flex items-center gap-x-2">
-                    <div class="flex overflow-hidden rounded-md border border-indigo-300">
-                        <button
-                            v-for="mode in packModes"
-                            :key="mode"
-                            type="button"
-                            v-tooltip="mode === 'all'
-                                ? ctrans('One scan packs everything left on the item')
-                                : ctrans('One scan packs a single unit, scan again for each extra one')"
-                            class="px-3 py-1.5 text-xs font-medium transition-colors"
-                            :class="packMode === mode
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-white text-indigo-700 hover:bg-indigo-100'"
-                            @click="packMode = mode">
-                            {{ mode === 'all' ? ctrans("Pack all") : ctrans("1 per scan") }}
-                        </button>
-                    </div>
-
-                    <input
-                        v-model.number="nextScanQuantity"
-                        type="number"
-                        min="1"
-                        step="1"
-                        v-tooltip="ctrans('Quantity for the next scan only, leave empty to use the mode above')"
-                        :placeholder="ctrans('qty')"
-                        class="w-20 rounded-md border-indigo-300 bg-white py-1.5 text-center text-sm"
-                        @keydown.enter.prevent />
-                </div>
-
                 <div class="flex items-center gap-x-4">
                     <div v-if="queuedCount" class="text-sm text-indigo-700">
                         {{ ctrans(":queueCount queued", { queueCount: queuedCount }) }}
@@ -383,8 +347,23 @@ onBeforeUnmount(() => {
                 </div>
                 <div
                     v-if="lastOutcome.item && lastOutcome.item.quantity_to_pack > 0"
-                    class="ml-auto whitespace-nowrap rounded bg-amber-950 px-2 py-1 text-sm font-bold text-amber-50">
-                    {{ ctrans(":remaining left on this item", { remaining: lastOutcome.item.quantity_to_pack }) }}
+                    class="ml-auto flex items-center gap-x-2">
+                    <span class="whitespace-nowrap rounded bg-amber-950 px-2 py-1 text-sm font-bold text-amber-50">
+                        {{ ctrans(":remaining left on this item", { remaining: lastOutcome.item.quantity_to_pack }) }}
+                    </span>
+
+                    <!-- mousedown.prevent stops the button from taking focus at all, so the scanner
+                         keeps feeding the scan field. The explicit focus() covers keyboard and touch
+                         activation, where no mousedown fires. -->
+                    <button
+                        type="button"
+                        :disabled="isProcessing || queuedCount > 0"
+                        v-tooltip="ctrans('Pack the remaining :remaining without scanning them one by one', { remaining: lastOutcome.item.quantity_to_pack })"
+                        class="whitespace-nowrap rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
+                        @mousedown.prevent
+                        @click="packRestOfLastScannedItem">
+                        {{ ctrans("Pack all :remaining", { remaining: lastOutcome.item.quantity_to_pack }) }}
+                    </button>
                 </div>
                 <div class="font-mono text-xs opacity-70" :class="{ 'ml-auto': !(lastOutcome.item?.quantity_to_pack > 0) }">
                     {{ lastOutcome.scanned }}

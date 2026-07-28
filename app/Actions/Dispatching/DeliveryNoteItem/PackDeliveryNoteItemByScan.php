@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -26,15 +27,29 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class PackDeliveryNoteItemByScan extends OrgAction
 {
+    use WithDeliveryNoteItemUI;
+
     protected User $user;
+
+    private DeliveryNote $deliveryNote;
+
+    /**
+     * Packing through a scan must be gated by the same rule that decides whether the packing UI is
+     * shown at all, so the endpoint cannot be used to pack a delivery note somebody else is handling.
+     */
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->canHandleDeliveryNote($this->deliveryNote);
+    }
 
     /**
      * @throws \Throwable
      */
     public function handle(DeliveryNote $deliveryNote, User $user, array $modelData): array
     {
-        $scanned         = trim((string)data_get($modelData, 'barcode'));
-        $tab             = data_get($modelData, 'tab');
+        $scanned           = trim((string)data_get($modelData, 'barcode'));
+        $tab               = data_get($modelData, 'tab');
+        $requestedItemId   = data_get($modelData, 'delivery_note_item_id');
         $requestedQuantity = data_get($modelData, 'quantity');
         $requestedQuantity = $requestedQuantity === null ? null : (float)$requestedQuantity;
 
@@ -50,12 +65,19 @@ class PackDeliveryNoteItemByScan extends OrgAction
         $deliveryNoteItems = $deliveryNote->deliveryNoteItems()->with(['orgStock', 'packings'])->get();
         $matchedItems      = $this->matchItems($deliveryNoteItems, $scanned);
 
+        // The 'pack the rest' button targets the exact item that was just scanned, so a delivery note
+        // carrying the same org stock in two lines cannot have the follow up land on the wrong one.
+        if ($requestedItemId) {
+            $matchedItems = $matchedItems->where('id', (int)$requestedItemId)->values();
+        }
+
         if ($matchedItems->isEmpty()) {
             return $this->outcome(
                 $deliveryNote,
                 'not_found',
                 __(':scanned does not belong to this delivery note', ['scanned' => $scanned]),
-                $scanned
+                $scanned,
+                knownItems: $deliveryNoteItems
             );
         }
 
@@ -73,7 +95,8 @@ class PackDeliveryNoteItemByScan extends OrgAction
                     'already_packed',
                     __(':code is already fully packed', ['code' => $packedItem->orgStock?->code ?? $scanned]),
                     $scanned,
-                    $packedItem
+                    $packedItem,
+                    knownItems: $deliveryNoteItems
                 );
             }
 
@@ -82,20 +105,26 @@ class PackDeliveryNoteItemByScan extends OrgAction
                 'nothing_to_pack',
                 __('Nothing picked to pack for :code', ['code' => $matchedItems->first()->orgStock?->code ?? $scanned]),
                 $scanned,
-                $matchedItems->first()
+                $matchedItems->first(),
+                knownItems: $deliveryNoteItems
             );
         }
 
-        $remainingBefore = UpdateDeliveryNoteItemPacking::quantityLeftToPack($itemToPack);
-        $quantityToPack  = $requestedQuantity === null
-            ? $remainingBefore
-            : min($requestedQuantity, $remainingBefore);
+        $packedBefore = (float)$itemToPack->packings()->sum('quantity');
+
+        // 'Pack all' passes null so the remainder is resolved inside the action's lock. Reading it
+        // out here would let a second packer's scan land in between and turn this into an error
+        // instead of simply packing whatever is genuinely left.
+        $quantityToPack = $requestedQuantity === null
+            ? null
+            : min($requestedQuantity, UpdateDeliveryNoteItemPacking::quantityLeftToPack($itemToPack));
 
         UpdateDeliveryNoteItemPacking::make()->action($itemToPack, $user, $quantityToPack);
 
         $itemToPack->refresh();
         $deliveryNote->refresh();
 
+        $quantityToPack = round((float)$itemToPack->packings()->sum('quantity') - $packedBefore, 3);
         $remainingAfter = UpdateDeliveryNoteItemPacking::quantityLeftToPack($itemToPack);
 
         $message = $remainingAfter > 0
@@ -165,13 +194,21 @@ class PackDeliveryNoteItemByScan extends OrgAction
         return $deliveryNoteItems->whereIn('org_stock_id', $matchedOrgStockIds)->values();
     }
 
+    /**
+     * $knownItems lets an outcome that wrote nothing reuse the collection already loaded by handle().
+     * A missed scan is common on a packing bench and should not cost a second full load; the 'packed'
+     * outcome passes null because its counts have to be read back after the write.
+     *
+     * @param  Collection<int, DeliveryNoteItem>|null  $knownItems
+     */
     protected function outcome(
         DeliveryNote $deliveryNote,
         string $status,
         string $message,
         string $scanned,
         ?DeliveryNoteItem $deliveryNoteItem = null,
-        ?string $tab = null
+        ?string $tab = null,
+        ?Collection $knownItems = null
     ): array {
         $row = null;
 
@@ -194,15 +231,18 @@ class PackDeliveryNoteItemByScan extends OrgAction
             ] : null,
             'row'                 => $row,
             'delivery_note_state' => $deliveryNote->state->value,
-            'remaining_to_pack'   => $this->countRemainingToPack($deliveryNote),
+            'remaining_to_pack'   => $this->countRemainingToPack($deliveryNote, $knownItems),
         ];
     }
 
-    protected function countRemainingToPack(DeliveryNote $deliveryNote): int
+    /**
+     * @param  Collection<int, DeliveryNoteItem>|null  $knownItems
+     */
+    protected function countRemainingToPack(DeliveryNote $deliveryNote, ?Collection $knownItems = null): int
     {
-        return $deliveryNote->deliveryNoteItems()
-            ->with('packings')
-            ->get()
+        $items = $knownItems ?? $deliveryNote->deliveryNoteItems()->with('packings')->get();
+
+        return $items
             ->filter(
                 fn (DeliveryNoteItem $item) => empty((float)$item->quantity_not_picked)
                     && !UpdateDeliveryNoteItemPacking::isFullyPacked($item)
@@ -213,9 +253,10 @@ class PackDeliveryNoteItemByScan extends OrgAction
     public function rules(): array
     {
         return [
-            'barcode'  => ['required', 'string', 'max:255'],
-            'tab'      => ['sometimes', 'nullable', 'string'],
-            'quantity' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'barcode'               => ['required', 'string', 'max:255'],
+            'tab'                    => ['sometimes', 'nullable', 'string'],
+            'quantity'               => ['sometimes', 'nullable', 'numeric', 'gt:0'],
+            'delivery_note_item_id'  => ['sometimes', 'nullable', 'integer'],
         ];
     }
 
@@ -224,7 +265,8 @@ class PackDeliveryNoteItemByScan extends OrgAction
      */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
-        $this->user = $request->user();
+        $this->user         = $request->user();
+        $this->deliveryNote = $deliveryNote;
 
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
