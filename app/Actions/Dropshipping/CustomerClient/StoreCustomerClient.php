@@ -33,7 +33,7 @@ class StoreCustomerClient extends OrgAction
     use WithNoStrictRules;
 
     private Customer $customer;
-    private CustomerSalesChannel $customerSalesChannel;
+    private ?CustomerSalesChannel $customerSalesChannel = null;
 
     /**
      * @throws \Throwable
@@ -101,7 +101,7 @@ class StoreCustomerClient extends OrgAction
                     table: 'customer_clients',
                     extraConditions: [
                         ['column' => 'customer_id', 'value' => $customer->id],
-                        ['column' => 'customer_sales_channel_id', 'value' => $this->customerSalesChannel->id],
+                        ['column' => 'customer_sales_channel_id', 'value' => $this->customerSalesChannel?->id],
                     ]
                 ),
             ],
