@@ -1,41 +1,36 @@
 <?php
 
-/*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 27-12-2024, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2024
- *
-*/
-
-namespace App\Actions\SysAdmin\Group\Hydrators;
+namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
-use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateStockDeliveries implements ShouldBeUnique
+class OrganisationHydrateStockDeliveries implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Group $group): string
+    public string $jobQueue = 'hydrators-slave';
+    public string $commandSignature = 'hydrate:organisation_stock_deliveries';
+
+    public function getJobUniqueId(Organisation $organisation): string
     {
-        return $group->id;
+        return $organisation->id.'-stock_deliveries';
     }
 
-    public function handle(Group $group): void
+    public function handle(Organisation $organisation): void
     {
         $queryBase = DB::table('stock_deliveries')
-            ->where('group_id', $group->id)
+            ->where('organisation_id', $organisation->id)
             ->whereNull('deleted_at');
 
         $stats = [
-            'number_stock_deliveries' => $queryBase->clone()->count(),
+            'number_stock_deliveries'         => $queryBase->clone()->count(),
             'number_current_stock_deliveries' => $queryBase->clone()->whereNotIn('state', [
                 StockDeliveryStateEnum::CANCELLED->value,
                 StockDeliveryStateEnum::NOT_RECEIVED->value
@@ -49,26 +44,20 @@ class GroupHydrateStockDeliveries implements ShouldBeUnique
                 field: 'state',
                 enum: StockDeliveryStateEnum::class,
                 models: StockDelivery::class,
-                where: function ($q) use ($group) {
+                where: function ($q) use ($organisation) {
                     $q->whereNull('deleted_at')
-                        ->where('group_id', $group->id);
+                        ->where('organisation_id', $organisation->id);
                 }
             )
         );
 
-
-        $group->procurementStats->update($stats);
+        $organisation->procurementStats()->update($stats);
     }
 
-    public string $commandSignature = 'hydrate:group_stock_deliveries';
-
-    public function asCommand($command): void
+    public function asCommand(): void
     {
-        $groups = Group::all();
-
-        foreach ($groups as $group) {
-            $this->handle($group);
+        foreach (Organisation::all() as $organisation) {
+            $this->handle($organisation);
         }
     }
-
 }
