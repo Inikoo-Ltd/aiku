@@ -63,6 +63,15 @@ trait WithDeliveryNoteItemUI
                     ");
     }
 
+    protected function hasPickingsWithBatchCodes(DeliveryNote $deliveryNote): bool
+    {
+        return DB::table('pickings')
+            ->join('delivery_note_items', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+            ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
+            ->whereNotNull('pickings.batch_code_id')
+            ->exists();
+    }
+
     protected function canHandleDeliveryNote(?DeliveryNote $deliveryNote): bool
     {
         if (!$deliveryNote) {
