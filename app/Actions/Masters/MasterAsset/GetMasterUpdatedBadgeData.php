@@ -88,11 +88,11 @@ class GetMasterUpdatedBadgeData
     {
         $query
             ->where('products.not_follow_master_prices', true)
+            ->where('products.is_for_sale', true)
             ->whereNotNull('products.master_product_id')
             ->join('master_assets', 'master_assets.id', '=', 'products.master_product_id')
             ->join('currencies', 'currencies.id', '=', 'products.currency_id')
             ->where(function ($query) {
-                // ponytail: jsonb_exists() not the `?` operator, PDO binds `?` as a placeholder
                 $query
                     ->whereRaw("jsonb_exists(master_assets.master_prices, currencies.code)
                         AND products.price <> (master_assets.master_prices #>> ARRAY[currencies.code, 'value'])::numeric")

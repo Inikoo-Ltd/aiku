@@ -64,7 +64,7 @@ function toggleOrg(orgSlug: string): void {
 <template>
     <div>
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            {{ trans('Products not following master prices') }}
+            {{ trans('Products Not Matching Master Prices') }}
         </p>
 
         <div v-if="isLoading" class="space-y-2">
