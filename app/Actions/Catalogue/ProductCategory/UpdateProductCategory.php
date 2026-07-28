@@ -172,6 +172,10 @@ class UpdateProductCategory extends OrgAction
             ProductHydratePricesFromMaster::dispatch($productCategory);
         }
 
+        if (Arr::hasAny($changes, ['faq']) && $productCategory->webpage) {
+            BreakWebpageCache::run($productCategory->webpage);
+        }
+
         if (Arr::hasAny($changes, [
             'code',
             'name',
@@ -183,7 +187,7 @@ class UpdateProductCategory extends OrgAction
             $this->productCategoryHydrators($productCategory);
 
             if ($productCategory->webpage) {
-                BreakWebpageCache::dispatch($productCategory->webpage, true);
+                BreakWebpageCache::run($productCategory->webpage, true);
             }
 
             if ($productCategory->webpage_id) {
