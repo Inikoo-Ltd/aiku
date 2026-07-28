@@ -22,7 +22,7 @@ use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
-use App\Actions\Comms\Outbox\PriceChange\RunPriceChangeEmailBulkRuns;
+use App\Actions\Comms\Outbox\PriceChange\RunPriceChangeEmailBulkRunsToSubscribers;
 use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
 use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
 use App\Actions\CRM\Customer\HydrateCustomersClv;
@@ -528,10 +528,10 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(RunPriceChangeEmailBulkRuns::makeJob())->everyFiveMinutes()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
-                    monitorSlug: 'RunPriceChangeEmailBulkRuns',
+                $schedule->job(RunPriceChangeEmailBulkRunsToSubscribers::makeJob())->everyTenMinutes()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunPriceChangeEmailBulkRunsToSubscribers',
                 ),
-                name: 'RunPriceChangeEmailBulkRuns',
+                name: 'RunPriceChangeEmailBulkRunsToSubscribers',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
