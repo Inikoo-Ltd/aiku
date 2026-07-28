@@ -28,8 +28,9 @@ const props = defineProps<{
     data?: { data: any[] };
     tab?: string;
     state: any;
-    key: any;
     route_checkmark: routeType;
+    can_edit_transactions?: boolean;
+    detachRoute?: routeType;
     palletReturn: {
         id: number
         state: string
