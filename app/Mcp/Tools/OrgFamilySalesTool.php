@@ -38,7 +38,7 @@ class OrgFamilySalesTool extends AikuOrganisationTool
 
         $organisation = $this->authorisedOrganisation($request);
         if (!$organisation) {
-            return Response::error('No organisation matching that slug is available to you. Call my-access-tool to list the organisations you can query, then use the slug exactly as given there. Do not guess slugs.');
+            return Response::error('No organisation matching that name is available to you. Organisations are identified by a short slug or code (for example aw, sk, es) — not by their full display name. Call my-access-tool to list the organisations you can query, and use a value from there. Do not guess.');
         }
 
         $direction = (string) $request->string('sort', 'best') === 'worst' ? 'asc' : 'desc';
@@ -84,7 +84,7 @@ class OrgFamilySalesTool extends AikuOrganisationTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'organisation' => $schema->string()->description('Organisation slug')->required(),
+            'organisation' => $schema->string()->description('Organisation slug or code')->required(),
             'from'         => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'           => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
             'sort'         => $schema->string()->description('best (highest sales first, default) or worst (lowest first)'),

@@ -46,7 +46,7 @@ test('user without crm permission is denied on reviews', function () {
         'shop' => $this->shop->slug,
     ]);
 
-    $response->assertHasErrors(['No shop matching that slug is available to you. Call my-access-tool to list the shops you can query, then use the slug exactly as given there. Do not guess slugs.']);
+    $response->assertHasErrors(['No shop matching that name is available to you. Shops are identified by a short slug or code (for example eu, aroma, uk) — not by their full display name. Call my-access-tool to list the shops you can query, and use a value from there. Do not guess.']);
 });
 
 test('admin gets shop reviews overview', function () {

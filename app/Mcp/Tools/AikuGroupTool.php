@@ -17,6 +17,16 @@ abstract class AikuGroupTool extends Tool
 {
     use WithMcpPermissions;
 
+    /**
+     * Users with direct SQL access work against the database instead: hiding the
+     * purpose-built tools from them keeps the choice on our side rather than
+     * relying on the assistant to pick correctly.
+     */
+    public function shouldRegister(Request $request): bool
+    {
+        return !$request->user()?->can_use_mcp_sql;
+    }
+
     abstract protected function permission(): GroupPermissionsEnum;
 
     protected function authorisedGroup(Request $request): ?Group

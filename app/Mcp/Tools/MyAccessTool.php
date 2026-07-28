@@ -27,6 +27,16 @@ class MyAccessTool extends Tool
 {
     use WithMcpPermissions;
 
+    /**
+     * Users with direct SQL access work against the database instead: hiding the
+     * purpose-built tools from them keeps the choice on our side rather than
+     * relying on the assistant to pick correctly.
+     */
+    public function shouldRegister(Request $request): bool
+    {
+        return !$request->user()?->can_use_mcp_sql;
+    }
+
     public function handle(Request $request): Response
     {
         $user = $request->user();
@@ -44,10 +54,11 @@ class MyAccessTool extends Tool
             ])
             ->values();
 
-        $organisations = Organisation::orderBy('id')->get(['id', 'slug', 'name'])
+        $organisations = Organisation::orderBy('id')->get(['id', 'slug', 'code', 'name'])
             ->filter(fn (Organisation $organisation) => $this->userCan($request, OrganisationPermissionsEnum::getPermissionName(OrganisationPermissionsEnum::ACCOUNTING_VIEW->value, $organisation)))
             ->map(fn (Organisation $organisation) => [
                 'slug' => $organisation->slug,
+                'code' => $organisation->code,
                 'name' => $organisation->name,
             ])
             ->values();
@@ -66,7 +77,7 @@ class MyAccessTool extends Tool
             'shops'         => $shops,
             'organisations' => $organisations,
             'warehouses'    => $warehouses,
-            'hint'          => 'Use the slug values above as the shop, organisation or warehouse argument of the other tools. An empty list means this user has no access at that level.',
+            'hint'          => 'Pass either the slug or the code as the shop, organisation or warehouse argument of the other tools; both are accepted and matching is case-insensitive. People usually refer to these by code. An empty list means this user has no access at that level.',
         ]);
     }
 

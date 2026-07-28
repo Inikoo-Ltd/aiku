@@ -17,11 +17,25 @@ abstract class AikuTool extends Tool
 {
     use WithMcpPermissions;
 
+    /**
+     * Users with direct SQL access work against the database instead: hiding the
+     * purpose-built tools from them keeps the choice on our side rather than
+     * relying on the assistant to pick correctly.
+     */
+    public function shouldRegister(Request $request): bool
+    {
+        return !$request->user()?->can_use_mcp_sql;
+    }
+
     abstract protected function permission(): ShopPermissionsEnum;
 
     protected function authorisedShop(Request $request): ?Shop
     {
-        $shop = Shop::where('slug', $request->string('shop'))->first();
+        $shop = Shop::where(function ($query) use ($request) {
+            $identifier = strtolower((string) $request->string('shop'));
+            $query->whereRaw('lower(slug) = ?', [$identifier])
+                ->orWhereRaw('lower(code) = ?', [$identifier]);
+        })->first();
 
         if (!$shop) {
             return null;

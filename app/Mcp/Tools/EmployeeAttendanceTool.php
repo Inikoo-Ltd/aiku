@@ -36,7 +36,7 @@ class EmployeeAttendanceTool extends AikuOrganisationTool
 
         $organisation = $this->authorisedOrganisation($request);
         if (!$organisation) {
-            return Response::error('No organisation matching that slug is available to you. Call my-access-tool to list the organisations you can query, then use the slug exactly as given there. Do not guess slugs.');
+            return Response::error('No organisation matching that name is available to you. Organisations are identified by a short slug or code (for example aw, sk, es) — not by their full display name. Call my-access-tool to list the organisations you can query, and use a value from there. Do not guess.');
         }
 
         $employee = Employee::where('slug', $request->string('employee'))
@@ -71,7 +71,7 @@ class EmployeeAttendanceTool extends AikuOrganisationTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'organisation' => $schema->string()->description('Organisation slug')->required(),
+            'organisation' => $schema->string()->description('Organisation slug or code')->required(),
             'employee'     => $schema->string()->description('Employee slug')->required(),
             'from'         => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'           => $schema->string()->description('End date (Y-m-d), inclusive')->required(),

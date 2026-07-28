@@ -34,7 +34,7 @@ class OffersOverviewTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('No shop matching that slug is available to you. Call my-access-tool to list the shops you can query, then use the slug exactly as given there. Do not guess slugs.');
+            return Response::error('No shop matching that name is available to you. Shops are identified by a short slug or code (for example eu, aroma, uk) — not by their full display name. Call my-access-tool to list the shops you can query, and use a value from there. Do not guess.');
         }
 
         $status = (string) $request->string('status', 'active');
@@ -84,7 +84,7 @@ class OffersOverviewTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop' => $schema->string()->description('Shop slug')->required(),
+            'shop' => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'status' => $schema->string()->description('Filter by status (active or all) - default active'),
         ];
     }

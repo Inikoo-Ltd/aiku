@@ -34,7 +34,7 @@ class StockLevelsTool extends AikuWarehouseTool
 
         $warehouse = $this->authorisedWarehouse($request);
         if (!$warehouse) {
-            return Response::error('No warehouse matching that slug is available to you. Call my-access-tool to list the warehouses you can query, then use the slug exactly as given there. Do not guess slugs.');
+            return Response::error('No warehouse matching that name is available to you. Warehouses are identified by a short slug or code — not by their full display name. Call my-access-tool to list the warehouses you can query, and use a value from there. Do not guess.');
         }
 
         $query = '%'.$request->string('query').'%';
@@ -67,7 +67,7 @@ class StockLevelsTool extends AikuWarehouseTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'warehouse' => $schema->string()->description('Warehouse slug')->required(),
+            'warehouse' => $schema->string()->description('Warehouse slug or code')->required(),
             'query'     => $schema->string()->description('Search text matched against stock code or name')->required(),
         ];
     }
