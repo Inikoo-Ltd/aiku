@@ -163,7 +163,7 @@ class IndexStockDeliveryItems extends OrgAction
                 StockDeliveryStateEnum::READY_TO_SHIP,
             ];
 
-            if ($stockDelivery->is_costed) {
+            if ($stockDelivery->state === StockDeliveryStateEnum::PLACED) {
                 $this->costingColumns($table, $stockDelivery);
 
                 return;
@@ -214,7 +214,7 @@ class IndexStockDeliveryItems extends OrgAction
             ->column(key: 'cost_tax', label: $costLabel(__('Tax')), canBeHidden: false)
             ->column(key: 'cost_total', label: $costLabel(__('Total')), canBeHidden: false, align: 'right');
 
-        if ($stockDelivery->state === StockDeliveryStateEnum::BOOKED_IN) {
+        if (!$stockDelivery->is_costed) {
             $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
         }
 

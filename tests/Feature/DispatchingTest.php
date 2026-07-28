@@ -128,6 +128,11 @@ use App\Models\Ordering\Transaction;
 use Config;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
+use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
+use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
+use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
+use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -1831,6 +1836,53 @@ function createPalletReturnWithPallet($ctx): PalletReturn
 
     return $palletReturn->refresh();
 }
+
+test('stored item return rows do not add queries as they grow', function () {
+    $palletReturn = createPalletReturnWithPallet($this);
+    $pallet       = $palletReturn->pallets()->first();
+
+    $addStoredItems = function (int $count) use ($palletReturn, $pallet) {
+        foreach (range(1, $count) as $index) {
+            $storedItem = StoreStoredItem::make()->action(
+                $palletReturn->fulfilmentCustomer,
+                ['reference' => 'NQ'.Str::random(6)]
+            );
+
+            $pallet->storedItems()->attach($storedItem->id, [
+                'quantity' => 1,
+                'state'    => PalletStoredItemStateEnum::ACTIVE,
+            ]);
+
+            $storedItem->update(['total_quantity' => 1]);
+        }
+
+        $pallet->update(['state' => \App\Enums\Fulfilment\Pallet\PalletStateEnum::STORING]);
+    };
+
+    $route = (new \Illuminate\Routing\Route(['GET'], 'x', []))->name('grp.org.warehouses.show.dispatching.pallet-returns.show');
+    request()->setRouteResolver(fn () => $route);
+
+    $countQueries = function () use ($palletReturn) {
+        $queries = 0;
+        DB::listen(function () use (&$queries) {
+            $queries++;
+        });
+
+        PalletReturnItemsWithStoredItemsResource::collection(
+            IndexStoredItemsInReturn::run($palletReturn->refresh(), 'stored_items')
+        )->toArray(request());
+
+        return $queries;
+    };
+
+    $addStoredItems(2);
+    $withTwo = $countQueries();
+
+    $addStoredItems(6);
+    $withEight = $countQueries();
+
+    expect($withEight)->toBe($withTwo);
+});
 
 test('UI goods out pallet return show pages', function () {
     $palletReturn = createPalletReturnWithPallet($this);

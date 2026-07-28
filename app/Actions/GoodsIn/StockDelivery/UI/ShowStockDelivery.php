@@ -92,7 +92,7 @@ class ShowStockDelivery extends OrgAction
                         'title' => __('Stock Delivery'),
                     ],
                     'afterTitle' => [
-                        'label' => $this->getStateLabels()[$stockDelivery->state->value],
+                        'label' => $this->getStateLabels($stockDelivery)[$stockDelivery->state->value],
                     ],
                     'edit'       => $this->canEdit ? [
                         'route' => [
@@ -323,21 +323,7 @@ class ShowStockDelivery extends OrgAction
                 ],
             ],
             StockDeliveryStateEnum::BOOKED_IN => [
-                $stockDelivery->is_costed ? [
-                    'label'   => __('Finish costing'),
-                    'tooltip' => __('Finish the costing, this stock delivery will be final'),
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'icon'    => 'fal fa-check-double',
-                    'key'     => 'finish_stock_delivery_costing',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.stock-delivery.finish-costing',
-                        'parameters' => [
-                            'stockDelivery' => $stockDelivery->id,
-                        ],
-                    ],
-                ] : [
+                [
                     'label'   => __('Start checking costs'),
                     'tooltip' => __('Start checking the costs of this stock delivery'),
                     'type'    => 'button',
@@ -353,15 +339,32 @@ class ShowStockDelivery extends OrgAction
                     ],
                 ],
             ],
+            StockDeliveryStateEnum::PLACED => $stockDelivery->is_costed ? [] : [
+                [
+                    'label'   => __('Finish costing'),
+                    'tooltip' => __('Finish the costing, this stock delivery will be final'),
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-check-double',
+                    'key'     => 'finish_stock_delivery_costing',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.stock-delivery.finish-costing',
+                        'parameters' => [
+                            'stockDelivery' => $stockDelivery->id,
+                        ],
+                    ],
+                ],
+            ],
             default => [],
         };
     }
 
-    public function getStateLabels(): array
+    public function getStateLabels(StockDelivery $stockDelivery): array
     {
         return array_replace(
             StockDeliveryStateEnum::labels(),
-            [StockDeliveryStateEnum::PLACED->value => __('Costing done')]
+            [StockDeliveryStateEnum::PLACED->value => $stockDelivery->is_costed ? __('Costing done') : __('Costing in process')]
         );
     }
 
@@ -388,7 +391,7 @@ class ShowStockDelivery extends OrgAction
                 ],
             ],
             'second_block' => [
-                'state'                        => $this->getStateLabels()[$stockDelivery->state->value],
+                'state'                        => $this->getStateLabels($stockDelivery)[$stockDelivery->state->value],
                 'total_items'                  => $stockDelivery->number_stock_delivery_items,
                 'total_received_checked_items' => $stockDelivery->number_stock_delivery_items_state_received + $stockDelivery->number_stock_delivery_items_state_checked,
                 'total_placed_items'           => $stockDelivery->number_stock_delivery_items_state_placed,
@@ -423,7 +426,7 @@ class ShowStockDelivery extends OrgAction
 
         $timeline = $purchaseOrder ? $this->getPurchaseOrderTimeline($purchaseOrder) : [];
 
-        $labels = $this->getStateLabels();
+        $labels = $this->getStateLabels($stockDelivery);
 
         $hiddenUnlessCurrent = [
             StockDeliveryStateEnum::CONFIRMED,
@@ -508,7 +511,7 @@ class ShowStockDelivery extends OrgAction
     {
         $items = IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::ITEMS->value);
 
-        return $stockDelivery->is_costed
+        return $stockDelivery->state === StockDeliveryStateEnum::PLACED
             ? StockDeliveryItemCostResource::collection($items)
             : StockDeliveryItemResource::collection($items);
     }
@@ -518,7 +521,7 @@ class ShowStockDelivery extends OrgAction
         return [
             'is_costed'                  => $stockDelivery->is_costed,
             'currency'                   => $stockDelivery->currency?->code,
-            'distributeExtraCostRoute'   => $stockDelivery->is_costed && $stockDelivery->state === StockDeliveryStateEnum::BOOKED_IN ? [
+            'distributeExtraCostRoute'   => $stockDelivery->state === StockDeliveryStateEnum::PLACED && !$stockDelivery->is_costed ? [
                 'name'       => 'grp.models.stock-delivery.distribute-extra-cost',
                 'parameters' => ['stockDelivery' => $stockDelivery->id],
                 'method'     => 'patch',
@@ -532,7 +535,7 @@ class ShowStockDelivery extends OrgAction
             ? StockDeliveryTabsEnum::navigation()
             : StockDeliveryTabsEnum::navigationExcept([StockDeliveryTabsEnum::UNDER_OVER_DELIVERED]);
 
-        if ($stockDelivery->is_costed) {
+        if ($stockDelivery->state === StockDeliveryStateEnum::PLACED) {
             $navigation[StockDeliveryTabsEnum::ITEMS->value]['title'] = __('Items (costing)');
             $navigation[StockDeliveryTabsEnum::ITEMS->value]['icon']  = 'fal fa-box-usd';
         }

@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\GoodsOut\UI;
 
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnAddressManagement;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnBoxStats;
+use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexServiceInPalletReturn;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
@@ -323,28 +324,30 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                  'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
                  'box_stats'          => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer),
 
-                // 'service_list_route'       => [
-                //     'name'       => 'grp.json.fulfilment.return.services.index',
-                //     'parameters' => [
-                //         'fulfilment' => $palletReturn->fulfilment->slug,
-                //         'scope'      => $palletReturn->slug
-                //     ]
-                // ],
-                // 'physical_good_list_route' => [
-                //     'name'       => 'grp.json.fulfilment.return.physical-goods.index',
-                //     'parameters' => [
-                //         'fulfilment' => $palletReturn->fulfilment->slug,
-                //         'scope'      => $palletReturn->slug
-                //     ]
-                // ],
+                'notes_data' => GetNotesData::run(model: $palletReturn),
 
-                // 'route_check_stored_items' => [
-                //     'method'     => 'post',
-                //     'name'       => 'grp.models.pallet-return.stored_item.store',
-                //     'parameters' => [
-                //         $palletReturn->id
-                //     ]
-                // ],
+                'service_list_route'       => [
+                    'name'       => 'grp.json.fulfilment.return.services.index',
+                    'parameters' => [
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
+                    ]
+                ],
+                'physical_good_list_route' => [
+                    'name'       => 'grp.json.fulfilment.return.physical-goods.index',
+                    'parameters' => [
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
+                    ]
+                ],
+
+                'route_check_stored_items' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.pallet-return.stored_item.store',
+                    'parameters' => [
+                        $palletReturn->id
+                    ]
+                ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.pallet-return.attachment.attach',

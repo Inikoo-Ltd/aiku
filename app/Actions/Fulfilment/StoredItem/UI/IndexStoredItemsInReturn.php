@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\StoredItem\UI;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
+use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\StoredItem;
 use Closure;
@@ -59,6 +60,13 @@ class IndexStoredItemsInReturn extends OrgAction
         }
 
         $queryBuilder
+            ->with([
+                'palletStoredItems' => fn ($query) => PalletReturnItemsWithStoredItemsResource::constrainReturnablePalletStoredItems(
+                    $query->with(PalletReturnItemsWithStoredItemsResource::PALLET_STORED_ITEM_RELATIONS),
+                    $parent->state->value,
+                    $parent->id
+                ),
+            ])
             ->defaultSort('stored_items.id')
             ->select([
                 'stored_items.id',

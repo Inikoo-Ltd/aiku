@@ -39,29 +39,24 @@ class FinishStockDeliveryCosting extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->stockDelivery->state !== StockDeliveryStateEnum::BOOKED_IN) {
-            $validator->errors()->add('state', __('You can only finish the costing of a booked in stock delivery'));
+        if ($this->stockDelivery->state !== StockDeliveryStateEnum::PLACED) {
+            $validator->errors()->add('state', __('The costing of this stock delivery has not started yet'));
         }
 
-        if (!$this->stockDelivery->is_costed) {
-            $validator->errors()->add('state', __('The costing of this stock delivery has not started yet'));
+        if ($this->stockDelivery->is_costed) {
+            $validator->errors()->add('state', __('The costing of this stock delivery is already done'));
         }
     }
 
     public function handle(StockDelivery $stockDelivery): StockDelivery
     {
-        StockDeliveriesHydrateCosts::run($stockDelivery);
-
         $stockDelivery->items()
             ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
             ->update(['is_costed' => true]);
 
-        $stockDelivery = $this->update($stockDelivery, [
-            'state'     => StockDeliveryStateEnum::PLACED,
-            'placed_at' => now(),
-        ]);
+        $stockDelivery = $this->update($stockDelivery, ['is_costed' => true]);
 
-        UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
+        StockDeliveriesHydrateCosts::run($stockDelivery);
 
         $this->runStockDeliveryHydrators($stockDelivery);
 

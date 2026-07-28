@@ -21,7 +21,7 @@ class StockDeliveryItemCostResource extends JsonResource
 
         $supplierProduct = $item->supplierProduct;
         $stockDelivery   = $item->stockDelivery;
-        $isEditable      = $stockDelivery?->state === StockDeliveryStateEnum::BOOKED_IN && $stockDelivery?->is_costed;
+        $isEditable      = $stockDelivery?->state === StockDeliveryStateEnum::PLACED && !$stockDelivery?->is_costed;
 
         return [
             'id'                   => $item->id,
