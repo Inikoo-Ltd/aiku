@@ -32,6 +32,17 @@ class ClockingMachineQRCodeResource extends JsonResource
             'number_different_staff' => (int) $this->number_different_staff,
             'last_used_at'           => $this->last_used_at,
             'created_at'             => $this->created_at,
+            'clockings_route'        => [
+                'name'       => 'grp.org.hr.clocking_machines.show',
+                'parameters' => [
+                    'organisation'    => $this->clockingMachine->organisation->slug,
+                    'clockingMachine' => $this->clockingMachine->slug,
+                    '_query'          => [
+                        'tab'                         => 'clockings',
+                        'clocking_machine_qr_code_id' => $this->id,
+                    ],
+                ],
+            ],
             'edit_route'             => [
                 'name'       => 'grp.org.hr.clocking_machines.show.qr_codes.edit',
                 'parameters' => [

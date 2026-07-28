@@ -23,6 +23,7 @@ use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\MasterVariant\IndexMasterVariant;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
@@ -242,6 +243,19 @@ class ShowMasterFamily extends OrgAction
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
+                         $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit Price'),
+                            'icon'  => ['fal', 'fa-money-bill'],
+                            'route' => [
+                                'name'       => 'grp.masters.master_shops.show.master_families.master_products.index',
+                                'parameters' => array_merge(
+                                    $request->route()->originalParameters(),
+                                    ['tab' => MasterProductsTabsEnum::PRICING->value]
+                                )
                             ]
                         ] : false,
                         $this->canDelete ? [

@@ -76,8 +76,10 @@ class RepairMasterAssetHydratePrices
                 continue;
             }
 
+            $fractionDigits = (int)($exchangeData['fraction_digits'] ?? 2);
+
             if ($majorPrice = data_get($prices, "$majorCode.value")) {
-                $prices[$currencyCode] = ['value' => formatPrice($majorPrice, $exchange), 'independent' => false];
+                $prices[$currencyCode] = ['value' => formatPrice($majorPrice, $exchange, $fractionDigits), 'independent' => false];
             }
             if ($majorRRP = data_get($rrps, "$majorCode.value")) {
                 $rrps[$currencyCode] = ['value' => formatPrice($majorRRP, $exchange), 'independent' => false];

@@ -51,6 +51,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ReconnectRetinaCustomer
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\RedirectRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaRecentCustomerSalesChannelPortfolioUploads;
+use App\Actions\Retina\Dropshipping\Orders\ExportRetinaCustomerSalesChannelOrders;
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
@@ -148,6 +149,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('orders')->as('orders.')->group(function () {
         Route::get('/', IndexRetinaDropshippingOrders::class)->name('index');
+        Route::get('/export', ExportRetinaCustomerSalesChannelOrders::class)->name('export');
         Route::get('/{order}', ShowRetinaDropshippingOrder::class)->name('show');
         Route::get('/{order}/review', ShowRetinaDropshippingOrderReview::class)->name('review');
     });

@@ -188,7 +188,6 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
-                // ->column(key: 'state', label: __('State'), canBeHidden: false);
 
                 if ($purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED) {
                     $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');

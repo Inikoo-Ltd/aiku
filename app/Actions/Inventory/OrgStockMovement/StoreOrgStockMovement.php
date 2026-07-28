@@ -82,7 +82,14 @@ class StoreOrgStockMovement extends OrgAction
         data_set($modelData, 'flow', $flow);
 
         if ($process) {
-            $parent = $process instanceof Picking ? $process->deliveryNote : $process->return;
+            $parent = null;
+
+            if ($process instanceof Picking) {
+                $parent = $process->deliveryNote;
+            } elseif ($process instanceof Sowing) {
+                $parent = $process->return ?? $process->stockDelivery;
+            }
+
             if ($parent) {
                 data_set($modelData, 'parent_type', class_basename($parent));
                 data_set($modelData, 'parent_id', class_basename($parent->id));

@@ -34,11 +34,11 @@ const locale = inject('locale', aikuLocaleStructure)
               {{ trans("Retail") }}:
             </td>
             <td class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pr-2.5 sm:pr-6 font-semibold">
-              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp) }}
+              {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product.rrp) }}
               <span class="font-normal text-slate-500">/{{ trans("Outer") }}</span>
             </td>
             <td v-if="product.units > 1" class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pr-2.5 sm:pr-6 font-semibold">
-              {{ locale.currencyFormat(layout?.iris?.currency?.code, product.rrp_per_unit) }}
+              {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product.rrp_per_unit) }}
               <span class="font-normal text-slate-500">/{{ product.unit }}</span>
             </td>
             <td class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pr-1.5 sm:pr-3"></td>

@@ -33,6 +33,7 @@ class StoreCustomerClient extends OrgAction
     use WithNoStrictRules;
 
     private Customer $customer;
+    private CustomerSalesChannel $customerSalesChannel;
 
     /**
      * @throws \Throwable
@@ -100,6 +101,7 @@ class StoreCustomerClient extends OrgAction
                     table: 'customer_clients',
                     extraConditions: [
                         ['column' => 'customer_id', 'value' => $customer->id],
+                        ['column' => 'customer_sales_channel_id', 'value' => $this->customerSalesChannel->id],
                     ]
                 ),
             ],
@@ -148,6 +150,7 @@ class StoreCustomerClient extends OrgAction
             CustomerClient::disableAuditing();
         }
         $this->customer       = $customerSalesChannel->customer;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
@@ -162,6 +165,7 @@ class StoreCustomerClient extends OrgAction
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerClient
     {
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->customer = $customerSalesChannel->customer;
         $this->initialisationFromShop($customerSalesChannel->shop, $request);
 

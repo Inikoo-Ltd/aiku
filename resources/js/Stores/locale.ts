@@ -41,6 +41,18 @@ export const useLocaleStore = defineStore("locale", () => {
 		}
 	}
 
+	// ponytail: mirrors the master shop price_exchanges fraction_digits config, keep in sync
+	const WHOLE_NUMBER_PRACTICE_CURRENCIES = ["CZK", "HUF", "UAH", "SEK"]
+
+	// RRP is a recommended shelf price, so in whole-number countries it is rounded up
+	// for display; stored values and exact unit rates (price/units) keep their decimals.
+	const currencyFormatRrp = (currencyCode: string, amount: number | string): string | number => {
+		const num = typeof amount === "string" ? parseFloat(amount) : (amount || 0)
+		const resolvedCurrency = currencyInertia.value?.code || currencyCode || ''
+
+		return currencyFormat(currencyCode, WHOLE_NUMBER_PRACTICE_CURRENCIES.includes(resolvedCurrency) ? Math.ceil(num) : num)
+	}
+
 	const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
 		// if (typeof amount === "undefined" || amount === null) return 0
 		const getAmount = amount ?? 0
@@ -51,10 +63,14 @@ export const useLocaleStore = defineStore("locale", () => {
 		const num = typeof getAmount === "string" ? parseFloat(getAmount) : (getAmount || 0)
 		const resolvedCurrency = currencyInertia.value?.code || currencyCode || ''
 
+		// Retail practice in these countries is whole-number prices, so a whole amount
+		// shows without ".00" while totals with real decimals still show them.
+		const wholeNumberPractice = WHOLE_NUMBER_PRACTICE_CURRENCIES.includes(resolvedCurrency) && Number.isInteger(num)
+
 		const formatter = new Intl.NumberFormat(localeForCurrency(resolvedCurrency), {
 			style: resolvedCurrency ? "currency" : "decimal",
 			currency: resolvedCurrency,
-			minimumFractionDigits: 2,
+			minimumFractionDigits: wholeNumberPractice ? 0 : 2,
 			maximumFractionDigits: 2,
 			currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.
 		})
@@ -112,5 +128,5 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	}
 
-	return { language, locale_iso, languageOptions, number, numberShort, currencySymbolNarrow, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
+	return { language, locale_iso, languageOptions, number, numberShort, currencySymbolNarrow, currencyFormat, currencyFormatRrp, CurrencyShort, currencySymbol, languageAssetsOptions  }
 })

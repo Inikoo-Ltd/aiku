@@ -42,10 +42,13 @@ class ShowHumanResourcesDashboard extends OrgAction
     public function htmlResponse(ActionRequest $request): Response
     {
         $title = __('Human Resources');
-        $today = now()->startOfDay();
+        $today = Carbon::now()->startOfDay();
 
-        $attendance      = $this->getTodayAttendance($today);
-        $onLeaveCount    = $this->getOnLeaveTodayCount($today);
+        $attendanceDate  = $this->resolveAttendanceDate($request, $today);
+        $isToday         = $attendanceDate->isSameDay($today);
+
+        $attendance      = $this->getAttendance($attendanceDate);
+        $onLeaveCount    = $this->getOnLeaveCount($attendanceDate);
         $presentCount    = $attendance->count();
         $lateCount       = $attendance->where('is_late', true)->count();
         $workingCount    = $this->organisation->humanResourcesStats->number_employees_state_working;
@@ -110,31 +113,41 @@ class ShowHumanResourcesDashboard extends OrgAction
                         ]
                     ],
                     [
-                        'name'  => __('Present today'),
+                        'name'  => $isToday ? __('Present today') : __('Present'),
                         'stat'  => $presentCount,
                         'color' => 'green',
                         'icon'  => ['fal', 'fa-user-check'],
                     ],
                     [
-                        'name'  => __('On leave today'),
+                        'name'  => $isToday ? __('On leave today') : __('On leave'),
                         'stat'  => $onLeaveCount,
                         'color' => 'blue',
                         'icon'  => ['fal', 'fa-umbrella-beach'],
                     ],
                     [
-                        'name'  => __('Late today'),
+                        'name'  => $isToday ? __('Late today') : __('Late'),
                         'stat'  => $lateCount,
                         'color' => 'amber',
                         'icon'  => ['fal', 'fa-clock'],
                     ],
                     [
-                        'name'  => __('Absent today'),
+                        'name'  => $isToday ? __('Absent today') : __('Absent'),
                         'stat'  => $absentCount,
                         'color' => 'red',
                         'icon'  => ['fal', 'fa-user-slash'],
                     ],
                 ],
                 'attendance'    => $attendance->values()->all(),
+                'attendanceDate' => [
+                    'date'      => $attendanceDate->toDateString(),
+                    'label'     => $attendanceDate->isoFormat('ddd, Do MMM YY'),
+                    'is_today'  => $isToday,
+                    'max_date'  => $today->toDateString(),
+                    'route'     => [
+                        'name'       => 'grp.org.hr.dashboard',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                ],
                 'birthdays'     => $this->getBirthdaysThisMonth($today),
                 'leaveOverview' => $this->getLeaveOverview($today),
                 'employeeLeaves' => $this->getEmployeeLeaves($today),
@@ -316,11 +329,28 @@ class ShowHumanResourcesDashboard extends OrgAction
         return $map[strtolower($color)] ?? '#94a3b8';
     }
 
-    private function getTodayAttendance(Carbon $today): Collection
+    private function resolveAttendanceDate(ActionRequest $request, Carbon $today): Carbon
+    {
+        $date = $request->input('date');
+
+        if (!$date) {
+            return $today;
+        }
+
+        try {
+            $parsed = Carbon::parse($date)->startOfDay();
+        } catch (\Throwable) {
+            return $today;
+        }
+
+        return $parsed->gt($today) ? $today : $parsed;
+    }
+
+    private function getAttendance(Carbon $date): Collection
     {
         $timesheets = Timesheet::where('timesheets.organisation_id', $this->organisation->id)
             ->where('subject_type', 'Employee')
-            ->whereDate('date', $today->toDateString())
+            ->whereDate('date', $date->toDateString())
             ->with(['subject' => function ($query) {
                 $query->select(['id', 'contact_name', 'alias', 'job_title', 'slug', 'image_id'])->with('image');
             }])
@@ -367,12 +397,12 @@ class ShowHumanResourcesDashboard extends OrgAction
             });
     }
 
-    private function getOnLeaveTodayCount(Carbon $today): int
+    private function getOnLeaveCount(Carbon $date): int
     {
         return Leave::where('organisation_id', $this->organisation->id)
             ->where('status', LeaveStatusEnum::APPROVED)
-            ->whereDate('start_date', '<=', $today->toDateString())
-            ->whereDate('end_date', '>=', $today->toDateString())
+            ->whereDate('start_date', '<=', $date->toDateString())
+            ->whereDate('end_date', '>=', $date->toDateString())
             ->distinct('employee_id')
             ->count('employee_id');
     }
