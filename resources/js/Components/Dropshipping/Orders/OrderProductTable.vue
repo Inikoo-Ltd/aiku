@@ -35,6 +35,7 @@ type ProductRow = {
     id: number
     asset_code: string
     asset_name: string
+    is_discretionary_offer?: boolean
     quantity_ordered: number
     available_quantity?: number
     product_slug?: string
@@ -479,6 +480,7 @@ const isOffersData = (offersData: any): boolean => {
                     <Discount 
                         v-if="isOffersData(item.offers_data)" 
                         :offers_data="item.offers_data" 
+                        :is_discretionary_offer="item.discretionary_offer"
                     />
                 </div>
             </template>

@@ -36,6 +36,11 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     private int|null $daysSinceLastInvoiced = null;
     private int|null $grAmnestyOfferId = null;
 
+    public function __construct()
+    {
+        $this->transactionsQuantityBonus = collect(); // handle accessed before initialized
+    }
+
     public function getJobUniqueId(Order $order, bool $onlyIfInBasket = false): string
     {
         return $order->id.'_'.($onlyIfInBasket ? '1' : '0');
