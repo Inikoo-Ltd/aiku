@@ -14,12 +14,17 @@ use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
+use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
+use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
@@ -47,11 +52,16 @@ use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Inventory\Location;
+use App\Models\Inventory\LocationOrgStock;
+use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\Warehouse;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
@@ -1130,3 +1140,109 @@ test('stock delivery item can not be placed beyond the checked quantity', functi
 
     UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 9]);
 })->throws(ValidationException::class);
+
+function createLocationOrgStockFor($test, StockDeliveryItem $stockDeliveryItem): LocationOrgStock
+{
+    $warehouse = Warehouse::where('organisation_id', $test->organisation->id)->first();
+
+    if (!$warehouse) {
+        $warehouse = StoreWarehouse::make()->action($test->organisation, Warehouse::factory()->definition());
+    }
+
+    $location = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    return StoreLocationOrgStock::make()->action(OrgStock::find($stockDeliveryItem->org_stock_id), $location, [
+        'type' => LocationStockTypeEnum::PICKING,
+    ]);
+}
+
+test('stock delivery item checks all the delivered quantity', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'CHECK-ALL', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemAsChecked::make()->action($stockDelivery->items()->first());
+
+    expect((float) $stockDeliveryItem->unit_quantity_checked)->toBe(10.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::CHECKED)
+        ->and($stockDeliveryItem->checked_at)->not->toBeNull()
+        ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::CHECKED);
+});
+
+test('stock delivery item places all the remaining checked quantity in one location', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-ALL', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, [
+        'location_org_stock_id' => $locationOrgStock->id,
+    ]);
+
+    $sowing = $stockDeliveryItem->sowings()->first();
+
+    expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(10.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED)
+        ->and($stockDeliveryItem->sowings()->count())->toBe(1)
+        ->and($sowing->location_id)->toBe($locationOrgStock->location_id)
+        ->and((float) $sowing->quantity)->toBe(10.0)
+        ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
+});
+
+test('stock delivery item places all without a location when the org stock has none', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-ALL-NO-LOCATION', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, []);
+
+    expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(10.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED)
+        ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
+});
+
+test('UI show stock delivery items exposes the placement and sowings data', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACEMENT-UI', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, [
+        'quantity'              => 4,
+        'location_org_stock_id' => $locationOrgStock->id,
+    ]);
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.show', [
+        $this->organisation->slug,
+        $stockDelivery->slug,
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($locationOrgStock) {
+        $page
+            ->component('Procurement/StockDelivery')
+            ->where('queryBuilderProps.items.columns.5.key', 'sowings')
+            ->where('queryBuilderProps.items.columns.6.key', 'placement')
+            ->has(
+                StockDeliveryTabsEnum::ITEMS->value.'.data',
+                1,
+                fn (AssertableInertia $page) => $page
+                    ->where('placement_remaining', 6)
+                    ->where('has_available_qty', true)
+                    ->where('is_editable', true)
+                    ->where('placeAllRoute.name', 'grp.models.stock-delivery-item.place-all')
+                    ->where('checkAllRoute.name', 'grp.models.stock-delivery-item.set-all-checked')
+                    ->where('warehouse_slug', $locationOrgStock->warehouse->slug)
+                    ->has('locations.0.warehouse_slug')
+                    ->has('sowings.0.undo_sowing_route')
+                    ->where('sowings.0.quantity', 4)
+                    ->where('sowings.0.location_code', $locationOrgStock->location->code)
+                    ->etc()
+            );
+    });
+});

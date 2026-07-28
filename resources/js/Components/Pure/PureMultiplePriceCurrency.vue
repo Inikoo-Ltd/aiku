@@ -46,6 +46,7 @@ const props = defineProps<{
         products: Record<string, string>
     } | null
     perUnits?: number
+    units?: number
     form?: any
     submitForm?: () => void
     inputPlaceholder?: string
@@ -538,6 +539,7 @@ const saveRebel = async (rebel: PriceRebel) => {
                 v-model="prices[baseCurrency.code]"
                 :impact="impactFor(baseCurrency.code)"
                 :placeholder="inputPlaceholder"
+                :units="units"
                 :dirty="isDirty(baseCurrency.code)"
                 :currency="baseCurrency"
                 :readonly="readonly"
@@ -599,6 +601,7 @@ const saveRebel = async (rebel: PriceRebel) => {
                 v-model="prices[currency.code]"
                 :impact="impactFor(currency.code)"
                 :placeholder="inputPlaceholder"
+                :units="units"
                 :dirty="isDirty(currency.code)"
                 :currency="currency"
                 :readonly="readonly"
@@ -622,6 +625,7 @@ const saveRebel = async (rebel: PriceRebel) => {
                     v-model="prices[currency.code]"
                     :impact="impactFor(currency.code)"
                     :placeholder="inputPlaceholder"
+                    :units="units"
                     :dirty="isDirty(currency.code)"
                     :currency="currency"
                     :readonly="readonly"
@@ -697,6 +701,7 @@ const saveRebel = async (rebel: PriceRebel) => {
                         v-model="prices[currency.code]"
                         :impact="impactFor(currency.code)"
                         :placeholder="inputPlaceholder"
+                        :units="units"
                         :dirty="isDirty(currency.code)"
                         :currency="currency"
                         :readonly="readonly"

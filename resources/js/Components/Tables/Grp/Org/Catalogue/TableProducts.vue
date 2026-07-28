@@ -743,7 +743,7 @@ const repairTradeUnitFromChildren = async (product) => {
                 </InputNumber>
                 <p class="text-red-600 text-xxs">{{ errors?.[product.id]?.rrp }}</p>
             </div>
-            <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp_per_unit) }}</span>
+            <span v-else>{{ locale.currencyFormatRrp(product.currency_code, product.rrp_per_unit) }}</span>
         </template>
 
         <template #cell(rrp)="{ item: product }">

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { routeType } from '@/types/route'
 import { Link } from '@inertiajs/vue3'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -62,10 +62,10 @@ const setError = (e: {}) => {
         type: "error",
     })
 }
-const dataToSend = {
+const dataToSend = computed(() => ({
   ...(props.body ?? {}),
   ...(props.routeTarget?.body ?? {}),
-}
+}))
 </script>
 
 <template>

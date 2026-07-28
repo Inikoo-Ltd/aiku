@@ -405,7 +405,7 @@ const trackFunction = () => ({
 </script>
 
 <template>
-	<div class="relative z-0">
+	<div class="relative z-0 pb-10">
 		<div v-if="!cameraOn" class="max-w-lg mx-auto p-4 sm:p-6 sm:pb-6">
 			<h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
 				{{ trans("Employee Clocking") }}

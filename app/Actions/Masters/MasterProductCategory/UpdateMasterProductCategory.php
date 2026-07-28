@@ -111,7 +111,7 @@ class UpdateMasterProductCategory extends OrgAction
         $grUpdating = false;
         $grDeleting = false;
         if (Arr::has($modelData, 'vol_gr_offer')) {
-            $volGR = Arr::pull($modelData, 'vol_gr_offer');
+            $volGR      = Arr::pull($modelData, 'vol_gr_offer');
             if ($volGR) {
                 data_set($modelData, 'has_gr_vol_discount', true);
                 data_set($modelData, 'gr_vol_discount_percentage', $volGR['percentage_off']);

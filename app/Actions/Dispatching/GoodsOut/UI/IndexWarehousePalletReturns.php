@@ -26,6 +26,8 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -36,6 +38,24 @@ class IndexWarehousePalletReturns extends OrgAction
     use WithPalletReturnSubNavigation;
     use WithFulfilmentWarehouseAuthorisation;
 
+
+    public const RETURN_ACTIVITY_AT = 'coalesce(pallet_returns.confirmed_at, pallet_returns.submitted_at, pallet_returns.created_at)';
+
+    /**
+     * Each bucket lists the timestamp of the state it holds, so the rows are ordered by the column they show.
+     * The buckets that span several states fall back to the latest activity, their date column being always null.
+     */
+    public static function returnSortColumn(?string $restriction): string
+    {
+        return match ($restriction) {
+            'dispatched' => 'pallet_returns.dispatched_at',
+            'confirmed'  => 'pallet_returns.confirmed_at',
+            'picking'    => 'pallet_returns.picking_at',
+            'picked'     => 'pallet_returns.picked_at',
+            'cancelled'  => 'pallet_returns.cancel_at',
+            default      => self::RETURN_ACTIVITY_AT,
+        };
+    }
 
     private ?string $restriction = null;
     private ?string $type = null;
@@ -313,7 +333,9 @@ class IndexWarehousePalletReturns extends OrgAction
             }
         }
 
-        $queryBuilder->defaultSort('-date');
+        $sortColumn = self::returnSortColumn($this->restriction);
+
+        $queryBuilder->defaultSort('-'.($sortColumn === self::RETURN_ACTIVITY_AT ? 'activity_at' : Str::afterLast($sortColumn, '.')));
 
         return $queryBuilder
             ->select([
@@ -350,7 +372,8 @@ class IndexWarehousePalletReturns extends OrgAction
                     ->limit(1)
                     ->select('ps.slug');
             }, 'picking_session_slug')
-            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'picking_at', 'picked_at', 'confirmed_at', 'number_stored_items', 'platform_name', 'cust_name', 'picker_name', 'packer_name'])
+            ->addSelect(DB::raw(self::RETURN_ACTIVITY_AT.' as activity_at'))
+            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'picking_at', 'picked_at', 'confirmed_at', 'cancel_at', 'dispatched_at', 'activity_at', 'number_stored_items', 'platform_name', 'cust_name', 'picker_name', 'packer_name'])
             ->allowedFilters([$globalSearch, 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -428,7 +451,7 @@ class IndexWarehousePalletReturns extends OrgAction
                         $table->column(key: 'cancel_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                         break;
                     default:
-                        $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                        $table->column(key: 'activity_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
                 }
             }
 

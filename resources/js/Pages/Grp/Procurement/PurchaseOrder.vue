@@ -129,8 +129,11 @@ const props = defineProps < {
             currency: string | null
             org_currency: string | null
             org_exchange: number | string | null
-            items: number | string
-            extra: number | string
+            items: number | string | null
+            extra: number | string | null
+            shipping: number | string | null
+            duties: number | string | null
+            tax: number | string | null
             total: number | string
             org_items: number | string
         }
@@ -176,8 +179,20 @@ const orgPerOrder = computed(() => {
 	return Number(org_exchange) || null
 })
 
+const costRows = computed(() => {
+	const { items, extra, shipping, duties, tax } = props.box_stats.third_block
+
+	return [
+		{ key: "items", label: trans("Items"), amount: Number(items) || 0, alwaysShown: true },
+		{ key: "extra", label: trans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
+		{ key: "shipping", label: trans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
+		{ key: "duties", label: trans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
+		{ key: "tax", label: trans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
+	].filter(row => row.alwaysShown || row.amount !== 0)
+})
+
 const costBlocks = computed(() => {
-	const { currency, org_currency, items, extra, total, org_items } = props.box_stats.third_block
+	const { currency, org_currency, total, org_items } = props.box_stats.third_block
 
 	const money = (code: string | null, amount: number) => locale.currencyFormat(code ?? "", amount)
 
@@ -185,8 +200,7 @@ const costBlocks = computed(() => {
 		key: "supplier",
 		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
 		rows: [
-			{ label: trans("Items"), value: money(currency, Number(items)) },
-			{ label: trans("Extra costs"), value: money(currency, Number(extra)) },
+			...costRows.value.map(row => ({ label: row.label, value: money(currency, row.amount) })),
 			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
 		],
 	}
@@ -194,8 +208,11 @@ const costBlocks = computed(() => {
 	const sameCurrency = !org_currency || org_currency === currency
 	const orgCurrency = org_currency || currency
 	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
-	const orgItems = sameCurrency ? Number(items) : Number(org_items)
-	const orgExtra = Number(extra) * rate
+
+	const orgAmount = (row: { key: string; amount: number }) =>
+		row.key === "items" && !sameCurrency ? Number(org_items) : row.amount * rate
+
+	const orgTotal = costRows.value.reduce((sum, row) => sum + orgAmount(row), 0)
 
 	const orderPerOrg = rate ? 1 / rate : null
 	const rateLabel = sameCurrency
@@ -210,9 +227,8 @@ const costBlocks = computed(() => {
 			key: "org",
 			title: rateLabel,
 			rows: [
-				{ label: trans("Items"), value: money(orgCurrency, orgItems) },
-				{ label: trans("Extra costs"), value: money(orgCurrency, orgExtra) },
-				{ label: trans("Total"), value: money(orgCurrency, orgItems + orgExtra), isTotal: true },
+				...costRows.value.map(row => ({ label: row.label, value: money(orgCurrency, orgAmount(row)) })),
+				{ label: trans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
 			],
 		},
 	]

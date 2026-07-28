@@ -177,6 +177,110 @@ test('cascade hydrator sets product rrp to master total, not multiplied by units
     expect((float) $product->fresh()->rrp)->toBe(960.0);
 })->depends('skips discontinued products');
 
+test('divides rrp by units in every currency when both majors carry the same corrupt ratio', function () {
+    $masterFamily = \App\Models\Masters\MasterProductCategory::where('code', 'RRPFIX-FAM')->firstOrFail();
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RRPFIX-UNITS',
+        'name'    => 'rrp times units asset',
+        'is_main' => true,
+        'type'    => \App\Enums\Masters\MasterAsset\MasterAssetTypeEnum::PRODUCT,
+        'price'   => 100,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'units'         => 36,
+        'master_prices' => [
+            'GBP' => ['value' => 100, 'independent' => false],
+            'EUR' => ['value' => 120, 'independent' => false],
+            'USD' => ['value' => 130, 'independent' => false],
+        ],
+        'master_rrps' => [
+            'GBP' => ['value' => 10080, 'independent' => false],
+            'EUR' => ['value' => 12096, 'independent' => false],
+            'USD' => ['value' => 13104, 'independent' => false],
+        ],
+    ]);
+    $masterAsset->refresh();
+
+    RepairMasterAssetRrpAnomalies::make()->handle($masterAsset, ['GBP' => 1.0, 'EUR' => 1.2, 'USD' => 1.3], 0.5, true);
+
+    $rrps = $masterAsset->fresh()->master_rrps;
+
+    expect((float) data_get($rrps, 'GBP.value'))->toBe(280.0)
+        ->and((float) data_get($rrps, 'EUR.value'))->toBe(336.0)
+        ->and((float) data_get($rrps, 'USD.value'))->toBe(364.0);
+
+    expect(RepairMasterAssetRrpAnomalies::make()->handle($masterAsset->fresh(), ['GBP' => 1.0, 'EUR' => 1.2, 'USD' => 1.3], 0.5, false))->toBeEmpty();
+})->depends('skips discontinued products');
+
+test('leaves a legitimate multipack whose rrp is quoted per single item untouched', function () {
+    $masterFamily = \App\Models\Masters\MasterProductCategory::where('code', 'RRPFIX-FAM')->firstOrFail();
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RRPFIX-MULTIPACK',
+        'name'    => 'legit multipack',
+        'is_main' => true,
+        'type'    => \App\Enums\Masters\MasterAsset\MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'units'         => 12,
+        'master_prices' => [
+            'GBP' => ['value' => 10, 'independent' => false],
+            'EUR' => ['value' => 12, 'independent' => false],
+        ],
+        'master_rrps' => [
+            'GBP' => ['value' => 125, 'independent' => false],
+            'EUR' => ['value' => 150, 'independent' => false],
+        ],
+    ]);
+    $masterAsset->refresh();
+
+    RepairMasterAssetRrpAnomalies::make()->handle($masterAsset, ['GBP' => 1.0, 'EUR' => 1.2], 0.5, true);
+
+    $rrps = $masterAsset->fresh()->master_rrps;
+
+    expect((float) data_get($rrps, 'GBP.value'))->toBe(125.0)
+        ->and((float) data_get($rrps, 'EUR.value'))->toBe(150.0);
+})->depends('skips discontinued products');
+
+test('leaves a healthy low units asset whose markup survives a division untouched', function () {
+    $masterFamily = \App\Models\Masters\MasterProductCategory::where('code', 'RRPFIX-FAM')->firstOrFail();
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RRPFIX-HEALTHY',
+        'name'    => 'healthy low units',
+        'is_main' => true,
+        'type'    => \App\Enums\Masters\MasterAsset\MasterAssetTypeEnum::PRODUCT,
+        'price'   => 100,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'units'         => 2,
+        'master_prices' => [
+            'GBP' => ['value' => 100, 'independent' => false],
+            'EUR' => ['value' => 120, 'independent' => false],
+        ],
+        'master_rrps' => [
+            'GBP' => ['value' => 300, 'independent' => false],
+            'EUR' => ['value' => 360, 'independent' => false],
+        ],
+    ]);
+    $masterAsset->refresh();
+
+    RepairMasterAssetRrpAnomalies::make()->handle($masterAsset, ['GBP' => 1.0, 'EUR' => 1.2], 0.5, true);
+
+    $rrps = $masterAsset->fresh()->master_rrps;
+
+    expect((float) data_get($rrps, 'GBP.value'))->toBe(300.0)
+        ->and((float) data_get($rrps, 'EUR.value'))->toBe(360.0);
+})->depends('skips discontinued products');
+
 test('skips master assets with status false', function () {
     $masterAsset = \App\Models\Masters\MasterAsset::where('code', 'RRPFIX-ASSET')->firstOrFail();
     $masterAsset->updateQuietly([

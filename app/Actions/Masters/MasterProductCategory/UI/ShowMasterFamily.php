@@ -23,6 +23,7 @@ use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\MasterVariant\IndexMasterVariant;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
@@ -244,6 +245,19 @@ class ShowMasterFamily extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
+                         $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit Price'),
+                            'icon'  => ['fal', 'fa-money-bill'],
+                            'route' => [
+                                'name'       => 'grp.masters.master_shops.show.master_families.master_products.index',
+                                'parameters' => array_merge(
+                                    $request->route()->originalParameters(),
+                                    ['tab' => MasterProductsTabsEnum::PRICING->value]
+                                )
+                            ]
+                        ] : false,
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',
@@ -286,7 +300,7 @@ class ShowMasterFamily extends OrgAction
                 'vol_gr_reward'           => [
                     'show_gr_vol'                   => $masterFamily->masterShop->gold_reward_eligible && $masterFamily->has_gr_vol_discount,
                     'gr_vol_discount_quantity'      => $masterFamily->gr_vol_discount_quantity,
-                    'gr_vol_discount_percentage'    => $masterFamily->gr_vol_discount_percentage,
+                    'gr_vol_discount_percentage'    => trimDecimalZeros($masterFamily->gr_vol_discount_percentage),
                     'missing_gr_children_count'     => $masterFamily->has_gr_vol_discount
                         ? $masterFamily->productCategories()->where('has_gr_vol_discount', false)->count()
                         : 0,

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\GoodsOut\UI;
 
+use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\PalletReturn\IndexPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnActions;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnAddressManagement;
@@ -242,6 +243,23 @@ class ShowWarehousePalletReturn extends OrgAction
                     'name'       => 'grp.models.pallet-return.stored_item.store',
                     'parameters' => [
                         $palletReturn->id
+                    ]
+                ],
+
+                'notes_data' => GetNotesData::run(model: $palletReturn),
+
+                'service_list_route'       => [
+                    'name'       => 'grp.json.fulfilment.return.services.index',
+                    'parameters' => [
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
+                    ]
+                ],
+                'physical_good_list_route' => [
+                    'name'       => 'grp.json.fulfilment.return.physical-goods.index',
+                    'parameters' => [
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
                     ]
                 ],
 

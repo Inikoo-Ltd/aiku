@@ -97,6 +97,11 @@ class Clocking extends Model implements HasMedia
         return $this->belongsTo(ClockingMachine::class);
     }
 
+    public function clockingMachineQrCode(): BelongsTo
+    {
+        return $this->belongsTo(ClockingMachineQRCode::class, 'clocking_machine_qr_code_id');
+    }
+
     public function timesheet(): BelongsTo
     {
         return $this->belongsTo(Timesheet::class);
