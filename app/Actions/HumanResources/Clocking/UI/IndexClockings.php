@@ -58,6 +58,12 @@ class IndexClockings extends OrgAction
                 abort(404, 'Not Found');
         }
 
+        $qrCodeId = request()->input('clocking_machine_qr_code_id');
+
+        if ($qrCodeId) {
+            $queryBuilder->where('clockings.clocking_machine_qr_code_id', (int)$qrCodeId);
+        }
+
         return $queryBuilder
             ->defaultSort('-clockings.clocked_at')
             ->select(
