@@ -60,9 +60,10 @@ class UpdateMasterShopPriceExchange extends OrgAction
             }
 
             $priceExchanges[$currencyCode] = [
-                'is_major' => false,
-                'major'    => $majorCurrencyCode,
-                'exchange' => $modelData['exchange'],
+                'is_major'        => false,
+                'major'           => $majorCurrencyCode,
+                'exchange'        => $modelData['exchange'],
+                'fraction_digits' => (int)($modelData['fraction_digits'] ?? 2),
             ];
         }
 
@@ -86,7 +87,8 @@ class UpdateMasterShopPriceExchange extends OrgAction
             'currency' => ['required', 'string', 'size:3', 'exists:currencies,code'],
             'is_major' => ['required', 'boolean'],
             'major'    => ['required_if:is_major,false', 'string', 'size:3', 'different:currency'],
-            'exchange' => ['required_if:is_major,false', 'numeric', 'gt:0'],
+            'exchange'        => ['required_if:is_major,false', 'numeric', 'gt:0'],
+            'fraction_digits' => ['sometimes', 'integer', 'between:0,2'],
         ];
     }
 

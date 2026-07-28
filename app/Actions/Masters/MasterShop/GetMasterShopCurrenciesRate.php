@@ -69,7 +69,7 @@ class GetMasterShopCurrenciesRate
                     'currency'        => $currency->code,
                     'currency_symbol' => $currency->symbol,
                     'currency_id'     => $currency->id,
-                    'fraction_digits' => $currency->fraction_digits,
+                    'fraction_digits' => $isMajor ? $currency->fraction_digits : (int)($exchangeData['fraction_digits'] ?? $currency->fraction_digits),
                     'is_major'        => $isMajor,
                     'major'           => $isMajor ? null : ($exchangeData['major'] ?? null),
                 ]
