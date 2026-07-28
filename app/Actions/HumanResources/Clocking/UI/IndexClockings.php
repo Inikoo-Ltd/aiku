@@ -62,22 +62,30 @@ class IndexClockings extends OrgAction
             ->defaultSort('-clockings.clocked_at')
             ->select(
                 [
-                    'clocked_at',
+                    'clockings.clocked_at',
                     'clockings.id',
                     'clockings.type',
                     'clockings.notes',
                     'clockings.organisation_id',
                     'workplaces.slug as workplace_slug',
                     'clocking_machines.slug as clocking_machine_slug',
-                    'clocking_machine_id',
+                    'clockings.clocking_machine_id',
                     'media.slug as media_slug',
                     'media.id as media_id',
-                    'organisations.code as organisation_code'
+                    'organisations.code as organisation_code',
+                    'employees.contact_name as employee_name',
+                    'clocking_machines.name as clocking_machine_name',
+                    'clocking_machine_qr_codes.label as clocking_machine_qr_code'
                 ]
             )
             ->leftJoin('workplaces', 'clockings.workplace_id', 'workplaces.id')
             ->leftJoin('media', 'clockings.image_id', 'media.id')
             ->leftJoin('clocking_machines', 'clockings.clocking_machine_id', 'clocking_machines.id')
+            ->leftJoin('clocking_machine_qr_codes', 'clockings.clocking_machine_qr_code_id', 'clocking_machine_qr_codes.id')
+            ->leftJoin('employees', function ($join) {
+                $join->on('clockings.subject_id', '=', 'employees.id')
+                    ->where('clockings.subject_type', '=', 'Employee');
+            })
             ->leftJoin('organisations', 'clockings.organisation_id', 'organisations.id')
             ->allowedSorts(['clocked_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -106,7 +114,10 @@ class IndexClockings extends OrgAction
                     ]
                 )
                 ->column(key: 'media_slug', label: __('Photo'), canBeHidden: false)
+                ->column(key: 'employee_name', label: __('Employee'), canBeHidden: false)
                 ->column(key: 'clocked_at', label: __('Time'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'clocking_machine_name', label: __('Machine'), canBeHidden: false)
+                ->column(key: 'clocking_machine_qr_code', label: __('QR Code'), canBeHidden: false)
                 ->column(key: 'notes', label: __('Notes'), canBeHidden: false, sortable: false, searchable: true)
                 ->defaultSort('clocked_at', 'desc');
 
