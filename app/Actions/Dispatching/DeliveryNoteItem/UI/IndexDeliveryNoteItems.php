@@ -42,18 +42,28 @@ class IndexDeliveryNoteItems extends OrgAction
         $this->applyDeliveryNoteItemBaseWiths($query);
         $this->applyDeliveryNoteItemBaseJoins($query);
 
-        $query->leftJoin('packings', function ($join) {
-            $join->on('packings.delivery_note_item_id', 'delivery_note_items.id');
-        });
+        // An item can be packed in several goes, so the packings are aggregated per item. Joining
+        // the table directly would return one row per packing and duplicate the item in the table.
+        $query->leftJoinSub(
+            DB::table('packings')
+                ->select('delivery_note_item_id')
+                ->selectRaw('sum(quantity) as total_quantity')
+                ->selectRaw('count(*) as packings_count')
+                ->groupBy('delivery_note_item_id'),
+            'item_packings',
+            'item_packings.delivery_note_item_id',
+            '=',
+            'delivery_note_items.id'
+        );
+
+        $packedSoFar = 'round(coalesce(item_packings.total_quantity, 0), 3)';
+        $pickedTotal = 'round(delivery_note_items.quantity_picked, 3)';
 
         if ($stateFilter === DeliveryNoteItemStateEnum::PACKING) {
-            $query->whereNull('packings.id')
+            $query->whereRaw("$packedSoFar < $pickedTotal")
                 ->where('delivery_note_items.quantity_picked', '!=', 0);
         } elseif ($stateFilter) {
-            $query->where(function ($query) {
-                $query->whereNotNull('packings.id')
-                    ->orWhereColumn('delivery_note_items.quantity_picked', 'delivery_note_items.quantity_packed');
-            });
+            $query->whereRaw("$packedSoFar >= $pickedTotal");
         }
 
         return $query->defaultSort('org_stocks.code')
@@ -61,11 +71,11 @@ class IndexDeliveryNoteItems extends OrgAction
                 array_merge(
                     $this->getDeliveryNoteItemBaseSelect(),
                     [
-                        'packings.quantity as packings_quantity',
+                        'item_packings.total_quantity as packings_quantity',
+                        'item_packings.packings_count as packings_count',
                         'org_stocks.main_batch_code_id as org_stocks_batch_code_id',
                         'org_stocks.current_batch_codes as org_stocks_batch_code_count',
                         'batch_codes.code as org_stocks_batch_code',
-                        'packings.id as packing_id',
                         DB::raw("'{$parent->warehouse->slug}' as warehouse_slug"),
                         DB::raw("'{$parent->warehouse->code}' as warehouse_code"),
                     ]

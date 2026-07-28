@@ -1258,10 +1258,18 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         <template #cell(action)="{ item: item }">
                 <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0" >
                     
-                    <div class="flex justify-start items-center">
+                    <div class="flex justify-start items-center gap-x-2">
+                    <!-- Label: partially packed, the rest is still waiting -->
+                    <span
+                        v-if="item.is_partially_packed"
+                        v-tooltip="ctrans('Packed :packed of :picked picked', { packed: Number(item.quantity_packed), picked: Number(item.quantity_picked) })"
+                        class="whitespace-nowrap rounded border border-amber-400 bg-amber-100 px-1.5 text-sm text-amber-700">
+                        {{ Number(item.quantity_packed) }} / {{ Number(item.quantity_picked) }}
+                    </span>
+
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
-                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_picked) })"
+                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_to_pack ?? item.quantity_picked) })"
                         type="secondary"
                         xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
@@ -1276,8 +1284,8 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                         }"
                     />
                     <ButtonWithLink
-                        v-else
-                        v-tooltip="ctrans('Undo packing')"
+                        v-if="item.is_done_packing || item.is_partially_packed"
+                        v-tooltip="item.is_partially_packed ? ctrans('Undo all packing on this item') : ctrans('Undo packing')"
                         type="negative"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :bindToLink="{preserveScroll: true}"

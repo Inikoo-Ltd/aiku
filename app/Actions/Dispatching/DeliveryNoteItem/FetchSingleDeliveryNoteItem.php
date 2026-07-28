@@ -69,7 +69,8 @@ class FetchSingleDeliveryNoteItem extends OrgAction
             'batch_code'                     => $deliveryNoteItem->batch_code,
             'expiry_date'                    => $deliveryNoteItem->expiry_date,
             'packed_in_message'              => $packedInMessage,
-            'is_done_packing'                => $deliveryNoteItem->packings()->exists(),
+            'is_done_packing'                => $deliveryNoteItem->packings()->exists()
+                && UpdateDeliveryNoteItemPacking::isFullyPacked($deliveryNoteItem),
         ];
     }
 

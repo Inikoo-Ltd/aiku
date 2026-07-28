@@ -31,7 +31,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_waiting_warehouse
  * @property mixed $quantity_waiting_crm
  * @property mixed $pickings
- * @property mixed $packing_id
+ * @property mixed $packings_count
  * @property mixed $is_picked
  * @property mixed $is_packed
  * @property mixed $warehouse_slug
@@ -100,6 +100,9 @@ class DeliveryNoteItemsResource extends JsonResource
             $packedQuantity = $this->packings_quantity;
         }
 
+        $quantityToPack  = max(0, round((float)$this->quantity_picked - (float)$packedQuantity, 3));
+        $isFullyPacked   = round((float)$packedQuantity, 3) >= round((float)$this->quantity_picked, 3);
+        $hasAnyPacking   = (int)$this->packings_count > 0;
 
 
         return [
@@ -131,7 +134,10 @@ class DeliveryNoteItemsResource extends JsonResource
                 ],
             ],
             'packed_in_message'              => $packedInMessage,
-            'is_done_packing'                => (bool)$this->packing_id,
+            'is_done_packing'                => $hasAnyPacking && $isFullyPacked,
+            'is_partially_packed'            => $hasAnyPacking && !$isFullyPacked,
+            'quantity_to_pack'               => $quantityToPack,
+            'quantity_to_pack_fractional'    => riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPack)), $packedIn),
             'is_picked'                      => $this->is_picked,
             'is_packed'                      => $this->is_packed,
             'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
