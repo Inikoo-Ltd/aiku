@@ -35,7 +35,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull } from "@fas"
 
 library.add(
@@ -59,7 +59,8 @@ library.add(
 	faArrowCircleLeft,
 	faExclamationCircle,
 	faBoxOpen,
-	faBoxFull
+	faBoxFull,
+	faClipboardList
 )
 
 const props = defineProps<{
@@ -71,6 +72,10 @@ const props = defineProps<{
 	timelines: {
 		[key: string]: TSTimeline
 	}
+	purchase_order: {
+		reference: string
+		route: routeType
+	} | null
 	box_stats: {
 		first_block: {
 			orderer: {
@@ -558,8 +563,17 @@ const confirmDeleteStockDelivery = (action: any) => {
 	</PageHeading>
 
 	<!-- Stock Delivery Timeline -->
-	<div v-if="timelines" class="py-2 border-b border-gray-300">
+	<div v-if="timelines" class="flex items-center gap-x-4 py-2 border-b border-gray-300" :class="purchase_order ? 'pl-4' : ''">
+		<Link
+			v-if="purchase_order"
+			:href="route(purchase_order.route.name, purchase_order.route.parameters)"
+			class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap"
+		>
+			<FontAwesomeIcon icon="fal fa-clipboard-list" fixed-width aria-hidden="true" />
+			{{ purchase_order.reference }}
+		</Link>
 		<Timeline
+			class="flex-1 min-w-0"
 			:options="timelines"
 			:state="stock_delivery.state"
 			:slidesPerView="6"
