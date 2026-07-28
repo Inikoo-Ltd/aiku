@@ -118,6 +118,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $this->processDiscretionaryOffers($order);
 
         DB::transaction(function () use ($order) {
+            DB::table('orders')->where('id', $order->id)->lockForUpdate()->first();
+
             DB::table('transaction_has_offer_allowances')
                 ->where('is_gift', false)
                 ->where('order_id', $order->id)->delete();

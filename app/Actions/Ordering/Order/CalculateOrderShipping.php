@@ -222,6 +222,7 @@ class CalculateOrderShipping
                 'gross_amount'      => $shippingAmount ?? 0,
                 'net_amount'        => $shippingAmount ?? 0,
             ],
+            false,
             false
         );
     }
