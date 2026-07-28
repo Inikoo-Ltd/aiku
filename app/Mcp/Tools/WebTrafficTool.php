@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Logged-in visitor requests for a shop\'s website over a date range, per day and by device. Note: covers only logged-in users; anonymous visitors are not tracked.')]
+#[IsReadOnly]
 class WebTrafficTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum

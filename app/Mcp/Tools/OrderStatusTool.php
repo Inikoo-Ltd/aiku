@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Look up one order by its reference and return its current state and key dates.')]
+#[IsReadOnly]
 class OrderStatusTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum

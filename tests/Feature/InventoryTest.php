@@ -701,6 +701,47 @@ test("UI show org stock", function (OrgStock $orgStock) {
     });
 })->depends('create org stock');
 
+test("UI show org stock navigation follows the bucket and sort", function () {
+    $warehouse = $this->organisation->warehouses->first() ?? createWarehouse();
+    $this->withoutExceptionHandling();
+
+    $makeOrgStock = function (string $code) {
+        $stock = StoreStock::make()->action(
+            $this->group,
+            array_merge(Stock::factory()->definition(), ['code' => $code, 'state' => StockStateEnum::ACTIVE])
+        );
+
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+
+        return $orgStock->refresh();
+    };
+
+    $first  = $makeOrgStock('NAVSTOCKA');
+    $middle = $makeOrgStock('NAVSTOCKB');
+    $last   = $makeOrgStock('NAVSTOCKC');
+
+    $showRoute = fn ($orgStock) => route("grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.show", [
+        $this->organisation->slug,
+        $warehouse->slug,
+        $orgStock->slug
+    ]);
+
+    get($showRoute($middle))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket_sort=-code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $last->name)
+            ->where('navigation.next.label', $first->name)
+            ->etc()
+    );
+});
+
 test("UI index org stocks all", function () {
     $warehouse = Warehouse::first();
     $this->withoutExceptionHandling();
@@ -1149,13 +1190,14 @@ test('OrgStockHydrateQuantityInLocations recomputes quantities and short-circuit
     $orgStock         = OrgStock::first();
     $expectedQuantity = (float) $orgStock->locationOrgStocks()->sum('quantity');
 
-    $orgStock->update(['quantity_in_locations' => 9999, 'quantity_available' => 9999]);
+    $orgStock->update(['quantity_in_locations' => 9999, 'quantity_available' => 9999, 'sku_value' => 7, 'value_in_locations' => 0]);
 
     OrgStockHydrateQuantityInLocations::run($orgStock->id);
 
     $orgStock->refresh();
     expect((float) $orgStock->quantity_in_locations)->toBe($expectedQuantity)
-        ->and((float) $orgStock->quantity_available)->toBe($expectedQuantity);
+        ->and((float) $orgStock->quantity_available)->toBe($expectedQuantity)
+        ->and((float) $orgStock->value_in_locations)->toBe($expectedQuantity * 7);
 
     // Guard clauses: null id and missing id return early without throwing
     OrgStockHydrateQuantityInLocations::run(null);

@@ -5,21 +5,22 @@
   -->
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
+import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faSpellCheck, faBoxCheck } from '@fal'
+import { faBox, faSpellCheck, faBoxCheck, faTrashAlt } from '@fal'
 import { faExclamationCircle, faSpinner } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faSpellCheck, faBoxCheck, faExclamationCircle, faSpinner)
+library.add(faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner)
 
 const props = defineProps<{
     data: object,
@@ -58,7 +59,7 @@ async function changeState(item: any, stateRoute: any) {
         const method = String(stateRoute.method ?? 'patch').toLowerCase()
         await axios[method](route(stateRoute.name, stateRoute.parameters))
         notify({ title: trans('Success'), text: trans('Item state updated'), type: 'success' })
-        router.reload({ only: [props.tab ?? 'items', 'timelines', 'stock_delivery'] })
+        router.reload({ only: [props.tab ?? 'items', 'timelines', 'stock_delivery', 'box_stats', 'pageHead'] })
     } catch (error: any) {
         notify({
             title: trans('Something went wrong'),
@@ -113,6 +114,30 @@ function orgStockRoute(item: { org_stock_id?: number }) {
     }
 
     return route('grp.majordomo.redirect_org_stock', [item.org_stock_id])
+}
+
+function onCheckedSaved() {
+    router.reload({ only: [props.tab ?? 'items', 'timelines', 'stock_delivery', 'box_stats', 'pageHead'] })
+}
+
+const selectedLocation = reactive<Record<number, number | null>>({})
+
+function placedAdditionalData(item: any) {
+    return { location_org_stock_id: selectedLocation[item.id] ?? null }
+}
+
+async function undoSowing(sowing: any) {
+    try {
+        await axios.delete(route(sowing.undo_route.name, sowing.undo_route.parameters))
+        notify({ title: trans('Success'), text: trans('Placement removed'), type: 'success' })
+        onCheckedSaved()
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to remove placement'),
+            type: 'error',
+        })
+    }
 }
 </script>
 
@@ -224,6 +249,86 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     />
                 </button>
             </div>
+        </template>
+
+        <template #cell(part)="{ item }">
+            <div class="flex items-center gap-1.5">
+                <Link
+                    v-if="orgStockRoute(item)"
+                    v-tooltip="trans('Part reference')"
+                    :href="orgStockRoute(item)"
+                    class="primaryLink"
+                >
+                    {{ item.org_stock_code }}
+                </Link>
+                <span v-else>{{ item.org_stock_code }}</span>
+            </div>
+        </template>
+
+        <template #cell(delivered_quantity)="{ item }">
+            <span class="text-gray-500">{{ quantityBreakdown(item) }}</span>
+        </template>
+
+        <template #cell(checked_unit)="{ item }">
+            <NumberWithButtonSave
+                v-if="item.checkedRoute"
+                :modelValue="Number(item.unit_quantity_checked)"
+                :min="Number(item.unit_quantity_placed)"
+                :routeSubmit="item.checkedRoute"
+                keySubmit="unit_quantity_checked"
+                saveOnForm
+                isUseAxios
+                allowZero
+                isWithRefreshModel
+                @onSuccess="onCheckedSaved"
+            />
+            <span v-else>{{ formatQuantity(Number(item.unit_quantity_checked)) }}</span>
+        </template>
+
+        <template #cell(placement)="{ item }">
+            <div v-if="Number(item.unit_quantity_checked) >= 1" class="space-y-1.5">
+                <div v-if="item.placedRoute" class="flex items-center gap-2">
+                    <select
+                        v-model="selectedLocation[item.id]"
+                        class="border border-gray-300 rounded text-sm py-1 px-2 max-w-[10rem]"
+                    >
+                        <option :value="null" disabled>{{ trans('Select location') }}</option>
+                        <option v-for="loc in item.locations" :key="loc.id" :value="loc.id">
+                            {{ loc.location_code }} ({{ formatQuantity(Number(loc.quantity)) }})
+                        </option>
+                    </select>
+                    <NumberWithButtonSave
+                        :key="`placement-${item.id}-${item.unit_quantity_placed}-${item.sowings?.length ?? 0}`"
+                        :modelValue="0"
+                        :min="0"
+                        :max="Number(item.placement_remaining)"
+                        :routeSubmit="item.placedRoute"
+                        keySubmit="quantity"
+                        :additionalData="placedAdditionalData(item)"
+                        saveOnForm
+                        isUseAxios
+                        allowZero
+                        @onSuccess="onCheckedSaved"
+                    />
+                </div>
+
+                <div
+                    v-for="sowing in item.sowings"
+                    :key="sowing.id"
+                    class="flex items-center gap-2 text-sm text-gray-600"
+                >
+                    <span>{{ sowing.location_code ?? trans('Unknown') }}: {{ formatQuantity(Number(sowing.quantity)) }}</span>
+                    <button
+                        type="button"
+                        v-tooltip="trans('Remove placement')"
+                        class="text-red-500 hover:text-red-700"
+                        @click="undoSowing(sowing)"
+                    >
+                        <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                    </button>
+                </div>
+            </div>
+            <span v-else class="text-gray-400 text-sm italic">{{ trans('Check items first') }}</span>
         </template>
     </Table>
 

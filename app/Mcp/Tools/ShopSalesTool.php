@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Sales summary for a shop over a date range: orders, invoices, sales revenue and customers invoiced.')]
+#[IsReadOnly]
 class ShopSalesTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum

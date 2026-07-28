@@ -111,31 +111,42 @@ class GetOrgStockShowcase
                                 'icon'    => 'fas fa-inventory',
                                 'tooltip' => __("Stock in locations"),
                             ],
-                            'value'      => $orgStock->quantity_in_locations
+                            'value'            => $orgStock->quantity_in_locations,
+                            'value_fractional' => $this->getFractionalQuantity($orgStock->quantity_in_locations, $orgStock->packed_in),
                         ],
                         'quantity_in_submitted_orders' => [
                             'icon_state' => [
                                 'icon'    => 'fas fa-shopping-cart',
                                 'tooltip' => __("Reserved paid parts in process by customer services"),
                             ],
-                            'value'      => $orgStock->quantity_in_submitted_orders
+                            'value'            => $orgStock->quantity_in_submitted_orders,
+                            'value_fractional' => $this->getFractionalQuantity($orgStock->quantity_in_submitted_orders, $orgStock->packed_in),
                         ],
                         'quantity_to_be_picked'        => [
                             'icon_state' => [
                                 'icon'    => 'fas fa-shopping-basket',
                                 'tooltip' => __("Parts been picked"),
                             ],
-                            'value'      => $orgStock->quantity_to_be_picked
+                            'value'            => $orgStock->quantity_to_be_picked,
+                            'value_fractional' => $this->getFractionalQuantity($orgStock->quantity_to_be_picked, $orgStock->packed_in),
                         ],
                     ],
                     'locations'       => $locations,
                     'qty_in_location'               => $orgStock->quantity_in_locations,
-                    'qty_in_location_fractional'    => riseDivisor(divideWithRemainder(findSmallestFactors($orgStock->quantity_in_locations ?? 0)), $orgStock->packed_in ?? 1),
+                    'qty_in_location_fractional'    => $this->getFractionalQuantity($orgStock->quantity_in_locations, $orgStock->packed_in),
                 ]
             ]
         );
     }
 
+
+    /**
+     * @return array{0: int|float, 1: array{0: int|float, 1: int|float}}
+     */
+    private function getFractionalQuantity(int|float|null $quantity, int|float|null $packedIn): array
+    {
+        return riseDivisor(divideWithRemainder(findSmallestFactors($quantity ?? 0)), $packedIn ?? 1);
+    }
 
     private function getLatestMovements(OrgStock $orgStock): array
     {
@@ -145,18 +156,21 @@ class GetOrgStockShowcase
             ->orderByDesc('date')
             ->limit(5)
             ->get()
-            ->map(function (OrgStockMovement $orgStockMovement) {
+            ->map(function (OrgStockMovement $orgStockMovement) use ($orgStock) {
                 return [
-                    'id'                         => $orgStockMovement->id,
-                    'date'                       => $orgStockMovement->date,
-                    'type_label'                 => $orgStockMovement->type->label(),
-                    'class_icon'                 => $orgStockMovement->class->icon(),
-                    'quantity'                   => trimDecimalZeros($orgStockMovement->quantity),
-                    'is_negative'                => ($orgStockMovement->quantity ?? 0) < 0,
-                    'running_quantity_org_stock' => trimDecimalZeros($orgStockMovement->running_quantity_org_stock),
-                    'location_code'              => $orgStockMovement->location?->code,
-                    'user_name'                  => $orgStockMovement->user?->contact_name,
-                    'reason_label'               => $orgStockMovement->reason?->label(),
+                    'id'                                    => $orgStockMovement->id,
+                    'date'                                  => $orgStockMovement->date,
+                    'type_label'                            => $orgStockMovement->type->label(),
+                    'class_icon'                            => $orgStockMovement->class->icon(),
+                    'quantity'                              => trimDecimalZeros($orgStockMovement->quantity),
+                    'quantity_fractional'                   => $this->getFractionalQuantity(abs($orgStockMovement->quantity ?? 0), $orgStock->packed_in),
+                    'is_negative'                           => ($orgStockMovement->quantity ?? 0) < 0,
+                    'running_quantity_org_stock'            => trimDecimalZeros($orgStockMovement->running_quantity_org_stock),
+                    'running_quantity_org_stock_fractional' => $this->getFractionalQuantity(abs($orgStockMovement->running_quantity_org_stock ?? 0), $orgStock->packed_in),
+                    'is_running_negative'                   => ($orgStockMovement->running_quantity_org_stock ?? 0) < 0,
+                    'location_code'                         => $orgStockMovement->location?->code,
+                    'user_name'                             => $orgStockMovement->user?->contact_name,
+                    'reason_label'                          => $orgStockMovement->reason?->label(),
                 ];
             })->toArray();
     }

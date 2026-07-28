@@ -528,6 +528,34 @@ test('UI show supplier', function () {
     });
 });
 
+test('UI show supplier navigation follows the free bucket', function () {
+    $this->withoutExceptionHandling();
+
+    $makeSupplier = function (string $code, ?Agent $agent = null) {
+        $data = array_merge(Supplier::factory()->definition(), ['code' => $code, 'name' => $code.' name']);
+
+        return StoreSupplier::make()->action(parent: $agent ?? $this->group, modelData: $data);
+    };
+
+    $agent = Agent::first();
+
+    $first    = $makeSupplier('NAVSUPA');
+    $inAgent  = $agent ? $makeSupplier('NAVSUPB', $agent) : null;
+    $middle   = $makeSupplier('NAVSUPC');
+    $last     = $makeSupplier('NAVSUPD');
+
+    $this->get(route('grp.supply-chain.suppliers.show', [$middle->slug]).'?bucket=free')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->code)
+            ->where('navigation.next.label', $last->code)
+            ->etc()
+    );
+
+    if ($inAgent) {
+        expect($inAgent->agent_id)->not->toBeNull();
+    }
+});
+
 test('UI edit supplier', function () {
     $agent    = Agent::first();
     $supplier = $agent->suppliers()->first();

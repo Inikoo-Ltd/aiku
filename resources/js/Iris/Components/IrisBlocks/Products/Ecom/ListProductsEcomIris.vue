@@ -519,7 +519,6 @@ watch(
 
                     <template v-else-if="products.length">
                         <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
-                        <!-- <pre>{{ get(layout, ['family_quantity_ordered'], []) }}</pre> -->
                         <div v-for="(product, index) in products" :key="`${renderKey}-${index}`"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class=" relative rounded flex md:flex-1 justify-center"
@@ -535,23 +534,28 @@ watch(
 
                         <div v-for="(card, cardIndex) in (fieldValue?.cards ?? []).filter((item: any) => item?.visible)"
                             :key="card.ulid ?? cardIndex" class="relative rounded-2xl overflow-hidden min-h-80">
-                            <Image v-if="card?.image?.source" :src="card.image.source" :imageCover="true"
-                                :alt="card?.image?.alt ?? 'card image'"
-                                class="absolute inset-0 w-full h-full" />
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
-                            </div>
-                            <!-- Center Content -->
-                            <div
-                                class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
-                                <div v-html="card.text"></div>
-                                <LinkIris :href="card.button.link.href" :canonical_url="card.button.link.canonical_url" :target="card.button.link.target" >
-                                     <Button class="mt-4"
-                                        :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
-                                        :label="card?.button?.text" 
-                                    />
-                                </LinkIris>
-                               
-                            </div>
+                            <LinkIris :href="card?.image?.link?.href" :canonical_url="card?.link?.link?.canonical_url"
+                                :target="card?.image?.link?.target">
+                                <Image v-if="card?.image?.source" :src="card?.image?.source" :imageCover="true"
+                                    :alt="card?.image?.alt ?? 'card image'" class="absolute inset-0 w-full h-full" />
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                                </div>
+                                <!-- Center Content -->
+                                <div
+                                    class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
+                                    <div v-html="card.text"></div>
+                                    <LinkIris :href="card?.button?.link?.href"
+                                        :canonical_url="card?.button?.link?.canonical_url"
+                                        :target="card?.button?.link?.target">
+                                        <Button class="mt-4"
+                                            :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
+                                            :label="card?.button?.text" />
+                                    </LinkIris>
+
+                                </div>
+                            </LinkIris>
+
                         </div>
                     </template>
 
@@ -568,7 +572,8 @@ watch(
 
                 <!-- Load More -->
                 <!--  {{ page   }}{{ lastPage }} -->
-                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12" :class="{ 'max-lg:hidden': isMobileCollapsed }">
+                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12"
+                    :class="{ 'max-lg:hidden': isMobileCollapsed }">
                     <Button @click="loadMore" type="tertiary" :disabled="isLoadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
                         <template v-if="isLoadingMore">

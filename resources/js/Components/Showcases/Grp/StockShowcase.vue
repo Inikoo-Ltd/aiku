@@ -20,6 +20,7 @@ import Image from "@common/Components/Image.vue"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import SalesAnalyticsCompact from "@/Components/Product/SalesAnalyticsCompact.vue"
 import Icon from "@/Components/Icon.vue"
+import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import JsBarcode from "jsbarcode"
 import { ctrans } from "@/Composables/useTrans"
 import { trans } from "laravel-vue-i18n"
@@ -77,8 +78,11 @@ const props = defineProps < {
             type_label: string
             class_icon: string | object
             quantity: string | number
+            quantity_fractional?: [number, [number, number]]
             is_negative: boolean
             running_quantity_org_stock: string | number
+            running_quantity_org_stock_fractional?: [number, [number, number]]
+            is_running_negative?: boolean
             location_code: string | null
             user_name: string | null
             reason_label: string | null
@@ -248,12 +252,12 @@ onMounted(() => {
             <div v-if="data.latest_movements?.length" class="mt-6 rounded-xl border border-gray-200 bg-white shadow-sm">
                 <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                     <span class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                        {{ trans("Latest movements") }}
+                        {{ ctrans("Latest movements") }}
                     </span>
                     <Link v-if="data.stock_history_route"
                         :href="route(data.stock_history_route.name, data.stock_history_route.parameters)"
                         class="text-xs font-medium text-indigo-500 hover:text-indigo-700">
-                        {{ trans("View all") }}
+                        {{ ctrans("View all") }}
                     </Link>
                 </div>
                 <div class="divide-y divide-gray-100">
@@ -272,11 +276,23 @@ onMounted(() => {
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="font-semibold tabular-nums" :class="movement.is_negative ? 'text-red-500' : 'text-green-600'">
-                                {{ movement.is_negative ? '' : '+' }}{{ movement.quantity }}
+                            <div class="font-semibold tabular-nums flex items-center justify-end" :class="movement.is_negative ? 'text-red-500' : 'text-green-600'">
+                                <template v-if="movement.quantity_fractional">
+                                    {{ movement.is_negative ? '−' : '+' }}
+                                    <FractionDisplay :fractionData="movement.quantity_fractional" />
+                                </template>
+                                <template v-else>
+                                    {{ movement.is_negative ? '' : '+' }}{{ movement.quantity }}
+                                </template>
                             </div>
-                            <div class="text-xs tabular-nums text-gray-400" v-tooltip="trans('Running quantity')">
-                                {{ movement.running_quantity_org_stock }}
+                            <div class="text-xs tabular-nums text-gray-400 flex items-center justify-end" v-tooltip="ctrans('Running quantity')">
+                                <template v-if="movement.running_quantity_org_stock_fractional">
+                                    <template v-if="movement.is_running_negative">−</template>
+                                    <FractionDisplay :fractionData="movement.running_quantity_org_stock_fractional" />
+                                </template>
+                                <template v-else>
+                                    {{ movement.running_quantity_org_stock }}
+                                </template>
                             </div>
                         </div>
                     </div>

@@ -35,8 +35,6 @@ const props = defineProps<{
     } | null
 }>()
 
-console.log(props)
-
 const emit = defineEmits<{
     'toggle-favorite': [product: Product]
     'add-to-basket': [product: Product]

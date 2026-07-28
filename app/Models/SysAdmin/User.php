@@ -146,6 +146,13 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     protected $guarded = [
     ];
 
+    /**
+     * Roles and permissions are all stored under the web guard. Without this,
+     * spatie resolves the guard from the active auth driver, so requests
+     * authenticated on another guard (mcp, mcp-oauth) match nothing.
+     */
+    protected $guard_name = 'web';
+
     protected $hidden = [
         'password',
         'remember_token',

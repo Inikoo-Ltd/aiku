@@ -224,3 +224,18 @@ test('never syncs when either side has no trade units at all', function () {
 
     expect((float) $product->refresh()->price)->toBe(999.0);
 });
+
+test('finalise only skips the price sync entirely', function () {
+    $masterAsset = syncTestMasterAsset($this->masterFamily, 'SYNC-FIN', $this->currencyCode, 4, $this->tradeUnitId);
+    $product     = syncTestProduct($this->shop, $masterAsset, 4, $this->tradeUnitId, 4);
+
+    Artisan::call('repair:master_child_prices', [
+        'master_shop'     => $this->masterShop->slug,
+        '--currency'      => $this->currencyCode,
+        '--finalise-only' => true,
+    ]);
+
+    // Recovers an interrupted run's closing sequence without touching a single price.
+    expect((float) $product->refresh()->price)->toBe(999.0)
+        ->and(Artisan::output())->toContain('Finalising');
+});

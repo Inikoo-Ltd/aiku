@@ -5,65 +5,60 @@ import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage } from "@far"
-import { getBestOffer } from '@/Composables/useOffers'
-import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import { getBestOffer } from "@/Composables/useOffers"
+import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 
 interface FamilyImage {
-  original: string
-  alt?: string
+	original: string
+	alt?: string
 }
 
 interface FamilyData {
-  name?: string
-  description?: string
-  description_image?: Record<string, FamilyImage>
-  offers_data: object
+	name?: string
+	description?: string
+	description_image?: Record<string, FamilyImage>
+	offers_data: object
 }
 
 interface FieldValue {
-  id?: string | number
-  family?: FamilyData
-  container?: {
-    properties?: Record<string, unknown>
-  }
+	id?: string | number
+	family?: FamilyData
+	container?: {
+		properties?: Record<string, unknown>
+	}
 }
 
 type ScreenType = "mobile" | "tablet" | "desktop"
 
 const props = defineProps<{
-  fieldValue: FieldValue
-  screenType: ScreenType
-  indexBlock: number
+	fieldValue: FieldValue
+	screenType: ScreenType
+	indexBlock: number
 }>()
 
 const layout = inject<Record<string, any>>("layout", {})
 
 const cleanedDescription = computed(() => {
-  const html = props.fieldValue?.family?.description || ""
+	const html = props.fieldValue?.family?.description || ""
 
-  return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+	return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
 })
 
-
-
 const images = computed<FamilyImage[]>(() => {
-  const data = props.fieldValue?.family?.description_image
+	const data = props.fieldValue?.family?.description_image
 
-  if (!data) return []
+	if (!data) return []
 
-  return Object.values(data).filter(
-    (item) => item && item.original
-  )
+	return Object.values(data).filter((item) => item && item.original)
 })
 
 const hasImage = (index: number) => {
-  return Boolean(images.value?.[index]?.original)
+	return Boolean(images.value?.[index]?.original)
 }
 
 const bestOffer = computed(() => {
-  return getBestOffer(props.fieldValue?.family?.offers_data)
+	return getBestOffer(props.fieldValue?.family?.offers_data)
 })
-
 
 const descriptionContentRef = ref<HTMLElement | null>(null)
 const imagesRef = ref<HTMLElement | null>(null)
@@ -76,352 +71,301 @@ const collapsedHeight = ref(0)
 let resizeObserver: ResizeObserver | null = null
 
 const COLLAPSED_HEIGHTS = [
-  { minWidth: 1536, height: 250 },
-  { minWidth: 1024, height: 195 },
-  { minWidth: 0, height: 260 },
+	{ minWidth: 1536, height: 250 },
+	{ minWidth: 1024, height: 195 },
+	{ minWidth: 0, height: 260 },
 ]
 
 const READ_MORE_ROW_HEIGHT = 26
 const MIN_COLLAPSED_HEIGHT = 120
 
 const getFallbackCollapsedHeight = (): number => {
-  const width = window.innerWidth
+	const width = window.innerWidth
 
-  return COLLAPSED_HEIGHTS.find((entry) => width >= entry.minWidth)!.height
+	return COLLAPSED_HEIGHTS.find((entry) => width >= entry.minWidth)!.height
 }
 
 const isSideBySide = (): boolean =>
-  Boolean(imagesRef.value) && !layout.rightbasket?.show && window.innerWidth >= 1024
+	Boolean(imagesRef.value) && !layout.rightbasket?.show && window.innerWidth >= 1024
 
 const getCollapsedHeight = (): number => {
-  if (!isSideBySide()) {
-    return getFallbackCollapsedHeight()
-  }
+	if (!isSideBySide()) {
+		return getFallbackCollapsedHeight()
+	}
 
-  const siblingsHeight = [offersRef, titleRef, actionsRef].reduce(
-    (total, element) => total + (element.value?.offsetHeight ?? 0),
-    READ_MORE_ROW_HEIGHT
-  )
+	const siblingsHeight = [offersRef, titleRef, actionsRef].reduce(
+		(total, element) => total + (element.value?.offsetHeight ?? 0),
+		READ_MORE_ROW_HEIGHT
+	)
 
-  return Math.max(
-    MIN_COLLAPSED_HEIGHT,
-    imagesRef.value!.offsetHeight - siblingsHeight
-  )
+	return Math.max(MIN_COLLAPSED_HEIGHT, imagesRef.value!.offsetHeight - siblingsHeight)
 }
 
 const calculateDescriptionHeight = async () => {
-  await nextTick()
+	await nextTick()
 
-  if (!descriptionContentRef.value) return
+	if (!descriptionContentRef.value) return
 
-  collapsedHeight.value = getCollapsedHeight()
+	collapsedHeight.value = getCollapsedHeight()
 
-  showReadMore.value =
-    descriptionContentRef.value.scrollHeight > collapsedHeight.value
+	showReadMore.value = descriptionContentRef.value.scrollHeight > collapsedHeight.value
 }
 
 const onWindowResize = () => {
-  calculateDescriptionHeight()
+	calculateDescriptionHeight()
 }
 
 onMounted(() => {
-  calculateDescriptionHeight()
+	calculateDescriptionHeight()
 
-  resizeObserver = new ResizeObserver(() => {
-    calculateDescriptionHeight()
-  })
+	resizeObserver = new ResizeObserver(() => {
+		calculateDescriptionHeight()
+	})
 
-  if (descriptionContentRef.value) {
-    resizeObserver.observe(descriptionContentRef.value)
-  }
+	if (descriptionContentRef.value) {
+		resizeObserver.observe(descriptionContentRef.value)
+	}
 
-  if (imagesRef.value) {
-    resizeObserver.observe(imagesRef.value)
-  }
+	if (imagesRef.value) {
+		resizeObserver.observe(imagesRef.value)
+	}
 
-  if (titleRef.value) {
-    resizeObserver.observe(titleRef.value)
-  }
+	if (titleRef.value) {
+		resizeObserver.observe(titleRef.value)
+	}
 
-  window.addEventListener('resize', onWindowResize)
+	window.addEventListener("resize", onWindowResize)
 })
 
 onUnmounted(() => {
-  if (resizeObserver) {
-    resizeObserver.disconnect()
-    resizeObserver = null
-  }
+	if (resizeObserver) {
+		resizeObserver.disconnect()
+		resizeObserver = null
+	}
 
-  window.removeEventListener('resize', onWindowResize)
+	window.removeEventListener("resize", onWindowResize)
 })
 
 watch(
-  () => [
-    props.fieldValue?.family?.name,
-    props.fieldValue?.family?.description,
-    props.fieldValue?.family?.description_image,
-  ],
-  () => {
-    calculateDescriptionHeight()
-  }
+	() => [
+		props.fieldValue?.family?.name,
+		props.fieldValue?.family?.description,
+		props.fieldValue?.family?.description_image,
+	],
+	() => {
+		calculateDescriptionHeight()
+	}
 )
 
 const contentClass = computed(() =>
-  layout.rightbasket?.show
-    ? 'flex flex-col gap-6'
-    : 'flex flex-col gap-6 lg:flex-row lg:items-stretch'
+	layout.rightbasket?.show
+		? "flex flex-col gap-6"
+		: "flex flex-col gap-6 lg:flex-row lg:items-stretch"
 )
-
 </script>
 
 <template>
-  <section :id="`family-2`" component="family-2-iris">
-    <div class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1800px] 2xl:px-14" :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue?.container?.properties, screenType),
-      width: 'auto'
-    }">
-      <div :class="contentClass">
-        <!-- ============================================================= -->
-        <!-- NEW IMAGE SECTION                                             -->
-        <!-- 1 image  -> only large image                                 -->
-        <!-- 2 images -> large + small top-right                          -->
-        <!-- 3 images -> large + small top-right + small bottom-right     -->
-        <!-- ============================================================= -->
-        <div v-if="hasImage(0)" ref="imagesRef" class="flex shrink-0 items-start justify-center gap-[6px]">
-          <!-- IMAGE 1 (large) -->
-          <Image :src="images[0].original" :srcset="images[0].srcset"
-            sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
-            :imageCover="true" :alt="images[0]?.alt || 'family image'" class="
-              h-[280px]
-              w-[220px]
-              object-cover
-              sm:w-[290px]
-              lg:h-[320px]
-              lg:w-[340px]
-              2xl:h-[380px]
-              2xl:w-[420px]
-            " />
+	<section :id="`family-2`" component="family-2-iris">
+		<div
+			class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1800px] 2xl:px-14"
+			:style="{
+				...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+				...getStyles(fieldValue?.container?.properties, screenType),
+				width: 'auto',
+			}">
+			<div :class="contentClass">
+				<!-- ============================================================= -->
+				<!-- NEW IMAGE SECTION                                             -->
+				<!-- 1 image  -> only large image                                 -->
+				<!-- 2 images -> large + small top-right                          -->
+				<!-- 3 images -> large + small top-right + small bottom-right     -->
+				<!-- ============================================================= -->
+				<div
+					v-if="hasImage(0)"
+					ref="imagesRef"
+					class="flex shrink-0 items-start justify-center gap-[6px]">
+					<!-- IMAGE 1 (large) -->
+					<Image
+						:src="images[0].original"
+						:srcset="images[0].srcset"
+						sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
+						:imageCover="true"
+						:alt="images[0]?.alt || 'family image'"
+						class="h-[280px] w-[220px] object-cover sm:w-[290px] lg:h-[320px] lg:w-[340px] 2xl:h-[380px] 2xl:w-[420px]" />
 
-          <!-- Right column only when there is a 2nd image -->
-          <div v-if="hasImage(1)" class="flex flex-col gap-[6px]">
-            <!-- IMAGE 2 (small, top-right) -->
-            <Image :src="images[1].original" :srcset="images[1].srcset"
-              sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px" :imageCover="true"
-              :alt="images[1]?.alt || 'family image'" class="
-                h-[137px]
-                w-[105px]
-                object-cover
-                sm:w-[140px]
-                lg:h-[157px]
-                lg:w-[160px]
-                2xl:h-[187px]
-                2xl:w-[200px]
-              " />
+					<!-- Right column only when there is a 2nd image -->
+					<div v-if="hasImage(1)" class="flex flex-col gap-[6px]">
+						<!-- IMAGE 2 (small, top-right) -->
+						<Image
+							:src="images[1].original"
+							:srcset="images[1].srcset"
+							sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+							:imageCover="true"
+							:alt="images[1]?.alt || 'family image'"
+							class="h-[137px] w-[105px] object-cover sm:w-[140px] lg:h-[157px] lg:w-[160px] 2xl:h-[187px] 2xl:w-[200px]" />
 
-            <!-- IMAGE 3 (small, bottom-right) only when there is a 3rd image -->
-            <Image v-if="hasImage(2)" :src="images[2].original" :srcset="images[2].srcset"
-              sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px" :imageCover="true"
-              :alt="images[2]?.alt || 'family image'" class="
-                h-[137px]
-                w-[105px]
-                object-cover
-                sm:w-[140px]
-                lg:h-[157px]
-                lg:w-[160px]
-                2xl:h-[187px]
-                2xl:w-[200px]
-              " />
-          </div>
-        </div>
+						<!-- IMAGE 3 (small, bottom-right) only when there is a 3rd image -->
+						<Image
+							v-if="hasImage(2)"
+							:src="images[2].original"
+							:srcset="images[2].srcset"
+							sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
+							:imageCover="true"
+							:alt="images[2]?.alt || 'family image'"
+							class="h-[137px] w-[105px] object-cover sm:w-[140px] lg:h-[157px] lg:w-[160px] 2xl:h-[187px] 2xl:w-[200px]" />
+					</div>
+				</div>
 
-        <!-- CONTENT -->
-        <div class="flex min-w-0 flex-1 flex-col">
-          <div ref="offersRef" class="
-              flex
-              flex-col
-              gap-4
-              text-center
-              lg:text-left
-              lg:flex-row
-              lg:items-start
-              lg:justify-start
-            ">
-            <div v-if="fieldValue?.family?.offers_data?.number_offers && layout.iris.is_logged_in"
-              class="flex gap-x-1 gap-y-1 mb-2 offer flex-wrap justify-center lg:justify-end">
-              <DiscountByType :offers_data="fieldValue?.family?.offers_data" :template="bestOffer?.type == 'Category Quantity Ordered Order Interval'
-                ? 'active-inactive-gr-v2'
-                : 'max_discount_2'
-                " />
+				<!-- CONTENT -->
+				<div class="flex min-w-0 flex-1 flex-col">
+					<div
+						ref="offersRef"
+						class="flex flex-col gap-4 text-center lg:text-left lg:flex-row lg:items-start lg:justify-start">
+						<div
+							v-if="
+								fieldValue?.family?.offers_data?.number_offers &&
+								layout.iris.is_logged_in
+							"
+							class="flex gap-x-1 gap-y-1 mb-2 offer flex-wrap justify-center lg:justify-end">
+							<DiscountByType
+								:offers_data="fieldValue?.family?.offers_data"
+								:template="
+									bestOffer?.type == 'Category Quantity Ordered Order Interval'
+										? 'active-inactive-gr-v2'
+										: 'max_discount_2'
+								" />
 
-              <DiscountByType v-if="
-                !(layout?.user?.gr_data?.amnesty ||
-                  layout?.user?.gr_data?.customer_is_gr) &&
-                bestOffer?.type == 'Category Quantity Ordered Order Interval'
-              " :offers_data="fieldValue?.family?.offers_data" :template="'triggers_labels_v2'" />
-            </div>
-          </div>
+							<DiscountByType
+								v-if="
+									!(
+										layout?.user?.gr_data?.amnesty ||
+										layout?.user?.gr_data?.customer_is_gr
+									) &&
+									bestOffer?.type == 'Category Quantity Ordered Order Interval'
+								"
+								:offers_data="fieldValue?.family?.offers_data"
+								:template="'triggers_labels_v2'" />
+						</div>
+					</div>
 
-          <div ref="descriptionContentRef" class="px-3 lg:px-0">
-            <div ref="titleRef" class="pb-2 2xl:pb-3">
-              <h1 class="
-                title
-                break-words
-                
-                font-bold
-                tracking-tight
-                text-[#1d2430]
-                text-left
-              ">
-                {{ fieldValue.family?.name }}
-              </h1>
-            </div>
+					<div ref="descriptionContentRef" class="px-3 lg:px-0">
+						<div ref="titleRef" class="pb-2 2xl:pb-3">
+							<h1
+								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
+								{{ fieldValue.family?.name }}
+							</h1>
+						</div>
 
-            <div class="
-    relative
-    flex-1
-    min-h-0
-    space-y-[4px]
-    text-[14px]
-    leading-[1.6]
-    text-[#1d2430]
-    2xl:space-y-2
-    overflow-hidden
-  " :class="!expanded && !collapsedHeight ? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]' : ''"
-              :style="!expanded && collapsedHeight ? { maxHeight: `${collapsedHeight}px` } : {}">
-              <div v-html="cleanedDescription"></div>
+						<div
+							class="relative flex-1 min-h-0 space-y-[4px] text-[14px] leading-[1.6] text-[#1d2430] 2xl:space-y-2 overflow-hidden"
+							:class="
+								!expanded && !collapsedHeight
+									? 'max-h-[260px] lg:max-h-[195px] 2xl:max-h-[250px]'
+									: ''
+							"
+							:style="
+								!expanded && collapsedHeight
+									? { maxHeight: `${collapsedHeight}px` }
+									: {}
+							">
+							<div v-html="cleanedDescription"></div>
 
-              <!-- Fade overlay -->
-              <div v-if="!expanded && showReadMore" class="
-      absolute
-      bottom-0
-      left-0
-      right-0
-      h-6
-      pointer-events-none
-      bg-gradient-to-t
-      from-white
-      via-white/90
-      to-transparent
-    " />
-            </div>
+							<!-- Fade overlay -->
+							<div
+								v-if="!expanded && showReadMore"
+								class="absolute bottom-0 left-0 right-0 h-6 pointer-events-none bg-gradient-to-t from-white via-white/90 to-transparent" />
+						</div>
+					</div>
 
-          </div>
+					<!-- Description fills remaining space -->
 
+					<div v-if="showReadMore" class="mt-2 flex justify-end">
+						<button
+							type="button"
+							class="text-xs italic underline"
+							@click="expanded = !expanded">
+							{{ expanded ? ctrans("Read Less") : ctrans("Read More") }}
+						</button>
+					</div>
 
-          <!-- Description fills remaining space -->
+					<!-- Always bottom -->
+					<div
+						ref="actionsRef"
+						class="mt-auto pt-1 flex items-center gap-4 flex-wrap 2xl:pt-8 justify-center lg:justify-start">
+						<a
+							v-if="fieldValue.family.description_extra || layout?.iris?.is_logged_in"
+							href="#family-2-extra-description"
+							class="shrink-0">
+							<button
+								class="h-[38px] rounded-xl border border-[#333] px-8 text-sm font-medium transition hover:bg-gray-50 2xl:h-[48px] 2xl:px-12 2xl:text-base"
+								:style="{
+									...getStyles(
+										fieldValue?.button?.container?.properties,
+										screenType
+									),
+								}">
+								{{ fieldValue?.button?.text || ctrans("Learn more") }}
+							</button>
+						</a>
 
+						<div
+							v-for="data in fieldValue.family.tags"
+							:key="data.name"
+							class="flex items-center gap-2 px-3 py-1.5 sm:px-2 lg:px-2 lg:py-2 2xl:px-6 2xl:py-2.5">
+							<Image
+								:src="data.web_image"
+								class="h-4 w-4 shrink-0 2xl:h-5 2xl:w-5"
+								image-class="object-contain" />
 
-          <div v-if="showReadMore" class="mt-2 flex justify-end">
-            <button type="button" class="text-xs italic underline  " @click="expanded = !expanded">
-              {{ expanded ? ctrans('Read Less') : ctrans('Read More') }}
-            </button>
-          </div>
-
-          <!-- Always bottom -->
-          <div ref="actionsRef" class="
-      mt-auto
-      pt-1
-      flex
-      items-center
-      gap-4
-      flex-wrap
-      2xl:pt-8
-      justify-center
-      lg:justify-start
-    ">
-            <a v-if="fieldValue.family.description_extra || layout?.iris?.is_logged_in"
-              href="#family-2-extra-description" class="shrink-0">
-              <button class="
-          h-[38px]
-          rounded-xl
-          border
-          border-[#333]
-          px-8
-          text-sm
-          font-medium
-          transition
-          hover:bg-gray-50
-          2xl:h-[48px]
-          2xl:px-12
-          2xl:text-base
-        " :style="{
-          ...getStyles(fieldValue?.button?.container?.properties, screenType)
-        }">
-                {{ fieldValue?.button?.text || ctrans('Learn more') }}
-              </button>
-            </a>
-
-            <div v-for="data in fieldValue.family.tags" :key="data.name" class="
-        flex
-        items-center
-        gap-2
-        px-3
-        py-1.5
-        sm:px-2
-        lg:px-2
-        lg:py-2
-        2xl:px-6
-        2xl:py-2.5
-      ">
-              <Image :src="data.web_image" class="h-4 w-4 shrink-0 2xl:h-5 2xl:w-5" image-class="object-contain" />
-
-              <span class="
-          whitespace-nowrap
-          text-[11px]
-          font-medium
-          text-[#555]
-          sm:text-xs
-          lg:text-sm
-          2xl:text-base
-        ">
-                {{ data.name }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+							<span
+								class="whitespace-nowrap text-[11px] font-medium text-[#555] sm:text-xs lg:text-sm 2xl:text-base">
+								{{ data.name }}
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
 </template>
 
 <style scoped>
 :deep(.offer .vd-content) {
-  @apply flex flex-col justify-center -ml-4 pl-7 pr-3 my-0.5 mr-0.5 rounded-md bg-gray-900 shadow-sm min-w-0;
+	@apply flex flex-col justify-center -ml-4 pl-7 pr-3 my-0.5 mr-0.5 rounded-md bg-gray-900 shadow-sm min-w-0;
 }
 
 :deep(.offer .vd-triggers) {
-  @apply text-[10px] leading-tight opacity-80 max-w-[7rem] whitespace-normal overflow-visible;
+	@apply text-[10px] leading-tight opacity-80 max-w-[7rem] whitespace-normal overflow-visible;
 }
 
 .editor-class h1 {
-  font-size: 1.75rem;
-  /* mobile */
+	font-size: 1.75rem;
+	/* mobile */
 }
 
 @media (min-width: 1280px) {
-  .editor-class h1 {
-    font-size: 1.8rem;
-    /* line-height: 1.5rem; */
-    /* lg */
-  }
+	.editor-class h1 {
+		font-size: 1.8rem;
+		/* line-height: 1.5rem; */
+		/* lg */
+	}
 }
 
 @media (min-width: 1536px) {
-  .editor-class h1 {
-    font-size: 2.5rem;
-    /* 2xl */
-  }
+	.editor-class h1 {
+		font-size: 2.5rem;
+		/* 2xl */
+	}
 }
 
 .title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	overflow: hidden;
 
-  font-size: clamp(1.375rem, 1.1rem + 1.2vw, 2rem);
-  line-height: 1.25;
+	font-size: clamp(1.375rem, 1.1rem + 1.2vw, 2rem);
+	line-height: 1.25;
 }
 </style>

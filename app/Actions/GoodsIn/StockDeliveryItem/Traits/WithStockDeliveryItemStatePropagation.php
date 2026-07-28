@@ -11,7 +11,7 @@ trait WithStockDeliveryItemStatePropagation
 {
     protected function propagateStockDeliveryItemStateChange(StockDeliveryItem $stockDeliveryItem): void
     {
-        StockDeliveriesHydrateItems::dispatch($stockDeliveryItem->stockDelivery);
+        StockDeliveriesHydrateItems::run($stockDeliveryItem->stockDelivery);
         UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem::run($stockDeliveryItem);
         UpdateStockDeliveryStateFromItems::run($stockDeliveryItem->stockDelivery);
     }

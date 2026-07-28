@@ -152,6 +152,7 @@ const props = defineProps<{
 	is_faire_order : boolean
 	showChangePickerPacker: boolean
 	is_editable: boolean  // To distinguish DN in Shops and DN in Wwarehouse
+	consumables?: { code: string, quantity: number }[]
 }>();
 
 
@@ -589,6 +590,21 @@ watch(
 		</template>
 
 	</PageHeading>
+
+	<!-- Section: Consumables the packer must add to the box -->
+	<div v-if="consumables?.length" class="p-2 pb-0">
+		<div class="inline-flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border-2 border-amber-500 bg-amber-300 px-4 py-3 shadow-sm">
+			<div class="flex items-center gap-2">
+				<FontAwesomeIcon :icon="faBoxOpen" class="text-xl text-amber-900" fixed-width aria-hidden="true" />
+				<span class="text-sm font-bold uppercase tracking-wider text-amber-900">{{ trans("Packer must add") }}</span>
+			</div>
+			<span v-for="consumable in consumables" :key="consumable.code"
+				class="flex items-center gap-2 rounded bg-amber-950 px-3 py-1 text-amber-50">
+				<span class="text-2xl font-bold leading-none tabular-nums">{{ consumable.quantity }}</span>
+				<span class="text-base font-semibold leading-none">&times; {{ consumable.code }}</span>
+			</span>
+		</div>
+	</div>
 
 	<!-- Section: Pallet Warning -->
 	<div v-if="alert?.status" class="p-2 pb-0">

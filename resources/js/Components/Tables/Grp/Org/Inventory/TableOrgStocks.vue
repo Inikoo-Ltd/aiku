@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link, router, useForm } from "@inertiajs/vue3"
+import { bucketQuery } from "@/Composables/bucketQuery"
 import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
@@ -203,6 +204,12 @@ function onCancelMoveAllSku() {
 const routeCurrent = route().current()
 const routeParams = route().params as RouteParams
 
+function orgStockHref(orgStock: OrgStock) {
+    const bucket = routeCurrent?.match(/\.org_stocks\.(\w+)_org_stocks\.index$/)?.[1]
+
+    return orgStockRoute(orgStock) + bucketQuery(bucket)
+}
+
 function orgStockRoute(orgStock: OrgStock) {
     const current = routeCurrent
 
@@ -353,13 +360,13 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <FontAwesomeIcon v-if="stock.type" :icon="stock.type == 'picking' ? faCheck : faHandPaper  " :data="stock.type"></FontAwesomeIcon>
         </template>
         <template #cell(org_sku)="{ item: stock }">
-            <Link :href="orgStockRoute(stock) as string" class="primaryLink">
+            <Link :href="orgStockHref(stock) as string" class="primaryLink">
                 {{ stock["organisation_code"] }}
             </Link>
         </template>
 
         <template #cell(code)="{ item: stock }">
-            <Link :href="orgStockRoute(stock) as string" class="primaryLink">
+            <Link :href="orgStockHref(stock) as string" class="primaryLink">
                 {{ stock["code"] }}
             </Link>
         </template>

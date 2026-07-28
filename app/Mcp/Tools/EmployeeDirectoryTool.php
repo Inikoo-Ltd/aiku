@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Search employees in an organisation by name, worker number or job title. Returns work contact info and employment state, never salary or personal data.')]
+#[IsReadOnly]
 class EmployeeDirectoryTool extends AikuOrganisationTool
 {
     protected function permission(): OrganisationPermissionsEnum

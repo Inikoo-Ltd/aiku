@@ -15,6 +15,7 @@ use App\Enums\UI\SupplyChain\SupplierProductTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\SupplyChain\SupplierProductResource;
 use App\Models\SupplyChain\Supplier;
+use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Models\SupplyChain\SupplierProduct;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,6 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowSupplierProduct extends InertiaAction
 {
+    use WithBucketNavigation;
+
     use WithSupplyChainAuthorisation;
     public function handle(SupplierProduct $supplierProduct): SupplierProduct
     {
@@ -145,37 +148,42 @@ class ShowSupplierProduct extends InertiaAction
     }
     public function getPrevious(SupplierProduct $supplierProduct, ActionRequest $request): ?array
     {
-        $query = SupplierProduct::where('code', '<', $supplierProduct->code);
-
-        $query = match ($request->route()->getName()) {
-            'grp.supply-chain.agents.show.supplier_products.show' => $query->where('supplier_products.agent_id', $supplierProduct->supplier_id),
-            'grp.supply-chain.agents.show.show.supplier.supplier_products.show',
-            'grp.supply-chain.supplier.supplier_products.show' => $query->where('supplier_products.supplier_id', $supplierProduct->supplier_id),
-
-            default => $query
-        };
-
-        $previous = $query->orderBy('code', 'desc')->first();
-
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getSupplierProductNeighbour($supplierProduct, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(SupplierProduct $supplierProduct, ActionRequest $request): ?array
     {
-        $query = SupplierProduct::where('code', '>', $supplierProduct->code);
+        return $this->getNavigation($this->getSupplierProductNeighbour($supplierProduct, $request, forward: true), $request->route()->getName());
+    }
 
-        $query = match ($request->route()->getName()) {
-            'grp.supply-chain.agents.show.supplier_products.show' => $query->where('supplier_products.agent_id', $supplierProduct->supplier_id),
-            'grp.supply-chain.agents.show.show.supplier.supplier_products.show',
+    private function getSupplierProductNeighbour(SupplierProduct $supplierProduct, ActionRequest $request, bool $forward): ?SupplierProduct
+    {
+        $query = SupplierProduct::query()->where('supplier_products.group_id', $supplierProduct->group_id);
+
+        match ($request->route()->getName()) {
+            'grp.supply-chain.agents.show.supplier_products.show' => $query->where('supplier_products.agent_id', $supplierProduct->agent_id),
+            'grp.supply-chain.agents.show.suppliers.supplier_products.show',
             'grp.supply-chain.suppliers.supplier_products.show' => $query->where('supplier_products.supplier_id', $supplierProduct->supplier_id),
-
-            default => $query
+            default => $query->when(
+                $request->input('bucket') == 'free',
+                fn ($query) => $query->whereNull('supplier_products.agent_id')
+            )->when(
+                $request->input('bucket') == 'in_agents',
+                fn ($query) => $query->whereNotNull('supplier_products.agent_id')
+            ),
         };
 
-        $next = $query->orderBy('code')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $supplierProduct,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'code' => 'supplier_products.code',
+                'name' => 'supplier_products.name',
+            ],
+            defaultSort: ['supplier_products.code', false],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?SupplierProduct $supplierProduct, string $routeName): ?array

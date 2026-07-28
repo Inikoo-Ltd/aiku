@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Best-selling products for a shop over a date range, by quantity sold, with revenue.')]
+#[IsReadOnly]
 class TopProductsTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum
@@ -81,7 +83,7 @@ class TopProductsTool extends AikuTool
             'shop'  => $schema->string()->description('Shop slug')->required(),
             'from'  => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'    => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
-            'limit' => $schema->integer()->description('Maximum products to return, default 10')->minimum(1)->maximum(50),
+            'limit' => $schema->integer()->description('Maximum products to return, default 10')->min(1)->max(50),
         ];
     }
 }
