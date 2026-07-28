@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, inject } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
@@ -13,16 +13,21 @@ import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import LabelPickingLocation from '@/Components/Warehouse/DeliveryNotes/LabelPickingLocation.vue'
+import SelectPickingLocation from '@/Components/Warehouse/DeliveryNotes/SelectPickingLocation.vue'
 import { routeType } from '@/types/route'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, faExclamationCircle as falExclamationCircle } from '@fal'
+import { faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, faUndoAlt, faHandHoldingBox, faExclamationCircle as falExclamationCircle } from '@fal'
 import { faExclamationCircle, faSpinner } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
+import { Dialog } from 'primevue'
 import { useConfirm } from 'primevue/useconfirm'
+import { ctrans } from '@/Composables/useTrans'
 
-library.add(faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, falExclamationCircle)
+library.add(faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, faUndoAlt, faHandHoldingBox, falExclamationCircle)
 
 const props = defineProps<{
     data: { data?: any[] },
@@ -36,6 +41,7 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 const confirm = useConfirm()
+const screenType = inject('screenType', ref('desktop'))
 
 const changingId = ref<number | null>(null)
 
@@ -149,10 +155,30 @@ function onCheckedSaved() {
     reloadStockDelivery()
 }
 
-const selectedLocation = reactive<Record<number, number | null>>({})
+const selectedLocationCode = reactive<Record<number, string | null>>({})
+const isModalLocation = ref(false)
+const selectedItemValue = ref<any>(null)
+
+function findLocation(locationsList: any[], locationCode: string | null) {
+    return locationsList?.find(location => location.location_code == locationCode) || locationsList?.[0]
+}
 
 function placedAdditionalData(item: any) {
-    return { location_org_stock_id: selectedLocation[item.id] ?? null }
+    return { location_org_stock_id: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.id }
+}
+
+function sowingLocationRoute(sowing: any, item: any) {
+    const warehouse = sowing.warehouse_slug || item.warehouse_slug
+
+    if (!sowing.location_slug || !warehouse) {
+        return ''
+    }
+
+    return route('grp.org.warehouses.show.infrastructure.locations.show', [
+        route().params['organisation'],
+        warehouse,
+        sowing.location_slug,
+    ])
 }
 
 const costFields = ['cost_items', 'cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax'] as const
@@ -235,19 +261,6 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
     }
 }
 
-async function undoSowing(sowing: any) {
-    try {
-        await axios.delete(route(sowing.undo_route.name, sowing.undo_route.parameters))
-        notify({ title: trans('Success'), text: trans('Placement removed'), type: 'success' })
-        onCheckedSaved()
-    } catch (error: any) {
-        notify({
-            title: trans('Something went wrong'),
-            text: error?.response?.data?.message || trans('Failed to remove placement'),
-            type: 'error',
-        })
-    }
-}
 </script>
 
 <template>
@@ -455,68 +468,179 @@ async function undoSowing(sowing: any) {
             </span>
         </template>
 
-        <template #cell(checked_unit)="{ item }">
-            <NumberWithButtonSave
-                v-if="item.checkedRoute"
-                :modelValue="Number(item.unit_quantity_checked)"
-                :min="Number(item.unit_quantity_placed)"
-                :routeSubmit="item.checkedRoute"
-                keySubmit="unit_quantity_checked"
-                saveOnForm
-                isUseAxios
-                allowZero
-                isWithRefreshModel
-                @onSuccess="onCheckedSaved"
-            />
+        <template #cell(checked_unit)="{ item, proxyItem }">
+            <div class="grid justify-items-end gap-y-2" v-if="item.checkedRoute">
+                <NumberWithButtonSave
+                    noUndoButton
+                    @onError="(error: any) => {
+                        proxyItem.errors = Object.values(error || {})
+                    }"
+                    :modelValue="Number(item.unit_quantity_checked)"
+                    @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
+                    saveOnForm
+                    isUseAxios
+                    isWithRefreshModel
+                    :routeSubmit="item.checkedRoute"
+                    keySubmit="unit_quantity_checked"
+                    :bindToTarget="{
+                        step: 1,
+                        min: Number(item.unit_quantity_placed)
+                    }"
+                    autoSave
+                    @onSuccess="onCheckedSaved"
+                >
+                    <template #save="{ isProcessing }">
+                        <div class="flex gap-x-8 w-fit">
+                            <ButtonWithLink
+                                v-tooltip="trans('Check all the delivered quantity')"
+                                icon="fal fa-check"
+                                :size="screenType != 'mobile' ? 'xs' : 'md'"
+                                type="positive"
+                                :loading="isProcessing"
+                                class="py-0"
+                                :routeTarget="item.checkAllRoute"
+                                :bind-to-link="{
+                                    preserveScroll: true,
+                                    preserveState: true,
+                                }"
+                                isWithError
+                            >
+                                <template #label>
+                                    <div>
+                                        {{ formatQuantity(Number(item.unit_quantity)) }}
+                                    </div>
+                                </template>
+                            </ButtonWithLink>
+                        </div>
+                    </template>
+                </NumberWithButtonSave>
+            </div>
             <span v-else>{{ formatQuantity(Number(item.unit_quantity_checked)) }}</span>
         </template>
 
-        <template #cell(placement)="{ item }">
-            <div v-if="Number(item.unit_quantity_checked) >= 1" class="space-y-1.5">
-                <div v-if="item.placedRoute" class="flex items-center gap-2">
-                    <select
-                        v-model="selectedLocation[item.id]"
-                        class="border border-gray-300 rounded text-sm py-1 px-2 max-w-[10rem]"
-                    >
-                        <option :value="null" disabled>{{ trans('Select location') }}</option>
-                        <option v-for="loc in item.locations" :key="loc.id" :value="loc.id">
-                            {{ loc.location_code }} ({{ formatQuantity(Number(loc.quantity)) }})
-                        </option>
-                    </select>
-                    <NumberWithButtonSave
-                        :key="`placement-${item.id}-${item.unit_quantity_placed}-${item.sowings?.length ?? 0}`"
-                        :modelValue="0"
-                        :min="0"
-                        :max="Number(item.placement_remaining)"
-                        :routeSubmit="item.placedRoute"
-                        keySubmit="quantity"
-                        :additionalData="placedAdditionalData(item)"
-                        saveOnForm
-                        isUseAxios
-                        allowZero
-                        @onSuccess="onCheckedSaved"
-                    />
-                </div>
+        <template #cell(sowings)="{ item }">
+            <div v-if="item.sowings?.length" class="space-y-1 grid pt-2">
+                <div v-for="sowing in item.sowings" :key="sowing.id" class="flex gap-x-2 w-fit">
+                    <div class="flex gap-x-2 items-center flex-wrap">
+                        <Link
+                            v-if="!!sowingLocationRoute(sowing, item)"
+                            :href="sowingLocationRoute(sowing, item)"
+                            class="secondaryLink"
+                        >
+                            {{ sowing.location_code }}
+                        </Link>
+                        <span v-else>
+                            {{ sowing.location_code ?? trans('Unknown') }}
+                        </span>
+                        <div v-tooltip="trans('Total placed quantity in this location')" class="text-gray-500 whitespace-nowrap">
+                            <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr-1 text-gray-500" fixed-width aria-hidden="true" />
+                            {{ formatQuantity(Number(sowing.quantity)) }}
+                        </div>
+                    </div>
 
-                <div
-                    v-for="sowing in item.sowings"
-                    :key="sowing.id"
-                    class="flex items-center gap-2 text-sm text-gray-600"
-                >
-                    <span>{{ sowing.location_code ?? trans('Unknown') }}: {{ formatQuantity(Number(sowing.quantity)) }}</span>
-                    <button
-                        type="button"
-                        v-tooltip="trans('Remove placement')"
-                        class="text-red-500 hover:text-red-700"
-                        @click="undoSowing(sowing)"
-                    >
-                        <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                    </button>
+                    <div v-if="item.is_editable">
+                        <ButtonWithLink
+                            v-if="sowing.quantity"
+                            v-tooltip="ctrans('Undo sowing :qtyPicked items', { qtyPicked: Number(sowing.quantity).toString() })"
+                            type="negative"
+                            :size="screenType != 'mobile' ? 'xxs' : 'md'"
+                            :icon="faUndoAlt"
+                            :routeTarget="sowing.undo_sowing_route"
+                            :bindToLink="{ preserveScroll: true }"
+                        />
+                    </div>
                 </div>
             </div>
-            <span v-else class="text-gray-400 text-sm italic">{{ trans('Check items first') }}</span>
+            <span v-else>
+            </span>
+        </template>
+
+        <template #cell(placement)="{ item, proxyItem }">
+            <div class="grid justify-items-end gap-y-2" v-if="item.has_available_qty && item.placedRoute">
+                <NumberWithButtonSave
+                    :key="`placement-${item.id}-${item.unit_quantity_placed}-${item.sowings?.length ?? 0}`"
+                    noUndoButton
+                    @onError="(error: any) => {
+                        proxyItem.errors = Object.values(error || {})
+                    }"
+                    :modelValue="0"
+                    @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
+                    saveOnForm
+                    isUseAxios
+                    :routeSubmit="item.placedRoute"
+                    keySubmit="quantity"
+                    :bindToTarget="{
+                        step: 1,
+                        min: 0,
+                        max: Number(item.placement_remaining)
+                    }"
+                    :additionalData="placedAdditionalData(item)"
+                    autoSave
+                    @onSuccess="onCheckedSaved"
+                >
+                    <template #save="{ isProcessing }">
+                        <div class="flex gap-x-8 w-fit">
+                            <ButtonWithLink
+                                v-tooltip="trans('Place all remaining quantity in location :xlocation', { xlocation: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.location_code || '-' })"
+                                icon="fal fa-check"
+                                :size="screenType != 'mobile' ? 'xs' : 'md'"
+                                type="positive"
+                                :loading="isProcessing"
+                                class="py-0"
+                                :routeTarget="item.placeAllRoute"
+                                :body="{
+                                    location_org_stock_id: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.id
+                                }"
+                                :bind-to-link="{
+                                    preserveScroll: true,
+                                    preserveState: true,
+                                }"
+                                isWithError
+                            >
+                                <template #label>
+                                    <div>
+                                        {{ formatQuantity(Number(item.placement_remaining)) }}
+                                    </div>
+                                </template>
+                            </ButtonWithLink>
+                        </div>
+                    </template>
+                </NumberWithButtonSave>
+                <LabelPickingLocation
+                    :locations="item.locations"
+                    :selectedOrgStockId="selectedLocationCode[item.id] ?? null"
+                    :warehouseArea="item.warehouse_area"
+                    :warehouse_slug="item.warehouse_slug"
+                    @openLocationModal="() => {
+                        isModalLocation = true; selectedItemValue = item;
+                    }"
+                />
+            </div>
+            <span v-else-if="Number(item.unit_quantity_placed) > 0" class="text-green-500">
+                {{ formatQuantity(Number(item.unit_quantity_placed)) }}
+            </span>
+            <span v-else>
+            </span>
         </template>
     </Table>
+
+    <Dialog
+        v-model:visible="isModalLocation"
+        modal
+        :draggable="false"
+        dismissableMask
+        :style="{ width: '48rem' }"
+        :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
+        :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
+        :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
+    >
+        <SelectPickingLocation
+            :item="selectedItemValue"
+            :selectedLocationCode="selectedLocationCode[selectedItemValue?.id] ?? null"
+            @select="(code) => { selectedLocationCode[selectedItemValue?.id] = code; isModalLocation = false; }"
+            :ignoreNoQty="true"
+        />
+    </Dialog>
 
     <ConfirmPopup />
 </template>
