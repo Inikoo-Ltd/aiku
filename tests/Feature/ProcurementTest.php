@@ -48,6 +48,7 @@ use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\GoodsIn\StockDelivery;
@@ -63,6 +64,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -939,7 +941,28 @@ test('UI show stock delivery', function () {
                     ->where('title', $this->stockDelivery->reference)
                     ->etc()
             )
-            ->has('tabs');
+            ->has(
+                'tabs',
+                fn (AssertableInertia $page) => $page
+                    ->where('current', StockDeliveryTabsEnum::ITEMS->value)
+                    ->etc()
+            )
+            ->missing('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value)
+            ->has('queryBuilderProps.items.columns', 8)
+            ->has(
+                'queryBuilderProps.items.columns.0',
+                fn (AssertableInertia $page) => $page
+                    ->where('key', 'state_icon')
+                    ->where('type', 'icon')
+                    ->etc()
+            )
+            ->has(
+                'queryBuilderProps.items.columns.7',
+                fn (AssertableInertia $page) => $page
+                    ->where('key', 'actions')
+                    ->where('align', 'right')
+                    ->etc()
+            );
     });
 });
 
@@ -1026,6 +1049,78 @@ test('under delivered stock delivery item is placed and books in the delivery', 
     expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(8.0)
         ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED)
         ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
+});
+
+test('UI show stock delivery under over delivered items tab', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'UNDER-OVER-TAB', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 8]);
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 8]);
+
+    expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.show', [
+        $this->organisation->slug,
+        $stockDelivery->slug,
+    ]).'?tab='.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value);
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDelivery')
+            ->has('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value)
+            ->has(
+                StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value.'.data',
+                1,
+                fn (AssertableInertia $page) => $page
+                    ->where('difference_units', -2)
+                    ->where('difference_percentage', -20)
+                    ->where('difference_skos', -0.2)
+                    ->etc()
+            );
+    });
+});
+
+test('UI stock delivery partial reload refreshes item state filters and tabs', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PARTIAL-RELOAD', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $url = route('grp.org.procurement.stock_deliveries.show', [
+        $this->organisation->slug,
+        $stockDelivery->slug,
+    ]);
+
+    $this->withoutExceptionHandling();
+
+    $this->get($url)->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->where('queryBuilderProps.items.elementGroups.state.elements.placed.1', 0)
+            ->has('tabs.navigation', 4)
+            ->missing('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value);
+    });
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 10]);
+
+    expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
+
+    $response = $this->get($url, [
+        'X-Inertia'                   => 'true',
+        'X-Inertia-Version'           => Inertia::getVersion(),
+        'X-Inertia-Partial-Component' => 'Procurement/StockDelivery',
+        'X-Inertia-Partial-Data'      => implode(',', [StockDeliveryTabsEnum::ITEMS->value, 'tabs', 'queryBuilderProps']),
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('props.queryBuilderProps.items.elementGroups.state.elements.placed.1', 1)
+        ->assertJsonCount(5, 'props.tabs.navigation')
+        ->assertJsonPath(
+            'props.tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value.'.title',
+            StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->blueprint()['title']
+        );
 });
 
 test('stock delivery item can not be placed beyond the checked quantity', function () {
