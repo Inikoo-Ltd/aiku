@@ -201,15 +201,14 @@ class ShowPurchaseOrder extends OrgAction
                         'org_currency' => $purchaseOrder->organisation?->currency?->code,
                         'org_exchange' => $purchaseOrder->org_exchange,
                         'items'        => $purchaseOrder->cost_items,
-                        'extra'        => $purchaseOrder->cost_extra + $purchaseOrder->cost_shipping + $purchaseOrder->cost_duties + $purchaseOrder->cost_tax,
+                        'extra'        => $purchaseOrder->cost_extra,
+                        'shipping'     => $purchaseOrder->cost_shipping,
+                        'duties'       => $purchaseOrder->cost_duties,
+                        'tax'          => $purchaseOrder->cost_tax,
                         'total'        => $purchaseOrder->cost_total,
                         'org_items'    => $purchaseOrder->purchaseOrderTransactions()->sum('org_net_amount'),
                     ],
                 ],
-
-                PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
-                    fn () => GetPurchaseOrderData::run($purchaseOrder)
-                    : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
 
                 PurchaseOrderTabsEnum::ITEMS->value => $this->tab == PurchaseOrderTabsEnum::ITEMS->value ?
                     fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))
@@ -218,6 +217,10 @@ class ShowPurchaseOrder extends OrgAction
                 PurchaseOrderTabsEnum::PRODUCTS->value => $showProductsTab && $this->tab == PurchaseOrderTabsEnum::PRODUCTS->value ?
                     fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value))
                     : Inertia::optional(fn () => $showProductsTab ? PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value)) : null),
+
+                PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
+                    fn () => GetPurchaseOrderData::run($purchaseOrder)
+                    : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
 
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))

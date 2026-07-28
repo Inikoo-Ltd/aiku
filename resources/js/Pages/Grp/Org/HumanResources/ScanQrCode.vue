@@ -30,6 +30,7 @@ type QrCodeRow = {
     number_clockings: number
     last_used_at: string | null
     created_at: string | null
+    clockings_route: RouteData
     edit_route: RouteData
     toggle_active_route: RouteData
 }
@@ -152,6 +153,16 @@ const downloadQrCode = () => {
 
             <template #cell(hash)="{ item }">
                 <span class="font-mono text-gray-600">{{ item.hash }}</span>
+            </template>
+
+            <template #cell(number_clockings)="{ item }">
+                <Link
+                    v-if="item.number_clockings > 0"
+                    :href="route(item.clockings_route.name, item.clockings_route.parameters)"
+                    class="primaryLink">
+                    {{ item.number_clockings }}
+                </Link>
+                <span v-else class="text-gray-400">0</span>
             </template>
 
             <template #cell(deactivated_at)="{ item }">

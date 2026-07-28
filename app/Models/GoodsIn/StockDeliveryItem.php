@@ -39,6 +39,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property numeric|null $grp_net_amount
  * @property numeric|null $org_net_amount
  * @property bool $is_costed
+ * @property numeric|null $cost_items
+ * @property numeric|null $cost_extra
+ * @property numeric|null $cost_shipping
+ * @property numeric|null $cost_duties
+ * @property numeric $cost_tax
+ * @property numeric $cost_total
  * @property numeric $gross_amount
  * @property numeric|null $grp_gross_amount
  * @property numeric|null $org_gross_amount

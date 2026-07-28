@@ -18,9 +18,21 @@ if (!function_exists('group')) {
 }
 
 if (!function_exists('formatPrice')) {
-    function formatPrice(int|float|null $num1 = 0, int|float|null $num2 = 0)
+    /**
+     * Multiply two numbers into a price string. With fewer than 2 fraction digits the
+     * result is rounded UP at that precision (retail whole-number pricing, e.g. CZK/HUF),
+     * so converted prices never lose margin; at 2 digits it rounds to nearest as before.
+     */
+    function formatPrice(int|float|null $num1 = 0, int|float|null $num2 = 0, int $fractionDigits = 2)
     {
-        return trimDecimalZeros(number_format($num1 * $num2, 2, '.', ''));
+        $value = ($num1 ?? 0) * ($num2 ?? 0);
+
+        if ($fractionDigits < 2) {
+            $factor = 10 ** $fractionDigits;
+            $value  = ceil(round($value * $factor, 6)) / $factor;
+        }
+
+        return trimDecimalZeros(number_format($value, 2, '.', ''));
     }
 }
 

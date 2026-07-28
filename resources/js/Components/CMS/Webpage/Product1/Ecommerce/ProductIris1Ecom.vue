@@ -272,7 +272,7 @@ onMounted(async () => {
                                 </div>
 
                                 <!-- <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
-                                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
+                                    RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
                                 </span> -->
 
                             </div>
@@ -651,7 +651,7 @@ onMounted(async () => {
                 </span>
 
                 <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
-                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
+                    RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
                     product.unit }}
                 </span>
 
