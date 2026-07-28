@@ -10,6 +10,8 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\CustomerEmailPressureTool;
 use App\Mcp\Tools\CustomerNotesTool;
+use App\Mcp\Tools\DescribeTablesTool;
+use App\Mcp\Resources\AikuDataGuideResource;
 use App\Mcp\Tools\DeliveryNotesSummaryTool;
 use App\Mcp\Tools\EmployeeAttendanceTool;
 use App\Mcp\Tools\EmployeeDirectoryTool;
@@ -23,6 +25,7 @@ use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\ProductsWithoutImagesTool;
 use App\Mcp\Tools\ShopReviewsTool;
 use App\Mcp\Tools\ShopSalesTool;
+use App\Mcp\Tools\SqlQueryTool;
 use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\TopProductsTool;
 use App\Mcp\Tools\TradeUnitFamilySalesTool;
@@ -64,5 +67,14 @@ class AikuServer extends Server
         GroupSalesTool::class,
         TradeUnitFamilySalesTool::class,
         TradeUnitSalesTool::class,
+        SqlQueryTool::class,
+        DescribeTablesTool::class,
+    ];
+
+    /**
+     * @var array<int, class-string<\Laravel\Mcp\Server\Resource>>
+     */
+    protected array $resources = [
+        AikuDataGuideResource::class,
     ];
 }

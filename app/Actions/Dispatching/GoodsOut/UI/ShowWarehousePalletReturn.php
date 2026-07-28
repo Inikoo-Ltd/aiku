@@ -36,6 +36,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWarehousePalletReturn extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
+    use WithPalletReturnBucketNavigation;
 
     private bool $requireShipping = true;
 
@@ -371,18 +372,22 @@ class ShowWarehousePalletReturn extends OrgAction
 
     public function getPrevious(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-
-        $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
-
+        if ($bucket = $this->getPalletReturnBucket($request)) {
+            $previous = $this->getPalletReturnBucketNeighbour($palletReturn, $request, $bucket, forward: false);
+        } else {
+            $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id', 'desc')->first();
+        }
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-
-        $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
-
+        if ($bucket = $this->getPalletReturnBucket($request)) {
+            $next = $this->getPalletReturnBucketNeighbour($palletReturn, $request, $bucket, forward: true);
+        } else {
+            $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
+        }
 
         return $this->getNavigation($next, $request->route()->getName());
     }

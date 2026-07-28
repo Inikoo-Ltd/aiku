@@ -22,6 +22,8 @@ use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
+use App\Actions\Traits\UI\WithBucketNavigation;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,6 +31,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowTradeUnit extends OrgAction
 {
+    use WithBucketNavigation;
+
     use WithGoodsAuthorisation;
 
 
@@ -177,16 +181,42 @@ class ShowTradeUnit extends OrgAction
 
     public function getPrevious(TradeUnit $tradeUnit, ActionRequest $request): ?array
     {
-        $previous = TradeUnit::where('code', '<', $tradeUnit->code)->orderBy('code', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getTradeUnitNeighbour($tradeUnit, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(TradeUnit $tradeUnit, ActionRequest $request): ?array
     {
-        $next = TradeUnit::where('code', '>', $tradeUnit->code)->orderBy('code')->first();
+        return $this->getNavigation($this->getTradeUnitNeighbour($tradeUnit, $request, forward: true), $request->route()->getName());
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    private function getTradeUnitNeighbour(TradeUnit $tradeUnit, ActionRequest $request, bool $forward): ?TradeUnit
+    {
+        $query = TradeUnit::query()->where('trade_units.group_id', $tradeUnit->group_id);
+
+        $status = match ($request->input('bucket')) {
+            'in_process'    => TradeUnitStatusEnum::IN_PROCESS,
+            'active'        => TradeUnitStatusEnum::ACTIVE,
+            'discontinuing' => TradeUnitStatusEnum::DISCONTINUING,
+            'discontinued'  => TradeUnitStatusEnum::DISCONTINUED,
+            'anomality'     => TradeUnitStatusEnum::ANOMALITY,
+            default         => null,
+        };
+
+        if ($status) {
+            $query->where('trade_units.status', $status);
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $tradeUnit,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'code' => 'trade_units.code',
+                'name' => 'trade_units.name',
+            ],
+            defaultSort: ['trade_units.code', false],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?TradeUnit $tradeUnit, string $routeName): ?array

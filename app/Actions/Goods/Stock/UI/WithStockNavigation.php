@@ -8,39 +8,68 @@
 
 namespace App\Actions\Goods\Stock\UI;
 
+use App\Actions\Traits\UI\WithBucketNavigation;
+use App\Enums\Goods\Stock\StockStateEnum;
 use App\Models\Goods\Stock;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithStockNavigation
 {
+    use WithBucketNavigation;
+
     public function getPrevious(Stock $stock, ActionRequest $request): ?array
     {
-        $previous = optional($stock->code, function ($code) use ($stock, $request) {
-            return Stock::where('code', '<', $code)
-                ->when(
-                    $request->route()->getName() === 'grp.org.warehouses.show.inventory.org_stock_families.show.stocks.show',
-                    fn ($query) => $query->where('stock_family_id', $stock->stockFamily->id)
-                )
-                ->orderBy('code', 'desc')
-                ->first();
-        });
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getStockNeighbour($stock, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(Stock $stock, ActionRequest $request): ?array
     {
-        $next = optional($stock->code, function ($code) use ($stock, $request) {
-            return Stock::where('code', '>', $code)
-                ->when(
-                    $request->route()->getName() === 'grp.org.warehouses.show.inventory.org_stock_families.show.stocks.show',
-                    fn ($query) => $query->where('stock_family_id', $stock->stockFamily->id)
-                )
-                ->orderBy('code')
-                ->first();
-        });
+        return $this->getNavigation($this->getStockNeighbour($stock, $request, forward: true), $request->route()->getName());
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    private function getStockNeighbour(Stock $stock, ActionRequest $request, bool $forward): ?Stock
+    {
+        if (!$stock->code) {
+            return null;
+        }
+
+        $routeName = $request->route()->getName();
+        $query     = Stock::query();
+
+        if ($routeName === 'grp.org.warehouses.show.inventory.org_stock_families.show.stocks.show') {
+            $query->where('stock_family_id', $stock->stockFamily->id);
+        }
+
+        $bucket = $request->input('bucket');
+
+        if (!$bucket && preg_match('/\.(\w+)_stocks\./', $routeName, $matches)) {
+            $bucket = $matches[1];
+        }
+
+        $state = match ($bucket) {
+            'active'        => StockStateEnum::ACTIVE,
+            'discontinuing' => StockStateEnum::DISCONTINUING,
+            'discontinued'  => StockStateEnum::DISCONTINUED,
+            'in_process'    => StockStateEnum::IN_PROCESS,
+            default         => null,
+        };
+
+        if ($state) {
+            $query->where('stocks.state', $state);
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $stock,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'code'        => 'stocks.code',
+                'name'        => 'stocks.name',
+                'description' => 'stocks.description',
+            ],
+            defaultSort: ['stocks.code', false],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?Stock $stock, string $routeName): ?array

@@ -80,7 +80,7 @@ class IndexOrgStocks extends OrgAction
     {
         $this->bucket = 'active';
         $this->parent = $organisation;
-        $this->initialisation($this->parent, $request)->withTab(OrgStocksTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
 
         return $this->handle($this->parent, prefix: OrgStocksTabsEnum::INDEX->value);
     }

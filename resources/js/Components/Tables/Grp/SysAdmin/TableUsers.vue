@@ -79,6 +79,11 @@ function userRoute(user: User) {
                 v-tooltip="trans('AI assistant not allowed')" fixed-width />
         </template>
 
+        <template #cell(can_use_mcp_sql)="{ item: user }">
+            <span v-if="user.can_use_mcp_sql" v-tooltip="trans('Super intelligence')" class="cursor-default">🧠</span>
+            <span v-else v-tooltip="trans('No super intelligence')" class="cursor-default opacity-20 grayscale">🧠</span>
+        </template>
+
         <template #cell(last_active)="{ item: user }">
             <span class="text-gray-500 whitespace-nowrap">{{ user.last_active ? useFormatTime(user.last_active, { formatTime: 'aiku' }) : '-' }}</span>
         </template>

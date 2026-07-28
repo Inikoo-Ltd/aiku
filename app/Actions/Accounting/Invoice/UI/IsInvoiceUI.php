@@ -14,6 +14,7 @@ use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Traits\Actions\WithNavigation;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Dispatching\ShipmentsResource;
@@ -135,7 +136,34 @@ trait IsInvoiceUI
     protected function applyNavigationFilters(Builder $query, Model $model, ActionRequest $request): void
     {
         /** @var Invoice $model */
-        $query->where('invoices.shop_id', $model->shop_id);
+        $query->where('invoices.shop_id', $model->shop_id)
+            ->whereNot('invoices.in_process', true);
+    }
+
+    protected function applyNavigationBucket(Builder $query, string $bucket, Model $model, ActionRequest $request): void
+    {
+        if ($bucket == 'unpaid') {
+            $query->where('invoices.pay_status', InvoicePayStatusEnum::UNPAID);
+        } elseif ($bucket == 'paid') {
+            $query->where('invoices.pay_status', InvoicePayStatusEnum::PAID);
+        }
+    }
+
+    protected function getNavigationDefaultSort(Model $model): array
+    {
+        return ['invoices.date', true];
+    }
+
+    protected function getNavigationSortColumns(Model $model): array
+    {
+        return [
+            'number'       => 'invoices.number',
+            'reference'    => 'invoices.reference',
+            'date'         => 'invoices.date',
+            'pay_status'   => 'invoices.pay_status',
+            'total_amount' => 'invoices.total_amount',
+            'net_amount'   => 'invoices.net_amount',
+        ];
     }
 
     protected function getNavigationLabel(Model $model): string

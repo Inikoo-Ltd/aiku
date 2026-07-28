@@ -35,21 +35,32 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     private int|null $daysSinceLastInvoiced = null;
     private int|null $grAmnestyOfferId = null;
 
-    public function getJobUniqueId(Order $order): string
+    public function getJobUniqueId(Order $order, bool $onlyIfInBasket = false): string
     {
-        return $order->id;
+        return $order->id.'_'.($onlyIfInBasket ? '1' : '0');
     }
 
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, bool $onlyIfInBasket = false): Order
     {
         if (in_array($order->state, [
             OrderStateEnum::CANCELLED,
             OrderStateEnum::DISPATCHED,
             OrderStateEnum::FINALISED,
         ])) {
+            return $order;
+        }
+
+        /**
+         * Bulk callers list the baskets of a shop or customer and then queue one job each, with a
+         * delay of up to two hours to spread the load. An order the customer submits inside that
+         * window would otherwise have its discounts recalculated after the fact, against offers
+         * that may since have changed. They pass true so the order is rechecked at execution time;
+         * callers acting on one known order keep the previous behaviour.
+         */
+        if ($onlyIfInBasket && $order->refresh()->state !== OrderStateEnum::CREATING) {
             return $order;
         }
 

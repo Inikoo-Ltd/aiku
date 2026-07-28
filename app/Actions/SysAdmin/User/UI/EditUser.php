@@ -90,9 +90,24 @@ class EditUser extends OrgAction
                             ],
                             "can_use_mcp" => [
                                 "type"        => "toggle",
+                                "icon"        => "fal fa-robot",
                                 "label"       => __("Can connect AI assistant"),
                                 "value"       => $user->can_use_mcp,
                             ],
+                            ...($user->can_use_mcp ? [
+                                "can_use_mcp_sql" => [
+                                    "type"             => "toggle",
+                                    "label"            => __("Super intelligence")." 🧠",
+                                    "value"            => $user->can_use_mcp_sql,
+                                    "noSaveButton"     => true,
+                                    "submitOnConfirm"  => true,
+                                    "warnOnEnableOnly" => true,
+                                    "warnTitle"        => __("Give their personal AI super intelligence?"),
+                                    "confirmLabel"     => __("Proceed at your own risk"),
+                                    "warningTextHtml"  => __("Their own AI assistant will know <strong>everything in Aiku</strong> — sales, products, stock, customers, suppliers, staff and payments — across <strong>every shop and organisation</strong>, and can ask <strong>any question</strong> of the data. It can <strong>only read</strong>: it can never change or delete anything."),
+                                    "warningBox"       => __("This bypasses permissions: their AI will see data this person cannot see in Aiku. Only for people you trust with all company data."),
+                                ],
+                            ] : []),
                         ],
                     ],
                     [

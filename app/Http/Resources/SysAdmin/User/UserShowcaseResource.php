@@ -31,10 +31,11 @@ class UserShowcaseResource extends JsonResource
     {
         if (!$user->can_use_mcp) {
             return [
-                'enabled'        => false,
-                'number_queries' => 0,
-                'last_used_at'   => null,
-                'tools_used'     => 0,
+                'enabled'          => false,
+                'full_data_access' => false,
+                'number_queries'   => 0,
+                'last_used_at'     => null,
+                'tools_used'       => 0,
             ];
         }
 
@@ -43,10 +44,11 @@ class UserShowcaseResource extends JsonResource
             ->first();
 
         return [
-            'enabled'        => true,
-            'number_queries' => (int) $stats->number_queries,
-            'last_used_at'   => $stats->last_used_at,
-            'tools_used'     => (int) $stats->tools_used,
+            'enabled'          => true,
+            'full_data_access' => (bool) $user->can_use_mcp_sql,
+            'number_queries'   => (int) $stats->number_queries,
+            'last_used_at'     => $stats->last_used_at,
+            'tools_used'       => (int) $stats->tools_used,
         ];
     }
 

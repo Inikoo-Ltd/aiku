@@ -15,6 +15,8 @@ use Laravel\Mcp\Server\Tool;
 
 abstract class AikuGroupTool extends Tool
 {
+    use WithMcpPermissions;
+
     abstract protected function permission(): GroupPermissionsEnum;
 
     protected function authorisedGroup(Request $request): ?Group
@@ -25,6 +27,6 @@ abstract class AikuGroupTool extends Tool
             return null;
         }
 
-        return $request->user()->authTo($this->permission()->value) ? $group : null;
+        return $this->userCan($request, $this->permission()->value) ? $group : null;
     }
 }

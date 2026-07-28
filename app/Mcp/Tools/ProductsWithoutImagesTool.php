@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Products in a shop that have no image, so content teams can fix listings.')]
+#[IsReadOnly]
 class ProductsWithoutImagesTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum

@@ -15,6 +15,8 @@ use Laravel\Mcp\Server\Tool;
 
 abstract class AikuTool extends Tool
 {
+    use WithMcpPermissions;
+
     abstract protected function permission(): ShopPermissionsEnum;
 
     protected function authorisedShop(Request $request): ?Shop
@@ -27,6 +29,6 @@ abstract class AikuTool extends Tool
 
         $permissionName = ShopPermissionsEnum::getPermissionName($this->permission()->value, $shop);
 
-        return $request->user()->authTo($permissionName) ? $shop : null;
+        return $this->userCan($request, $permissionName) ? $shop : null;
     }
 }

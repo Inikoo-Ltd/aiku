@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Traits\Actions\WithNavigation;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,39 @@ trait WithOrgStockNavigation
         if (str_contains($request->route()->getName(), 'grp.org.warehouses.show.inventory.org_stocks.')) {
             $query->where('organisation_id', $orgStock->organisation_id);
         }
+
+        if (!$request->input('bucket') && preg_match('/\.(\w+)_org_stocks\./', $request->route()->getName(), $matches)) {
+            $this->applyNavigationBucket($query, $matches[1], $model, $request);
+        }
+    }
+
+    protected function applyNavigationBucket(Builder $query, string $bucket, Model $model, ActionRequest $request): void
+    {
+        if ($bucket == 'current') {
+            $query->whereIn('org_stocks.state', [OrgStockStateEnum::ACTIVE, OrgStockStateEnum::DISCONTINUING]);
+        } elseif ($bucket == 'active') {
+            $query->where('org_stocks.state', OrgStockStateEnum::ACTIVE);
+        } elseif ($bucket == 'discontinuing') {
+            $query->where('org_stocks.state', OrgStockStateEnum::DISCONTINUING);
+        } elseif ($bucket == 'discontinued') {
+            $query->where('org_stocks.state', OrgStockStateEnum::DISCONTINUED);
+        } elseif ($bucket == 'abnormality') {
+            $query->where('org_stocks.state', OrgStockStateEnum::ABNORMALITY);
+        }
+    }
+
+    protected function getNavigationDefaultSort(Model $model): array
+    {
+        return ['org_stocks.code', false];
+    }
+
+    protected function getNavigationSortColumns(Model $model): array
+    {
+        return [
+            'code'                           => 'org_stocks.code',
+            'name'                           => 'org_stocks.name',
+            'discontinued_in_organisation_at' => 'org_stocks.discontinued_in_organisation_at',
+        ];
     }
 
     protected function getNavigationLabel(Model $model): string

@@ -117,6 +117,7 @@ class OrgStock extends Model implements Auditable
 
     protected $casts = [
         'data'                             => 'array',
+        'consumables'                      => 'array',
         'activated_in_organisation_at'     => 'datetime',
         'discontinuing_in_organisation_at' => 'datetime',
         'discontinued_in_organisation_at'  => 'datetime',

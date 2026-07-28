@@ -810,6 +810,65 @@ test('UI show ordering backlog', function () {
     });
 });
 
+test('UI show order navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeOrder = function (string $date, int $netAmount) {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        $order->update(['state' => OrderStateEnum::IN_WAREHOUSE, 'date' => $date, 'net_amount' => $netAmount, 'submitted_at' => null]);
+
+        return $order->refresh();
+    };
+
+    $newest = $makeOrder('2026-07-20 10:00:00', 300);
+    $middle = $makeOrder('2026-07-19 10:00:00', 200);
+    $oldest = $makeOrder('2026-07-18 10:00:00', 100);
+
+    $routeParameters = [$this->organisation->slug, $this->shop->slug, $middle->slug];
+
+    $response = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop');
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    $ascendingByAmount = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=net_amount');
+    $ascendingByAmount->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    $byJoinedColumn = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=-customer_name');
+    $byJoinedColumn->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    $byNullColumn = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=submitted_at');
+    $byNullColumn->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    $withoutBucket = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters));
+    $withoutBucket->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+
+});
+
 test('UI show ordering backlog waiting crm items', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $this->shop]));
@@ -1714,4 +1773,50 @@ test('transaction import marks rows with missing code or quantity as failed', fu
     $import->storeModel(collect(['code' => $this->product->code]), $missingQuantityRecord);
     expect($missingQuantityRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
         ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
+});
+
+test('recalculating basket totals skips orders that are no longer baskets', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 111.11, 'total_amount' => 111.11]);
+
+    // A bulk run selects baskets when it queues the jobs, but drains for hours. An order submitted
+    // in the meantime must not be repriced from current prices after the fact.
+    \App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket::make()->handle($order->id);
+
+    expect((float) $order->refresh()->net_amount)->toBe(111.11)
+        ->and((float) $order->total_amount)->toBe(111.11)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('bulk basket recalculation skips orders submitted while the job was waiting', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 222.22, 'total_amount' => 222.22]);
+
+    // Offer activation lists baskets then queues one job each with a delay. An order submitted
+    // inside that window must be left alone by both halves of the recalculation.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()
+        ->handle($order, true, true, false, true, true);
+    \App\Actions\Ordering\Order\CalculateOrderDiscounts::make()->handle($order, true);
+
+    expect((float) $order->refresh()->net_amount)->toBe(222.22)
+        ->and((float) $order->total_amount)->toBe(222.22);
+
+    // Without the flag the same call still works on a submitted order, as other callers rely on.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()->handle($order);
+
+    expect((float) $order->refresh()->total_amount)->not->toBe(222.22);
 });
