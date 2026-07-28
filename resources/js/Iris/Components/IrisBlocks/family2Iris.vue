@@ -60,15 +60,30 @@ const bestOffer = computed(() => {
 	return getBestOffer(props.fieldValue?.family?.offers_data)
 })
 
-const descriptionContentRef = ref<HTMLElement | null>(null)
+const descriptionBoxRef = ref<HTMLElement | null>(null)
+const descriptionBodyRef = ref<HTMLElement | null>(null)
 const imagesRef = ref<HTMLElement | null>(null)
 const offersRef = ref<HTMLElement | null>(null)
+const offerBadgesRef = ref<HTMLElement | null>(null)
 const titleRef = ref<HTMLElement | null>(null)
+const titleTextRef = ref<HTMLElement | null>(null)
+const truncatedTitleRef = ref<HTMLElement | null>(null)
 const actionsRef = ref<HTMLElement | null>(null)
+const isTitleTruncated = ref(false)
+const isTitleSingleLine = ref(true)
 const expanded = ref(false)
 const showReadMore = ref(false)
 const collapsedHeight = ref(0)
+const titleWidth = ref(0)
 let resizeObserver: ResizeObserver | null = null
+
+const TITLE_OFFERS_GAP = 16
+const MIN_TITLE_WIDTH = 150
+const TITLE_ROW_MIN_SCREEN_WIDTH = 1024
+
+const titleWidthStyle = computed(() =>
+	titleWidth.value ? { width: `${titleWidth.value}px` } : {}
+)
 
 const COLLAPSED_HEIGHTS = [
 	{ minWidth: 1536, height: 250 },
@@ -93,7 +108,7 @@ const getCollapsedHeight = (): number => {
 		return getFallbackCollapsedHeight()
 	}
 
-	const siblingsHeight = [offersRef, titleRef, actionsRef].reduce(
+	const siblingsHeight = [offersRef, titleRef, truncatedTitleRef, actionsRef].reduce(
 		(total, element) => total + (element.value?.offsetHeight ?? 0),
 		READ_MORE_ROW_HEIGHT
 	)
@@ -101,14 +116,70 @@ const getCollapsedHeight = (): number => {
 	return Math.max(MIN_COLLAPSED_HEIGHT, imagesRef.value!.offsetHeight - siblingsHeight)
 }
 
+const TRUNCATION_TOLERANCE = 1
+const SINGLE_LINE_TOLERANCE = 1.5
+const NORMAL_LINE_HEIGHT_RATIO = 1.2
+
+const calculateTitleWidth = () => {
+	const offersRow = offersRef.value
+
+	if (!offersRow || window.innerWidth < TITLE_ROW_MIN_SCREEN_WIDTH) {
+		titleWidth.value = 0
+
+		return
+	}
+
+	if (titleRef.value) {
+		titleWidth.value = Math.round(titleRef.value.clientWidth)
+
+		return
+	}
+
+	const badgesWidth = offerBadgesRef.value?.offsetWidth ?? 0
+	const availableWidth =
+		offersRow.clientWidth - badgesWidth - (badgesWidth ? TITLE_OFFERS_GAP : 0)
+
+	titleWidth.value = Math.round(Math.max(MIN_TITLE_WIDTH, availableWidth))
+}
+
+const getLineHeight = (element: HTMLElement): number => {
+	const { lineHeight, fontSize } = window.getComputedStyle(element)
+	const parsedLineHeight = Number.parseFloat(lineHeight)
+
+	return Number.isNaN(parsedLineHeight)
+		? Number.parseFloat(fontSize) * NORMAL_LINE_HEIGHT_RATIO
+		: parsedLineHeight
+}
+
+const checkTitleTruncated = () => {
+	const title = titleTextRef.value
+
+	if (!title) {
+		isTitleTruncated.value = false
+		isTitleSingleLine.value = true
+
+		return
+	}
+
+	isTitleTruncated.value = title.scrollHeight - title.clientHeight > TRUNCATION_TOLERANCE
+	isTitleSingleLine.value = title.scrollHeight <= getLineHeight(title) * SINGLE_LINE_TOLERANCE
+}
+
 const calculateDescriptionHeight = async () => {
 	await nextTick()
 
-	if (!descriptionContentRef.value) return
+	calculateTitleWidth()
+
+	await nextTick()
+
+	checkTitleTruncated()
+
+	if (!descriptionBoxRef.value) return
 
 	collapsedHeight.value = getCollapsedHeight()
 
-	showReadMore.value = descriptionContentRef.value.scrollHeight > collapsedHeight.value
+	showReadMore.value =
+		descriptionBoxRef.value.scrollHeight - collapsedHeight.value > TRUNCATION_TOLERANCE
 }
 
 const onWindowResize = () => {
@@ -122,19 +193,31 @@ onMounted(() => {
 		calculateDescriptionHeight()
 	})
 
-	if (descriptionContentRef.value) {
-		resizeObserver.observe(descriptionContentRef.value)
+	if (descriptionBodyRef.value) {
+		resizeObserver.observe(descriptionBodyRef.value)
 	}
 
 	if (imagesRef.value) {
 		resizeObserver.observe(imagesRef.value)
 	}
 
-	if (titleRef.value) {
-		resizeObserver.observe(titleRef.value)
+	if (titleTextRef.value) {
+		resizeObserver.observe(titleTextRef.value)
+	}
+
+	if (offersRef.value) {
+		resizeObserver.observe(offersRef.value)
+	}
+
+	if (offerBadgesRef.value) {
+		resizeObserver.observe(offerBadgesRef.value)
 	}
 
 	window.addEventListener("resize", onWindowResize)
+
+	document.fonts?.ready.then(() => {
+		calculateDescriptionHeight()
+	})
 })
 
 onUnmounted(() => {
@@ -151,6 +234,9 @@ watch(
 		props.fieldValue?.family?.name,
 		props.fieldValue?.family?.description,
 		props.fieldValue?.family?.description_image,
+		layout?.user?.gr_data?.customer_is_gr,
+		layout?.user?.gr_data?.amnesty,
+		bestOffer.value?.type,
 	],
 	() => {
 		calculateDescriptionHeight()
@@ -218,14 +304,43 @@ const contentClass = computed(() =>
 
 				<!-- CONTENT -->
 				<div class="flex min-w-0 flex-1 flex-col">
+					<div aria-hidden="true" class="invisible h-0 overflow-hidden">
+						<div class="w-full" :style="titleWidthStyle">
+							<h1
+								ref="titleTextRef"
+								:style="{ fontSize: '1.5rem' }"
+								class="title break-words font-bold tracking-tight text-left">
+								{{ fieldValue.family?.name }}
+							</h1>
+						</div>
+					</div>
+
 					<div
 						ref="offersRef"
-						class="flex flex-col gap-4 text-center lg:text-left lg:flex-row lg:items-start lg:justify-start">
+						class="flex flex-col gap-4 text-center items-center lg:text-left lg:flex-row"
+						:class="
+							isTitleTruncated
+								? 'lg:items-end lg:justify-end'
+								: isTitleSingleLine
+									? 'lg:items-center lg:justify-between'
+									: 'lg:items-start lg:justify-between'
+						">
+						<div
+							v-if="!isTitleTruncated"
+							ref="titleRef"
+							class="w-full pb-1 2xl:pb-1 lg:min-w-0 lg:flex-1">
+							<h1
+								:style="{ fontSize: '1.5rem' }"
+								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
+								{{ fieldValue.family?.name }}
+							</h1>
+						</div>
 						<div
 							v-if="
 								fieldValue?.family?.offers_data?.number_offers &&
 								layout.iris.is_logged_in
 							"
+							ref="offerBadgesRef"
 							class="flex gap-x-1 gap-y-1 offer flex-wrap justify-center lg:justify-end">
 							<DiscountByType
 								:offers_data="fieldValue?.family?.offers_data"
@@ -248,15 +363,19 @@ const contentClass = computed(() =>
 						</div>
 					</div>
 
-					<div ref="descriptionContentRef" class="px-3 lg:px-0">
-						<div ref="titleRef" class="pb-1 2xl:pb-1">
-							<h1 :style="{ fontSize : '1.5rem'}"
+					<div class="px-3 lg:px-0">
+						<div
+							v-if="isTitleTruncated"
+							ref="truncatedTitleRef"
+							class="pb-1 2xl:pb-1 px-3 lg:px-0">
+							<h1
+								:style="{ fontSize: '1.5rem' }"
 								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
 								{{ fieldValue.family?.name }}
 							</h1>
 						</div>
-
 						<div
+							ref="descriptionBoxRef"
 							class="relative flex-1 min-h-0 space-y-[4px] text-[14px] leading-[1.6] text-[#1d2430] 2xl:space-y-2 overflow-hidden"
 							:class="
 								!expanded && !collapsedHeight
@@ -268,12 +387,12 @@ const contentClass = computed(() =>
 									? { maxHeight: `${collapsedHeight}px` }
 									: {}
 							">
-							<div v-html="cleanedDescription"></div>
+							<div ref="descriptionBodyRef" v-html="cleanedDescription"></div>
 
 							<!-- Fade overlay -->
 							<div
 								v-if="!expanded && showReadMore"
-								class="absolute bottom-0 left-0 right-0 h-6 pointer-events-none bg-gradient-to-t " />
+								class="absolute bottom-0 left-0 right-0 h-6 pointer-events-none bg-gradient-to-t" />
 						</div>
 					</div>
 

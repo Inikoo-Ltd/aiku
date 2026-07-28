@@ -74,6 +74,7 @@ class IndexStockDeliveryItems extends OrgAction
             'supplierProduct.currency',
             'supplierProduct.supplier',
             'organisation.currency',
+            'stockDelivery.currency',
         ]);
 
         $weight = DB::table('model_has_trade_units as mhtu')
@@ -91,7 +92,14 @@ class IndexStockDeliveryItems extends OrgAction
             ->defaultSort('org_stocks.code')
             ->select([
                 'stock_delivery_items.id',
+                'stock_delivery_items.stock_delivery_id',
                 'stock_delivery_items.state',
+                'stock_delivery_items.cost_items',
+                'stock_delivery_items.cost_extra',
+                'stock_delivery_items.cost_shipping',
+                'stock_delivery_items.cost_duties',
+                'stock_delivery_items.cost_tax',
+                'stock_delivery_items.cost_total',
                 'stock_delivery_items.supplier_product_id',
                 'stock_delivery_items.unit_quantity',
                 'stock_delivery_items.unit_quantity_checked',
@@ -155,6 +163,12 @@ class IndexStockDeliveryItems extends OrgAction
                 StockDeliveryStateEnum::READY_TO_SHIP,
             ];
 
+            if ($stockDelivery->state === StockDeliveryStateEnum::PLACED) {
+                $this->costingColumns($table, $stockDelivery);
+
+                return;
+            }
+
             $table->column(key: 'state_icon', label: ['fal', 'fa-yin-yang'], canBeHidden: false, type: 'icon');
 
             if (in_array($stockDelivery->state, $goodsInStates, true)) {
@@ -181,5 +195,29 @@ class IndexStockDeliveryItems extends OrgAction
                 $table->defaultSort('code');
             }
         };
+    }
+
+    private function costingColumns(InertiaTable $table, StockDelivery $stockDelivery): void
+    {
+        $currency = $stockDelivery->currency?->code;
+
+        $costLabel = fn (string $label) => $currency ? $label.' ('.$currency.')' : $label;
+
+        $table
+            ->column(key: 'part', label: __('Part'), canBeHidden: false, sortable: true)
+            ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
+            ->column(key: 'units_in', label: __('Units In'), canBeHidden: false)
+            ->column(key: 'cost_items', label: $costLabel(__('Items')), canBeHidden: false)
+            ->column(key: 'cost_extra', label: $costLabel(__('Extra')), canBeHidden: false)
+            ->column(key: 'cost_shipping', label: $costLabel(__('Shipping')), canBeHidden: false)
+            ->column(key: 'cost_duties', label: $costLabel(__('Duties')), canBeHidden: false)
+            ->column(key: 'cost_tax', label: $costLabel(__('Tax')), canBeHidden: false)
+            ->column(key: 'cost_total', label: $costLabel(__('Total')), canBeHidden: false, align: 'right');
+
+        if (!$stockDelivery->is_costed) {
+            $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
+        }
+
+        $table->defaultSort('part');
     }
 }
