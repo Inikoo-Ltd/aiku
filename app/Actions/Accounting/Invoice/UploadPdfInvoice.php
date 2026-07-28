@@ -62,7 +62,7 @@ class UploadPdfInvoice
             'invoiceNumberLabel' => $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE ? __('Invoice number') : __('Refund Number'),
             'dateLabel'          => $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
             'typeLabel'          => $invoice->type == \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
-            'transactions'       => $invoice->invoiceTransactions()->with('historicAsset')->get()->sortBy(fn($transaction) => strtolower($transaction->historicAsset?->code ?? '')),
+            'transactions'       => $invoice->invoiceTransactions()->with('historicAsset')->get()->sortBy(fn ($transaction) => strtolower($transaction->historicAsset?->code ?? '')),
             'totalNet'           => $totalNet
         ])->save($filename);
 

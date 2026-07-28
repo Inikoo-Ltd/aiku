@@ -117,7 +117,7 @@ trait WithInvoicesExport
             }
 
             return $transaction;
-        })->sortBy(fn($transaction) => strtolower($transaction->historicAsset?->code ?? ''));
+        })->sortBy(fn ($transaction) => strtolower($transaction->historicAsset?->code ?? ''));
 
         $orderData     = $invoice->order?->data ?? [];
         $recipientName = null;
@@ -208,7 +208,7 @@ trait WithInvoicesExport
             'show_batch_code'         => Arr::get($options, 'show_batch_code', false),
             'dispatch_total_skos'     => $deliveryNote?->total_skos > 0 ? $deliveryNote->total_skos : null,
             'dispatch_total_units'    => $deliveryNote?->total_units > 0 ? $deliveryNote->total_units : null,
-            'dispatch_total_quantity' => $transactions->sum(fn($t) => $t->quantity ?? 0),
+            'dispatch_total_quantity' => $transactions->sum(fn ($t) => $t->quantity ?? 0),
         ], [], $config);
 
         return [$pdf, $filename];

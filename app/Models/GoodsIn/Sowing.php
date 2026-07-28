@@ -56,6 +56,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\GoodsIn\ReturnDeliveryNoteItem|null $returnItem
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read User|null $sower
+ * @property-read \App\Models\GoodsIn\StockDelivery|null $stockDelivery
+ * @property-read \App\Models\GoodsIn\StockDeliveryItem|null $stockDeliveryItem
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sowing newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sowing newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Sowing query()

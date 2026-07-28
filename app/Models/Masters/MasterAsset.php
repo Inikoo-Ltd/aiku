@@ -149,6 +149,8 @@ use App\Models\Traits\HasSearch;
  * @property bool $has_missing_child_description True when at least one linked product has a null or empty description
  * @property array<array-key, mixed> $master_prices
  * @property array<array-key, mixed> $master_rrps
+ * @property string|null $units_review
+ * @property numeric|null $effective_cost stock-weighted avg cost across organisations, group currency, per outer
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

@@ -59,10 +59,13 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property bool $is_migration_point
  * @property string|null $migration_source_id
  * @property OrgStockMovementReasonEnum|null $reason
+ * @property string|null $parent_type
+ * @property int|null $parent_id
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read Model|\Eloquent|null $parent
  * @property-read User|null $user
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|OrgStockMovement newModelQuery()
