@@ -38,7 +38,7 @@ class OrgFamilySalesTool extends AikuOrganisationTool
 
         $organisation = $this->authorisedOrganisation($request);
         if (!$organisation) {
-            return Response::error('No organisation matching that name is available to you. Organisations are identified by a short slug or code (for example aw, sk, es) — not by their full display name. Call my-access-tool to list the organisations you can query, and use a value from there. Do not guess.');
+            return $this->organisationNotFoundError($request);
         }
 
         $direction = (string) $request->string('sort', 'best') === 'worst' ? 'asc' : 'desc';

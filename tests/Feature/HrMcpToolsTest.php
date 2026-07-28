@@ -49,7 +49,7 @@ test('user without hr permission is denied', function () {
         'query'        => 'x',
     ]);
 
-    $response->assertHasErrors(['No organisation matching that name is available to you. Organisations are identified by a short slug or code (for example aw, sk, es) — not by their full display name. Call my-access-tool to list the organisations you can query, and use a value from there. Do not guess.']);
+    $response->assertHasErrors(['You do not have access to any organisation.']);
 });
 
 test('admin can search employee directory', function () {

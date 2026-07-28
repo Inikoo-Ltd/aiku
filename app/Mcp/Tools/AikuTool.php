@@ -11,6 +11,7 @@ namespace App\Mcp\Tools;
 use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\Catalogue\Shop;
 use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
 
 abstract class AikuTool extends Tool
@@ -34,7 +35,8 @@ abstract class AikuTool extends Tool
         $shop = Shop::where(function ($query) use ($request) {
             $identifier = strtolower((string) $request->string('shop'));
             $query->whereRaw('lower(slug) = ?', [$identifier])
-                ->orWhereRaw('lower(code) = ?', [$identifier]);
+                ->orWhereRaw('lower(code) = ?', [$identifier])
+                ->orWhereRaw('lower(name) = ?', [$identifier]);
         })->first();
 
         if (!$shop) {
@@ -44,5 +46,10 @@ abstract class AikuTool extends Tool
         $permissionName = ShopPermissionsEnum::getPermissionName($this->permission()->value, $shop);
 
         return $this->userCan($request, $permissionName) ? $shop : null;
+    }
+
+    protected function shopNotFoundError(Request $request): Response
+    {
+        return $this->notFoundError('shop', (string) $request->string('shop'), $this->accessibleShops($request), $request);
     }
 }

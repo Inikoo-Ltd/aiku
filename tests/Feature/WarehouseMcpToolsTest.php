@@ -44,7 +44,7 @@ test('user without stocks permission is denied', function () {
         'query'     => 'x',
     ]);
 
-    $response->assertHasErrors(['No warehouse matching that name is available to you. Warehouses are identified by a short slug or code — not by their full display name. Call my-access-tool to list the warehouses you can query, and use a value from there. Do not guess.']);
+    $response->assertHasErrors(['You do not have access to any warehouse.']);
 });
 
 test('admin user can search stock levels', function () {

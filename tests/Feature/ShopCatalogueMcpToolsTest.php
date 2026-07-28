@@ -49,7 +49,7 @@ test('user without products permission is denied', function () {
         'to'   => '2026-12-31',
     ]);
 
-    $response->assertHasErrors(['No shop matching that name is available to you. Shops are identified by a short slug or code (for example eu, aroma, uk) — not by their full display name. Call my-access-tool to list the shops you can query, and use a value from there. Do not guess.']);
+    $response->assertHasErrors(['You do not have access to any shop.']);
 });
 
 test('admin gets top products', function () {

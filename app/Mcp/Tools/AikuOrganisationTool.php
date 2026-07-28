@@ -11,6 +11,7 @@ namespace App\Mcp\Tools;
 use App\Enums\SysAdmin\Authorisation\OrganisationPermissionsEnum;
 use App\Models\SysAdmin\Organisation;
 use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
 
 abstract class AikuOrganisationTool extends Tool
@@ -34,7 +35,8 @@ abstract class AikuOrganisationTool extends Tool
         $organisation = Organisation::where(function ($query) use ($request) {
             $identifier = strtolower((string) $request->string('organisation'));
             $query->whereRaw('lower(slug) = ?', [$identifier])
-                ->orWhereRaw('lower(code) = ?', [$identifier]);
+                ->orWhereRaw('lower(code) = ?', [$identifier])
+                ->orWhereRaw('lower(name) = ?', [$identifier]);
         })->first();
 
         if (!$organisation) {
@@ -44,5 +46,10 @@ abstract class AikuOrganisationTool extends Tool
         $permissionName = OrganisationPermissionsEnum::getPermissionName($this->permission()->value, $organisation);
 
         return $this->userCan($request, $permissionName) ? $organisation : null;
+    }
+
+    protected function organisationNotFoundError(Request $request): Response
+    {
+        return $this->notFoundError('organisation', (string) $request->string('organisation'), $this->accessibleOrganisations($request), $request);
     }
 }

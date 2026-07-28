@@ -35,7 +35,7 @@ class ProductsWithoutImagesTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('No shop matching that name is available to you. Shops are identified by a short slug or code (for example eu, aroma, uk) — not by their full display name. Call my-access-tool to list the shops you can query, and use a value from there. Do not guess.');
+            return $this->shopNotFoundError($request);
         }
 
         $limit = $request->integer('limit', 20);

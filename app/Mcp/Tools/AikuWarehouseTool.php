@@ -11,6 +11,7 @@ namespace App\Mcp\Tools;
 use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\Inventory\Warehouse;
 use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
 
 abstract class AikuWarehouseTool extends Tool
@@ -31,10 +32,17 @@ abstract class AikuWarehouseTool extends Tool
 
     protected function authorisedWarehouse(Request $request): ?Warehouse
     {
-        $warehouse = Warehouse::where(function ($query) use ($request) {
-            $identifier = strtolower((string) $request->string('warehouse'));
+        $identifier = strtolower((string) $request->string('warehouse'));
+
+        $warehouse = Warehouse::where(function ($query) use ($identifier) {
             $query->whereRaw('lower(slug) = ?', [$identifier])
-                ->orWhereRaw('lower(code) = ?', [$identifier]);
+                ->orWhereRaw('lower(code) = ?', [$identifier])
+                ->orWhereRaw('lower(name) = ?', [$identifier])
+                ->orWhereHas('organisation', function ($query) use ($identifier) {
+                    $query->whereRaw('lower(slug) = ?', [$identifier])
+                        ->orWhereRaw('lower(code) = ?', [$identifier])
+                        ->orWhereRaw('lower(name) = ?', [$identifier]);
+                });
         })->first();
 
         if (!$warehouse) {
@@ -44,5 +52,10 @@ abstract class AikuWarehouseTool extends Tool
         $permissionName = WarehousePermissionsEnum::getPermissionName($this->permission()->value, $warehouse);
 
         return $this->userCan($request, $permissionName) ? $warehouse : null;
+    }
+
+    protected function warehouseNotFoundError(Request $request): Response
+    {
+        return $this->notFoundError('warehouse', (string) $request->string('warehouse'), $this->accessibleWarehouses($request), $request);
     }
 }
