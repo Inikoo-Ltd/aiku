@@ -2184,7 +2184,7 @@ test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from mast
     // Reflects a shop where GBP (not EUR) is the configured major currency.
     $masterShop->update(['price_exchanges' => [
         'GBP' => ['is_major' => true],
-        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18, 'increment' => 0.05],
     ]]);
 
     $this->shop->updateQuietly(['master_shop_id' => $masterShop->id, 'currency_id' => $gbp->id]);
@@ -2200,9 +2200,11 @@ test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from mast
     expect($rates['GBP']['is_major'])->toBeTrue()
         ->and($rates['GBP']['ratio_eur'])->toBe(1.0)
         ->and($rates['GBP']['major'])->toBeNull()
+        ->and($rates['GBP']['increment'])->toBeNull()
         ->and($rates['EUR']['is_major'])->toBeFalse()
         ->and($rates['EUR']['ratio_eur'])->toBe(1.18)
-        ->and($rates['EUR']['major'])->toBe('GBP');
+        ->and($rates['EUR']['major'])->toBe('GBP')
+        ->and($rates['EUR']['increment'])->toBe(0.05);
 });
 
 test('updating master prices merges per currency, skips nulls and syncs legacy columns from the base major', function () {
