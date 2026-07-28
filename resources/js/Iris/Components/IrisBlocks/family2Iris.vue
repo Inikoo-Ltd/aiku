@@ -60,26 +60,30 @@ const bestOffer = computed(() => {
 	return getBestOffer(props.fieldValue?.family?.offers_data)
 })
 
-const titleWidthClass = computed(() =>
-	!(layout?.user?.gr_data?.amnesty || layout?.user?.gr_data?.customer_is_gr) &&
-	bestOffer.value?.type === "Category Quantity Ordered Order Interval"
-		? "w-[200px]"
-		: "w-[250px]"
-)
-
 const descriptionBoxRef = ref<HTMLElement | null>(null)
 const descriptionBodyRef = ref<HTMLElement | null>(null)
 const imagesRef = ref<HTMLElement | null>(null)
 const offersRef = ref<HTMLElement | null>(null)
+const offerBadgesRef = ref<HTMLElement | null>(null)
 const titleRef = ref<HTMLElement | null>(null)
 const titleTextRef = ref<HTMLElement | null>(null)
 const truncatedTitleRef = ref<HTMLElement | null>(null)
 const actionsRef = ref<HTMLElement | null>(null)
 const isTitleTruncated = ref(false)
+const isTitleSingleLine = ref(true)
 const expanded = ref(false)
 const showReadMore = ref(false)
 const collapsedHeight = ref(0)
+const titleWidth = ref(0)
 let resizeObserver: ResizeObserver | null = null
+
+const TITLE_OFFERS_GAP = 16
+const MIN_TITLE_WIDTH = 150
+const TITLE_ROW_MIN_SCREEN_WIDTH = 1024
+
+const titleWidthStyle = computed(() =>
+	titleWidth.value ? { width: `${titleWidth.value}px` } : {}
+)
 
 const COLLAPSED_HEIGHTS = [
 	{ minWidth: 1536, height: 250 },
@@ -113,20 +117,59 @@ const getCollapsedHeight = (): number => {
 }
 
 const TRUNCATION_TOLERANCE = 1
+const SINGLE_LINE_TOLERANCE = 1.5
+const NORMAL_LINE_HEIGHT_RATIO = 1.2
+
+const calculateTitleWidth = () => {
+	const offersRow = offersRef.value
+
+	if (!offersRow || window.innerWidth < TITLE_ROW_MIN_SCREEN_WIDTH) {
+		titleWidth.value = 0
+
+		return
+	}
+
+	if (titleRef.value) {
+		titleWidth.value = Math.round(titleRef.value.clientWidth)
+
+		return
+	}
+
+	const badgesWidth = offerBadgesRef.value?.offsetWidth ?? 0
+	const availableWidth =
+		offersRow.clientWidth - badgesWidth - (badgesWidth ? TITLE_OFFERS_GAP : 0)
+
+	titleWidth.value = Math.round(Math.max(MIN_TITLE_WIDTH, availableWidth))
+}
+
+const getLineHeight = (element: HTMLElement): number => {
+	const { lineHeight, fontSize } = window.getComputedStyle(element)
+	const parsedLineHeight = Number.parseFloat(lineHeight)
+
+	return Number.isNaN(parsedLineHeight)
+		? Number.parseFloat(fontSize) * NORMAL_LINE_HEIGHT_RATIO
+		: parsedLineHeight
+}
 
 const checkTitleTruncated = () => {
 	const title = titleTextRef.value
 
 	if (!title) {
 		isTitleTruncated.value = false
+		isTitleSingleLine.value = true
 
 		return
 	}
 
 	isTitleTruncated.value = title.scrollHeight - title.clientHeight > TRUNCATION_TOLERANCE
+	isTitleSingleLine.value = title.scrollHeight <= getLineHeight(title) * SINGLE_LINE_TOLERANCE
 }
 
 const calculateDescriptionHeight = async () => {
+	await nextTick()
+
+	calculateTitleWidth()
+
 	await nextTick()
 
 	checkTitleTruncated()
@@ -162,6 +205,14 @@ onMounted(() => {
 		resizeObserver.observe(titleTextRef.value)
 	}
 
+	if (offersRef.value) {
+		resizeObserver.observe(offersRef.value)
+	}
+
+	if (offerBadgesRef.value) {
+		resizeObserver.observe(offerBadgesRef.value)
+	}
+
 	window.addEventListener("resize", onWindowResize)
 
 	document.fonts?.ready.then(() => {
@@ -183,7 +234,6 @@ watch(
 		props.fieldValue?.family?.name,
 		props.fieldValue?.family?.description,
 		props.fieldValue?.family?.description_image,
-		titleWidthClass.value,
 		layout?.user?.gr_data?.customer_is_gr,
 		layout?.user?.gr_data?.amnesty,
 		bestOffer.value?.type,
@@ -255,7 +305,7 @@ const contentClass = computed(() =>
 				<!-- CONTENT -->
 				<div class="flex min-w-0 flex-1 flex-col">
 					<div aria-hidden="true" class="invisible h-0 overflow-hidden">
-						<div :class="titleWidthClass" >
+						<div class="w-full" :style="titleWidthStyle">
 							<h1
 								ref="titleTextRef"
 								:style="{ fontSize: '1.5rem' }"
@@ -271,13 +321,14 @@ const contentClass = computed(() =>
 						:class="
 							isTitleTruncated
 								? 'lg:items-end lg:justify-end'
-								: 'lg:items-start lg:justify-between'
+								: isTitleSingleLine
+									? 'lg:items-center lg:justify-between'
+									: 'lg:items-start lg:justify-between'
 						">
 						<div
 							v-if="!isTitleTruncated"
 							ref="titleRef"
-							class="pb-1 2xl:pb-1"
-							:class="titleWidthClass">
+							class="w-full pb-1 2xl:pb-1 lg:min-w-0 lg:flex-1">
 							<h1
 								:style="{ fontSize: '1.5rem' }"
 								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
@@ -289,6 +340,7 @@ const contentClass = computed(() =>
 								fieldValue?.family?.offers_data?.number_offers &&
 								layout.iris.is_logged_in
 							"
+							ref="offerBadgesRef"
 							class="flex gap-x-1 gap-y-1 offer flex-wrap justify-center lg:justify-end">
 							<DiscountByType
 								:offers_data="fieldValue?.family?.offers_data"
