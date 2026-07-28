@@ -9,6 +9,8 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Common/Components/Image.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { getStyles } from "@/Composables/styles"
 
 
@@ -172,14 +174,19 @@ console.log(props)
           <Swiper :modules="[Navigation]" :loop="true" :slides-per-view="perRow" :space-between="spaceBetween"
         :allow-touch-move="true" :navigation="true" :initial-slide="0" @swiper="onSwiper" class="w-full">
         <SwiperSlide v-for="(data, index) in allItems" :key="'item-' + index" class="h-auto">
-          <a :href="data?.url || '#'" class="group flex h-full flex-col ">
+          <LinkIris :href="data?.url || '#'" class="group flex h-full w-full flex-col"
+            v-slot="{ isLoading } = { isLoading: false }">
             <!-- Image -->
-            <div class="aspect-square overflow-hidden bg-gray-100">
+            <div class="relative aspect-square overflow-hidden bg-gray-100">
               <Image v-if="data?.web_images?.main?.original" :src="data?.web_images?.main?.original" :alt="data.name"
                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 
               <div v-else class="flex h-full items-center justify-center">
                 <FontAwesomeIcon :icon="faImage" class="text-3xl text-gray-300" />
+              </div>
+
+              <div v-if="isLoading" class="absolute inset-0 grid place-items-center bg-black/50 text-5xl text-white">
+                <LoadingIcon />
               </div>
             </div>
 
@@ -189,7 +196,7 @@ console.log(props)
                 {{ data?.name }}
               </h4>
             </div>
-          </a>
+          </LinkIris>
         </SwiperSlide>
       </Swiper>
 
