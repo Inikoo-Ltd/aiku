@@ -90,15 +90,21 @@ defineExpose({
         <!-- V-FOR 1: Existing locations -->
         <div class="flex flex-col gap-y-3">
             <template v-if="props.locations.length > 0">
+                <div class="grid grid-cols-7 gap-x-3 items-center gap-2 border-b pb-2">
+                    <div class="col-span-2 flex items-center gap-x-2 font-semibold">
+                        Location code
+                    </div>
+                    <div class="col-span-5 text-end font-semibold">
+                        Current stock
+                    </div>
+                </div>
                 <div v-for="(loc, idx) in props.locations" :key="'existing-' + loc.id"
                     class="grid grid-cols-7 gap-x-3 items-center gap-2 border-b pb-2">
                     <div class="col-span-2 flex items-center gap-x-2">
                         {{ loc.code }}
                     </div>
-                    <div class="col-span-5 text-end">
-                        <span class="text-sm italic text-gray-400">
-                            {{ trans("Current Stock") }} {{ Number(loc.quantity) }}
-                        </span>
+                    <div class="col-span-5 text-end tabular-nums">
+                        {{ Number(loc.quantity) }}
                     </div>
                 </div>
             </template>
@@ -115,6 +121,8 @@ defineExpose({
                 </div>
             </div>
         </div>
+
+        <hr class="border-t border-gray-300 border-dashed">
 
         <!-- Add new location section -->
         <div class="border-gray-200 mt-3">
