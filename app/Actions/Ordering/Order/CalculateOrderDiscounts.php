@@ -133,7 +133,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ]);
 
             $offerAllowancePivots = [];
-            
+
             foreach ($this->transactions as $transaction) {
                 if (property_exists($transaction, 'with_offer')) {
                     $offerAllowancePivots[] = $this->updateTransactionDiscount(
@@ -997,19 +997,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 continue;
             }
 
-            $hasOffer = property_exists($transaction, 'with_offer') && $transaction->with_offer;
-
             // Force discretionary offer nonetheless.
             $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
-
-            // if ($hasOffer) {
-            //     $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
-            //     if ((float)$current <= $percentageOff) {
-            //         $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
-            //     }
-            // } else {
-            //     $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
-            // }
         }
     }
 
