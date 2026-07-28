@@ -37,9 +37,11 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateProductCategory extends OrgAction
 {
@@ -345,7 +347,7 @@ class UpdateProductCategory extends OrgAction
     /**
      * @throws \Throwable
      */
-    private function updateFamilyGrOffer(ProductCategory $productCategory, ?array $volGrData): void
+    public function updateFamilyGrOffer(ProductCategory $productCategory, ?array $volGrData): void
     {
         if (!$volGrData || empty($volGrData['item_quantity']) || empty($volGrData['percentage_off'])) {
             $productCategory->updateQuietly(['has_gr_vol_discount' => false]);
@@ -354,7 +356,7 @@ class UpdateProductCategory extends OrgAction
         }
 
         $itemQuantity  = (int)$volGrData['item_quantity'];
-        $percentageOff = (float)$volGrData['percentage_off'];
+        $percentageOff = (float)$volGrData['percentage_off'] / 100;
 
         $offer = Offer::where('trigger_id', $productCategory->id)
             ->where('trigger_type', class_basename(ProductCategory::class))
@@ -362,10 +364,12 @@ class UpdateProductCategory extends OrgAction
             ->with('offerAllowances')
             ->first();
 
+        $oldOfferData = clone($offer);
+
         if (!$offer) {
             $offer = StoreVolumeGRDiscount::make()->action($productCategory, [
                 'trigger_data_item_quantity' => $itemQuantity,
-                'percentage_off'             => $percentageOff / 100,
+                'percentage_off'             => $percentageOff,
                 'interval'                   => 30,
             ]);
         } else {
@@ -380,7 +384,7 @@ class UpdateProductCategory extends OrgAction
 
             foreach ($offer->offerAllowances as $offerAllowance) {
                 $allowanceData = $offerAllowance->data;
-                data_set($allowanceData, 'percentage_off', $percentageOff / 100);
+                data_set($allowanceData, 'percentage_off', $percentageOff);
 
                 $offerAllowance->update([
                     'state'  => $offer->state->value,
@@ -395,6 +399,15 @@ class UpdateProductCategory extends OrgAction
 
         $productCategory->updateQuietly(['has_gr_vol_discount' => true]);
 
+        $productCategory->auditEvent = 'updated_gold_reward';
+        $productCategory->isCustomEvent = true;
+
+        $productCategory->auditCustomOld = $this->getAuditedOffers($oldOfferData);
+
+        $productCategory->auditCustomNew = $this->getAuditedOffers($offer);
+
+        Event::dispatch(new AuditCustom($productCategory));
+
         if ($offer) {
             $offer->refresh();
             UpdateProductCategoryOffersData::run($offer);
@@ -403,6 +416,19 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
+    }
+
+    private function getAuditedOffers(?Offer $offer = null): array
+    {
+        preg_match('/percentage_off:([^:]+)/', $offer?->allowance_signature, $matches);
+
+        return [
+            'gold_reward_state'             => ucfirst($offer?->state->value),
+            'gold_reward_code'              => $offer?->code,
+            'gold_reward_type'              => $offer?->type,
+            'gold_reward_min_quantity'      => data_get($offer?->trigger_data, 'item_quantity', null),
+            'gold_reward_percentage_off'    => isset($matches[1]) ? (float) $matches[1] : null,
+        ];
     }
 
     private function finishFamilyGrOffer(ProductCategory $productCategory): void

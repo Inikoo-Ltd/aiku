@@ -221,7 +221,7 @@ class EditMasterFamily extends OrgAction
                                     'type'          => 'vol_discount',
                                     'initial_value' => [
                                         'item_quantity'  => $masterProductCategory->gr_vol_discount_quantity,
-                                        'percentage_off' => $masterProductCategory->gr_vol_discount_percentage,
+                                        'percentage_off' => trimDecimalZeros($masterProductCategory->gr_vol_discount_percentage),
                                     ],
                                 ],
                             ],

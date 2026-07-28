@@ -15,7 +15,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
+use OwenIt\Auditing\Events\AuditCustom;
 
 /**
  * Specialised save path for master price/rrp edits: cascades to child products with the
@@ -38,6 +40,8 @@ class UpdateMasterAssetPrices extends OrgAction
 
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
+        $oldMasterAsset = clone($masterAsset);
+
         $masterAsset = DB::transaction(function () use ($masterAsset, $modelData) {
             /** @var MasterAsset $lockedMasterAsset */
             $lockedMasterAsset = MasterAsset::lockForUpdate()->findOrFail($masterAsset->id);
@@ -87,8 +91,39 @@ class UpdateMasterAssetPrices extends OrgAction
                 CascadeMasterAssetPricesToChildren::dispatch($masterAsset, $type);
             }
         }
+        
+        $masterAsset->auditEvent = 'updated_master_prices';
+        $masterAsset->isCustomEvent = true;
+
+        if ($changedPrices) {
+            $masterAsset->auditCustomOld = $this->getMasterPricesAudit($oldMasterAsset->master_prices);
+            $masterAsset->auditCustomNew = $this->getMasterPricesAudit($masterAsset->master_prices);
+        }
+
+        if ($changedRRPs) {
+            $masterAsset->auditCustomOld = $this->getMasterPricesAudit($oldMasterAsset->master_rrps, 'RRP');
+            $masterAsset->auditCustomNew = $this->getMasterPricesAudit($masterAsset->master_rrps, 'RRP');
+        }
+        
+        Event::dispatch(new AuditCustom($masterAsset));
 
         return $masterAsset;
+    }
+
+    private function getMasterPricesAudit(array $masterPrices, string $type = 'Price'): array
+    {
+        $result = [];
+
+        foreach ($masterPrices as $currency => $price) {
+            $key = $type . ' ' . $currency;
+            $result[$key] = $price['value'];
+
+            if (!($currency === 'EUR' || $currency === 'GBP') && $price['independent']) {
+                $result[$key] .= ' (Is Rebel)';
+            }
+        }
+
+        return $result;
     }
 
     public function rules(): array
