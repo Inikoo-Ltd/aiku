@@ -8,7 +8,6 @@ import { onMounted, onBeforeUnmount, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import Layout from '@/Layouts/GrpAuth.vue'
-import { useLayoutStore } from '@/Stores/layout'
 import { Passkeys, UserCancelledError } from '@laravel/passkeys'
 defineOptions({ layout: Layout })
 
@@ -27,12 +26,6 @@ const submit = () => {
         onError: () => (
             isLoading.value = false
         ),
-        onFinish: () => {
-            console.log('Org length', useLayoutStore().organisations.data.length)
-            // useLayoutStore().organisations.data.length === 1
-            //     ? router.get(route('grp.org.dashboard.show', useLayoutStore().organisations.data[0].slug))
-            //     : false
-        },
         onSuccess: () => {
             form.reset('password')
         }

@@ -87,7 +87,6 @@ const onGenerateApiToken = async () => {
             }
         );
 
-        console.log("Generate API Token response:", data.data);
         newToken.value = data.data.token;
 
         router.reload(
@@ -97,7 +96,6 @@ const onGenerateApiToken = async () => {
         );
 
     } catch (error) {
-        console.log("error", error);
         notify({
             title: trans("Something went wrong"),
             text: trans("Failed to create API Token"),
