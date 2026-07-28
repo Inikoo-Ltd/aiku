@@ -16,29 +16,34 @@ enum StockDeliveryTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE    = 'showcase';
-    case ITEMS       = 'items';
-    case ATTACHMENTS = 'attachments';
-    case HISTORY     = 'history';
+    case ITEMS                = 'items';
+    case UNDER_OVER_DELIVERED = 'under_over_delivered';
+    case SHOWCASE             = 'showcase';
+    case ATTACHMENTS          = 'attachments';
+    case HISTORY              = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
-            StockDeliveryTabsEnum::SHOWCASE    => [
-                'title' => __('Settings'),
-                'icon'  => 'fal fa-sliders-h',
-            ],
-            StockDeliveryTabsEnum::ITEMS       => [
+            StockDeliveryTabsEnum::ITEMS                => [
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
-            StockDeliveryTabsEnum::ATTACHMENTS => [
+            StockDeliveryTabsEnum::UNDER_OVER_DELIVERED => [
+                'title' => __('Under/Over delivered items'),
+                'icon'  => 'fal fa-box-open',
+            ],
+            StockDeliveryTabsEnum::SHOWCASE             => [
+                'title' => __('Settings'),
+                'icon'  => 'fal fa-sliders-h',
+            ],
+            StockDeliveryTabsEnum::ATTACHMENTS          => [
                 'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            StockDeliveryTabsEnum::HISTORY     => [
+            StockDeliveryTabsEnum::HISTORY              => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',

@@ -149,6 +149,14 @@ class IndexStockDeliveryItems extends OrgAction
                 StockDeliveryStateEnum::BOOKED_IN,
             ];
 
+            $itemActionStates = [
+                StockDeliveryStateEnum::IN_PROCESS,
+                StockDeliveryStateEnum::CONFIRMED,
+                StockDeliveryStateEnum::READY_TO_SHIP,
+            ];
+
+            $table->column(key: 'state_icon', label: ['fal', 'fa-yin-yang'], canBeHidden: false, type: 'icon');
+
             if (in_array($stockDelivery->state, $goodsInStates, true)) {
                 $table
                     ->column(key: 'part', label: __('Part'), canBeHidden: false, sortable: true)
@@ -164,9 +172,13 @@ class IndexStockDeliveryItems extends OrgAction
                     ->column(key: 'quantity', label: __('Qty'), canBeHidden: false)
                     ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
-                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false)
-                    ->column(key: 'state', label: __('State'), canBeHidden: false)
-                    ->defaultSort('code');
+                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
+
+                if (in_array($stockDelivery->state, $itemActionStates, true)) {
+                    $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
+                }
+
+                $table->defaultSort('code');
             }
         };
     }

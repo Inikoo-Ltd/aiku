@@ -135,9 +135,9 @@ const props = defineProps < {
             org_items: number | string
         }
 	}
-	showcase?: {}
 	items?: {}
 	products?: {}
+	showcase?: {}
 	history?: {}
 }>()
 
@@ -410,9 +410,9 @@ const confirmNewStockDelivery = (action: any) => {
 
 const component = computed(() => {
 	const components: Component = {
-		showcase: ProcurementOrderData,
 		items: TablePurchaseOrderTransactions,
 		products: TablePurchaseOrderTransactions,
+		showcase: ProcurementOrderData,
 		history: TableHistories,
 	}
 
