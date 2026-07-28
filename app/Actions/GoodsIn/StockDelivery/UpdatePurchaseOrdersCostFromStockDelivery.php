@@ -46,9 +46,9 @@ class UpdatePurchaseOrdersCostFromStockDelivery
             ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
             ->get();
 
-        $costedStockDeliveries = $stockDeliveries->where('is_costed', true);
+        $costingStockDeliveries = $stockDeliveries->where('state', StockDeliveryStateEnum::PLACED);
 
-        if ($costedStockDeliveries->isEmpty()) {
+        if ($costingStockDeliveries->isEmpty()) {
             $purchaseOrder->update(['is_costed' => false]);
             CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
 
@@ -56,8 +56,8 @@ class UpdatePurchaseOrdersCostFromStockDelivery
         }
 
         $purchaseOrder->update(array_merge(
-            ['is_costed' => $costedStockDeliveries->count() === $stockDeliveries->count()],
-            $this->getCosts($costedStockDeliveries)
+            ['is_costed' => $stockDeliveries->where('is_costed', true)->count() === $stockDeliveries->count()],
+            $this->getCosts($costingStockDeliveries)
         ));
     }
 

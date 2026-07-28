@@ -9,6 +9,7 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
+use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -20,7 +21,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StartStockDeliveryCosting extends OrgAction
 {
+    use HasStockDeliveryHydrators;
     use WithActionUpdate;
+
+    public int $hydratorsDelay = 0;
 
     private StockDelivery $stockDelivery;
 
@@ -38,10 +42,6 @@ class StartStockDeliveryCosting extends OrgAction
         if ($this->stockDelivery->state !== StockDeliveryStateEnum::BOOKED_IN) {
             $validator->errors()->add('state', __('You can only start the costing of a booked in stock delivery'));
         }
-
-        if ($this->stockDelivery->is_costed) {
-            $validator->errors()->add('state', __('The costing of this stock delivery has already started'));
-        }
     }
 
     public function handle(StockDelivery $stockDelivery): StockDelivery
@@ -53,9 +53,16 @@ class StartStockDeliveryCosting extends OrgAction
                 'cost_total' => DB::raw('net_amount + coalesce(cost_extra, 0) + coalesce(cost_shipping, 0) + coalesce(cost_duties, 0) + coalesce(cost_tax, 0)'),
             ]);
 
-        $stockDelivery = $this->update($stockDelivery, ['is_costed' => true]);
+        $stockDelivery = $this->update($stockDelivery, [
+            'state'     => StockDeliveryStateEnum::PLACED,
+            'placed_at' => now(),
+        ]);
+
+        UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
 
         StockDeliveriesHydrateCosts::run($stockDelivery);
+
+        $this->runStockDeliveryHydrators($stockDelivery);
 
         return $stockDelivery->refresh();
     }

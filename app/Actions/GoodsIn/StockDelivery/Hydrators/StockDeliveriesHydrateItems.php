@@ -49,7 +49,7 @@ class StockDeliveriesHydrateItems implements ShouldBeUnique
             'net_weight'                                   => $weights['net_weight'],
         ];
 
-        if (!$stockDelivery->is_costed) {
+        if ($stockDelivery->state !== StockDeliveryStateEnum::PLACED) {
             $stats['cost_items'] = $itemsNet;
             $stats['cost_total'] = $itemsNet + $extras;
         }

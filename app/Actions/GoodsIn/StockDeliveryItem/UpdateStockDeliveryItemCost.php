@@ -51,7 +51,7 @@ class UpdateStockDeliveryItemCost extends OrgAction
     {
         $stockDelivery = $this->stockDeliveryItem->stockDelivery;
 
-        if ($stockDelivery->state !== StockDeliveryStateEnum::BOOKED_IN || !$stockDelivery->is_costed) {
+        if ($stockDelivery->state !== StockDeliveryStateEnum::PLACED || $stockDelivery->is_costed) {
             $validator->errors()->add('state', __('You can only edit the costs while the costing is in progress'));
         }
     }

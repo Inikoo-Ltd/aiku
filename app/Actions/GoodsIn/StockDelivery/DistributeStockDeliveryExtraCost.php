@@ -46,7 +46,7 @@ class DistributeStockDeliveryExtraCost extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->stockDelivery->state !== StockDeliveryStateEnum::BOOKED_IN || !$this->stockDelivery->is_costed) {
+        if ($this->stockDelivery->state !== StockDeliveryStateEnum::PLACED || $this->stockDelivery->is_costed) {
             $validator->errors()->add('state', __('You can only distribute extra costs while the costing is in progress'));
         }
     }

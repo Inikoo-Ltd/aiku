@@ -389,7 +389,7 @@ const finishCostingLoading = ref(false)
 const confirmStartStockDeliveryCosting = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
-		message: trans("Are you sure you want to start checking the costs of this stock delivery?"),
+		message: trans("Are you sure you want to start checking the costs? This stock delivery will be placed."),
 		header: trans("Start checking costs"),
 		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
 		acceptProps: { label: trans("Start checking costs"), severity: "primary" },
