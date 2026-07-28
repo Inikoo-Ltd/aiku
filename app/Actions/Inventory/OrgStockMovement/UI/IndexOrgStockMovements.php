@@ -19,6 +19,7 @@ use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\GoodsIn\ReturnDeliveryNote;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
@@ -131,6 +132,10 @@ class IndexOrgStockMovements extends OrgAction
             ->leftJoin('delivery_notes as dn', function ($join) {
                 $join->on('dn.id', 'org_stock_movements.parent_id')
                     ->where('org_stock_movements.parent_type', class_basename(DeliveryNote::class));
+            })
+            ->leftJoin('stock_deliveries as sd', function ($join) {
+                $join->on('sd.id', 'org_stock_movements.parent_id')
+                    ->where('org_stock_movements.parent_type', class_basename(StockDelivery::class));
             });
 
 
@@ -164,7 +169,7 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.reason',
                 'org_stock_movements.note',
                 'org_stock_movements.parent_type',
-                DB::raw('COALESCE(dn.reference, rdn.reference) as parent_reference'),
+                DB::raw('COALESCE(dn.reference, rdn.reference, sd.reference) as parent_reference'),
             ])
             ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')

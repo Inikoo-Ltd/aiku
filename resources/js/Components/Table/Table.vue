@@ -544,11 +544,11 @@ function generateNewQueryString() {
 
     const externalFilters = queryStringData[prefix + 'filter'] || {}
     const managedKeys = [
-        ...map(queryBuilderProps.value.searchInputs, 'key'), 
+        ...map(queryBuilderProps.value.searchInputs, 'key'),
         ...map(queryBuilderProps.value.filters, 'key'),
     ]
 
-    forEach(managedKeys, (k : any) => { delete externalFilters[k] }) 
+    forEach(managedKeys, (k : any) => { delete externalFilters[k] })
     // To exclude 'filter', 'columns', 'cursor', and 'sort' that received from the URL
     forEach(['columns', 'cursor', 'sort'], (key) => {
         delete queryStringData[prefix + key];
@@ -620,11 +620,11 @@ const visit = (url?: string) => {
                 if ('queryBuilderProps' in usePage().props) {
                     const newCursor = queryBuilderProps.value.cursor;
                     const newPage   = queryBuilderProps.value.page;
-            
+
                     if (queryBuilderData.value.cursor !== newCursor || queryBuilderData.value.page !== newPage) {
                         skipNextDebouncedVisit = true;
                     }
-                
+
                     queryBuilderData.value.cursor = newCursor;
                     queryBuilderData.value.page   = newPage;
                 }
@@ -968,7 +968,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                 }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
                         @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                        :tableName="props.name" 
+                        :tableName="props.name"
                     />
                 </div>
 
@@ -976,7 +976,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                     <TableElements :elements="queryBuilderProps.additionalElementGroups"
                         @checkboxChanged="(data) => queryBuilderData.additionalElementFilter = data"
                         :tableName="props.name"
-                        :isAdditional="true" 
+                        :isAdditional="true"
                     />
                 </div>
 
@@ -1134,8 +1134,8 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                         <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
                             :exportLinks="queryBuilderProps.exportLinks"
                             :per-page-options="queryBuilderProps.perPageOptions"
-                            :on-per-page-change="onPerPageChange" 
-                            :custom-wrapper-class="'sticky top-[39px] z-[10] border-b !border-gray-300'"
+                            :on-per-page-change="onPerPageChange"
+                            :custom-wrapper-class="'sticky top-[33px] z-[10] border-b !border-gray-300'"
                         >
                             <template #topRow="{ data }">
                                 <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center mt-0.5 px-2" :class="data.paginated ? 'mb-2' : ''">
@@ -1220,7 +1220,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                             :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
                         <table class="divide-y divide-gray-200 bg-white w-full">
                             <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
-                                <tr 
+                                <tr
                                     class="border-t border-gray-200 divide-x divide-gray-200"
                                     :class="{
                                         'border-t': !useTopPagination

@@ -607,6 +607,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                 v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
                                 class="cursor-pointer focus:outline-none"
                                 :icon="allowActions ? faLockOpen : faLock"
+                                :class="allowActions ? 'text-green-500' : 'text-red-500'"
                                 fixed-width aria-hidden="true"
                             />
                         </div>

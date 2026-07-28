@@ -15,6 +15,8 @@ enum OrgStockMovementTypeEnum: string
     use EnumHelperTrait;
 
     case PURCHASE                   = 'purchase';
+    case CANCEL_PURCHASE            = 'cancel-purchase';
+
     case RETURN_DISPATCH            = 'return-dispatch';
     case RETURN_PICKED              = 'return-picked';
     case CANCEL_RETURN_PICKED       = 'cancel-return-picked';
@@ -37,6 +39,8 @@ enum OrgStockMovementTypeEnum: string
     {
         return match ($this) {
             self::PURCHASE              => __('Purchase'),
+            self::CANCEL_PURCHASE       => __('Cancel Purchase'),
+
             self::RETURN_DISPATCH       => __('Return Dispatch'),
 
             self::RETURN_PICKED         => __('Return Picked'),

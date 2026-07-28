@@ -5,8 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { computed } from "vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { computed, ref, watch } from "vue"
+import { Head, Link, router } from "@inertiajs/vue3"
+import DatePicker from "primevue/datepicker"
 import {
 	Chart as ChartJS,
 	ArcElement,
@@ -23,9 +24,9 @@ import { useFormatTime, useSecondsToMS } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight } from "@fal"
+import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight } from "@fal"
 
-library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight)
+library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight)
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 interface AttendanceRow {
@@ -85,16 +86,76 @@ interface LeaveTypeSlice {
 	percentage: number
 }
 
+interface AttendanceDate {
+	date: string
+	label: string
+	is_today: boolean
+	max_date: string
+	route: { name: string; parameters: Record<string, unknown> }
+}
+
 const props = defineProps<{
 	title: string
 	pageHead: object
 	stats: StatCard[]
 	attendance: AttendanceRow[]
+	attendanceDate: AttendanceDate
 	birthdays: BirthdayRow[]
 	leaveOverview: LeaveOverviewDay[]
 	employeeLeaves: EmployeeLeave[]
 	leaveTypes: { total: number; types: LeaveTypeSlice[] }
 }>()
+
+const toDateString = (date: Date) =>
+	`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+
+const parseDateString = (value: string) => {
+	const [year, month, day] = value.split("-").map(Number)
+	return new Date(year, month - 1, day)
+}
+
+const selectedDate = ref<Date>(parseDateString(props.attendanceDate.date))
+const maxDate = computed(() => parseDateString(props.attendanceDate.max_date))
+
+watch(
+	() => props.attendanceDate.date,
+	(value) => {
+		selectedDate.value = parseDateString(value)
+	}
+)
+
+const goToDate = (date: Date) => {
+	const dateString = toDateString(date)
+
+	if (dateString === props.attendanceDate.date) {
+		return
+	}
+
+	router.get(
+		route(props.attendanceDate.route.name, props.attendanceDate.route.parameters),
+		{ date: dateString },
+		{ preserveScroll: true, preserveState: true }
+	)
+}
+
+const shiftDay = (days: number) => {
+	const next = parseDateString(props.attendanceDate.date)
+	next.setDate(next.getDate() + days)
+
+	if (next > maxDate.value) {
+		return
+	}
+
+	goToDate(next)
+}
+
+const onDatePicked = (value: Date | null) => {
+	if (!value) {
+		return
+	}
+
+	goToDate(value)
+}
 
 const leaveOverviewData = computed(() => ({
 	labels: props.leaveOverview.map((d) => d.label),
@@ -161,8 +222,6 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 	amber: { icon: "text-amber-500", bg: "bg-amber-50" },
 	red: { icon: "text-red-500", bg: "bg-red-50" },
 }
-
-const todayLabel = useFormatTime(new Date(), { formatTime: "aiku" })
 </script>
 
 <template>
@@ -199,14 +258,50 @@ const todayLabel = useFormatTime(new Date(), { formatTime: "aiku" })
 	<!-- Today's attendance (full width) -->
 	<div class="mt-6 px-4 pb-6">
 		<div class="bg-white shadow-sm rounded-lg p-4">
-			<div class="flex items-center justify-between mb-4">
+			<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
 				<div>
-					<h2 class="text-lg font-bold text-gray-800">{{ trans("Today's attendance") }}</h2>
-					<p class="text-xs text-gray-500">{{ todayLabel }} · {{ trans("earliest arrivals first") }}</p>
+					<h2 class="text-lg font-bold text-gray-800">
+						{{ attendanceDate.is_today ? trans("Today's attendance") : trans("Attendance") }}
+					</h2>
+					<p class="text-xs text-gray-500">
+						{{ attendanceDate.label }} · {{ trans("earliest arrivals first") }}
+					</p>
 				</div>
-				<span class="inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-sm font-medium text-green-800">
-					{{ attendance.length }} {{ trans("present") }}
-				</span>
+				<div class="flex items-center gap-2">
+					<button
+						type="button"
+						class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50"
+						:title="trans('Previous day')"
+						@click="shiftDay(-1)">
+						<FontAwesomeIcon :icon="faChevronLeft" fixed-width />
+					</button>
+					<DatePicker
+						v-model="selectedDate"
+						dateFormat="dd M yy"
+						showIcon
+						iconDisplay="input"
+						:maxDate="maxDate"
+						class="w-44"
+						@update:modelValue="onDatePicked" />
+					<button
+						type="button"
+						class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+						:title="trans('Next day')"
+						:disabled="attendanceDate.is_today"
+						@click="shiftDay(1)">
+						<FontAwesomeIcon :icon="faChevronRight" fixed-width />
+					</button>
+					<button
+						v-if="!attendanceDate.is_today"
+						type="button"
+						class="rounded-md px-3 py-1.5 text-sm font-medium text-indigo-600 ring-1 ring-indigo-200 transition hover:bg-indigo-50"
+						@click="goToDate(maxDate)">
+						{{ trans("Today") }}
+					</button>
+					<span class="inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-sm font-medium text-green-800">
+						{{ attendance.length }} {{ trans("present") }}
+					</span>
+				</div>
 			</div>
 
 			<div class="overflow-x-auto">

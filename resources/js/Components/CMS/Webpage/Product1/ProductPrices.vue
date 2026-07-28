@@ -59,7 +59,7 @@ const closePopover = (close: any): void => {
                         <span class="text-sm font-medium text-gray-600 xmb-1 w-fit" v-tooltip="trans('Recommended Retail Price')">{{ trans('Retail Price') }}</span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
-                                {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp_per_unit || 0) }}
+                                {{ locale.currencyFormatRrp(currency?.code, fieldValue.product?.rrp_per_unit || 0) }}
                             </span>
                             <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
 
@@ -98,11 +98,11 @@ const closePopover = (close: any): void => {
                     <span class="text-gray-700">{{ trans('Recommended Retail Price') }}</span>
                     <div class="flex items-center gap-4 text-right">
                         <span class="font-semibold text-gray-900 min-w-[90px] text-end">
-                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp) }} / <span v-if="fieldValue.product.units != 1">{{trans('Outer') }}</span><span v-else>{{ fieldValue.product.unit }}</span>
+                            {{ locale.currencyFormatRrp(currency?.code, fieldValue.product.rrp) }} / <span v-if="fieldValue.product.units != 1">{{trans('Outer') }}</span><span v-else>{{ fieldValue.product.unit }}</span>
                         </span>
                         <span v-if="fieldValue.product.units != 1"
                             class="text-xs text-gray-500 border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit.toFixed(2)) }} / {{ fieldValue.product.unit }}
+                            {{ locale.currencyFormatRrp(currency?.code, fieldValue.product.rrp_per_unit.toFixed(2)) }} / {{ fieldValue.product.unit }}
                         </span>
                     </div>
                 </div>

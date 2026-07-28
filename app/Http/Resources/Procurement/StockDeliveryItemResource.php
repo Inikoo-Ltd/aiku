@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Procurement;
 
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\Sowing;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -26,6 +27,7 @@ class StockDeliveryItemResource extends JsonResource
 
         $locations = DB::table('location_org_stocks')
             ->leftJoin('locations', 'location_org_stocks.location_id', '=', 'locations.id')
+            ->leftJoin('warehouses', 'location_org_stocks.warehouse_id', '=', 'warehouses.id')
             ->where('location_org_stocks.org_stock_id', $item->org_stock_id)
             ->select([
                 'location_org_stocks.id',
@@ -33,9 +35,12 @@ class StockDeliveryItemResource extends JsonResource
                 'locations.id as location_id',
                 'locations.code as location_code',
                 'locations.slug as location_slug',
+                'warehouses.slug as warehouse_slug',
             ])
             ->orderBy('locations.code')
             ->get();
+
+        $warehouseSlugByLocation = $locations->pluck('warehouse_slug', 'location_id');
 
         $sowings = $item->sowings()
             ->where('type', SowingTypeEnum::SOW)
@@ -43,19 +48,48 @@ class StockDeliveryItemResource extends JsonResource
             ->orderBy('id')
             ->get()
             ->map(fn (Sowing $sowing) => [
-                'id'            => $sowing->id,
-                'quantity'      => $sowing->quantity,
-                'location_code' => $sowing->location?->code,
-                'undo_route'    => [
+                'id'                => $sowing->id,
+                'type'              => $sowing->type,
+                'quantity'          => (float) $sowing->quantity,
+                'location_code'     => $sowing->location?->code,
+                'location_slug'     => $sowing->location?->slug,
+                'warehouse_slug'    => $warehouseSlugByLocation[$sowing->location_id] ?? null,
+                'undo_sowing_route' => [
                     'name'       => 'grp.models.sowing.delete',
                     'parameters' => ['sowing' => $sowing->id],
                     'method'     => 'delete',
                 ],
             ])->all();
 
-        $checked  = (float) $item->unit_quantity_checked;
-        $placed   = (float) $item->unit_quantity_placed;
-        $canPlace = $checked >= 1 && $placed < $checked && $item->state !== StockDeliveryItemStateEnum::CANCELLED;
+        $warehouseArea = '';
+        if ($item->warehouse_area_picking_position) {
+            $warehouseArea = __('Sort:').': '.$item->warehouse_area_picking_position.' ';
+        }
+
+        if ($item->warehouse_area_code) {
+            $warehouseArea .= __('Area').': '.$item->warehouse_area_code;
+        }
+
+        if ($warehouseArea == '') {
+            $warehouseArea = __('No Area');
+        }
+
+        $checked = (float) $item->unit_quantity_checked;
+        $placed  = (float) $item->unit_quantity_placed;
+
+        $isEditable = $item->state !== StockDeliveryItemStateEnum::CANCELLED
+            && in_array($item->stockDelivery?->state, [
+                StockDeliveryStateEnum::RECEIVED,
+                StockDeliveryStateEnum::CHECKED,
+                StockDeliveryStateEnum::BOOKING_IN,
+            ], true);
+
+        $canPlace = $isEditable && $checked >= 1 && $placed < $checked;
+        $canCheck = in_array($item->state, [
+            StockDeliveryItemStateEnum::RECEIVED,
+            StockDeliveryItemStateEnum::CHECKED,
+            StockDeliveryItemStateEnum::NOT_RECEIVED,
+        ], true);
 
         return [
             'id'                    => $item->id,
@@ -91,16 +125,30 @@ class StockDeliveryItemResource extends JsonResource
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
-            'checkedRoute'          => in_array($item->state, [StockDeliveryItemStateEnum::RECEIVED, StockDeliveryItemStateEnum::CHECKED, StockDeliveryItemStateEnum::NOT_RECEIVED], true) ? [
+            'checkedRoute'          => $canCheck ? [
                 'name'       => 'grp.models.stock-delivery-item.set-checked',
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
+            'checkAllRoute'         => $canCheck ? [
+                'name'       => 'grp.models.stock-delivery-item.set-all-checked',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
             'placement_remaining'   => max(0, $checked - $placed),
+            'has_available_qty'     => $checked - $placed > 0,
+            'is_editable'           => $isEditable,
             'locations'             => $locations,
+            'warehouse_area'        => $warehouseArea,
+            'warehouse_slug'        => $locations->first()?->warehouse_slug,
             'sowings'               => $sowings,
             'placedRoute'           => $canPlace ? [
                 'name'       => 'grp.models.stock-delivery-item.place',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
+            'placeAllRoute'         => $canPlace ? [
+                'name'       => 'grp.models.stock-delivery-item.place-all',
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,

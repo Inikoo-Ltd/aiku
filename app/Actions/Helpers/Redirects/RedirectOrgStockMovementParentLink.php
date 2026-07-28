@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Redirects;
 
 use App\Actions\OrgAction;
 use App\Models\GoodsIn\ReturnDeliveryNote;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStockMovement;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -22,16 +23,24 @@ class RedirectOrgStockMovementParentLink extends OrgAction
     {
         $parent = $orgStockMovement->parent;
 
-        $url = 'grp.org.warehouses.show.dispatching.delivery_notes.show';
+        $url        = 'grp.org.warehouses.show.dispatching.delivery_notes.show';
+        $parameter  = [
+            $parent->organisation->slug,
+            $parent->warehouse?->slug,
+            $parent->slug
+        ];
+
         if ($parent instanceof ReturnDeliveryNote) {
-            $url =  'grp.org.warehouses.show.incoming.return_delivery_notes.show';
+            $url = 'grp.org.warehouses.show.incoming.return_delivery_notes.show';
+        } elseif ($parent instanceof StockDelivery) {
+            $url = 'grp.org.procurement.stock_deliveries.show';
+            $parameter = [
+                $parent->organisation->slug,
+                $parent->slug
+            ];
         }
 
-        return Redirect::to(route($url, [
-            $parent->organisation->slug,
-            $parent->warehouse->slug,
-            $parent->slug
-        ]));
+        return Redirect::to(route($url, $parameter));
     }
 
 

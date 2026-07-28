@@ -8,8 +8,15 @@ import { faImage } from "@far"
 import { getBestOffer } from "@/Composables/useOffers"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 
+interface ImageFormats {
+	original?: string
+	avif?: string
+	webp?: string
+}
+
 interface FamilyImage {
-	original: string
+	original: ImageFormats
+	srcset?: ImageFormats
 	alt?: string
 }
 
@@ -41,7 +48,9 @@ const layout = inject<Record<string, any>>("layout", {})
 const cleanedDescription = computed(() => {
 	const html = props.fieldValue?.family?.description || ""
 
-	return html.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+	return html
+		.replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+		.replace(/<img\b(?![^>]*\bloading=)/gi, '<img loading="lazy" decoding="async"')
 })
 
 const images = computed<FamilyImage[]>(() => {
@@ -59,6 +68,14 @@ const hasImage = (index: number) => {
 const bestOffer = computed(() => {
 	return getBestOffer(props.fieldValue?.family?.offers_data)
 })
+
+const isLcpBlock = computed(() => Number(props.indexBlock) === 0)
+
+const secondaryImageAttributes = computed(() =>
+	isLcpBlock.value
+		? { loading: "eager" as const, decoding: "async" as const }
+		: { loading: "lazy" as const, decoding: "async" as const }
+)
 
 const descriptionBoxRef = ref<HTMLElement | null>(null)
 const descriptionBodyRef = ref<HTMLElement | null>(null)
@@ -119,6 +136,12 @@ const getCollapsedHeight = (): number => {
 const TRUNCATION_TOLERANCE = 1
 const SINGLE_LINE_TOLERANCE = 1.5
 const NORMAL_LINE_HEIGHT_RATIO = 1.2
+const SINGLE_LINE_FONT_SIZE = "1.5rem"
+const MULTI_LINE_FONT_SIZE = "1.4rem"
+
+const titleFontSize = computed(() =>
+	isTitleSingleLine.value ? SINGLE_LINE_FONT_SIZE : MULTI_LINE_FONT_SIZE
+)
 
 const calculateTitleWidth = () => {
 	const offersRow = offersRef.value
@@ -161,8 +184,12 @@ const checkTitleTruncated = () => {
 		return
 	}
 
+	title.style.fontSize = SINGLE_LINE_FONT_SIZE
+	isTitleSingleLine.value =
+		title.scrollHeight <= getLineHeight(title) * SINGLE_LINE_TOLERANCE
+
+	title.style.fontSize = titleFontSize.value
 	isTitleTruncated.value = title.scrollHeight - title.clientHeight > TRUNCATION_TOLERANCE
-	isTitleSingleLine.value = title.scrollHeight <= getLineHeight(title) * SINGLE_LINE_TOLERANCE
 }
 
 const calculateDescriptionHeight = async () => {
@@ -276,6 +303,9 @@ const contentClass = computed(() =>
 						:srcset="images[0].srcset"
 						sizes="(min-width: 1536px) 420px, (min-width: 1024px) 340px, (min-width: 640px) 290px, 220px"
 						:imageCover="true"
+						:preload="isLcpBlock"
+						width="420"
+						height="380"
 						:alt="images[0]?.alt || 'family image'"
 						class="h-[280px] w-[220px] object-cover sm:w-[290px] lg:h-[320px] lg:w-[340px] 2xl:h-[380px] 2xl:w-[420px]" />
 
@@ -287,6 +317,9 @@ const contentClass = computed(() =>
 							:srcset="images[1].srcset"
 							sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
 							:imageCover="true"
+							:imgAttributes="secondaryImageAttributes"
+							width="200"
+							height="187"
 							:alt="images[1]?.alt || 'family image'"
 							class="h-[137px] w-[105px] object-cover sm:w-[140px] lg:h-[157px] lg:w-[160px] 2xl:h-[187px] 2xl:w-[200px]" />
 
@@ -297,6 +330,9 @@ const contentClass = computed(() =>
 							:srcset="images[2].srcset"
 							sizes="(min-width: 1024px) 200px, (min-width: 640px) 140px, 105px"
 							:imageCover="true"
+							:imgAttributes="secondaryImageAttributes"
+							width="200"
+							height="187"
 							:alt="images[2]?.alt || 'family image'"
 							class="h-[137px] w-[105px] object-cover sm:w-[140px] lg:h-[157px] lg:w-[160px] 2xl:h-[187px] 2xl:w-[200px]" />
 					</div>
@@ -308,7 +344,6 @@ const contentClass = computed(() =>
 						<div class="w-full" :style="titleWidthStyle">
 							<h1
 								ref="titleTextRef"
-								:style="{ fontSize: '1.5rem' }"
 								class="title break-words font-bold tracking-tight text-left">
 								{{ fieldValue.family?.name }}
 							</h1>
@@ -317,7 +352,7 @@ const contentClass = computed(() =>
 
 					<div
 						ref="offersRef"
-						class="flex flex-col gap-4 text-center items-center lg:text-left lg:flex-row"
+						class="flex flex-col-reverse gap-4 text-center items-center lg:text-left lg:flex-row"
 						:class="
 							isTitleTruncated
 								? 'lg:items-end lg:justify-end'
@@ -330,7 +365,7 @@ const contentClass = computed(() =>
 							ref="titleRef"
 							class="w-full pb-1 2xl:pb-1 lg:min-w-0 lg:flex-1">
 							<h1
-								:style="{ fontSize: '1.5rem' }"
+								:style="{ fontSize: titleFontSize }"
 								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
 								{{ fieldValue.family?.name }}
 							</h1>
@@ -369,7 +404,7 @@ const contentClass = computed(() =>
 							ref="truncatedTitleRef"
 							class="pb-1 2xl:pb-1 px-3 lg:px-0">
 							<h1
-								:style="{ fontSize: '1.5rem' }"
+								:style="{ fontSize: titleFontSize }"
 								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
 								{{ fieldValue.family?.name }}
 							</h1>
@@ -433,6 +468,9 @@ const contentClass = computed(() =>
 							class="flex items-center gap-2 px-3 py-1.5 sm:px-2 lg:px-2 lg:py-2 2xl:px-6 2xl:py-2.5">
 							<Image
 								:src="data.web_image"
+								sizes="20px"
+								width="20"
+								height="20"
 								class="h-4 w-4 shrink-0 2xl:h-5 2xl:w-5"
 								image-class="object-contain" />
 
@@ -484,7 +522,7 @@ const contentClass = computed(() =>
 	line-clamp: 2;
 	overflow: hidden;
 
-	/* font-size: clamp(1.375rem, 1.1rem + 1.2vw, 2rem); */
+	/* font-size: clamp(1rem, 1.1rem + 1.2vw, 1.5rem); */
 	line-height: 1.25;
 }
 </style>

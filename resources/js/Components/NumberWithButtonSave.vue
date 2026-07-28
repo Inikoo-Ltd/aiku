@@ -10,7 +10,7 @@ import { faRobot, faPlus, faMinus, faUndoAlt } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import InputNumber from "primevue/inputnumber"
-import { inject, ref, watch } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { faSave as fadSave } from "@fad"
 import { faSave as falSave, faInfoCircle } from "@fal"
 import { faAsterisk, faQuestion, faSpinner, faMinus as fasMinus, faPlus as fasPlus } from "@fas"
@@ -151,6 +151,19 @@ const onSaveViaForm = async () => {
 }
 const debounceSaveViaForm = debounce(onSaveViaForm, 1000)
 
+const inputWidth = computed(() => {
+	if (props.bindToTarget?.fluid) {
+		return undefined
+	}
+
+	const baseWidth = props.denominator ? 75 : 50
+	const displayedValue = props.denominator
+		? `${Math.round(form.quantity * props.denominator)}/${props.denominator}`
+		: new Intl.NumberFormat().format(Number(form.quantity) || 0)
+
+	return `${Math.max(baseWidth, displayedValue.length * 9 + 12)}px`
+})
+
 const keyIconUndo = ref(0)
 
 defineOptions({
@@ -275,7 +288,7 @@ const stopHold = () => {
 			<!-- Section: - and + -->
 			<div
 				class="w-fit transition-all relative inline-flex items-center justify-center"
-				:class="bindToTarget?.fluid ? 'w-full' : 'w-28'">
+				:class="bindToTarget?.fluid ? 'w-full' : 'min-w-28'">
 				<!-- Button: Minus -->
 				<div
 					@mousedown.stop="() => props.readonly || form.processing ? null : startHold(onClickMinusButton)"
@@ -322,11 +335,7 @@ const stopHold = () => {
 						inputClass="!p-1 lg:!p-0"
 						:suffix="props.denominator ? '/' + props.denominator : undefined"
 						:inputStyle="{
-							width: bindToTarget?.fluid ? undefined : (
-								props.denominator
-									? '75px'
-									: '50px'
-							),
+							width: inputWidth,
 							color: props.readonly ? '#6b7280' : colorTheme ?? '#374151',
 							border: 'none',
 							textAlign: 'center',

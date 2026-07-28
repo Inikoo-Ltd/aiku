@@ -232,6 +232,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'name',
         'description',
         'not_follow_master_prices',
+        'follow_master_gr',
     ];
 
     public function getRouteKeyName(): string
