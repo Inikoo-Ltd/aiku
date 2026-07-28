@@ -386,6 +386,12 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
+                    'remove_discount'            => [
+                        'name'       => 'grp.models.order.discount.removal',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
                     'delivery_note'              => $deliveryNoteRoute
                 ],
 

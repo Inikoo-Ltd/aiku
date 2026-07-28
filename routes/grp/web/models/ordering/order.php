@@ -33,6 +33,7 @@ use App\Actions\Ordering\Order\UpdateOrderShippingTBCAmount;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
+use App\Actions\Ordering\Order\UpdateState\RemoveOrderDiscount;
 use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
@@ -47,12 +48,14 @@ use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderDiscretionaryDiscount;
+use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
 
 Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
     Route::delete('', DeleteTransaction::class)->name('delete');
     Route::patch('', UpdateTransaction::class)->name('update');
     Route::patch('units', UpdateTransactionUnits::class)->name('update_units');
     Route::patch('update-discretionary-discount', UpdateTransactionDiscretionaryDiscount::class)->name('update_discretionary_discount');
+    Route::patch('remove-discount', RemoveTransactionDiscount::class)->name('remove_discount');
     Route::patch('update-charge-amount', UpdateTransactionChargeAmount::class)->name('update_charge_amount');
 });
 
@@ -73,6 +76,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
     Route::patch('update-discount', UpdateOrderDiscretionaryDiscount::class)->name('discount.update');
+    Route::patch('remove-discount', RemoveOrderDiscount::class)->name('discount.removal');
     Route::post('add-voucher', AddVoucherToOrder::class)->name('add_voucher');
     Route::post('remove-voucher', RemoveVoucherFromOrder::class)->name('remove_voucher');
 

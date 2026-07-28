@@ -40,7 +40,7 @@ import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PureInputNumber from "@/Components/Pure/PureInputNumber.vue"
 import AlertMessage from "@/Components/Utils/AlertMessage.vue"
@@ -67,7 +67,10 @@ import {
     faParachuteBox,
     faSortNumericDown,
     faMoneyCheckEditAlt,
-    faReceipt
+    faReceipt,
+    faTrash,
+    faPercentage,
+    faUndo as falUndo
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -877,6 +880,100 @@ const closeEditAllPercentageModal = () => {
 const isValidPercentage = (val: number | null) => {
     return val !== null && val >= 0 && val <= 100
 }
+const removeDiscount = async () => {
+    const routeConfig = props.routes?.remove_discount
+
+    if (!routeConfig) {
+        notify({
+            title: trans('Route not configured'),
+            type: 'error',
+        })
+        return
+    }
+
+    router.patch(
+        route(routeConfig.name, routeConfig.parameters),
+        {
+            discretionary_offer: editedAllPercentage.value,
+            discretionary_offer_label: labelPercentage.value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmitNetAmount.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans('Success'),
+                    text: trans('Successfully removed discount to all products'),
+                    type: 'success',
+                })
+                closeEditAllPercentageModal()
+            },
+            onError: (errors) => {
+                notify({
+                    title: trans('Something went wrong'),
+                    text:
+                        errors?.discretionary_discount_percentage ||
+                        trans('Failed to remove discount'),
+                    type: 'error',
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitNetAmount.value = false
+            },
+        }
+    )
+}
+
+const restoreAllDiscount = async () => {
+    const routeConfig = props.routes?.update_discount
+
+    if (!routeConfig) {
+        notify({
+            title: trans('Route not configured'),
+            type: 'error',
+        })
+        return
+    }
+
+    router.patch(
+        route(routeConfig.name, routeConfig.parameters),
+        {
+            discretionary_offer: 0,
+            discretionary_offer_label: ''
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmitNetAmount.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans('Success'),
+                    text: trans('Successfully restore original discount data to all products'),
+                    type: 'success',
+                })
+                closeEditAllPercentageModal()
+            },
+            onError: (errors) => {
+                notify({
+                    title: trans('Something went wrong'),
+                    text:
+                        errors?.discretionary_discount_percentage ||
+                        trans('Failed to restore original discount data '),
+                    type: 'error',
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitNetAmount.value = false
+            },
+        }
+    )
+}
+
 const onSubmitEditAllPercentage = async () => {
     if (!isValidPercentage(editedAllPercentage.value)) {
         notify({
@@ -2005,10 +2102,34 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <template v-if="!(['finalised', 'dispatched', 'cancelled'].includes(data?.data?.state || 'xxxxxxxxx')) && !is_shop_external">
                                 <div class="text-right text-purple-600 w-full mr-1">{{ trans('Global discount') }}</div>
                                 <button
-                                    class="ml-auto h-6 mr-2" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
+                                    class="ml-auto h-6 mr-2 text-purple-400 hover:text-purple-600" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
                                     v-tooltip="trans('Apply discount to all products')">
                                     <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
-                                        class="h-4 text-purple-400 hover:text-gray-600" />
+                                        class="h-4" />
+                                </button>
+                                <button
+                                    @click="() => {
+                                        removeDiscount()
+                                    }"
+                                    v-tooltip="trans('Remove discount')" type="transparent" key="1"
+                                    class="ml-auto h-6 mr-2 text-pink-400 hover:text-pink-600 w-max"
+                                >
+                                    <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
+                                        <FontAwesomeIcon
+                                            :icon="faTrash"
+                                            class="!text-lg !w-fit"
+                                        />
+                                        <FontAwesomeIcon
+                                            :icon="faPercentage"
+                                            class="text-xs !top-[25%]"
+                                        />
+                                    </FontAwesomeLayers>
+                                </button>
+                                <button
+                                    class="ml-auto h-6 mr-2 text-red-500 hover:text-red-700" @click="restoreAllDiscount" aria-label="Edit Percentage"
+                                    v-tooltip="trans('Restore original discount to all products')">
+                                    <FontAwesomeIcon :icon="falUndo"
+                                        class="h-4" />
                                 </button>
                             </template>
                         </dl>
