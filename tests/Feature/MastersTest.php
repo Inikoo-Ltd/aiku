@@ -2461,7 +2461,54 @@ test('minor currency with zero fraction digits rounds converted prices up to who
     expect(formatPrice(9.76, 25.5))->toBe('248.88')
         ->and(formatPrice(9.76, 25.5, 0))->toBe('249')
         ->and(formatPrice(10, 25.5, 0))->toBe('255')
-        ->and(formatPrice(1, 3, 0))->toBe('3');
+        ->and(formatPrice(1, 3, 0))->toBe('3')
+        ->and(formatPrice(5.97, 4.3, 2, 0.05))->toBe('25.7')
+        ->and(formatPrice(5, 4.3, 2, 0.05))->toBe('21.5')
+        ->and(formatPrice(5.98, 4.3, 2, 0.05))->toBe('25.75');
+});
+
+test('minor currency with increment rounds converted prices and rrps up to the step', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'PLN' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 4.3, 'increment' => 0.05],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PLNDEP-'.uniqid(),
+        'name' => 'PLN Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PLNFAM-'.uniqid(),
+        'name' => 'PLN Family',
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PLNAST-'.uniqid(),
+        'name'    => 'PLN Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 5.97,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 5.97, 'independent' => false],
+            'PLN' => ['value' => 25.67, 'independent' => false],
+        ],
+        'master_rrps'   => [
+            'EUR' => ['value' => 19.98, 'independent' => false],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices::run($masterShop, 'PLN');
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe('25.7')
+        ->and(data_get($masterAsset->master_rrps, 'PLN.value'))->toBe('85.95');
 });
 
 test('master shop currencies rate can restrict to open shops only', function () {

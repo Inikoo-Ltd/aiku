@@ -34,14 +34,16 @@ class RecalculateMasterShopMinorCurrencyPricesChunk
     {
         $affectedShops  = RecalculateMasterShopMinorCurrencyPrices::getAffectedShops($masterShop, $currencyCode);
         $fractionDigits = (int)data_get($masterShop->price_exchanges, "$currencyCode.fraction_digits", 2);
+        $increment      = data_get($masterShop->price_exchanges, "$currencyCode.increment");
+        $increment      = $increment ? (float)$increment : null;
 
         try {
             if ($userID) {
                 Auth::guard('web')->loginUsingId($userID);
             }
-            Product::withoutSyncingToSearch(function () use ($assetIDs, $currencyCode, $majorCurrencyCode, $exchange, $affectedShops, $fractionDigits) {
+            Product::withoutSyncingToSearch(function () use ($assetIDs, $currencyCode, $majorCurrencyCode, $exchange, $affectedShops, $fractionDigits, $increment) {
                 foreach (MasterAsset::whereIn('id', $assetIDs)->get() as $masterAsset) {
-                    $this->recalculateMasterAsset($masterAsset, $currencyCode, $majorCurrencyCode, $exchange, $affectedShops, $fractionDigits);
+                    $this->recalculateMasterAsset($masterAsset, $currencyCode, $majorCurrencyCode, $exchange, $affectedShops, $fractionDigits, $increment);
                 }
             });
         } finally {
@@ -91,12 +93,12 @@ class RecalculateMasterShopMinorCurrencyPricesChunk
         }
     }
 
-    protected function recalculateMasterAsset(MasterAsset $masterAsset, string $currencyCode, string $majorCurrencyCode, float $exchange, Collection $affectedShops, int $fractionDigits): void
+    protected function recalculateMasterAsset(MasterAsset $masterAsset, string $currencyCode, string $majorCurrencyCode, float $exchange, Collection $affectedShops, int $fractionDigits, ?float $increment): void
     {
-        $masterAsset = DB::transaction(function () use ($masterAsset, $currencyCode, $majorCurrencyCode, $exchange, $fractionDigits) {
+        $masterAsset = DB::transaction(function () use ($masterAsset, $currencyCode, $majorCurrencyCode, $exchange, $fractionDigits, $increment) {
             $masterAsset = MasterAsset::lockForUpdate()->find($masterAsset->id);
             if ($masterAsset) {
-                $this->applyExchange($masterAsset, $currencyCode, $majorCurrencyCode, $exchange, $fractionDigits);
+                $this->applyExchange($masterAsset, $currencyCode, $majorCurrencyCode, $exchange, $fractionDigits, $increment);
             }
 
             return $masterAsset;
@@ -109,7 +111,7 @@ class RecalculateMasterShopMinorCurrencyPricesChunk
         }
     }
 
-    protected function applyExchange(MasterAsset $masterAsset, string $currencyCode, string $majorCurrencyCode, float $exchange, int $fractionDigits = 2): bool
+    protected function applyExchange(MasterAsset $masterAsset, string $currencyCode, string $majorCurrencyCode, float $exchange, int $fractionDigits = 2, ?float $increment = null): bool
     {
         $modelData = [];
 
@@ -125,7 +127,7 @@ class RecalculateMasterShopMinorCurrencyPricesChunk
                 continue;
             }
 
-            $newValue = formatPrice($majorValue, $exchange, $field === 'master_prices' ? $fractionDigits : 2);
+            $newValue = formatPrice($majorValue, $exchange, $field === 'master_prices' ? $fractionDigits : 2, $increment);
             if ((float)$newValue <= 0 || (string)data_get($values, "$currencyCode.value") === $newValue) {
                 continue;
             }
