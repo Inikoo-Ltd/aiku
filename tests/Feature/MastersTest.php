@@ -2509,6 +2509,28 @@ test('minor currency with increment rounds converted prices and rrps up to the s
 
     expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe('25.7')
         ->and(data_get($masterAsset->master_rrps, 'PLN.value'))->toBe('85.95');
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [
+            'EUR' => ['value' => 8.8, 'independent' => false],
+            'PLN' => ['value' => 37.84, 'independent' => false],
+        ],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe('37.85')
+        ->and(data_get($masterAsset->master_prices, 'EUR.value'))->toBe(8.8);
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [
+            'PLN' => ['value' => 37.84, 'independent' => true],
+        ],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe(37.84);
 });
 
 test('master shop currencies rate can restrict to open shops only', function () {
