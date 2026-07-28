@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Allegro\Traits\WithAllegroMarketplace;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -35,6 +36,7 @@ class StoreProductToAllegro extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
     use WithAllegroMarketplace;
+    use WithPortfolioErrorResponse;
 
     public function handle(Portfolio $portfolio): Portfolio
     {
@@ -234,6 +236,10 @@ class StoreProductToAllegro extends RetinaAction
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             } else {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => $this->portfolioErrorResponse($allegroOffer)
+                ]);
+
                 UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => json_encode($allegroOffer)
@@ -248,9 +254,7 @@ class StoreProductToAllegro extends RetinaAction
             ]);
 
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [
-                    'message' => $e->getMessage()
-                ]
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
             ]);
 
             return $portfolio;

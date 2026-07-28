@@ -226,7 +226,7 @@ const contentClass = computed(() =>
 								fieldValue?.family?.offers_data?.number_offers &&
 								layout.iris.is_logged_in
 							"
-							class="flex gap-x-1 gap-y-1 mb-2 offer flex-wrap justify-center lg:justify-end">
+							class="flex gap-x-1 gap-y-1 offer flex-wrap justify-center lg:justify-end">
 							<DiscountByType
 								:offers_data="fieldValue?.family?.offers_data"
 								:template="
@@ -249,8 +249,8 @@ const contentClass = computed(() =>
 					</div>
 
 					<div ref="descriptionContentRef" class="px-3 lg:px-0">
-						<div ref="titleRef" class="pb-2 2xl:pb-3">
-							<h1
+						<div ref="titleRef" class="pb-1 2xl:pb-1">
+							<h1 :style="{ fontSize : '1.5rem'}"
 								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
 								{{ fieldValue.family?.name }}
 							</h1>
@@ -273,7 +273,7 @@ const contentClass = computed(() =>
 							<!-- Fade overlay -->
 							<div
 								v-if="!expanded && showReadMore"
-								class="absolute bottom-0 left-0 right-0 h-6 pointer-events-none bg-gradient-to-t from-white via-white/90 to-transparent" />
+								class="absolute bottom-0 left-0 right-0 h-6 pointer-events-none bg-gradient-to-t " />
 						</div>
 					</div>
 
@@ -297,7 +297,7 @@ const contentClass = computed(() =>
 							href="#family-2-extra-description"
 							class="shrink-0">
 							<button
-								class="h-[38px] rounded-xl border border-[#333] px-8 text-sm font-medium transition hover:bg-gray-50 2xl:h-[48px] 2xl:px-12 2xl:text-base"
+								class="h-[30px] rounded-xl border border-[#333] px-8 text-sm font-medium transition hover:bg-gray-50 2xl:h-[48px] 2xl:px-12 2xl:text-base"
 								:style="{
 									...getStyles(
 										fieldValue?.button?.container?.properties,
@@ -335,7 +335,7 @@ const contentClass = computed(() =>
 }
 
 :deep(.offer .vd-triggers) {
-	@apply text-[10px] leading-tight opacity-80 max-w-[7rem] whitespace-normal overflow-visible;
+	@apply text-[10px] leading-tight opacity-80 max-w-[7rem] md:max-w-full whitespace-normal overflow-visible;
 }
 
 .editor-class h1 {
@@ -365,7 +365,7 @@ const contentClass = computed(() =>
 	line-clamp: 2;
 	overflow: hidden;
 
-	font-size: clamp(1.375rem, 1.1rem + 1.2vw, 2rem);
+	/* font-size: clamp(1.375rem, 1.1rem + 1.2vw, 2rem); */
 	line-height: 1.25;
 }
 </style>

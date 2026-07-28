@@ -119,8 +119,9 @@ const props = defineProps<{
 		attachRoute: routeType
 		detachRoute: routeType
 	}
-	showcase?: {}
 	items?: {}
+	under_over_delivered?: {}
+	showcase?: {}
 	attachments?: {}
 	history?: {}
 }>()
@@ -132,8 +133,9 @@ const isModalUploadOpen = ref(false)
 
 const component = computed(() => {
 	const components: Component = {
-		showcase: ProcurementOrderData,
 		items: TableStockDeliveryItems,
+		under_over_delivered: TableStockDeliveryItems,
+		showcase: ProcurementOrderData,
 		attachments: TableAttachments,
 		history: TableHistories,
 	}
@@ -685,6 +687,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component
 		:is="component"
+		:key="currentTab"
 		:data="props[currentTab]"
 		:tab="currentTab"
 		:detachRoute="attachmentRoutes.detachRoute"

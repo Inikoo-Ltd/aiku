@@ -12,15 +12,16 @@ import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faSpellCheck, faBoxCheck, faTrashAlt } from '@fal'
+import { faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faExclamationCircle as falExclamationCircle } from '@fal'
 import { faExclamationCircle, faSpinner } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner)
+library.add(faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, falExclamationCircle)
 
 const props = defineProps<{
     data: object,
@@ -31,6 +32,12 @@ const locale = useLocaleStore()
 const confirm = useConfirm()
 
 const changingId = ref<number | null>(null)
+
+function reloadStockDelivery() {
+    router.reload({
+        only: [props.tab ?? 'items', 'timelines', 'stock_delivery', 'box_stats', 'pageHead', 'tabs', 'queryBuilderProps'],
+    })
+}
 
 function confirmChangeState(event: MouseEvent, item: any, stateRoute: any, message: string, acceptLabel: string) {
     if (!stateRoute) {
@@ -59,7 +66,7 @@ async function changeState(item: any, stateRoute: any) {
         const method = String(stateRoute.method ?? 'patch').toLowerCase()
         await axios[method](route(stateRoute.name, stateRoute.parameters))
         notify({ title: trans('Success'), text: trans('Item state updated'), type: 'success' })
-        router.reload({ only: [props.tab ?? 'items', 'timelines', 'stock_delivery', 'box_stats', 'pageHead'] })
+        reloadStockDelivery()
     } catch (error: any) {
         notify({
             title: trans('Something went wrong'),
@@ -84,6 +91,22 @@ function skosPerCarton(item: any) {
 
 function quantityBreakdown(item: any) {
     const units = Number(item.unit_quantity)
+    const pack = Number(item.units_per_pack) || 1
+    const carton = Number(item.units_per_carton) || 1
+
+    return `${formatQuantity(units)}u. | ${formatQuantity(units / pack)}sko. | ${formatQuantity(units / carton)}C.`
+}
+
+function differenceClass(value: number | null) {
+    if (value === null || Number(value) === 0) {
+        return ''
+    }
+
+    return Number(value) < 0 ? 'text-red-500' : 'text-orange-500'
+}
+
+function checkedQuantityBreakdown(item: any) {
+    const units = Number(item.unit_quantity_checked)
     const pack = Number(item.units_per_pack) || 1
     const carton = Number(item.units_per_carton) || 1
 
@@ -117,7 +140,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 }
 
 function onCheckedSaved() {
-    router.reload({ only: [props.tab ?? 'items', 'timelines', 'stock_delivery', 'box_stats', 'pageHead'] })
+    reloadStockDelivery()
 }
 
 const selectedLocation = reactive<Record<number, number | null>>({})
@@ -206,48 +229,35 @@ async function undoSowing(sowing: any) {
             {{ amount(item) }}
         </template>
 
-        <template #cell(state)="{ item }">
-            <div class="flex items-center gap-1.5">
-                <FontAwesomeIcon
-                    v-tooltip="item.state_icon?.tooltip"
-                    :icon="item.state_icon?.icon"
-                    :class="item.state_icon?.class"
-                    aria-hidden="true"
-                    fixed-width
-                />
-                <span>{{ item.state_label }}</span>
-
-                <button
+        <template #cell(actions)="{ item }">
+            <div class="flex justify-end items-center gap-2">
+                <Button
                     v-if="item.confirmRoute"
-                    v-tooltip="trans('Confirm item')"
-                    type="button"
-                    class="flex items-center justify-center text-emerald-500 hover:text-emerald-700 disabled:text-gray-300"
+                    :label="trans('Confirm')"
+                    :tooltip="trans('Confirm item')"
+                    icon="fal fa-spell-check"
+                    type="positive"
+                    size="xs"
+                    :loading="changingId === item.id"
                     :disabled="changingId === item.id"
                     @click="confirmChangeState($event, item, item.confirmRoute, trans('Confirm this item?'), trans('Confirm'))"
-                >
-                    <FontAwesomeIcon
-                        :icon="changingId === item.id ? 'fas fa-spinner' : 'fal fa-spell-check'"
-                        :spin="changingId === item.id"
-                        aria-hidden="true"
-                        fixed-width
-                    />
-                </button>
+                />
 
-                <button
+                <Button
                     v-else-if="item.readyToShipRoute"
-                    v-tooltip="trans('Set ready to ship')"
-                    type="button"
-                    class="flex items-center justify-center text-indigo-500 hover:text-indigo-700 disabled:text-gray-300"
+                    :label="trans('Ready to ship')"
+                    :tooltip="trans('Set ready to ship')"
+                    icon="fal fa-box-check"
+                    type="secondary"
+                    size="xs"
+                    :loading="changingId === item.id"
                     :disabled="changingId === item.id"
                     @click="confirmChangeState($event, item, item.readyToShipRoute, trans('Set this item as ready to ship?'), trans('Ready to ship'))"
-                >
-                    <FontAwesomeIcon
-                        :icon="changingId === item.id ? 'fas fa-spinner' : 'fal fa-box-check'"
-                        :spin="changingId === item.id"
-                        aria-hidden="true"
-                        fixed-width
-                    />
-                </button>
+                />
+
+                <span v-if="!item.confirmRoute && !item.readyToShipRoute" class="text-gray-400 text-sm">
+                    {{ trans('No actions needed') }}
+                </span>
             </div>
         </template>
 
@@ -267,6 +277,26 @@ async function undoSowing(sowing: any) {
 
         <template #cell(delivered_quantity)="{ item }">
             <span class="text-gray-500">{{ quantityBreakdown(item) }}</span>
+        </template>
+
+        <template #cell(checked_quantity)="{ item }">
+            <span class="text-gray-500">{{ checkedQuantityBreakdown(item) }}</span>
+        </template>
+
+        <template #cell(difference_percentage)="{ item }">
+            <span :class="differenceClass(item.difference_percentage)">
+                {{ item.difference_percentage === null ? '-' : `${locale.number(item.difference_percentage)}%` }}
+            </span>
+        </template>
+
+        <template #cell(difference_units)="{ item }">
+            <span :class="differenceClass(item.difference_units)">{{ formatQuantity(Number(item.difference_units)) }}</span>
+        </template>
+
+        <template #cell(difference_skos)="{ item }">
+            <span :class="differenceClass(item.difference_skos)">
+                {{ item.difference_skos === null ? '-' : formatQuantity(Number(item.difference_skos)) }}
+            </span>
         </template>
 
         <template #cell(checked_unit)="{ item }">

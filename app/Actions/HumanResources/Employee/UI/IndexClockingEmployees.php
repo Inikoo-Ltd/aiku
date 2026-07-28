@@ -18,6 +18,8 @@ use App\Http\Resources\HumanResources\LeaveBalanceResource;
 use App\Http\Resources\HumanResources\AttendanceAdjustmentResource;
 use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\QrScanLog;
+use App\Models\HumanResources\TimeTracker;
+use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
@@ -90,6 +92,7 @@ class IndexClockingEmployees extends OrgAction
         $activeTimeTracker = null;
         $lastClockIn = null;
         $lastClockOut = null;
+        $clockingSessions = [];
         $timezone = null;
 
         if ($this->employee && $tab == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value) {
@@ -131,6 +134,8 @@ class IndexClockingEmployees extends OrgAction
                         $lastClockOut->clocked_at = $lastClockOut->clocked_at->timezone($timezone)->toIso8601String();
                     }
                 }
+
+                $clockingSessions = $this->getClockingSessions($todayTimesheet, $timezone);
             }
         }
 
@@ -371,7 +376,73 @@ class IndexClockingEmployees extends OrgAction
             'today_timesheet' => $todayTimesheet,
             'last_clock_in' => $lastClockIn,
             'last_clock_out' => $lastClockOut,
+            'clocking_sessions' => $clockingSessions,
             'timezone' => $timezone,
+        ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     id: int,
+     *     sequence: int,
+     *     status: string|null,
+     *     is_open: bool,
+     *     duration: int|null,
+     *     clock_in: array{id: int, clocked_at: string|null, type: string|null, is_late: bool, notes: string|null}|null,
+     *     clock_out: array{id: int, clocked_at: string|null, type: string|null, is_late: bool, notes: string|null}|null
+     * }>
+     */
+    protected function getClockingSessions(Timesheet $timesheet, string $timezone): array
+    {
+        $timeTrackers = TimeTracker::where('timesheet_id', $timesheet->id)
+            ->orderBy('starts_at')
+            ->get();
+
+        if ($timeTrackers->isEmpty()) {
+            return [];
+        }
+
+        $clockingIds = $timeTrackers
+            ->flatMap(fn (TimeTracker $timeTracker) => [$timeTracker->start_clocking_id, $timeTracker->end_clocking_id])
+            ->filter()
+            ->unique()
+            ->all();
+
+        $clockings = Clocking::whereIn('id', $clockingIds)->get()->keyBy('id');
+
+        return $timeTrackers->values()->map(function (TimeTracker $timeTracker, int $index) use ($clockings, $timezone) {
+            $clockIn = $timeTracker->start_clocking_id ? $clockings->get($timeTracker->start_clocking_id) : null;
+            $clockOut = $timeTracker->end_clocking_id ? $clockings->get($timeTracker->end_clocking_id) : null;
+
+            $startsAt = $timeTracker->starts_at;
+            $endsAt = $timeTracker->ends_at;
+
+            return [
+                'id'         => $timeTracker->id,
+                'sequence'   => $index + 1,
+                'status'     => $timeTracker->status?->value,
+                'is_open'    => $endsAt === null,
+                'starts_at'  => $startsAt?->timezone($timezone)->toIso8601String(),
+                'ends_at'    => $endsAt?->timezone($timezone)->toIso8601String(),
+                'duration'   => $timeTracker->duration ?? ($startsAt && $endsAt ? $startsAt->diffInSeconds($endsAt) : null),
+                'clock_in'   => $this->transformClocking($clockIn, $timezone),
+                'clock_out'  => $this->transformClocking($clockOut, $timezone),
+            ];
+        })->all();
+    }
+
+    protected function transformClocking(?Clocking $clocking, string $timezone): ?array
+    {
+        if (!$clocking) {
+            return null;
+        }
+
+        return [
+            'id'         => $clocking->id,
+            'clocked_at' => $clocking->clocked_at?->timezone($timezone)->toIso8601String(),
+            'type'       => $clocking->type?->value,
+            'is_late'    => (bool) $clocking->is_late,
+            'notes'      => $clocking->notes,
         ];
     }
 
@@ -589,6 +660,7 @@ class IndexClockingEmployees extends OrgAction
                         'today_timesheet' => $data['today_timesheet'],
                         'last_clock_in' => $data['last_clock_in'],
                         'last_clock_out' => $data['last_clock_out'],
+                        'clocking_sessions' => $data['clocking_sessions'],
                         'timezone' => $data['timezone'],
                     ]
                     : Inertia::optional(fn () => ['status' => 'loaded_lazy']),
