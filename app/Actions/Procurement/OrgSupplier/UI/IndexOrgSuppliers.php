@@ -260,11 +260,11 @@ class IndexOrgSuppliers extends OrgAction
                 'title' => __('Suppliers'),
             ];
             $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $iconRight     = [
-                'icon' => 'fal fa-person-dolly',
-            ];
             $afterTitle    = [
                 'label' => __('Suppliers'),
+            ];
+            $iconRight     = [
+                'icon' => 'fal fa-person-dolly',
             ];
         }
 

@@ -34,7 +34,13 @@ class IndexOrgSupplierProducts extends OrgAction
 {
     use WithOrgAgentSubNavigation;
     use WithOrgSupplierSubNavigation;
+
     private OrgSupplier|OrgAgent|Organisation $parent;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
+    }
 
     public function handle(Organisation|OrgAgent|OrgSupplier $parent, $prefix = null): LengthAwarePaginator
     {
@@ -44,6 +50,7 @@ class IndexOrgSupplierProducts extends OrgAction
                     ->orWhereAnyWordStartWith('supplier_products.name', $value);
             });
         });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -51,19 +58,13 @@ class IndexOrgSupplierProducts extends OrgAction
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id');
 
-
-        if (class_basename($parent) == 'OrgAgent') {
-            $queryBuilder->leftJoin('org_agents', 'org_agents.id', 'org_supplier_products.org_agent_id');
-            //$queryBuilder->leftJoin('agents', 'agents.id', 'org_agents.agent_id');
-
+        if ($parent instanceof OrgAgent) {
             $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id);
-            $queryBuilder->addSelect('org_agents.slug as org_agent_slug');
-        } elseif (class_basename($parent) == 'OrgSupplier') {
+        } elseif ($parent instanceof OrgSupplier) {
             $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id);
         } else {
-            $queryBuilder->where('org_supplier_products.organisation_id', $this->organisation->id);
+            $queryBuilder->where('org_supplier_products.organisation_id', $parent->id);
         }
-
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
@@ -72,23 +73,22 @@ class IndexOrgSupplierProducts extends OrgAction
                 'supplier_products.code',
                 'supplier_products.name'
             ])
-            ->leftJoin('org_supplier_product_stats', 'org_supplier_product_stats.org_supplier_product_id', 'org_supplier_products.id')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Organisation|OrgAgent|OrgSupplier $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+
             $table
-                ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Supplier Product'), __('Supplier Products')])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
@@ -97,17 +97,11 @@ class IndexOrgSupplierProducts extends OrgAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
-
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
+
         return $this->handle($organisation);
     }
 
@@ -115,6 +109,7 @@ class IndexOrgSupplierProducts extends OrgAction
     {
         $this->parent = $orgAgent;
         $this->initialisation($organisation, $request);
+
         return $this->handle($orgAgent);
     }
 
@@ -122,83 +117,62 @@ class IndexOrgSupplierProducts extends OrgAction
     {
         $this->parent = $orgSupplier;
         $this->initialisation($organisation, $request);
+
         return $this->handle($orgSupplier);
     }
-
 
     public function jsonResponse(LengthAwarePaginator $orgSupplierProducts): AnonymousResourceCollection
     {
         return OrgSupplierProductsResource::collection($orgSupplierProducts);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $orgSupplierProducts, ActionRequest $request): Response
     {
-        $subNavigation = null;
-        $title = __('Supplier Products');
-        $model = '';
-        $icon  = [
+        $title         = __('Supplier Products');
+        $icon          = [
             'icon'  => ['fal', 'fa-box-usd'],
-            'title' => __('Supplier Products')
+            'title' => __('Supplier Products'),
         ];
-        $afterTitle = null;
-        $iconRight = null;
+        $subNavigation = null;
+        $afterTitle    = null;
+        $iconRight     = null;
 
         if ($this->parent instanceof OrgAgent) {
-            $subNavigation = $this->getOrgAgentNavigation($this->parent);
-            $title = $this->parent->agent->organisation->name;
-            $model = '';
-            $icon  = [
+            $title         = $this->parent->agent->organisation->name;
+            $icon          = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Supplier Products')
+                'title' => __('Supplier Products'),
             ];
-            $iconRight    = [
-                'icon' => 'fal fa-box-usd',
-            ];
-            $afterTitle = [
-
-                'label'     => __('Supplier Products')
-            ];
+            $subNavigation = $this->getOrgAgentNavigation($this->parent);
+            $afterTitle    = ['label' => __('Supplier Products')];
+            $iconRight     = ['icon' => 'fal fa-box-usd'];
         } elseif ($this->parent instanceof OrgSupplier) {
-            $subNavigation = $this->getOrgSupplierNavigation($this->parent);
-            $title = $this->parent->supplier->name;
-            $model = '';
-            $icon  = [
+            $title         = $this->parent->supplier->name;
+            $icon          = [
                 'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('Supplier Products')
+                'title' => __('Supplier Products'),
             ];
-            $iconRight    = [
-                'icon' => 'fal fa-box-usd',
-            ];
-            $afterTitle = [
-
-                'label'     => __('Supplier Products')
-            ];
+            $subNavigation = $this->getOrgSupplierNavigation($this->parent);
+            $afterTitle    = ['label' => __('Supplier Products')];
+            $iconRight     = ['icon' => 'fal fa-box-usd'];
         }
 
         return Inertia::render(
             'Procurement/OrgSupplierProducts',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('Supplier Products'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
-                    'model'         => $model,
+                    'subNavigation' => $subNavigation,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'subNavigation' => $subNavigation,
                 ],
                 'data'        => OrgSupplierProductsResource::collection($orgSupplierProducts),
-
-
-            ]
-        )->table($this->tableStructure($this->parent));
+            ],
+        )->table($this->tableStructure());
     }
-
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
@@ -207,9 +181,9 @@ class IndexOrgSupplierProducts extends OrgAction
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'route' => $routeParameters,
                         'label' => __('Supplier products'),
-                        'icon'  => 'fal fa-bars'
+                        'icon'  => 'fal fa-bars',
+                        'route' => $routeParameters,
                     ],
                 ],
             ];
@@ -222,21 +196,19 @@ class IndexOrgSupplierProducts extends OrgAction
                 $headCrumb(
                     [
                         'name'       => 'grp.org.procurement.org_supplier_products.index',
-                        'parameters' => Arr::only($routeParameters, 'organisation')
-                    ]
+                        'parameters' => Arr::only($routeParameters, 'organisation'),
+                    ],
                 ),
             ),
-
-
             'grp.org.procurement.org_agents.show.supplier_products.index' =>
             array_merge(
                 (new ShowOrgAgent())->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.procurement.org_agents.show.supplier_products.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
+                        'parameters' => $routeParameters,
+                    ],
+                ),
             ),
             'grp.org.procurement.org_suppliers.show.supplier_products.index' =>
             array_merge(
@@ -244,11 +216,11 @@ class IndexOrgSupplierProducts extends OrgAction
                 $headCrumb(
                     [
                         'name'       => 'grp.org.procurement.org_suppliers.show.supplier_products.index',
-                        'parameters' => $routeParameters
-                    ]
-                )
+                        'parameters' => $routeParameters,
+                    ],
+                ),
             ),
-            default => []
+            default => [],
         };
     }
 }
