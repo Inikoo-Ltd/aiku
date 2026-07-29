@@ -28,6 +28,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
 import error from "@iris/Pages/Errors/Error.vue"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode, faGift, faRepeat)
 
@@ -129,7 +130,7 @@ const onUpdateQuantity = (
         {
             onError: (e: any) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.message,
                     type: "error"
                 })
@@ -204,14 +205,14 @@ async function onSave() {
                 Object.keys(createNewQty).forEach((k) => delete createNewQty[k])
                 editingIds.value.clear()
                 notify({
-                    title: trans("Success"),
-                    text: trans("Changes saved successfully"),
+                    title: ctrans("Success"),
+                    text: ctrans("Changes saved successfully"),
                     type: "success"
                 })
             },
             onError: (e: any) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.message,
                     type: "error"
                 })
@@ -261,7 +262,6 @@ const onDeleteNewRow = (index) => {
     props.data.data.splice(index, 1)
 }
 
-
 defineExpose({
     openModal,
     onSave,
@@ -296,15 +296,15 @@ const removeDiscount = (item) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully removed discount from the product"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully removed discount from the product"),
                     type: "success"
                 })
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors?.discretionary_offer || trans("Failed to remove discount for the product. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: errors?.discretionary_offer || ctrans("Failed to remove discount for the product. Try again"),
                     type: "error"
                 })
             },
@@ -331,16 +331,16 @@ const restoreDiscount = (item) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully restored submitted discount data"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully restored submitted discount data"),
                     type: "success"
                 })
                 onCloseModalNetAmount()
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors?.discretionary_offer || trans("Failed to set restore submitted discount data. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: errors?.discretionary_offer || ctrans("Failed to set restore submitted discount data. Try again"),
                     type: "error"
                 })
             },
@@ -375,16 +375,16 @@ const onSubmitEditNetAmount = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully set discretionary discount percentage"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully set discretionary discount percentage"),
                     type: "success"
                 })
                 onCloseModalNetAmount()
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors?.discretionary_offer || trans("Failed to set discretionary discount percentage. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: errors?.discretionary_offer || ctrans("Failed to set discretionary discount percentage. Try again"),
                     type: "error"
                 })
             },
@@ -414,8 +414,8 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             onError: () => {
                 console.log('eeerr', error)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: error.message || trans("Please try again or contact administrator"),
+                    title: ctrans("Something went wrong"),
+                    text: error.message || ctrans("Please try again or contact administrator"),
                     type: 'error'
                 })
             },
@@ -555,7 +555,7 @@ const isOffersData = (offersData: any): boolean => {
                             xv-if="layout.app.environment == 'local'"
                             v-if="Number(item.product_units) !== 1"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
-                            v-tooltip="trans('Cut view')"
+                            v-tooltip="ctrans('Cut view')"
                             class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
                             :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
                         >
@@ -634,7 +634,7 @@ const isOffersData = (offersData: any): boolean => {
                     </span>
                 </div>
                 <span v-else class="text-gray-400 italic text-xs">
-                    {{ trans("No batch code set") }}
+                    {{ ctrans("No batch code set") }}
                 </span>
             </template>
 
@@ -676,13 +676,13 @@ const isOffersData = (offersData: any): boolean => {
                             <span v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift">
                                 <Button
                                     @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
-                                    v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
+                                    v-tooltip="ctrans('Edit discretionary discount')" type="transparent" size="xs" key="1"
                                     :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400 hover:text-purple-600" />
                                 <Button
                                     @click="() => {
                                         removeDiscount(item)
                                     }"
-                                    v-tooltip="trans('Remove discount from this product')" type="transparent" key="1"
+                                    v-tooltip="ctrans('Remove discount from this product')" type="transparent" key="1"
                                     class="ml-1 !px-0 text-pink-400 hover:text-pink-600 w-max"
                                 >
                                     <template #icon>
@@ -702,7 +702,7 @@ const isOffersData = (offersData: any): boolean => {
                                     @click="() => {
                                         restoreDiscount(item)
                                     }"
-                                    v-tooltip="trans('Restore original discount data')" type="transparent" size="md" key="1"
+                                    v-tooltip="ctrans('Restore original discount data')" type="transparent" size="md" key="1"
                                     :icon="faUndo" class="ml-1 !px-1 text-red-500 hover:text-red-700" 
                                 />
                             </span>
@@ -717,7 +717,7 @@ const isOffersData = (offersData: any): boolean => {
                     <!-- Delete / Unselect -->
                     <Link v-if="state === 'creating'" :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
                           as="button" :method="item.deleteRoute.method" @start="() => (isLoading = 'unselect' + item.id)"
-                          @finish="() => (isLoading = null)" v-tooltip="trans('Unselect this product')"
+                          @finish="() => (isLoading = null)" v-tooltip="ctrans('Unselect this product')"
                           :preserveScroll="true">
                         <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
                                 :loading="isLoading === 'unselect' + item.id" />
@@ -757,7 +757,7 @@ const isOffersData = (offersData: any): boolean => {
                 <!-- Input: Percentage -->
                 <div class="w-full ">
                     <label class="block text-sm font-medium mb-2">
-                        {{ trans("Discretionary discount percentage") }}:
+                        {{ ctrans("Discretionary discount percentage") }}:
                     </label>
                     <InputNumber
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
@@ -771,7 +771,7 @@ const isOffersData = (offersData: any): boolean => {
                 <!-- Input: Label -->
                 <div class="w-full ">
                     <label class="block text-sm font-medium mb-2">
-                        {{ trans("Discretionary discount Label") }}:
+                        {{ ctrans("Discretionary discount Label") }}:
                     </label>
                     <InputText
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer_label', '')"
@@ -802,7 +802,7 @@ const isOffersData = (offersData: any): boolean => {
 
                 <div class="w-full flex gap-4 mt-4">
                     <Button type="negative" size="md" :disabled="isLoadingSubmitNetAmount" icon="far fa-arrow-left"
-                            @click="onCloseModalNetAmount" :label="trans('Cancel')">
+                            @click="onCloseModalNetAmount" :label="ctrans('Cancel')">
                     </Button>
 
                     <Button type="primary" size="md" :loading="isLoadingSubmitNetAmount" icon="fad fa-save"
@@ -814,7 +814,7 @@ const isOffersData = (offersData: any): boolean => {
 
         <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
             <ProductsSelectorAutoSelect
-                :headLabel="trans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"
+                :headLabel="ctrans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"
                 :routeFetch="props.routesProductsListModification" :isLoadingSubmit="false" :listLoadingProducts="false"
                 withQuantity @submit="addNewProduct" />
         </Modal>
