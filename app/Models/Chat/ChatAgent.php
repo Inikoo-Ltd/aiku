@@ -192,7 +192,7 @@ class ChatAgent extends Model
     }
 
 
-    public static function findAvailableAgent(?array $requiredSpecializations = null): ?self
+    public static function findAvailableAgent(?array $requiredSpecializations = null, ?int $shopId = null): ?self
     {
         $query = self::available();
 
@@ -200,6 +200,18 @@ class ChatAgent extends Model
             foreach ($requiredSpecializations as $specialization) {
                 $query->whereJsonContains('specialization', $specialization);
             }
+        }
+
+        if ($shopId) {
+            $organisationId = Shop::where('id', $shopId)->value('organisation_id');
+
+            $query->whereHas('shopAssignments', function ($assignment) use ($shopId, $organisationId) {
+                $assignment->where('shop_id', $shopId)
+                    ->orWhere(function ($orgWide) use ($organisationId) {
+                        $orgWide->whereNull('shop_id')
+                            ->where('organisation_id', $organisationId);
+                    });
+            });
         }
 
         return $query->inRandomOrder()->first();

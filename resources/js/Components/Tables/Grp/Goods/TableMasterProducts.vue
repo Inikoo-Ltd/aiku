@@ -427,7 +427,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <span v-else>
                     {{ locale.currencyFormat(product.currency_code, product.rrp) }}
                     <span v-if="product.rrp_per_unit">
-                        {{ locale.currencyFormat(product.currency_code, product.rrp_per_unit) }}
+                        {{ locale.currencyFormatRrp(product.currency_code, product.rrp_per_unit) }}
                     </span>
                 </span>
             </div>

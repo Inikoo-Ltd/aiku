@@ -5,47 +5,34 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
-import Table from "@/Components/Table/Table.vue";
-import { OrgSupplierProduct } from "@/types/org-supplier-product";
-import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue";
+import { Link } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import { OrgSupplierProduct } from "@/types/org-supplier-product"
 
 defineProps<{
-  data: object,
+  data: object
   tab?: string
-}>();
-
+}>()
 
 function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
-  // console.log(route().current())
   switch (route().current()) {
-    case "grp.org.procurement.suppliers.show":
-      return route(
-        "grp.org.procurement.suppliers.show.supplier_products.show",
-        [supplierProduct.supplier_slug, supplierProduct.slug]);
-    case "grp.org.procurement.org_suppliers.show":
-      return route(
-        "grp.org.procurement.org_suppliers.show.supplier_products.show",
-        [route().params["organisation"], route().params["orgSupplier"], supplierProduct.slug]);
-    case "grp.org.procurement.agents.show":
-      return route(
-        "grp.org.procurement.agents.show.supplier_products.show",
-        [supplierProduct.agent_slug, supplierProduct.slug]);
-    case "grp.org.procurement.agents.show.suppliers.show":
-      return route(
-        "grp.org.procurement.agents.show.suppliers.show.supplier_products.show",
-        [supplierProduct.agent_slug, supplierProduct.supplier_slug, supplierProduct.slug]);
     case "grp.org.procurement.org_agents.show.supplier_products.index":
       return route(
         "grp.org.procurement.org_agents.show.supplier_products.show",
-        [route().params['organisation'], route().params['orgAgent'], supplierProduct.slug]);
+        [route().params["organisation"], route().params["orgAgent"], supplierProduct.slug])
+
+    case "grp.org.procurement.org_suppliers.show":
+    case "grp.org.procurement.org_suppliers.show.supplier_products.index":
+      return route(
+        "grp.org.procurement.org_suppliers.show.supplier_products.show",
+        [route().params["organisation"], route().params["orgSupplier"], supplierProduct.slug])
+
     default:
       return route(
         "grp.org.procurement.org_supplier_products.show",
-        [route().params["organisation"], supplierProduct.slug]);
+        [route().params["organisation"], supplierProduct.slug])
   }
 }
-
 </script>
 
 <template>
@@ -57,5 +44,3 @@ function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
     </template>
   </Table>
 </template>
-
-

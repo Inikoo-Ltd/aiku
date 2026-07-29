@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\HistoricSupplierProduct\StoreHistoricSupplierProduct;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydrateSupplierProducts;
@@ -24,21 +25,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreSupplierProduct extends GrpAction
+class StoreSupplierProduct extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use WithNoStrictRules;
 
     public bool $skipHistoric = false;
     private int $supplier_id;
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("supply-chain.edit");
-    }
 
     /**
      * @throws \Throwable
@@ -128,7 +121,7 @@ class StoreSupplierProduct extends GrpAction
         $this->skipHistoric   = $skipHistoric;
         $this->strict         = $strict;
 
-        $this->initialisation($supplier->group, $modelData);
+        $this->initialisationFromGroup($supplier->group, $modelData);
 
         return $this->handle($supplier, $this->validatedData);
     }
@@ -136,7 +129,7 @@ class StoreSupplierProduct extends GrpAction
     public function asController(Supplier $supplier, ActionRequest $request)
     {
         $this->supplier_id = $supplier->id;
-        $this->initialisation($supplier->group, $request);
+        $this->initialisationFromGroup($supplier->group, $request);
 
         return $this->handle($supplier, $this->validatedData);
     }

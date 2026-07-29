@@ -431,13 +431,24 @@ class GetCatalogueShowcase
             'is_negative'     => true,
             'route'           => [
                 'name'       => 'grp.org.shops.show.catalogue.products.missing_description_products.index',
-                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+                'parameters' => [
+                    'organisation'     => $orgSlug,
+                    'shop'             => $shopSlug,
+                    'elements[state]'  => implode(',', [
+                        ProductStateEnum::IN_PROCESS->value,
+                        ProductStateEnum::ACTIVE->value,
+                        ProductStateEnum::DISCONTINUING->value,
+                    ]),
+                ],
             ],
             'icon'            => 'fal fa-align-left',
             'backgroundColor' => '#ff000011',
-            'value'           => $shop->products()->where('is_main', true)->where(function ($q) {
-                $q->whereNull('description')->orWhere('description', '');
-            })->count(),
+            'value'           => $shop->products()
+                ->where('is_main', true)
+                ->whereIn('state', [ProductStateEnum::IN_PROCESS, ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+                ->where(function ($q) {
+                    $q->whereNull('description')->orWhere('description', '');
+                })->count(),
         ];
     }
 

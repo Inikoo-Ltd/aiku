@@ -11,13 +11,14 @@ import { User } from "@/types/user"
 import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue"
 import Icon from '@/Components/Icon.vue'
+import { useFormatTime } from '@/Composables/useFormatTime'
 
-import { faCheck, faTimes, faUserCircle, faYinYang, faKey, faCheckCircle, faTimesCircle } from "@fal"
+import { faCheck, faTimes, faUserCircle, faYinYang, faKey, faRobot, faCheckCircle, faTimesCircle } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faShieldAlt, faUserShield } from "@far"
 
-library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey,faUserShield, faShieldAlt)
+library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey, faRobot, faUserShield, faShieldAlt)
 
 defineProps<{
     data: {}
@@ -67,6 +68,24 @@ function userRoute(user: User) {
         <template #cell(is_two_factor_required)="{ item: user }">
             <FontAwesomeIcon v-if="user.is_two_factor_required" :icon="faCheckCircle" class="text-green-500"/>
             <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500"/>
+        </template>
+
+        <template #cell(can_use_mcp)="{ item: user }">
+            <FontAwesomeIcon v-if="user.can_use_mcp && user.has_mcp_queries" :icon="faRobot" class="text-green-500"
+                v-tooltip="trans('AI assistant in use')" fixed-width />
+            <FontAwesomeIcon v-else-if="user.can_use_mcp" :icon="faRobot" class="text-gray-400"
+                v-tooltip="trans('AI assistant allowed, not used yet')" fixed-width />
+            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500"
+                v-tooltip="trans('AI assistant not allowed')" fixed-width />
+        </template>
+
+        <template #cell(can_use_mcp_sql)="{ item: user }">
+            <span v-if="user.can_use_mcp_sql" v-tooltip="trans('Super intelligence')" class="cursor-default">🧠</span>
+            <span v-else v-tooltip="trans('No super intelligence')" class="cursor-default opacity-20 grayscale">🧠</span>
+        </template>
+
+        <template #cell(last_active)="{ item: user }">
+            <span class="text-gray-500 whitespace-nowrap">{{ user.last_active ? useFormatTime(user.last_active, { formatTime: 'aiku' }) : '-' }}</span>
         </template>
 
         <!-- Column: Image -->

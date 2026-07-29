@@ -85,7 +85,6 @@ enum PurchaseOrderTransactionStateEnum: string
                     'name' => 'times-circle',
                     'type' => 'font-awesome-5'
                 ]
-
             ],
             'not_received' => [
                 'tooltip' => __('Not Received'),

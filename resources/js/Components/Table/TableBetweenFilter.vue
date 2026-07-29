@@ -128,6 +128,25 @@ const dateIntervals = computed<DateInterval[]>(() => [
         }
     },
     {
+        value: 'mtd',
+        label: trans('Month to Date'),
+        getDateRange: () => {
+            const now = new Date()
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+            return [new Date(startOfMonth.setHours(0, 0, 0, 0)), new Date()]
+        }
+    },
+    {
+        value: 'lm',
+        label: trans('Last Month'),
+        getDateRange: () => {
+            const now = new Date()
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+            return [new Date(startOfLastMonth.setHours(0, 0, 0, 0)), new Date(endOfLastMonth.setHours(23, 59, 59, 999))]
+        }
+    },
+    {
         value: '3d',
         label: trans('3 Days'),
         getDateRange: () => {
@@ -178,25 +197,6 @@ const dateIntervals = computed<DateInterval[]>(() => [
             const oneMonthAgo = new Date()
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
             return [new Date(oneMonthAgo.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: 'mtd',
-        label: trans('Month to Date'),
-        getDateRange: () => {
-            const now = new Date()
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-            return [new Date(startOfMonth.setHours(0, 0, 0, 0)), new Date()]
-        }
-    },
-    {
-        value: 'lm',
-        label: trans('Last Month'),
-        getDateRange: () => {
-            const now = new Date()
-            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
-            return [new Date(startOfLastMonth.setHours(0, 0, 0, 0)), new Date(endOfLastMonth.setHours(23, 59, 59, 999))]
         }
     },
     {

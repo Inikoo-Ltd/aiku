@@ -497,7 +497,7 @@ defineExpose({
             <div class="mb-4 flex flex-col sm:flex-row gap-4 items-center">
                 <!-- Search Input (only for Products tab) -->
                 <div v-if="activeTab === PRODUCT_TABS.PRODUCTS" class="flex-1">
-                    <PureInput v-model="productSearchQuery" :placeholder="trans('Type SKU or product name...')"
+                    <PureInput v-model="productSearchQuery" :placeholder="trans('Type SKO or product name...')"
                         @input="onSearchInput" :autofocus="true" />
                 </div>
 

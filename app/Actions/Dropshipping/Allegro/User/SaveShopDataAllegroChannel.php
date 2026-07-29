@@ -41,14 +41,14 @@ class SaveShopDataAllegroChannel
                 if (! Arr::get($allegroUser->settings, 'shipping.id')) {
                     $shippingRates = $allegroUser->getShippingRates();
 
-                    if(Arr::get($shippingRates, 'shippingRates.0.id')) {
+                    if (Arr::get($shippingRates, 'shippingRates.0.id')) {
                         $shipping = Arr::get($shippingRates, 'shippingRates.0');
                     } else {
                         $shipping = ProcessShippingRates::run($allegroUser);
                     }
 
                     $shippingId = Arr::get($shipping, 'id');
-                    if(blank($shippingId)) {
+                    if (blank($shippingId)) {
                         Sentry::captureMessage('Shipping rates not found');
                     }
 

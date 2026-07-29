@@ -23,6 +23,7 @@ enum SalesChannelTypeEnum: string
     case PLATFORM = 'platform'; // e.g. Shopify, Magento, WooCommerce
     case OTHER = 'other';
     case NA = 'na';
+    case API = 'api';
 
     public static function labels(): array
     {
@@ -36,6 +37,7 @@ enum SalesChannelTypeEnum: string
             'social_media' => __('Social media'),
             'platform'     => __('Platform'),
             'na'           => __('N/A'),
+            'api'           => __('API'),
 
         ];
     }
@@ -63,6 +65,7 @@ enum SalesChannelTypeEnum: string
             self::SOCIAL_MEDIA => 'fal fa-social-media',
             self::PLATFORM     => 'fal fa-cogs',
             self::NA           => 'fal fa-question-circle',
+            self::API          => 'fal fa-fire',
         };
     }
 

@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from "@/Components/Table/Table.vue"
 import { TradeUnit } from "@/types/trade-unit"
 import Icon from "@/Components/Icon.vue"
@@ -108,6 +109,12 @@ const formatDimensions = (dims: any): string => {
     return parts.join(' × ') + (unit ? ` ${unit}` : '')
 }
 
+function tradeUnitHref(tradeUnit: TradeUnit) {
+    const bucket = route().current()?.match(/^grp\.trade_units\.units\.(in_process|active|discontinuing|discontinued|anomality)$/)?.[1]
+
+    return tradeUnitRoute(tradeUnit) + bucketQuery(bucket)
+}
+
 function tradeUnitRoute(tradeUnit: TradeUnit) {
     return route(
         "grp.trade_units.units.show",
@@ -140,7 +147,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <Icon :data="tradeUnit.status_icon" />
         </template>
         <template #cell(code)="{ item: tradeUnit }">
-            <Link :href="tradeUnitRoute(tradeUnit) as string" class="primaryLink">
+            <Link :href="tradeUnitHref(tradeUnit) as string" class="primaryLink">
                 {{ tradeUnit["code"] }}
             </Link>
         </template>

@@ -11,6 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -21,6 +22,7 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterSubDepartment extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithMasterSubDepartmentNavigation;
 
     /**
@@ -117,7 +119,7 @@ class EditMasterSubDepartment extends OrgAction
                                     'options'   => [
                                         'counter'   => true,
                                     ],
-                                    'toogle'  => [
+                                    'toggle'  => [
                                           'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                           'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
                                           'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -130,7 +132,7 @@ class EditMasterSubDepartment extends OrgAction
                                     'options'   => [
                                         'counter'   => true,
                                     ],
-                                    'toogle'  => [
+                                    'toggle'  => [
                                           'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                           'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "link",
                                           'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -192,23 +194,6 @@ class EditMasterSubDepartment extends OrgAction
                                     'noSaveButton' => true,
                                     "full"         => true
                                 ]
-                            ]
-                        ],
-                        [
-                            'label'  => __('Pricing'),
-                            'icon'   => 'fa-light fa-money-bill',
-                            'fields' => [
-                                'cost_price_ratio' => [
-                                    'type'          => 'input_number',
-                                    'bind' => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'         => __('Pricing ratio'),
-                                    'placeholder'   => __('Cost price ratio'),
-                                    'required'      => true,
-                                    'value'         => $masterProductCategory->cost_price_ratio,
-                                    'min'           => 0
-                                ],
                             ]
                         ],
                         [

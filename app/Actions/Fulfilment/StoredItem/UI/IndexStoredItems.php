@@ -151,7 +151,7 @@ class IndexStoredItems extends OrgAction
         $subNavigation = [];
         $actions = [];
         $icon = ['fal', 'fa-narwhal'];
-        $title = __("Customer's SKUs");
+        $title = __("Customer's SKOs");
         $afterTitle = null;
         $iconRight = null;
 
@@ -164,7 +164,7 @@ class IndexStoredItems extends OrgAction
             ];
             $afterTitle = [
 
-                'label' => __("Customer's SKUs")
+                'label' => __("Customer's SKOs")
             ];
 
 
@@ -176,8 +176,8 @@ class IndexStoredItems extends OrgAction
                         $actions[] = [
                             'type' => 'button',
                             'style' => 'secondary',
-                            'tooltip' => __("Continue customer's SKUs audit"),
-                            'label' => __("Continue customer's SKUs audit"),
+                            'tooltip' => __("Continue customer's SKOs audit"),
+                            'label' => __("Continue customer's SKOs audit"),
                             'route' => [
                                 'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.show',
                                 'parameters' => array_merge($request->route()->originalParameters(), ['storedItemAudit' => $openStoredItemAudit->slug])
@@ -186,8 +186,8 @@ class IndexStoredItems extends OrgAction
                     } else {
                         $actions[] = [
                             'type' => 'button',
-                            'tooltip' => __("Start customer's SKUs audit"),
-                            'label' => __("Start customer's SKUs audit"),
+                            'tooltip' => __("Start customer's SKOs audit"),
+                            'label' => __("Start customer's SKOs audit"),
                             'route' => [
                                 'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-item-audits.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -200,8 +200,8 @@ class IndexStoredItems extends OrgAction
                 $actions[] = [
                     'type' => 'button',
                     'style' => 'create',
-                    'tooltip' => __("Create SKU"),
-                    'label' => __("Create SKU"),
+                    'tooltip' => __("Create SKO"),
+                    'label' => __("Create SKO"),
                     'key' => 'create_sku',
                     'route' => [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.create',
@@ -212,8 +212,8 @@ class IndexStoredItems extends OrgAction
                 $actions[] = [
                     'type' => 'button',
                     'style' => 'edit',
-                    'tooltip' => __("Bulk Edit SKU"),
-                    'label' => __("Bulk Edit SKU"),
+                    'tooltip' => __("Bulk Edit SKO"),
+                    'label' => __("Bulk Edit SKO"),
                     'key' => 'edit_sku',
                     'route' => [
                         'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.create',
@@ -230,7 +230,7 @@ class IndexStoredItems extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title' => __("Customer's SKUs"),
+                'title' => __("Customer's SKOs"),
                 'pageHead' => [
                     'title' => $title,
                     'afterTitle' => $afterTitle,
@@ -246,7 +246,7 @@ class IndexStoredItems extends OrgAction
 
                 'bulk_edit_upload' => [
                     'title' => [
-                        'label' => __("Bulk Edit Customer's SKU"),
+                        'label' => __("Bulk Edit Customer's SKO"),
                         'information' => __('The list of column file: stored_items')
                     ],
                     'progressDescription'   => __('Editing stored item'),
@@ -311,7 +311,7 @@ class IndexStoredItems extends OrgAction
                     'type' => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __("Customer's SKUs"),
+                        'label' => __("Customer's SKOs"),
                         'icon' => 'fal fa-bars',
                     ],
 
@@ -340,7 +340,7 @@ class IndexStoredItems extends OrgAction
                                 'name' => 'grp.org.fulfilments.show.crm.customers.show.stored-items.index',
                                 'parameters' => $routeParameters
                             ],
-                            'label' => __("Customer's SKUs"),
+                            'label' => __("Customer's SKOs"),
                             'icon' => 'fal fa-bars',
                         ],
 

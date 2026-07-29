@@ -8,7 +8,7 @@
 
 namespace App\Actions\Comms\PostRoom\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Http\Resources\Mail\PostRoomResource;
 use App\InertiaTable\InertiaTable;
@@ -23,7 +23,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexPostRooms extends GrpAction
+class IndexPostRooms extends OrgAction
 {
     public function handle($prefix = null): LengthAwarePaginator
     {
@@ -71,7 +71,7 @@ class IndexPostRooms extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle();
     }

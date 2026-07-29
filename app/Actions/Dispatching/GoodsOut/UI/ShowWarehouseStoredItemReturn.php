@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\GoodsOut\UI;
 
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnAddressManagement;
 use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnBoxStats;
+use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexServiceInPalletReturn;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
@@ -38,6 +39,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWarehouseStoredItemReturn extends OrgAction
 {
     use WithFulfilmentWarehouseAuthorisation;
+    use WithPalletReturnBucketNavigation;
 
     private bool $requireShipping = true;
 
@@ -322,28 +324,30 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                  'address_management' => GetPalletReturnAddressManagement::run(palletReturn: $palletReturn),
                  'box_stats'          => GetPalletReturnBoxStats::run(palletReturn: $palletReturn, parent: $palletReturn->fulfilmentCustomer),
 
-                // 'service_list_route'       => [
-                //     'name'       => 'grp.json.fulfilment.return.services.index',
-                //     'parameters' => [
-                //         'fulfilment' => $palletReturn->fulfilment->slug,
-                //         'scope'      => $palletReturn->slug
-                //     ]
-                // ],
-                // 'physical_good_list_route' => [
-                //     'name'       => 'grp.json.fulfilment.return.physical-goods.index',
-                //     'parameters' => [
-                //         'fulfilment' => $palletReturn->fulfilment->slug,
-                //         'scope'      => $palletReturn->slug
-                //     ]
-                // ],
+                'notes_data' => GetNotesData::run(model: $palletReturn),
 
-                // 'route_check_stored_items' => [
-                //     'method'     => 'post',
-                //     'name'       => 'grp.models.pallet-return.stored_item.store',
-                //     'parameters' => [
-                //         $palletReturn->id
-                //     ]
-                // ],
+                'service_list_route'       => [
+                    'name'       => 'grp.json.fulfilment.return.services.index',
+                    'parameters' => [
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
+                    ]
+                ],
+                'physical_good_list_route' => [
+                    'name'       => 'grp.json.fulfilment.return.physical-goods.index',
+                    'parameters' => [
+                        'fulfilment' => $palletReturn->fulfilment->slug,
+                        'scope'      => $palletReturn->slug
+                    ]
+                ],
+
+                'route_check_stored_items' => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.pallet-return.stored_item.store',
+                    'parameters' => [
+                        $palletReturn->id
+                    ]
+                ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.pallet-return.attachment.attach',
@@ -484,16 +488,22 @@ class ShowWarehouseStoredItemReturn extends OrgAction
 
     public function getPrevious(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-        $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::STORED_ITEM)->orderBy('id', 'desc')->first();
-
+        if ($bucket = $this->getPalletReturnBucket($request)) {
+            $previous = $this->getPalletReturnBucketNeighbour($palletReturn, $request, $bucket, forward: false);
+        } else {
+            $previous = PalletReturn::where('id', '<', $palletReturn->id)->where('type', PalletReturnTypeEnum::STORED_ITEM)->orderBy('id', 'desc')->first();
+        }
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(PalletReturn $palletReturn, ActionRequest $request): ?array
     {
-        $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::PALLET)->orderBy('id')->first();
-
+        if ($bucket = $this->getPalletReturnBucket($request)) {
+            $next = $this->getPalletReturnBucketNeighbour($palletReturn, $request, $bucket, forward: true);
+        } else {
+            $next = PalletReturn::where('id', '>', $palletReturn->id)->where('type', PalletReturnTypeEnum::STORED_ITEM)->orderBy('id')->first();
+        }
 
         return $this->getNavigation($next, $request->route()->getName());
     }

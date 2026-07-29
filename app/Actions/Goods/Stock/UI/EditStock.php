@@ -58,7 +58,7 @@ class EditStock extends OrgAction
                 'pageHead'    => [
                     'title'   => $stock->name,
                     'icon'    => [
-                        'title' => __('SKUs'),
+                        'title' => __('SKOs'),
                         'icon'  => 'fal fa-box'
                     ],
                     'actions' => [

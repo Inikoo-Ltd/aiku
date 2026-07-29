@@ -15,13 +15,14 @@ import { trans } from 'laravel-vue-i18n'
 
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
-import { set, get } from 'lodash-es'
+import { set, get, pick } from 'lodash-es'
 import PureMultiselectInfiniteScroll from '../Pure/PureMultiselectInfiniteScroll.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import ButtonWithLink from '../Elements/Buttons/ButtonWithLink.vue'
 import PureInput from '../Pure/PureInput.vue'
 import { RouteParams } from 'ziggy-js'
+import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 
 library.add(faSearch, faColumns)
 // import { useToast } from 'primevue/usetoast'
@@ -30,6 +31,8 @@ library.add(faSearch, faColumns)
 // onMounted(() => {
 //     ProductService.getProducts().then((data) => (products.value = data))
 // })
+
+defineProps<{}>()
 
 const layout = inject('layout', layoutStructure)
 
@@ -128,7 +131,7 @@ const rowClass = (xxx: any) => {
 
 
 // Section: multiselect columns selector
-const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'price', 'rrp', 'units', 'unit', 'gross_weight', 'family_id', ])
+const selectedColumns = ref([ 'name', 'image', 'description', 'is_for_sale', 'units', 'unit', 'gross_weight', 'family_id' ])
 const groupedColumnList = ref([
     {
         label: 'General',
@@ -137,13 +140,6 @@ const groupedColumnList = ref([
             { label: 'Image', value: 'image' },
             { label: 'Description', value: 'description' },
             { label: 'Is For Sale?', value: 'is_for_sale' }
-        ]
-    },
-    {
-        label: 'Pricing',
-        items: [
-            { label: 'Price', value: 'price' },
-            { label: 'RRP', value: 'rrp' },
         ]
     },
     {
@@ -176,8 +172,9 @@ watch(selectedColumns, (e) => {  // To avoid 'name' to be unselected
 
 // Section: Submit data
 const isLoadingSave = ref(false)
+const editableFields = ['id', 'name', 'description', 'is_for_sale', 'unit', 'gross_weight', 'master_family_id']
 const onSave = async () => {
-    console.log('productsList.value', productsList.value)
+    const payload = productsList.value.map((product: any) => pick(product, editableFields))
     try {
         isLoadingSave.value = true
         const response = await axios.post(
@@ -187,7 +184,7 @@ const onSave = async () => {
                     masterShop: routeParams.masterShop
                 }
             ),
-            { data: productsList.value }
+            { data: payload }
         )
         if (response.status !== 200) {
             
@@ -247,6 +244,15 @@ const onSelectFamily = (option: any) => {
         row.master_family_data = option
     }
 }
+
+const locale = inject("locale", {});
+
+const tradeUnitRoute = (tradeUnit) => {
+    return route(
+        "grp.trade_units.units.show",
+        [tradeUnit.slug])
+}
+
 </script>
 
 
@@ -397,40 +403,24 @@ const onSelectFamily = (option: any) => {
                     </template>
                 </Column>
 
-                <!-- Column: Price -->
-                <Column v-if="selectedColumns.includes('price')" field="price" header="Price" sortable style="min-width: 8rem">
+                  <!-- Column: Units -->
+                <Column v-if="selectedColumns.includes('units')" field="units" header="Units" style="min-width: 6rem">
                     <template #body="slotProps">
-                        <InputNumber
-                            v-model="slotProps.data.price"
-                            @input="(e) => slotProps.data.price = e?.value ?? 0"
-                            mode="currency"
-                            :currency="slotProps.data.currency"
-                            inputClass="text-right"
+                        <LabelSKU :product="slotProps.data" :trade_units="slotProps.data.trade_units"
+                            :routeFunction="tradeUnitRoute" />
+                       <!--  <InputNumber
+                            v-model="slotProps.data.units"
+                            @input="(e) => slotProps.data.units = e?.value ?? 0"
                             :maxFractionDigits="2"
                             locale="en-US"
                             :min="0"
-                            fluid
-                        />
-                    </template>
-                </Column>
-                
-                <!-- Column: RRP -->
-                <Column v-if="selectedColumns.includes('rrp')" field="rrp" header="RRP" sortable style="min-width: 8rem">
-                    <template #body="slotProps">
-                        <InputNumber
-                            v-model="slotProps.data.rrp"
-                            @input="(e) => slotProps.data.rrp = e?.value ?? 0"
-                            mode="currency"
-                            :currency="slotProps.data.currency"
                             inputClass="text-right"
-                            :maxFractionDigits="2"
-                            locale="en-US"
-                            :min="0"
                             fluid
-                        />
+                            :disabled="true"
+                        /> -->
                     </template>
                 </Column>
-                
+
                 <!-- Column: Unit price -->
                 <!-- <Column v-if="selectedColumns.includes('unit_price')" field="unit_price" header="Unit price" sortable style="min-width: 8rem">
                     <template #body="slotProps">
@@ -465,20 +455,7 @@ const onSelectFamily = (option: any) => {
                     </template>
                 </Column>
 
-                <!-- Column: Units -->
-                <Column v-if="selectedColumns.includes('units')" field="units" header="Units" style="min-width: 6rem">
-                    <template #body="slotProps">
-                        <InputNumber
-                            v-model="slotProps.data.units"
-                            @input="(e) => slotProps.data.units = e?.value ?? 0"
-                            :maxFractionDigits="2"
-                            locale="en-US"
-                            :min="0"
-                            inputClass="text-right"
-                            fluid
-                        />
-                    </template>
-                </Column>
+              
 
                 <!-- Column: Unit -->
                 <Column v-if="selectedColumns.includes('unit')" field="unit" header="Unit" style="min-width: 8rem">
@@ -564,5 +541,15 @@ const onSelectFamily = (option: any) => {
 
 :deep(.multiselect .multiselect-dropdown) {
     max-height: 22rem !important;
+}
+
+:deep(.p-datatable-scrollable .p-datatable-frozen-column) {
+    position: sticky;
+    background: var(--p-datatable-row-background, #fff);
+    z-index: 3;
+}
+
+:deep(.p-datatable-scrollable .p-datatable-tbody > tr > td) {
+    z-index: 1;
 }
 </style>

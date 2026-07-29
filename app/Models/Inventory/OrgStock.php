@@ -81,6 +81,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $current_supplier_sku_cost
  * @property int $current_batch_codes
  * @property int|null $main_batch_code_id
+ * @property string|null $note_to_pickers
+ * @property string|null $note_to_packers
+ * @property array<array-key, mixed>|null $consumables [{"code": "IAL01", "quantity": 1}] the packer adds per product ordered
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
  * @property-read \App\Models\SysAdmin\Group|null $group
@@ -117,6 +120,7 @@ class OrgStock extends Model implements Auditable
 
     protected $casts = [
         'data'                             => 'array',
+        'consumables'                      => 'array',
         'activated_in_organisation_at'     => 'datetime',
         'discontinuing_in_organisation_at' => 'datetime',
         'discontinued_in_organisation_at'  => 'datetime',

@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\SupplyChain\HasSupplyChainFields;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Group;
@@ -16,8 +17,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateSupplier extends GrpAction
+class CreateSupplier extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use HasSupplyChainFields;
 
     private Group|Agent $parent;
@@ -65,15 +67,10 @@ class CreateSupplier extends GrpAction
         );
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo('supply-chain.edit');
-    }
-
     public function asController(ActionRequest $request): Response
     {
         $group = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $request);
     }
@@ -81,7 +78,7 @@ class CreateSupplier extends GrpAction
     public function inAgent(Agent $agent, ActionRequest $request): Response
     {
         $group = $agent->group;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($agent, $request);
     }

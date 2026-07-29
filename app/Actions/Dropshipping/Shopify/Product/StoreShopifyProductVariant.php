@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -23,6 +24,7 @@ use Sentry;
 class StoreShopifyProductVariant extends RetinaAction
 {
     use WithActionUpdate;
+    use WithPortfolioErrorResponse;
 
 
     /** level 1: upload includes price
@@ -148,7 +150,7 @@ class StoreShopifyProductVariant extends RetinaAction
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => [$errorMessage]
+                    'errors_response' => $this->portfolioErrorResponse($errorMessage)
                 ]);
                 Log::error("Product variant update failed A: ".$errorMessage);
 
@@ -162,7 +164,7 @@ class StoreShopifyProductVariant extends RetinaAction
                 $errorMessage = 'User errors: '.json_encode($errors);
 
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => [$errorMessage]
+                    'errors_response' => $this->portfolioErrorResponse($errorMessage)
                 ]);
                 Log::error("Product variant update failed B: ".$errorMessage);
 
@@ -177,7 +179,7 @@ class StoreShopifyProductVariant extends RetinaAction
         } catch (Exception $e) {
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [$e->getMessage()]
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
             ]);
 
             return [false, $e->getMessage()];

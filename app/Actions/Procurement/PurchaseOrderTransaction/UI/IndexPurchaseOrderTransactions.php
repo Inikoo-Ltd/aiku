@@ -11,6 +11,8 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PurchaseOrder;
@@ -34,6 +36,51 @@ class IndexPurchaseOrderTransactions extends OrgAction
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
+    protected function showDeliveryState(PurchaseOrder $purchaseOrder): bool
+    {
+        return in_array($purchaseOrder->state, [PurchaseOrderStateEnum::CONFIRMED, PurchaseOrderStateEnum::SETTLED], true)
+            && $purchaseOrder->stockDeliveries()->exists();
+    }
+
+    protected function getElementGroups(PurchaseOrder $purchaseOrder): array
+    {
+        $elementGroups = [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => collect(PurchaseOrderTransactionStateEnum::cases())->mapWithKeys(
+                    fn (PurchaseOrderTransactionStateEnum $state) => [
+                        $state->value => [
+                            PurchaseOrderTransactionStateEnum::labels()[$state->value],
+                            $purchaseOrder->{'number_purchase_order_transactions_state_'.$state->snake()},
+                        ],
+                    ]
+                )->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('purchase_order_transactions.state', $elements);
+                },
+            ],
+        ];
+
+        if ($this->showDeliveryState($purchaseOrder)) {
+            $elementGroups['delivery_state'] = [
+                'label'    => __('Delivery State'),
+                'elements' => collect(PurchaseOrderTransactionDeliveryStateEnum::cases())->mapWithKeys(
+                    fn (PurchaseOrderTransactionDeliveryStateEnum $deliveryState) => [
+                        $deliveryState->value => [
+                            PurchaseOrderTransactionDeliveryStateEnum::labels()[$deliveryState->value],
+                            $purchaseOrder->{'number_purchase_orders_transactions_delivery_state_'.$deliveryState->snake()},
+                        ],
+                    ]
+                )->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('purchase_order_transactions.delivery_state', $elements);
+                },
+            ];
+        }
+
+        return $elementGroups;
+    }
+
     public function handle(PurchaseOrder $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -50,6 +97,8 @@ class IndexPurchaseOrderTransactions extends OrgAction
         $query = QueryBuilder::for(PurchaseOrderTransaction::class);
         $query->with([
             'supplierProduct.currency',
+            'supplierProduct.supplier',
+            'orgSupplierProduct.orgSupplier',
             'organisation.currency',
             'orgStock.tradeUnits.image',
         ]);
@@ -74,6 +123,17 @@ class IndexPurchaseOrderTransactions extends OrgAction
             $query->where('purchase_order_transactions.purchase_order_id', $parent->id);
         }
 
+        if ($parent->state !== PurchaseOrderStateEnum::IN_PROCESS) {
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $query->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix,
+                );
+            }
+        }
+
         return $query->allowedSorts([AllowedSort::field('code', 'sp.code')])
             ->defaultSort('purchase_order_transactions.id')
             ->allowedFilters([$globalSearch])
@@ -91,9 +151,26 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
+            if ($purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS) {
+                foreach ($this->getElementGroups($purchaseOrder) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements'],
+                    );
+                }
+            }
+
             $table
                 ->withGlobalSearch()
                 ->withModelOperations()
+                ->column(key: 'state_icon', label: ['fal', 'fa-clipboard-list'], canBeHidden: false, type: 'icon');
+
+            if ($this->showDeliveryState($purchaseOrder)) {
+                $table->column(key: 'delivery_state', label: ['fal', 'fa-people-arrows'], canBeHidden: false, type: 'icon');
+            }
+
+            $table
                 ->column(key: 'code', label: __('S. Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'image_thumbnail', label: __('Image'), canBeHidden: false);
 
@@ -101,15 +178,19 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 $table
                     ->column(key: 'description', label: __('Description'), canBeHidden: false)
                     ->column(key: 'subtotals', label: __('Subtotals'), canBeHidden: false)
-                    ->column(key: 'quantity', label: __('Units'), canBeHidden: false, align: 'right');
+                    ->column(key: 'quantity', label: __('Units'), canBeHidden: false, align: 'right')
+                    ->column(key: 'actions', label: 'Actions', canBeHidden: false, align: 'right');
             } else {
                 $table
                     ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
                     ->column(key: 'quantity', label: __('Qty'), canBeHidden: false)
                     ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
-                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false)
-                    ->column(key: 'state', label: __('State'), canBeHidden: false);
+                    ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
+
+                if ($purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED) {
+                    $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
+                }
             }
 
             $table->defaultSort('code');

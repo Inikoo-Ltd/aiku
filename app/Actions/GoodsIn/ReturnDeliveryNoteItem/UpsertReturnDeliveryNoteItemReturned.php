@@ -61,7 +61,7 @@ class UpsertReturnDeliveryNoteItemReturned extends OrgAction
     public function rules(): array
     {
         return [
-            'quantity'              => ['required', 'numeric', 'min:0'],
+            'quantity'              => ['required', 'numeric', 'gte:0'],
             'location_org_stock_id' => ['sometimes', Rule::Exists('location_org_stocks', 'id')->where('warehouse_id', $this->warehouse->id)]
         ];
     }

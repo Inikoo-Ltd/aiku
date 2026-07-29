@@ -34,6 +34,8 @@ class UpdatePurchaseOrder extends OrgAction
         'delivery_address',
         'payment_terms',
         'terms_and_conditions',
+        'estimated_production_date',
+        'estimated_receiving_date',
     ];
 
     public function handle(PurchaseOrder $purchaseOrder, array $modelData): PurchaseOrder
@@ -72,6 +74,8 @@ class UpdatePurchaseOrder extends OrgAction
             'delivery_address'     => ['sometimes', 'nullable', 'string'],
             'payment_terms'        => ['sometimes', 'nullable', 'string'],
             'terms_and_conditions' => ['sometimes', 'nullable', 'string'],
+            'estimated_production_date' => ['sometimes', 'nullable', 'date'],
+            'estimated_receiving_date'  => ['sometimes', 'nullable', 'date'],
         ];
 
         if ($this->strict) {

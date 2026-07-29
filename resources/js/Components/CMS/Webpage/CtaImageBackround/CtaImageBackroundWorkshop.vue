@@ -63,7 +63,7 @@ const imageSettings = {
           sendMessageToParent('activeBlock', indexBlock)
           sendMessageToParent('activeChildBlock', bKeys[1])
         }">
-        <div class="text-center lg:text-left text-gray-700 pr-3 mb-4 w-full">
+        <div class="text-center md:text-left text-gray-700 pr-3 mb-4 w-full">
           <Editor v-if="modelValue?.text" v-model="modelValue.text" @update:modelValue="() => emits('autoSave')" @focus="() => {
               sendMessageToParent('activeBlock', indexBlock)
               sendMessageToParent('activeChildBlock', bKeys[1])
@@ -79,11 +79,16 @@ const imageSettings = {
         <div v-if="modelValue?.button?.show" class="flex w-full"  :style="getStyles(modelValue.button?.box?.container?.properties, screenType)">
           <Button :injectStyle="{
             ...getStyles(modelValue?.button?.container?.properties, screenType),
-            width: 'fit-content !important'
-          }" :label="modelValue?.button?.text" @click.stop="() => {
+          }"@click.stop="() => {
             sendMessageToParent('activeBlock', indexBlock)
             sendMessageToParent('activeChildBlock', bKeys[2])
-          }" />
+          }"
+            class="w-full text-center md:!w-fit"
+          >
+              <template #label>
+                  <span class="text-center w-full">{{ modelValue?.button?.text }}</span>
+              </template>
+          </Button>
 
         </div>
 

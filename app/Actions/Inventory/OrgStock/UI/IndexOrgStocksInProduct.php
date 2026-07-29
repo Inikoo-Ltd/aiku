@@ -71,7 +71,7 @@ class IndexOrgStocksInProduct extends OrgAction
             }
 
             $table
-                ->withLabelRecord([__('SKU'),__('SKUs')])
+                ->withLabelRecord([__('SKO'),__('SKOs')])
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations);

@@ -39,7 +39,7 @@ class SyncStoredItemPallet extends OrgAction
 
             foreach ($newPallets as $palletId => $palletData) {
                 if ($palletData['quantity'] > ($currentQuantities[$palletId] ?? 0)) {
-                    throw ValidationException::withMessages(['pallets' => __('The SKU ":reference" is :state, its quantity cannot be increased.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
+                    throw ValidationException::withMessages(['pallets' => __('The SKO ":reference" is :state, its quantity cannot be increased.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
                 }
             }
         }

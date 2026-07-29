@@ -113,4 +113,8 @@ return [
     'discord' => [
         'webhook_url' => env('DISCORD_WEBHOOK_URL'),
     ],
+    'github' => [
+        'token' => env('GITHUB_TOKEN'),
+        'repo' => env('GITHUB_REPO', 'Inikoo-Ltd/aiku'),
+    ],
 ];

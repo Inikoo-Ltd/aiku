@@ -36,11 +36,28 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_waiting_warehouse
  * @property mixed $quantity_waiting_crm
  * @property mixed $notes
+ * @property mixed $org_stock_note_to_pickers
+ * @property mixed $org_stock_note_to_packers
+ * @property mixed $transaction_quantity_ordered
  * @property mixed $shop_slug
  * @property mixed $shop_type
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
+    /**
+     * Replaces `:qty` in a standing warehouse note with the number of products ordered in this
+     * transaction, so notes such as "add :qty import address label(s)" carry the count the picker
+     * used to read off the IAL01 line.
+     */
+    private function resolveHandlingNote(?string $note): ?string
+    {
+        if (!$note) {
+            return null;
+        }
+
+        return str_replace(':qty', (string) (0 + $this->transaction_quantity_ordered), $note);
+    }
+
     public function toArray($request): array
     {
         $packedIn = $this->packed_in;
@@ -173,6 +190,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             ],
             'packed_in_message'              => $packedInMessage,
             'notes'                          => $this->notes,
+            'note_to_pickers'                => $this->resolveHandlingNote($this->org_stock_note_to_pickers),
+            'note_to_packers'                => $this->resolveHandlingNote($this->org_stock_note_to_packers),
             'shop_slug'                      => $this->shop_slug,
             'delivery_note_shop_type'        => $this->shop_type,
             'un_numbers'                     => @json_decode($this->un_numbers) ?? null,

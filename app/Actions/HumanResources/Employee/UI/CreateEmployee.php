@@ -281,15 +281,17 @@ class CreateEmployee extends OrgAction
                             'fields' => [
 
                                 'username' => [
-                                    'type'  => 'input',
-                                    'label' => __('Username'),
-                                    'value' => ''
+                                    'type'     => 'input',
+                                    'label'    => __('Username'),
+                                    'required' => true,
+                                    'value'    => ''
 
                                 ],
                                 'password' => [
-                                    'type'  => 'password',
-                                    'label' => __('Password'),
-                                    'value' => ''
+                                    'type'     => 'password',
+                                    'label'    => __('Password'),
+                                    'required' => true,
+                                    'value'    => ''
                                 ],
                             ]
                         ],

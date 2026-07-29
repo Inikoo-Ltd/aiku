@@ -17,10 +17,8 @@ trait WithOrgSupplierSubNavigation
     {
         return [
             [
-                "isAnchor" => true,
-                "label"    => __($parent->slug),
-
-                "route"     => [
+                "label"    => $parent->slug,
+                "route"    => [
                     "name"       => "grp.org.procurement.org_suppliers.show",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
                 ],
@@ -28,11 +26,11 @@ trait WithOrgSupplierSubNavigation
                     "icon"    => ["fal", "fa-person-dolly"],
                     "tooltip" => __("Org Supplier"),
                 ],
+                "isAnchor" => true,
             ],
             [
-                "number"   => $parent->stats->number_org_supplier_products,
                 "label"    => __("Products"),
-                "route"     => [
+                "route"    => [
                     "name"       => "grp.org.procurement.org_suppliers.show.supplier_products.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
                 ],
@@ -40,11 +38,11 @@ trait WithOrgSupplierSubNavigation
                     "icon"    => ["fal", "fa-box-usd"],
                     "tooltip" => __("Products"),
                 ],
+                "number"   => $parent->stats->number_org_supplier_products,
             ],
             [
-                "number"   => $parent->stats->number_purchase_orders,
                 "label"    => __("Purchase Orders"),
-                "route"     => [
+                "route"    => [
                     "name"       => "grp.org.procurement.org_suppliers.show.purchase_orders.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
                 ],
@@ -52,11 +50,11 @@ trait WithOrgSupplierSubNavigation
                     "icon"    => ["fal", "fa-clipboard"],
                     "tooltip" => __("Purchase Orders"),
                 ],
+                "number"   => $parent->stats->number_purchase_orders,
             ],
             [
-                "number"   => $parent->stats->number_stock_deliveries,
                 "label"    => __("Stock Deliveries"),
-                "route"     => [
+                "route"    => [
                     "name"       => "grp.org.procurement.org_suppliers.show.stock_deliveries.index",
                     "parameters" => [$parent->organisation->slug, $parent->slug],
                 ],
@@ -64,8 +62,8 @@ trait WithOrgSupplierSubNavigation
                     "icon"    => ["fal", "fa-truck-container"],
                     "tooltip" => __("Stock Deliveries"),
                 ],
+                "number"   => $parent->stats->number_stock_deliveries,
             ],
-
         ];
     }
 }

@@ -154,6 +154,7 @@ test('approved pastpay order stores payment, marks api point success and submits
 });
 
 test('pastpay term charge is added to the order on success', function () {
+    createWarehouse();
     $paymentAccountShop = createPastpayPaymentAccountShop($this->organisation, $this->shop);
     list($order, $orderPaymentApiPoint) = createOrderWithPastpayApiPoint($this->customer, $this->product, $paymentAccountShop);
 
@@ -445,6 +446,14 @@ test('order partially paid with balance is financed by pastpay only for the rema
     list($order, $orderPaymentApiPoint) = createOrderWithPastpayApiPoint($this->customer, $this->product, $paymentAccountShop);
 
     $startingBalance = (float) $this->customer->balance;
+    if ($startingBalance != 0.0) {
+        StoreCreditTransaction::make()->action($this->customer, [
+            'amount' => -$startingBalance,
+            'type'   => CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER,
+        ]);
+        $this->customer->refresh();
+        $startingBalance = (float) $this->customer->balance;
+    }
     StoreCreditTransaction::make()->action($this->customer, [
         'amount' => 5,
         'type'   => CreditTransactionTypeEnum::ADD_FUNDS_OTHER,

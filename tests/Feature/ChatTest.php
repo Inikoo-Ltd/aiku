@@ -1775,7 +1775,7 @@ test('GetChatCustomerProfile returns empty defaults when session has no web user
 
     $result = GetChatCustomerProfile::make()->handle($chatSession);
 
-    expect($result)->toBe(['tags' => [], 'stats' => null]);
+    expect($result)->toBe(['tags' => [], 'stats' => null, 'email' => null, 'profile_url' => null]);
 });
 
 test('GetChatCustomerTimeline returns empty events when session has no customer', function () {
@@ -2015,7 +2015,7 @@ test('TranslateSessionMessages chains translation jobs for unread visitor messag
 test('UI Show shop chat dashboard', function () {
     actingAs($this->user);
 
-    $response = get(route('grp.org.shops.show.crm.chat.dashboard', [$this->organisation->slug, $this->shop->slug]));
+    $response = get(route('grp.org.shops.show.chat.dashboard', [$this->organisation->slug, $this->shop->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Shop/Chat/Dashboard');

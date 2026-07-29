@@ -15,6 +15,7 @@ use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 /**
  * @property mixed $id
@@ -42,7 +43,7 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $storedItem = StoredItem::find($this->id);
+        $storedItem = $this->resource instanceof StoredItem ? $this->resource : StoredItem::find($this->id);
 
         return [
             'id'                     => $this->id,
@@ -60,25 +61,7 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
             'total_quantity_ordered' => (int) ($this->total_quantity_ordered ?? 0),
             'is_checked'             => (bool) $this->pallet_return_state === PalletReturnStateEnum::IN_PROCESS->value ? $this->pallet_return_id : false,
             'pallet_return_state'    => $this->pallet_return_state ?? null,
-            'pallet_stored_items'    => $storedItem->palletStoredItems()
-                ->whereHas(
-                    'pallet',
-                    fn ($q) =>
-                    $q->where('state', PalletStateEnum::STORING)
-                )
-                ->when(
-                    in_array($this->pallet_return_state, [PalletReturnStateEnum::PICKING->value, PalletReturnStateEnum::PICKED->value, PalletReturnStateEnum::DISPATCHED->value]),
-                    fn ($query) => $query->where(function ($q) {
-                        $q->where('state', '!=', PalletStoredItemStateEnum::RETURNED)
-                        ->orWhereHas(
-                            'palletReturnItems',
-                            fn ($subQuery) =>
-                            $subQuery->where('pallet_return_id', $this->pallet_return_id)
-                        );
-                    }),
-                    fn ($query) => $query->where('state', '!=', PalletStoredItemStateEnum::RETURNED)
-                )
-                ->get()
+            'pallet_stored_items'    => $this->getReturnablePalletStoredItems($storedItem)
                 ->map(function ($palletStoredItem) {
                     $palletReturnItem = $palletStoredItem->palletReturnItems
                         ->where('pallet_return_id', $this->pallet_return_id)
@@ -158,8 +141,66 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                             'code' => $palletStoredItem->pallet->location->code ?? null
                         ] : null
                     ];
-                }),
+                })
+                ->pipe(fn (Collection $palletStoredItems) => self::sortPalletStoredItems($palletStoredItems)),
             'total_quantity' => (int) $this->total_quantity,
         ];
+    }
+
+    /**
+     * Eager loaded by the index when it can, so the rows do not each fetch their own pallets.
+     */
+    private function getReturnablePalletStoredItems(StoredItem $storedItem): Collection
+    {
+        if ($storedItem->relationLoaded('palletStoredItems')) {
+            return $storedItem->palletStoredItems;
+        }
+
+        return self::constrainReturnablePalletStoredItems(
+            $storedItem->palletStoredItems()->with(self::PALLET_STORED_ITEM_RELATIONS),
+            $this->pallet_return_state,
+            $this->pallet_return_id
+        )->get();
+    }
+
+    public const PALLET_STORED_ITEM_RELATIONS = ['palletReturnItems', 'pallet.location', 'pallet.palletStoredItems'];
+
+    /**
+     * Keeps the index eager load and the per row query filtering the same rows.
+     */
+    public static function constrainReturnablePalletStoredItems($query, ?string $palletReturnState, mixed $palletReturnId)
+    {
+        return $query
+            ->whereHas(
+                'pallet',
+                fn ($q) => $q->where('state', PalletStateEnum::STORING)
+            )
+            ->when(
+                in_array($palletReturnState, [PalletReturnStateEnum::PICKING->value, PalletReturnStateEnum::PICKED->value, PalletReturnStateEnum::DISPATCHED->value]),
+                fn ($query) => $query->where(function ($q) use ($palletReturnId) {
+                    $q->where('state', '!=', PalletStoredItemStateEnum::RETURNED)
+                        ->orWhereHas(
+                            'palletReturnItems',
+                            fn ($subQuery) => $subQuery->where('pallet_return_id', $palletReturnId)
+                        );
+                }),
+                fn ($query) => $query->where('state', '!=', PalletStoredItemStateEnum::RETURNED)
+            );
+    }
+
+    /**
+     * @param  Collection<int, array{id: int, reference: string|null, location: array{code: string|null}|null}>  $palletStoredItems
+     * @return Collection<int, array{id: int, reference: string|null, location: array{code: string|null}|null}>
+     */
+    public static function sortPalletStoredItems(Collection $palletStoredItems): Collection
+    {
+        return $palletStoredItems
+            ->sortBy(fn (array $palletStoredItem) => sprintf(
+                '%s|%s|%012d',
+                $palletStoredItem['location']['code'] ?? '~',
+                $palletStoredItem['reference'] ?? '~',
+                (int) $palletStoredItem['id']
+            ))
+            ->values();
     }
 }

@@ -11,10 +11,12 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
+use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -43,7 +45,7 @@ class UpdateMasterAsset extends OrgAction
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
     use WithMasterAssetTradeUnits;
-
+    use WithCustomTradeUnitAudits;
 
     private MasterAsset $masterAsset;
 
@@ -52,7 +54,8 @@ class UpdateMasterAsset extends OrgAction
      */
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
-        $oldMismatchDetected = $masterAsset->mismatch_detected;
+        $oldMasterAsset      = clone($masterAsset);
+        $oldMismatchDetected = $oldMasterAsset->mismatch_detected;
 
         if (Arr::has($modelData, 'master_family_id')) {
             $masterFamily = null;
@@ -108,9 +111,25 @@ class UpdateMasterAsset extends OrgAction
             ]);
         }
 
+        if (Arr::has($modelData, 'master_prices')) {
+            $eurPrice = data_get($modelData, 'master_prices.EUR.value');
+            if ($eurPrice) {
+                data_set($modelData, 'price', $eurPrice);
+            }
+        }
+
+        if (Arr::has($modelData, 'master_rrps')) {
+            $eurRRP = data_get($modelData, 'master_rrps.EUR.value');
+            if ($eurRRP) {
+                data_set($modelData, 'rrp', $eurRRP);
+            }
+        }
+
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
 
         $masterAsset = DB::transaction(function () use ($masterAsset, $modelData, $tradeUnits) {
+            $oldTradeUnitData = $masterAsset->tradeUnits;
+
             /** @var MasterAsset $masterAsset */
             if (!empty($tradeUnits)) {
                 $this->processTradeUnits($masterAsset, $tradeUnits);
@@ -132,12 +151,13 @@ class UpdateMasterAsset extends OrgAction
             $this->update($masterAsset, $modelData);
             $masterAsset->refresh();
 
+            $this->dispatchCustomAuditTradeUnit($masterAsset, $oldTradeUnitData);
+
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
 
         CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
-
 
         if ($oldMismatchDetected != $masterAsset->mismatch_detected) {
             $masterFamily = $masterAsset->masterFamily;
@@ -149,7 +169,6 @@ class UpdateMasterAsset extends OrgAction
 
             MasterShopHydrateNumberMismatches::run($masterAsset->masterShop);
         }
-
 
         if ($masterAsset->wasChanged('unit')) {
             $english = Language::where('code', 'en')->first();
@@ -180,7 +199,6 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-
         if ($masterAsset->wasChanged('master_family_id')) {
             if ($masterAsset->masterFamily) {
                 foreach ($masterAsset->products as $product) {
@@ -198,13 +216,12 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if ($masterAsset->wasChanged(['master_prices', 'master_rrps'])) {
+            MasterAssetHydrateMasterPricesRRPtoChild::run($masterAsset);
+        }
+
         if ($masterAsset->wasChanged(['price', 'rrp', 'status'])) {
             MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
-
-            if ($masterAsset->wasChanged(['price', 'rrp'])) {
-                // TODO MasterLevel Price RRP (Raul)
-                // TODO HydrateChildPriceRRP according to Ratio
-            }
 
             if ($masterAsset->wasChanged('status')) {
                 GroupHydrateMasterAssets::dispatch($masterAsset->group)->delay($this->hydratorsDelay);
@@ -319,7 +336,15 @@ class UpdateMasterAsset extends OrgAction
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'follow_trade_unit_media'      => ['sometimes', 'boolean'],
-            'tax_category'                 => ['sometimes', 'array']
+            'tax_category'                 => ['sometimes', 'array'],
+            // Master Prices
+            'master_prices'                => ['sometimes', 'array'],
+            'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
+            'master_prices.*.independent'  => ['sometimes', 'boolean'],
+            // Master RRPs | values are totals (same basis as products.rrp), NOT per unit
+            'master_rrps'                   => ['sometimes', 'array'],
+            'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
+            'master_rrps.*.independent'     => ['sometimes', 'boolean'],
         ];
 
         if (!$this->strict) {

@@ -186,7 +186,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                 'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -207,7 +207,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                     'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -232,7 +232,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                 'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -253,7 +253,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                     'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -273,23 +273,6 @@ class EditSubDepartment extends OrgAction
                                         "required"     => false,
                                         'noSaveButton' => true,
                                         "full"         => true
-                                    ],
-                                ]
-                            ],
-                            [
-                                'label'  => __('Pricing'),
-                                'icon'   => 'fa-light fa-money-bill',
-                                'fields' => [
-                                    'cost_price_ratio' => [
-                                        'type'        => 'input_number',
-                                        'bind'        => [
-                                            'maxFractionDigits' => 3
-                                        ],
-                                        'label'       => __('Pricing ratio'),
-                                        'placeholder' => __('Cost price ratio'),
-                                        'required'    => true,
-                                        'value'       => $subDepartment->cost_price_ratio,
-                                        'min'         => 0
                                     ],
                                 ]
                             ],

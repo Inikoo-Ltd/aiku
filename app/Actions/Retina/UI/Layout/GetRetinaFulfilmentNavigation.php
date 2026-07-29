@@ -136,7 +136,7 @@ class GetRetinaFulfilmentNavigation
                                 'topMenu' => [
                                     'subSections' => [
                                         [
-                                            'label' => __('SKUs'),
+                                            'label' => __('SKOs'),
                                             'icon'  => ['fal', 'fa-barcode'],
                                             'root'  => 'retina.fulfilment.itemised_storage.stored_items.',
                                             'route' => [

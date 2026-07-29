@@ -9,32 +9,87 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'urgent';
+
     public function getJobUniqueId(?int $orderID): string
     {
         return $orderID ?? 'empty';
     }
 
-    public function handle(?int $orderID, ?Command $command = null): void
+    public function handle(?int $orderID, ?Command $command = null, ?int $priceExchangeMasterShopID = null, ?string $priceExchangeCurrencyCode = null): void
+    {
+        try {
+            $this->recalculate($orderID, $command);
+        } finally {
+            if ($priceExchangeMasterShopID && $priceExchangeCurrencyCode) {
+                $this->updatePriceExchangeProgress($priceExchangeMasterShopID, $priceExchangeCurrencyCode);
+            }
+        }
+    }
+
+    protected function updatePriceExchangeProgress(int $masterShopID, string $currencyCode): void
+    {
+        $masterShop = MasterShop::find($masterShopID);
+        if (!$masterShop) {
+            return;
+        }
+
+        $basketsDone = (int)Cache::increment(RecalculateMasterShopMinorCurrencyPrices::basketsDoneKey($masterShop, $currencyCode));
+        $progress    = RecalculateMasterShopMinorCurrencyPrices::getProgress($masterShop, $currencyCode);
+        $remaining   = Cache::decrement(RecalculateMasterShopMinorCurrencyPrices::basketsRemainingKey($masterShop, $currencyCode));
+
+        if ($remaining <= 0) {
+            RecalculateMasterShopMinorCurrencyPrices::setProgress($masterShop, $currencyCode, array_merge($progress ?? [], [
+                'state'        => 'finished',
+                'baskets_done' => $basketsDone,
+                'finished_at'  => now()->toIso8601String(),
+            ]));
+            RecalculateMasterShopMinorCurrencyPrices::forgetProgress($masterShop, $currencyCode);
+        } elseif ($progress && $progress['state'] === 'repricing_baskets' && $basketsDone % 10 === 0) {
+            RecalculateMasterShopMinorCurrencyPrices::setProgress($masterShop, $currencyCode, array_merge($progress, [
+                'baskets_done' => $basketsDone,
+            ]));
+        }
+    }
+
+    protected function recalculate(?int $orderID, ?Command $command = null): void
     {
         if (!$orderID) {
             return;
         }
         $order = Order::find($orderID);
         if (!$order) {
+            return;
+        }
+
+        /**
+         * This reprices every transaction from the product's CURRENT price, which is only correct
+         * while the order is still a basket. Callers select their orders when they queue the jobs,
+         * but the jobs run later - a bulk run drains for hours - and an order the customer submits
+         * in the meantime would otherwise be repriced after the fact, losing its agreed prices and
+         * discounts and leaving the total out of step with what was already paid. Recheck at
+         * execution time, not just at dispatch time.
+         */
+        if ($order->state !== OrderStateEnum::CREATING) {
+            $command?->line("Order $order->reference is $order->state->value, no longer a basket, skipped");
+
             return;
         }
 

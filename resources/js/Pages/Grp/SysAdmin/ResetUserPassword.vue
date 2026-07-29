@@ -26,8 +26,7 @@ const isResetLinkSent = ref(false)
 
 const submit = () => {
     form.post(route('grp.password.email'), {
-        onSuccess: () => (console.log('ewqewq'), isResetLinkSent.value = true),
-        // onError: (e) => errorForm.value = e.email
+        onSuccess: () => isResetLinkSent.value = true,
     })
 }
 </script>

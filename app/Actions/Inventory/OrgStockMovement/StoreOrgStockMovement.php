@@ -21,6 +21,7 @@ use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Events\BroadcastStockMovement;
 use App\Models\Dispatching\Picking;
+use App\Models\GoodsIn\Sowing;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStockMovement;
@@ -36,7 +37,7 @@ class StoreOrgStockMovement extends OrgAction
 
     public int $jobTries = 1;
 
-    public function handle(OrgStock $orgStock, Location $location, array $modelData, ?Picking $picking = null): OrgStockMovement
+    public function handle(OrgStock $orgStock, Location $location, array $modelData, null|Picking|Sowing $process = null): OrgStockMovement
     {
         data_set($modelData, 'group_id', $location->group_id);
         data_set($modelData, 'organisation_id', $location->organisation_id);
@@ -78,8 +79,22 @@ class StoreOrgStockMovement extends OrgAction
             $flow = OrgStockMovementFlowEnum::IN;
         }
 
-
         data_set($modelData, 'flow', $flow);
+
+        if ($process) {
+            $parent = null;
+
+            if ($process instanceof Picking) {
+                $parent = $process->deliveryNote;
+            } elseif ($process instanceof Sowing) {
+                $parent = $process->return ?? $process->stockDelivery;
+            }
+
+            if ($parent) {
+                data_set($modelData, 'parent_type', class_basename($parent));
+                data_set($modelData, 'parent_id', class_basename($parent->id));
+            }
+        }
 
         /** @var OrgStockMovement $orgStockMovement */
         $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
@@ -126,8 +141,7 @@ class StoreOrgStockMovement extends OrgAction
 
         $this->hydrateOrgStockMovement($orgStockMovement);
 
-
-        $picking?->update(
+        $process?->update(
             [
                 'org_stock_movement_id' => $orgStockMovement->id,
             ]

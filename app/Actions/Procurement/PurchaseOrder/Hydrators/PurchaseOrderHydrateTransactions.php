@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PurchaseOrder\Hydrators;
 
 use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -25,6 +26,7 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
         $transactions = $purchaseOrder->purchaseOrderTransactions;
 
         $stateCounts = $transactions->groupBy(fn ($transaction) => $transaction->state->value)->map->count();
+        $deliveryStateCounts = $transactions->groupBy(fn ($transaction) => $transaction->delivery_state->value)->map->count();
 
         $stats = [];
 
@@ -40,6 +42,10 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
 
         foreach (PurchaseOrderTransactionStateEnum::cases() as $state) {
             $stats['number_purchase_order_transactions_state_'.$state->snake()] = Arr::get($stateCounts, $state->value, 0);
+        }
+
+        foreach (PurchaseOrderTransactionDeliveryStateEnum::cases() as $deliveryState) {
+            $stats['number_purchase_orders_transactions_delivery_state_'.$deliveryState->snake()] = Arr::get($deliveryStateCounts, $deliveryState->value, 0);
         }
 
         $weightAndVolume = $this->getPurchaseOrderWeightAndVolume($purchaseOrder);

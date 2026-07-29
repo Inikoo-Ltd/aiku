@@ -98,6 +98,17 @@ class GetGroupNavigation
                             'name' => 'grp.chat.dashboard',
                         ],
                     ],
+                    ...($user->chatAgent ? [
+                        [
+                            'label'   => __('Inbox'),
+                            'tooltip' => __('Inbox'),
+                            'icon'    => ['fal', 'fa-inbox'],
+                            'root'    => 'grp.chat.inbox',
+                            'route'   => [
+                                'name' => 'grp.chat.inbox',
+                            ],
+                        ],
+                    ] : []),
                     // [
                     //     'label'   => __('Agents'),
                     //     'tooltip' => __('Agents'),
@@ -243,7 +254,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('Master SKUs families'),
+                        'label' => __('Master SKOs families'),
                         'icon'  => ['fal', 'fa-rainbow'],
                         'root'  => 'grp.goods.stock-families.',
                         'route' => [
@@ -252,7 +263,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('Master SKUs'),
+                        'label' => __('Master SKOs'),
                         'icon'  => ['fal', 'fa-cloud-rainbow'],
                         'root'  => 'grp.goods.stocks.',
                         'route' => [

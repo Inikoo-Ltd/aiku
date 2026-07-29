@@ -17,6 +17,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
+use App\Models\Helpers\Currency;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Reviews\MasterAssetReviewStat;
@@ -32,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -80,7 +82,6 @@ use App\Models\Traits\HasSearch;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property \Illuminate\Support\Carbon|null $discontinued_at
- * @property numeric|null $cost_price_ratio
  * @property int|null $front_image_id
  * @property int|null $34_image_id
  * @property int|null $left_image_id
@@ -146,6 +147,10 @@ use App\Models\Traits\HasSearch;
  * @property bool|null $mismatch_with_seeder_detected
  * @property int|null $index_under_master_family
  * @property bool $has_missing_child_description True when at least one linked product has a null or empty description
+ * @property array<array-key, mixed> $master_prices
+ * @property array<array-key, mixed> $master_rrps
+ * @property string|null $units_review
+ * @property numeric|null $effective_cost stock-weighted avg cost across organisations, group currency, per outer
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -230,13 +235,17 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'web_images'              => 'array',
         'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
+        'master_prices'           => 'array',
+        'master_rrps'             => 'array',
     ];
 
     protected $attributes = [
-        'data'         => '{}',
-        'offers_data'  => '{}',
-        'web_images'   => '{}',
-        'tax_category' => '{}',
+        'data'          => '{}',
+        'offers_data'   => '{}',
+        'web_images'    => '{}',
+        'tax_category'  => '{}',
+        'master_prices' => '{}',
+        'master_rrps'   => '{}'
     ];
 
     public function generateTags(): array
@@ -282,6 +291,16 @@ class MasterAsset extends Model implements Auditable, HasMedia
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(128);
+    }
+
+    public function getPriceFromCurrency(Currency $currency): float
+    {
+        return data_get($this->master_prices, "{$currency->code}.value", 0);
+    }
+
+    public function getRrpFromCurrency(Currency $currency): float
+    {
+        return data_get($this->master_rrps, "{$currency->code}.value", 0);
     }
 
     public function assets(): HasMany
@@ -432,6 +451,15 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return Tag::whereHas('tradeUnits', function ($query) {
             $query->whereIn('trade_units.id', $this->tradeUnits()->pluck('trade_units.id'));
         })->get();
+    }
+
+    public function getStockPackedInByTradeUnit(): array
+    {
+        return DB::table('model_has_trade_units')
+            ->where('model_type', 'Stock')
+            ->whereIn('trade_unit_id', $this->tradeUnits->pluck('id'))
+            ->pluck('quantity', 'trade_unit_id')
+            ->toArray();
     }
 
     public function getBrand(): ?Brand

@@ -72,7 +72,7 @@ class CreateBlogWebpage extends OrgAction
 
 
                         [
-                            'title'  => __('Id'),
+                            'title'  => __('Blog'),
                             'icon'   => ['fal', 'fa-fingerprint'],
                             'fields' => [
                                 'code' => [

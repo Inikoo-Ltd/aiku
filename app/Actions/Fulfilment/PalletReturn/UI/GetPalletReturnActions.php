@@ -88,7 +88,7 @@ class GetPalletReturnActions
             $isDisabled = !($palletReturn->estimated_delivery_date) || !$hasSelectedStoredItem;
 
             if (!$hasSelectedStoredItem) {
-                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __("Select Customer's SKU before submit");
+                $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __("Select Customer's SKO before submit");
             } else {
                 $tooltipSubmit = !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit');
             }

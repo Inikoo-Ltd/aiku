@@ -3,83 +3,817 @@
   -  Created: Thu, 15 Sept 2022 16:07:20 Malaysia Time, Kuala Lumpur, Malaysia
   -  Copyright (c) 2022, Raul A Perusquia Flores
   -->
+
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
-import ModelDetails from "@/Components/ModelDetails.vue"
+import type { Component } from "vue"
+import { Head, Link, router } from "@inertiajs/vue3"
+import { trans } from "laravel-vue-i18n"
+
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
+import { notify } from "@kyvg/vue3-notification"
+
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import Timeline from "@/Components/Utils/Timeline.vue"
+import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
+import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
+import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
+
+import { useLocaleStore } from "@/Stores/locale"
 import { useTabChange } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
-import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
-import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
-import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
-import UploadAttachment from '@/Components/Upload/UploadAttachment.vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import Timeline from "@/Components/Utils/Timeline.vue"
+
+import { PageHeadingTypes } from "@/types/PageHeading"
+import { routeType } from "@/types/route"
 import { Timeline as TSTimeline } from "@/types/Timeline"
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList } from "@fal"
+import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull } from "@fas"
+
+library.add(
+	faInventory,
+	faWarehouse,
+	faPersonDolly,
+	faBoxUsd,
+	faTruck,
+	faTerminal,
+	faCameraRetro,
+	faPaperclip,
+	faInfoCircle,
+	faHandHoldingBox,
+	faPeopleArrows,
+	faExclamationTriangle,
+	faBars,
+	faBoxCheck,
+	fasInventory,
+	faShare,
+	faArrowCircleRight,
+	faArrowCircleLeft,
+	faExclamationCircle,
+	faBoxOpen,
+	faBoxFull,
+	faClipboardList
+)
+
 const props = defineProps<{
-    title: string,
-    pageHead: object,
-    tabs: {
-        current: string
-        navigation: object
-    },
-    attachments?: {}
-    attachmentRoutes?: {}
-    stock_delivery: {}
-    items?: {}
-    history?: {}
-    timelines: {
-        [key: string]: TSTimeline
-    }
+	title: string
+	pageHead: PageHeadingTypes
+	stock_delivery: {
+		state: string
+	}
+	timelines: {
+		[key: string]: TSTimeline
+	}
+	purchase_order: {
+		reference: string
+		route: routeType
+	} | null
+	box_stats: {
+		first_block: {
+			orderer: {
+				slug?: string
+				type?: string
+				name?: string
+			}
+			delivery: {
+				type: string | null
+				incoterm: string | null
+				port_of_export: string | null
+				port_of_import: string | null
+				delivery_address: string | null
+			}
+		}
+		second_block: {
+			state: string
+			total_items: number
+			total_received_checked_items: number
+			total_placed_items: number
+			show_delivery_discrepancy: boolean
+			total_under_delivered_items: number
+			total_over_delivered_items: number
+			weight: number | null
+			volume: number | null
+			is_weight_partial: boolean
+			is_volume_partial: boolean
+			production_time: string | null
+			delivery_time: string | null
+		}
+		third_block: {
+			currency: string | null
+			org_currency: string | null
+			org_exchange: number | string | null
+			items: number | string | null
+			extra: number | string | null
+			shipping: number | string | null
+			duties: number | string | null
+			tax: number | string | null
+			total: number | string
+			org_items: number | string
+		}
+	}
+	tabs: {
+		current: string
+		navigation: {}
+	}
+	attachmentRoutes: {
+		attachRoute: routeType
+		detachRoute: routeType
+	}
+	costing: {
+		is_costed: boolean
+		currency: string | null
+		distributeExtraCostRoute: routeType | null
+	}
+	items?: {}
+	under_over_delivered?: {}
+	showcase?: {}
+	attachments?: {}
+	history?: {}
 }>()
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle } from '@fal'
-import ComsDashboard from "@/Components/Coms/ComsDashboard.vue";
 
-library.add(faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle)
+const locale = useLocaleStore()
 
+const currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
-let currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
+	const components: Component = {
+		items: TableStockDeliveryItems,
+		under_over_delivered: TableStockDeliveryItems,
+		showcase: ProcurementOrderData,
+		attachments: TableAttachments,
+		history: TableHistories,
+	}
 
-    const components = {
-        details: ModelDetails,
-        history: TableHistories,
-        attachments: TableAttachments,
-        SHOWCASE: ComsDashboard,
-        items: TableStockDeliveryItems,
-    }
-    return components[currentTab.value]
+	return components[currentTab.value]
+})
 
-});
+const metrics = computed(() => {
+	const { weight, volume, is_weight_partial, is_volume_partial } = props.box_stats.second_block
+
+	return [
+		{
+			key: "weight",
+			isUnknown: weight === null,
+			showMark: weight === null || is_weight_partial,
+			text: weight === null ? trans("Unknown weight") : `${locale.number(weight)}Kg`,
+			tooltip: weight === null ? trans("No item has weight data") : trans("Some items have unknown weight"),
+		},
+		{
+			key: "volume",
+			isUnknown: volume === null,
+			showMark: volume === null || is_volume_partial,
+			text: volume === null ? trans("Unknown CBM") : `${locale.number(volume)} m³`,
+			tooltip: volume === null ? trans("No item has CBM data") : trans("Some items have unknown CBM"),
+		},
+	]
+})
+
+const ordererRoute = computed<string>(() => {
+	const orderer = props.box_stats.first_block.orderer
+	const slug = orderer.slug
+	const type = orderer.type
+
+	if (!slug || !type) return ""
+
+	const organisation = route().params["organisation"]
+
+	switch (type) {
+		case "Agent":
+			return route("grp.org.procurement.org_agents.show", [organisation, slug])
+		case "Supplier":
+			return route("grp.org.procurement.org_suppliers.show", [organisation, slug])
+		default:
+			return ""
+	}
+})
+
+const orgPerOrder = computed(() => {
+	const { items, org_items, org_exchange } = props.box_stats.third_block
+	const deliveryItems = Number(items)
+	const orgItems = Number(org_items)
+
+	if (deliveryItems) {
+		return orgItems / deliveryItems
+	}
+
+	return Number(org_exchange) || null
+})
+
+const costRows = computed(() => {
+	const { items, extra, shipping, duties, tax } = props.box_stats.third_block
+
+	return [
+		{ key: "items", label: trans("Items"), amount: Number(items) || 0, alwaysShown: true },
+		{ key: "extra", label: trans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
+		{ key: "shipping", label: trans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
+		{ key: "duties", label: trans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
+		{ key: "tax", label: trans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
+	].filter(row => row.alwaysShown || row.amount !== 0)
+})
+
+const costBlocks = computed(() => {
+	const { currency, org_currency, items, total, org_items } = props.box_stats.third_block
+
+	const money = (code: string | null, amount: number) => locale.currencyFormat(code ?? "", amount)
+
+	const supplierBlock = {
+		key: "supplier",
+		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
+		rows: [
+			...costRows.value.map(row => ({ label: row.label, value: money(currency, row.amount) })),
+			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
+		],
+	}
+
+	const sameCurrency = !org_currency || org_currency === currency
+	const orgCurrency = org_currency || currency
+	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
+
+	const orgAmount = (row: { key: string; amount: number }) =>
+		row.key === "items" && !sameCurrency ? Number(org_items) : row.amount * rate
+
+	const orgTotal = costRows.value.reduce((sum, row) => sum + orgAmount(row), 0)
+
+	const orderPerOrg = rate ? 1 / rate : null
+	const rateLabel = sameCurrency
+		? `${trans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
+		: orderPerOrg === null
+			? ""
+			: `1 ${orgCurrency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
+
+	return [
+		supplierBlock,
+		{
+			key: "org",
+			title: rateLabel,
+			rows: [
+				...costRows.value.map(row => ({ label: row.label, value: money(orgCurrency, orgAmount(row)) })),
+				{ label: trans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
+			],
+		},
+	]
+})
+
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const confirm = useConfirm()
+const deleteLoading = ref(false)
+const dispatchLoading = ref(false)
+const undispatchLoading = ref(false)
+const receiveLoading = ref(false)
+const unreceiveLoading = ref(false)
+const cancelLoading = ref(false)
+
+const confirmDispatchStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to mark this stock delivery as dispatched?"),
+		header: trans("Dispatch Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Mark as Dispatched"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { dispatchLoading.value = true },
+				onFinish: () => { dispatchLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to dispatch stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmUndispatchStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to unmark this stock delivery as dispatched? It will be reverted to its previous state."),
+		header: trans("Unmark as Dispatched"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Unmark as Dispatched"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { undispatchLoading.value = true },
+				onFinish: () => { undispatchLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to unmark stock delivery as dispatched"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmReceiveStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to mark this stock delivery as received? This can not be reverted."),
+		header: trans("Receive Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Mark as Received"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { receiveLoading.value = true },
+				onFinish: () => { receiveLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to receive stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmUnreceiveStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to unmark this stock delivery as received? It will be reverted to its previous state."),
+		header: trans("Unmark as Received"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Unmark as Received"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { unreceiveLoading.value = true },
+				onFinish: () => { unreceiveLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to unmark stock delivery as received"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmCancelStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to cancel this stock delivery? Its items will be emptied and the purchase order will allow a new delivery."),
+		header: trans("Cancel Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Cancel Stock Delivery"), severity: "danger" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { cancelLoading.value = true },
+				onFinish: () => { cancelLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to cancel stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const startCostingLoading = ref(false)
+const finishCostingLoading = ref(false)
+
+const confirmStartStockDeliveryCosting = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to start checking the costs? This stock delivery will be placed."),
+		header: trans("Start checking costs"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Start checking costs"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { startCostingLoading.value = true },
+				onFinish: () => { startCostingLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to start checking the costs"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmFinishStockDeliveryCosting = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to finish the costing? This stock delivery will be final and can not be changed anymore."),
+		header: trans("Finish costing"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Finish costing"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { finishCostingLoading.value = true },
+				onFinish: () => { finishCostingLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to finish the costing"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmDeleteStockDelivery = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to delete this stock delivery? The purchase order will be reverted to before this delivery."),
+		header: trans("Delete Stock Delivery"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Delete"), severity: "danger" },
+		accept: () => {
+			router.delete(route(action.route.name, action.route.parameters), {
+				onStart: () => { deleteLoading.value = true },
+				onFinish: () => { deleteLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to delete stock delivery"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
 </script>
 
 <template>
+	<Head :title="capitalize(title)" />
+	<PageHeading :data="pageHead">
+		<template #other>
+			<Button
+				v-if="currentTab === 'attachments'"
+				label="Attach"
+				icon="upload"
+				@click="() => (isModalUploadOpen = true)"
+			/>
+		</template>
 
-    <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead">
-        <template #other>
-            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
-                icon="upload" />
-        </template>
-    </PageHeading>
-   	<div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
+		<template #button-dispatch-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="dispatchLoading"
+				@click="() => confirmDispatchStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-undispatch-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="undispatchLoading"
+				@click="() => confirmUndispatchStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-receive-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="receiveLoading"
+				@click="() => confirmReceiveStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-unreceive-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="unreceiveLoading"
+				@click="() => confirmUnreceiveStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-cancel-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="cancelLoading"
+				@click="() => confirmCancelStockDelivery(action)"
+			/>
+		</template>
+
+		<template #button-start-stock-delivery-costing="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="startCostingLoading"
+				@click="() => confirmStartStockDeliveryCosting(action)"
+			/>
+		</template>
+
+		<template #button-finish-stock-delivery-costing="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="finishCostingLoading"
+				@click="() => confirmFinishStockDeliveryCosting(action)"
+			/>
+		</template>
+
+		<template #button-delete-stock-delivery="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="deleteLoading"
+				@click="() => confirmDeleteStockDelivery(action)"
+			/>
+		</template>
+	</PageHeading>
+
+	<!-- Stock Delivery Timeline -->
+	<div v-if="timelines" class="flex items-center gap-x-4 py-2 border-b border-gray-300" :class="purchase_order ? 'pl-4' : ''">
+		<Link
+			v-if="purchase_order"
+			:href="route(purchase_order.route.name, purchase_order.route.parameters)"
+			class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap"
+		>
+			<FontAwesomeIcon icon="fal fa-clipboard-list" fixed-width aria-hidden="true" />
+			{{ purchase_order.reference }}
+		</Link>
 		<Timeline
+			class="flex-1 min-w-0"
 			:options="timelines"
 			:state="stock_delivery.state"
 			:slidesPerView="6"
-			:format-time="'MMMM d yyyy, HH:mm'" />
+			:format-time="'MMMM d yyyy, HH:mm'"
+		/>
 	</div>
-    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute">
-    </component>
-    <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
-        label: 'Upload your file',
-        information: 'The list of column file: customer_reference, notes, stored_items'
-    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
+
+	<div class="grid grid-cols-2 lg:grid-cols-4 text-gray-500 divide-x divide-gray-300 border-b border-gray-300">
+		<!-- First Block -->
+		<BoxStatPallet class="p-4">
+			<div class="flex flex-col gap-4">
+				<!-- Orderer -->
+				<div v-if="box_stats.first_block.orderer.name" class="flex items-center gap-2">
+					<dt>
+						<FontAwesomeIcon
+							v-tooltip="trans(box_stats.first_block.orderer.type ?? '')"
+							icon="fal fa-hand-holding-box"
+							aria-hidden="true"
+							fixed-width
+						/>
+					</dt>
+					<dd>
+						<Link v-if="ordererRoute" :href="ordererRoute" class="primaryLink">
+							{{ box_stats.first_block.orderer.name }}
+						</Link>
+						<span v-else>{{ box_stats.first_block.orderer.name }}</span>
+					</dd>
+				</div>
+
+				<!-- Delivery terms -->
+				<div v-if="box_stats.first_block.delivery.type === 'container'">
+					<div class="flex items-center gap-2">
+						<dt>
+							<FontAwesomeIcon
+								v-tooltip="trans('Incoterm')"
+								icon="fas fa-share"
+								aria-hidden="true"
+								fixed-width
+							/>
+						</dt>
+						<dd v-if="box_stats.first_block.delivery.incoterm">{{ box_stats.first_block.delivery.incoterm }}</dd>
+						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
+							<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
+							<span>{{ trans("Incoterm not set") }}</span>
+						</dd>
+					</div>
+
+					<div class="flex items-center gap-2">
+						<dt>
+							<FontAwesomeIcon
+								v-tooltip="trans('Port of export')"
+								icon="fas fa-arrow-circle-right"
+								aria-hidden="true"
+								fixed-width
+							/>
+						</dt>
+						<dd v-if="box_stats.first_block.delivery.port_of_export">{{ box_stats.first_block.delivery.port_of_export }}</dd>
+						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
+							<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
+							<span>{{ trans("Port of export not set") }}</span>
+						</dd>
+					</div>
+
+					<div class="flex items-center gap-2">
+						<dt>
+							<FontAwesomeIcon
+								v-tooltip="trans('Port of import')"
+								icon="fas fa-arrow-circle-left"
+								aria-hidden="true"
+								fixed-width
+							/>
+						</dt>
+						<dd v-if="box_stats.first_block.delivery.port_of_import">{{ box_stats.first_block.delivery.port_of_import }}</dd>
+						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
+							<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
+							<span>{{ trans("Port of import not set") }}</span>
+						</dd>
+					</div>
+				</div>
+
+				<!-- Deliver to -->
+				<div class="pt-2 text-sm">
+					<div class="text-gray-400">{{ trans("Deliver to") }}:</div>
+					<div v-if="box_stats.first_block.delivery.delivery_address" class="text-xs whitespace-pre-line">{{ box_stats.first_block.delivery.delivery_address }}</div>
+					<div v-else class="flex items-center gap-1 text-red-500 text-xs italic">
+						<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
+						<span>{{ trans("Delivery address not set") }}</span>
+					</div>
+				</div>
+			</div>
+		</BoxStatPallet>
+
+		<!-- Second Block -->
+		<BoxStatPallet class="p-4">
+			<div class="flex justify-center items-center gap-2">
+				<FontAwesomeIcon
+					v-tooltip="trans('Stock Delivery')"
+					icon="fal fa-people-arrows"
+					class="text-gray-400"
+					fixed-width
+					aria-hidden="true"
+				/>
+				<span>{{ box_stats.second_block.state }}</span>
+			</div>
+
+			<hr class="my-1 border-t border-gray-300" />
+
+			<!-- Todo: not sure in which states production/delivery time should appear, so far only known when the purchase order is cancelled, hidden for now -->
+			<template v-if="false">
+				<div class="space-y-1 text-sm">
+					<div class="flex items-center justify-between gap-4">
+						<span>{{ trans("Production time") }}</span>
+						<span :class="box_stats.second_block.production_time ? '' : 'italic text-gray-400'">
+							{{ box_stats.second_block.production_time ?? trans("Unknown") }}
+						</span>
+					</div>
+					<div class="flex items-center justify-between gap-4">
+						<span>{{ trans("Delivery time") }}</span>
+						<span :class="box_stats.second_block.delivery_time ? '' : 'italic text-gray-400'">
+							{{ box_stats.second_block.delivery_time ?? trans("Unknown") }}
+						</span>
+					</div>
+				</div>
+
+				<hr class="my-1 border-t border-gray-300" />
+			</template>
+
+			<div class="flex justify-center gap-4">
+				<div class="flex items-center gap-1">
+					<FontAwesomeIcon v-tooltip="trans('Items')" icon="fas fa-bars" aria-hidden="true" fixed-width />
+					<span>{{ box_stats.second_block.total_items }}</span>
+				</div>
+
+				<div class="flex items-center gap-1">
+					<FontAwesomeIcon v-tooltip="trans('Received & checked items')" icon="fas fa-box-check" aria-hidden="true" fixed-width />
+					<span>{{ box_stats.second_block.total_received_checked_items }}</span>
+				</div>
+
+				<div class="flex items-center gap-1">
+					<FontAwesomeIcon v-tooltip="trans('Placed items')" icon="fas fa-inventory" aria-hidden="true" fixed-width />
+					<span>{{ box_stats.second_block.total_placed_items }}</span>
+				</div>
+			</div>
+
+			<div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+				<div
+					v-for="metric in metrics"
+					:key="metric.key"
+					class="flex items-center justify-center gap-1"
+					:class="metric.isUnknown ? 'italic text-red-500' : ''"
+				>
+					<FontAwesomeIcon
+						v-if="metric.showMark"
+						v-tooltip="metric.tooltip"
+						icon="fas fa-exclamation-circle"
+						:class="metric.isUnknown ? 'text-red-500' : 'text-orange-500'"
+						aria-hidden="true"
+						fixed-width
+					/>
+					<span>{{ metric.text }}</span>
+				</div>
+			</div>
+
+			<div v-if="box_stats.second_block.show_delivery_discrepancy" class="mt-2 flex justify-center gap-4">
+				<div
+					class="flex items-center gap-1"
+					:class="box_stats.second_block.total_under_delivered_items ? 'text-orange-500' : ''"
+				>
+					<FontAwesomeIcon
+						v-tooltip="trans('Items under delivered')"
+						icon="fal fa-box-open"
+						aria-hidden="true"
+						fixed-width
+					/>
+					<span>{{ box_stats.second_block.total_under_delivered_items }}</span>
+				</div>
+
+				<div
+					class="flex items-center gap-1"
+					:class="box_stats.second_block.total_over_delivered_items ? 'text-orange-500' : ''"
+				>
+					<FontAwesomeIcon
+						v-tooltip="trans('Items over delivered')"
+						icon="fas fa-box-full"
+						aria-hidden="true"
+						fixed-width
+					/>
+					<span>{{ box_stats.second_block.total_over_delivered_items }}</span>
+				</div>
+			</div>
+		</BoxStatPallet>
+
+		<!-- Third Block: costs -->
+		<BoxStatPallet v-for="block in costBlocks" :key="block.key" class="p-4">
+			<div class="flex justify-center text-center">
+				{{ block.title }}
+			</div>
+
+			<hr class="my-1 border-t border-gray-300" />
+
+			<div class="mt-2 space-y-1 text-sm">
+				<div
+					v-for="row in block.rows"
+					:key="row.label"
+					class="flex items-center justify-between gap-4"
+					:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
+				>
+					<span>{{ row.label }}</span>
+					<span>{{ row.value }}</span>
+				</div>
+			</div>
+		</BoxStatPallet>
+
+		<BoxStatPallet v-for="n in (2 - costBlocks.length)" :key="`cost-empty-${n}`" class="p-4" />
+	</div>
+
+	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+	<component
+		:is="component"
+		:key="currentTab"
+		:data="props[currentTab]"
+		:tab="currentTab"
+		:costing="currentTab === 'items' ? costing : undefined"
+		:detachRoute="attachmentRoutes.detachRoute"
+	/>
+
+	<UploadAttachment
+		v-model="isModalUploadOpen"
+		scope="attachment"
+		:title="{
+			label: 'Upload your file',
+			information: 'The list of column file: customer_reference, notes, stored_items',
+		}"
+		progressDescription="Adding Stock Delivery Attachments"
+		:attachmentRoutes="attachmentRoutes"
+	/>
+
+	<ConfirmDialog group="stock-delivery">
+		<template #icon>
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+		</template>
+	</ConfirmDialog>
 </template>

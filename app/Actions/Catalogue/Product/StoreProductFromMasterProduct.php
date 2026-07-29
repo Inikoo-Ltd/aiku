@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -18,7 +18,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 
-class StoreProductFromMasterProduct extends GrpAction
+class StoreProductFromMasterProduct extends OrgAction
 {
     public string $jobQueue = 'urgent';
 
@@ -45,8 +45,8 @@ class StoreProductFromMasterProduct extends GrpAction
                 $createInShop = Arr::get($shopProductData, 'create_in_shop');
 
                 if ($createInShop == 'Yes') {
-                    $price = $shopProductData['price'] ?? $masterAsset->price;
-                    $rrp   = $shopProductData['rrp'];
+                    $price = $masterAsset->getPriceFromCurrency($shop->currency) ;
+                    $rrp   = $masterAsset->getRrpFromCurrency($shop->currency);
 
                     $tradeUnits = [];
                     foreach ($masterAsset->tradeUnits as $tradeUnit) {
@@ -56,11 +56,7 @@ class StoreProductFromMasterProduct extends GrpAction
                         ];
                     }
 
-
                     $isMain = $masterAsset->is_main;
-
-                    // TODO MasterLevel Price RRP (Raul)
-                    // TODO HydrateChildPriceRRP according MasterProduct using the Exchange Ratio
 
                     $data   = [
                         'code'              => $masterAsset->code,
@@ -212,7 +208,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
         $group = $masterAsset->group;
 
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         $this->handle($masterAsset, $this->validatedData, $generateVariant, $ignoreCreateWebpage);
     }

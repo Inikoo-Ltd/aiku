@@ -50,7 +50,7 @@ export interface ProductShowcase {
   cpnp_number: string | null
   ufi_number: string | null
   scpn_number: string | null
-  country_of_origin: CountryInfo | Record<string, never> | null
+  countries_of_origin: CountryInfo[]
   picking_factor: Array<{
     org_stock_id: number
     org_stock_code: string

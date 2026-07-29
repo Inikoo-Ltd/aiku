@@ -10,9 +10,14 @@
 
 namespace App\Actions;
 
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductSuppliers;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSupplierProducts;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
 use App\Actions\Traits\WithOrganisationsArgument;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Group;
 use Illuminate\Console\Command;
 
 class HydrateModels extends HydrateModel
@@ -268,7 +273,13 @@ class HydrateModels extends HydrateModel
         $command->info('Supply Chain section 🚛');
         $command->call('hydrate:agents');
         $command->call('hydrate:suppliers');
-        $command->call('hydrate:supplier_products'); // not yet tested
+
+        foreach (Group::all() as $group) {
+            GroupHydrateAgents::run($group);
+            GroupHydrateSuppliers::run($group);
+            GroupHydrateSupplierProducts::run($group);
+            GroupHydrateProductSuppliers::run($group);
+        }
     }
 
     protected function hydrateProduction(Command $command): void

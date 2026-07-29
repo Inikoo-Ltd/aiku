@@ -54,7 +54,7 @@ class StoreInvoice extends OrgAction
         }
 
         data_set($modelData, 'uuid', Str::uuid());
-        data_set($modelData, 'ulid', Str::ulid());
+        data_set($modelData, 'ulid', (string) Str::ulid());
 
         data_set($modelData, 'pay_status', InvoicePayStatusEnum::UNPAID);
         data_set($modelData, 'pay_detailed_status', InvoicePayDetailedStatusEnum::UNPAID);

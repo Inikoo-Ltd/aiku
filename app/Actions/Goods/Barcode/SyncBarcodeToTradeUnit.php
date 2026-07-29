@@ -10,11 +10,11 @@
 namespace App\Actions\Goods\Barcode;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductsHydrateBarcodeFromTradeUnit;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
 
-class SyncBarcodeToTradeUnit extends GrpAction
+class SyncBarcodeToTradeUnit extends OrgAction
 {
     public function handle(Barcode $barcode, ?TradeUnit $newTradeUnit = null): Barcode
     {
@@ -63,7 +63,7 @@ class SyncBarcodeToTradeUnit extends GrpAction
 
     public function action(Barcode $barcode, ?TradeUnit $newTradeUnit = null): Barcode
     {
-        $this->initialisation($barcode->group, []);
+        $this->initialisationFromGroup($barcode->group, []);
 
         return $this->handle($barcode, $newTradeUnit);
     }

@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import {Link} from '@inertiajs/vue3';
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from '@/Components/Table/Table.vue';
 import {SupplierProduct} from "@/types/supplier-product";
 
@@ -15,8 +16,13 @@ const props = defineProps<{
 }>()
 
 
+function supplierProductHref(supplierProduct: SupplierProduct) {
+  const bucket = route().current()?.match(/^grp\.supply-chain\.supplier_products\.(free|in_agents)$/)?.[1]
+
+  return supplierProductRoute(supplierProduct) + bucketQuery(bucket)
+}
+
 function supplierProductRoute(supplierProduct: SupplierProduct) {
-     console.log(route().current())
     switch (route().current()) {
         case 'grp.org.procurement.suppliers.show':
             return route(
@@ -40,9 +46,11 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
           [route().params["organisation"],route().params["warehouse"], supplierProduct.slug]);
 
         case 'grp.supply-chain.agents.show.supplier_products.index':
-            return '#';
         case 'grp.supply-chain.supplier_products.index':
-            return '#';
+        case 'grp.supply-chain.supplier_products.free':
+        case 'grp.supply-chain.supplier_products.in_agents':
+        case 'grp.overview.procurement.supplier-products.index':
+            return route('grp.majordomo.redirect_supplier_product', [supplierProduct.id]);
         default:
             return route(
                 'grp.org.procurement.org_supplier_products.show',
@@ -55,7 +63,7 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: supplier_product }">
-            <Link :href="supplierProductRoute(supplier_product)" class="primaryLink">
+            <Link :href="supplierProductHref(supplier_product)" class="primaryLink">
                 {{ supplier_product['code'] }}
             </Link>
         </template>

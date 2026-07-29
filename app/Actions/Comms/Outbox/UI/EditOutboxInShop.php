@@ -37,7 +37,7 @@ class EditOutboxInShop extends OrgAction
             'fields' => [
                 'subject' => [
                     'type' => 'input',
-                    'label' => __('subject'),
+                    'label' => __('Subject'),
                     'placeholder' => __('Email subject'),
                     'required' => false,
                     'value' => $outbox->emailOngoingRun?->email?->subject,
@@ -79,16 +79,23 @@ class EditOutboxInShop extends OrgAction
             ]
         ];
 
-        if (in_array($outbox->code, [OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD])) {
+        if (in_array($outbox->code, [
+            OutboxCodeEnum::REORDER_REMINDER,
+            OutboxCodeEnum::REORDER_REMINDER_2ND,
+            OutboxCodeEnum::REORDER_REMINDER_3RD,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3 ])) {
             $fields[] = $subjectField;
             $fields[] = [
                 'title' => '',
                 'fields' => [
                     'days_after' => [
                         'type' => 'input_number',
-                        'label' => __('Days after last order dispatched'),
+                        'label' => __('Reminder Interval (Days)'),
                         'placeholder' => __('Days after last order dispatched'),
-                        'required' => false,
+                        'information' => __('Number of days to wait after the last dispatched order before sending this reminder.'),
+                        'required' => true,
                         'value' => $outbox->days_after,
                     ],
                 ]
@@ -128,6 +135,30 @@ class EditOutboxInShop extends OrgAction
         } elseif (in_array($outbox->code, [OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION])) {
             $fields[] = $subjectField;
             $fields[] = $intervalField;
+            $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
+        } elseif (in_array($outbox->code, [OutboxCodeEnum::PRICE_CHANGE])) {
+            $fields[] = $subjectField;
+            $fields[] = [
+                'title' => '',
+                'fields' => [
+                    'interval' => [
+                        'type' => 'select',
+                        'label' => __('Cooldown Period'),
+                        'placeholder' => __('Cooldown Period'),
+                        'required' => true,
+                        'mode' => 'single',
+                        'options' => [
+                            ['value' => 10, 'label' => __('10 minutes')],
+                            ['value' => 20, 'label' => __('20 minutes')],
+                            ['value' => 30, 'label' => __('30 minutes')],
+                            ['value' => 60, 'label' => __('1 hour')],
+                            ['value' => 120, 'label' => __('2 hours')],
+                            ['value' => 1440, 'label' => __('1 day')],
+                        ],
+                        'value' => $outbox->interval ?? 10,
+                    ],
+                ]
+            ];
             $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
         } else {
             $fields[] = $subjectField;

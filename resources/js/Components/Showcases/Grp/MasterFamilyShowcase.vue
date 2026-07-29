@@ -14,6 +14,7 @@ import Dialog from 'primevue/dialog';
 import { ref } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue';
+import MasterFamilyBestSellers from '@/Components/Master/MasterFamilyBestSellers.vue';
 
 library.add(faAlbumCollection);
 
@@ -23,6 +24,11 @@ const props = defineProps<{
             data: any,
         },
         tags?: Array<any>
+        bestSellers?: {
+            products: any[]
+            currency: string
+            route: { name: string, parameters: Record<string, any> }
+        }
     },
     master_vol_gr_reward?: {
         show_gr_vol: boolean
@@ -185,6 +191,8 @@ const saveGROffer = () => {
                         </div>
                     </Dialog>
                 </template>
+
+                <MasterFamilyBestSellers v-if="data.bestSellers" :data="data.bestSellers" class="mt-4" />
             </div>
 
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">

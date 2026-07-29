@@ -2,6 +2,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -89,6 +90,26 @@ class GetPurchaseOrderData
                 ],
             ],
         ];
+
+        if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED) {
+            array_splice($blueprint, 1, 0, [
+                [
+                    'title'  => __('Estimated process dates'),
+                    'fields' => [
+                        'estimated_production_date' => [
+                            'type'  => 'date',
+                            'label' => __('Estimated production date'),
+                            'value' => Arr::get($data, 'estimated_production_date'),
+                        ],
+                        'estimated_receiving_date'  => [
+                            'type'  => 'date',
+                            'label' => __('Estimated receiving date'),
+                            'value' => Arr::get($data, 'estimated_receiving_date'),
+                        ],
+                    ],
+                ],
+            ]);
+        }
 
         return [
             'blueprint'   => $blueprint,

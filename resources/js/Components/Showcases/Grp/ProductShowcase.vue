@@ -174,7 +174,7 @@ const getTooltips = () => {
 				</template>
 
 				<template #col_name="{ data }">
-					<p>{{ data.org_stock_name }} <span class="text-orange-500">{{ trans('Units/SKU')}}:{{ data.units_per_sku }}</span></p>
+					<p>{{ data.org_stock_name }} <span class="text-orange-500">{{ trans('Units/SKO')}}:{{ data.units_per_sku }}</span></p>
 				</template>
 			</LabelSKU>
 
@@ -209,9 +209,13 @@ const getTooltips = () => {
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mx-3 lg:mx-0 mt-2">
-		<!-- Sidebar -->
-		<div class="space-y-4 lg:space-y-6" v-if="data?.product?.data?.picking_factor?.length">
+	<!-- The right sidebar (prices, analytics) always keeps its width; the content area
+	     gets the rest, with the image beside the summary only when there is room -->
+	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mx-0 lg:grid-cols-[minmax(0,1fr)_minmax(385px,420px)]">
+		<!-- Content: image + summary. The summary is capped; spare width goes first to
+		     the image column (up to its own cap), the rest stays as breathing room -->
+		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
+		<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]" v-if="data?.product?.data?.picking_factor?.length">
 			<!-- Product Tags -->
 			<!-- <dd v-if="data.tags && data.tags?.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
 				<span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
@@ -243,8 +247,8 @@ const getTooltips = () => {
 			</div>
 		</div>
 
-		<!-- Product Summary - spans 2 columns -->
-		<div :class="data?.product?.data?.picking_factor?.length ? 'lg:col-span-2' : 'lg:col-span-3'">
+		<!-- Product Summary -->
+		<div class="min-w-0 flex-1 max-w-2xl">
 			<ProductSummary
 				:noTradeUnit="!data?.product?.data?.picking_factor?.length"
 				:data="{...data.product.data, tags: data.tags, brands: data.brands}"
@@ -255,8 +259,9 @@ const getTooltips = () => {
 				:attachments="data.attachment_box"
 			/>
 		</div>
+		</div>
 
-		<div class="bg-white h-fit mx-4  shadow-sm ">
+		<div class="min-w-0 bg-white h-fit mx-4 shadow-sm">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
 				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
 					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" />

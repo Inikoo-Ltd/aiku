@@ -88,7 +88,6 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
- * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property bool|null $is_name_reviewed
@@ -115,6 +114,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $showcase_image_id
  * @property bool|null $has_gr_vol_discount
  * @property bool $follow_master_gr
+ * @property bool $not_follow_master_prices
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -194,6 +194,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'last_fetched_at'               => 'datetime',
         'offers_data'                   => 'array',
         'mismatch_with_master_detected' => 'boolean',
+        'not_follow_master_prices'      => 'boolean',
     ];
 
     protected $attributes = [
@@ -230,6 +231,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
         'code',
         'name',
         'description',
+        'not_follow_master_prices',
+        'follow_master_gr',
     ];
 
     public function getRouteKeyName(): string

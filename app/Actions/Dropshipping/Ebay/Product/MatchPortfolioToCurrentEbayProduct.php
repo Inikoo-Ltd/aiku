@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Ebay\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class MatchPortfolioToCurrentEbayProduct extends OrgAction
 {
     use AsAction;
+    use WithPortfolioErrorResponse;
 
     public function handle(Portfolio $portfolio, array $modelData): void
     {
@@ -78,6 +80,11 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
         ]);
 
         if (Arr::get($publishedOffer, 'listingId')) {
+            UpdatePortfolio::make()->action($portfolio, [
+                'upload_warning'  => null,
+                'errors_response' => null
+            ]);
+
             UpdatePlatformPortfolioLog::dispatch($logs, [
                 'status' => PlatformPortfolioLogsStatusEnum::OK
             ]);
@@ -92,7 +99,7 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
             ]);
 
             UpdatePortfolio::make()->action($portfolio, [
-                'upload_warning' => $displayError,
+                'upload_warning' => $this->portfolioErrorMessage($displayError),
                 'errors_response' => [
                     'message' => __('Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product')
                 ]

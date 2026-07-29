@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOutboxes;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Http\Resources\Mail\OutboxesResource;
 use App\Models\Catalogue\Shop;
@@ -62,13 +63,31 @@ class UpdateOutbox extends OrgAction
 
     public function rules(): array
     {
+        $daysAfterRules = ['sometimes', 'required', 'integer', 'gt:0'];
+        $intervalRules = ['sometimes', 'required', 'integer', 'gt:0'];
+
+        if (in_array($this->outbox->code, [
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+        ])) {
+            $daysAfterRules[] = 'max:30';
+        }
+
+        if (in_array($this->outbox->code, [
+            OutboxCodeEnum::PRICE_CHANGE
+        ])) {
+            $intervalRules = ['sometimes', 'required', 'integer', 'min:0'];
+        }
+
+
         return [
             'name'       => ['sometimes', 'required', 'string'],
             'subject'    => ['sometimes', 'required', 'string'],
-            'days_after' => ['sometimes', 'required', 'integer', 'gt:0'],
+            'days_after' => $daysAfterRules,
             'send_time'  => ['sometimes', 'required', 'date_format:H:i:s'],
             'threshold'  => ['sometimes', 'required', 'integer', 'gt:0'],
-            'interval'   => ['sometimes', 'required', 'integer', 'gt:0'],
+            'interval'   => $intervalRules,
             'state'      => ['sometimes', 'required', Rule::enum(OutboxStateEnum::class)],
             'is_applicable' => ['sometimes', 'required', 'boolean'],
         ];
@@ -77,6 +96,7 @@ class UpdateOutbox extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Shop $shop, Outbox $outbox, ActionRequest $request): Outbox
     {
+        $this->outbox = $outbox;
         $this->initialisationFromShop($outbox->shop, $request);
 
         return $this->handle($outbox, $this->validatedData);
@@ -93,6 +113,7 @@ class UpdateOutbox extends OrgAction
 
     public function asController(Fulfilment $fulfilment, Outbox $outbox, ActionRequest $request): Outbox
     {
+        $this->outbox = $outbox;
         $this->initialisation($outbox->organisation, $request);
 
         return $this->handle($outbox, $this->validatedData);

@@ -15,12 +15,12 @@ enum StockDeliveryStateEnum: string
     use EnumHelperTrait;
 
     case IN_PROCESS = 'in_process';
-    case CONFIRMED = 'confirmed';
-    case READY_TO_SHIP = 'ready_to_ship';
+    case CONFIRMED = 'confirmed'; // Skippable
+    case READY_TO_SHIP = 'ready_to_ship'; // Skippable
     case DISPATCHED = 'dispatched';
     case RECEIVED = 'received';
     case CHECKED = 'checked';
-    case BOOKING_IN = 'booking_in';
+    case BOOKING_IN = 'booking_in'; // Skippable
     case BOOKED_IN = 'booked_in';
     // Final
     case PLACED = 'placed';

@@ -102,6 +102,7 @@ trait WithIrisInertia
                     'symbol' => $shop->currency->symbol,
                     'name'   => $shop->currency->name,
                 ],
+                'show_price' => (bool) Arr::get($website->settings, 'webpage.show_price', false),
                 'locale'               => $locale,
                 'website_i18n'         => [
                     'current_language' => LanguageResource::make($currentLanguage)->getArray(),

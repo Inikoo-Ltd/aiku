@@ -13,15 +13,16 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerTimeSeries;
+use App\Traits\BuildsInvoiceTimeSeriesQuery;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
+    use BuildsInvoiceTimeSeriesQuery;
 
     public string $jobQueue = 'sales_slave';
 
@@ -32,16 +33,15 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $customerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
-        $customer = Customer::find($customerId);
+        $customer = Customer::on('aiku_no_sticky')->find($customerId);
 
         if (!$customer) {
             return;
         }
 
-        $timeSeries = CustomerTimeSeries::where('customer_id', $customer->id)->where('frequency', $frequency->value)->first();
+        $timeSeries = CustomerTimeSeries::on('aiku_no_sticky')->where('customer_id', $customer->id)->where('frequency', $frequency->value)->first();
 
         if (!$timeSeries) {
             $timeSeries = $customer->timeSeries()->create(['frequency' => $frequency]);
@@ -63,7 +63,7 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
             ->where('invoices.date', '<=', $to)
             ->whereNull('invoices.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, customSelects: $this->customerInvoiceSelects())->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -177,53 +177,5 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
             'orders'                       => $orders,
             'delivery_notes'               => $deliveryNotes,
         ];
-    }
-
-    protected function applyFrequencyGrouping(Builder $query, TimeSeriesFrequencyEnum $frequency): Builder
-    {
-        $selects = [
-            DB::raw('SUM(CASE WHEN type = \'invoice\' THEN net_amount ELSE 0 END) as sales'),
-            DB::raw('SUM(CASE WHEN type = \'invoice\' THEN org_net_amount ELSE 0 END) as sales_org_currency'),
-            DB::raw('SUM(CASE WHEN type = \'invoice\' THEN grp_net_amount ELSE 0 END) as sales_grp_currency'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-        ];
-
-        return match ($frequency) {
-            TimeSeriesFrequencyEnum::YEARLY => $query
-                ->select([DB::raw('EXTRACT(YEAR FROM invoices.date) as year'), ...$selects])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)')),
-
-            TimeSeriesFrequencyEnum::QUARTERLY => $query
-                ->select([
-                    DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                    DB::raw('EXTRACT(QUARTER FROM invoices.date) as quarter'),
-                    ...$selects,
-                ])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(QUARTER FROM invoices.date)')),
-
-            TimeSeriesFrequencyEnum::MONTHLY => $query
-                ->select([
-                    DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                    DB::raw('EXTRACT(MONTH FROM invoices.date) as month'),
-                    ...$selects,
-                ])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(MONTH FROM invoices.date)')),
-
-            TimeSeriesFrequencyEnum::WEEKLY => $query
-                ->select([
-                    DB::raw('EXTRACT(YEAR FROM invoices.date) as year'),
-                    DB::raw('EXTRACT(WEEK FROM invoices.date) as week'),
-                    ...$selects,
-                ])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoices.date)'), DB::raw('EXTRACT(WEEK FROM invoices.date)')),
-
-            TimeSeriesFrequencyEnum::DAILY => $query
-                ->select([DB::raw('CAST(invoices.date AS DATE) as date'), ...$selects])
-                ->groupBy(DB::raw('CAST(invoices.date AS DATE)')),
-        };
     }
 }

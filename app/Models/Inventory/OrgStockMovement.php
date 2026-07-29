@@ -18,6 +18,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property int $id
@@ -58,10 +59,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_migration_point
  * @property string|null $migration_source_id
  * @property OrgStockMovementReasonEnum|null $reason
+ * @property string|null $parent_type
+ * @property int|null $parent_id
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read Model|\Eloquent|null $parent
  * @property-read User|null $user
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|OrgStockMovement newModelQuery()
@@ -115,5 +119,10 @@ class OrgStockMovement extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function parent(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

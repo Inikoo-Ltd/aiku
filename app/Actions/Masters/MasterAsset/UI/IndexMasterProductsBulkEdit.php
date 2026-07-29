@@ -10,7 +10,7 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -23,26 +23,24 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexMasterProductsBulkEdit extends GrpAction
+class IndexMasterProductsBulkEdit extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
     use WithMasterFamilySubNavigation;
     use WithMastersAuthorisation;
 
-    private Group|MasterShop|MasterProductCategory $parent;
-
-    public function handle(Group|MasterShop|MasterProductCategory $parent, $prefix = null): Group|MasterShop|MasterProductCategory
+    public function handle(MasterShop $parent, $prefix = null): Group|MasterShop|MasterProductCategory
     {
         return $parent;
     }
 
-    public function jsonResponse(Group|MasterShop|MasterProductCategory $masterAssets): AnonymousResourceCollection
+    public function jsonResponse(MasterShop $parent): AnonymousResourceCollection
     {
-        return MasterProductsResource::collection($masterAssets);
+        return MasterProductsResource::collection($parent);
     }
 
-    public function htmlResponse(Group|MasterShop|MasterProductCategory $masterAssets, ActionRequest $request): Response
+    public function htmlResponse(MasterShop $parent, ActionRequest $request): Response
     {
         $title = __('Bulk edit Master Products');
 
@@ -54,18 +52,15 @@ class IndexMasterProductsBulkEdit extends GrpAction
                     'model'         => __('Master Products'),
                     'title'         => __('Bulk Edit'),
                 ],
-
             ]
         );
     }
 
-    public function asController(ActionRequest $request): Group|MasterShop|MasterProductCategory
+    public function asController(MasterShop $masterShop, ActionRequest $request): Group|MasterShop|MasterProductCategory
     {
-        $group        = group();
-        $this->parent = $group;
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($group);
+        return $this->handle($masterShop);
     }
 
 }

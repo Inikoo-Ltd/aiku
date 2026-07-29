@@ -42,7 +42,7 @@ class ShowRetinaStoredItemAudit extends RetinaAction
     {
         $subNavigation = [];
 
-        $title      = __("SKUs audit");
+        $title      = __("SKOs audit");
         $icon       = ['fal', 'fa-pallet'];
         $afterTitle = null;
         $iconRight  = null;
@@ -57,7 +57,7 @@ class ShowRetinaStoredItemAudit extends RetinaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __("SKUs audit"),
+                'title'       => __("SKOs audit"),
                 'pageHead'    => [
                     'title'      => $title,
                     'afterTitle' => $afterTitle,
@@ -125,7 +125,7 @@ class ShowRetinaStoredItemAudit extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('SKUs Audit')
+                            'label' => __('SKOs Audit')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\UserRequest;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\SysAdmin\User\StoreUserRequest;
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
@@ -16,7 +16,7 @@ use App\Models\Analytics\UserRequest;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
 
-class ProcessUserRequest extends GrpAction
+class ProcessUserRequest extends OrgAction
 {
     public string $jobQueue = 'analytics';
 

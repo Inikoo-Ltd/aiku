@@ -22,7 +22,7 @@ import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
-
+import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
@@ -130,6 +130,9 @@ const emits = defineEmits<{
 const product = ref(props.product)
 const layout = inject("layout", {})
 const webpage_id = inject("webpage_id", {})
+const isPriceVisible = computed(() =>
+    Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price)
+)
 const expanded = ref(false)
 const keyCustomer = ref(ulid())
 
@@ -269,7 +272,7 @@ onMounted(async () => {
                                 </div>
 
                                 <!-- <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
-                                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
+                                    RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{ product.unit }}
                                 </span> -->
 
                             </div>
@@ -321,9 +324,8 @@ onMounted(async () => {
                 </div>       
 
                 <!-- PRICE -->
-
                 <ProductPrices2
-                    v-if="layout?.iris?.is_logged_in"
+                    v-if="isPriceVisible"
                     :field-value="fieldValue"
                     :product="product"
                     :key="product.code"
@@ -388,7 +390,16 @@ onMounted(async () => {
 
                 </div>
 
-                
+                <!-- Section: Step discount (buy more, save more) -->
+                <StepDiscountOffer
+                    v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+                    class="mt-3"
+                    :stepDiscount="product.step_discount"
+                    :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+                    :originalPrice="product.price"
+                    :unit="product.unit"
+                />
+
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
                     <!-- ONLY show when NOT coming soon -->
@@ -551,15 +562,16 @@ onMounted(async () => {
         </div>
 
         <!-- PRICE / OFFERS / PROFIT -->
-        <div v-if="layout?.iris?.is_logged_in" class="mt-3 space-y-2">
+        <div class="mt-3 space-y-2">
 
-            <ProductPrices2
+            <ProductPrices2   
+                v-if="isPriceVisible"             
                 :field-value="fieldValue"
                 :product="product"
                 :key="product.code"
             />
 
-            <div class="flex justify-between items-start">
+            <div v-if="layout?.iris?.is_logged_in"  class="flex justify-between items-start">
 
                 <!-- OFFERS -->
                 <div v-if="product.offers_data?.number_offers > 0" class="flex flex-col gap-1 offers">
@@ -639,7 +651,7 @@ onMounted(async () => {
                 </span>
 
                 <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
-                    RRP : {{ locale.currencyFormat(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
+                    RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
                     product.unit }}
                 </span>
 
@@ -667,6 +679,16 @@ onMounted(async () => {
             </span>
         </button>
 
+        <!-- Section: Step discount (buy more, save more) -->
+        <StepDiscountOffer
+            v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+            class="mt-4"
+            :stepDiscount="product.step_discount"
+            :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+            :originalPrice="product.price"
+            :unit="product.unit"
+        />
+        
         <!-- ADD TO CART -->
         <div class="mt-5 space-y-2">
             <EcomAddToBasketv2

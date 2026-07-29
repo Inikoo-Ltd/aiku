@@ -155,7 +155,7 @@ const bestOfferClass = computed(() => {
 watch(
     () => props.hasInBasket?.quantity_ordered,
     (newValue) => {
-        console.log('quantity changed', newValue)
+        // console.log('quantity changed', newValue)
     },
     { immediate: true }
 )
@@ -194,7 +194,7 @@ const _popoverProfit = ref(null)
                 <span class="text-[8px] sm:text-[9px] md:text-[10px] text-[#E87928] border-[#E87928]">
                     {{ trans('RRP') }}:
                     <span class="font-medium">
-                        {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit) }}
+                        {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit) }}
                     </span>
                 </span>
             </div>

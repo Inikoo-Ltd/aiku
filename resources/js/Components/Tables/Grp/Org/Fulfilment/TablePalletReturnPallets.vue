@@ -43,6 +43,8 @@ const props = defineProps<{
     state?: string
     route_checkmark : routeType
     palletReturn: {}
+    can_edit_transactions?: boolean
+    detachRoute?: routeType
 }>()
 
 const emit = defineEmits<{

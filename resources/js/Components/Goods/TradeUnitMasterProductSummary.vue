@@ -90,7 +90,7 @@ const props = withDefaults(
 			private: {}[]
 		}
 		properties?: {
-			country_of_origin?: { code: string; name: string }
+			countries_of_origin?: { code: string; name: string }[]
 			tariff_code?: string
 			duty_rate?: string
 		}

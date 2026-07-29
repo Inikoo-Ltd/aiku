@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
@@ -21,14 +22,18 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\SupplyChain\SupplierProductResource;
 use App\Http\Resources\SupplyChain\SupplierResource;
 use App\Models\SupplyChain\Agent;
+use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowSupplier extends GrpAction
+class ShowSupplier extends OrgAction
 {
+    use WithBucketNavigation;
+
+    use WithSupplyChainAuthorisation;
     use WithSupplierSubNavigation;
     public function handle(Supplier $supplier): Supplier
     {
@@ -36,17 +41,9 @@ class ShowSupplier extends GrpAction
     }
 
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo('supply-chain.edit');
-        $this->canDelete = $request->user()->authTo('supply-chain.edit');
-
-        return $request->user()->authTo("supply-chain.view");
-    }
-
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
-        $this->initialisation($supplier->group, $request)->withTab(SupplierTabsEnum::values());
+        $this->initialisationFromGroup($supplier->group, $request)->withTab(SupplierTabsEnum::values());
 
         return $this->handle($supplier);
     }
@@ -55,7 +52,7 @@ class ShowSupplier extends GrpAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
     {
-        $this->initialisation($supplier->group, $request)->withTab(SupplierTabsEnum::values());
+        $this->initialisationFromGroup($supplier->group, $request)->withTab(SupplierTabsEnum::values());
 
         return $this->handle($supplier);
     }
@@ -182,7 +179,7 @@ class ShowSupplier extends GrpAction
                     fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))
                     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier)))
             ]
-        )->table(IndexSupplierProducts::make()->tableStructure())
+        )->table(IndexSupplierProducts::make()->tableStructure(parent: $supplier))
             ->table(IndexAttachments::make()->tableStructure(SupplierTabsEnum::ATTACHMENTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
     }
@@ -267,24 +264,37 @@ class ShowSupplier extends GrpAction
 
     public function getPrevious(Supplier $supplier, ActionRequest $request): ?array
     {
-        $previous = Supplier::where('code', '<', $supplier->code)->when(true, function ($query) use ($supplier, $request) {
-            if ($request->route()->getName() == 'grp.supply-chain.agents.show.suppliers.show') {
-                $query->where('suppliers.agent_id', $supplier->agent_id);
-            }
-        })->orderBy('code', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getSupplierNeighbour($supplier, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(Supplier $supplier, ActionRequest $request): ?array
     {
-        $next = Supplier::where('code', '>', $supplier->code)->when(true, function ($query) use ($supplier, $request) {
-            if ($request->route()->getName() == 'grp.supply-chain.agents.show.suppliers.show') {
-                $query->where('suppliers.agent_id', $supplier->agent_id);
-            }
-        })->orderBy('code')->first();
+        return $this->getNavigation($this->getSupplierNeighbour($supplier, $request, forward: true), $request->route()->getName());
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    private function getSupplierNeighbour(Supplier $supplier, ActionRequest $request, bool $forward): ?Supplier
+    {
+        $query = Supplier::query()->where('suppliers.group_id', $supplier->group_id);
+
+        if ($request->route()->getName() == 'grp.supply-chain.agents.show.suppliers.show') {
+            $query->where('suppliers.agent_id', $supplier->agent_id);
+        } elseif ($request->input('bucket') == 'free') {
+            $query->whereNull('suppliers.agent_id');
+        } elseif ($request->input('bucket') == 'in_agents') {
+            $query->whereNotNull('suppliers.agent_id');
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $supplier,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'code' => 'suppliers.code',
+                'name' => 'suppliers.name',
+            ],
+            defaultSort: ['suppliers.code', false],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?Supplier $supplier, string $routeName): ?array

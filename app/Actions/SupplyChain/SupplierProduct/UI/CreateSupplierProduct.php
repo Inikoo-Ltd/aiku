@@ -9,14 +9,16 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Models\SupplyChain\Supplier;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateSupplierProduct extends GrpAction
+class CreateSupplierProduct extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     public function handle(Supplier $supplier, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -93,15 +95,10 @@ class CreateSupplierProduct extends GrpAction
         );
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo('supply-chain.edit');
-    }
-
     public function asController(Supplier $supplier, ActionRequest $request): Response
     {
         $group = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($supplier, $request);
     }

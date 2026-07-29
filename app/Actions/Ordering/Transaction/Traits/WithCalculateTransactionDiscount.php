@@ -2,7 +2,6 @@
 
 namespace App\Actions\Ordering\Transaction\Traits;
 
-use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -16,8 +15,10 @@ trait WithCalculateTransactionDiscount
     {
         $transaction = $deliveryNoteItem->transaction;
 
-        // INI-1811: Guard, is follow on products must always be 0 
-        if ($transaction->is_follow_on) return;
+        // INI-1811: Guard, is follow on products must always be 0
+        if ($transaction->is_follow_on) {
+            return;
+        }
 
         // Recalculate the transaction totals (Data below)
         $packedData = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNoteItem->deliveryNote);

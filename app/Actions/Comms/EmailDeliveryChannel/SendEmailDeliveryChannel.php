@@ -21,6 +21,7 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailBulkRun\EmailBulkRunStateEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\EmailBulkRunRecipient;
@@ -30,6 +31,7 @@ use App\Models\Comms\MailshotRecipient;
 use App\Models\CRM\Prospect;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -63,6 +65,13 @@ class SendEmailDeliveryChannel
         }
 
         $emailHtmlBody = GetHtmlLayout::run($model);
+
+        if ($model instanceof EmailBulkRun) {
+            if ($model->outbox->builder == OutboxBuilderEnum::BLADE) {
+                $outbox = $model->outbox;
+                $emailHtmlBody = Arr::get($outbox->emailOngoingRun?->email?->liveSnapshot?->layout, 'blade_template');
+            }
+        }
 
         if ($model->requiresUnsubscribeLink()) {
             $emailHtmlBody = EnsureEmailHasUnsubscribeLink::run($emailHtmlBody);

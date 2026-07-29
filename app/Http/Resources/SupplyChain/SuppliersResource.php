@@ -22,6 +22,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $created_at
  * @property string $updated_at
  * @property string $agent_slug
+ * @property mixed $id
  */
 class SuppliersResource extends JsonResource
 {
@@ -29,6 +30,7 @@ class SuppliersResource extends JsonResource
     {
 
         return [
+            'id'                       => $this->id,
             'org_slug'                 => $this->org_slug,
             'agent_slug'               => $this->agent_slug,
             'code'                     => $this->code,

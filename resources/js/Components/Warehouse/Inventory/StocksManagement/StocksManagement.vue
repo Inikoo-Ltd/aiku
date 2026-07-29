@@ -447,15 +447,17 @@ const onAddLocationShow = () => {
                     <span>
                         <Icon :data="{...item.icon_state, tooltip : null}" />
                     </span>
-                    <span class="ml-2 text-lg font-bold">
-                        {{ locale.number(item.value ?? 0) }}
+                    <span class="ml-2 text-lg font-bold inline-flex align-middle">
+                        <FractionDisplay v-if="item.value_fractional" :fractionData="item.value_fractional" />
+                        <template v-else>{{ locale.number(item.value ?? 0) }}</template>
                     </span>
                 </div>
             </div>
 
             <div class="grid align-item-middle border-l">
-                <span class="my-auto text-lg text-center font-semibold mx-1 px-4 py-2 border border-green-200 bg-green-100 rounded tabular-nums" v-tooltip="trans('Stock in Location')">
-                    {{ locale.number(stocks_management.qty_in_location ?? 0) }}
+                <span class="my-auto text-lg text-center font-semibold mx-1 px-4 py-2 border border-green-200 bg-green-100 rounded tabular-nums flex items-center justify-center" v-tooltip="trans('Stock in Location')">
+                    <FractionDisplay v-if="stocks_management.qty_in_location_fractional" :fractionData="stocks_management.qty_in_location_fractional" />
+                    <template v-else>{{ locale.number(stocks_management.qty_in_location ?? 0) }}</template>
                 </span>
             </div>
         </div>

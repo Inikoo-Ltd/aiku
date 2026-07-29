@@ -13,45 +13,52 @@ import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
 import Image from '@common/Components/Image.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
+import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle } from '@fal'
-import { faExclamationCircle } from '@fas'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox, faPeopleArrows } from '@fal'
+import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
+import ConfirmPopup from 'primevue/confirmpopup'
+import { useConfirm } from 'primevue/useconfirm'
 
-library.add(faBox, faPallet, faStopCircle, faExclamationCircle)
+library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle, faPeopleArrows)
+
+const confirm = useConfirm()
 
 const props = defineProps<{
     data: object
     tab?: string
     state?: string
+    isOrgAgent?: boolean
+    orgAgentSlug?: string
 }>()
+
+function supplierRoute(item: any): string {
+    if (!props.isOrgAgent || !props.orgAgentSlug || !item.supplier_slug) {
+        return ''
+    }
+
+    return route('grp.org.procurement.org_agents.show.suppliers.show', [
+        route().params.organisation,
+        props.orgAgentSlug,
+        item.supplier_slug,
+    ])
+}
+
+const currentLevel = defineModel<OrderingLevel>('level', { default: 'cartons' })
 
 const locale = useLocaleStore()
 
-type Level = 'cartons' | 'skos' | 'units'
-
 const isInProcess = computed(() => props.state === 'in_process')
 
-const levels = computed(() => [
-    { key: 'cartons' as Level, icon: 'fal fa-pallet', tab: trans('Ordering Cartons'), description: trans('Carton description'), quantity: trans('Cartons'), cost: trans('Carton cost') },
-    { key: 'skos' as Level, icon: 'fal fa-box', tab: trans('Ordering SKOs'), description: trans('SKO description'), quantity: trans('SKOs'), cost: trans('SKO cost') },
-    { key: 'units' as Level, icon: 'fal fa-stop-circle', tab: trans('Ordering Units'), description: trans('Unit description'), quantity: trans('Units'), cost: trans('Unit cost') },
-])
-
-const currentLevel = ref<Level>('cartons')
+const levels = computed(() => getOrderingLevels())
 
 const level = computed(() => levels.value.find(l => l.key === currentLevel.value) ?? levels.value[0])
 
 function unitsPerLevel(item: any) {
-    if (currentLevel.value === 'cartons') {
-        return Number(item.units_per_carton) || 1
-    }
-    if (currentLevel.value === 'skos') {
-        return Number(item.units_per_pack) || 1
-    }
-
-    return 1
+    return unitsPerOrderingLevel(item, currentLevel.value)
 }
 
 function skosPerCarton(item: any) {
@@ -107,11 +114,13 @@ const savingId = ref<number | null>(null)
 
 async function onSaveQuantity(item: any, form: any) {
     const quantityOrdered = Number(form.quantity) * unitsPerLevel(item)
+    const saveRoute = item.saveRoute ?? item.updateRoute
+    const method = String(saveRoute?.method ?? 'patch').toLowerCase()
 
     savingId.value = item.id
     try {
-        await axios.patch(
-            route(item.updateRoute.name, item.updateRoute.parameters),
+        await axios[method](
+            route(saveRoute.name, saveRoute.parameters),
             { quantity_ordered: quantityOrdered }
         )
         form.defaults()
@@ -125,6 +134,78 @@ async function onSaveQuantity(item: any, form: any) {
         })
     } finally {
         savingId.value = null
+    }
+}
+
+const deletingId = ref<number | null>(null)
+
+function confirmDeleteItem(event: MouseEvent, item: any) {
+    if (!item.deleteRoute) {
+        return
+    }
+
+    confirm.require({
+        target: event.currentTarget as HTMLElement,
+        message: trans('Remove this product from the purchase order?'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: trans('Delete'),
+        rejectLabel: trans('Cancel'),
+        acceptClass: 'p-button-danger',
+        rejectClass: 'p-button-text',
+        accept: () => onDeleteItem(item),
+    })
+}
+
+async function onDeleteItem(item: any) {
+    deletingId.value = item.id
+    try {
+        await axios.delete(route(item.deleteRoute.name, item.deleteRoute.parameters))
+        notify({ title: trans('Success'), text: trans('Item removed'), type: 'success' })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to remove item'),
+            type: 'error',
+        })
+    } finally {
+        deletingId.value = null
+    }
+}
+
+const cancellingId = ref<number | null>(null)
+
+function confirmCancelItem(event: MouseEvent, item: any) {
+    if (!item.cancelRoute) {
+        return
+    }
+
+    confirm.require({
+        target: event.currentTarget as HTMLElement,
+        message: trans('Cancel this item?'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: trans('Cancel item'),
+        rejectLabel: trans('Keep'),
+        acceptClass: 'p-button-danger',
+        rejectClass: 'p-button-text',
+        accept: () => onCancelItem(item),
+    })
+}
+
+async function onCancelItem(item: any) {
+    cancellingId.value = item.id
+    try {
+        await axios.patch(route(item.cancelRoute.name, item.cancelRoute.parameters))
+        notify({ title: trans('Success'), text: trans('Item cancelled'), type: 'success' })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats'] })
+    } catch (error: any) {
+        notify({
+            title: trans('Something went wrong'),
+            text: error?.response?.data?.message || trans('Failed to cancel item'),
+            type: 'error',
+        })
+    } finally {
+        cancellingId.value = null
     }
 }
 
@@ -178,31 +259,49 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(code)="{ item }">
-            <div class="flex items-center gap-1.5">
-                <Link
-                    v-if="supplierProductRoute(item)"
-                    v-tooltip="trans('Supplier product code')"
-                    :href="supplierProductRoute(item)"
-                    class="primaryLink"
-                >
-                    {{ item.code }}
-                </Link>
-                <span v-else>{{ item.code }}</span>
+            <div class="flex flex-col gap-0.5">
+                <div class="flex items-center gap-1.5">
+                    <Link
+                        v-if="supplierProductRoute(item)"
+                        v-tooltip="trans('Supplier product code')"
+                        :href="supplierProductRoute(item)"
+                        class="primaryLink"
+                    >
+                        {{ item.code }}
+                    </Link>
+                    <span v-else>{{ item.code }}</span>
 
-                <Link
-                    v-if="orgStockRoute(item)"
-                    v-tooltip="trans('Part reference is same as supplier product code')"
-                    :href="orgStockRoute(item)"
-                    class="text-gray-400 hover:text-gray-600"
+                    <Link
+                        v-if="orgStockRoute(item)"
+                        v-tooltip="trans('Part reference is same as supplier product code')"
+                        :href="orgStockRoute(item)"
+                        class="text-gray-400 hover:text-gray-600"
+                    >
+                        <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
+                    </Link>
+                </div>
+
+                <div
+                    v-if="isOrgAgent && item.supplier_name"
+                    class="flex items-center gap-1 text-xs text-gray-500"
                 >
-                    <FontAwesomeIcon icon="fal fa-box" aria-hidden="true" fixed-width />
-                </Link>
+                    <FontAwesomeIcon icon="fal fa-hand-holding-box" aria-hidden="true" fixed-width />
+                    <Link
+                        v-if="supplierRoute(item)"
+                        v-tooltip="trans('Supplier')"
+                        :href="supplierRoute(item)"
+                        class="primaryLink"
+                    >
+                        {{ item.supplier_name }}
+                    </Link>
+                    <span v-else>{{ item.supplier_name }}</span>
+                </div>
             </div>
         </template>
 
         <template #cell(image_thumbnail)="{ item }">
             <div class="flex">
-                <Image :src="item['image_thumbnail']" imageCover class="aspect-square overflow-hidden" />
+                <Image :src="item['image_thumbnail']" imageCover class="w-20 aspect-square overflow-hidden" />
             </div>
         </template>
 
@@ -244,9 +343,10 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(quantity)="{ item }">
-            <div v-if="isInProcess" class="flex justify-end">
+            <div v-if="isInProcess" class="flex justify-end items-center">
                 <NumberWithButtonSave
                     :key="`${item.id}-${currentLevel}`"
+                    isWithRefreshModel
                     :modelValue="quantityAtLevel(item)"
                     :min="0"
                     :isLoading="savingId === item.id"
@@ -254,6 +354,38 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 />
             </div>
             <span v-else class="text-gray-500">{{ quantityBreakdown(item) }}</span>
+        </template>
+
+        <template #cell(actions)="{ item }">
+            <div class="flex justify-end items-center gap-2">
+                <Button
+                    v-if="item.deleteRoute && state === 'in_process'"
+                    :label="trans('Remove')"
+                    :tooltip="trans('Remove this product from the purchase order')"
+                    icon="fal fa-trash-alt"
+                    type="delete"
+                    size="xs"
+                    :loading="deletingId === item.id"
+                    :disabled="deletingId === item.id"
+                    @click="confirmDeleteItem($event, item)"
+                />
+
+                <Button
+                    v-if="state === 'submitted' && item.cancelRoute"
+                    :label="trans('Cancel')"
+                    :tooltip="trans('Cancel this item')"
+                    icon="fas fa-minus-circle"
+                    type="delete"
+                    size="xs"
+                    :loading="cancellingId === item.id"
+                    :disabled="cancellingId === item.id"
+                    @click="confirmCancelItem($event, item)"
+                />
+
+                <span v-if="!item.deleteRoute && !item.cancelRoute" class="text-gray-400 text-sm">
+                    {{ trans('No actions needed') }}
+                </span>
+            </div>
         </template>
 
         <template #cell(weight)="{ item }">
@@ -284,15 +416,29 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
         <template #cell(state)="{ item }">
             <div class="flex items-center gap-1.5">
-                <FontAwesomeIcon
-                    v-tooltip="item.state_icon?.tooltip"
-                    :icon="item.state_icon?.icon"
-                    :class="item.state_icon?.class"
+                 <FontAwesomeIcon
+                    v-if="item.state_icon"
+                    v-tooltip="item.state_icon.tooltip"
+                    :icon="item.state_icon.icon"
+                    :class="item.state_icon.class"
                     aria-hidden="true"
                     fixed-width
                 />
-                <span>{{ item.state_label }}</span>
+            </div>
+        </template>
+
+        <template #cell(delivery_state)="{ item }">
+            <div class="flex justify-center items-center gap-1.5">
+                <FontAwesomeIcon
+                    v-tooltip="item.delivery_state_icon?.tooltip"
+                    :icon="item.delivery_state_icon?.icon"
+                    :class="item.delivery_state_icon?.class"
+                    aria-hidden="true"
+                    fixed-width
+                />
             </div>
         </template>
     </Table>
+
+    <ConfirmPopup />
 </template>

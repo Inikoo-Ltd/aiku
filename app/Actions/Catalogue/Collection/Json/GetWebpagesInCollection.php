@@ -66,7 +66,7 @@ class GetWebpagesInCollection extends OrgAction
         } elseif ($this->bucket == 'storefront') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
         }
-        
+
         if (Arr::has($modelData, 'excluded_list')) {
             $queryBuilder->whereNotIn('webpages.id', data_get($modelData, 'excluded_list.*.id', []));
         }

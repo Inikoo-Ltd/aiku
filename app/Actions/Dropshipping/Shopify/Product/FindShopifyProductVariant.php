@@ -186,12 +186,12 @@ class FindShopifyProductVariant
                         'ID'        => $variant['id'],
                         'Title'     => $variant['title'],
                         'Price'     => $variant['price'],
-                        'SKU'       => $variant['sku'],
+                        'SKO'       => $variant['sku'],
                         'Barcode'   => $variant['barcode'] ?? 'N/A',
                         'Inventory' => $variant['inventoryQuantity'] ?? 'N/A'
                     ];
                 }
-                $command->table(['Index', 'ID', 'Title', 'Price', 'SKU', 'Barcode', 'Inventory'], $variantData);
+                $command->table(['Index', 'ID', 'Title', 'Price', 'SKO', 'Barcode', 'Inventory'], $variantData);
             }
         }
     }

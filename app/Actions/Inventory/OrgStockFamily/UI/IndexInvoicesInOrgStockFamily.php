@@ -145,7 +145,7 @@ class IndexInvoicesInOrgStockFamily extends OrgAction
                                 'warehouse'    => $routeParameters['warehouse'],
                             ],
                         ],
-                        'label' => __('SKU Families'),
+                        'label' => __('SKO Families'),
                         'icon'  => 'fal fa-boxes-alt',
                     ],
                 ],

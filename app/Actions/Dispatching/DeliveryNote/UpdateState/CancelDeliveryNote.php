@@ -14,8 +14,8 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\Packing\DeletePacking;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
+use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
-use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\Ordering\Order\UpdateState\RollbackOrderAfterDeliveryNoteCancellation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -85,16 +85,7 @@ class CancelDeliveryNote extends OrgAction
                 }
 
                 if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK && $picking->quantity > 0) {
-                    StoreSowing::make()->action(
-                        $deliveryNoteItem,
-                        $user,
-                        [
-                            'location_org_stock_id' => $locationPickingStock->id,
-                            'quantity'              => $picking->quantity,
-                            'sower_user_id'         => $picking->picker_user_id,
-                            'original_picking_id'   => $picking->id,
-                        ],
-                    );
+                    DeletePicking::make()->action($picking, $user);
                 }
 
                 if ($toPick > 0) {

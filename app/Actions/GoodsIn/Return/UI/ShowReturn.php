@@ -76,7 +76,7 @@ class ShowReturn extends OrgAction
                 ]);
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'org_stock_code', label: __('SKU'), sortable: true);
+            $table->column(key: 'org_stock_code', label: __('SKO'), sortable: true);
             $table->column(key: 'org_stock_name', label: __('Product'), sortable: true);
             $table->column(key: 'quantity_expected', label: __('Expected'), sortable: true, align: 'right');
             $table->column(key: 'quantity_received', label: __('Received'), sortable: true, align: 'right');

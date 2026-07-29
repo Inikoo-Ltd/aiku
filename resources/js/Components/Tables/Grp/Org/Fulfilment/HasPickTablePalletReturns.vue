@@ -45,6 +45,33 @@ const onCheckedAll = ({ data, allChecked }) => {
 const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
+function returnHref(palletReturn: PalletDelivery) {
+    const url = palletReturn.type === 'pallet' ? palletReturnRoute(palletReturn) : storedItemReturnRoute(palletReturn)
+
+    return url ? url + bucketQuery() : ''
+}
+
+function bucketQuery() {
+    const bucket = route().current()?.match(/\.pallet-returns\.([^.]+)\.index$/)?.[1]
+
+    if (!bucket) return ''
+
+    const current = new URLSearchParams(location.search)
+    const query = new URLSearchParams({ bucket })
+    const sort = current.get('sort')
+    const type = current.get('filter[type]')
+
+    if (type) {
+        query.set('filter[type]', type)
+    }
+
+    if (sort) {
+        query.set('bucket_sort', sort)
+    }
+
+    return `?${query.toString()}`
+}
+
 function palletReturnRoute(palletReturn: PalletDelivery) {
     switch (route().current()) {
         case 'grp.org.warehouses.show.dispatching.pallet-returns.index':
@@ -222,11 +249,11 @@ function pickingSessionRoute(palletReturn: any) {
 
         <template #cell(reference)="{ item: palletReturn }">
             <div class="flex gap-2 flex-wrap items-center">
-                <Link v-if="palletReturn.type === 'pallet'" :href="palletReturnRoute(palletReturn)" class="primaryLink">
+                <Link v-if="palletReturn.type === 'pallet'" :href="returnHref(palletReturn)" class="primaryLink">
                     {{ palletReturn["reference"] }}
                 </Link>
 
-                <Link v-else-if="palletReturn.type === 'stored_item'" :href="storedItemReturnRoute(palletReturn)" class="primaryLink">
+                <Link v-else-if="palletReturn.type === 'stored_item'" :href="returnHref(palletReturn)" class="primaryLink">
                     {{ palletReturn["reference"] }}
                 </Link>
 

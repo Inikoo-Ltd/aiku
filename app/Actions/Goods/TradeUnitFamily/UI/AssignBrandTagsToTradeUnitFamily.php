@@ -3,7 +3,7 @@
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\TradeUnit\HydrateTradeUnitBrandTagsFromFamily;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Traits\WithActionUpdate;
@@ -11,7 +11,7 @@ use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class AssignBrandTagsToTradeUnitFamily extends GrpAction
+class AssignBrandTagsToTradeUnitFamily extends OrgAction
 {
     use WithActionUpdate;
 
@@ -43,7 +43,7 @@ class AssignBrandTagsToTradeUnitFamily extends GrpAction
 
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): void
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         $this->handle($tradeUnitFamily, $this->validatedData);
     }

@@ -18,16 +18,23 @@ const props = defineProps<{
 	form: any
 	fieldName: string
 	options?: any
+	submit?: Function
 	fieldData?: {
 		type: string
 		placeholder: string
 		readonly?: boolean
+		disabled?: boolean
 		copyButton: boolean
 		maxLength?: number
 		noIcon?: boolean
 		suffixImage?: string
 		warningText?: string
+		warningTextHtml?: string
+		warningBox?: string
 		warnTitle?: string
+		confirmLabel?: string
+		warnOnEnableOnly?: boolean
+		submitOnConfirm?: boolean
 		description?: string | string[]
 		descriptionLinks?: {   // EditShop
             [key: string]: {
@@ -89,7 +96,13 @@ watch(value, (newValue) => {
 
 const clearAndWarn = () => {
 	props.form.errors[props.fieldName] = null
-	if (!props.fieldData?.warningText) return false
+	if (
+		!props.fieldData?.warningText &&
+		!props.fieldData?.warningTextHtml &&
+		!props.fieldData?.warningBox
+	) {
+		return false
+	}
 	return true
 }
 
@@ -139,27 +152,50 @@ const getDescriptionSegments = (description: string) => {
 				fieldData?.warningText ?? trans('Enabling this would have direct consequences')
 			"
 			hideCancel>
+			<template v-if="fieldData?.warningTextHtml || fieldData?.warningBox" #description>
+				<div class="mt-2 space-y-3">
+					<!-- warningTextHtml is blueprint copy authored in PHP, never user input -->
+					<p
+						v-if="fieldData?.warningTextHtml"
+						class="text-sm text-gray-500"
+						v-html="fieldData.warningTextHtml"></p>
+					<p v-else class="text-sm text-gray-500">{{ fieldData?.warningText }}</p>
+					<div
+						v-if="fieldData?.warningBox"
+						class="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+						{{ fieldData.warningBox }}
+					</div>
+				</div>
+			</template>
 			<template #default="{ isOpenModal, changeModel }">
 				<Switch
 					v-model="value"
 					@update:modelValue="
 						() => {
-							if (clearAndWarn()) {
+							if (clearAndWarn() && !(fieldData?.warnOnEnableOnly && !value)) {
 								value = !value
 								changeModel()
+								return
+							}
+							if (fieldData?.submitOnConfirm) {
+								updateFormValue(value)
+								submit?.()
 							}
 						}
 					"
-					class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+					class="pr-1 relative inline-flex h-6 w-12 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
 					:class="[
 						value ? 'bg-indigo-500' : 'bg-indigo-100',
 						form.errors[fieldName] ? 'errorShake' : '',
-					]">
+						fieldData?.disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+					]"
+					:disabled="fieldData?.disabled"
+				>
 					<span
 						aria-hidden="true"
 						:class="value ? 'translate-x-6 bg-white ' : 'translate-x-0 bg-gray-50'"
 						class="flex items-center justify-center pointer-events-none h-full w-1/2 transform rounded-full shadow-lg ring-0 transition">
-						<template v-if="!fieldData.noIcon">
+						<template v-if="!fieldData?.noIcon">
 							<FontAwesomeIcon
 								v-if="value"
 								icon="fal fa-check"
@@ -178,11 +214,15 @@ const getDescriptionSegments = (description: string) => {
 			</template>
 			<template #btn-yes="{ closeModal }">
 				<Button
-					:label="trans('Confirm')"
+					:label="fieldData?.confirmLabel ?? trans('Confirm')"
 					@click="
 						() => {
 							value = !value
 							closeModal()
+							if (fieldData?.submitOnConfirm) {
+								updateFormValue(value)
+								props.submit?.()
+							}
 						}
 					"
 					type="negative"

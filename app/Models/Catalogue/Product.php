@@ -151,7 +151,6 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $master_product_id
  * @property Carbon|null $mark_for_discontinued_at
  * @property Carbon|null $discontinued_at
- * @property numeric|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
  * @property int|null $art1_image_id
@@ -187,6 +186,8 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $not_follow_master_trade_units
  * @property int|null $index_under_family
  * @property bool $is_on_demand
+ * @property bool $not_follow_master_prices
+ * @property string|null $units_review
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -299,7 +300,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_for_sale_from_master'      => 'boolean',
         'mismatch_with_master_detected' => 'boolean',
         'is_on_demand'                  => 'boolean',
-
+        'not_follow_master_prices'      => 'boolean',
     ];
 
     protected $attributes = [
@@ -369,6 +370,7 @@ class Product extends Model implements Auditable, HasMedia
         'auto_assign_status',
         'is_main',
         'is_on_demand',
+        'not_follow_master_prices',
     ];
 
     public function getRouteKeyName(): string

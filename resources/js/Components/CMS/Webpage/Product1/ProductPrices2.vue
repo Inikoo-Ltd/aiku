@@ -66,7 +66,7 @@ const bestOffer = computed(() => {
         <div class="col-span-2 text-right space-y-1.5">
             <div class="">
                 <span class="">
-                    {{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}
+                    {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}
                 </span>
                 <span class="">/{{ product?.unit }}</span>
             </div>

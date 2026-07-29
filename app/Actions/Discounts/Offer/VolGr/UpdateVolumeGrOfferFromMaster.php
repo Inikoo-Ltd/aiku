@@ -8,12 +8,8 @@
 
 namespace App\Actions\Discounts\Offer\VolGr;
 
-use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
-use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
-use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\Discounts\Offer\OfferStateEnum;
-use App\Models\Discounts\Offer;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -45,60 +41,16 @@ class UpdateVolumeGrOfferFromMaster
         }
 
         DB::transaction(function () use ($masterProductCategory) {
-            $percentageOff = (float)($masterProductCategory->gr_vol_discount_percentage / 100);
 
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 if (!$productCategory->follow_master_gr) {
                     continue;
                 }
 
-                $offer = Offer::where('shop_id', $productCategory->shop_id)->where('type', 'Category Quantity Ordered Order Interval')->where('trigger_id', $productCategory->id)->first();
-
-                if (!$offer) {
-                    $offer = StoreVolumeGRDiscount::make()->action(
-                        $productCategory,
-                        [
-                            'trigger_data_item_quantity' => $masterProductCategory->gr_vol_discount_quantity,
-                            'percentage_off'             => $percentageOff,
-                            'interval'                   => 30
-                        ]
-                    );
-                } else {
-                    $triggerData = $offer->trigger_data;
-                    data_set($triggerData, 'item_quantity', $masterProductCategory->gr_vol_discount_quantity);
-
-                    $offer->update([
-                        'state'        => OfferStateEnum::ACTIVE,
-                        'status'       => true,
-                        'trigger_data' => $triggerData,
-                    ]);
-
-                    foreach ($offer->offerAllowances as $offerAllowance) {
-                        $allowanceData = $offerAllowance->data;
-                        data_set($allowanceData, 'percentage_off', $percentageOff);
-
-                        $offerAllowance->update([
-                            'state'  => $offer->state->value,
-                            'status' => $offer->status,
-                            'data'   => $allowanceData,
-                            'end_at' => null,
-                        ]);
-
-                        $this->updatedAllowancesCount++;
-                    }
-
-                    UpdateOfferAllowanceSignature::run($offer);
-                }
-
-                $productCategory->updateQuietly(['has_gr_vol_discount' => true]);
-
-                if ($offer) {
-                    $offer->refresh();
-                    UpdateProductCategoryOffersData::run($offer);
-                    if ($productCategory->webpage) {
-                        BreakWebpageCache::dispatch($productCategory->webpage, true);
-                    }
-                }
+                UpdateProductCategory::make()->updateFamilyGrOffer($productCategory, [
+                    'item_quantity'     => $masterProductCategory->gr_vol_discount_quantity,
+                    'percentage_off'    => $masterProductCategory->gr_vol_discount_percentage,
+                ]);
 
                 $this->updatedOffersCount++;
             }

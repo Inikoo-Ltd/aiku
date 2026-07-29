@@ -502,12 +502,26 @@
   },
    {
     "outboxes": [
+      "price_change"
+    ],
+    "name": "Price change",
+    "content": "price_change.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "products"
+    ]
+  },
+   {
+    "outboxes": [
       "chat_notification_to_customer",
       "price_change_notification",
       "web_user_registration",
       "oos_in_order_notification",
       "review_reminder",
       "invoice_paid",
+      "gold_reward_reminder_1",
+      "gold_reward_reminder_2",
+      "gold_reward_reminder_3",
       "prospect_convertion_1"
     ],
     "name": "Beefree blank email template",

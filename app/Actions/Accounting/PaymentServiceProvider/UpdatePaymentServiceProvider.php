@@ -8,7 +8,7 @@
 
 namespace App\Actions\Accounting\PaymentServiceProvider;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
@@ -18,7 +18,7 @@ use App\Rules\IUnique;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdatePaymentServiceProvider extends GrpAction
+class UpdatePaymentServiceProvider extends OrgAction
 {
     use WithActionUpdate;
 
@@ -76,7 +76,7 @@ class UpdatePaymentServiceProvider extends GrpAction
     {
         $this->asAction               = true;
         $this->paymentServiceProvider = $paymentServiceProvider;
-        $this->initialisation($paymentServiceProvider->group, $modelData);
+        $this->initialisationFromGroup($paymentServiceProvider->group, $modelData);
 
         return $this->handle($paymentServiceProvider, $this->validatedData);
     }

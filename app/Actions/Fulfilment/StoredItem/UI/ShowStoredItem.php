@@ -110,7 +110,7 @@ class ShowStoredItem extends OrgAction
                             'title' => __('Stored item')
                         ],
                     'subNavigation' => $subNavigation,
-                    'model'  => __("Customer's SKU"),
+                    'model'  => __("Customer's SKO"),
                     'title'  => $storedItem->slug,
                     'actions' => [
 
@@ -218,7 +218,7 @@ class ShowStoredItem extends OrgAction
                                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-items.index',
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ],
-                            'label' => __("Customer's SKUs")
+                            'label' => __("Customer's SKOs")
                         ],
                         'model' => [
                             'route' => [

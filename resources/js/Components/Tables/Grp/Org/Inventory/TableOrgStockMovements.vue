@@ -8,8 +8,8 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
-import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faInboxIn, faInboxOut, faInfoCircle, faMapSigns, faPersonCarry, faQuestionCircle, faTilde, faTruckLoading } from "@fal";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faBoxFull, faClipboardCheck, faDumpster, faHandsHelping, faHorizontalRule, faInboxIn, faInboxOut, faInfoCircle, faMapSigns, faPersonCarry, faQuestionCircle, faRampLoading, faShippingFast, faTilde, faTruckLoading } from "@fal";
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { trans } from "laravel-vue-i18n";
 import OrgStockMovements from "@/Pages/Grp/Org/Inventory/OrgStockMovements.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -89,15 +89,15 @@ const locationRoute = (orgStockMovement, extraData = {}) => {
   })
 }
 
-function deliveryNoteRoute(orgStockMovement) {
-    return route("grp.majordomo.redirect_delivery_notes", [orgStockMovement.delivery_note_id])
+function parentRoute(orgStockMovement) {
+    return route("grp.majordomo.redirect_org_stock_movement_parent", [orgStockMovement.id])
 }
 
 const isNoteModalOpen = ref(false);
 const selectedMovement = ref<{}|null>(null)
 
 function noteBgColor(movement) {
-  let colorBg = '#ffe975'; 
+  let colorBg = '#ffe975';
   let colorText = 'rgb(55, 65, 81)';
 
   if (movement?.type == 'audit') {
@@ -111,7 +111,7 @@ function noteBgColor(movement) {
 }
 
 function noteColor(movement) {
-  let borderColor = '#ffd700'; 
+  let borderColor = '#ffd700';
 
   if (movement?.type == 'audit') {
     borderColor = '#67a5db'
@@ -130,15 +130,30 @@ function noteColor(movement) {
         {{ orgStockMovement.user ? `${orgStockMovement.user?.username}` : 'System' }}
       </span>
     </template>
-    
+
     <template #cell(type)="{ item: orgStockMovement }">
-      <span v-if="orgStockMovement.delivery_note_reference && orgStockMovement.delivery_note_id">
-        <Link class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold" :href="deliveryNoteRoute(orgStockMovement)">
-          <FontAwesomeIcon 
-            :icon="faTruckLoading"
-            class="pr-1"
-          />
-          {{ orgStockMovement.delivery_note_reference }}
+      <span v-if="orgStockMovement.parent_reference">
+        <Link
+          v-tooltip="orgStockMovement.type_label"
+          class="primaryLink !px-2 !py-1 !border !rounded-md !border-yellow-300 font-semibold"
+          :href="parentRoute(orgStockMovement)"
+        >
+          <FontAwesomeLayers
+            class="mr-1"
+          >
+            <FontAwesomeIcon
+              :icon="orgStockMovement.parent_type == 'DeliveryNote' ? faTruckLoading : (
+                  orgStockMovement.parent_type == 'ReturnDeliveryNote' ? faRampLoading :
+                  faShippingFast
+              )"
+            />
+            <FontAwesomeIcon
+              v-if="orgStockMovement.type == 'cancel-return-picked' || orgStockMovement.type == 'cancel-picked' || orgStockMovement.type == 'cancel-purchase'"
+              :icon="faHorizontalRule"
+              class="rotate-[45deg] text-red-500 text-md"
+            />
+          </FontAwesomeLayers>
+          {{ orgStockMovement.parent_reference }}
         </Link>
       </span>
       <span v-else-if="orgStockMovement.is_migration_point" v-tooltip="ctrans('Anchor point. From where data is migrated from Aurora')">
@@ -156,7 +171,7 @@ function noteColor(movement) {
     <template #cell(reason)="{ item: orgStockMovement }">
       <div class="flex justify-between">
         {{ orgStockMovement.reason_label }}
-        <FontAwesomeIcon 
+        <FontAwesomeIcon
           v-if="orgStockMovement.note"
           v-tooltip="ctrans('View Note')"
           :icon="faNoteSticky"
@@ -181,7 +196,7 @@ function noteColor(movement) {
           <span v-if="orgStockMovement.type == 'disassociate' || orgStockMovement.type == 'associate'">
           </span>
           <span v-else-if="orgStockMovement.flow == 'audit'" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
-            <FontAwesomeIcon 
+            <FontAwesomeIcon
               :icon="faBoxFull"
             />
             <FractionDisplay v-if="orgStockMovement.audited_quantity_fractional" :fractionData="orgStockMovement.audited_quantity_fractional" class="ml-1"/>
@@ -190,7 +205,7 @@ function noteColor(movement) {
             </span>
           </span>
           <span v-else class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
-            <FontAwesomeIcon 
+            <FontAwesomeIcon
               :icon="faBoxFull"
             />
             <FractionDisplay v-if="orgStockMovement.running_quantity_fractional" :fractionData="orgStockMovement.running_quantity_fractional" class="ml-1"/>
@@ -229,7 +244,7 @@ function noteColor(movement) {
       <span v-if="orgStockMovement.type == 'disassociate' || orgStockMovement.type == 'associate'">
       </span>
       <span v-else-if="orgStockMovement.flow == 'audit'" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
-        <FontAwesomeIcon 
+        <FontAwesomeIcon
           :icon="faBoxFull"
         />
         <FractionDisplay v-if="orgStockMovement.audited_quantity_fractional" :fractionData="orgStockMovement.audited_quantity_fractional" class="ml-1"/>
@@ -238,7 +253,7 @@ function noteColor(movement) {
         </span>
       </span>
       <span v-else class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
-        <FontAwesomeIcon 
+        <FontAwesomeIcon
           :icon="faBoxFull"
         />
         <FractionDisplay v-if="orgStockMovement.running_quantity_fractional" :fractionData="orgStockMovement.running_quantity_fractional" class="ml-1"/>
@@ -251,8 +266,8 @@ function noteColor(movement) {
     <template #cell(running_quantity_org_stock)="{ item: orgStockMovement }">
       <span
         :class="[
-            orgStockMovement.flow == 'audit' 
-            ? 'text-blue-500' 
+            orgStockMovement.flow == 'audit'
+            ? 'text-blue-500'
             : ''
         ]">
         <FractionDisplay v-if="orgStockMovement.running_quantity_org_stock_fractional" :fractionData="orgStockMovement.running_quantity_org_stock_fractional"/>
@@ -264,11 +279,11 @@ function noteColor(movement) {
   </Table>
 
   <Dialog
-    v-model:visible="isNoteModalOpen" 
-    modal 
-    :style="{ 
-      width: '30vw', 
-      overflow:'hidden', 
+    v-model:visible="isNoteModalOpen"
+    modal
+    :style="{
+      width: '30vw',
+      overflow:'hidden',
       'border-width': '1px',
       'border-style': 'solid',
       'border-color': noteColor(selectedMovement)
@@ -284,24 +299,24 @@ function noteColor(movement) {
     }"
   >
     <template #container>
-      <div 
-        class="py-2 px-1" 
+      <div
+        class="py-2 px-1"
         :style="noteBgColor(selectedMovement)"
       >
         <div class="top-0 left-0 w-full flex gap-x-1 lg:pr-0 justify-between h-full">
           <div class="flex flex-row w-full text-md font-semibold truncate gap-x-2 text-center py-0.5 pl-3 pr-3" style="">
-            <FontAwesomeIcon 
+            <FontAwesomeIcon
               :icon="faNoteSticky"
               class="my-auto"
             />
-            <span 
-              class="align-middle" 
+            <span
+              class="align-middle"
               style="color: rgb(55, 65, 81);"
             >
               {{ ctrans('Movement Note') }}
               <span class="my-auto ml-2 px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100 text-xs">
                 {{ selectedMovement.location_code }}
-                <FontAwesomeIcon 
+                <FontAwesomeIcon
                   :icon="faBoxFull"
                 />
                 <FractionDisplay v-if="selectedMovement.running_quantity_fractional" :fractionData="selectedMovement.running_quantity_fractional" class="ml-1"/>
@@ -310,7 +325,7 @@ function noteColor(movement) {
                 </span>
               </span>
             </span>
-            
+
           </div>
           <div class="mr-2 text-lg my-auto">
             <FontAwesomeIcon
@@ -356,5 +371,3 @@ function noteColor(movement) {
     </template>
   </Dialog>
 </template>
-
-

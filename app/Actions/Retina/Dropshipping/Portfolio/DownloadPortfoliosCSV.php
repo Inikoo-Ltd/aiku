@@ -71,6 +71,11 @@ class DownloadPortfoliosCSV extends RetinaAction
                 ->where('products.is_for_sale', true);
         }
 
+        if (in_array('only_not_for_sale', $productAvailability)) {
+            $portfolios = $portfolios
+                ->where('products.is_for_sale', false);
+        }
+
         if (in_array('exclude_out_of_stocks', $productAvailability)) {
             $portfolios = $portfolios
                 ->where('products.available_quantity', '>', 0);
@@ -174,6 +179,9 @@ class DownloadPortfoliosCSV extends RetinaAction
             'tariff_code'             => 'Tariff code',
             'duty_rate'               => 'Duty rate',
             'hts_us'                  => 'HTS US',
+            'available_quantity'      => 'Stock',
+            'status'                  => 'Status',
+            'for_sale'                => 'For sale',
             'data_updated'            => 'Data updated',
         ];
     }
@@ -200,6 +208,9 @@ class DownloadPortfoliosCSV extends RetinaAction
             'tariff_code'             => $row->tariff_code ?? '',
             'duty_rate'               => $row->duty_rate ?? '',
             'hts_us'                  => $row->hts_us ?? '',
+            'available_quantity'      => $row->available_quantity,
+            'status'                  => $row->status === 'out-of-stock' ? 'Out of stock' : 'In stock',
+            'for_sale'                => $row->is_for_sale ? 'Yes' : 'No',
             'data_updated'            => $row->updated_at,
         ];
     }

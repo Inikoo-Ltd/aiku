@@ -103,8 +103,8 @@ const label = {
 </script>
 
 <template>
-    <Disclosure as="nav" class="fixed top-0 z-[21] w-full bg-gray-50 text-gray-700" v-slot="{ open }">
-        <ScreenWarning v-if="layoutStore.app.environment === 'staging'" class="relative top-0" />
+    <Disclosure id="topbar_grp" as="nav" class="fixed top-0 z-[21] w-full bg-gray-50 text-gray-700" v-slot="{ open }">
+        <ScreenWarning v-if="layoutStore.hasTopBanner" class="relative top-0" />
 
         <div class="px-0">
             <div class="flex h-11 lg:h-10 flex-shrink-0 w-full">
