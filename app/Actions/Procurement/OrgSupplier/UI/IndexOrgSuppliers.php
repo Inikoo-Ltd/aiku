@@ -44,7 +44,7 @@ class IndexOrgSuppliers extends OrgAction
         if ($parent instanceof OrgAgent) {
             $elements = [
                 'through_agent' => [
-                    __('Through agent'),
+                    __('Through Agent'),
                     $parent->stats->number_active_org_suppliers,
                     null,
                     [
@@ -74,7 +74,7 @@ class IndexOrgSuppliers extends OrgAction
                     ],
                 ],
                 'through_agent' => [
-                    __('Through agent'),
+                    __('Through Agent'),
                     $parent->procurementStats->number_active_org_suppliers_in_agents,
                     null,
                     [
@@ -130,7 +130,9 @@ class IndexOrgSuppliers extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(OrgSupplier::class);
+        $queryBuilder = QueryBuilder::for(OrgSupplier::class)
+            ->leftJoin('suppliers', 'org_suppliers.supplier_id', 'suppliers.id')
+            ->leftJoin('org_supplier_stats', 'org_supplier_stats.org_supplier_id', 'org_suppliers.id');
 
         if ($parent instanceof OrgAgent) {
             $queryBuilder->where('org_suppliers.org_agent_id', $parent->id);
@@ -151,25 +153,21 @@ class IndexOrgSuppliers extends OrgAction
             ->defaultSort('suppliers.code')
             ->select([
                 'suppliers.code',
-                'suppliers.slug',
                 'suppliers.name',
                 'suppliers.location',
-                'number_org_supplier_products',
-                'number_purchase_orders_delivery_state_in_process',
-                'number_purchase_orders',
+                'org_supplier_stats.number_org_supplier_products',
+                'org_supplier_stats.number_purchase_orders',
+                'org_supplier_stats.number_stock_deliveries',
                 'org_suppliers.status as status',
                 'org_suppliers.slug as org_supplier_slug',
             ])
-            ->leftJoin('suppliers', 'org_suppliers.supplier_id', 'suppliers.id')
-            ->leftJoin('org_supplier_stats', 'org_supplier_stats.org_supplier_id', 'org_suppliers.id')
             ->allowedSorts([
                 'code',
                 'name',
-                'agent_name',
                 'location',
                 'number_org_supplier_products',
                 'number_purchase_orders',
-                'number_purchase_orders_delivery_state_in_process',
+                'number_stock_deliveries',
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -211,9 +209,9 @@ class IndexOrgSuppliers extends OrgAction
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
-                ->column(key: 'number_org_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'number_org_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'number_purchase_orders_delivery_state_in_process', label: __('Orders Delivery'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
                 ->defaultSort('code');
         };
     }
