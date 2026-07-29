@@ -3,11 +3,11 @@ import { ref, computed, inject, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLink } from '@fal'
+import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt } from '@fal'
 import CustomerTimeline from '@/Components/Showcases/Grp/CustomerTimeline.vue'
 import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLink)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt)
 
 type SidePanelTab = 'profile' | 'statistics' | 'timeline' | 'log'
 
@@ -193,7 +193,7 @@ const copyChatId = async () => {
                                 class="inline-flex items-center gap-1 hover:underline"
                                 :style="{ color: themePrimary }">
                                 {{ session.contact_name || '-' }}
-                                <FontAwesomeIcon :icon="['fal', 'fa-external-link']" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="['fal', 'fa-external-link-alt']" class="text-[10px]" />
                             </a>
                             <span v-else>{{ session.contact_name || '-' }}</span>
                         </div>

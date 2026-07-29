@@ -123,15 +123,33 @@ const showAddImageDialog = ref<boolean>(false)
 const showLinkDialog = ref<boolean>()
 const CustomLinkConfirm = ref(false)
 const attrsCustomLink = ref<Object>(null)
-const tippyOptions = ref({})
+const tippyOptions = {
+    placement: 'bottom',
+    offset: [0, 8],
+    appendTo: () => document.body,
+    maxWidth: 'none',
+    popperOptions: {
+        strategy: 'fixed',
+        modifiers: [
+            { name: 'preventOverflow', options: { padding: 8 } },
+            { name: 'flip', options: { padding: 8 } },
+        ],
+    },
+}
 const key = ref(ulid())
+const isPickingColor = ref(false)
+const colorSelection = ref<{ from: number; to: number } | null>(null)
 const editorInstance = useEditor({
     content: props.modelValue,
     editable: props.editable,
     onFocus: () => {
+        if (isPickingColor.value) return
+
         emits('focus')
     },
     onBlur: () => {
+        if (isPickingColor.value) return
+
         emits('blur')
     },
     editorProps: {
@@ -485,8 +503,48 @@ const lastSelection = ref<{ from: number; to: number } | null>(null)
 
 const shouldShowBubble = ({ editor }: any) => {
   if (!editor) return false
+  if (isPickingColor.value) return true
   if (!showBubble.value) return false
   return editor.isFocused && !showDialog.value
+}
+
+const startPickingColor = () => {
+  const selection = editorInstance.value?.state.selection
+  colorSelection.value = selection ? { from: selection.from, to: selection.to } : null
+  isPickingColor.value = true
+}
+
+const applyTextColor = (color: string) => {
+  const chain = editorInstance.value?.chain()
+  if (!chain) return
+
+  if (colorSelection.value) {
+    chain.setTextSelection(colorSelection.value)
+  }
+
+  chain.setColor(color).run()
+}
+
+const finishPickingColor = () => {
+  if (!isPickingColor.value) return
+
+  editorInstance.value?.commands.focus()
+  isPickingColor.value = false
+  colorSelection.value = null
+}
+
+const cancelPickingColor = () => {
+  if (!isPickingColor.value) return
+
+  isPickingColor.value = false
+  colorSelection.value = null
+
+  if (!editorInstance.value?.isFocused) {
+    showBubble.value = false
+    lastSelection.value = null
+    key.value = ulid()
+    emits('blur')
+  }
 }
 
 
@@ -499,8 +557,10 @@ const closeBubble = () => {
 watch(editorInstance, (editor) => {
   if (!editor) return
 
-  // BLUR: always hide
+  // BLUR: always hide, except while the color picker holds the focus
   editor.on('blur', () => {
+    if (isPickingColor.value) return
+
     showBubble.value = false
     lastSelection.value = null
   })
@@ -546,11 +606,9 @@ onMounted(async () => {
         <Teleport to="body">
             <BubbleMenu  
                 :key="key"
-                :shouldShow="shouldShowBubble" 
-                :tippy-options="{
-                placement: 'bottom',
-                offset: [0, 8],}" 
-                ref="_bubbleMenu"  
+                :shouldShow="shouldShowBubble"
+                :tippy-options="tippyOptions"
+                ref="_bubbleMenu"
                 :editor="editorInstance"
                 v-if="editorInstance && !showDialog"
                 class="w-max max-w-[92vw]"
@@ -691,8 +749,11 @@ onMounted(async () => {
                                 <div class="relative w-7 h-7">
                                     <!-- Color Input -->
                                     <input type="color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                        @input="editorInstance?.chain().focus().setColor($event.target.value).run()"
-                                        :value="editorInstance.getAttributes('textStyle').color" />
+                                        @mousedown="startPickingColor"
+                                        @input="applyTextColor($event.target.value)"
+                                        @change="finishPickingColor"
+                                        @blur="cancelPickingColor"
+                                        :value="editorInstance.getAttributes('textStyle').color || '#000000'" />
                                     <!-- Icon -->
                                     <div class="flex items-center justify-center w-full h-full rounded"
                                         :style="{ color: editorInstance.getAttributes('textStyle').color || 'gray' }">
@@ -1063,15 +1124,6 @@ onMounted(async () => {
   transform: translateX(-50%);
   z-index: 50;
 } */
-
-:deep(.tippy-box) {
-    min-width: 10px !important;
-    max-width: 92vw !important;
-    background-color: transparent
-}
-
-
-
 
 :deep(.font-inter) {
     font-family: "Inter", sans-serif;
