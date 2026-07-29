@@ -60,10 +60,6 @@ class HydrateModels extends HydrateModel
             $this->hydrateCatalogue($command);
         }
 
-        if ($this->checkIfCanHydrate(['catalogue_sales', 'cat_s'], $command)) {
-            $this->hydrateCatalogueSales($command);
-        }
-
         if ($this->checkIfCanHydrate(['billables', 'bil', 'bill'], $command)) {
             $this->hydrateBillables($command);
         }
@@ -182,12 +178,6 @@ class HydrateModels extends HydrateModel
         $command->call('hydrate:families');
         $command->call('hydrate:products');
         $command->call('hydrate:assets');
-    }
-
-    protected function hydrateCatalogueSales(Command $command): void
-    {
-        $command->info('Catalogue section 📚');
-        $command->call('hydrate:shops_sales');
     }
 
     protected function hydrateBillables(Command $command): void

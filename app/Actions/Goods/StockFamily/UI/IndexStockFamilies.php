@@ -151,8 +151,7 @@ class IndexStockFamilies extends OrgAction
                     'invoices'                    => 'invoices',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
-                prefix: $prefix,
-                includeLY: true
+                prefix: $prefix
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -161,9 +160,19 @@ class IndexStockFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
             $allowedSorts = array_merge($allowedSorts, ['sales_grp_currency_external', 'invoices']);
         } else {
-            $queryBuilder->leftJoin('stock_family_sales_intervals', 'stock_family_sales_intervals.stock_family_id', 'stock_families.id');
-            $selects[] = 'stock_family_sales_intervals.*';
-            $selects[] = 'stock_family_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency';
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'stock_family_time_series',
+                timeSeriesRecordsTable: 'stock_family_time_series_records',
+                foreignKey: 'stock_family_id',
+                aggregateColumns: [
+                    'sales_grp_currency_external' => 'revenue_grp_currency',
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: false
+            );
+
+            $selects[]      = $timeSeriesData['selectRaw']['revenue_grp_currency'];
             $allowedSorts[] = 'revenue_grp_currency';
         }
 
@@ -228,7 +237,7 @@ class IndexStockFamilies extends OrgAction
             } else {
                 $table->dateInterval($this->dateInterval)
                     ->column(key: 'number_current_stocks', label: 'SKOs', tooltip: __('Current SKOs'), canBeHidden: false, sortable: true)
-                    ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true)
+                    ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right')
                     ->defaultSort('code');
             }
         };

@@ -2379,3 +2379,19 @@ test('customer time series merges grouped metrics with invoice periods and metri
         ->and((float) $basketRecord->baskets_updated)->toBe(55.0)
         ->and((int) $basketRecord->orders)->toBe(1);
 });
+
+test('invoice categories index uses time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Time Series IC',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 1
+    ]);
+
+    $result = \App\Actions\Accounting\InvoiceCategory\UI\IndexInvoiceCategories::make()->handle($this->organisation);
+
+    expect($result->total())->toBeGreaterThanOrEqual(1)
+        ->and(collect($result->items())->firstWhere('id', $invoiceCategory->id)->amount)->not->toBeNull();
+});

@@ -87,7 +87,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read BatchCode|null $mainBatchCode
@@ -216,11 +215,6 @@ class OrgStock extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(OrgStockStats::class);
-    }
-
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(OrgStockIntervals::class);
     }
 
     public function orgSupplierProducts(): BelongsToMany

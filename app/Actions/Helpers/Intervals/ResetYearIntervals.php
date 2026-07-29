@@ -23,7 +23,6 @@ class ResetYearIntervals
         $this->intervals         = [
             DateIntervalEnum::YEAR_TO_DAY
         ];
-        $this->doPreviousPeriods = ['previous_years'];
     }
 
 

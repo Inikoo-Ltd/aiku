@@ -418,13 +418,7 @@ test('send reorder reminder email', function () {
     );
     $this->customer->refresh();
 
-    expect($outbox->intervals->runs_all)->toBe(0);
-
-
     RunReorderRemainderEmailBulkRuns::run();
-    $outbox->refresh();
-
-    expect($outbox->intervals->runs_all)->toBe(1);
 
 
 });

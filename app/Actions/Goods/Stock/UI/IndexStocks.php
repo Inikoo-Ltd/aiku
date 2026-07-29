@@ -186,9 +186,19 @@ class IndexStocks extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
             $allowedSorts = array_merge($allowedSorts, ['sales_grp_currency_external', 'invoices']);
         } else {
-            $queryBuilder->leftJoin('stock_sales_intervals', 'stock_sales_intervals.stock_id', 'stocks.id');
-            $selects[] = 'stock_sales_intervals.*';
-            $selects[] = 'stock_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency';
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'stock_time_series',
+                timeSeriesRecordsTable: 'stock_time_series_records',
+                foreignKey: 'stock_id',
+                aggregateColumns: [
+                    'sales_grp_currency_external' => 'revenue_grp_currency',
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: false
+            );
+
+            $selects[]      = $timeSeriesData['selectRaw']['revenue_grp_currency'];
             $allowedSorts[] = 'revenue_grp_currency';
         }
 
@@ -250,8 +260,7 @@ class IndexStocks extends OrgAction
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, align: 'right');
             } else {
-                $table->dateInterval($this->dateInterval)
-                    ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true);
+                $table->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right');
             }
         };
     }

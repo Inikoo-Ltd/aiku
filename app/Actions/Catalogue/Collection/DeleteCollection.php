@@ -50,10 +50,6 @@ class DeleteCollection extends OrgAction
                 $collection->orderingStats->delete();
             }
 
-            if ($collection->orderingIntervals) {
-                $collection->orderingIntervals->delete();
-            }
-
             $collection->forceDelete();
         } else {
             $collection->delete();

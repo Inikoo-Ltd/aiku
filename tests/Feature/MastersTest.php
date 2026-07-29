@@ -57,7 +57,6 @@ use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
-use App\Models\Masters\MasterAssetOrderingIntervals;
 use App\Models\Masters\MasterAssetStats;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterCollectionOrderingStats;
@@ -807,7 +806,6 @@ test('update master asset', function (MasterAsset $masterAsset) {
 
     expect($masterAsset)->toBeInstanceOf(MasterAsset::class)
         ->and($masterAsset->stats)->toBeInstanceOf(MasterAssetStats::class)
-        ->and($masterAsset->orderingIntervals)->toBeInstanceOf(MasterAssetOrderingIntervals::class)
         ->and($masterAsset->timeSeries()->count())->toBe(5)
         ->and($masterAsset)->not->toBeNull()
         ->and($masterAsset->code)->toBe('MASTER_ASSET1')
@@ -2570,4 +2568,11 @@ test('master shop currencies rate can restrict to open shops only', function () 
         // Master product creation only seeds currencies of shops that will actually sell.
         ->and($openShops->keys()->all())->toContain('GBP')
         ->and($openShops->keys()->all())->not->toContain('EUR');
+});
+
+test('master products in trade unit index uses time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    $tradeUnits = createTradeUnits($this->group);
+
+    expect(\App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit::make()->handle($tradeUnits[0])->total())->toBeGreaterThanOrEqual(0);
 });

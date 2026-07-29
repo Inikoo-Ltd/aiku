@@ -28,7 +28,6 @@ class StorePostRoom extends OrgAction
             /** @var PostRoom $postRoom */
             $postRoom = $group->postRooms()->create($modelData);
             $postRoom->stats()->create();
-            $postRoom->intervals()->create();
 
             return $postRoom;
         });
