@@ -446,6 +446,14 @@ test('order partially paid with balance is financed by pastpay only for the rema
     list($order, $orderPaymentApiPoint) = createOrderWithPastpayApiPoint($this->customer, $this->product, $paymentAccountShop);
 
     $startingBalance = (float) $this->customer->balance;
+    if ($startingBalance != 0.0) {
+        StoreCreditTransaction::make()->action($this->customer, [
+            'amount' => -$startingBalance,
+            'type'   => CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER,
+        ]);
+        $this->customer->refresh();
+        $startingBalance = (float) $this->customer->balance;
+    }
     StoreCreditTransaction::make()->action($this->customer, [
         'amount' => 5,
         'type'   => CreditTransactionTypeEnum::ADD_FUNDS_OTHER,
