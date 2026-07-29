@@ -57,11 +57,11 @@ const isBestStep = (step: StepDiscountStep): boolean =>
                 v-for="step in steps"
                 :key="step.min_quantity"
                 class="step-tier relative flex items-center gap-3 rounded-xl border px-4 py-3"
+                :class="{ 'is-best': isBestStep(step) }"
                 >
-                <!-- :class="{ 'is-best': isBestStep(step) }" -->
-                <!-- <span v-if="isBestStep(step)" class="popular-badge">
-                    {{ trans("Most popular") }}
-                </span> -->
+                <span v-if="isBestStep(step)" class="popular-badge">
+                    {{ trans("Best Price") }}
+                </span>
 
                 <span class="radio">
                     <span class="radio-dot" />
