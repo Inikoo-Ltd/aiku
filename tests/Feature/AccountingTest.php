@@ -38,6 +38,8 @@ use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\Accounting\TopUp\UpdateTopUp;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\CRM\Customer\ProcessCustomerTimeSeriesRecords;
+use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use Illuminate\Support\Facades\DB;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -2314,4 +2316,66 @@ test('a single day customer redo keeps the whole period totals in the organisati
 
     expect((float) $record->sales_grp_currency_external)->toBe(350.0)
         ->and((int) $record->invoices)->toBe(2);
+});
+
+test('customer time series merges grouped metrics with invoice periods and metric-only periods', function () {
+    $customer       = createCustomer($this->shop);
+    $invoiceMonth   = now()->subMonths(2)->startOfMonth();
+    $basketMonth    = now()->subMonth()->startOfMonth();
+    $insertInvoice  = function ($date, $amount) use ($customer) {
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => DB::table('tax_categories')->value('id'),
+            'slug'            => 'cts-inv-'.uniqid(),
+            'reference'       => 'CTS-INV-'.uniqid(),
+            'type'            => 'invoice',
+            'in_process'      => false,
+            'date'            => $date,
+            'net_amount'      => $amount,
+            'grp_net_amount'  => $amount,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+    };
+
+    $insertInvoice($invoiceMonth->copy()->addDays(5), 120);
+
+    $order = StoreOrder::make()->action($customer, []);
+    DB::table('orders')->where('id', $order->id)->update([
+        'date'       => $basketMonth->copy()->addDays(10),
+        'created_at' => $basketMonth->copy()->addDays(10),
+        'updated_at' => $basketMonth->copy()->addDays(10),
+        'net_amount' => 55,
+    ]);
+
+    ProcessCustomerTimeSeriesRecords::run(
+        $customer->id,
+        TimeSeriesFrequencyEnum::MONTHLY,
+        $invoiceMonth->toDateString(),
+        $basketMonth->copy()->endOfMonth()->toDateString()
+    );
+
+    $records = DB::table('customer_time_series as ts')
+        ->join('customer_time_series_records as r', 'r.customer_time_series_id', '=', 'ts.id')
+        ->where('ts.customer_id', $customer->id)
+        ->where('ts.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+        ->get()
+        ->keyBy('period');
+
+    $invoiceRecord = $records[$invoiceMonth->format('Y-m')];
+    $basketRecord  = $records[$basketMonth->format('Y-m')];
+
+    expect((float) $invoiceRecord->sales)->toBe(120.0)
+        ->and((int) $invoiceRecord->invoices)->toBe(1)
+        ->and((int) $invoiceRecord->orders)->toBe(0)
+        ->and((float) $basketRecord->sales)->toBe(0.0)
+        ->and((float) $basketRecord->baskets_created)->toBe(55.0)
+        ->and((float) $basketRecord->baskets_updated)->toBe(55.0)
+        ->and((int) $basketRecord->orders)->toBe(1);
 });

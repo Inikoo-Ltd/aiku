@@ -15,7 +15,6 @@ use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformTimeSeries;
 use App\Traits\BuildsInvoiceTimeSeriesQuery;
-use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -58,6 +57,8 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
     {
         $processedPeriods = [];
 
+        $metricsByPeriod = $this->getPlatformMetricsByPeriod($timeSeries, $shop, $timeSeries->frequency, $from, $to);
+
         $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.platform_id', $timeSeries->platform_id)
             ->where('invoices.shop_id', $shop->id)
@@ -71,7 +72,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $metrics = $this->getPlatformPeriodMetrics($timeSeries, $shop, $periodFrom, $periodTo);
+            $metrics = [...$this->zeroMetrics(), ...($metricsByPeriod[$period]['metrics'] ?? [])];
 
             $timeSeries->records()->updateOrCreate(
                 [
@@ -95,15 +96,17 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $shop, $from, $to, $processedPeriods);
+        $this->processPeriodsWithoutInvoices($timeSeries, $shop, $metricsByPeriod, $processedPeriods);
     }
 
-    protected function processPeriodsWithoutInvoices(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to, array $processedPeriods): void
+    protected function processPeriodsWithoutInvoices(PlatformTimeSeries $timeSeries, Shop $shop, array $metricsByPeriod, array $processedPeriods): void
     {
-        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+        foreach ($metricsByPeriod as $period => $periodData) {
+            if (in_array($period, $processedPeriods)) {
+                continue;
+            }
 
-        foreach ($nonInvoicePeriods as $periodData) {
-            $metrics = $this->getPlatformPeriodMetrics($timeSeries, $shop, $periodData['from'], $periodData['to']);
+            $metrics = [...$this->zeroMetrics(), ...$periodData['metrics']];
 
             $hasActivity = collect($metrics)->some(fn ($value) => $value > 0);
 
@@ -115,7 +118,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                 [
                     'platform_time_series_id' => $timeSeries->id,
                     'shop_id'                 => $shop->id,
-                    'period'                  => $periodData['period'],
+                    'period'                  => $period,
                     'frequency'               => $timeSeries->frequency->singleLetter(),
                 ],
                 [
@@ -132,52 +135,65 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
         }
     }
 
-    protected function getPlatformPeriodMetrics(PlatformTimeSeries $timeSeries, Shop $shop, Carbon $periodFrom, Carbon $periodTo): array
+    protected function getPlatformMetricsByPeriod(PlatformTimeSeries $timeSeries, Shop $shop, TimeSeriesFrequencyEnum $frequency, string $from, string $to): array
     {
         $channels = DB::connection('aiku_no_sticky')->table('customer_sales_channels')
             ->where('platform_id', $timeSeries->platform_id)
             ->where('shop_id', $shop->id)
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
-            ->where('created_at', '>=', $periodFrom)
-            ->where('created_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->count();
+            ->where('created_at', '>=', $from)
+            ->where('created_at', '<=', $to)
+            ->whereNull('deleted_at');
+
+        $byPeriod = $this->mergeMetricsByPeriod([], $channels, $frequency, 'created_at', [
+            DB::raw('count(*) as channels'),
+        ]);
 
         $customers = DB::connection('aiku_no_sticky')->table('customer_sales_channels')
             ->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
             ->where('customer_sales_channels.platform_id', $timeSeries->platform_id)
             ->where('customer_sales_channels.shop_id', $shop->id)
-            ->where('customers.registered_at', '>=', $periodFrom)
-            ->where('customers.registered_at', '<=', $periodTo)
-            ->whereNull('customers.deleted_at')
-            ->distinct('customer_sales_channels.customer_id')
-            ->count('customer_sales_channels.customer_id');
+            ->where('customers.registered_at', '>=', $from)
+            ->where('customers.registered_at', '<=', $to)
+            ->whereNull('customers.deleted_at');
+
+        $byPeriod = $this->mergeMetricsByPeriod($byPeriod, $customers, $frequency, 'customers.registered_at', [
+            DB::raw('count(distinct customer_sales_channels.customer_id) as customers'),
+        ]);
 
         $portfolios = DB::connection('aiku_no_sticky')->table('portfolios')
             ->where('portfolios.item_type', 'Product')
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->where('portfolios.platform_id', $timeSeries->platform_id)
             ->where('portfolios.shop_id', $shop->id)
-            ->where('portfolios.created_at', '>=', $periodFrom)
-            ->where('portfolios.created_at', '<=', $periodTo)
+            ->where('portfolios.created_at', '>=', $from)
+            ->where('portfolios.created_at', '<=', $to)
             ->where('portfolios.status', true)
-            ->whereNull('portfolios.last_removed_at')
-            ->distinct('portfolios.item_id')
-            ->count('portfolios.item_id');
+            ->whereNull('portfolios.last_removed_at');
+
+        $byPeriod = $this->mergeMetricsByPeriod($byPeriod, $portfolios, $frequency, 'portfolios.created_at', [
+            DB::raw('count(distinct portfolios.item_id) as portfolios'),
+        ]);
 
         $customerClients = DB::connection('aiku_no_sticky')->table('customer_clients')
             ->where('platform_id', $timeSeries->platform_id)
             ->where('shop_id', $shop->id)
-            ->where('created_at', '>=', $periodFrom)
-            ->where('created_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->count();
+            ->where('created_at', '>=', $from)
+            ->where('created_at', '<=', $to)
+            ->whereNull('deleted_at');
 
+        return $this->mergeMetricsByPeriod($byPeriod, $customerClients, $frequency, 'created_at', [
+            DB::raw('count(*) as customer_clients'),
+        ]);
+    }
+
+    protected function zeroMetrics(): array
+    {
         return [
-            'channels'         => $channels,
-            'customers'        => $customers,
-            'portfolios'       => $portfolios,
-            'customer_clients' => $customerClients,
+            'channels'         => 0,
+            'customers'        => 0,
+            'portfolios'       => 0,
+            'customer_clients' => 0,
         ];
     }
 }
