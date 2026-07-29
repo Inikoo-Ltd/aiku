@@ -23,8 +23,17 @@ class IndexMissingDescriptionProducts extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
+    /**
+     * @var array<int, array<string, mixed>>
+     */
+    private array $elementGroups = [];
+
     public function getElementGroups(Shop $shop): array
     {
+        if (isset($this->elementGroups[$shop->id])) {
+            return $this->elementGroups[$shop->id];
+        }
+
         $rawCounts = Product::where('is_main', true)
             ->where('shop_id', $shop->id)
             ->whereNull('exclusive_for_customer_id')
@@ -41,7 +50,7 @@ class IndexMissingDescriptionProducts extends OrgAction
             $counts[$state] = $count;
         }
 
-        return [
+        return $this->elementGroups[$shop->id] = [
             'state' => [
                 'label'    => __('State'),
                 'elements' => array_merge_recursive(ProductStateEnum::labels(), $counts),
