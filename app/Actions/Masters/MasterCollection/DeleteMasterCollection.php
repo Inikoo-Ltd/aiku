@@ -43,7 +43,6 @@ class DeleteMasterCollection extends OrgAction
             if ($forceDelete) {
                 DB::table('model_has_master_collections')->where('master_collection_id', $masterCollection->id)->delete();
                 DB::table('master_collection_has_models')->where('master_collection_id', $masterCollection->id)->delete();
-                DB::table('master_collection_sales_intervals')->where('master_collection_id', $masterCollection->id)->delete();
 
                 if ($masterCollection->stats) {
                     $masterCollection->stats->delete();

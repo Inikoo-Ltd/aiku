@@ -38,7 +38,6 @@ class DeleteCollection extends OrgAction
         if ($forceDelete) {
             DB::table('model_has_collections')->where('collection_id', $collection->id)->delete();
             DB::table('collection_has_models')->where('collection_id', $collection->id)->delete();
-            DB::table('collection_sales_intervals')->where('collection_id', $collection->id)->delete();
 
             DB::table('model_has_media')->where('model_type', 'Collection')->where('model_id', $collection->id)->delete();
 

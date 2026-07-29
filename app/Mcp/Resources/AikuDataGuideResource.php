@@ -60,9 +60,9 @@ organisation, group (parent only — group records table does not exist yet).
   `_grp_currency_` variants exist for cross-currency aggregation: use
   `sales_org_currency_external` when totalling across shops in one organisation, and
   `sales_grp_currency_external` when totalling across organisations.
-- **Never use `*_sales_intervals` tables.** They are legacy leftovers, still present
-  in the schema, and their numbers are not maintained. If you find
-  `product_category_sales_intervals` or similar, you are on the wrong path.
+- **`*_intervals` tables no longer exist.** The legacy `*_sales_intervals` /
+  `*_ordering_intervals` tables were dropped; time series tables are the only
+  source for period metrics.
 - `frequency` on the **parent** table is the full word (`daily`, `weekly`, `monthly`,
   `quarterly`, `yearly`); on the **records** table it is `char(1)` (`d`, `w`, `m`,
   `q`, `y`). Both tables have a `frequency` column, so qualify it in joins or
