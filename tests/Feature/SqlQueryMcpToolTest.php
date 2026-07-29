@@ -9,6 +9,8 @@
 use App\Mcp\Servers\AikuServer;
 use App\Mcp\Tools\SqlQueryTool;
 
+use function Pest\Laravel\actingAs;
+
 beforeAll(function () {
     loadDB();
 });
@@ -29,14 +31,15 @@ beforeEach(function () {
     config()->set('mcp.sql_read_only_user', 'aiku_read_only_test');
 });
 
-test('user without sql access is denied', function () {
+test('user without sql access is not offered the tool at all', function () {
     $this->user->update(['can_use_mcp_sql' => false]);
+    actingAs($this->user);
 
-    $response = AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
-        'sql' => 'select 1 as one',
-    ]);
+    expect((new SqlQueryTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeFalse();
 
-    $response->assertHasErrors(['SQL access is not enabled for this user.']);
+    $this->user->update(['can_use_mcp_sql' => true]);
+
+    expect((new SqlQueryTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeTrue();
 });
 
 test('user with sql access can run a select', function () {

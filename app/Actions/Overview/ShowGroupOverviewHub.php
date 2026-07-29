@@ -9,7 +9,6 @@
 namespace App\Actions\Overview;
 
 use App\Actions\OrgAction;
-use App\Actions\Search\GetSearchAnalytics;
 use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use Inertia\Inertia;
@@ -54,11 +53,6 @@ class ShowGroupOverviewHub extends OrgAction
                                     'row_span' => 10,
                                     'type' => 'overview_display',
                                     'data' => GetGroupOverview::run($this->group)
-                                ],
-                                [
-                                    'col_span' => 1,
-                                    'type' => 'search_analytics',
-                                    'data' => GetSearchAnalytics::run($this->group)
                                 ],
                                 [
                                     'col_span' => 1,

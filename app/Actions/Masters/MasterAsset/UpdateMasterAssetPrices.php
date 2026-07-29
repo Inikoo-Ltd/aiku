@@ -15,7 +15,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
+use OwenIt\Auditing\Events\AuditCustom;
 
 /**
  * Specialised save path for master price/rrp edits: cascades to child products with the
@@ -38,6 +40,8 @@ class UpdateMasterAssetPrices extends OrgAction
 
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
+        $oldMasterAsset = clone($masterAsset);
+
         $masterAsset = DB::transaction(function () use ($masterAsset, $modelData) {
             /** @var MasterAsset $lockedMasterAsset */
             $lockedMasterAsset = MasterAsset::lockForUpdate()->findOrFail($masterAsset->id);
@@ -47,11 +51,20 @@ class UpdateMasterAssetPrices extends OrgAction
                     continue;
                 }
 
-                $record = is_array($lockedMasterAsset->$field) ? $lockedMasterAsset->$field : [];
+                $record         = is_array($lockedMasterAsset->$field) ? $lockedMasterAsset->$field : [];
+                $priceExchanges = $lockedMasterAsset->masterShop?->price_exchanges ?? [];
 
                 foreach ($modelData[$field] as $currencyCode => $entry) {
                     if (($entry['value'] ?? null) !== null) {
-                        data_set($record, "$currencyCode.value", $entry['value']);
+                        data_set(
+                            $record,
+                            "$currencyCode.value",
+                            $this->snapToRoundingPolicy(
+                                $entry['value'],
+                                $priceExchanges[$currencyCode] ?? null,
+                                $entry['independent'] ?? data_get($record, "$currencyCode.independent", false)
+                            )
+                        );
                     }
                     if (array_key_exists('independent', $entry)) {
                         data_set($record, "$currencyCode.independent", (bool) $entry['independent']);
@@ -88,7 +101,66 @@ class UpdateMasterAssetPrices extends OrgAction
             }
         }
 
+        $masterAsset->auditEvent = 'updated_master_prices';
+        $masterAsset->isCustomEvent = true;
+
+        $oldAudit = [];
+        $newAudit = [];
+
+        if ($changedPrices) {
+            $oldAudit = array_merge($oldAudit, $this->getMasterPricesAudit($oldMasterAsset->master_prices));
+            $newAudit = array_merge($newAudit, $this->getMasterPricesAudit($masterAsset->master_prices));
+        }
+
+        if ($changedRRPs) {
+            $oldAudit = array_merge($oldAudit, $this->getMasterPricesAudit($oldMasterAsset->master_rrps, 'RRP'));
+            $newAudit = array_merge($newAudit, $this->getMasterPricesAudit($masterAsset->master_rrps, 'RRP'));
+        }
+
+        $masterAsset->auditCustomOld = $oldAudit;
+        $masterAsset->auditCustomNew = $newAudit;
+
+        Event::dispatch(new AuditCustom($masterAsset));
+
         return $masterAsset;
+    }
+
+    /**
+     * The price editor derives minor-currency values from the major client-side and knows
+     * nothing about the shop's rounding policy, so derived (non-independent) minors are
+     * snapped here — the single write path — to the currency's fraction_digits/increment.
+     * Majors and hand-set (independent) values are stored exactly as given.
+     */
+    private function snapToRoundingPolicy(mixed $value, ?array $exchangeConfig, mixed $independent): mixed
+    {
+        if (!$exchangeConfig || ($exchangeConfig['is_major'] ?? false) || $independent) {
+            return $value;
+        }
+
+        $fractionDigits = (int)($exchangeConfig['fraction_digits'] ?? 2);
+        $increment      = isset($exchangeConfig['increment']) ? (float)$exchangeConfig['increment'] : null;
+
+        if ($fractionDigits >= 2 && !$increment) {
+            return $value;
+        }
+
+        return formatPrice((float)$value, 1, $fractionDigits, $increment);
+    }
+
+    private function getMasterPricesAudit(array $masterPrices, string $type = 'Price'): array
+    {
+        $result = [];
+
+        foreach ($masterPrices as $currency => $price) {
+            $key = $type . ' ' . $currency;
+            $result[$key] = $price['value'];
+
+            if (!($currency === 'EUR' || $currency === 'GBP') && $price['independent']) {
+                $result[$key] .= ' (Is Rebel)';
+            }
+        }
+
+        return $result;
     }
 
     public function rules(): array

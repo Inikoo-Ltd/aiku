@@ -50,7 +50,8 @@ class GroupHydrateStockDeliveries implements ShouldBeUnique
                 enum: StockDeliveryStateEnum::class,
                 models: StockDelivery::class,
                 where: function ($q) use ($group) {
-                    $q->where('group_id', $group->id);
+                    $q->whereNull('deleted_at')
+                        ->where('group_id', $group->id);
                 }
             )
         );

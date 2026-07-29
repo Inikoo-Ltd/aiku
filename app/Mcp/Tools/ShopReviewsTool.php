@@ -34,7 +34,7 @@ class ShopReviewsTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $stats = $shop->reviewStats;
@@ -73,7 +73,7 @@ class ShopReviewsTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop'  => $schema->string()->description('Shop slug')->required(),
+            'shop'  => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'limit' => $schema->integer()->description('Maximum recent review messages to return, default 10')->min(1)->max(50),
         ];
     }

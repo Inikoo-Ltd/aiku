@@ -125,7 +125,7 @@ class UpdatePortfolio extends OrgAction
             'customer_description'  => ['sometimes', 'string', 'nullable'],
             'platform_product_id'   => 'sometimes|string',
             'platform_handle'       => 'sometimes|string',
-            'errors_response'       => 'sometimes|array',
+            'errors_response'       => 'sometimes|nullable|array',
             'options'               => 'sometimes|string',
             'data'                  => 'sometimes|array',
             'sku'                   => 'sometimes',

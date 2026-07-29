@@ -154,6 +154,7 @@ test('approved pastpay order stores payment, marks api point success and submits
 });
 
 test('pastpay term charge is added to the order on success', function () {
+    createWarehouse();
     $paymentAccountShop = createPastpayPaymentAccountShop($this->organisation, $this->shop);
     list($order, $orderPaymentApiPoint) = createOrderWithPastpayApiPoint($this->customer, $this->product, $paymentAccountShop);
 

@@ -54,7 +54,8 @@ class UpdateMasterAsset extends OrgAction
      */
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
-        $oldMismatchDetected = $masterAsset->mismatch_detected;
+        $oldMasterAsset      = clone($masterAsset);
+        $oldMismatchDetected = $oldMasterAsset->mismatch_detected;
 
         if (Arr::has($modelData, 'master_family_id')) {
             $masterFamily = null;

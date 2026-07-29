@@ -196,7 +196,7 @@ defineExpose({
 
                         <span  class="text-left md:text-right text-xs break-words">
                             {{ trans("RRP") }}:
-                            {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }} / {{ product.unit }}
+                            {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit) }} / {{ product.unit }}
                         </span>
                     </div>
                 </div>

@@ -35,7 +35,7 @@ class WebTrafficTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $website = $shop->website;
@@ -72,7 +72,7 @@ class WebTrafficTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop' => $schema->string()->description('Shop slug')->required(),
+            'shop' => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'from' => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'   => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
         ];

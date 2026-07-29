@@ -10,6 +10,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\GoodsIn\StockDeliveryItem;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -46,19 +47,23 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
 
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
-        $user = auth()->user();
-        data_set($modelData, 'sower_user_id', $user?->id);
+        $stockDeliveryItem = DB::transaction(function () use ($modelData, $stockDeliveryItem) {
+            $user = auth()->user();
+            data_set($modelData, 'sower_user_id', $user?->id);
 
-        StoreSowing::make()->action($stockDeliveryItem, $user, $modelData);
+            StoreSowing::make()->action($stockDeliveryItem, $user, $modelData);
 
-        $stockDeliveryItem = CalculateStockDeliveryItemTotalPlaced::run($stockDeliveryItem);
+            $stockDeliveryItem = CalculateStockDeliveryItemTotalPlaced::run($stockDeliveryItem);
 
-        $stockDelivery = $stockDeliveryItem->stockDelivery;
+            $stockDelivery = $stockDeliveryItem->stockDelivery;
 
-        StockDeliveriesHydrateItems::run($stockDelivery);
-        UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem::run($stockDeliveryItem);
-        UpdateStockDeliveryStateFromGoodsIn::run($stockDelivery);
-        UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery->refresh());
+            StockDeliveriesHydrateItems::run($stockDelivery);
+            UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem::run($stockDeliveryItem);
+            UpdateStockDeliveryStateFromGoodsIn::run($stockDelivery);
+            UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery->refresh());
+
+            return $stockDeliveryItem;
+        });
 
         return $stockDeliveryItem;
     }

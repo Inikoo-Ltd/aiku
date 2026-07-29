@@ -2036,7 +2036,7 @@ test('master shop price exchanges default and seeder', function () {
 
     expect($masterShop->price_exchanges)->toHaveKeys(['GBP', 'EUR', 'PLN', 'CZK', 'HUF', 'RON', 'SEK', 'UAH'])
         ->and($masterShop->price_exchanges['EUR']['is_major'])->toBeTrue()
-        ->and($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11])
+        ->and($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11, 'fraction_digits' => 0])
         ->and($masterShop->price_exchanges['PLN']['exchange'])->toBe(4.3);
 });
 
@@ -2078,7 +2078,7 @@ test('update master shop price exchange recalculates minor prices', function () 
 
     $masterAsset->refresh();
 
-    expect($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11])
+    expect($masterShop->price_exchanges['SEK'])->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 11, 'fraction_digits' => 2])
         ->and(data_get($masterAsset->master_prices, 'SEK.value'))->toBe('110');
 
     $masterAsset->updateQuietly([
@@ -2184,7 +2184,7 @@ test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from mast
     // Reflects a shop where GBP (not EUR) is the configured major currency.
     $masterShop->update(['price_exchanges' => [
         'GBP' => ['is_major' => true],
-        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18, 'increment' => 0.05],
     ]]);
 
     $this->shop->updateQuietly(['master_shop_id' => $masterShop->id, 'currency_id' => $gbp->id]);
@@ -2200,9 +2200,11 @@ test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from mast
     expect($rates['GBP']['is_major'])->toBeTrue()
         ->and($rates['GBP']['ratio_eur'])->toBe(1.0)
         ->and($rates['GBP']['major'])->toBeNull()
+        ->and($rates['GBP']['increment'])->toBeNull()
         ->and($rates['EUR']['is_major'])->toBeFalse()
         ->and($rates['EUR']['ratio_eur'])->toBe(1.18)
-        ->and($rates['EUR']['major'])->toBe('GBP');
+        ->and($rates['EUR']['major'])->toBe('GBP')
+        ->and($rates['EUR']['increment'])->toBe(0.05);
 });
 
 test('updating master prices merges per currency, skips nulls and syncs legacy columns from the base major', function () {
@@ -2402,6 +2404,135 @@ test('minor currency recalculation includes variant master assets', function () 
     $variant->refresh();
 
     expect(data_get($variant->master_prices, 'SEK.value'))->toBe('110');
+});
+
+test('minor currency with zero fraction digits rounds converted prices up to whole numbers', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'CZK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 25.5, 'fraction_digits' => 0],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'CZKDEP-'.uniqid(),
+        'name' => 'CZK Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'CZKFAM-'.uniqid(),
+        'name' => 'CZK Family',
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'CZKAST-'.uniqid(),
+        'name'    => 'CZK Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 9.76,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 9.76, 'independent' => false],
+            'CZK' => ['value' => 248.88, 'independent' => false],
+        ],
+        'master_rrps'   => [
+            'EUR' => ['value' => 19.98, 'independent' => false],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices::run($masterShop, 'CZK');
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'CZK.value'))->toBe('249')
+        ->and(data_get($masterAsset->master_rrps, 'CZK.value'))->toBe('509.49');
+
+    $this->artisan('master_shop:price_exchange', [
+        'master_shop'       => $masterShop->slug,
+        'currency'          => 'CZK',
+        '--fraction-digits' => '2',
+        '--force'           => true,
+    ])->assertExitCode(0);
+
+    $masterShop->refresh();
+    expect($masterShop->price_exchanges['CZK'])
+        ->toEqualCanonicalizing(['is_major' => false, 'major' => 'EUR', 'exchange' => 25.5, 'fraction_digits' => 2]);
+
+    expect(formatPrice(9.76, 25.5))->toBe('248.88')
+        ->and(formatPrice(9.76, 25.5, 0))->toBe('249')
+        ->and(formatPrice(10, 25.5, 0))->toBe('255')
+        ->and(formatPrice(1, 3, 0))->toBe('3')
+        ->and(formatPrice(5.97, 4.3, 2, 0.05))->toBe('25.7')
+        ->and(formatPrice(5, 4.3, 2, 0.05))->toBe('21.5')
+        ->and(formatPrice(5.98, 4.3, 2, 0.05))->toBe('25.75');
+});
+
+test('minor currency with increment rounds converted prices and rrps up to the step', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'PLN' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 4.3, 'increment' => 0.05],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PLNDEP-'.uniqid(),
+        'name' => 'PLN Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PLNFAM-'.uniqid(),
+        'name' => 'PLN Family',
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PLNAST-'.uniqid(),
+        'name'    => 'PLN Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 5.97,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 5.97, 'independent' => false],
+            'PLN' => ['value' => 25.67, 'independent' => false],
+        ],
+        'master_rrps'   => [
+            'EUR' => ['value' => 19.98, 'independent' => false],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices::run($masterShop, 'PLN');
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe('25.7')
+        ->and(data_get($masterAsset->master_rrps, 'PLN.value'))->toBe('85.95');
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [
+            'EUR' => ['value' => 8.8, 'independent' => false],
+            'PLN' => ['value' => 37.84, 'independent' => false],
+        ],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe('37.85')
+        ->and(data_get($masterAsset->master_prices, 'EUR.value'))->toBe(8.8);
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [
+            'PLN' => ['value' => 37.84, 'independent' => true],
+        ],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe(37.84);
 });
 
 test('master shop currencies rate can restrict to open shops only', function () {

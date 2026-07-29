@@ -81,7 +81,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\CRM\WebUserPasswordReset> $passwordResets
  * @property-read Collection<int, \Spatie\Permission\Models\Permission> $permissions
- * @property-read Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read Collection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read \App\Models\CRM\WebUserStats|null $stats

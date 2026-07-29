@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
@@ -19,6 +20,7 @@ class DeleteStockDelivery extends OrgAction
 {
     use AsAction;
     use HasPurchaseOrderHydrators;
+    use HasStockDeliveryHydrators;
 
     private StockDelivery $stockDelivery;
 
@@ -56,6 +58,8 @@ class DeleteStockDelivery extends OrgAction
         foreach ($purchaseOrders as $purchaseOrder) {
             $this->revertPurchaseOrder($purchaseOrder);
         }
+
+        $this->runStockDeliveryHydrators($stockDelivery);
 
         return $redirectPurchaseOrder;
     }

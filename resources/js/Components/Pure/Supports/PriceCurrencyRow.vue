@@ -24,6 +24,7 @@ const props = defineProps<{
     highlighted?: boolean
     dirty?: boolean
     placeholder?: string
+    units?: number
     impact?: {
         dirty: boolean
         delta: number | null
@@ -56,6 +57,14 @@ const displayValue = computed({
         model.value.value = value
     }
 })
+
+const unitPrice = computed(() => {
+    if (!props.units || props.units <= 1 || model.value.value == null) {
+        return null
+    }
+
+    return (Number(model.value.value) / props.units).toFixed(props.currency.fraction_digits ?? 2)
+})
 </script>
 
 <template>
@@ -83,17 +92,20 @@ const displayValue = computed({
                 @update:modelValue="emits('change')"
             />
             <span
-                v-if="impact"
+                v-if="impact || unitPrice"
                 class="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-x-2 text-xs tabular-nums"
                 aria-hidden="true"
             >
+                <span v-if="unitPrice" class="text-gray-600">
+                    {{ unitPrice }}<span class="text-gray-400">/u</span>
+                </span>
                 <span
-                    v-if="impact.delta !== null"
+                    v-if="impact && impact.delta !== null"
                     class="font-medium"
                     :class="impact.delta >= 0 ? 'text-green-600' : 'text-red-600'"
                 >{{ impact.delta >= 0 ? '▲' : '▼' }} {{ impact.delta >= 0 ? '+' : '' }}{{ impact.delta }}%</span>
-                <span v-if="impact.marginAfter !== null" class="text-gray-400">
-                    {{ ctrans('margin') }}
+                <span v-if="impact && impact.marginAfter !== null" class="text-gray-400">
+                    {{ ctrans('M:') }}
                     <template v-if="impact.marginBefore !== null">{{ impact.marginBefore }}% → </template>
                     <span
                         v-if="impact.dirty"

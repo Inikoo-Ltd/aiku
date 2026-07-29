@@ -684,6 +684,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('users:process_time_series')->dailyAt('22:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ProcessUserTimeSeriesRecords',
+                ),
+                name: 'ProcessUserTimeSeriesRecords',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(PruneCustomerWebActivities::makeJob())->dailyAt('03:30')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'PruneCustomerWebActivities',
                 ),

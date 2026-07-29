@@ -242,7 +242,10 @@ export const initialiseApp = () => {
 
         if (usePage().props.crm_return_count !== undefined) {
             layout.crm_return_count = usePage().props.crm_return_count as number
-            console.log(layout);
+        }
+
+        if (usePage().props.master_updated_count !== undefined) {
+            layout.master_updated_count = usePage().props.master_updated_count as number
         }
 
         layout.app.name = "Aiku"

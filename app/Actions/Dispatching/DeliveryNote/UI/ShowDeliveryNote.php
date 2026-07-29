@@ -276,7 +276,7 @@ class ShowDeliveryNote extends OrgAction
                 'type'  => 'button',
                 'style' => 'cancel',
                 'key'   => 'cancel',
-                'label' => __('Cancel'),
+                'label' => __('Cancel Delivery Note'),
                 'route' => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.delivery_note.state.cancel',
@@ -290,7 +290,7 @@ class ShowDeliveryNote extends OrgAction
         if ($isEditable && $deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $actions[] = [
                 'type'    => 'button',
-                'style'   => 'save',
+                'style'   => 'tertiary',
                 'icon'    => 'fal fa-tired',
                 'tooltip' => __('Go back to picked'),
                 'label'   => __('Undo packing'),
@@ -898,6 +898,24 @@ class ShowDeliveryNote extends OrgAction
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
         }
 
+        $scanToPack = null;
+        if (
+            $deliveryNote->state == DeliveryNoteStateEnum::PACKING
+            && $isEditable
+            && $allowAction
+            && $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING
+        ) {
+            $scanToPack = [
+                'scan_route' => [
+                    'name'       => 'grp.json.delivery_note.pack_by_scan',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id,
+                    ],
+                    'method'     => 'post',
+                ],
+            ];
+        }
+
         $props = [
             'title'         => __('Delivery note').' '.$deliveryNote->reference,
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -1058,7 +1076,8 @@ class ShowDeliveryNote extends OrgAction
             'shop'                               => [
                 'type' => $deliveryNote->shop?->type?->value,
             ],
-            'consumables'                        => GetDeliveryNoteConsumables::run($deliveryNote)
+            'consumables'                        => GetDeliveryNoteConsumables::run($deliveryNote),
+            'scan_to_pack'                       => $scanToPack
 
 
         ];

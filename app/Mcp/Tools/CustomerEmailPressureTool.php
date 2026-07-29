@@ -37,7 +37,7 @@ class CustomerEmailPressureTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $from = $request->date('from');
@@ -106,7 +106,7 @@ class CustomerEmailPressureTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop'  => $schema->string()->description('Shop slug')->required(),
+            'shop'  => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'from'  => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'    => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
             'limit' => $schema->integer()->description('Maximum customers to return, default 10, max 50')->default(10),

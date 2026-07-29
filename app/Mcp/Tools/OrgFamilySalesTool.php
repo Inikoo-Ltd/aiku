@@ -38,7 +38,7 @@ class OrgFamilySalesTool extends AikuOrganisationTool
 
         $organisation = $this->authorisedOrganisation($request);
         if (!$organisation) {
-            return Response::error('Organisation not found or permission denied.');
+            return $this->organisationNotFoundError($request);
         }
 
         $direction = (string) $request->string('sort', 'best') === 'worst' ? 'asc' : 'desc';
@@ -84,7 +84,7 @@ class OrgFamilySalesTool extends AikuOrganisationTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'organisation' => $schema->string()->description('Organisation slug')->required(),
+            'organisation' => $schema->string()->description('Organisation slug or code')->required(),
             'from'         => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'           => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
             'sort'         => $schema->string()->description('best (highest sales first, default) or worst (lowest first)'),

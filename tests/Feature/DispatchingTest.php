@@ -128,6 +128,11 @@ use App\Models\Ordering\Transaction;
 use Config;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
+use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
+use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
+use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
+use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -1832,6 +1837,53 @@ function createPalletReturnWithPallet($ctx): PalletReturn
     return $palletReturn->refresh();
 }
 
+test('stored item return rows do not add queries as they grow', function () {
+    $palletReturn = createPalletReturnWithPallet($this);
+    $pallet       = $palletReturn->pallets()->first();
+
+    $addStoredItems = function (int $count) use ($palletReturn, $pallet) {
+        foreach (range(1, $count) as $index) {
+            $storedItem = StoreStoredItem::make()->action(
+                $palletReturn->fulfilmentCustomer,
+                ['reference' => 'NQ'.Str::random(6)]
+            );
+
+            $pallet->storedItems()->attach($storedItem->id, [
+                'quantity' => 1,
+                'state'    => PalletStoredItemStateEnum::ACTIVE,
+            ]);
+
+            $storedItem->update(['total_quantity' => 1]);
+        }
+
+        $pallet->update(['state' => \App\Enums\Fulfilment\Pallet\PalletStateEnum::STORING]);
+    };
+
+    $route = (new \Illuminate\Routing\Route(['GET'], 'x', []))->name('grp.org.warehouses.show.dispatching.pallet-returns.show');
+    request()->setRouteResolver(fn () => $route);
+
+    $countQueries = function () use ($palletReturn) {
+        $queries = 0;
+        DB::listen(function () use (&$queries) {
+            $queries++;
+        });
+
+        PalletReturnItemsWithStoredItemsResource::collection(
+            IndexStoredItemsInReturn::run($palletReturn->refresh(), 'stored_items')
+        )->toArray(request());
+
+        return $queries;
+    };
+
+    $addStoredItems(2);
+    $withTwo = $countQueries();
+
+    $addStoredItems(6);
+    $withEight = $countQueries();
+
+    expect($withEight)->toBe($withTwo);
+});
+
 test('UI goods out pallet return show pages', function () {
     $palletReturn = createPalletReturnWithPallet($this);
 
@@ -2240,9 +2292,13 @@ test('UI show delivery note navigation follows the bucket it was opened from', f
 test('UI show pallet return navigation follows the bucket it was opened from', function () {
     $this->withoutExceptionHandling();
 
-    $makeReturnOn = function (string $date) {
+    $makeReturnOn = function (string $confirmedAt) {
         $palletReturn = createPalletReturnWithPallet($this);
-        $palletReturn->update(['state' => PalletReturnStateEnum::CONFIRMED, 'date' => $date]);
+        $palletReturn->update([
+            'state'        => PalletReturnStateEnum::CONFIRMED,
+            'confirmed_at' => $confirmedAt,
+            'date'         => $confirmedAt,
+        ]);
 
         return $palletReturn->refresh();
     };
@@ -2275,12 +2331,52 @@ test('UI show pallet return navigation follows the bucket it was opened from', f
         fn (AssertableInertia $page) => $page->has('navigation')->etc()
     );
 
-    PalletReturn::whereIn('id', [$oldest->id, $middle->id, $newest->id])->update(['date' => null]);
+    PalletReturn::whereIn('id', [$oldest->id, $middle->id, $newest->id])->update(['confirmed_at' => null, 'date' => null]);
 
     get($showRoute($middle).'?bucket=confirmed')->assertInertia(
         fn (AssertableInertia $page) => $page
             ->where('navigation.previous.label', $newest->reference)
             ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+});
+
+test('UI show pallet return navigation orders the new bucket by its latest activity', function () {
+    $this->withoutExceptionHandling();
+
+    PalletReturn::query()->update(['state' => PalletReturnStateEnum::DISPATCHED]);
+
+    $makeReturn = function (PalletReturnStateEnum $state, array $timestamps) {
+        $palletReturn = createPalletReturnWithPallet($this);
+        $palletReturn->update(array_merge(['state' => $state, 'date' => null], $timestamps));
+
+        return $palletReturn->refresh();
+    };
+
+    $confirmed = $makeReturn(PalletReturnStateEnum::CONFIRMED, [
+        'confirmed_at' => '2026-07-20 10:00:00',
+        'submitted_at' => '2026-07-14 10:00:00',
+    ]);
+
+    $submitted = $makeReturn(PalletReturnStateEnum::SUBMITTED, [
+        'confirmed_at' => null,
+        'submitted_at' => '2026-07-19 10:00:00',
+    ]);
+
+    $inProcess = $makeReturn(PalletReturnStateEnum::IN_PROCESS, [
+        'confirmed_at' => null,
+        'submitted_at' => null,
+    ]);
+    $inProcess->forceFill(['created_at' => '2026-07-18 10:00:00'])->saveQuietly();
+
+    $showRoute = fn (PalletReturn $palletReturn) => route('grp.org.warehouses.show.dispatching.pallet-returns.show', [
+        $this->organisation->slug, $this->warehouse->slug, $palletReturn->slug,
+    ]);
+
+    get($showRoute($submitted).'?bucket=new')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $confirmed->reference)
+            ->where('navigation.next.label', $inProcess->reference)
             ->etc()
     );
 });

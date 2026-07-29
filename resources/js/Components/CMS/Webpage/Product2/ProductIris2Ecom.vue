@@ -308,7 +308,7 @@ onMounted(() => {
                     <div>
                         <div class="text-xs font-medium border-b-2 border-gray-900 p-1.5 text-right ">
                             <p>{{ trans("Retail Price") }}:</p>
-                            <p>{{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                            <p>{{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                             </p>
                         </div>
                         <div class="p-1.5 text-right">
@@ -565,7 +565,7 @@ onMounted(() => {
                 <div>
                     <div class="text-xs font-medium border-b-2 border-gray-900 p-1.5 text-right ">
                         <p>Retail Price:</p>
-                        <p>{{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                        <p>{{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                         </p>
                     </div>
                     <div class="p-1.5 text-right">

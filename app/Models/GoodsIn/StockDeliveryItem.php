@@ -56,8 +56,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $deleted_at
  * @property string|null $source_id
+ * @property numeric|null $cost_items
+ * @property numeric|null $cost_extra
+ * @property numeric|null $cost_shipping
+ * @property numeric|null $cost_duties
+ * @property numeric $cost_tax
+ * @property numeric $cost_total
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\GoodsIn\Sowing> $sowings
  * @property-read \App\Models\GoodsIn\StockDelivery|null $stockDelivery
  * @property-read SupplierProduct|null $supplierProduct
  * @method static \Database\Factories\GoodsIn\StockDeliveryItemFactory factory($count = null, $state = [])

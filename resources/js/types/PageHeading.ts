@@ -75,6 +75,16 @@ export interface PageHeadingTypes {
         route: routeType
         color?: string  // rgb(75, 0, 130)
     }[]
+    exports?: {
+        routes: {
+            label: string
+            key?: string
+            icon?: Icon
+            popover?: boolean
+            inside_popover?: boolean
+            route: routeType
+        }[]
+    }[]
 }
 
 

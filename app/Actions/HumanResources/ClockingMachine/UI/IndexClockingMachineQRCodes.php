@@ -1,12 +1,6 @@
 <?php
 
 /*
- * @Author: andiferdiawan (https://github.com/andiferdiawan)
- * @Created: YYYY-MM-DD HH:mm:ss
- * @Copyright: Copyright (c) 2026, andiferdiawan
- */
-
-/*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 21 Jul 2026 09:10:36 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores

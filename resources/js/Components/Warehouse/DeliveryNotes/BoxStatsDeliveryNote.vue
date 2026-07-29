@@ -574,8 +574,8 @@ function returnNoteRoute(returnDeliveryNote) {
                 </div>
 
                 <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_create_replacement">
+                    <!-- Section: Picker name -->
                     <div class="flex gap-x-4 items-center">
-                        <!-- Section: Picker name -->
                         <div v-if="boxStats?.picker?.contact_name">
                             <dl class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                                 <dt class="flex-none">
@@ -586,8 +586,25 @@ function returnNoteRoute(returnDeliveryNote) {
                                 </dd>
                             </dl>
                         </div>
-                        
-                        <!-- Section: Packer name -->
+
+                        <template v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker">
+                            <div v-if="showLockButton()" @click="assignSelfTemporarily()">
+                                <LoadingIcon v-if="isLoadingSelfTemporarily" />
+                                <FontAwesomeIcon
+                                    v-else
+                                    v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
+                                    class="cursor-pointer focus:outline-none"
+                                    :icon="allowActions ? faLockOpen : faLock"
+                                    :class="allowActions ? 'text-green-500' : 'text-red-500'"
+                                    fixed-width aria-hidden="true"
+                                />
+                            </div>
+                            <Button @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
+                        </template>
+                    </div>
+
+                    <!-- Section: Packer name -->
+                    <div class="flex gap-x-4 items-center">
                         <div v-if="boxStats?.packer?.contact_name">
                             <dl v-tooltip="trans('Packer name')"
                                 class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -600,28 +617,20 @@ function returnNoteRoute(returnDeliveryNote) {
                             </dl>
                         </div>
 
-                        <div v-if="showLockButton()" @click="assignSelfTemporarily()">
-                            <LoadingIcon v-if="isLoadingSelfTemporarily" />
-                            <FontAwesomeIcon
-                                v-else
-                                v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
-                                class="cursor-pointer focus:outline-none"
-                                :icon="allowActions ? faLockOpen : faLock"
-                                fixed-width aria-hidden="true"
-                            />
-                        </div>
-
-                        <Button
-                            v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
-                            @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
-
-
-                        <Button
-                            v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
-                            @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
-
-
-                     
+                        <template v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker">
+                            <div v-if="showLockButton()" @click="assignSelfTemporarily()">
+                                <LoadingIcon v-if="isLoadingSelfTemporarily" />
+                                <FontAwesomeIcon
+                                    v-else
+                                    v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
+                                    class="cursor-pointer focus:outline-none"
+                                    :icon="allowActions ? faLockOpen : faLock"
+                                    :class="allowActions ? 'text-green-500' : 'text-red-500'"
+                                    fixed-width aria-hidden="true"
+                                />
+                            </div>
+                            <Button @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+                        </template>
                     </div>
 
                     <!-- Section: Trolleys -->

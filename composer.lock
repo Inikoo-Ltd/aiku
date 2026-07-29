@@ -9291,16 +9291,16 @@
         },
         {
             "name": "nightowl/agent",
-            "version": "v1.2.2",
+            "version": "v1.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lemed99/nightowl-agent.git",
-                "reference": "e95a66385373a8e11241966adb04aa1dde550256"
+                "reference": "996635b44e9ad80672b5dc83b4dcc80e3adbf5c4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lemed99/nightowl-agent/zipball/e95a66385373a8e11241966adb04aa1dde550256",
-                "reference": "e95a66385373a8e11241966adb04aa1dde550256",
+                "url": "https://api.github.com/repos/lemed99/nightowl-agent/zipball/996635b44e9ad80672b5dc83b4dcc80e3adbf5c4",
+                "reference": "996635b44e9ad80672b5dc83b4dcc80e3adbf5c4",
                 "shasum": ""
             },
             "require": {
@@ -9316,6 +9316,7 @@
             "require-dev": {
                 "laravel/boost": "^2.3",
                 "mockery/mockery": "^1.6",
+                "nightowl/agent-simulator": "^0.1",
                 "phpunit/phpunit": "^11.5"
             },
             "suggest": {
@@ -9348,7 +9349,7 @@
             ],
             "support": {
                 "issues": "https://github.com/lemed99/nightowl-agent/issues",
-                "source": "https://github.com/lemed99/nightowl-agent/tree/v1.2.2"
+                "source": "https://github.com/lemed99/nightowl-agent/tree/v1.4.1"
             },
             "funding": [
                 {
@@ -9356,7 +9357,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2026-06-07T18:41:06+00:00"
+            "time": "2026-07-20T17:01:27+00:00"
         },
         {
             "name": "nikic/php-parser",

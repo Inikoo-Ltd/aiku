@@ -43,7 +43,7 @@ test('user without web permission is denied on website overview', function () {
         'shop' => $this->shop->slug,
     ]);
 
-    $response->assertHasErrors(['Shop not found or permission denied.']);
+    $response->assertHasErrors(['You do not have access to any shop.']);
 });
 
 test('admin user gets website overview', function () {

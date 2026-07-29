@@ -17,6 +17,7 @@ use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\InertiaTable\InertiaTable;
@@ -58,7 +59,7 @@ class IndexPurchaseOrders extends OrgAction
     protected function getElementGroups(): array
     {
         return [
-            'state' => [
+            'state'          => [
                 'label'    => __('State'),
                 'elements' => array_map(
                     fn ($label) => [$label, null],
@@ -66,6 +67,16 @@ class IndexPurchaseOrders extends OrgAction
                 ),
                 'engine'   => function ($query, $elements) {
                     $query->whereIn('purchase_orders.state', $elements);
+                },
+            ],
+            'delivery_state' => [
+                'label'    => __('Delivery State'),
+                'elements' => array_map(
+                    fn ($label) => [$label, null],
+                    PurchaseOrderDeliveryStateEnum::labels(),
+                ),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('purchase_orders.delivery_state', $elements);
                 },
             ],
         ];
