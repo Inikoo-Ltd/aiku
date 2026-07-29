@@ -1226,7 +1226,8 @@ test('UI show stock delivery items exposes the placement and sowings data', func
     $response->assertInertia(function (AssertableInertia $page) use ($locationOrgStock) {
         $page
             ->component('Procurement/StockDelivery')
-            ->where('queryBuilderProps.items.columns.5.key', 'sowings')
+            ->where('queryBuilderProps.items.columns.4.key', 'sowings')
+            ->where('queryBuilderProps.items.columns.5.key', 'checked_unit')
             ->where('queryBuilderProps.items.columns.6.key', 'placement')
             ->has(
                 StockDeliveryTabsEnum::ITEMS->value.'.data',

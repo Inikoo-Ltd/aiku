@@ -65,6 +65,20 @@ trait BuildsInvoiceTimeSeriesQuery
         ];
     }
 
+    protected function customerInvoiceSelects(): array
+    {
+        return [
+            DB::raw('SUM(CASE WHEN type = \'invoice\' THEN net_amount ELSE 0 END) as sales'),
+            DB::raw('SUM(CASE WHEN type = \'invoice\' THEN org_net_amount ELSE 0 END) as sales_org_currency'),
+            DB::raw('SUM(CASE WHEN type = \'invoice\' THEN grp_net_amount ELSE 0 END) as sales_grp_currency'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
+        ];
+    }
+
     protected function applyFrequencyGrouping(Builder $query, TimeSeriesFrequencyEnum $frequency, bool $includeOrders = false, ?array $customSelects = null): Builder
     {
         $baseSelects = $customSelects ?? $this->fullInvoiceSelects($includeOrders);

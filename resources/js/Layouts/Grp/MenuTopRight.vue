@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import ReturnCrmList from './ReturnCrmList.vue';
+import MasterUpdatedList from './MasterUpdatedList.vue';
 library.add(faCircle)
 
 const props = defineProps<{
@@ -132,6 +133,22 @@ const isUserMac = navigator.platform.includes('Mac')
                         </template>
                         <template #content="{ open, close }">
                             <ReturnCrmList :open="open" :close="close" />
+                        </template>
+                    </Popover>
+                </div>
+
+                <!-- Badge: Products not following master prices -->
+                <div v-if="layout?.master_updated_count > 0" class="relative flex items-center">
+                    <Popover width="w-80" position="right-0">
+                        <template #button="{ open }">
+                            <div class="relative bg-rose-300 text-rose-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
+                                <Transition name="spin-to-right"><span :key="layout?.master_updated_count">{{ layout?.master_updated_count > 9 ? '9+' : layout?.master_updated_count }}</span></Transition>
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-rose-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-rose-500 text-[5px]" fixed-width aria-hidden="true" />
+                            </div>
+                        </template>
+                        <template #content="{ open, close }">
+                            <MasterUpdatedList :open="open" :close="close" />
                         </template>
                     </Popover>
                 </div>

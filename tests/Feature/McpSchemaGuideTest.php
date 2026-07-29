@@ -10,6 +10,8 @@ use App\Mcp\Resources\AikuDataGuideResource;
 use App\Mcp\Servers\AikuServer;
 use App\Mcp\Tools\DescribeTablesTool;
 
+use function Pest\Laravel\actingAs;
+
 beforeAll(function () {
     loadDB();
 });
@@ -40,14 +42,16 @@ test('sql tools refuse to run without a dedicated read only database user', func
     $response->assertHasErrors(['SQL access is disabled: this environment has no dedicated read-only database user configured.']);
 });
 
-test('user without sql access is denied schema introspection', function () {
+test('a user without sql access cannot even reach the tool', function () {
     $this->user->update(['can_use_mcp_sql' => false]);
 
-    $response = AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, [
-        'search' => 'invoices',
-    ]);
+    actingAs($this->user);
 
-    $response->assertHasErrors(['SQL access is not enabled for this user.']);
+    expect((new DescribeTablesTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeFalse();
+
+    $this->user->update(['can_use_mcp_sql' => true]);
+
+    expect((new DescribeTablesTool())->shouldRegister(new Laravel\Mcp\Request()))->toBeTrue();
 });
 
 test('search finds tables by partial name', function () {

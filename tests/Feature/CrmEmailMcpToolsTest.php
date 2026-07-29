@@ -43,7 +43,7 @@ test('user without marketing view permission is denied on MailshotPerformanceToo
         'shop' => $this->shop->slug,
     ]);
 
-    $response->assertHasErrors(['Shop not found or permission denied.']);
+    $response->assertHasErrors(['You do not have access to any shop.']);
 });
 
 test('user without crm view permission is denied on CustomerEmailPressureTool', function () {
@@ -61,7 +61,7 @@ test('user without crm view permission is denied on CustomerEmailPressureTool', 
         'to'   => '2026-12-31',
     ]);
 
-    $response->assertHasErrors(['Shop not found or permission denied.']);
+    $response->assertHasErrors(['You do not have access to any shop.']);
 });
 
 test('admin user gets mailshot performance with no data', function () {

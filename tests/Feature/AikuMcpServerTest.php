@@ -54,7 +54,28 @@ test('user without orders permission is denied', function () {
         'to'   => '2026-12-31',
     ]);
 
-    $response->assertHasErrors(['Shop not found or permission denied.']);
+    $response->assertHasErrors(['You do not have access to any shop.']);
+});
+
+test('unknown shop error lists the codes the user can query', function () {
+    $response = AikuServer::actingAs($this->user)->tool(ShopSalesTool::class, [
+        'shop' => 'totally-made-up',
+        'from' => '2026-01-01',
+        'to'   => '2026-12-31',
+    ]);
+
+    $response->assertSee("'totally-made-up' does not match any shop you can query")
+        ->assertSee($this->shop->code);
+});
+
+test('shop resolves by full name', function () {
+    $response = AikuServer::actingAs($this->user)->tool(ShopSalesTool::class, [
+        'shop' => strtoupper($this->shop->name),
+        'from' => '2026-01-01',
+        'to'   => '2026-12-31',
+    ]);
+
+    $response->assertOk();
 });
 
 test('admin user gets shop sales from time series', function () {

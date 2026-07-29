@@ -44,7 +44,7 @@ test('user without products permission is denied on ProductsWithoutImagesTool', 
         'shop' => $this->shop->slug,
     ]);
 
-    $response->assertHasErrors(['Shop not found or permission denied.']);
+    $response->assertHasErrors(['You do not have access to any shop.']);
 });
 
 test('admin gets products without images', function () {

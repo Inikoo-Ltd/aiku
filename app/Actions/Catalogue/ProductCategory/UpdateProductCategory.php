@@ -364,7 +364,7 @@ class UpdateProductCategory extends OrgAction
             ->with('offerAllowances')
             ->first();
 
-        $oldOfferData = clone($offer);
+        $oldOfferData = $offer ? clone $offer : null;
 
         if (!$offer) {
             $offer = StoreVolumeGRDiscount::make()->action($productCategory, [

@@ -8,6 +8,7 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\CustomerConversionTool;
 use App\Mcp\Tools\CustomerEmailPressureTool;
 use App\Mcp\Tools\CustomerNotesTool;
 use App\Mcp\Tools\DescribeTablesTool;
@@ -18,14 +19,18 @@ use App\Mcp\Tools\EmployeeDirectoryTool;
 use App\Mcp\Tools\FamilySalesTool;
 use App\Mcp\Tools\GroupSalesTool;
 use App\Mcp\Tools\MailshotPerformanceTool;
+use App\Mcp\Tools\MarginTrendTool;
 use App\Mcp\Tools\MyAccessTool;
 use App\Mcp\Tools\OffersOverviewTool;
 use App\Mcp\Tools\OrderStatusTool;
+use App\Mcp\Tools\OrderFunnelTool;
 use App\Mcp\Tools\OrgFamilySalesTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\ProductsWithoutImagesTool;
+use App\Mcp\Tools\RefundsByProductTool;
 use App\Mcp\Tools\ShopReviewsTool;
 use App\Mcp\Tools\ShopSalesTool;
+use App\Mcp\Tools\SlowStockTool;
 use App\Mcp\Tools\SqlQueryTool;
 use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\TopProductsTool;
@@ -40,7 +45,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Aiku')]
 #[Version('1.0.0')]
-#[Instructions('Read-only access to Aiku commerce data. Every tool is scoped by the authenticated user\'s permissions: a tool call against a shop the user cannot view returns a permission error. Tools identify shops, organisations and warehouses by slug, never by their display name — when a question names one in words, call my-access-tool first to get the slugs this user can reach, and never guess a slug.')]
+#[Instructions('Read-only access to Aiku commerce data. Every tool is scoped by the authenticated user\'s permissions: a tool call against a shop the user cannot view returns a permission error. Tools identify shops, organisations and warehouses by slug, never by their display name — when a question names one in words, call my-access-tool first to get the slugs this user can reach, and never guess a slug. Users with SQL access also have sql-query-tool and describe-tables-tool: prefer a purpose-built tool when one fits the question, and fall back to SQL for anything they do not cover.')]
 class AikuServer extends Server
 {
     /**
@@ -69,6 +74,11 @@ class AikuServer extends Server
         GroupSalesTool::class,
         TradeUnitFamilySalesTool::class,
         TradeUnitSalesTool::class,
+        SlowStockTool::class,
+        OrderFunnelTool::class,
+        CustomerConversionTool::class,
+        RefundsByProductTool::class,
+        MarginTrendTool::class,
         SqlQueryTool::class,
         DescribeTablesTool::class,
     ];

@@ -7,7 +7,7 @@ import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAl
 import CustomerTimeline from '@/Components/Showcases/Grp/CustomerTimeline.vue'
 import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faArrowUpRightFromSquare)
 
 type SidePanelTab = 'profile' | 'statistics' | 'timeline' | 'log'
 

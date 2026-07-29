@@ -29,7 +29,7 @@ class UpdateTransaction extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
-    public function handle(Transaction $transaction, array $modelData, $calculateShipping = true): Transaction
+    public function handle(Transaction $transaction, array $modelData, $calculateShipping = true, bool $calculateDiscounts = true): Transaction
     {
         if (Arr::has($modelData, 'units_ordered')) {
             $unitsOrders = Arr::pull($modelData, 'units_ordered');
@@ -97,7 +97,7 @@ class UpdateTransaction extends OrgAction
 
             if (Arr::hasAny($changes, ['quantity_ordered', 'net_amount', 'gross_amount'])) {
                 OrderHydrateCategoriesData::run($transaction->order);
-                CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping);
+                CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping, $calculateDiscounts);
             }
         }
 

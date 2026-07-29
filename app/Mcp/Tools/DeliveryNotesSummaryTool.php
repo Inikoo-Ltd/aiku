@@ -35,7 +35,7 @@ class DeliveryNotesSummaryTool extends AikuWarehouseTool
 
         $warehouse = $this->authorisedWarehouse($request);
         if (!$warehouse) {
-            return Response::error('Warehouse not found or permission denied.');
+            return $this->warehouseNotFoundError($request);
         }
 
         $notes = DeliveryNote::where('warehouse_id', $warehouse->id)
@@ -67,7 +67,7 @@ class DeliveryNotesSummaryTool extends AikuWarehouseTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'warehouse' => $schema->string()->description('Warehouse slug')->required(),
+            'warehouse' => $schema->string()->description('Warehouse slug or code')->required(),
             'from'      => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'        => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
         ];

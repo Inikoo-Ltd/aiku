@@ -118,6 +118,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $this->processDiscretionaryOffers($order);
 
         DB::transaction(function () use ($order) {
+            DB::table('orders')->where('id', $order->id)->lockForUpdate()->first();
+
             DB::table('transaction_has_offer_allowances')
                 ->where('is_gift', false)
                 ->where('order_id', $order->id)->delete();
@@ -131,7 +133,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ]);
 
             $offerAllowancePivots = [];
-            
+
             foreach ($this->transactions as $transaction) {
                 if (property_exists($transaction, 'with_offer')) {
                     $offerAllowancePivots[] = $this->updateTransactionDiscount(
@@ -995,19 +997,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 continue;
             }
 
-            $hasOffer = property_exists($transaction, 'with_offer') && $transaction->with_offer;
-
             // Force discretionary offer nonetheless.
             $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
-
-            // if ($hasOffer) {
-            //     $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
-            //     if ((float)$current <= $percentageOff) {
-            //         $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
-            //     }
-            // } else {
-            //     $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
-            // }
         }
     }
 
