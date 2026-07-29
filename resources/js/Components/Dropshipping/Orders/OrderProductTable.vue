@@ -297,14 +297,14 @@ const removeDiscount = (item) => {
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully removed discount percentage"),
+                    text: trans("Successfully removed discount from the product"),
                     type: "success"
                 })
             },
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: errors?.discretionary_offer || trans("Failed to remove discount percentage. Try again"),
+                    text: errors?.discretionary_offer || trans("Failed to remove discount for the product. Try again"),
                     type: "error"
                 })
             },
@@ -682,7 +682,7 @@ const isOffersData = (offersData: any): boolean => {
                                     @click="() => {
                                         removeDiscount(item)
                                     }"
-                                    v-tooltip="trans('Remove discount from Order')" type="transparent" key="1"
+                                    v-tooltip="trans('Remove discount from this product')" type="transparent" key="1"
                                     class="ml-1 !px-0 text-pink-400 hover:text-pink-600 w-max"
                                 >
                                     <template #icon>

@@ -906,7 +906,7 @@ const removeDiscount = async () => {
             onSuccess: () => {
                 notify({
                     title: trans('Success'),
-                    text: trans('Successfully removed discount to all products'),
+                    text: trans('Successfully removed discount from all products'),
                     type: 'success',
                 })
                 closeEditAllPercentageModal()
@@ -916,7 +916,7 @@ const removeDiscount = async () => {
                     title: trans('Something went wrong'),
                     text:
                         errors?.discretionary_discount_percentage ||
-                        trans('Failed to remove discount'),
+                        trans('Failed to remove discount percentage from all products'),
                     type: 'error',
                 })
             },
@@ -2111,7 +2111,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     @click="() => {
                                         removeDiscount()
                                     }"
-                                    v-tooltip="trans('Remove discount')" type="transparent" key="1"
+                                    v-tooltip="trans('Remove discount from all items under this order')" type="transparent" key="1"
                                     class="ml-auto h-6 mr-2 text-pink-400 hover:text-pink-600 w-max"
                                 >
                                     <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
