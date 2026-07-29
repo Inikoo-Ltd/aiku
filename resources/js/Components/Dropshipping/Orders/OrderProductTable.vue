@@ -7,7 +7,7 @@ import Tag from "@/Components/Tag.vue"
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
 import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt, faPlus, faMinus } from "@far"
-import { faBarcode, faGift, faRepeat } from "@fal"
+import { faBarcode, faGift, faRepeat, faTrash, faUndo } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -17,8 +17,9 @@ import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelect
 import { ulid } from "ulid"
 import Image from "@common/Components/Image.vue"
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { faBadgePercent, faFragile } from "@fas"
+import { faBan, faPercentage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import { InputNumber, InputText } from "primevue"
@@ -34,6 +35,7 @@ type ProductRow = {
     id: number
     asset_code: string
     asset_name: string
+    is_discretionary_offer?: boolean
     quantity_ordered: number
     available_quantity?: number
     product_slug?: string
@@ -280,6 +282,75 @@ const onCloseModalNetAmount = () => {
 }
 const isLoadingSubmitNetAmount = ref(false)
 const isOpenModalEditNetAmount = ref(false)
+
+const removeDiscount = (item) => {
+    router.patch(
+        route("grp.models.transaction.remove_discount", {
+            transaction: item.id
+        }),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully removed discount from the product"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: errors?.discretionary_offer || trans("Failed to remove discount for the product. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+            }
+        }
+    )
+}
+
+const restoreDiscount = (item) => {
+    router.patch(
+        route("grp.models.transaction.update_discretionary_discount", {
+            transaction: item.id
+        }),
+        {
+            discretionary_offer: 0,
+            discretionary_offer_label: ''
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmitNetAmount.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully restored submitted discount data"),
+                    type: "success"
+                })
+                onCloseModalNetAmount()
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: errors?.discretionary_offer || trans("Failed to set restore submitted discount data. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitNetAmount.value = false
+            }
+        }
+    )
+}
+
 const onSubmitEditNetAmount = () => {
 
     console.log("ccc", selectedItemToEditNetAmount.value)
@@ -358,7 +429,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
 const isOffersData = (offersData: any): boolean => {
     if (!offersData) return false
     const parsed = typeof offersData === 'string' ? JSON.parse(offersData) : offersData
-    return Object.keys(parsed || {}).length > 0
+    return Object.keys(parsed || {}).length > 0 && parseFloat(offersData.o.p ?? 0)
 }
 </script>
 
@@ -406,8 +477,11 @@ const isOffersData = (offersData: any): boolean => {
                         <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>
                         <div v-if="item.upcoming_transaction_private_notes">{{ item.upcoming_transaction_private_notes }}</div>
                     </div>
-
-                    <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />
+                    <Discount 
+                        v-if="isOffersData(item.offers_data)" 
+                        :offers_data="item.offers_data" 
+                        :is_discretionary_offer="item.discretionary_offer"
+                    />
                 </div>
             </template>
 
@@ -599,11 +673,39 @@ const isOffersData = (offersData: any): boolean => {
                                   class="text-gray-500 line-through mr-1 opacity-70">{{
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
-                            <Button
-                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift"
-                                @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
-                                v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
-                                :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400" />
+                            <span v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift">
+                                <Button
+                                    @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
+                                    v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
+                                    :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400 hover:text-purple-600" />
+                                <Button
+                                    @click="() => {
+                                        removeDiscount(item)
+                                    }"
+                                    v-tooltip="trans('Remove discount from this product')" type="transparent" key="1"
+                                    class="ml-1 !px-0 text-pink-400 hover:text-pink-600 w-max"
+                                >
+                                    <template #icon>
+                                        <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
+                                            <FontAwesomeIcon
+                                                :icon="faTrash"
+                                                class="!text-lg !w-fit"
+                                            />
+                                            <FontAwesomeIcon
+                                                :icon="faPercentage"
+                                                class="text-xs !top-[25%]"
+                                            />
+                                        </FontAwesomeLayers>
+                                    </template>
+                                </Button>
+                                <Button
+                                    @click="() => {
+                                        restoreDiscount(item)
+                                    }"
+                                    v-tooltip="trans('Restore original discount data')" type="transparent" size="md" key="1"
+                                    :icon="faUndo" class="ml-1 !px-1 text-red-500 hover:text-red-700" 
+                                />
+                            </span>
                         </p>
                     </div>
                 </div>

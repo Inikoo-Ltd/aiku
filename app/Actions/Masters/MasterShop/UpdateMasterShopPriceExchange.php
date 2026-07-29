@@ -66,6 +66,9 @@ class UpdateMasterShopPriceExchange extends OrgAction
                 'exchange'        => $modelData['exchange'],
                 'fraction_digits' => (int)($modelData['fraction_digits'] ?? 2),
             ];
+            if (!empty($modelData['increment'])) {
+                $priceExchanges[$currencyCode]['increment'] = (float)$modelData['increment'];
+            }
         }
 
         $masterShop->update(['price_exchanges' => $priceExchanges]);
@@ -90,6 +93,7 @@ class UpdateMasterShopPriceExchange extends OrgAction
             'major'    => ['required_if:is_major,false', 'string', 'size:3', 'different:currency'],
             'exchange'        => ['required_if:is_major,false', 'numeric', 'gt:0'],
             'fraction_digits' => ['sometimes', 'integer', 'between:0,2'],
+            'increment'       => ['sometimes', 'nullable', 'numeric', 'gt:0', 'lt:1'],
         ];
     }
 
@@ -127,6 +131,7 @@ class UpdateMasterShopPriceExchange extends OrgAction
         {--major= : Major currency to follow (defaults to current)}
         {--exchange= : Exchange rate from the major (defaults to current)}
         {--fraction-digits= : 0 for whole-number prices, 2 for cents (defaults to current)}
+        {--increment= : Round converted prices/RRPs up to this step, e.g. 0.05 (defaults to current; pass 0 to clear)}
         {--force : Skip the confirmation prompt}';
 
     public function asCommand(Command $command): int
@@ -151,6 +156,11 @@ class UpdateMasterShopPriceExchange extends OrgAction
             $fractionDigits = $command->option('fraction-digits') ?? data_get($current, 'fraction_digits');
             if ($fractionDigits !== null) {
                 $modelData['fraction_digits'] = (int)$fractionDigits;
+            }
+
+            $increment = $command->option('increment') ?? data_get($current, 'increment');
+            if ($increment) {
+                $modelData['increment'] = (float)$increment;
             }
         }
 

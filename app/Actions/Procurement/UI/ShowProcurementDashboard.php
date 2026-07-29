@@ -120,7 +120,7 @@ class ShowProcurementDashboard extends OrgAction
                             'icon'  => ['fal', 'fa-truck-container'],
                             'route'  => ['name' => 'grp.org.procurement.stock_deliveries.index', 'parameters' => ['organisation' => $this->organisation->slug]],
                             'index' => [
-                                'number' => $this->organisation->procurementStats->number_deliveries
+                                'number' => $this->organisation->procurementStats->number_stock_deliveries
                             ]
 
                         ],

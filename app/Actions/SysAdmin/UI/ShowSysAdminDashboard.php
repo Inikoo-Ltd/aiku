@@ -9,6 +9,9 @@
 namespace App\Actions\SysAdmin\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Search\GetSearchAnalytics;
+use App\Actions\SysAdmin\GetMcpAnalytics;
+use App\Actions\SysAdmin\GetUsersInsights;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
@@ -50,18 +53,9 @@ class ShowSysAdminDashboard extends OrgAction
                     ],
                     'title' => __('System Administration'),
                 ],
-                'stats'       => [
-                    [
-                        'name'  => __('Users'),
-                        'stat'  => $group->sysadminStats->number_users_status_active,
-                        'route' => ['name' => 'grp.sysadmin.users.index']
-                    ],
-                    [
-                        'name'  => __('Guests'),
-                        'stat'  => $group->sysadminStats->number_guests_status_active,
-                        'route' => ['name' => 'grp.sysadmin.guests.index']
-                    ]
-                ]
+                'users_insights'  => GetUsersInsights::run($group),
+                'search_insights' => GetSearchAnalytics::run($group),
+                'ai_insights'     => GetMcpAnalytics::run($group),
             ]
         );
     }
