@@ -18,7 +18,7 @@ export interface OfferDiscountStep {
     percentage_off: number
 }
 
-export interface OfferGiftProduct {
+export interface OfferProduct {
     id: number
     slug: string
     code: string
@@ -28,12 +28,10 @@ export interface OfferGiftProduct {
 }
 
 export interface OfferGiftData {
-    trigger_type: string | null
     min_order_amount: number | null
     item_quantity: number | null
     quantity: number
-    product: OfferGiftProduct | null
-    trigger_product: OfferGiftProduct | null
+    product: OfferProduct | null
 }
 
 export interface OfferResource {
@@ -58,6 +56,7 @@ export interface OfferResource {
         interval?: number
         min_order_amount?: number
     }
+    trigger_product?: OfferProduct | null
     gift_data?: OfferGiftData | null
     percentage_off?: number
     created_at: string

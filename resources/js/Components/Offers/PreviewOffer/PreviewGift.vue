@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faGift } from '@fal'
 import { faCheckCircle, faArrowRight } from '@fas'
 import { computed, inject, ref, watch } from 'vue'
-import { OfferGiftProduct, OfferResource } from '@/types/Catalogue/Offers'
+import { OfferProduct, OfferResource } from '@/types/Catalogue/Offers'
 import { InputNumber } from 'primevue'
 import { ctrans } from '@/Composables/useTrans'
 
@@ -29,8 +29,8 @@ const convertToFloat2 = (val: unknown) => {
 
 const giftData = computed(() => props.offer?.gift_data ?? null)
 
-const giftProduct = computed<OfferGiftProduct | null>(() => giftData.value?.product ?? null)
-const triggerProduct = computed<OfferGiftProduct | null>(() => giftData.value?.trigger_product ?? null)
+const giftProduct = computed<OfferProduct | null>(() => giftData.value?.product ?? null)
+const triggerProduct = computed<OfferProduct | null>(() => props.offer?.trigger_product ?? null)
 const giftQuantity = computed(() => Math.max(Math.floor(Number(giftData.value?.quantity ?? 1)), 1))
 
 const targetQuantity = computed(() => {

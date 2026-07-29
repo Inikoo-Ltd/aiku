@@ -85,6 +85,11 @@ class OfferResource extends JsonResource
             ],
         ];
 
+        $trigger = $offer->trigger;
+        if ($trigger instanceof Product) {
+            $customOfferData['trigger_product'] = $this->getOfferProductData($trigger);
+        }
+
         if ($offer->type == OfferTypeEnum::GIFT->value) {
             $customOfferData['gift_data'] = $this->getGiftData($offer);
         }
@@ -93,31 +98,27 @@ class OfferResource extends JsonResource
     }
 
     /**
-     * @return array{trigger_type: string|null, min_order_amount: float|null, item_quantity: int|null, quantity: int, product: array|null, trigger_product: array|null}
+     * @return array{min_order_amount: float|null, item_quantity: int|null, quantity: int, product: array|null}
      */
     protected function getGiftData(Offer $offer): array
     {
         /** @var OfferAllowance $giftAllowance */
         $giftAllowance = $offer->offerAllowances()->where('type', OfferAllowanceType::GIFT)->first();
 
-        $giftProduct    = $giftAllowance ? Product::find(Arr::get($giftAllowance->data, 'product_id')) : null;
-        $trigger        = $offer->trigger;
-        $triggerProduct = $trigger instanceof Product ? $trigger : null;
+        $giftProduct = $giftAllowance ? Product::find(Arr::get($giftAllowance->data, 'product_id')) : null;
 
         return [
-            'trigger_type'     => $offer->trigger_type,
             'min_order_amount' => Arr::get($offer->trigger_data, 'min_order_amount'),
             'item_quantity'    => Arr::get($offer->trigger_data, 'item_quantity'),
             'quantity'         => (int)Arr::get($giftAllowance?->data, 'quantity', 1),
-            'product'          => $this->getGiftProductData($giftProduct),
-            'trigger_product'  => $this->getGiftProductData($triggerProduct),
+            'product'          => $this->getOfferProductData($giftProduct),
         ];
     }
 
     /**
      * @return array{id: int, slug: string, code: string, name: string|null, price: float|null, image: array|null}|null
      */
-    protected function getGiftProductData(?Product $product): ?array
+    protected function getOfferProductData(?Product $product): ?array
     {
         if (!$product) {
             return null;

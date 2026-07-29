@@ -30,6 +30,7 @@ import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 import PreviewVoucher from '@/Components/Offers/PreviewOffer/PreviewVoucher.vue'
 import PreviewGift from '@/Components/Offers/PreviewOffer/PreviewGift.vue'
 import PreviewStepDiscount from '@/Components/Offers/PreviewOffer/PreviewStepDiscount.vue'
+import PreviewProductDiscount from '@/Components/Offers/PreviewOffer/PreviewProductDiscount.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 library.add(faFlagCheckered)
@@ -83,6 +84,16 @@ const getCategoryLink = (productCategory?: ProductCategoryLink | null) => {
         organisation: route().params.organisation,
         shop: route().params.shop,
         family: productCategory.slug,
+    })
+}
+
+const getProductLink = (product?: { slug: string } | null) => {
+    if (!product) return '#'
+
+    return route('grp.org.shops.show.catalogue.products.all_products.show', {
+        organisation: route().params.organisation,
+        shop: route().params.shop,
+        product: product.slug,
     })
 }
 
@@ -146,6 +157,22 @@ const hasTrigger = computed(() => {
 
 const state = props.data.offer_allowances[0]?.state
 const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
+
+const triggerProduct = computed(() => props.data.offer.trigger_product ?? null)
+
+const giftProduct = computed(() => props.data.offer.gift_data?.product ?? null)
+
+const isProductDiscount = computed(() =>
+    ['Product Amount Ordered', 'Product Quantity Ordered'].includes(props.data.offer.type)
+    && !!triggerProduct.value
+)
+
+const offerPercentageOff = computed(() => {
+    const fromAllowance = props.data.offer_allowances?.find(offerAllowance => offerAllowance.data?.percentage_off)?.data?.percentage_off
+    const fromSignature = props.data.offer.data_allowance_signature?.percentage_off
+
+    return parseFloat(String(fromAllowance ?? fromSignature ?? 0)) || 0
+})
 
 const hasDiscountSteps = computed(() =>
     props.data.offer_allowances?.some(offerAllowance => offerAllowance.data?.steps?.length) ?? false
@@ -251,6 +278,13 @@ const irisOffersData = computed(() => {
                     :offer_allowances="data.offer_allowances"
                     class="mt-3"
                 />
+                <PreviewProductDiscount
+                    v-else-if="isProductDiscount"
+                    :offer="data.offer"
+                    :offer_allowances="data.offer_allowances"
+                    :currencyCode="currency_code"
+                    class="mt-3"
+                />
                 <Coupon v-else :offer="data.offer" :currency_code="currency_code" />
             </div>
 
@@ -297,6 +331,45 @@ const irisOffersData = computed(() => {
                             </dd>
                         </div>
 
+                        <!-- Product -->
+                        <div v-if="triggerProduct" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Product") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%]">
+                                <Link :href="getProductLink(triggerProduct)" class="secondaryLink">
+                                    {{ triggerProduct.code }}
+                                </Link>
+                                <div v-if="triggerProduct.name" class="text-xs text-gray-400 font-normal">
+                                    {{ triggerProduct.name }}
+                                </div>
+                            </dd>
+                        </div>
+
+                        <!-- Gift -->
+                        <div v-if="giftProduct" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">
+                                {{ ctrans("Gift") }}
+                            </dt>
+                            <dd class="font-medium text-right break-words max-w-[60%]">
+                                <Link :href="getProductLink(giftProduct)" class="secondaryLink">
+                                    {{ giftProduct.code }}
+                                </Link>
+                                <span class="text-gray-500">&times;{{ data.offer.gift_data?.quantity }}</span>
+                                <div v-if="giftProduct.name" class="text-xs text-gray-400 font-normal">
+                                    {{ giftProduct.name }}
+                                </div>
+                            </dd>
+                        </div>
+
+                        <!-- Discount -->
+                        <div v-if="offerPercentageOff" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Discount") }}</dt>
+                            <dd class="font-medium text-right tabular-nums">
+                                {{ (offerPercentageOff * 100).toFixed(offerPercentageOff * 100 % 1 === 0 ? 0 : 1) }}%
+                            </dd>
+                        </div>
+
                         <div v-if="data.offer_allowances[0]?.data?.free_quantity !== undefined" class="flex justify-between gap-4">
                             <dt class="text-gray-500">{{ ctrans("Free quantity") }}</dt>
                             <dd class="font-medium text-right">
@@ -333,7 +406,10 @@ const irisOffersData = computed(() => {
 
                         <!-- Item Quantity -->
                         <div v-if="data.offer.trigger_data?.item_quantity !== undefined" class="flex justify-between gap-4">
-                            <dt class="text-gray-500">{{ ctrans("Item quantity") }}</dt>
+                            <dt class="text-gray-500">
+                                {{ ctrans("Item quantity") }}
+                                <span v-if="triggerProduct" class="text-xs text-gray-400">({{ triggerProduct.code }})</span>
+                            </dt>
                             <dd class="font-medium text-right">
                                 {{ data.offer.trigger_data.item_quantity }}
                             </dd>
@@ -341,7 +417,10 @@ const irisOffersData = computed(() => {
 
                         <!-- Item Amount -->
                         <div v-if="data.offer.trigger_data?.item_amount !== undefined" class="flex justify-between gap-4">
-                            <dt class="text-gray-500">{{ ctrans("Item amount") }}</dt>
+                            <dt class="text-gray-500">
+                                {{ ctrans("Item amount") }}
+                                <span v-if="triggerProduct" class="text-xs text-gray-400">({{ triggerProduct.code }})</span>
+                            </dt>
                             <dd class="font-medium text-right">
                                 {{ locale.currencyFormat(currency_code, data.offer.trigger_data.item_amount) }}
                             </dd>
