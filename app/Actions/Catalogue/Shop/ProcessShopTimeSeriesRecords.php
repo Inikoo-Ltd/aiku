@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopTimeSeries;
 use App\Traits\BuildsInvoiceTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,6 +22,7 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -53,6 +55,7 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(ShopTimeSeries $timeSeries, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $metricsByPeriod = $this->getShopMetricsByPeriod($timeSeries->shop_id, $timeSeries->frequency, $from, $to);
 
@@ -70,13 +73,11 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
 
             $metrics = [...$this->zeroMetrics(), ...($metricsByPeriod[$period]['metrics'] ?? [])];
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'shop_time_series_id' => $timeSeries->id,
-                    'period'              => $period,
-                    'frequency'           => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'shop_time_series_id' => $timeSeries->id,
+                'period'              => $period,
+                'frequency'           => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
                     'sales_external'              => $result->sales_external,
@@ -91,16 +92,20 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                     'orders'                      => $result->orders,
                     ...$metrics,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $metricsByPeriod, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $metricsByPeriod, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['shop_time_series_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(ShopTimeSeries $timeSeries, array $metricsByPeriod, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(ShopTimeSeries $timeSeries, array $metricsByPeriod, array $processedPeriods): array
     {
+        $rows = [];
+
         foreach ($metricsByPeriod as $period => $periodData) {
             if (in_array($period, $processedPeriods)) {
                 continue;
@@ -114,13 +119,11 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                 continue;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'shop_time_series_id' => $timeSeries->id,
-                    'period'              => $period,
-                    'frequency'           => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'shop_time_series_id' => $timeSeries->id,
+                'period'              => $period,
+                'frequency'           => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
                     'sales_external'              => 0,
@@ -135,8 +138,10 @@ class ProcessShopTimeSeriesRecords implements ShouldBeUnique
                     'orders'                      => 0,
                     ...$metrics,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 
     protected function getShopMetricsByPeriod(int $shopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): array

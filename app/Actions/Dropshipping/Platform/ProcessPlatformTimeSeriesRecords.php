@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformTimeSeries;
 use App\Traits\BuildsInvoiceTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,6 +24,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -56,6 +58,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $metricsByPeriod = $this->getPlatformMetricsByPeriod($timeSeries, $shop, $timeSeries->frequency, $from, $to);
 
@@ -74,14 +77,12 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
 
             $metrics = [...$this->zeroMetrics(), ...($metricsByPeriod[$period]['metrics'] ?? [])];
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'platform_time_series_id' => $timeSeries->id,
-                    'shop_id'                 => $shop->id,
-                    'period'                  => $period,
-                    'frequency'               => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'platform_time_series_id' => $timeSeries->id,
+                'shop_id'                 => $shop->id,
+                'period'                  => $period,
+                'frequency'               => $timeSeries->frequency->singleLetter(),
+                ...[
                     'organisation_id'             => $shop->organisation_id,
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
@@ -91,16 +92,20 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     ...$metrics,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $shop, $metricsByPeriod, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $shop, $metricsByPeriod, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['platform_time_series_id', 'shop_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(PlatformTimeSeries $timeSeries, Shop $shop, array $metricsByPeriod, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(PlatformTimeSeries $timeSeries, Shop $shop, array $metricsByPeriod, array $processedPeriods): array
     {
+        $rows = [];
+
         foreach ($metricsByPeriod as $period => $periodData) {
             if (in_array($period, $processedPeriods)) {
                 continue;
@@ -114,14 +119,12 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                 continue;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'platform_time_series_id' => $timeSeries->id,
-                    'shop_id'                 => $shop->id,
-                    'period'                  => $period,
-                    'frequency'               => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'platform_time_series_id' => $timeSeries->id,
+                'shop_id'                 => $shop->id,
+                'period'                  => $period,
+                'frequency'               => $timeSeries->frequency->singleLetter(),
+                ...[
                     'organisation_id'             => $shop->organisation_id,
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
@@ -131,8 +134,10 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => 0,
                     ...$metrics,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 
     protected function getPlatformMetricsByPeriod(PlatformTimeSeries $timeSeries, Shop $shop, TimeSeriesFrequencyEnum $frequency, string $from, string $to): array

@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\OrganisationTimeSeries;
 use App\Traits\BuildsInvoiceTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,6 +22,7 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -53,6 +55,7 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(OrganisationTimeSeries $timeSeries, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $metricsByPeriod = $this->getOrganisationMetricsByPeriod($timeSeries->organisation_id, $timeSeries->frequency, $from, $to);
 
@@ -70,13 +73,11 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
 
             $metrics = [...$this->zeroMetrics(), ...($metricsByPeriod[$period]['metrics'] ?? [])];
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'organisation_time_series_id' => $timeSeries->id,
-                    'period'                      => $period,
-                    'frequency'                   => $timeSeries->frequency->singleLetter()
-                ],
-                [
+            $rows[] = [
+                'organisation_time_series_id' => $timeSeries->id,
+                'period'                      => $period,
+                'frequency'                   => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                         => $periodFrom,
                     'to'                           => $periodTo,
                     'sales_org_currency_external'  => $result->sales_org_currency_external,
@@ -89,16 +90,20 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
                     'orders'                       => $result->orders,
                     ...$metrics,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $metricsByPeriod, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $metricsByPeriod, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['organisation_time_series_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(OrganisationTimeSeries $timeSeries, array $metricsByPeriod, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(OrganisationTimeSeries $timeSeries, array $metricsByPeriod, array $processedPeriods): array
     {
+        $rows = [];
+
         foreach ($metricsByPeriod as $period => $periodData) {
             if (in_array($period, $processedPeriods)) {
                 continue;
@@ -112,13 +117,11 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
                 continue;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'organisation_time_series_id' => $timeSeries->id,
-                    'period'                      => $period,
-                    'frequency'                   => $timeSeries->frequency->singleLetter()
-                ],
-                [
+            $rows[] = [
+                'organisation_time_series_id' => $timeSeries->id,
+                'period'                      => $period,
+                'frequency'                   => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                         => $periodData['from'],
                     'to'                           => $periodData['to'],
                     'sales_org_currency_external'  => 0,
@@ -131,8 +134,10 @@ class ProcessOrganisationTimeSeriesRecords implements ShouldBeUnique
                     'orders'                       => 0,
                     ...$metrics,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 
     protected function getOrganisationMetricsByPeriod(int $organisationId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): array

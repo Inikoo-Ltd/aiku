@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,6 +22,7 @@ class ProcessStockTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -53,6 +55,7 @@ class ProcessStockTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(StockTimeSeries $timeSeries, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_stocks as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
@@ -66,13 +69,11 @@ class ProcessStockTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'stock_time_series_id' => $timeSeries->id,
-                    'period'               => $period,
-                    'frequency'            => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'stock_time_series_id' => $timeSeries->id,
+                'period'               => $period,
+                'frequency'            => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
                     'sales_external'              => $result->sales_external,
@@ -89,26 +90,28 @@ class ProcessStockTimeSeriesRecords implements ShouldBeUnique
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['stock_time_series_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(StockTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(StockTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
     {
+        $rows = [];
+
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
         foreach ($nonInvoicePeriods as $periodData) {
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'stock_time_series_id' => $timeSeries->id,
-                    'period'               => $periodData['period'],
-                    'frequency'            => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'stock_time_series_id' => $timeSeries->id,
+                'period'               => $periodData['period'],
+                'frequency'            => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
                     'sales_external'              => 0,
@@ -125,7 +128,9 @@ class ProcessStockTimeSeriesRecords implements ShouldBeUnique
                     'refunds'                     => 0,
                     'orders'                      => 0,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 }

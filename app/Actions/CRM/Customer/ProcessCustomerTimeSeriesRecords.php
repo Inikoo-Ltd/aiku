@@ -14,6 +14,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerTimeSeries;
 use App\Traits\BuildsInvoiceTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,7 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -67,40 +69,42 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
 
         $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, customSelects: $this->customerInvoiceSelects())->get();
 
+        $rows = [];
+
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
             $metrics = [...$this->zeroMetrics(), ...($metricsByPeriod[$period]['metrics'] ?? [])];
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'customer_time_series_id' => $timeSeries->id,
-                    'period'                  => $period,
-                    'frequency'               => $timeSeries->frequency->singleLetter(),
-                ],
-                [
-                    'from'                      => $periodFrom,
-                    'to'                        => $periodTo,
-                    'sales'                     => $result->sales,
-                    'sales_org_currency'        => $result->sales_org_currency,
-                    'sales_grp_currency'        => $result->sales_grp_currency,
-                    'lost_revenue'              => $result->lost_revenue,
-                    'lost_revenue_org_currency' => $result->lost_revenue_org_currency,
-                    'lost_revenue_grp_currency' => $result->lost_revenue_grp_currency,
-                    'invoices'                  => $result->invoices,
-                    'refunds'                   => $result->refunds,
-                    ...$metrics,
-                ]
-            );
+            $rows[] = [
+                'customer_time_series_id'   => $timeSeries->id,
+                'period'                    => $period,
+                'frequency'                 => $timeSeries->frequency->singleLetter(),
+                'from'                      => $periodFrom,
+                'to'                        => $periodTo,
+                'sales'                     => $result->sales,
+                'sales_org_currency'        => $result->sales_org_currency,
+                'sales_grp_currency'        => $result->sales_grp_currency,
+                'lost_revenue'              => $result->lost_revenue,
+                'lost_revenue_org_currency' => $result->lost_revenue_org_currency,
+                'lost_revenue_grp_currency' => $result->lost_revenue_grp_currency,
+                'invoices'                  => $result->invoices,
+                'refunds'                   => $result->refunds,
+                ...$metrics,
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $metricsByPeriod, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $metricsByPeriod, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['customer_time_series_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(CustomerTimeSeries $timeSeries, array $metricsByPeriod, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(CustomerTimeSeries $timeSeries, array $metricsByPeriod, array $processedPeriods): array
     {
+        $rows = [];
+
         foreach ($metricsByPeriod as $period => $periodData) {
             if (in_array($period, $processedPeriods)) {
                 continue;
@@ -114,27 +118,25 @@ class ProcessCustomerTimeSeriesRecords implements ShouldBeUnique
                 continue;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'customer_time_series_id' => $timeSeries->id,
-                    'period'                  => $period,
-                    'frequency'               => $timeSeries->frequency->singleLetter(),
-                ],
-                [
-                    'from'                      => $periodData['from'],
-                    'to'                        => $periodData['to'],
-                    'sales'                     => 0,
-                    'sales_org_currency'        => 0,
-                    'sales_grp_currency'        => 0,
-                    'lost_revenue'              => 0,
-                    'lost_revenue_org_currency' => 0,
-                    'lost_revenue_grp_currency' => 0,
-                    'invoices'                  => 0,
-                    'refunds'                   => 0,
-                    ...$metrics,
-                ]
-            );
+            $rows[] = [
+                'customer_time_series_id'   => $timeSeries->id,
+                'period'                    => $period,
+                'frequency'                 => $timeSeries->frequency->singleLetter(),
+                'from'                      => $periodData['from'],
+                'to'                        => $periodData['to'],
+                'sales'                     => 0,
+                'sales_org_currency'        => 0,
+                'sales_grp_currency'        => 0,
+                'lost_revenue'              => 0,
+                'lost_revenue_org_currency' => 0,
+                'lost_revenue_grp_currency' => 0,
+                'invoices'                  => 0,
+                'refunds'                   => 0,
+                ...$metrics,
+            ];
         }
+
+        return $rows;
     }
 
     protected function getCustomerMetricsByPeriod(int $customerId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): array
