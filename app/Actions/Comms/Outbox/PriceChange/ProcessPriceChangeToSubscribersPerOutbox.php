@@ -59,9 +59,8 @@ class ProcessPriceChangeToSubscribersPerOutbox
         $baseQuery->join('audits', function ($join) use ($lastOutBoxSent) {
             $join->on('audits.auditable_id', '=', 'products.master_product_id')
                 ->where('audits.auditable_type', 'MasterAsset')
-                ->where('audits.event', 'updated')
-                ->where('audits.created_at', '>', $lastOutBoxSent)
-                ->whereRaw("(jsonb_exists(audits.new_values, 'price') OR jsonb_exists(audits.new_values, 'rrp'))");
+                ->where('audits.event', 'updated_master_prices')
+                ->where('audits.created_at', '>', $lastOutBoxSent);
         });
 
         $baseQuery->select('products.id', 'products.master_product_id');
