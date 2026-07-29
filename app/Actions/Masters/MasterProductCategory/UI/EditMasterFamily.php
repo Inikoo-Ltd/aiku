@@ -231,9 +231,10 @@ class EditMasterFamily extends OrgAction
                             'icon'   => 'fa-light fa-question-circle',
                             'fields' => [
                                 'faq' => [
-                                    'type'  => 'faq-master',
-                                    'label' => __('FAQ'),
-                                    'value' => $masterProductCategory->faq,
+                                    'type'                       => 'faq-master',
+                                    'label'                      => __('FAQ'),
+                                    'value'                      => $masterProductCategory->faq,
+                                    'master_product_category_id' => $masterProductCategory->id,
                                 ],
                             ]
                         ],
