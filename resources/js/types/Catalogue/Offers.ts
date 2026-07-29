@@ -5,6 +5,8 @@
  * Copyright: 2026
 */
 
+import { Image } from '@/types/Image'
+
 export interface OfferProductCategoryLink {
     name: string
     slug: string
@@ -16,12 +18,32 @@ export interface OfferDiscountStep {
     percentage_off: number
 }
 
+export interface OfferGiftProduct {
+    id: number
+    slug: string
+    code: string
+    name: string | null
+    price: number | null
+    image: Image | null
+}
+
+export interface OfferGiftData {
+    trigger_type: string | null
+    min_order_amount: number | null
+    item_quantity: number | null
+    quantity: number
+    product: OfferGiftProduct | null
+    trigger_product: OfferGiftProduct | null
+}
+
 export interface OfferResource {
     id?: number
     type: 'Amount AND Order Number' | 'Category Ordered' | 'Category Quantity Ordered' | 'GR Amnesty' | 'Category Quantity Ordered Order Interval' | string
     name: string
     code?: string
     label?: string | null
+    label_got?: string | null
+    information?: string | null
     state: string
     status: boolean | string
     duration?: string | null
@@ -36,6 +58,7 @@ export interface OfferResource {
         interval?: number
         min_order_amount?: number
     }
+    gift_data?: OfferGiftData | null
     percentage_off?: number
     created_at: string
     updated_at?: string
