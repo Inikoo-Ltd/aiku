@@ -25,7 +25,6 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-//TODO: Need to the price changes, related to curency
 class ProcessPriceChangeToSubscribersRecipients
 {
     use AsAction;
@@ -215,25 +214,25 @@ class ProcessPriceChangeToSubscribersRecipients
                     <td align="center"
                         style="font-weight:600;
                                color:#16a34a;">'
-                    . $currencySymbol . ' ' . number_format((float) $masterPrice, 2) .
+                    . $currencySymbol . ' ' .$masterPrice .
                     '</td>
 
                     <td align="center"
                         style="font-weight:600;
                                color:#dc2626;">'
-                    . $currencySymbol . ' ' . number_format((float) $productPrice, 2) .
+                    . $currencySymbol . ' ' . $productPrice .
                     '</td>
 
                     <td align="center"
                         style="font-weight:600;
                                color:#16a34a;">'
-                    . $currencySymbol . ' ' . number_format((float) $masterRrp, 2) .
+                    . $currencySymbol . ' ' . $masterRrp.
                     '</td>
 
                     <td align="center"
                         style="font-weight:600;
                                color:#dc2626;">'
-                    . $currencySymbol . ' ' . number_format((float) $productRrp, 2) .
+                    . $currencySymbol . ' ' .$productRrp .
                     '</td>
                 </tr>';
             }
