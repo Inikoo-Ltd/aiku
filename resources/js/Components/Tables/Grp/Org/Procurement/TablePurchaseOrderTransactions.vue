@@ -415,7 +415,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(state)="{ item }">
-            <div class="flex items-center gap-1.5">                
+            <div class="flex items-center gap-1.5">
                  <FontAwesomeIcon
                     v-if="item.state_icon"
                     v-tooltip="item.state_icon.tooltip"
@@ -435,7 +435,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     :class="item.delivery_state_icon?.class"
                     aria-hidden="true"
                     fixed-width
-                />                
+                />
             </div>
         </template>
     </Table>
