@@ -6,8 +6,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faGift } from '@fal'
 import { faCheckCircle, faArrowRight } from '@fas'
-import { computed, inject, ref, watch } from 'vue'
-import { OfferProduct, OfferResource } from '@/types/Catalogue/Offers'
+import { computed, inject, ref, watch, watchEffect } from 'vue'
+import { OfferProduct, OfferResource, OfferSimulation } from '@/types/Catalogue/Offers'
 import { InputNumber } from 'primevue'
 import { ctrans } from '@/Composables/useTrans'
 
@@ -18,8 +18,10 @@ const props = defineProps<{
     currencyCode?: string
 }>()
 
+const simulation = defineModel<OfferSimulation | null>('simulation', { default: null })
+
 const locale = inject('locale', aikuLocaleStructure)
-const activeCurrencyCode = computed(() => props.currencyCode || 'GBP')
+const activeCurrencyCode = computed(() => props.currencyCode || '')
 
 const convertToFloat2 = (val: unknown) => {
     const num = parseFloat(String(val ?? 0))
@@ -104,6 +106,30 @@ const formatValue = (value: number) => {
 
     return locale.currencyFormat(activeCurrencyCode.value, convertToFloat2(value))
 }
+
+const triggerGrossAmount = computed(() => {
+    if (!isQuantityTrigger.value) {
+        return convertToFloat2(sanitizedCurrentValue.value)
+    }
+
+    return convertToFloat2(sanitizedCurrentValue.value * convertToFloat2(triggerProduct.value?.price ?? 0))
+})
+
+watchEffect(() => {
+    simulation.value = {
+        mode: isQuantityTrigger.value ? 'quantity' : 'amount',
+        quantity: isQuantityTrigger.value ? sanitizedCurrentValue.value : 0,
+        isQuantityExact: isQuantityTrigger.value,
+        freeUnits: 0,
+        percentageOff: 0,
+        grossAmount: triggerGrossAmount.value,
+        netAmount: triggerGrossAmount.value,
+        savedAmount: 0,
+        meterCurrent: sanitizedCurrentValue.value,
+        meterTarget: targetValue.value,
+        isReached: isReached.value,
+    }
+})
 
 const giftLabel = computed(() => {
     if (isReached.value) {

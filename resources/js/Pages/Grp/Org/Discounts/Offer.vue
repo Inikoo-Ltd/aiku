@@ -20,7 +20,7 @@ import { routeType } from '@/types/route'
 import { trans } from 'laravel-vue-i18n'
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
 import BasicDiscount from '@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue'
-import { OfferResource, OfferAllowanceResource } from '@/types/Catalogue/Offers'
+import { OfferResource, OfferAllowanceResource, OfferSimulation } from '@/types/Catalogue/Offers'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faFlagCheckered } from "@fortawesome/free-solid-svg-icons"
@@ -31,6 +31,8 @@ import PreviewVoucher from '@/Components/Offers/PreviewOffer/PreviewVoucher.vue'
 import PreviewGift from '@/Components/Offers/PreviewOffer/PreviewGift.vue'
 import PreviewStepDiscount from '@/Components/Offers/PreviewOffer/PreviewStepDiscount.vue'
 import PreviewProductDiscount from '@/Components/Offers/PreviewOffer/PreviewProductDiscount.vue'
+import PreviewFreeItems from '@/Components/Offers/PreviewOffer/PreviewFreeItems.vue'
+import CustomerViewOffer from '@/Components/Offers/PreviewOffer/CustomerViewOffer.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 
 library.add(faFlagCheckered)
@@ -158,6 +160,8 @@ const hasTrigger = computed(() => {
 const state = props.data.offer_allowances[0]?.state
 const percentage_off = props.data.offer_allowances[0]?.data?.percentage_off
 
+const offerSimulation = ref<OfferSimulation | null>(null)
+
 const triggerProduct = computed(() => props.data.offer.trigger_product ?? null)
 
 const giftProduct = computed(() => props.data.offer.gift_data?.product ?? null)
@@ -165,6 +169,10 @@ const giftProduct = computed(() => props.data.offer.gift_data?.product ?? null)
 const isProductDiscount = computed(() =>
     ['Product Amount Ordered', 'Product Quantity Ordered'].includes(props.data.offer.type)
     && !!triggerProduct.value
+)
+
+const freeItemsAllowance = computed(() =>
+    props.data.offer_allowances?.find(offerAllowance => offerAllowance.data?.free_quantity)?.data ?? null
 )
 
 const offerPercentageOff = computed(() => {
@@ -268,6 +276,7 @@ const irisOffersData = computed(() => {
                 />
                 <PreviewGift
                     v-else-if="data.offer.type == 'Gift'"
+                    v-model:simulation="offerSimulation"
                     :offer="data.offer"
                     :currencyCode="currency_code"
                     class="xscale-[120%] mt-3"
@@ -278,8 +287,17 @@ const irisOffersData = computed(() => {
                     :offer_allowances="data.offer_allowances"
                     class="mt-3"
                 />
+                <PreviewFreeItems
+                    v-else-if="freeItemsAllowance"
+                    v-model:simulation="offerSimulation"
+                    :offer="data.offer"
+                    :offer_allowances="data.offer_allowances"
+                    :currencyCode="currency_code"
+                    class="mt-3"
+                />
                 <PreviewProductDiscount
                     v-else-if="isProductDiscount"
+                    v-model:simulation="offerSimulation"
                     :offer="data.offer"
                     :offer_allowances="data.offer_allowances"
                     :currencyCode="currency_code"
@@ -370,10 +388,21 @@ const irisOffersData = computed(() => {
                             </dd>
                         </div>
 
-                        <div v-if="data.offer_allowances[0]?.data?.free_quantity !== undefined" class="flex justify-between gap-4">
+                        <!-- Free items deal -->
+                        <div v-if="freeItemsAllowance" class="flex justify-between gap-4">
+                            <dt class="text-gray-500">{{ ctrans("Deal") }}</dt>
+                            <dd class="font-medium text-right">
+                                {{ ctrans('Buy :quantity, get :free free', {
+                                    quantity: String(freeItemsAllowance.item_quantity ?? data.offer.trigger_data?.item_quantity ?? ''),
+                                    free: String(freeItemsAllowance.free_quantity ?? '')
+                                }) }}
+                            </dd>
+                        </div>
+
+                        <div v-if="freeItemsAllowance?.free_quantity !== undefined" class="flex justify-between gap-4">
                             <dt class="text-gray-500">{{ ctrans("Free quantity") }}</dt>
                             <dd class="font-medium text-right">
-                                {{ data.offer_allowances[0]?.data?.free_quantity }}
+                                {{ freeItemsAllowance?.free_quantity }}
                             </dd>
                         </div>
 
@@ -455,6 +484,16 @@ const irisOffersData = computed(() => {
             </div>
             
         </div>
+    </div>
+
+    <!-- Section: What customers see -->
+    <div v-if="triggerProduct || giftProduct" class="px-5 py-4 border-b border-gray-300">
+        <CustomerViewOffer
+            :offer="data.offer"
+            :offer_allowances="data.offer_allowances"
+            :currency_code="currency_code"
+            :simulation="offerSimulation"
+        />
     </div>
 
     <!-- Tabs: Customers / Orders -->

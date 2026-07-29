@@ -5,9 +5,9 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faBadgePercent } from '@fal'
 import { faCheckCircle } from '@fas'
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, ref, watch, watchEffect } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
-import { OfferAllowanceResource, OfferProduct, OfferResource } from '@/types/Catalogue/Offers'
+import { OfferAllowanceResource, OfferProduct, OfferResource, OfferSimulation } from '@/types/Catalogue/Offers'
 import { InputNumber } from 'primevue'
 
 library.add(faBadgePercent, faCheckCircle)
@@ -18,8 +18,10 @@ const props = defineProps<{
     currencyCode?: string
 }>()
 
+const simulation = defineModel<OfferSimulation | null>('simulation', { default: null })
+
 const locale = inject('locale', aikuLocaleStructure)
-const activeCurrencyCode = computed(() => props.currencyCode || 'GBP')
+const activeCurrencyCode = computed(() => props.currencyCode || '')
 
 const convertToFloat2 = (val: unknown) => {
     const num = parseFloat(String(val ?? 0))
@@ -111,6 +113,30 @@ const grossAmount = computed(() => {
 const savedAmount = computed(() => isReached.value ? convertToFloat2(grossAmount.value * percentageOff.value) : 0)
 
 const netAmount = computed(() => convertToFloat2(grossAmount.value - savedAmount.value))
+
+const simulatedQuantity = computed(() => {
+    if (isQuantityTrigger.value) {
+        return sanitizedCurrentValue.value
+    }
+
+    return unitPrice.value ? Math.max(Math.round(grossAmount.value / unitPrice.value), 1) : 0
+})
+
+watchEffect(() => {
+    simulation.value = {
+        mode: isQuantityTrigger.value ? 'quantity' : 'amount',
+        quantity: simulatedQuantity.value,
+        isQuantityExact: isQuantityTrigger.value,
+        freeUnits: 0,
+        percentageOff: isReached.value ? percentageOff.value : 0,
+        grossAmount: grossAmount.value,
+        netAmount: netAmount.value,
+        savedAmount: savedAmount.value,
+        meterCurrent: sanitizedCurrentValue.value,
+        meterTarget: targetValue.value,
+        isReached: isReached.value,
+    }
+})
 
 const formatValue = (value: number) => {
     if (isQuantityTrigger.value) {

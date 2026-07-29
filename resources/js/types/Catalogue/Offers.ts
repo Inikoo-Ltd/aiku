@@ -27,6 +27,20 @@ export interface OfferProduct {
     image: Image | null
 }
 
+export interface OfferSimulation {
+    mode: 'quantity' | 'amount'
+    quantity: number
+    isQuantityExact: boolean
+    freeUnits: number
+    percentageOff: number
+    grossAmount: number
+    netAmount: number
+    savedAmount: number
+    meterCurrent: number
+    meterTarget: number
+    isReached: boolean
+}
+
 export interface OfferGiftData {
     min_order_amount: number | null
     item_quantity: number | null
@@ -83,6 +97,10 @@ export interface OfferAllowanceResource {
     data: {
         percentage_off?: number
         steps?: OfferDiscountStep[]
+        product_id?: number
+        item_quantity?: number
+        free_quantity?: number
+        quantity?: number
         [key: string]: unknown
     } | null
     state: string | null
