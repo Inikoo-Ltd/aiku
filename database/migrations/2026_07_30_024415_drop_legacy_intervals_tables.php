@@ -9,6 +9,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
+    /**
+     * Dropping 67 tables in one transaction exhausts the lock table on Postgres
+     * instances with default max_locks_per_transaction (breaks CI dump generation).
+     * Each drop is idempotent, so no transaction is needed.
+     */
+    public $withinTransaction = false;
+
     public function up(): void
     {
         Schema::dropIfExists('asset_ordering_intervals');

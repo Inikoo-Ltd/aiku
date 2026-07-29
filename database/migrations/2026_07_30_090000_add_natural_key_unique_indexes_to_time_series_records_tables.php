@@ -10,6 +10,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 return new class () extends Migration {
+    /**
+     * 28 dedupes + partitioned unique index builds take too many locks for one
+     * transaction on default max_locks_per_transaction. Every statement is
+     * idempotent (IF NOT EXISTS, re-runnable dedupe), so no transaction needed.
+     */
+    public $withinTransaction = false;
+
     public function up(): void
     {
         foreach ($this->tables() as $table) {
