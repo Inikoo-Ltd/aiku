@@ -108,6 +108,7 @@ class UpdateStockDelivery extends OrgAction
 
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
     {
+        $this->stockDelivery = $stockDelivery;
         $this->initialisation($stockDelivery->organisation, $request);
 
         return $this->handle($stockDelivery, $this->validatedData);
