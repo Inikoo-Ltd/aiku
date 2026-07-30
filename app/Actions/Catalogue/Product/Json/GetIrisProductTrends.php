@@ -33,13 +33,15 @@ class GetIrisProductTrends extends IrisAction
     public const string ORDER_PRICE      = 'price';
     public const string ORDER_DISCOUNT   = 'discount';
 
-    public const string DEFAULT_PERIOD = '1d';
+    public const string DEFAULT_PERIOD = '3d';
 
     /**
      * Narrowest first: a period also acts as the entry point of the fallback chain below it.
      */
     private const array SALES_PERIOD_COLUMNS = [
-        '1d'  => 'sales_1d',
+        'tdy' => 'sales_tdy',
+        'ld'  => 'sales_ld',
+        '3d'  => 'sales_3d',
         '1w'  => 'sales_1w',
         '1m'  => 'sales_1m',
         '1q'  => 'sales_1q',
@@ -65,7 +67,7 @@ class GetIrisProductTrends extends IrisAction
 
     /**
      * The requested period followed by every wider one. Short periods are sparse: on a quiet day
-     * hardly any product has sales_1d, and ordering by it alone collapses the ranking onto the
+     * hardly any product has sales_3d, and ordering by it alone collapses the ranking onto the
      * tiebreakers, which reads as a fixed list rather than as trending products. Products with no
      * sales in the requested period are ranked by the next wider period instead.
      *
