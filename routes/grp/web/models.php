@@ -323,6 +323,7 @@ use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\CloneFamilyAndProductsFromMaster;
 use App\Actions\Masters\MasterAsset\CloneMasterAssetToOtherShop;
 use App\Actions\Masters\MasterAsset\DeleteImageFromMasterProduct;
 use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
@@ -557,6 +558,8 @@ Route::prefix('upcoming-transaction/{upcomingTransaction:id}')->name('upcoming_t
 });
 
 Route::patch('master-product-category/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product_category.update')->withoutScopedBindings();
+Route::patch('master-product-category/{masterProductCategory:id}/clone-family', CloneFamilyAndProductsFromMaster::class)->name('master_product_category.clone-to-child-shops')->withoutScopedBindings();
+
 Route::post('master-product-category/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_category_image.upload')->withoutScopedBindings();
 Route::patch('master-product-category/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
 Route::patch('master-product-category/{masterProductCategory:id}/master-sub-department/parent', UpdateMasterSubDepartmentsMasterDepartment::class)->name('master_product_category.master_sub_department.parent.update');

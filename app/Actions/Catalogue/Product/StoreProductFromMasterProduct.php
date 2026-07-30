@@ -73,7 +73,7 @@ class StoreProductFromMasterProduct extends OrgAction
                         'state'             => ProductStateEnum::ACTIVE,
                         'status'            => ProductStatusEnum::FOR_SALE,
                         'is_main'           => $isMain,
-                        'is_for_sale'       => data_get($modelData, 'is_for_sale', $masterAsset->status),
+                        'is_for_sale'       => data_get($modelData, 'is_for_sale', $masterAsset->is_for_sale),
                         'is_minion_variant' => !$isMain,
                     ];
 

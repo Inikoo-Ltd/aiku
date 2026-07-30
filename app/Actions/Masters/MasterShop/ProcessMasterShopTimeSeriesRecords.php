@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Masters\MasterShop;
 use App\Models\Masters\MasterShopTimeSeries;
 use App\Traits\BuildsInvoiceTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -54,6 +56,7 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(MasterShopTimeSeries $timeSeries, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.master_shop_id', $timeSeries->master_shop_id)
@@ -69,13 +72,11 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
 
             $metrics = $this->getMasterShopPeriodMetrics($timeSeries->master_shop_id, $periodFrom, $periodTo);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'master_shop_time_series_id'  => $timeSeries->id,
-                    'period'                      => $period,
-                    'frequency'                   => $timeSeries->frequency->singleLetter()
-                ],
-                [
+            $rows[] = [
+                'master_shop_time_series_id'  => $timeSeries->id,
+                'period'                      => $period,
+                'frequency'                   => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                         => $periodFrom,
                     'to'                           => $periodTo,
                     'sales_grp_currency_external'  => $result->sales_grp_currency_external,
@@ -86,16 +87,20 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
                     'orders'                       => $result->orders,
                     ...$metrics,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['master_shop_time_series_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(MasterShopTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(MasterShopTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
     {
+        $rows = [];
+
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
         foreach ($nonInvoicePeriods as $periodData) {
@@ -107,13 +112,11 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
                 continue;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'master_shop_time_series_id'  => $timeSeries->id,
-                    'period'                      => $periodData['period'],
-                    'frequency'                   => $timeSeries->frequency->singleLetter()
-                ],
-                [
+            $rows[] = [
+                'master_shop_time_series_id'  => $timeSeries->id,
+                'period'                      => $periodData['period'],
+                'frequency'                   => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
                     'sales_grp_currency_external' => 0,
@@ -124,8 +127,10 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
                     'orders'                      => 0,
                     ...$metrics,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 
     protected function getMasterShopPeriodMetrics(int $masterShopId, Carbon $periodFrom, Carbon $periodTo): array

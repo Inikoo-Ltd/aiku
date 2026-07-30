@@ -94,44 +94,6 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
             $processedPeriods[] = $period;
         }
 
-        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $shop, $from, $to, $processedPeriods)];
-
         $this->upsertTimeSeriesRecords($timeSeries, $rows, ['brand_time_series_id', 'shop_id', 'period', 'frequency']);
-    }
-
-    protected function periodsWithoutInvoicesRows(BrandTimeSeries $timeSeries, Shop $shop, string $from, string $to, array $processedPeriods): array
-    {
-        $rows = [];
-
-        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
-
-        foreach ($nonInvoicePeriods as $periodData) {
-            $rows[] = [
-                'brand_time_series_id' => $timeSeries->id,
-                'shop_id'              => $shop->id,
-                'period'               => $periodData['period'],
-                'frequency'            => $timeSeries->frequency->singleLetter(),
-                ...[
-                    'organisation_id'             => $shop->organisation_id,
-                    'from'                        => $periodData['from'],
-                    'to'                          => $periodData['to'],
-                    'sales_external'              => 0,
-                    'sales_org_currency_external' => 0,
-                    'sales_grp_currency_external' => 0,
-                    'sales_internal'              => 0,
-                    'sales_org_currency_internal' => 0,
-                    'sales_grp_currency_internal' => 0,
-                    'lost_revenue'                => 0,
-                    'lost_revenue_org_currency'   => 0,
-                    'lost_revenue_grp_currency'   => 0,
-                    'customers_invoiced'          => 0,
-                    'invoices'                    => 0,
-                    'refunds'                     => 0,
-                    'orders'                      => 0,
-                ]
-            ];
-        }
-
-        return $rows;
     }
 }

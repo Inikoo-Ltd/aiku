@@ -31,7 +31,7 @@ class UploadProgressResource extends JsonResource
         $upload = $this;
 
         return [
-            'action_type'  => 'Upload',
+            'action_type'       => 'Upload',
             'action_id'         => $upload->id,
             'id'                => $upload->id,
             'type'              => $upload->model,
@@ -44,7 +44,7 @@ class UploadProgressResource extends JsonResource
             'start_at'     => $upload->created_at,
             'end_at'       => $upload->uploaded_at,
             'last_updated' => $upload->updated_at,
-            'total'        => $upload->number_rows,//need
+            'total'        => $upload->number_rows,//need*
             'done'         => $upload->number_success + $upload->number_fails,//need
             'data'         => [
                 'type'           => $upload->model,
