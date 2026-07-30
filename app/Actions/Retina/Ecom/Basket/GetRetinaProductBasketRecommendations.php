@@ -7,7 +7,6 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Http\Resources\Catalogue\IrisProductBasketRecommendationResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -26,6 +25,10 @@ use Lorisleiva\Actions\ActionRequest;
  * products. The candidates are then diversified by family: only the best few of each family survive so
  * the block offers variety instead of a wall of near-identical products. When strict diversity leaves
  * too few products the cap per family is relaxed until the minimum is met.
+ *
+ * The co-purchase counts are the expensive part, so they are computed a single time: a pool of the
+ * top scored candidates is fetched in one query and the family diversification (including the widening
+ * fallback) runs in memory instead of re-scanning the transactions table for a second pass.
  */
 class GetRetinaProductBasketRecommendations extends RetinaAction
 {
@@ -33,6 +36,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
     public const int MIN_PRODUCTS = 6;
 
     public const int MAX_BASKET_PRODUCTS = 50;
+    public const int CANDIDATE_POOL      = 60;
 
     public const int MAX_PER_FAMILY         = 1;
     public const int MAX_PER_FAMILY_WIDENED = 3;
@@ -52,29 +56,9 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
         $preferCheaper  = ($modelData['prefer_cheaper'] ?? true) !== false;
         $referencePrice = $preferCheaper ? $this->getBasketReferencePrice($shop, $basketProductIds) : 0.0;
 
-        $recommendations = $this->getDiversifiedRecommendations(
-            $shop,
-            $basketProductIds,
-            $referencePrice,
-            $preferCheaper,
-            self::MAX_PER_FAMILY
-        );
+        $candidates = $this->getScoredCandidates($shop, $basketProductIds, $referencePrice, $preferCheaper);
 
-        if ($recommendations->count() >= self::MIN_PRODUCTS) {
-            return $recommendations;
-        }
-
-        /** @var array $widenedRecommendations */
-        $widenedRecommendations = $this->getDiversifiedRecommendations(
-            $shop,
-            $basketProductIds,
-            $referencePrice,
-            $preferCheaper,
-            self::MAX_PER_FAMILY_WIDENED,
-            $recommendations->pluck('id')->all()
-        );
-
-        return $recommendations->concat($widenedRecommendations)->take(self::MAX_PRODUCTS);
+        return $this->diversifyByFamily($candidates);
     }
 
     private function getBasketReferencePrice(Shop $shop, array $basketProductIds): float
@@ -85,49 +69,35 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
             ->max('price');
     }
 
-    private function getDiversifiedRecommendations(
-        Shop $shop,
-        array $basketProductIds,
-        float $referencePrice,
-        bool $preferCheaper,
-        int $maxPerFamily,
-        array $excludedProductIds = []
-    ): Collection {
-        $candidates = $this->getScoredCandidates($shop, $basketProductIds, $referencePrice, $preferCheaper, $excludedProductIds);
+    /**
+     * The pool already carries a per-family rank from the database. Strict diversity keeps the best of
+     * each family; if that leaves fewer than the minimum the runners-up (rank 2..N) top the list up.
+     * Everything happens over the in-memory pool, so there is no second database round-trip.
+     */
+    private function diversifyByFamily(Collection $candidates): Collection
+    {
+        $recommendations = $candidates
+            ->where('family_rank', '<=', self::MAX_PER_FAMILY)
+            ->take(self::MAX_PRODUCTS)
+            ->values();
 
-        $connection = $shop->getConnection();
+        if ($recommendations->count() >= self::MIN_PRODUCTS) {
+            return $recommendations;
+        }
 
-        $rankedCandidates = $connection->query()
-            ->fromSub($candidates, 'candidates')
-            ->select('candidates.*')
-            ->selectRaw(
-                'row_number() over ('
-                .'partition by candidates.family_id'
-                .' order by candidates.basket_score desc, candidates.co_orders desc, candidates.price asc, candidates.available_quantity desc, candidates.id'
-                .') as family_rank'
-            );
+        $widened = $candidates
+            ->whereNotIn('id', $recommendations->pluck('id')->all())
+            ->take(self::MAX_PRODUCTS - $recommendations->count());
 
-        $recommendations = $connection->query()
-            ->fromSub($rankedCandidates, 'recommendations')
-            ->where('family_rank', '<=', $maxPerFamily)
-            ->orderByDesc('basket_score')
-            ->orderByDesc('co_orders')
-            ->orderBy('price')
-            ->orderByDesc('available_quantity')
-            ->orderBy('id')
-            ->limit(self::MAX_PRODUCTS)
-            ->get();
-
-        return Product::hydrate($recommendations->map(fn ($recommendation) => (array) $recommendation)->all());
+        return $recommendations->concat($widened)->take(self::MAX_PRODUCTS)->values();
     }
 
     private function getScoredCandidates(
         Shop $shop,
         array $basketProductIds,
         float $referencePrice,
-        bool $preferCheaper,
-        array $excludedProductIds
-    ): Builder {
+        bool $preferCheaper
+    ): Collection {
         $coPurchase = $this->getCoPurchaseCounts($shop, $basketProductIds);
 
         $scoreExpression = '(?::float8 * ln(1 + co_purchase.co_orders))';
@@ -138,9 +108,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
             $scoreBindings = array_merge($scoreBindings, [self::WEIGHT_CHEAPER, $referencePrice, $referencePrice]);
         }
 
-        $excludedIds = array_values(array_unique(array_merge($basketProductIds, $excludedProductIds)));
-
-        return Product::query()
+        $scoredCandidates = Product::query()
             ->joinSub($coPurchase, 'co_purchase', 'co_purchase.product_id', '=', 'products.id')
             ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id')
             ->where('products.shop_id', $shop->id)
@@ -148,7 +116,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
             ->where('products.has_live_webpage', true)
             ->where('products.available_quantity', '>', 0)
             ->whereNotNull('products.price')
-            ->whereNotIn('products.id', $excludedIds)
+            ->whereNotIn('products.id', $basketProductIds)
             ->where(function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->where('products.is_minion_variant', false)
@@ -174,19 +142,51 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
                 'co_purchase.co_orders',
             ])
             ->selectRaw("($scoreExpression) as basket_score", $scoreBindings);
+
+        $connection = $shop->getConnection();
+
+        $rankedCandidates = $connection->query()
+            ->fromSub($scoredCandidates, 'candidates')
+            ->select('candidates.*')
+            ->selectRaw(
+                'row_number() over ('
+                .'partition by candidates.family_id'
+                .' order by candidates.basket_score desc, candidates.co_orders desc, candidates.price asc, candidates.available_quantity desc, candidates.id'
+                .') as family_rank'
+            );
+
+        $pool = $connection->query()
+            ->fromSub($rankedCandidates, 'recommendations')
+            ->where('family_rank', '<=', self::MAX_PER_FAMILY_WIDENED)
+            ->orderByDesc('basket_score')
+            ->orderByDesc('co_orders')
+            ->orderBy('price')
+            ->orderByDesc('available_quantity')
+            ->orderBy('id')
+            ->limit(self::CANDIDATE_POOL)
+            ->get();
+
+        return Product::hydrate($pool->map(fn ($candidate) => (array) $candidate)->all());
     }
 
+    /**
+     * The seed order ids are collapsed to a distinct set before the co-purchase join. Deduplicating
+     * them lets the planner drive a single index scan per order instead of re-walking the transaction
+     * rows once per matching basket item, which is where the previous self-join spent its time.
+     */
     private function getCoPurchaseCounts(Shop $shop, array $basketProductIds): QueryBuilder
     {
         $connection = $shop->getConnection();
 
+        $seedOrders = $connection->table('transactions')
+            ->where('model_type', 'Product')
+            ->whereIn('model_id', $basketProductIds)
+            ->whereNull('deleted_at')
+            ->select('order_id')
+            ->distinct();
+
         return $connection->table('transactions as co')
-            ->join('transactions as seed', function ($join) use ($basketProductIds) {
-                $join->on('seed.order_id', '=', 'co.order_id')
-                    ->where('seed.model_type', '=', 'Product')
-                    ->whereIn('seed.model_id', $basketProductIds)
-                    ->whereNull('seed.deleted_at');
-            })
+            ->joinSub($seedOrders, 'seed_orders', 'seed_orders.order_id', '=', 'co.order_id')
             ->where('co.model_type', 'Product')
             ->where('co.shop_id', $shop->id)
             ->whereNotIn('co.model_id', $basketProductIds)
