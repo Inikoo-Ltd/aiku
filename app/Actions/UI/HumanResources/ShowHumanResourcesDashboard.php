@@ -12,6 +12,7 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Leave\LeaveCategoryEnum;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\HumanResources\Leave\LeaveTypeEnum;
 use App\Models\HumanResources\Clocking;
@@ -44,12 +45,17 @@ class ShowHumanResourcesDashboard extends OrgAction
         $title = __('Human Resources');
         $today = Carbon::now()->startOfDay();
 
+        $routeParameters = $request->route()->originalParameters();
+        $hrStats         = $this->organisation->humanResourcesStats;
+
         $attendanceDate  = $this->resolveAttendanceDate($request, $today);
         $isToday         = $attendanceDate->isSameDay($today);
 
-        $attendance      = $this->getAttendance($attendanceDate);
-        $onLeaveCount    = $this->getOnLeaveCount($attendanceDate);
-        $presentCount    = $attendance->count();
+        $attendance       = $this->getAttendance($attendanceDate);
+        $onLeaveCount     = $this->getOnLeaveCount($attendanceDate);
+        $annualLeaveCount = $this->getLeaveCountByCategory($attendanceDate, [LeaveCategoryEnum::ANNUAL->value]);
+        $sickLeaveCount   = $this->getLeaveCountByCategory($attendanceDate, [LeaveCategoryEnum::MEDICAL->value]);
+        $presentCount     = $attendance->count();
         $lateCount       = $attendance->where('is_late', true)->count();
         $workingCount    = $this->organisation->humanResourcesStats->number_employees_state_working;
         $absentCount     = max(0, $workingCount - $presentCount - $onLeaveCount);
@@ -88,30 +94,52 @@ class ShowHumanResourcesDashboard extends OrgAction
                                         'elements[state]' => 'working'
                                     ]
                                 ],
-                                $request->route()->originalParameters()
+                                $routeParameters
                             )
                         ]
                     ],
                     [
                         'name'  => __('Working places'),
-                        'stat'  => $this->organisation->humanResourcesStats->number_workplaces,
+                        'stat'  => $hrStats->number_workplaces,
                         'color' => 'teal',
                         'icon'  => ['fal', 'fa-building'],
                         'route' => [
                             'name'       => 'grp.org.hr.workplaces.index',
-                            'parameters' => $request->route()->originalParameters()
+                            'parameters' => $routeParameters
                         ]
                     ],
                     [
                         'name'  => __('Responsibilities'),
-                        'stat'  => $this->organisation->humanResourcesStats->number_job_positions,
+                        'stat'  => $hrStats->number_job_positions,
                         'color' => 'purple',
                         'icon'  => ['fal', 'fa-sitemap'],
                         'route' => [
                             'name'       => 'grp.org.hr.job_positions.index',
-                            'parameters' => $request->route()->originalParameters()
+                            'parameters' => $routeParameters
                         ]
                     ],
+                    [
+                        'name'  => __('Clocking machines'),
+                        'stat'  => $hrStats->number_clocking_machines,
+                        'color' => 'blue',
+                        'icon'  => ['fal', 'fa-chess-clock'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.clocking_machines.index',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    [
+                        'name'  => __('Timesheets'),
+                        'stat'  => $hrStats->number_timesheets,
+                        'color' => 'amber',
+                        'icon'  => ['fal', 'fa-stopwatch'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.timesheets.index',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                ],
+                'attendanceStats' => [
                     [
                         'name'  => $isToday ? __('Present today') : __('Present'),
                         'stat'  => $presentCount,
@@ -119,10 +147,16 @@ class ShowHumanResourcesDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-user-check'],
                     ],
                     [
-                        'name'  => $isToday ? __('On leave today') : __('On leave'),
-                        'stat'  => $onLeaveCount,
+                        'name'  => $isToday ? __('Annual leave today') : __('Annual leave'),
+                        'stat'  => $annualLeaveCount,
                         'color' => 'blue',
                         'icon'  => ['fal', 'fa-umbrella-beach'],
+                    ],
+                    [
+                        'name'  => $isToday ? __('Sick leave today') : __('Sick leave'),
+                        'stat'  => $sickLeaveCount,
+                        'color' => 'teal',
+                        'icon'  => ['fal', 'fa-notes-medical'],
                     ],
                     [
                         'name'  => $isToday ? __('Late today') : __('Late'),
@@ -135,6 +169,32 @@ class ShowHumanResourcesDashboard extends OrgAction
                         'stat'  => $absentCount,
                         'color' => 'red',
                         'icon'  => ['fal', 'fa-user-slash'],
+                    ],
+                ],
+                'quickActions'  => [
+                    [
+                        'label' => __('Create employee'),
+                        'icon'  => ['fal', 'fa-user-plus'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.employees.create',
+                            'parameters' => $routeParameters,
+                        ],
+                    ],
+                    [
+                        'label' => __('Create clocking machine'),
+                        'icon'  => ['fal', 'fa-chess-clock'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.clocking_machines.index',
+                            'parameters' => $routeParameters,
+                        ],
+                    ],
+                    [
+                        'label' => __('Create working place'),
+                        'icon'  => ['fal', 'fa-building'],
+                        'route' => [
+                            'name'       => 'grp.org.hr.workplaces.create',
+                            'parameters' => $routeParameters,
+                        ],
                     ],
                 ],
                 'attendance'    => $attendance->values()->all(),
@@ -405,6 +465,22 @@ class ShowHumanResourcesDashboard extends OrgAction
             ->whereDate('end_date', '>=', $date->toDateString())
             ->distinct('employee_id')
             ->count('employee_id');
+    }
+
+    /**
+     * @param array<int, string> $categories Leave type categories (see LeaveCategoryEnum).
+     */
+    private function getLeaveCountByCategory(Carbon $date, array $categories): int
+    {
+        return Leave::query()
+            ->join('leave_types', 'leaves.leave_type_id', '=', 'leave_types.id')
+            ->where('leaves.organisation_id', $this->organisation->id)
+            ->where('leaves.status', LeaveStatusEnum::APPROVED)
+            ->whereDate('leaves.start_date', '<=', $date->toDateString())
+            ->whereDate('leaves.end_date', '>=', $date->toDateString())
+            ->whereIn('leave_types.category', $categories)
+            ->distinct('leaves.employee_id')
+            ->count('leaves.employee_id');
     }
 
     private function getBirthdaysThisMonth(Carbon $today): array
