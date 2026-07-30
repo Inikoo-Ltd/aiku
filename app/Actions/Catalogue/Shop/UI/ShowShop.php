@@ -15,6 +15,7 @@ use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithDashboardTableTabResolution;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
@@ -36,6 +37,7 @@ class ShowShop extends OrgAction
     use WithDashboardCurrencyTypeSettings;
     use WithDashboardIntervalOption;
     use WithDashboardSettings;
+    use WithDashboardTableTabResolution;
     use WithPerformanceDateResolution;
     use WithTabsBox;
     use GetPlatformLogo;
@@ -51,11 +53,7 @@ class ShowShop extends OrgAction
 
         $tabsNavigation = ShopDashboardSalesTableTabsEnum::navigation($shop);
         $validTabs  = array_keys($tabsNavigation);
-        $currentTab = Arr::get($userSettings, 'shop_dashboard_tab', Arr::first($validTabs));
-
-        if (! in_array($currentTab, $validTabs, true)) {
-            $currentTab = Arr::first($validTabs);
-        }
+        $currentTab = $this->resolveDashboardTableTab($validTabs, $userSettings, 'shop_dashboard_tab');
 
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
