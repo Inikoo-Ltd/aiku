@@ -470,7 +470,8 @@ const currentPage = ref(1);
             <Button 
                 :label="currentPage == 1 ? ctrans('Next') : ctrans('Save')" 
                 :type="'primary'"                 
-                :icon="currentPage == 1 ? faArrowRight : faFloppyDisk" 
+                :icon="currentPage == 1 ? undefined : faFloppyDisk" 
+                :iconRight="currentPage == 1 ? faArrowRight : undefined"
                 class="ml-auto" @click="() => {
                     if (currentPage == 1) {
                         currentPage = 2
