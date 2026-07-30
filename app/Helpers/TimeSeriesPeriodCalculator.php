@@ -28,7 +28,7 @@ class TimeSeriesPeriodCalculator
             TimeSeriesFrequencyEnum::WEEKLY => [
                 'periodFrom' => $date->copy()->startOfWeek(),
                 'periodTo'   => $date->copy()->endOfWeek(),
-                'period'     => $date->year . ' W' . str_pad($date->isoWeek(), 2, '0', STR_PAD_LEFT),
+                'period'     => $date->isoWeekYear . ' W' . str_pad($date->isoWeek(), 2, '0', STR_PAD_LEFT),
             ],
             TimeSeriesFrequencyEnum::DAILY => [
                 'periodFrom' => $date->copy()->startOfDay(),
@@ -57,8 +57,8 @@ class TimeSeriesPeriodCalculator
                 'period'     => $result->year . '-' . str_pad($result->month, 2, '0', STR_PAD_LEFT),
             ],
             TimeSeriesFrequencyEnum::WEEKLY => [
-                'periodFrom' => Carbon::create((int) $result->year)->week((int) $result->week)->startOfWeek(),
-                'periodTo'   => Carbon::create((int) $result->year)->week((int) $result->week)->endOfWeek(),
+                'periodFrom' => Carbon::now()->setISODate((int) $result->year, (int) $result->week)->startOfWeek(),
+                'periodTo'   => Carbon::now()->setISODate((int) $result->year, (int) $result->week)->endOfWeek(),
                 'period'     => $result->year . ' W' . str_pad($result->week, 2, '0', STR_PAD_LEFT),
             ],
             TimeSeriesFrequencyEnum::DAILY => [

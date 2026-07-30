@@ -19,7 +19,6 @@ class GetOrgStockFamilyShowcase
     public function handle(OrgStockFamily $orgStockFamily): array
     {
         $stats       = $orgStockFamily->stats;
-        $intervals   = $orgStockFamily->intervals;
         $stockFamily = $orgStockFamily->stockFamily;
         $stateIcon   = OrgStockFamilyStateEnum::stateIcon()[$orgStockFamily->state->value];
 
@@ -93,13 +92,6 @@ class GetOrgStockFamilyShowcase
                     'icon'  => 'fal fa-arrow-alt-circle-up',
                     'class' => 'text-blue-500',
                 ],
-            ],
-            'dispatched'      => [
-                'today'      => $intervals?->dispatched_tdy ?? 0,
-                'last_week'  => $intervals?->dispatched_lw ?? 0,
-                'last_month' => $intervals?->dispatched_lm ?? 0,
-                'last_year'  => $intervals?->dispatched_1y ?? 0,
-                'all'        => $intervals?->dispatched_all ?? 0,
             ],
         ];
     }

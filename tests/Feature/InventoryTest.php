@@ -1619,3 +1619,25 @@ test('UI Index and Show OrganisationStockHistory', function () {
 
     return $history;
 })->depends('create warehouse');
+
+test('org stock indexes use time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    createWarehouse();
+    $stocks = createStocks($this->group);
+    createOrgStocks($this->organisation, $stocks);
+
+    $organisation = $this->organisation;
+
+    $indexOrgStocks = \App\Actions\Inventory\OrgStock\UI\IndexOrgStocks::make();
+    (function () use ($organisation) {
+        $this->organisation = $organisation;
+    })->call($indexOrgStocks);
+
+    $indexOrgStocksWithNoProducts = \App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts::make();
+    (function () use ($organisation) {
+        $this->organisation = $organisation;
+    })->call($indexOrgStocksWithNoProducts);
+
+    expect($indexOrgStocks->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(1)
+        ->and($indexOrgStocksWithNoProducts->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(0);
+});

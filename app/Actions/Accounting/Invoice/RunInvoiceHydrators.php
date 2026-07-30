@@ -20,10 +20,6 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRevenue;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
 use App\Actions\Dropshipping\Platform\ProcessPlatformTimeSeriesRecords;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsInvoices;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSales;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesGrpCurrency;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsSalesOrgCurrency;
 use App\Actions\Masters\MasterShop\ProcessMasterShopTimeSeriesRecords;
 use App\Actions\Ordering\SalesChannel\ProcessSalesChannelTimeSeriesRecords;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
@@ -146,13 +142,7 @@ class RunInvoiceHydrators
 
         // --- Invoice Intervals ---
 
-        // --- Platform intervals ---
         if ($invoice->platform_id) {
-            $queueOrRun(ShopHydratePlatformSalesIntervalsInvoices::class, [$invoice->shop_id, $invoice->platform_id, $intervalsExceptHistorical, []]);
-            $queueOrRun(ShopHydratePlatformSalesIntervalsSales::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
-            $queueOrRun(ShopHydratePlatformSalesIntervalsSalesOrgCurrency::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
-            $queueOrRun(ShopHydratePlatformSalesIntervalsSalesGrpCurrency::class, [$invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, []]);
-
             // --- Platform Time Series ---
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $queueOrRun(ProcessPlatformTimeSeriesRecords::class, [

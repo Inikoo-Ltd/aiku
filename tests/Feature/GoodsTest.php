@@ -880,3 +880,17 @@ test('UI Create Stock Family', function () {
             );
     });
 });
+
+test('stock and stock family indexes use time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    createStocks($this->group);
+
+    $indexStocks = \App\Actions\Goods\Stock\UI\IndexStocks::make();
+    $group       = $this->group;
+    (function () use ($group) {
+        $this->group = $group;
+    })->call($indexStocks);
+
+    expect($indexStocks->handle($this->group, bucket: 'all')->total())->toBeGreaterThanOrEqual(1)
+        ->and(\App\Actions\Goods\StockFamily\UI\IndexStockFamilies::make()->handle($this->group, bucket: 'all')->total())->toBeGreaterThanOrEqual(0);
+});
