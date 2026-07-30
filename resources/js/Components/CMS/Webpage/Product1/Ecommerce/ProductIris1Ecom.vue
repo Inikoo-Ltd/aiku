@@ -116,7 +116,7 @@ const props = withDefaults(
     }>(),
     {}
 )
-console.log('product',props.fieldValue)
+
 const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
@@ -155,16 +155,6 @@ watch(
 
 
 const _popoverProfit = ref(null)
-
-// console.log('fdsfds', props.fieldValue.product)
-/* const getBestOffer = (offerId: string) => {
-    if (!offerId) {
-        return
-    }
-
-    return product.value?.offers_data?.offers?.[offerId] 
-} */
-
 const bestOffer = computed(() => {
   return getBestOffer(props.product?.offers_data)
 })
@@ -185,11 +175,6 @@ const showDiscount = computed(() => {
         !(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) &&
         bestOffer.value?.type === 'Category Quantity Ordered Order Interval'
     )
-})
-
-const showIntervalOffer = computed(() => {
-    return getBestOfferfromComposable(props.product?.product_offers_data)?.type
-        === 'Category Quantity Ordered Order Interval'
 })
 
 

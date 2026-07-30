@@ -167,18 +167,6 @@ onBeforeUnmount(() => {
             class="order-input-button"
             :classContainer="!hasInBasketList[selectedProduct.id]?.quantity_ordered && !hasInBasketList[selectedProduct.id]?.quantity_ordered_new ? 'relative' : 'relative'"
             :customer-data="hasInBasketList[selectedProduct.id]" v-model:product="selectedProduct">
-            <!-- <template v-if="isMobile" #qty-add-button="{ data }">
-                <div v-if="!data.customer.quantity_ordered && !data.customer.quantity_ordered_new">
-                    <button @click="data.onAddToBasket(data.product, 1)" :disabled="data.isLoadingSubmitQuantityProduct"
-                        class="rounded-full option-primary bg-gray-800 hover:bg-green-700
-                       text-gray-300 h-10 w-10 flex items-center justify-center
-                       transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        v-tooltip="trans('Add to basket')">
-                        <LoadingIcon v-if="data.isLoadingSubmitQuantityProduct" class="text-gray-600" />
-                        <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width />
-                    </button>
-                </div>
-            </template> -->
             <template #qty-add-button="{ data }">
                 <div></div>
             </template>
