@@ -5,11 +5,26 @@
   -->
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue"
+import { ref, onMounted, onBeforeUnmount, nextTick, watch, computed } from "vue"
 
 const props = defineProps<{
     text: string
 }>()
+
+const escapeHtml = (value: string) =>
+    value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+
+const formattedText = computed(() =>
+    escapeHtml(props.text ?? "").replace(
+        /\*\*(?=\S)([\s\S]*?\S)\*\*/g,
+        '<strong class="font-semibold text-gray-900">$1</strong>'
+    )
+)
 
 const expanded = ref(false)
 const isOverflowing = ref(false)
@@ -57,9 +72,8 @@ watch(() => props.text, () => {
             ref="textRef"
             class="text-sm text-gray-700 whitespace-pre-line"
             :class="{ 'line-clamp-4': !expanded }"
-        >
-            {{ text }}
-        </p>
+            v-html="formattedText"
+        />
 
         <button
             v-if="isOverflowing || expanded"
