@@ -24,7 +24,7 @@ class UpdateVolumeGrOfferFromMaster
     /**
      * @throws \Throwable
      */
-    public function handle(MasterProductCategory $masterProductCategory): array
+    public function handle(MasterProductCategory $masterProductCategory, ?array $shopIds = null): array
     {
         $masterProductCategory->refresh();
         $this->updatedOffersCount     = 0;
@@ -40,9 +40,13 @@ class UpdateVolumeGrOfferFromMaster
             ];
         }
 
-        DB::transaction(function () use ($masterProductCategory) {
-
-            foreach ($masterProductCategory->productCategories as $productCategory) {
+        DB::transaction(function () use ($masterProductCategory, $shopIds) {
+            foreach (
+                $masterProductCategory
+                    ->productCategories()
+                    ->when($shopIds, fn ($q) => $q->whereIn('shops.id', $shopIds))
+                    ->get() as $productCategory
+            ) {
                 if (!$productCategory->follow_master_gr) {
                     continue;
                 }

@@ -12,8 +12,10 @@ use App\Actions\Catalogue\ProductCategory\CloneProductCategoryImagesFromMaster;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Translations\TranslateModel;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithVolGrDiscount;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -31,16 +33,20 @@ class StoreFamilyFromMasterFamily extends OrgAction
      */
     public function handle(MasterProductCategory $masterFamily, array $modelData): void
     {
-        $activeShops = $masterFamily->masterShop->shops()->where('state', ShopStateEnum::OPEN)->get();
+        $activeShops = $masterFamily
+            ->masterShop
+            ->shops()
+            ->where('state', ShopStateEnum::OPEN)
+            ->when(
+                isset($modelData['shop_family']),
+                fn ($q) => $q->whereIn('shops.id', array_keys($modelData['shop_family']))
+            )
+            ->get();
 
         if ($activeShops) {
             /** @var Shop $shop */
             foreach ($activeShops as $shop) {
-                if (isset($modelData['shop_family']) && !array_key_exists($shop->id, $modelData['shop_family'])) {
-                    continue;
-                }
-
-                $shopProductData = isset($modelData['shop_family'][$shop->id]) ? $modelData['shop_family'][$shop->id] : [];
+                $shopProductData = data_get($modelData, "shop_family.{$shop->id}");
                 $createWebpage   = $shopProductData['create_webpage'] ?? true;
 
                 $subDepartment = null;
@@ -64,8 +70,8 @@ class StoreFamilyFromMasterFamily extends OrgAction
                     'type'                       => ProductCategoryTypeEnum::FAMILY,
                     'master_product_category_id' => $masterFamily->id,
                     'trade_unit_family_id'       => $masterFamily->trade_unit_family_id,
+                    'faq'                        => $masterFamily->faq,
                 ];
-
 
                 $family = ProductCategory::where('shop_id', $shop->id)
                     ->whereRaw("lower(code) = lower(?)", [$masterFamily->code])
@@ -104,9 +110,14 @@ class StoreFamilyFromMasterFamily extends OrgAction
                 CloneProductCategoryImagesFromMaster::run($family);
                 TranslateModel::dispatch(
                     model: $family,
-                    translationData: Arr::only($data, ['name', 'description', 'description_title', 'description_extra']),
+                    translationData: Arr::only($data, ['name', 'description', 'description_title', 'description_extra', 'faq']),
                     overwrite: true
                 );
+
+                if ($masterFamily->has_gr_vol_discount) {
+                    UpdateVolumeGrOfferFromMaster::run($masterFamily, [$family->id]);
+                    MasterShopHydrateMasterFamiliesWithVolGrDiscount::dispatch($masterFamily->masterShop);
+                }
             }
         }
     }
