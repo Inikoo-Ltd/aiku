@@ -61,6 +61,7 @@ class GetProductDetail extends IrisAction
                     'percentage_off_label' => percentage($percentageOff, 1),
                     'price'                => $discountedPrice,
                     'price_per_unit'       => $pricePerUnit,
+                    'is_popular'           => (bool)Arr::get($step, 'is_popular', false),
                 ];
             })
             ->values()
@@ -68,6 +69,8 @@ class GetProductDetail extends IrisAction
 
         return [
             'label' => $offer->label ?? $offer->name,
+            'unit'  => $product->unit,
+            'units' => (int)$product->units,
             'steps' => $tiers,
         ];
     }
