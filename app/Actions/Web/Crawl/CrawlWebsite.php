@@ -154,6 +154,11 @@ class CrawlWebsite
     protected function onCrawledUrl(string $url, CrawlResponse $response, CrawlProgress $progress): void
     {
         echo "[$progress->urlsProcessed/$progress->urlsFound] $url\n";
+
+        if ($progress->urlsProcessed % 100 !== 0) {
+            return;
+        }
+
         $this->crawl->update(
             [
                 'urls_processed' => $progress->urlsProcessed,
