@@ -24,9 +24,9 @@ import { useFormatTime, useSecondsToMS } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight } from "@fal"
+import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical } from "@fal"
 
-library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight)
+library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical)
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 interface AttendanceRow {
@@ -64,6 +64,12 @@ interface StatCard {
 	route?: { name: string; parameters: Record<string, unknown> }
 }
 
+interface QuickAction {
+	label: string
+	icon: [string, string]
+	route: { name: string; parameters: Record<string, unknown> }
+}
+
 interface LeaveOverviewDay {
 	label: string
 	count: number
@@ -98,6 +104,8 @@ const props = defineProps<{
 	title: string
 	pageHead: object
 	stats: StatCard[]
+	attendanceStats: StatCard[]
+	quickActions: QuickAction[]
 	attendance: AttendanceRow[]
 	attendanceDate: AttendanceDate
 	birthdays: BirthdayRow[]
@@ -228,31 +236,67 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead"></PageHeading>
 
-	<div class="grid grid-cols-2 gap-4 px-4 pt-4 md:grid-cols-4 xl:grid-cols-7">
-		<component
-			:is="card.route ? Link : 'div'"
-			v-for="card in stats"
-			:key="card.name"
-			:href="card.route ? route(card.route.name, card.route.parameters) : undefined"
-			class="group flex flex-col gap-3 overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
-			:class="{ 'cursor-pointer': card.route }">
-			<div class="flex items-center justify-between">
+	<!-- Left: row 1 (5 overview) + row 2 (4 attendance) · Right: Quick actions spanning both rows -->
+	<div class="flex flex-col gap-4 px-4 pt-4 xl:flex-row xl:items-stretch">
+		<div class="flex flex-1 flex-col gap-4">
+			<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+				<component
+					:is="card.route ? Link : 'div'"
+					v-for="card in stats"
+					:key="card.name"
+					:href="card.route ? route(card.route.name, card.route.parameters) : undefined"
+					class="group flex flex-col gap-3 overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100 transition"
+					:class="card.route ? 'cursor-pointer hover:shadow-md' : ''">
+					<div class="flex items-center justify-between">
+						<div
+							class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+							:class="iconColors[card.color]?.bg ?? 'bg-gray-100'">
+							<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-500'" fixed-width />
+						</div>
+						<FontAwesomeIcon
+							v-if="card.route"
+							:icon="['fal', 'fa-arrow-right']"
+							class="text-gray-300 opacity-0 transition group-hover:opacity-100"
+							fixed-width />
+					</div>
+					<div>
+						<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
+						<dt class="mt-0.5 truncate text-sm font-medium text-gray-500">{{ card.name }}</dt>
+					</div>
+				</component>
+			</div>
+
+			<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
 				<div
-					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-					:class="iconColors[card.color]?.bg ?? 'bg-gray-100'">
-					<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-500'" fixed-width />
+					v-for="card in attendanceStats"
+					:key="card.name"
+					class="flex flex-col gap-3 overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100">
+					<div
+						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+						:class="iconColors[card.color]?.bg ?? 'bg-gray-100'">
+						<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-500'" fixed-width />
+					</div>
+					<div>
+						<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
+						<dt class="mt-0.5 truncate text-sm font-medium text-gray-500">{{ card.name }}</dt>
+					</div>
 				</div>
-				<FontAwesomeIcon
-					v-if="card.route"
-					:icon="['fal', 'fa-arrow-right']"
-					class="text-gray-300 opacity-0 transition group-hover:opacity-100"
-					fixed-width />
 			</div>
-			<div>
-				<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
-				<dt class="mt-0.5 truncate text-sm font-medium text-gray-500">{{ card.name }}</dt>
+		</div>
+
+		<div class="flex shrink-0 flex-col overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100 xl:w-64">
+			<h3 class="mb-2.5 text-sm font-semibold text-gray-700">{{ trans("Quick actions") }}</h3>
+			<div class="flex flex-col gap-2">
+				<Link
+					v-for="action in quickActions"
+					:key="action.label"
+					:href="route(action.route.name, action.route.parameters)"
+					class="flex items-center gap-2.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100 hover:text-indigo-900">
+					<FontAwesomeIcon :icon="action.icon" class="text-indigo-500" fixed-width />
+					{{ action.label }}
+				</Link>
 			</div>
-		</component>
+		</div>
 	</div>
 
 	<!-- Today's attendance (full width) -->

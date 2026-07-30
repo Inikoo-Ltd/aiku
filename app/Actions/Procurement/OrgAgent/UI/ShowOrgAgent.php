@@ -12,6 +12,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\UI\Procurement\OrgAgentTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
@@ -25,6 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowOrgAgent extends OrgAction
 {
     use WithOrgAgentSubNavigation;
+    use WithAgentOrganisation;
+
     public function handle(OrgAgent $orgAgent): OrgAgent
     {
         return $orgAgent;
@@ -41,6 +44,7 @@ class ShowOrgAgent extends OrgAction
     public function asController(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): RedirectResponse|OrgAgent
     {
         $this->initialisation($organisation, $request)->withTab(OrgAgentTabsEnum::values());
+        $this->authorizeProcurementRecord($orgAgent);
 
         return $this->handle($orgAgent);
     }
@@ -49,6 +53,8 @@ class ShowOrgAgent extends OrgAction
     {
         $this->maya   = true;
         $this->initialisation($organisation, $request)->withTab(OrgAgentTabsEnum::values());
+        $this->authorizeProcurementRecord($orgAgent);
+
         return $this->handle($orgAgent);
     }
 
