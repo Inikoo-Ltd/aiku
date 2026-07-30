@@ -16,7 +16,6 @@ use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\AssetTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
 use App\Traits\UpsertsTimeSeriesRecords;
-use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -65,6 +64,8 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
         $processedPeriods = [];
         $rows             = [];
 
+        $statsByPeriod = $this->getPortfolioStatsByPeriod($timeSeries->asset_id, $timeSeries->frequency, $from, $to);
+
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where('asset_id', $timeSeries->asset_id)
             ->where('date', '>=', $from)
@@ -76,7 +77,7 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $metrics = $this->getPortfolioStats($timeSeries->asset_id, $periodFrom, $periodTo);
+            $metrics = [...$this->zeroPortfolioStats(), ...($statsByPeriod[$period]['metrics'] ?? [])];
 
             $rows[] = [
                 'asset_time_series_id' => $timeSeries->id,
@@ -100,19 +101,21 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
             $processedPeriods[] = $period;
         }
 
-        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $statsByPeriod, $processedPeriods)];
 
         $this->upsertTimeSeriesRecords($timeSeries, $rows, ['asset_time_series_id', 'period', 'frequency']);
     }
 
-    protected function periodsWithoutInvoicesRows(AssetTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
+    protected function periodsWithoutInvoicesRows(AssetTimeSeries $timeSeries, array $statsByPeriod, array $processedPeriods): array
     {
         $rows = [];
 
-        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+        foreach ($statsByPeriod as $period => $periodData) {
+            if (in_array($period, $processedPeriods)) {
+                continue;
+            }
 
-        foreach ($nonInvoicePeriods as $periodData) {
-            $metrics = $this->getPortfolioStats($timeSeries->asset_id, $periodData['from'], $periodData['to']);
+            $metrics = [...$this->zeroPortfolioStats(), ...$periodData['metrics']];
 
             $hasActivity = collect($metrics)->some(fn ($value) => $value != 0 && $value !== null);
 
@@ -122,7 +125,7 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 
             $rows[] = [
                 'asset_time_series_id' => $timeSeries->id,
-                'period'               => $periodData['period'],
+                'period'               => $period,
                 'frequency'            => $timeSeries->frequency->singleLetter(),
                 ...[
                     'from'                        => $periodData['from'],
@@ -143,30 +146,32 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
         return $rows;
     }
 
-    protected function getPortfolioStats(int $assetId, Carbon $periodFrom, Carbon $periodTo): array
+    protected function getPortfolioStatsByPeriod(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): array
     {
-        $portfolioStats = [
+        $asset = Asset::on('aiku_no_sticky')->with('shop')->find($assetId);
+
+        if (!$asset || $asset->shop->type != ShopTypeEnum::DROPSHIPPING || !$asset->product) {
+            return [];
+        }
+
+        $query = DB::connection('aiku_no_sticky')->table('portfolios')
+            ->where('item_type', 'Product')
+            ->where('item_id', $asset->product->id)
+            ->where('last_added_at', '>=', $from)
+            ->where('last_added_at', '<=', $to)
+            ->whereNull('last_removed_at');
+
+        return $this->mergeMetricsByPeriod([], $query, $frequency, 'last_added_at', [
+            DB::raw('COUNT(DISTINCT customer_id) as dropshippers'),
+            DB::raw('COUNT(id) as listings'),
+        ]);
+    }
+
+    protected function zeroPortfolioStats(): array
+    {
+        return [
             'dropshippers' => 0,
             'listings'     => 0,
         ];
-
-        $asset = Asset::on('aiku_no_sticky')->find($assetId);
-        if ($asset && $asset->shop->type == ShopTypeEnum::DROPSHIPPING) {
-            $result = DB::connection('aiku_no_sticky')->table('portfolios')
-                ->selectRaw('COUNT(id) as total_listed, COUNT(DISTINCT customer_id) as total_customers')
-                ->where('item_type', 'Product')
-                ->where('item_id', $asset->product->id)
-                ->where('last_added_at', '>=', $periodFrom)
-                ->where('last_added_at', '<=', $periodTo)
-                ->whereNull('last_removed_at')
-                ->first();
-
-            $portfolioStats = [
-                'dropshippers' => $result->total_customers ?? 0,
-                'listings'     => $result->total_listed ?? 0,
-            ];
-        }
-
-        return $portfolioStats;
     }
 }
