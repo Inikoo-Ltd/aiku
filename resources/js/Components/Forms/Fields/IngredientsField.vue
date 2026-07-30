@@ -19,9 +19,11 @@ const props = defineProps<{
         parseRoute: routeType
         [key: string]: any
     }
+    submit?: () => void
 }>()
 
 const localOptions = ref([...(props.options ?? [])])
+const selectRemountKey = ref(0)
 const isModalOpen = ref(false)
 const pastedText = ref("")
 const preview = ref<ParsedIngredient[] | null>(null)
@@ -54,7 +56,9 @@ const parse = async (commit: boolean, replace = false) => {
         }
 
         props.form[props.fieldName] = [...selected]
+        selectRemountKey.value++
         closeModal()
+        props.submit?.()
     } catch (error: any) {
         notify({
             title: trans("Something went wrong"),
@@ -76,6 +80,7 @@ const closeModal = () => {
 <template>
     <div>
         <SelectInfiniteScroll
+            :key="selectRemountKey"
             :form="form"
             :fieldName="fieldName"
             :options="localOptions"
@@ -145,11 +150,13 @@ const closeModal = () => {
                     <template v-else>
                         <Button
                             type="tertiary"
+                            icon="fad fa-save"
                             :label="trans('Replace all')"
                             :loading="isLoading"
                             @click="parse(true, true)"
                         />
                         <Button
+                            icon="fad fa-save"
                             :label="trans('Add to current')"
                             :loading="isLoading"
                             @click="parse(true)"
