@@ -28,6 +28,7 @@ import Pin from '@/Components/Forms/Fields/Pin.vue'
 import GeneratePassword from '@/Components/Forms/Fields/GeneratePassword.vue'
 import TaxNumber from '@/Components/Forms/Fields/TaxNumber.vue'
 import EditorHtml from '@/Components/Forms/Fields/EditorHtml.vue'
+import EditorV2Field from '@/Components/Forms/Fields/EditorV2Field.vue'
 import StructureDataWebsite from '@/Components/Forms/Fields/StructureDataWebsite.vue'
 import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll.vue'
 import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
@@ -74,6 +75,7 @@ import InputJsonByForm from '@/Components/Forms/Fields/InputJsonByForm.vue'
 import VariantsField from '@/Components/Forms/Fields/VariantsField.vue'
 import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
+import PasskeysManager from '@/Components/Forms/Fields/PasskeysManager.vue'
 import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
@@ -93,6 +95,8 @@ import InputFaqShop from '@/Components/Forms/Fields/InputFaqShop.vue'
 import TagsInput from '@/Components/Forms/Fields/TagsInput.vue'
 import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
 import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
+import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
+import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -116,6 +120,7 @@ export const componentsList: { [key: string]: Component } = {
     'textEditor': TextEditor,
     'toggle': Toggle,
     'toggle2fa': ToggleState2FA,
+    'passkeys': PasskeysManager,
     'jobPosition': JobPosition,
     'senderEmail': SenderEmail,
     'employeePosition': EmployeePosition,
@@ -140,6 +145,7 @@ export const componentsList: { [key: string]: Component } = {
     'pin': Pin,
     'tax_number': TaxNumber,
     'editor': EditorHtml,
+    'editor_v2': EditorV2Field,
     'structure_data_website': StructureDataWebsite,
     'poll_type_select': PollTypeSelect,
     'toggle_state_webpage': ToggleStateWebpage,
@@ -187,6 +193,8 @@ export const componentsList: { [key: string]: Component } = {
     'tags': TagsInput,
     'banned-countries': BannedCountries,
 	field_group: FieldGroup,
+    'multiple_price_currency' : MultiplePriceCurrency,
+    'master_shop_price_exchanges' : MasterShopPriceExchanges
 }
 
 export const getComponent = (componentName: string) => {

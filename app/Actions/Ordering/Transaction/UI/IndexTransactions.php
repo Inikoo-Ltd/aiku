@@ -139,7 +139,9 @@ class IndexTransactions extends OrgAction
             $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
 
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
+            if ($parent instanceof Order && $parent->deliveryNotes()->exists()) {
+                $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
+            }
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             if (
                 $parent instanceof Order

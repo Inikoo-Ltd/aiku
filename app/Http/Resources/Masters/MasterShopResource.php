@@ -10,6 +10,7 @@
 namespace App\Http\Resources\Masters;
 
 use App\Http\Resources\HasSelfCall;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterShop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -128,10 +129,31 @@ class MasterShopResource extends JsonResource
             ];
         }
 
+        $currencies = Currency::whereIn('code', array_keys($masterShop->price_exchanges ?? []))
+            ->get()->keyBy('code');
+
+        $priceExchanges = collect($masterShop->price_exchanges ?? [])
+            ->map(function (array $exchangeData, string $currencyCode) use ($currencies) {
+                $currency = $currencies->get($currencyCode);
+
+                return [
+                    'code'     => $currencyCode,
+                    'name'     => $currency?->name,
+                    'symbol'   => $currency?->symbol,
+                    'is_major' => (bool)($exchangeData['is_major'] ?? false),
+                    'major'    => $exchangeData['major'] ?? null,
+                    'exchange' => $exchangeData['exchange'] ?? null,
+                ];
+            })
+            ->sortBy([['is_major', 'desc'], ['code', 'asc']])
+            ->values()
+            ->all();
+
         return [
-            'slug'     => $this->slug,
-            'code'     => $this->code,
-            'name'     => $this->name,
+            'slug'            => $this->slug,
+            'code'            => $this->code,
+            'name'            => $this->name,
+            'price_exchanges' => $priceExchanges,
             'statsBox' => array_filter([
                 [
                     'label' => __('Master Departments'),

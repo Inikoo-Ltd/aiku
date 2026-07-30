@@ -48,6 +48,7 @@ use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Iris\Reviews\FetchIrisReviewsInWebpage;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
+use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
 use App\Actions\Reviews\Iris\GetIrisReviews;
@@ -69,6 +70,8 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 
 
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
+    Route::get('zentrada-web-api', ZentradaWebApi::class)->name('zentrada_web_api');
+
     Route::get('basket-transaction-product-data/{transaction:id}', GetIrisBasketTransactionProductData::class)->name('basket_transaction_product_data')->whereNumber('transaction');
 
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');

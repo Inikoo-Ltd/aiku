@@ -37,7 +37,7 @@ class ShowIrisProduct extends IrisAction
                         'icon'  => ['fal', 'fa-cube'],
                         'title' => __('Product'),
                     ],
-                    'iconRight' => $product->state->stateIcon()[$product->state->value],
+                   /*  'iconRight' => $product->state->stateIcon()[$product->state->value], */
                 ],
                 'mini_breadcrumbs' => array_filter([
                     $product->department ? [

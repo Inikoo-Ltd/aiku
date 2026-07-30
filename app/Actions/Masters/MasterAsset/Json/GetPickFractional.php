@@ -8,14 +8,14 @@
 
 namespace App\Actions\Masters\MasterAsset\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetPickFractional extends GrpAction
+class GetPickFractional extends OrgAction
 {
     public function asController(ActionRequest $request): array
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle();
     }

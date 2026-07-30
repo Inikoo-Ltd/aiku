@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateParents;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -18,7 +18,7 @@ use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
-class AttachMasterCollectionToModel extends GrpAction
+class AttachMasterCollectionToModel extends OrgAction
 {
     public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection, bool $attachChildren = true): MasterCollection
     {
@@ -89,14 +89,14 @@ class AttachMasterCollectionToModel extends GrpAction
     public function action(MasterShop|MasterProductCategory $parent, MasterCollection $collection): MasterCollection
     {
         $this->asAction = true;
-        $this->initialisation($parent->group, []);
+        $this->initialisationFromGroup($parent->group, []);
 
         return $this->handle($parent, $collection);
     }
 
     public function asController(MasterProductCategory $masterProductCategory, MasterCollection $masterCollection): MasterCollection
     {
-        $this->initialisation($masterProductCategory->group, []);
+        $this->initialisationFromGroup($masterProductCategory->group, []);
 
         return $this->handle($masterProductCategory, $masterCollection);
     }

@@ -23,6 +23,7 @@ use App\Actions\Billables\Rental\UpdateRental;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
@@ -252,6 +253,24 @@ use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
+use App\Actions\GoodsIn\StockDelivery\DeleteStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UndispatchStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UnreceiveStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\FinishStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\DistributeStockDeliveryExtraCost;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToReadyToShipStockDeliveryItem;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Brand\AttachBrandToMultipleModel;
@@ -275,8 +294,12 @@ use App\Actions\Helpers\Translations\Translate;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\GenerateClockingMachineQrCode;
+use App\Actions\HumanResources\ClockingMachine\SetClockingMachineKioskToken;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\RegenerateClockingMachineQRCodeHash;
+use App\Actions\HumanResources\ClockingMachine\ToggleClockingMachineQRCodeActive;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachineQRCode;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\DeleteClockingMachineCoordinatePolicy;
 use App\Actions\HumanResources\ClockingMachineCoordinatePolicy\StoreClockingMachineCoordinatePolicy;
@@ -300,6 +323,7 @@ use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\CloneFamilyAndProductsFromMaster;
 use App\Actions\Masters\MasterAsset\CloneMasterAssetToOtherShop;
 use App\Actions\Masters\MasterAsset\DeleteImageFromMasterProduct;
 use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
@@ -307,6 +331,8 @@ use App\Actions\Masters\MasterAsset\RepairMasterAssetTradeUnitsToChildren;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetImageAlt;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetIndex;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
@@ -337,7 +363,9 @@ use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryTransla
 use App\Actions\Masters\MasterProductCategory\UpdateMasterSubDepartmentsMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UploadImagesToMasterProductCategory;
+use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
+use App\Actions\Masters\MasterShop\UpdateMasterShopPriceExchange;
 use App\Actions\Masters\MasterVariant\StoreMasterVariant;
 use App\Actions\Masters\MasterVariant\UpdateMasterVariant;
 use App\Actions\Ordering\Order\StoreOrder;
@@ -346,14 +374,16 @@ use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
+use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
-use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToNotReceived;
-use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSettled;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
+use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Production\Artefact\ImportArtefact;
@@ -422,6 +452,7 @@ use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
+use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
@@ -494,6 +525,17 @@ Route::prefix('clocking-machine-coordinate-policy-rule')->name('clocking-machine
     Route::delete('{policyRule:id}', DeleteClockingMachineCoordinatePolicyRule::class)->name('delete');
 });
 
+Route::prefix('clocking-machine-qr-code')->name('clocking_machine_qr_code.')->group(function () {
+    Route::patch('{clockingMachineQRCode:id}', UpdateClockingMachineQRCode::class)->name('update');
+    Route::patch('{clockingMachineQRCode:id}/toggle-active', ToggleClockingMachineQRCodeActive::class)->name('toggle_active');
+    Route::patch('{clockingMachineQRCode:id}/regenerate-hash', RegenerateClockingMachineQRCodeHash::class)->name('hash.regenerate');
+});
+
+
+Route::prefix('shipping-zone-schema')->name('shipping_zone_schema.')->group(function () {
+    Route::patch('{shippingZoneSchema:id}', UpdateShippingZoneSchema::class)->name('update');
+});
+
 Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
     Route::post('{shippingZoneSchema:id}/create', StoreShippingZone::class)->name('create');
     Route::patch('{shippingZone:id}', UpdateShippingZone::class)->name('update');
@@ -516,6 +558,8 @@ Route::prefix('upcoming-transaction/{upcomingTransaction:id}')->name('upcoming_t
 });
 
 Route::patch('master-product-category/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product_category.update')->withoutScopedBindings();
+Route::patch('master-product-category/{masterProductCategory:id}/clone-family', CloneFamilyAndProductsFromMaster::class)->name('master_product_category.clone-to-child-shops')->withoutScopedBindings();
+
 Route::post('master-product-category/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_category_image.upload')->withoutScopedBindings();
 Route::patch('master-product-category/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
 Route::patch('master-product-category/{masterProductCategory:id}/master-sub-department/parent', UpdateMasterSubDepartmentsMasterDepartment::class)->name('master_product_category.master_sub_department.parent.update');
@@ -540,8 +584,11 @@ Route::name('stock.')->prefix('/stock')->group(function () {
     Route::patch('/{stock:id}', UpdateStock::class)->name('update');
 });
 
+Route::post('master-shop', StoreMasterShop::class)->name('master_shop.store');
+
 Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
     Route::patch('/', UpdateMasterShop::class)->name('update');
+    Route::patch('price-exchange', UpdateMasterShopPriceExchange::class)->name('price_exchange.update');
     Route::post('master-department', StoreMasterDepartment::class)->name('master_department.store');
     Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
     Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
@@ -577,6 +624,7 @@ Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(
 
 Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
     Route::patch('update', UpdateMasterAsset::class)->name('update');
+    Route::patch('update-prices', UpdateMasterAssetPrices::class)->name('prices.update');
     Route::patch('repair-trade-units', RepairMasterAssetTradeUnitsToChildren::class)->name('repair_mismatch_trade_units');
     Route::patch('update-images', UpdateMasterProductImages::class)->name('update_images');
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
@@ -585,6 +633,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
 });
 
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
+Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::class)->name('master_asset.prices.bulk_update');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');
 
@@ -1054,6 +1103,8 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
 });
 
+Route::patch('website/{website:id}/bulk-offline-webpages', SetWebpageOfflineBulk::class)->name('webpage.set_offline_bulk');
+
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::patch('', UpdateRedirect::class)->name('update');
     Route::delete('', DeleteRedirect::class)->name('delete');
@@ -1164,8 +1215,28 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
 });
 
 Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->group(function () {
+    Route::patch('update', UpdateStockDelivery::class)->name('update');
+    Route::patch('dispatch', DispatchStockDelivery::class)->name('dispatch');
+    Route::patch('undispatch', UndispatchStockDelivery::class)->name('undispatch');
+    Route::patch('receive', ReceiveStockDelivery::class)->name('receive');
+    Route::patch('unreceive', UnreceiveStockDelivery::class)->name('unreceive');
+    Route::patch('cancel', CancelStockDelivery::class)->name('cancel');
+    Route::patch('start-costing', StartStockDeliveryCosting::class)->name('start-costing');
+    Route::patch('finish-costing', FinishStockDeliveryCosting::class)->name('finish-costing');
+    Route::patch('distribute-extra-cost', DistributeStockDeliveryExtraCost::class)->name('distribute-extra-cost');
+    Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inStockDelivery'])->name('attachment.detach')->withoutScopedBindings();
+});
+
+Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryItem:id}')->group(function () {
+    Route::patch('confirm', UpdateStateToConfirmedStockDeliveryItem::class)->name('confirm')->withoutScopedBindings();
+    Route::patch('ready-to-ship', UpdateStateToReadyToShipStockDeliveryItem::class)->name('ready-to-ship')->withoutScopedBindings();
+    Route::patch('set-checked', SetStockDeliveryItemCheckedQuantity::class)->name('set-checked')->withoutScopedBindings();
+    Route::patch('set-all-checked', SetStockDeliveryItemAsChecked::class)->name('set-all-checked')->withoutScopedBindings();
+    Route::patch('place', UpsertStockDeliveryItemPlaced::class)->name('place')->withoutScopedBindings();
+    Route::patch('place-all', SetStockDeliveryItemAsPlaced::class)->name('place-all')->withoutScopedBindings();
+    Route::patch('update-cost', UpdateStockDeliveryItemCost::class)->name('update-cost')->withoutScopedBindings();
 });
 
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {
@@ -1180,14 +1251,17 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
+    Route::delete('', DeletePurchaseOrder::class)->name('delete');
     Route::patch('submit', UpdatePurchaseOrderStateToSubmitted::class)->name('submit');
+    Route::patch('undo-submit', UpdatePurchaseOrderStateToInProcess::class)->name('undo-submit');
     Route::patch('confirm', UpdatePurchaseOrderStateToConfirmed::class)->name('confirm');
-    Route::patch('settle', UpdatePurchaseOrderStateToSettled::class)->name('settle');
+    Route::patch('undo-confirm', RevertPurchaseOrderToSubmitted::class)->name('undo-confirm');
     Route::patch('cancel', UpdatePurchaseOrderStateToCancelled::class)->name('cancel');
-    Route::patch('not-received', UpdatePurchaseOrderStateToNotReceived::class)->name('not-received');
+    Route::post('stock-delivery', StoreStockDeliveryFromPurchaseOrder::class)->name('stock-delivery.store');
     Route::post('transactions/{historicSupplierProduct:id}/{orgStock:id}/store', StorePurchaseOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/update', UpdatePurchaseOrderTransaction::class)->name('transaction.update')->withoutScopedBindings();
     Route::delete('transactions/{purchaseOrderTransaction:id}/delete', DeletePurchaseOrderTransaction::class)->name('transaction.delete')->withoutScopedBindings();
+    Route::patch('transactions/{purchaseOrderTransaction:id}/cancel', CancelPurchaseOrderTransaction::class)->name('transaction.cancel')->withoutScopedBindings();
 });
 
 Route::name('email.')->prefix('email/')->group(function () {
@@ -1321,7 +1395,8 @@ Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDel
 Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
 
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
-    Route::get('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
+    Route::post('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');
+    Route::post('{clockingMachine}/kiosk-token', SetClockingMachineKioskToken::class)->name('kiosk_token.set');
     Route::post('qr/validate', ValidateClockingMachineQrCode::class)->name('qr.validate');
     Route::patch('clocking/{clocking:id}/notes', UpdateClockingNotes::class)->name('clocking.notes.update');
 });

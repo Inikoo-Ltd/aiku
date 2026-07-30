@@ -26,7 +26,7 @@ import { computed, inject, ref } from "vue"
 
 library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle, faInfoCircle)
 
-defineProps<{
+const props = defineProps<{
     data: {
         data: {}[]
         links: Links
@@ -37,6 +37,30 @@ defineProps<{
 }>()
 
 const locale = useLocaleStore()
+
+function orderHref(order: Order) {
+    const url = orderRoute(order) as unknown as string
+
+    return url ? url + bucketQuery() : ''
+}
+
+function bucketQuery() {
+    if (!props.tab) return ''
+
+    const scope = {
+        "grp.overview.ordering.backlog": "group",
+        "grp.org.overview.ordering.backlog": "organisation",
+    }[route().current() as string] ?? "shop"
+
+    const query = new URLSearchParams({ bucket: props.tab, bucket_scope: scope })
+    const sort = new URLSearchParams(location.search).get(`${props.tab}_sort`)
+
+    if (sort) {
+        query.set('bucket_sort', sort)
+    }
+
+    return `?${query.toString()}`
+}
 
 function orderRoute(order: Order) {
     switch (route().current()) {
@@ -53,6 +77,7 @@ function orderRoute(order: Order) {
                 "grp.org.shops.show.ordering.orders.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug])
 
+        case "grp.org.shops.show.catalogue.products.all_products.show":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":
             return route(
@@ -217,7 +242,7 @@ const setNewMarkerDate = (newVal: Date) => {
 
         <template #cell(reference)="{ item: order }">
             <div class="flex gap-2 flex-wrap items-center">
-                <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
+                <Link :href="orderHref(order)" class="primaryLink">
                     <FontAwesomeIcon
                         v-if="isValidMark && isBeforeMark(order['date'])"
                         v-tooltip="trans('Order created at :_dateCreated', {_dateCreated: getDateLocaleString(new Date(order['date']))})"
@@ -226,6 +251,8 @@ const setNewMarkerDate = (newVal: Date) => {
                     />
                     {{ order["reference"] }}
                 </Link>
+
+                <img v-if="order?.platform" :src="order?.platform" class="w-4" alt="platform" />
 
                 <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />

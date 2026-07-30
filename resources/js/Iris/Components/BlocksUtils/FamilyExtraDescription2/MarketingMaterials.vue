@@ -25,6 +25,20 @@ library.add(faHeart,
 
 const containerStyle = computed(() => (getStyles(props.fieldValue?.marketing?.container?.properties)))
 
+const marketingMaterialUrl = computed(() => {
+    const marketingMaterialRoute = props.fieldValue?.family?.marketing_material_route
+
+    if (!marketingMaterialRoute?.name || typeof window === 'undefined' || typeof route !== 'function') {
+        return '#'
+    }
+
+    try {
+        return route(marketingMaterialRoute.name, marketingMaterialRoute.parameters)
+    } catch {
+        return '#'
+    }
+})
+
 </script>
 
 <template>
@@ -38,7 +52,7 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.marketing?.co
                     {{ ctrans("store & social media") }}
                 </h2>
 
-                <a :href="fieldValue?.family?.marketing_material_route?.name ? route(fieldValue?.family?.marketing_material_route.name, fieldValue?.family?.marketing_material_route.parameters) : '#'"
+                <a :href="marketingMaterialUrl"
                     target="_blank">
                      <button
                          :style="{
@@ -51,7 +65,6 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.marketing?.co
                             ↓
                         </span>
                     </button>
-
                 </a>
 
             </div>

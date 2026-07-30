@@ -33,8 +33,14 @@ class GetIrisReviews extends IrisAction
             $reviews = GetIrisProductReviews::run($model);
         } elseif ($model instanceof ProductCategory) {
             $reviews = GetIrisProductCategoryReviews::run($model);
+
+            if ($reviews->isEmpty()) {
+                $reviews = GetIrisShopReviews::run($webpage->shop);
+                $model = $webpage->shop;
+            }
         } else {
             $reviews = GetIrisShopReviews::run($webpage->shop);
+            $model = $webpage->shop;
         }
 
         $avgReview = $this->getBaseQuery($model)->avg('rating_main');
@@ -50,7 +56,7 @@ class GetIrisReviews extends IrisAction
         return $reviewData;
     }
 
-    public function asController(Webpage $webpage, ActionRequest $request)
+    public function asController(Webpage $webpage, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
 

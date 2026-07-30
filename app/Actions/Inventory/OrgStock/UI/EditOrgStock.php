@@ -10,6 +10,7 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
+use App\Actions\Inventory\OrgStock\WithOrgStockConsumables;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\UI\Procurement\OrgStockTabsEnum;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditOrgStock extends OrgAction
 {
     use WithInventoryAuthorisation;
+    use WithOrgStockConsumables;
 
     private Organisation|StockFamily $parent;
 
@@ -58,14 +60,14 @@ class EditOrgStock extends OrgAction
         $warning = [
             'type'  => 'warning',
             'title' => __('Important'),
-            'text'  => __('Products relies on SKU data. Editing it would affect the related product display behavior'),
+            'text'  => __('Products relies on SKO data. Editing it would affect the related product display behavior'),
             'icon'  => ['fas', 'fa-exclamation-triangle']
         ];
 
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Editing SKU').' '.$orgStock->code,
+                'title'       => __('Editing SKO').' '.$orgStock->code,
                 'warning'     => $warning,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $orgStock,
@@ -79,7 +81,7 @@ class EditOrgStock extends OrgAction
                         'title' => __('Sku'),
                         'icon'  => 'fal fa-box'
                     ],
-                    'model' => __('SKU'),
+                    'model' => __('SKO'),
                     'title' => $orgStock->code,
                     'actions'   => [
                         [
@@ -122,6 +124,31 @@ class EditOrgStock extends OrgAction
                         'value' => $orgStock->is_on_demand
                     ],
                 ]
+            ],
+            [
+                'label'  => __('Warehouse instructions'),
+                'icon'   => 'fa-light fa-note-sticky',
+                'fields' => [
+                    'note_to_pickers' => [
+                        'type'        => 'textarea',
+                        'label'       => __('Note to pickers'),
+                        'placeholder' => __('Shown to the picker on every delivery note containing this SKO. Use :qty for the number of products ordered, eg "add :qty import address label(s)"'),
+                        'value'       => $orgStock->note_to_pickers
+                    ],
+                    'consumables'     => [
+                        'type'        => 'textarea',
+                        'label'       => __('Consumables'),
+                        'information' => __('Items the packer adds to the box for each product ordered that uses this SKO, kept at the packing bench and not picked from stock'),
+                        'placeholder' => __('One per line, eg "IAL01 x 1"'),
+                        'value'       => $this->consumablesAsText($orgStock)
+                    ],
+                    'note_to_packers' => [
+                        'type'        => 'textarea',
+                        'label'       => __('Note to packers'),
+                        'placeholder' => __('Shown to the packer on every delivery note containing this SKO. Use :qty for the number of products ordered'),
+                        'value'       => $orgStock->note_to_packers
+                    ],
+                ]
             ]
         ];
     }
@@ -140,7 +167,7 @@ class EditOrgStock extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('SKUs')
+                            'label' => __('SKOs')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

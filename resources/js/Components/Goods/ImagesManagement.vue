@@ -12,7 +12,6 @@ import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import Tag from "@/Components/Tag.vue"
 import { capitalize } from "lodash"
-import { Message } from "primevue"
 // Types
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
@@ -281,7 +280,6 @@ function onDeleteFilesInList(categoryBox: any) {
             ...props.data.delete_images_route.parameters,
             media: categoryBox.id,
         }),
-        {},
         {
             preserveScroll: true,
             preserveState: true,

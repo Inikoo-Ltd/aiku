@@ -14,6 +14,7 @@ use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\UI\Procurement\OrgSupplierProductTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
@@ -31,6 +32,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgSupplierProduct extends OrgAction
 {
+    use WithAgentOrganisation;
+
     private OrgAgent|Organisation|OrgSupplier $parent;
 
     public function handle(OrgSupplierProduct $orgSupplierProduct): OrgSupplierProduct
@@ -50,6 +53,7 @@ class ShowOrgSupplierProduct extends OrgAction
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request);
+        $this->authorizeProcurementRecord($orgSupplierProduct);
 
         return $this->handle($orgSupplierProduct);
     }
@@ -57,7 +61,8 @@ class ShowOrgSupplierProduct extends OrgAction
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
     {
         $this->parent = $orgAgent;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab(OrgSupplierProductTabsEnum::values());
+        $this->authorizeProcurementRecord($orgSupplierProduct);
 
         return $this->handle($orgSupplierProduct);
     }
@@ -66,6 +71,7 @@ class ShowOrgSupplierProduct extends OrgAction
     {
         $this->parent = $orgSupplier;
         $this->initialisation($organisation, $request);
+        $this->authorizeProcurementRecord($orgSupplierProduct);
 
         return $this->handle($orgSupplierProduct);
     }
@@ -82,6 +88,7 @@ class ShowOrgSupplierProduct extends OrgAction
                 //     'next'     => $this->getNext($orgSupplierProduct, $request),
                 // ],
                 'pageHead'                                           => [
+                    'model' => __('Supplier Product'),
                     'icon'  =>
                         [
                             'icon'  => ['fal', 'box-usd'],

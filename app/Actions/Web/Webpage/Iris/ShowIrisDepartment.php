@@ -47,7 +47,7 @@ class ShowIrisDepartment extends IrisAction
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('Department'),
                     ],
-                    'iconRight' => $department->state->stateIcon()[$department->state->value],
+                    /* 'iconRight' => $department->state->stateIcon()[$department->state->value], */
                 ],
                 'tabs' => [
                     'current'    => $this->tab,

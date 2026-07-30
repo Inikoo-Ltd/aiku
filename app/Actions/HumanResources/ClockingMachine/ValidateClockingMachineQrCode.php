@@ -9,12 +9,12 @@ use App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\ClockingMachineCoordinatePolicy;
+use App\Models\HumanResources\ClockingMachineQRCode;
 use App\Models\HumanResources\ClockingMachineCoordinatePolicyRule;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\WorkSchedule;
 use App\Notifications\LateClockInNotification;
 use Exception;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -30,30 +30,23 @@ class ValidateClockingMachineQrCode
         $clockingMachine = null;
 
         try {
-            try {
-                $payload = json_decode(decrypt($qrCodeToken), true);
-            } catch (DecryptException $e) {
+            $clockingMachineQRCode = ClockingMachineQRCode::where('hash', static::extractHash($qrCodeToken))->first();
+
+            if (!$clockingMachineQRCode) {
                 throw new Exception(__('Invalid QR Code.'));
             }
 
-            if (!$payload || !isset($payload['mid'], $payload['ts'])) {
-                throw new Exception(__('Invalid QR Code format.'));
-            }
-
-            $clockingMachine = ClockingMachine::find($payload['mid']);
+            $clockingMachine = $clockingMachineQRCode->clockingMachine;
 
             if (!$clockingMachine) {
                 throw new Exception(__('Clocking machine not found.'));
             }
 
-            $config = $clockingMachine->config['qr'] ?? [];
-
-            $expiryDuration = (int) ($config['expiry_duration'] ?? 60);
-            $generatedAt = Carbon::createFromTimestamp($payload['ts']);
-
-            if ($generatedAt->addSeconds($expiryDuration)->isPast()) {
-                throw new Exception(__('QR Code has expired. Please scan a new one.'));
+            if (!$clockingMachineQRCode->active) {
+                throw new Exception(__('This QR Code is no longer active. Please scan a new one.'));
             }
+
+            $config = $clockingMachine->config['qr'] ?? [];
 
             $employeeId = Auth::user()?->employees->first()?->id;
             $effectiveMode = $this->resolveEffectivePolicyMode($clockingMachine, $employeeId, now());
@@ -77,8 +70,8 @@ class ValidateClockingMachineQrCode
 
             $workingHours = $this->getWorkingHours($clockingMachine);
 
-            $clockingResult = DB::transaction(function () use ($clockingMachine, $userLat, $userLng, $workScheduleId) {
-                return $this->processClocking($clockingMachine, $userLat, $userLng, $workScheduleId);
+            $clockingResult = DB::transaction(function () use ($clockingMachine, $clockingMachineQRCode, $userLat, $userLng, $workScheduleId) {
+                return $this->processClocking($clockingMachine, $clockingMachineQRCode, $userLat, $userLng, $workScheduleId);
             });
 
             return [
@@ -103,7 +96,7 @@ class ValidateClockingMachineQrCode
         }
     }
 
-    private function processClocking(ClockingMachine $machine, ?float $lat, ?float $lng, ?int $workScheduleId = null): array
+    private function processClocking(ClockingMachine $machine, ClockingMachineQRCode $clockingMachineQRCode, ?float $lat, ?float $lng, ?int $workScheduleId = null): array
     {
         $user = Auth::user();
         $employee = $user?->employees->first();
@@ -124,7 +117,8 @@ class ValidateClockingMachineQrCode
         $clockedInAt = now();
 
         $modelData = [
-            'clocked_at' => $clockedInAt,
+            'clocked_at'                  => $clockedInAt,
+            'clocking_machine_qr_code_id' => $clockingMachineQRCode->id,
         ];
 
         if ($workScheduleId) {
@@ -146,6 +140,8 @@ class ValidateClockingMachineQrCode
             $employee->user->notify(new LateClockInNotification($clocking));
         }
 
+        $this->updateQrCodeUsage($clockingMachineQRCode, $clockedInAt);
+
         $timeTracker = null;
         if ($clocking->time_tracker_id) {
             $timeTracker = TimeTracker::find($clocking->time_tracker_id);
@@ -164,6 +160,33 @@ class ValidateClockingMachineQrCode
             'clocking' => $clocking,
             'action_type' => $actionType
         ];
+    }
+
+    /**
+     * Pull the hash out of whatever the scanner reports.
+     */
+    protected static function extractHash(string $qrCodeToken): string
+    {
+        $token = trim($qrCodeToken);
+        $token = strtok($token, '?#') ?: $token;
+
+        $segments = array_values(array_filter(
+            preg_split('#[:/]+#', $token) ?: [],
+            static fn (string $segment): bool => trim($segment) !== ''
+        ));
+
+        return $segments === [] ? '' : trim((string) end($segments));
+    }
+
+    private function updateQrCodeUsage(ClockingMachineQRCode $clockingMachineQRCode, Carbon $clockedInAt): void
+    {
+        $clockingMachineQRCode->update([
+            'number_clockings'       => Clocking::where('clocking_machine_qr_code_id', $clockingMachineQRCode->id)->count(),
+            'number_different_staff' => Clocking::where('clocking_machine_qr_code_id', $clockingMachineQRCode->id)
+                ->distinct()
+                ->count(DB::raw('concat(subject_type, subject_id)')),
+            'last_used_at'           => $clockedInAt,
+        ]);
     }
 
     private function calculateLate($employee, Carbon $clockedInAt, ?WorkSchedule $selectedSchedule = null): bool

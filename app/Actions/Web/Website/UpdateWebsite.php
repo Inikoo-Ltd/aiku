@@ -164,6 +164,9 @@ class UpdateWebsite extends OrgAction
         if (Arr::has($modelData, 'webpage_title_suffix')) {
             data_set($modelData, 'settings.webpage.title_suffix', Arr::pull($modelData, 'webpage_title_suffix', null));
         }
+        if (Arr::has($modelData, 'show_price')) {
+            data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
+        }
 
         // Handle LLMs.txt file upload
         if (Arr::has($modelData, 'llms_txt') && $modelData['llms_txt'] instanceof \Illuminate\Http\UploadedFile) {
@@ -273,6 +276,7 @@ class UpdateWebsite extends OrgAction
             'max_amt_shown_recommender_product_category' => ['sometimes', 'numeric', 'min:1'],
             'webpage_title_prefix'                       => ['sometimes', 'nullable', 'string'],
             'webpage_title_suffix'                       => ['sometimes', 'nullable', 'string'],
+            'show_price'                                 => ['sometimes', 'nullable', 'boolean']
         ];
 
         if (!$this->strict) {

@@ -31,7 +31,6 @@ use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
-use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -168,7 +167,6 @@ class StoreCustomer extends OrgAction
         GroupHydrateCustomers::dispatch($customer->group)->delay($this->hydratorsDelay);
         OrganisationHydrateCustomers::dispatch($customer->organisation)->delay($this->hydratorsDelay);
 
-        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
         if ($customer->registered_at) {
             $registeredAtDate = Carbon::parse($customer->registered_at)->toDateString();

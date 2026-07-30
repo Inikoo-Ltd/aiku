@@ -10,6 +10,7 @@ namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Currency;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -84,10 +86,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property int $number_stock_delivery_items_under_delivered unit_quantity_checked < unit_quantity
+ * @property int $number_stock_delivery_items_over_delivered unit_quantity_checked > unit_quantity
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Currency $currency
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Collection<int, \App\Models\GoodsIn\StockDeliveryItem> $items
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
@@ -175,5 +180,10 @@ class StockDelivery extends Model implements HasMedia, Auditable
     public function parent(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class);
     }
 }

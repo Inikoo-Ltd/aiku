@@ -63,6 +63,15 @@ trait WithDeliveryNoteItemUI
                     ");
     }
 
+    protected function hasPickingsWithBatchCodes(DeliveryNote $deliveryNote): bool
+    {
+        return DB::table('pickings')
+            ->join('delivery_note_items', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+            ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
+            ->whereNotNull('pickings.batch_code_id')
+            ->exists();
+    }
+
     protected function canHandleDeliveryNote(?DeliveryNote $deliveryNote): bool
     {
         if (!$deliveryNote) {
@@ -128,6 +137,8 @@ trait WithDeliveryNoteItemUI
             'org_stocks.name as org_stock_name',
             'org_stocks.slug as org_stock_slug',
             'org_stocks.packed_in as packed_in',
+            'org_stocks.note_to_pickers as org_stock_note_to_pickers',
+            'org_stocks.note_to_packers as org_stock_note_to_packers',
             'delivery_note_items.quantity_waiting_crm',
             'delivery_note_items.quantity_waiting_warehouse',
         ];

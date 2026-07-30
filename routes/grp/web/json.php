@@ -105,6 +105,9 @@ use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
 use App\Actions\CRM\Customer\Json\GetCustomersInShop;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
+use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
+use App\Actions\Masters\MasterAsset\Json\GetMasterUpdatedBadge;
+use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
@@ -114,7 +117,7 @@ use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCat
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
 use App\Actions\Ordering\Order\GetChargesInOrder;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
-use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\SysAdmin\Group\Json\GetAllTradeUnitsInGroup;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
 use App\Actions\Web\Announcement\UI\GetActiveAnnouncement;
@@ -193,8 +196,8 @@ Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers:
 
 Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
-Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
-Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [GetOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
+Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
+Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 
@@ -232,6 +235,8 @@ Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsIn
 
 Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])->name('webpages.index');
 Route::get('/shops/{shop}/webpages/active', [GetWebpagesInCollection::class, 'inShopActive'])->name('active_webpages.index');
+Route::post('/shops/{shop}/webpages/active-with-exclusion', [GetWebpagesInCollection::class, 'inShopActiveWithExclusion'])->name('active_webpages.with_exclusion.index');
+
 Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
 
 Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
@@ -291,6 +296,9 @@ Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::
 
 Route::get('get-pick-fractional', GetPickFractional::class)->name('product.get-pick-fractional')->withoutScopedBindings();
 
+Route::post('{masterAsset:id}/get-price-rebels', GetPriceRebelProducts::class)->name('master_products.get_price_rebels')->withoutScopedBindings();
+Route::post('master-product-category/{masterProductCategory:id}/pricing-sales', GetMasterProductsPricingSales::class)->name('master_product_category.pricing_sales')->withoutScopedBindings();
+
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
 
 Route::get('dashboard-custom-dates/masters-shops-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.masters_shops_sales');
@@ -328,6 +336,7 @@ Route::get('{warehouse}/return/select-delivery-notes', GetDeliveryNoteValidForRe
 Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name('dispatching_waiting_badge');
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
+Route::get('shops/master-updated-badge', GetMasterUpdatedBadge::class)->name('master_updated_badge');
 
 Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
 

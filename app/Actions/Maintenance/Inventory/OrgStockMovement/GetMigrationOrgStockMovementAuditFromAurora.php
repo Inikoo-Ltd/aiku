@@ -141,7 +141,7 @@ class GetMigrationOrgStockMovementAuditFromAurora
         );
     }
 
-    public string $commandSignature = 'migration_point {--s|org_stock_slug=} {--o|organisation=} ';
+    public string $commandSignature = 'stock-migration:point {--s|org_stock_slug=} {--o|organisation=} ';
 
     public function asCommand(Command $command): int
     {

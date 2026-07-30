@@ -54,7 +54,6 @@ class StoreCollection extends OrgAction
         $collection = Collection::create($modelData);
 
         $collection->stats()->create();
-        $collection->orderingIntervals()->create();
         $collection->orderingStats()->create();
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {

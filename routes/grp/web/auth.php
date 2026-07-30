@@ -18,11 +18,16 @@ use App\Actions\SysAdmin\User\UI\ShowSetNewPassword;
 use App\Actions\SysAdmin\User\UpdateUserPassword;
 use App\Actions\SysAdmin\User\UpdateUserPasswordViaEmail;
 use Illuminate\Support\Facades\Route;
+use Laravel\Passkeys\Http\Controllers\PasskeyLoginController;
+use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
 
 Route::middleware('guest')->group(function () {
     Route::get('resetpassword', ShowResetPassword::class)->name('reset.password');
     Route::get('login', ShowLogin::class)->name('login.show');
     Route::post('login', Login::class)->name('login.store');
+
+    Route::get('passkeys/login/options', [PasskeyLoginController::class, 'index'])->middleware('throttle:6,1')->name('passkey.login-options');
+    Route::post('passkeys/login', [PasskeyLoginController::class, 'store'])->middleware('throttle:6,1')->name('passkey.login');
 
     Route::get('reset-password', ShowSetNewPassword::class)->name('email.reset-password.show');
     Route::post('reset/password/link', PasswordResetLink::class)->name('password.email');
@@ -34,6 +39,12 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('logout', Logout::class)->name('logout');
+
+    Route::middleware('two_fa')->group(function () {
+        Route::get('user/passkeys/options', [PasskeyRegistrationController::class, 'index'])->name('passkey.registration-options');
+        Route::post('user/passkeys', [PasskeyRegistrationController::class, 'store'])->name('passkey.store');
+        Route::delete('user/passkeys/{passkey}', [PasskeyRegistrationController::class, 'destroy'])->name('passkey.destroy');
+    });
     Route::get('reset/password', ShowSetNewPassword::class)->name('reset-password.edit');
     Route::patch('reset/password', UpdateUserPassword::class)->name('reset-password.update');
 });

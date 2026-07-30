@@ -22,6 +22,7 @@ use App\Actions\Goods\Asset\UI\IndexAssetTimeSeries;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInProduct;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
+use App\Actions\Ordering\Order\UI\IndexOrdersInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Reviews\UI\IndexReviews;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -40,6 +41,7 @@ use App\Http\Resources\Goods\AssetTimeSeriesResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStocksResource;
+use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -62,6 +64,14 @@ class ShowProduct extends OrgAction
 
     public function handle(Product $product): Product
     {
+        if (!$this->parent instanceof Group && !$this->parent instanceof Organisation && !$this->parent instanceof Fulfilment) {
+            $shop =  $this->parent instanceof Shop ? $this->parent : $this->parent?->shop;
+
+            if ($shop->id != $product->shop_id) {
+                abort(404, 'Product not found under this shop');
+            }
+        }
+
         return $product;
     }
 
@@ -304,7 +314,7 @@ class ShowProduct extends OrgAction
                     'type'    => 'button',
                     'style'   => 'edit',
                     'icon'    => ["fal", "fa-external-link"],
-                    'tooltip' => "Open website in a new tab",
+                    'tooltip' => __("Open product in the website"),
                     'route'   => [
                         'url'       => $product->webpage?->canonical_url,
                         'openBlank' => true,
@@ -329,6 +339,10 @@ class ShowProduct extends OrgAction
                 : Inertia::optional(fn () => $product->asset
                     ? AssetTimeSeriesResource::collection(IndexAssetTimeSeries::run($product->asset, ProductTabsEnum::SALES->value))
                     : AssetTimeSeriesResource::collection(new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20))),
+
+            ProductTabsEnum::ORDERS->value => $this->tab == ProductTabsEnum::ORDERS->value ?
+                fn () => OrdersResource::collection(IndexOrdersInProduct::run($product, ProductTabsEnum::ORDERS->value))
+                : Inertia::optional(fn () => OrdersResource::collection(IndexOrdersInProduct::run($product, ProductTabsEnum::ORDERS->value))),
 
             ProductTabsEnum::TRADE_UNITS->value => $this->tab == ProductTabsEnum::TRADE_UNITS->value ?
                 fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
@@ -456,6 +470,7 @@ class ShowProduct extends OrgAction
             ]
         )
             ->table(IndexAssetTimeSeries::make()->tableStructure(prefix: ProductTabsEnum::SALES->value))
+            ->table(IndexOrdersInProduct::make()->tableStructure($product, ProductTabsEnum::ORDERS->value))
             ->table(IndexTradeUnitsInProduct::make()->tableStructure(prefix: ProductTabsEnum::TRADE_UNITS->value))
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))

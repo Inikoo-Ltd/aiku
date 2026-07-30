@@ -10,7 +10,6 @@ namespace App\Actions\Dropshipping\CustomerClient;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateCustomerClients;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomerClient;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
@@ -33,6 +32,7 @@ class StoreCustomerClient extends OrgAction
     use WithNoStrictRules;
 
     private Customer $customer;
+    private ?CustomerSalesChannel $customerSalesChannel = null;
 
     /**
      * @throws \Throwable
@@ -66,10 +66,6 @@ class StoreCustomerClient extends OrgAction
         CustomerHydrateClients::dispatch($customerSalesChannel->customer_id)->delay($this->hydratorsDelay);
         CustomerSalesChannelsHydrateCustomerClients::dispatch($customerSalesChannel);
 
-        if ($customerSalesChannel->shop && $customerSalesChannel->platform) {
-            ShopHydratePlatformSalesIntervalsNewCustomerClient::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay(5);
-        }
-
         return $customerClient;
     }
 
@@ -100,6 +96,7 @@ class StoreCustomerClient extends OrgAction
                     table: 'customer_clients',
                     extraConditions: [
                         ['column' => 'customer_id', 'value' => $customer->id],
+                        ['column' => 'customer_sales_channel_id', 'value' => $this->customerSalesChannel?->id],
                     ]
                 ),
             ],
@@ -148,6 +145,7 @@ class StoreCustomerClient extends OrgAction
             CustomerClient::disableAuditing();
         }
         $this->customer       = $customerSalesChannel->customer;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
@@ -162,6 +160,7 @@ class StoreCustomerClient extends OrgAction
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerClient
     {
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->customer = $customerSalesChannel->customer;
         $this->initialisationFromShop($customerSalesChannel->shop, $request);
 

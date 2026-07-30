@@ -7,6 +7,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -60,10 +61,12 @@ class RedoWebpageTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessWebpageTimeSeriesRecords::dispatch($webpage->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessWebpageTimeSeriesRecords::dispatch($webpage->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessWebpageTimeSeriesRecords::run($webpage->id, $frequency, $from, $to);
+                ProcessWebpageTimeSeriesRecords::run($webpage->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

@@ -16,6 +16,7 @@ use App\Actions\HumanResources\Clocking\UI\ShowClocking;
 use App\Actions\HumanResources\ClockingMachine\ExportWorkplaces;
 use App\Actions\HumanResources\ClockingMachine\UI\CreateClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UI\EditClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\UI\EditClockingMachineQRCode;
 use App\Actions\HumanResources\ClockingMachine\UI\IndexClockingMachines;
 use App\Actions\HumanResources\ClockingMachine\UI\ShowClockingMachine;
 use App\Actions\HumanResources\Employee\DownloadEmployeesTemplate;
@@ -51,6 +52,7 @@ use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\ShowUser;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
+use App\Actions\UI\HumanResources\ShowOrgChart;
 use App\Actions\HumanResources\Leave\ApproveLeave;
 use App\Actions\HumanResources\Leave\ExportCalendar;
 use App\Actions\HumanResources\Leave\ExportLeaveReport;
@@ -80,6 +82,7 @@ use App\Actions\HumanResources\HolidayYear\UpdateHolidayYear;
 use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
+Route::get('/org-chart', ShowOrgChart::class)->name('org_chart');
 
 Route::prefix('employees')->as('employees.')->group(function () {
     Route::get('', IndexEmployees::class)->name('index');
@@ -167,6 +170,7 @@ Route::prefix('clocking-machines')->as('clocking_machines.')->group(function () 
     Route::get('create', [CreateClockingMachine::class, 'inOrganisation'])->name('create');
     Route::get('{clockingMachine}', [ShowClockingMachine::class,'inOrganisation'])->name('show');
     Route::get('{clockingMachine}/edit', EditClockingMachine::class)->name('edit');
+    Route::get('{clockingMachine}/qr-codes/{clockingMachineQRCode:id}/edit', EditClockingMachineQRCode::class)->name('show.qr_codes.edit');
 });
 
 Route::get('/clocking', IndexClockings::class)->name('clockings.index');

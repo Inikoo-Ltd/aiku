@@ -52,7 +52,7 @@ class ProposeAllegroProduct
             ],
             'images'     => $productImages,
             'parameters' => $this->buildParameters($portfolio, Arr::get($attributes, 'parameters', [])),
-            'language' => 'en-US',
+            'language' => Arr::get($attributes, 'language', 'en-US'),
             'description' => [
                 'sections' => [
                     [

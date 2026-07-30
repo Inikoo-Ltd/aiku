@@ -62,7 +62,7 @@ class ShowStock extends OrgAction
         return Inertia::render(
             'Goods/Stock',
             [
-                'title'                        => __('Master SKU').' '.$stock->code,
+                'title'                        => __('Master SKO').' '.$stock->code,
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $stock,
                     $request->route()->getName(),
@@ -74,7 +74,7 @@ class ShowStock extends OrgAction
                 ],
                 'pageHead'                     => [
                     'icon'  => [
-                        'title' => __('Master SKU'),
+                        'title' => __('Master SKO'),
                         'icon'  => 'fal fa-cloud-rainbow'
                     ],
                     'title' => $stock->code,
@@ -137,11 +137,11 @@ class ShowStock extends OrgAction
     {
         $headCrumb = function (Stock $stock, array $routeParameters, $suffix) {
             $label = match ($routeParameters['index']['name']) {
-                'grp.goods.stocks.active_stocks.index' => __('Active SKUs'),
-                'grp.goods.stocks.in_process_stocks.index' => __('In process SKUs'),
-                'grp.goods.stocks.discontinuing_stocks.index' => __('Discontinuing SKUs'),
-                'grp.goods.stocks.discontinued_stocks.index' => __('Discontinued SKUs'),
-                default => __('SKUs')
+                'grp.goods.stocks.active_stocks.index' => __('Active SKOs'),
+                'grp.goods.stocks.in_process_stocks.index' => __('In process SKOs'),
+                'grp.goods.stocks.discontinuing_stocks.index' => __('Discontinuing SKOs'),
+                'grp.goods.stocks.discontinued_stocks.index' => __('Discontinued SKOs'),
+                default => __('SKOs')
             };
 
             return [

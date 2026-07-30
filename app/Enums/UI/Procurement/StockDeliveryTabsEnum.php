@@ -16,48 +16,39 @@ enum StockDeliveryTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    // case SHOWCASE            = 'SHOWCASE';
-
-    case ITEMS               = 'items';
-
-    case HISTORY             = 'history';
-    // case ATTACHMENTS         = 'attachments';
-    // case DATA                = 'data';
-
-
-
-
+    case ITEMS                = 'items';
+    case UNDER_OVER_DELIVERED = 'under_over_delivered';
+    case SHOWCASE             = 'showcase';
+    case ATTACHMENTS          = 'attachments';
+    case HISTORY              = 'history';
 
     public function blueprint(): array
     {
         return match ($this) {
-            // StockDeliveryTabsEnum::DATA     => [
-            //     'title' => __('Data'),
-            //     'icon'  => 'fal fa-database',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            // ],
-            StockDeliveryTabsEnum::ITEMS  => [
+            StockDeliveryTabsEnum::ITEMS                => [
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
-            // StockDeliveryTabsEnum::SHOWCASE => [
-            //     'title' => __('Supplier delivery'),
-            //     'icon'  => 'fal fa-info-circle',
-            // ],
-            StockDeliveryTabsEnum::HISTORY     => [
+            StockDeliveryTabsEnum::UNDER_OVER_DELIVERED => [
+                'title' => __('Under/Over delivered items'),
+                'icon'  => 'fal fa-box-open',
+            ],
+            StockDeliveryTabsEnum::SHOWCASE             => [
+                'title' => __('Settings'),
+                'icon'  => 'fal fa-sliders-h',
+            ],
+            StockDeliveryTabsEnum::ATTACHMENTS          => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
+            StockDeliveryTabsEnum::HISTORY              => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-            // StockDeliveryTabsEnum::ATTACHMENTS => [
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            //     'title' => __('Attachments'),
-            //     'icon'  => 'fal fa-paperclip',
-
-            // ],
         };
     }
 }

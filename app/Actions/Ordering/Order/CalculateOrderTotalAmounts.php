@@ -19,17 +19,29 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
 {
     public string $jobQueue = 'urgent';
 
-    public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): string
+    public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): string
     {
         return $order->id.'_'.
             ($calculateShipping ? '1' : '0').
             ($calculateDiscounts ? '1' : '0').
             ($collectionChanged ? '1' : '0').
-            ($forceRecalculate ? '1' : '0');
+            ($forceRecalculate ? '1' : '0').
+            ($onlyIfInBasket ? '1' : '0');
     }
 
-    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
+    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): void
     {
+        /**
+         * Bulk callers list the baskets of a shop and then queue one job each, with a delay of up
+         * to two hours to spread the load. An order the customer submits inside that window would
+         * otherwise be recalculated after the fact - and with forceRecalculate it also reruns the
+         * discounts. They pass true so the order is rechecked at execution time; every other caller
+         * keeps the previous behaviour, including the legitimate ones that act on submitted orders.
+         */
+        if ($onlyIfInBasket && $order->refresh()->state !== OrderStateEnum::CREATING) {
+            return;
+        }
+
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
         $tax        = $order->taxCategory->rate;
@@ -134,14 +146,17 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         }
     }
 
-    public string $commandSignature = 'order:totals {order}';
+    public string $commandSignature = 'order:totals {order} {--ignoreCalculateDiscounts}';
 
     public function asCommand(Command $command): int
     {
         $exitCode = 0;
         $order    = Order::where('slug', $command->argument('order'))->firstOrFail();
+
+        $ignoreCalculateDiscounts = !(bool)$command->option('ignoreCalculateDiscounts');
+
         if ($order) {
-            $this->handle($order);
+            $this->handle($order, calculateDiscounts: $ignoreCalculateDiscounts);
             $command->line("Order $order->reference totals calculated. 🧮");
         } else {
             $command->error("Model not found");

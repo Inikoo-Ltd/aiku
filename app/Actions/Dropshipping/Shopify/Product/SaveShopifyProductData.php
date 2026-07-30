@@ -292,14 +292,14 @@ class SaveShopifyProductData extends RetinaAction
                     'ID'             => $variant['id'],
                     'Title'          => $variant['title'],
                     'Price'          => $variant['price'],
-                    'SKU'            => $variant['sku'] ?? 'N/A',
+                    'SKO'            => $variant['sku'] ?? 'N/A',
                     'Barcode'        => $variant['barcode'] ?? 'N/A',
                     'Inventory'      => $variant['inventory_quantity'] ?? 'N/A',
                     'InventoryLevel' => isset($variant['inventoryItem']['inventoryLevel']) ?
                                         $variant['inventoryItem']['inventoryLevel']['id'] : 'ERROR'
                 ];
             }
-            $command->table(['Index', 'ID', 'Title', 'Price', 'SKU', 'Barcode', 'Inventory',  'InventoryLevel'], $variantData);
+            $command->table(['Index', 'ID', 'Title', 'Price', 'SKO', 'Barcode', 'Inventory',  'InventoryLevel'], $variantData);
         }
 
         $command->info("\nProduct data retrieved successfully");

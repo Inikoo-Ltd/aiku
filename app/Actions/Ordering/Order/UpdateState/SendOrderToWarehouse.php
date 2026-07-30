@@ -32,6 +32,7 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -203,7 +204,7 @@ class SendOrderToWarehouse extends OrgAction
             $contactName = $order->customer->contact_name;
         }
 
-        return $contactName;
+        return Str::substr($contactName, 0, 40);
     }
 
 
@@ -223,7 +224,9 @@ class SendOrderToWarehouse extends OrgAction
         if (!$this->has('warehouse_id')) {
             /** @var Warehouse $warehouse */
             $warehouse = $this->shop->organisation->warehouses()->first();
-            $this->set('warehouse_id', $warehouse->id);
+            if ($warehouse) {
+                $this->set('warehouse_id', $warehouse->id);
+            }
         }
     }
 

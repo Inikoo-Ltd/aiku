@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\AttachModelToCollection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
@@ -17,7 +17,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 
-class AttachModelToMasterCollection extends GrpAction
+class AttachModelToMasterCollection extends OrgAction
 {
     public function handle(MasterCollection $masterCollection, MasterProductCategory|MasterAsset|MasterCollection $model, bool $attachChildren = true): MasterCollection
     {
@@ -75,7 +75,7 @@ class AttachModelToMasterCollection extends GrpAction
     public function action(MasterCollection $masterCollection, MasterProductCategory|MasterAsset|MasterCollection $model): MasterCollection
     {
         $this->asAction = true;
-        $this->initialisation($masterCollection->group, []);
+        $this->initialisationFromGroup($masterCollection->group, []);
 
         return $this->handle($masterCollection, $model);
     }

@@ -25,6 +25,34 @@ export const useLocaleStore = defineStore("locale", () => {
 		return new Intl.NumberFormat(locale_iso.value || language.value.code).format(number)
 	}
 
+	// Derive the locale from the currency's home country so the amount is laid out
+	// the way that country writes it (e.g. RON -> ro-RO -> "80,09 lei", not "lei 80.09").
+	// The first two letters of an ISO 4217 currency code are the ISO 3166 country code.
+	const localeForCurrency = (currencyCode: string): string | undefined => {
+		if (!currencyCode) {
+			return locale_iso.value || language.value.code
+		}
+		try {
+			const region = currencyCode.slice(0, 2).toUpperCase()
+			const maximized = new Intl.Locale("und", { region }).maximize()
+			return `${maximized.language}-${region}`
+		} catch {
+			return locale_iso.value || language.value.code
+		}
+	}
+
+	// ponytail: mirrors the master shop price_exchanges fraction_digits config, keep in sync
+	const WHOLE_NUMBER_PRACTICE_CURRENCIES = ["CZK", "HUF", "UAH", "SEK"]
+
+	// RRP is a recommended shelf price, so in whole-number countries it is rounded up
+	// for display; stored values and exact unit rates (price/units) keep their decimals.
+	const currencyFormatRrp = (currencyCode: string, amount: number | string): string | number => {
+		const num = typeof amount === "string" ? parseFloat(amount) : (amount || 0)
+		const resolvedCurrency = currencyInertia.value?.code || currencyCode || ''
+
+		return currencyFormat(currencyCode, WHOLE_NUMBER_PRACTICE_CURRENCIES.includes(resolvedCurrency) ? Math.ceil(num) : num)
+	}
+
 	const currencyFormat = (currencyCode: string, amount: number | string): string | number => {
 		// if (typeof amount === "undefined" || amount === null) return 0
 		const getAmount = amount ?? 0
@@ -33,17 +61,36 @@ export const useLocaleStore = defineStore("locale", () => {
 		}
 
 		const num = typeof getAmount === "string" ? parseFloat(getAmount) : (getAmount || 0)
+		const resolvedCurrency = currencyInertia.value?.code || currencyCode || ''
 
-		const formatter = new Intl.NumberFormat(language.value.code, {
-			style: (currencyCode || currencyInertia.value?.code) ? "currency" : "decimal",
-			currency: currencyInertia.value?.code || currencyCode || '',
-			minimumFractionDigits: 2,
+		// Retail practice in these countries is whole-number prices, so a whole amount
+		// shows without ".00" while totals with real decimals still show them.
+		const wholeNumberPractice = WHOLE_NUMBER_PRACTICE_CURRENCIES.includes(resolvedCurrency) && Number.isInteger(num)
+
+		const formatter = new Intl.NumberFormat(localeForCurrency(resolvedCurrency), {
+			style: resolvedCurrency ? "currency" : "decimal",
+			currency: resolvedCurrency,
+			minimumFractionDigits: wholeNumberPractice ? 0 : 2,
 			maximumFractionDigits: 2,
 			currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.
 		})
 
 		return formatter.format(num);
 	};
+
+	const currencySymbolNarrow = (currencyCode: string) => {
+		const resolvedCurrency = currencyInertia.value?.code || currencyCode || ''
+
+		const formatter = new Intl.NumberFormat(localeForCurrency(resolvedCurrency), {
+			style: resolvedCurrency ? "currency" : "decimal",
+			currency: resolvedCurrency,
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+			currencyDisplay: "narrowSymbol",  // to make UAH -> ₴, USD -> $, etc.
+		})
+
+		return formatter.formatToParts(1).find(part => part.type === 'currency')?.value ?? ''
+	}
 
 	const numberShort = (number: number) => {
 		return new Intl.NumberFormat(locale_iso.value || language.value.code, {
@@ -81,5 +128,5 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	}
 
-	return { language, locale_iso, languageOptions, number, numberShort, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
+	return { language, locale_iso, languageOptions, number, numberShort, currencySymbolNarrow, currencyFormat, currencyFormatRrp, CurrencyShort, currencySymbol, languageAssetsOptions  }
 })

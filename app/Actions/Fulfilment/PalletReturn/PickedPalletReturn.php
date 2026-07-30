@@ -37,6 +37,8 @@ class PickedPalletReturn extends OrgAction
 {
     use WithActionUpdate;
 
+    private PalletReturn $palletReturn;
+
 
     /**
      * @throws \Throwable
@@ -88,7 +90,15 @@ class PickedPalletReturn extends OrgAction
         if ($this->asAction) {
             return true;
         }
-        return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
+
+        $warehouseId = $this->palletReturn->warehouse_id;
+
+        return $request->user()->authTo([
+            "fulfilment-shop.{$this->fulfilment->id}.edit",
+            "fulfilment.$warehouseId.edit",
+            "supervisor-incoming.$warehouseId",
+            "supervisor-fulfilment.$warehouseId",
+        ]);
     }
 
     public function jsonResponse(PalletReturn $palletReturn): JsonResource
@@ -101,6 +111,7 @@ class PickedPalletReturn extends OrgAction
      */
     public function asController(Organisation $organisation, FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 
         $user = $request->user();
@@ -113,6 +124,7 @@ class PickedPalletReturn extends OrgAction
      */
     public function maya(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->palletReturn = $palletReturn;
         $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
 
         $user = $request->user();

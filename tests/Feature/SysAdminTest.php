@@ -19,6 +19,8 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\Media\HydrateMedia;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Actions\HumanResources\JobPosition\SyncEmployeeJobPositions;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Actions\Maintenance\Appearance\ResetModelColours;
 use App\Actions\Maintenance\SysAdmin\RepairUsersAdminsAuth;
 use App\Actions\SysAdmin\Admin\StoreAdmin;
@@ -74,10 +76,15 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
+use Illuminate\Http\Request;
+use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 
@@ -115,7 +122,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(9)
+        ->and($group->roles()->count())->toBe(10)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -123,14 +130,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(8)
+    expect($group->jobPositions()->count())->toBe(9)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(8)
+    expect($group->jobPositions()->count())->toBe(9)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -183,7 +190,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(8)
-        ->and($group->roles()->count())->toBe(17)
+        ->and($group->roles()->count())->toBe(18)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -836,6 +843,75 @@ test('can login', function (Guest $guest) {
     expect($user->stats->number_logins)->toBe(1);
 })->depends('create guest');
 
+test('guest can fetch passkey login options', function () {
+    $response = $this->getJson(route('grp.passkey.login-options'));
+    $response->assertOk();
+    $response->assertJsonStructure(['options' => ['challenge']]);
+});
+
+test('passkey registration options require authentication', function () {
+    $response = $this->getJson(route('grp.passkey.registration-options'));
+    $response->assertUnauthorized();
+});
+
+test('user can fetch passkey registration options', function (Guest $guest) {
+    actingAs($guest->getUser());
+    $response = $this->getJson(route('grp.passkey.registration-options'));
+    $response->assertOk();
+    $response->assertJsonStructure(['options' => ['challenge', 'user']]);
+})->depends('create guest');
+
+test('passkey login marks 2fa as passed', function (Guest $guest) {
+    actingAs($guest->getUser());
+
+    $request = Request::create(route('grp.passkey.login'), 'POST');
+    $request->setLaravelSession(app('session.store'));
+
+    app(PasskeyLoginResponse::class)->toResponse($request);
+
+    expect($request->session()->get('google2fa.auth_passed'))->toBeTrue();
+})->depends('create guest');
+
+test('passkey enrollment satisfies 2fa requirement', function (Guest $guest) {
+    $user = $guest->getUser();
+    $user->update(['is_two_factor_required' => true]);
+    app()->instance('group', $guest->group);
+    setPermissionsTeamId($guest->group->id);
+    actingAs($user);
+
+    $response = $this->get(route('grp.dashboard.show'));
+    $response->assertRedirect(route('grp.login.require2fa'));
+
+    $passkey = $user->passkeys()->create([
+        'name'          => 'Test device',
+        'credential_id' => 'test-credential-id',
+        'credential'    => [],
+    ]);
+
+    $response = $this->get(route('grp.dashboard.show'));
+    $response->assertOk();
+
+    $passkey->delete();
+    $user->update(['is_two_factor_required' => false]);
+})->depends('create guest');
+
+test('inactive user can not login with passkey', function (Guest $guest) {
+    $user = $guest->getUser();
+    $passkey = $user->passkeys()->create([
+        'name'          => 'Test device',
+        'credential_id' => 'test-credential-id-status',
+        'credential'    => [],
+    ]);
+
+    expect(\Laravel\Passkeys\Passkeys::allowsLogin(request(), $passkey))->toBeTrue();
+
+    $user->update(['status' => false]);
+    expect(\Laravel\Passkeys\Passkeys::allowsLogin(request(), $passkey->refresh()))->toBeFalse();
+
+    $user->update(['status' => true]);
+    $passkey->delete();
+})->depends('create guest');
+
 
 test('Hydrate group', function (Group $group) {
     HydrateGroup::run($group);
@@ -989,6 +1065,9 @@ test('can show hr dashboard', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('SysAdmin/SysAdminDashboard')
+            ->has('users_insights')
+            ->has('search_insights')
+            ->has('ai_insights')
             ->has('breadcrumbs', 2);
     });
 });
@@ -1455,6 +1534,32 @@ test('UI sysadmin search analytics index', function (User $user) {
     });
 })->depends('SetUserAuthorisedModels command');
 
+test('UI sysadmin ai analytics index', function (User $user) {
+    $this->withoutExceptionHandling();
+    actingAs($user);
+
+    \App\Models\SysAdmin\McpRequest::create([
+        'group_id'    => group()->id,
+        'user_id'     => $user->id,
+        'tool'        => 'shop-sales-tool',
+        'arguments'   => ['shop' => 'eu'],
+        'is_error'    => false,
+        'duration_ms' => 120,
+    ]);
+
+    $response = get(route('grp.sysadmin.mcp.index'));
+    $response->assertInertia(function (AssertableInertia $page) use ($user) {
+        $page
+            ->component('SysAdmin/McpAnalytics')
+            ->has('insights')
+            ->where('insights.calls', 1)
+            ->has('data.data', 1)
+            ->has('users.data', 1)
+            ->where('users.data.0.username', $user->username)
+            ->where('users.data.0.calls', 1);
+    });
+})->depends('SetUserAuthorisedModels command');
+
 test('UI sysadmin guest show and edit', function (User $user) {
     $this->withoutExceptionHandling();
     actingAs($user);
@@ -1586,6 +1691,90 @@ test('update user group pseudo job positions', function (User $user) {
     expect($groupPseudoCount())->toBe(0);
 })->depends('SetUserAuthorisedModels command');
 
+test('changing group permissions leaves the cached ui props in sync with the menu', function (User $admin) {
+    $this->withoutExceptionHandling();
+    config()->set('ui.cache.layout', true);
+    setPermissionsTeamId($admin->group_id);
+
+    $code = JobPosition::where('group_id', $admin->group_id)->where('scope', 'group')->value('code');
+
+    $admin->assignRole('group-admin');
+    CleanUserCaches::run($admin);
+
+    $cachedNavigation = function (User $target) {
+        return data_get(
+            Cache::tags('grp-first-load-props:'.$target->id)->get('grp-first-load-props:'.$target->id.':'.$target->language->code),
+            'layout.navigation.grp'
+        );
+    };
+    $freshNavigation = function (User $target) {
+        setPermissionsTeamId($target->group_id);
+
+        return GetGroupNavigation::run(User::find($target->id));
+    };
+
+    $editPermissionsOf = function (User $target, array $permissions) use ($admin) {
+        actingAs($admin);
+        patch(route('grp.models.user.group_permissions.update', [$target]), ['permissions' => $permissions]);
+    };
+
+    // Production shape: an admin edits somebody else, who is signed in elsewhere.
+    $victim = User::where('group_id', $admin->group_id)->where('id', '!=', $admin->id)->firstOrFail();
+
+    $editPermissionsOf($victim, [$code]);
+    expect($cachedNavigation($victim))->not->toBeNull()
+        ->and($cachedNavigation($victim))->toEqual($freshNavigation($victim));
+
+    $editPermissionsOf($victim, []);
+    expect($cachedNavigation($victim))->toEqual($freshNavigation($victim));
+
+    // Self-edit must hold too. Runs via action() because self-revoking the
+    // sysadmin position makes a follow-up HTTP call legitimately unauthorized.
+    app()->instance('group', $admin->group);
+    setPermissionsTeamId($admin->group_id);
+    UpdateUserGroupPseudoJobPositions::make()->action($admin, ['permissions' => [$code]]);
+    expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
+
+    UpdateUserGroupPseudoJobPositions::make()->action($admin, ['permissions' => []]);
+    expect($cachedNavigation($admin))->toEqual($freshNavigation($admin));
+})->depends('SetUserAuthorisedModels command');
+
+test('employee job position edit flushes menu cache even if recache job never runs', function (Employee $employee) {
+    config()->set('ui.cache.layout', true);
+    $user = $employee->getUser();
+    setPermissionsTeamId($user->group_id);
+
+    Queue::fake();
+
+    $menuCacheKey = 'grp-first-load-props:'.$user->id.':'.$user->language->code;
+    Cache::tags('grp-first-load-props:'.$user->id)->put($menuCacheKey, ['layout' => 'stale'], 3600);
+    Cache::tags('auth-user:'.$user->id)->put('can:probe', true, 3600);
+
+    $jobPosition = $employee->organisation->jobPositions()->where('code', 'hr-m')->firstOrFail();
+    SyncEmployeeJobPositions::run($employee, [$jobPosition->id => []]);
+
+    expect(Cache::tags('grp-first-load-props:'.$user->id)->get($menuCacheKey))->toBeNull()
+        ->and(Cache::tags('auth-user:'.$user->id)->get('can:probe'))->toBeNull();
+
+    BreakUserUiProps::assertPushed();
+})->depends('employee job position in another organisation');
+
+test('recache is immune to relations loaded under the wrong permissions team', function (Employee $employee) {
+    config()->set('ui.cache.layout', true);
+    $user = $employee->getUser();
+
+    setPermissionsTeamId(999999);
+    $user->load('roles');
+    expect($user->roles->count())->toBe(0);
+
+    BreakUserUiProps::run($user);
+
+    setPermissionsTeamId($user->group_id);
+    $cached = Cache::tags('grp-first-load-props:'.$user->id)->get('grp-first-load-props:'.$user->id.':'.$user->language->code);
+    $fresh  = GetGroupNavigation::run(User::find($user->id));
+    expect(data_get($cached, 'layout.navigation.grp'))->toEqual($fresh);
+})->depends('employee job position in another organisation');
+
 
 test('GetSectionRoute resolves section codes for all scopes', function (Group $group, Organisation $organisation, Shop $shop) {
     app()->instance('group', $group);
@@ -1706,3 +1895,34 @@ test('process user request stores a request', function (User $user) {
     );
     expect($search)->toBeNull();
 })->depends('SetUserAuthorisedModels command');
+
+test('user time series records aggregate requests and logins', function (User $user) {
+    app()->instance('group', $user->group);
+    setPermissionsTeamId($user->group->id);
+
+    \Illuminate\Support\Facades\DB::table('user_logins')->insert([
+        'user_id' => $user->id,
+        'date'    => now(),
+    ]);
+
+    \App\Actions\SysAdmin\User\ProcessUserTimeSeriesRecords::run(
+        \App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum::DAILY,
+        now()->toDateString(),
+        now()->toDateString()
+    );
+
+    $timeSeries = $user->timeSeries()->where('frequency', 'daily')->first();
+    expect($timeSeries)->not->toBeNull()
+        ->and($timeSeries->number_records)->toBeGreaterThan(0);
+
+    $record = $timeSeries->records()->where('period', now()->format('Y-m-d'))->first();
+    expect($record)->not->toBeNull()
+        ->and($record->number_requests)->toBeGreaterThan(0)
+        ->and($record->number_logins)->toBeGreaterThanOrEqual(1)
+        ->and($record->number_active_days)->toBe(1);
+
+    \Illuminate\Support\Facades\Cache::forget("sysadmin-users-insights-{$user->group->id}-30");
+    $insights = \App\Actions\SysAdmin\GetUsersInsights::run($user->group);
+    expect($insights['logins'])->toBeGreaterThanOrEqual(1)
+        ->and(collect($insights['top_users'])->pluck('username'))->toContain($user->username);
+})->depends('SetUserAuthorisedModels command', 'process user request stores a request');

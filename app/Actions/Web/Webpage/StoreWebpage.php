@@ -79,7 +79,7 @@ class StoreWebpage extends OrgAction
             ];
         }
 
-        if ($modelData['sub_type'] == WebPageSubTypeEnum::MAILSHOT && Arr::exists($modelData, 'fieldValue')) {
+        if ($modelData['sub_type'] == WebpageSubTypeEnum::MAILSHOT && Arr::exists($modelData, 'fieldValue')) {
             $newBlogModelData['fieldValue'] = Arr::pull($modelData, 'fieldValue');
         }
 

@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from "@/Components/Table/Table.vue";
 import { Supplier } from "@/types/supplier";
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue";
@@ -18,25 +19,14 @@ defineProps<{
 
 const locale = useLocaleStore();
 
+function supplierHref(supplier: Supplier) {
+  const bucket = route().current()?.match(/^grp\.supply-chain\.suppliers\.(free|in_agents)$/)?.[1]
+
+  return supplierRoute(supplier) + bucketQuery(bucket)
+}
+
 function supplierRoute(supplier: Supplier) {
-    console.log(supplier.agent_slug, supplier.slug);
-    switch (route().current()) {
-        case 'grp.supply-chain.suppliers.index':
-            return route(
-                'grp.supply-chain.suppliers.show',
-                [supplier.slug]);
-        case 'grp.overview.procurement.suppliers.index':
-            return route(
-                'grp.supply-chain.suppliers.show',
-                [supplier.slug]);
-        default:
-            return route(
-                'grp.supply-chain.agents.show.suppliers.show',
-                [
-                    route().params['agent'],
-                    supplier.slug
-                ]);
-    }
+    return route("grp.majordomo.redirect_supplier", [supplier.id])
 }
 
 </script>
@@ -46,7 +36,7 @@ function supplierRoute(supplier: Supplier) {
 
 
     <template #cell(code)="{ item: supplier }">
-      <Link :href="supplierRoute(supplier)" class="primaryLink">
+      <Link :href="supplierHref(supplier)" class="primaryLink">
         {{ supplier["code"] }}
       </Link>
     </template>

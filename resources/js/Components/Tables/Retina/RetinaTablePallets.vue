@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import Table from '@/Components/Table/Table.vue'
+import { bucketQuery } from "@/Composables/bucketQuery"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link } from '@inertiajs/vue3'
 
@@ -22,13 +23,19 @@ defineProps<{
 
 
 
+
+function palletHref(pallet: any) {
+    const bucket = route().current()?.match(/^retina\.fulfilment\.storage\.pallets\.(storing|in_process|incidents|returned)_pallets\.index$/)?.[1]
+
+    return route('retina.fulfilment.storage.pallets.show', { ...route().params, pallet: pallet.slug ? pallet.slug : pallet.id }) + bucketQuery(bucket)
+}
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: pallet }">
           
-            <Link :href="route('retina.fulfilment.storage.pallets.show',{ ...route().params, pallet : pallet.slug ? pallet.slug : pallet.id })" class="primaryLink">
+            <Link :href="palletHref(pallet)" class="primaryLink">
                 {{ pallet.reference }}
             </Link>
         </template>

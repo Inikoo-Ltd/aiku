@@ -24,10 +24,10 @@ class GetAgentOrganisationNavigation
 
         $navigation = $this->getWarehouseNavs($user, $organisation, $navigation);
 
-        if ($user->hasPermissionTo("procurement.$organisation->id.view")) {
+        if ($user->authTo("procurement.$organisation->id.view")) {
             $navigation['procurement'] = [
                 'root'    => 'grp.org.procurement',
-                'label'   => __('procurement'),
+                'label'   => __('Procurement'),
                 'icon'    => ['fal', 'fa-box-usd'],
                 'route'   => [
                     'name'       => 'grp.org.procurement.dashboard',
@@ -45,7 +45,7 @@ class GetAgentOrganisationNavigation
                         ],
 
                         [
-                            'label' => __('suppliers'),
+                            'label' => __('Suppliers'),
                             'icon'  => ['fal', 'fa-person-dolly'],
                             'root'  => 'grp.org.procurement.org_suppliers.',
                             'route' => [
@@ -54,7 +54,7 @@ class GetAgentOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('partners'),
+                            'label' => __('Partners'),
                             'icon'  => ['fal', 'fa-users-class'],
                             'root'  => 'grp.org.procurement.org_partners.',
                             'route' => [
@@ -63,11 +63,29 @@ class GetAgentOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('purchase orders'),
+                            'label' => __('Supplier Products'),
+                            'icon'  => ['fal', 'fa-box-usd'],
+                            'root'  => 'grp.org.procurement.org_supplier_products.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_supplier_products.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Purchase Orders'),
                             'icon'  => ['fal', 'fa-clipboard-list'],
                             'root'  => 'grp.org.procurement.purchase_orders.',
                             'route' => [
                                 'name'       => 'grp.org.procurement.purchase_orders.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
+                            'label' => __('Stock Deliveries'),
+                            'icon'  => ['fal', 'fa-truck-container'],
+                            'root'  => 'grp.org.procurement.stock_deliveries.',
+                            'route' => [
+                                'name'       => 'grp.org.procurement.stock_deliveries.index',
                                 'parameters' => [$organisation->slug],
                             ]
                         ],

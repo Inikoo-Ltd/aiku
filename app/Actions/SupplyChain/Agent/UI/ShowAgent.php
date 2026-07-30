@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
@@ -26,16 +27,10 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowAgent extends GrpAction
+class ShowAgent extends OrgAction
 {
+    use WithSupplyChainAuthorisation;
     use WithAgentSubNavigation;
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('supply-chain.edit');
-
-        return $request->user()->authTo('supply-chain.view');
-    }
-
     public function handle(Agent $agent): Agent
     {
         return $agent;
@@ -44,7 +39,7 @@ class ShowAgent extends GrpAction
 
     public function asController(Agent $agent, ActionRequest $request): Agent
     {
-        $this->initialisation(app('group'), $request)->withTab(AgentTabsEnum::values());
+        $this->initialisationFromGroup(app('group'), $request)->withTab(AgentTabsEnum::values());
 
         return $this->handle($agent);
     }
@@ -52,7 +47,7 @@ class ShowAgent extends GrpAction
 
     public function htmlResponse(Agent $agent, ActionRequest $request): Response
     {
-// dd($agent);
+        // dd($agent);
         return Inertia::render(
             'SupplyChain/Agent',
             [

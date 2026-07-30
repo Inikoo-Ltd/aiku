@@ -69,6 +69,7 @@ trait HasRetinaCustomerProductData
             'rrp_per_unit'               => $rrpPerUnit,
             'margin'                     => $margin,
             'profit'                     => $profit,
+            'family_id'                  => $this->family_id,
             'state'                      => $this->state,
             'status'                     => $this->status,
             'created_at'                 => $this->created_at,

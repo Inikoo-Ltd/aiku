@@ -25,7 +25,7 @@ import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import AddLocations from './AddLocations.vue'
-import EditLocationsModal from './EditLocationsModal.vue'
+import EditLocations from './EditLocations.vue'
 import { WINDOW } from '@sentry/vue'
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
@@ -347,11 +347,11 @@ const locationCount = computed(() => props.stocks_management.locations.length)
 const actionGridClass = computed(() => {
     const count = Object.values(MODALS).filter(action => showAction(action)).length
     return {
-        1: 'lg:grid-cols-1',
-        2: 'lg:grid-cols-2',
-        3: 'lg:grid-cols-3',
-        4: 'lg:grid-cols-4',
-    }[count] ?? 'lg:grid-cols-4'
+        1: 'xl:grid-cols-1',
+        2: 'xl:grid-cols-2',
+        3: 'xl:grid-cols-3',
+        4: 'xl:grid-cols-4',
+    }[count] ?? 'xl:grid-cols-4'
 })
 
 const isStockCheckModalOpen = ref(false)
@@ -447,15 +447,17 @@ const onAddLocationShow = () => {
                     <span>
                         <Icon :data="{...item.icon_state, tooltip : null}" />
                     </span>
-                    <span class="ml-2 text-lg font-bold">
-                        {{ locale.number(item.value ?? 0) }}
+                    <span class="ml-2 text-lg font-bold inline-flex align-middle">
+                        <FractionDisplay v-if="item.value_fractional" :fractionData="item.value_fractional" />
+                        <template v-else>{{ locale.number(item.value ?? 0) }}</template>
                     </span>
                 </div>
             </div>
 
             <div class="grid align-item-middle border-l">
-                <span class="my-auto text-lg text-center font-semibold mx-1 px-4 py-2 border border-green-200 bg-green-100 rounded tabular-nums" v-tooltip="trans('Stock in Location')">
-                    {{ locale.number(stocks_management.qty_in_location ?? 0) }}
+                <span class="my-auto text-lg text-center font-semibold mx-1 px-4 py-2 border border-green-200 bg-green-100 rounded tabular-nums flex items-center justify-center" v-tooltip="trans('Stock in Location')">
+                    <FractionDisplay v-if="stocks_management.qty_in_location_fractional" :fractionData="stocks_management.qty_in_location_fractional" />
+                    <template v-else>{{ locale.number(stocks_management.qty_in_location ?? 0) }}</template>
                 </span>
             </div>
         </div>
@@ -465,9 +467,9 @@ const onAddLocationShow = () => {
 
             <Dialog
                 v-model:visible="isStockCheckModalOpen"
-                :header="`${trans('Audit Stock')} - ${props.trade_units[0]?.code}`"
+                :header="`${ctrans('Audit Stock')} - ${props.trade_units[0]?.code}`"
                 modal
-                :dismissableMask="true"
+                xdismissableMask="true"
                 :closeOnEscape="true"
                 :focusOnShow="false"
                 :style="{ width: '60vw' }"
@@ -490,9 +492,9 @@ const onAddLocationShow = () => {
                 />
             </Dialog>
 
-                <Dialog v-model:visible="isMoveStockModalOpen" modal :header="trans('Move Stock')"
+            <Dialog v-model:visible="isMoveStockModalOpen" modal :header="ctrans('Move Stock')"
                 :style="{ width: '50vw' }"
-                :dismissableMask="true"
+                xdismissableMask="true"
                 :closeOnEscape="true"
                 :breakpoints="{
                     '1200px': '75vw',
@@ -506,18 +508,30 @@ const onAddLocationShow = () => {
                     @close="isMoveStockModalOpen = false"
                     :reasons
                 />
-                </Dialog>
+            </Dialog>
 
-            <EditLocationsModal
-                v-model="isEditLocationModalOpen"
-                :locations="props.stocks_management.locations"
-                :routes="props.stocks_management.routes"
-            />
+            <Dialog v-model:visible="isEditLocationModalOpen" modal :header="ctrans('Remove Locations')"
+                :style="{ width: '50vw' }"
+                xdismissableMask="true"
+                :closeOnEscape="true"
+                :breakpoints="{
+                    '1200px': '76vw',
+                    '992px': '80vw',
+                    '768px': '90vw',
+                    '576px': '95vw'
+                }"
+                :contentStyle="{ maxHeight: '70vh' }">
+                <EditLocations
+                    :locations="props.stocks_management.locations"
+                    :routes="props.stocks_management.routes"
+                    @close="isEditLocationModalOpen = false"
+                />
+            </Dialog>
 
-            <Dialog v-model:visible="isAddLocationModalOpen" modal :header="trans('Add Location')"
+            <Dialog v-model:visible="isAddLocationModalOpen" modal :header="ctrans('Add Location')"
                 @show="onAddLocationShow"
                 :style="{ width: '50vw' }"
-                :dismissableMask="true"
+                xdismissableMask="true"
                 :closeOnEscape="true"
                 :breakpoints="{
                     '1200px': '75vw',
@@ -693,7 +707,7 @@ const onAddLocationShow = () => {
         <div class="grid grid-cols-2 border-t pt-3 gap-2" :class="actionGridClass">
             <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to audit') : undefined" iconRight="fal fa-clipboard-check" :label="ctrans('Audit Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
             <Button v-if="showAction(MODALS.MOVE_STOCK)" @click="openModal(MODALS.MOVE_STOCK)" :disabled="locationCount < 2" :tooltip="locationCount < 2 ? ctrans('Requires at least 2 locations') : undefined" iconRight="fal fa-forklift" :label="ctrans('Move Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
-            <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to edit') : undefined" iconRight="fal fa-edit" :label="ctrans('Edit Locations')" size="sm" type="tertiary" full class="whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to edit') : undefined" iconRight="fal fa-edit" :label="ctrans('Remove Locations')" size="sm" type="tertiary" full class="whitespace-nowrap" />
             <Button v-if="showAction(MODALS.ADD_LOCATION)" @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="ctrans('Add Location')" size="sm" type="tertiary" full class="whitespace-nowrap" />
         </div>
 

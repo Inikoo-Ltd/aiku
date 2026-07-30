@@ -8,9 +8,11 @@
 
 namespace App\Actions\Dropshipping\Allegro\Product;
 
+use App\Actions\Dropshipping\Allegro\Traits\WithAllegroMarketplace;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -33,6 +35,8 @@ class StoreProductToAllegro extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithAllegroMarketplace;
+    use WithPortfolioErrorResponse;
 
     public function handle(Portfolio $portfolio): Portfolio
     {
@@ -41,6 +45,10 @@ class StoreProductToAllegro extends RetinaAction
 
         /** @var AllegroUser $allegroUser */
         $allegroUser = $customerSalesChannel->user;
+
+        if (!$allegroUser) {
+            return $portfolio;
+        }
 
         /** @var Customer $customer */
         $customer = $customerSalesChannel->customer;
@@ -56,6 +64,10 @@ class StoreProductToAllegro extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
+            $marketplaceId = Arr::get($allegroUser->data, 'marketplace_id');
+
+            $offerLanguage = $this->getAllegroOfferLanguage($marketplaceId);
+
             $productSearch = [];
             if ($product->barcode) {
                 $productSearch = $allegroUser->getProductByEan($product->barcode);
@@ -65,7 +77,7 @@ class StoreProductToAllegro extends RetinaAction
                 $categoryId = $foundedProduct;
             } else {
                 $parent = $product->subDepartment?->name;
-                if (! $parent) {
+                if (!$parent) {
                     $parent = $product->name;
                 }
 
@@ -78,27 +90,26 @@ class StoreProductToAllegro extends RetinaAction
             try {
                 $proposedProduct = ProposeAllegroProduct::run($allegroUser, $portfolio, [
                     'category_id' => $categoryId,
-                    'parameters' => $getParameters
+                    'parameters' => $getParameters,
+                    'language' => $offerLanguage
                 ]);
 
                 $allegroProductId = Arr::get($proposedProduct, 'id');
-            } catch (\Exception $e) {
-                $res = Str::contains($e->getMessage(), ['Product already exists.']);
 
-                if ($res) {
+                if (!$allegroProductId && Str::contains((string)Arr::get($proposedProduct, 'message'), 'Product already exists')) {
                     $proposedProduct = $allegroUser->searchProducts([
                         'phrase' => $portfolio->barcode,
                         'mode' => 'GTIN'
                     ]);
 
                     $allegroProductId = Arr::get($proposedProduct, 'products.0.id');
-                } else {
-                    throw $e;
-                }
-            }
 
-            if (!$allegroProductId) {
-                throw new \Exception('Failed to propose product to Allegro: no product ID returned.');
+                    if (!$allegroProductId) {
+                        throw new \Exception(Arr::get($proposedProduct, 'message', 'Failed to propose product to Allegro: no product ID returned.'));
+                    }
+                }
+            } catch (\Exception $e) {
+                throw new \Exception($e->getMessage());
             }
 
             $availableQuantity = $product->available_quantity;
@@ -107,13 +118,22 @@ class StoreProductToAllegro extends RetinaAction
                 $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
             }
 
-            if (Arr::get($allegroUser->data, 'marketplace_id') === 'allegro-pl') {
-                $targetCurrency = Currency::where('code', 'PLN')->first();
-                $plnPriceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
-                $customerPrice = $portfolio->customer_price * $plnPriceExchange;
-            } else {
-                $targetCurrency = $shop->currency;
-                $customerPrice = $portfolio->customer_price;
+            $marketplaceCurrencyCode = $this->getAllegroCurrencyCode($marketplaceId);
+
+            $targetCurrency = $marketplaceCurrencyCode
+                ? Currency::where('code', $marketplaceCurrencyCode)->first() ?? $shop->currency
+                : $shop->currency;
+
+            $customerPrice = $portfolio->customer_price;
+
+            if ($targetCurrency->code !== $shop->currency->code) {
+                $priceExchange = GetCurrencyExchange::run($shop->currency, $targetCurrency);
+
+                if (!$priceExchange) {
+                    throw new \Exception("Unable to get the {$shop->currency->code} to {$targetCurrency->code} exchange rate.");
+                }
+
+                $customerPrice = $customerPrice * $priceExchange;
             }
 
             $responsibleProducerId = Arr::get($allegroUser->data, 'responsible_producer_id');
@@ -126,7 +146,7 @@ class StoreProductToAllegro extends RetinaAction
                             'id' => $allegroProductId
                         ],
                         'quantity' => [
-                            'value' => $availableQuantity
+                            'value' => (int) $product->units
                         ],
                         'responsibleProducer' => [
                             'id' => $responsibleProducerId
@@ -140,23 +160,23 @@ class StoreProductToAllegro extends RetinaAction
                         ]
                     ]
                 ],
-                'name'     => Str::limit($portfolio->customer_product_name, 75),
+                'name' => Str::substr($portfolio->customer_product_name, 0, 75),
                 'category' => [
                     'id' => $categoryId
                 ],
                 'sellingMode' => [
                     'format' => 'BUY_NOW',
-                    'price'  => [
-                        'amount'   => number_format((float) $customerPrice, 2, '.', ''),
+                    'price' => [
+                        'amount' => $this->formatAllegroPrice($customerPrice, $marketplaceId),
                         'currency' => $targetCurrency->code
                     ]
                 ],
                 'stock' => [
                     'available' => $availableQuantity,
-                    'unit'      => 'UNIT'
+                    'unit' => 'UNIT'
                 ],
                 'delivery' => [
-                    'handlingTime'  => 'PT24H',
+                    'handlingTime' => 'PT24H',
                     'shippingRates' => [
                         'id' => Arr::get($allegroUser->settings, 'shipping.id')
                     ]
@@ -167,13 +187,13 @@ class StoreProductToAllegro extends RetinaAction
                     ]
                 ],
                 'publication' => [
-                    'status'    => 'ACTIVE',
+                    'status' => 'ACTIVE',
                     'republish' => true
                 ],
                 'external' => [
-                    'id' => (string) $portfolio->id
+                    'id' => (string)$portfolio->id
                 ],
-                'language' => 'en-US',
+                'language' => $offerLanguage,
                 'description' => [
                     'sections' => [
                         [
@@ -189,12 +209,23 @@ class StoreProductToAllegro extends RetinaAction
             ];
 
             $allegroOffer = $allegroUser->createOffer($offerData);
-            $allegroUser->publishOffers(Str::uuid(), [Arr::get($allegroOffer, 'id')]);
+            $allegroOfferId = Arr::get($allegroOffer, 'id');
+
+            if (!$allegroOfferId) {
+                throw new \Exception(Arr::get($allegroOffer, 'message', 'Failed to create Allegro offer: no offer ID returned.'));
+            }
 
             UpdatePortfolio::run($portfolio, [
-                'platform_product_id'         => Arr::get($allegroOffer, 'id'),
-                'platform_product_variant_id' => Arr::get($allegroOffer, 'id')
+                'platform_product_id' => $allegroOfferId,
+                'platform_product_variant_id' => $allegroOfferId,
+                'errors_response' => null
             ]);
+
+            $publishResponse = $allegroUser->publishOffers(Str::uuid(), [$allegroOfferId]);
+
+            if ($publishError = Arr::get($publishResponse, 'message')) {
+                throw new \Exception($publishError);
+            }
 
             CheckAllegroPortfolio::run($portfolio);
 
@@ -205,26 +236,26 @@ class StoreProductToAllegro extends RetinaAction
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             } else {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => $this->portfolioErrorResponse($allegroOffer)
+                ]);
+
                 UpdatePlatformPortfolioLog::dispatch($logs, [
-                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $allegroOffer
+                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => json_encode($allegroOffer)
                 ]);
             }
 
             return $portfolio;
-        } catch (\Exception $e) {
-            UpdatePortfolio::run($portfolio, [
-                'errors_response' => [
-                    'message' => $e->getMessage()
-                ]
+        } catch (\Throwable $e) {
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
             ]);
 
-            if ($logs) {
-                UpdatePlatformPortfolioLog::dispatch($logs, [
-                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $e->getMessage()
-                ]);
-            }
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
+            ]);
 
             return $portfolio;
         }

@@ -7,6 +7,7 @@
 
 namespace App\Actions\Discounts\OfferCampaign;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -85,10 +86,12 @@ class RedoOfferCampaignTimeSeries implements ShouldBeUnique
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessOfferCampaignTimeSeriesRecords::dispatch($offerCampaign->id, $frequency, $from, $to);
+                ProcessOfferCampaignTimeSeriesRecords::dispatch($offerCampaign->id, $frequency, $periodFrom, $periodTo);
             } else {
-                ProcessOfferCampaignTimeSeriesRecords::run($offerCampaign->id, $frequency, $from, $to);
+                ProcessOfferCampaignTimeSeriesRecords::run($offerCampaign->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

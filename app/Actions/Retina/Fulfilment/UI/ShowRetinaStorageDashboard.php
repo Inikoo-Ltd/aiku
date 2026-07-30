@@ -80,7 +80,7 @@ class ShowRetinaStorageDashboard extends RetinaAction
             'type'    => 'button',
             'style'   => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? 'create' : 'gray',
             'disabled' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? false : true,
-            'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Make a new dispatch from your SKUs') : __('This service is available if you have SKUs to dispatch'),
+            'tooltip' => $fulfilmentCustomer->number_pallets_with_stored_items_state_storing ? __('Make a new dispatch from your SKOs') : __('This service is available if you have SKOs to dispatch'),
             'label'   => __('New Dropshipping Dispatch'),
             'route'   => [
                 'method'     => 'post',

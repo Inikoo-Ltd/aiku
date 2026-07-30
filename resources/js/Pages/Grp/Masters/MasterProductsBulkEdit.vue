@@ -32,8 +32,7 @@ const props = defineProps<{
     <!-- Page Heading with slot button -->
     <PageHeading :data="pageHead">
     </PageHeading>
-
-    <TableMasterProductsEdit/>
+    <TableMasterProductsEdit />
     
 </template>
 

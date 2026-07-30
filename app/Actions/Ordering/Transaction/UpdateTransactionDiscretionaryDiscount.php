@@ -33,7 +33,7 @@ class UpdateTransactionDiscretionaryDiscount extends OrgAction
             abort(403);
         }
 
-        if (Arr::get($modelData, 'discretionary_offer') == 0) {
+        if (Arr::get($modelData, 'discretionary_offer') == 0 && !$this->asAction) {
             $modelData['discretionary_offer'] = null;
         }
 
@@ -60,6 +60,7 @@ class UpdateTransactionDiscretionaryDiscount extends OrgAction
 
     public function action(Transaction $transaction, array $modelData): Transaction
     {
+        $this->asAction = true;
         $this->initialisationFromShop($transaction->shop, $modelData);
 
         return $this->handle($transaction, $this->validatedData);

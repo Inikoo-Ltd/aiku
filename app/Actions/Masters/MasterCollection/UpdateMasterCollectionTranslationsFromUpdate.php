@@ -9,13 +9,13 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Masters\MasterCollection;
 use App\Models\Catalogue\Collection;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateMasterCollectionTranslationsFromUpdate extends GrpAction
+class UpdateMasterCollectionTranslationsFromUpdate extends OrgAction
 {
     use asAction;
 
@@ -129,7 +129,7 @@ class UpdateMasterCollectionTranslationsFromUpdate extends GrpAction
 
     public function action(MasterCollection $masterCollection, array $modelData): void
     {
-        $this->initialisation($masterCollection->group, $modelData);
+        $this->initialisationFromGroup($masterCollection->group, $modelData);
         $this->handle($masterCollection, $this->validatedData);
     }
 

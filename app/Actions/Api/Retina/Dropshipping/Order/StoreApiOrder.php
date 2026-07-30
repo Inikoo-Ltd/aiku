@@ -12,8 +12,10 @@ namespace App\Actions\Api\Retina\Dropshipping\Order;
 use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\RetinaApiAction;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\SalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -28,9 +30,12 @@ class StoreApiOrder extends RetinaApiAction
      */
     public function handle(CustomerClient $customerClient): Order
     {
+        $salesChannel = SalesChannel::where('type', SalesChannelTypeEnum::API)->first();
+
         return StoreOrder::make()->action($customerClient, [
             'platform_id' => $this->customerSalesChannel->platform_id,
             'customer_sales_channel_id' => $this->customerSalesChannel->id,
+            'sales_channel_id' => $salesChannel->id,
         ]);
     }
 

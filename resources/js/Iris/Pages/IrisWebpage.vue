@@ -18,6 +18,7 @@ library.add(faCheck, faPlus, faMinus)
 const props = defineProps<{
     webpage_data: {  // ShowIrisWebpage
         seo_data: {}
+        seo_image_alt?: string | null
         title: string
         description: string
         canonical_url: string
@@ -68,6 +69,8 @@ const checkScreenType = () => {
     screenType.value = getScreenType()
 }
 
+const shareImageAlt = computed(() => props.webpage_data.seo_image_alt || props.webpage_data.title || '')
+
 const robotsContent = computed(() => {
     const index = props.index_page ? "index" : "noindex"
     const follow = props.follow_link ? "follow" : "nofollow"
@@ -114,13 +117,14 @@ console.log('props',props)
         <meta property="og:description" :content="webpage_data.description || ''" />
         <meta property="og:url" :content="webpage_data.canonical_url || currentUrl" />
         <meta property="og:image" :content="webpage_img?.png || webpage_img?.url || ''" />
-        <meta property="og:image:alt" :content="webpage_data.title || ''" />
+        <meta property="og:image:alt" :content="shareImageAlt" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" :content="usePage().props?.iris?.website?.name || webpage_data.title" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" :content="webpage_data.title || ''" />
         <meta name="twitter:description" :content="webpage_data.description || ''" />
         <meta name="twitter:image" :content="webpage_img?.png || webpage_img?.url || ''" />
+        <meta name="twitter:image:alt" :content="shareImageAlt" />
     </Head>
 
     <div class="bg-white">
@@ -144,9 +148,8 @@ console.log('props',props)
 
             <!-- REVIEW -->
             <div 
-                v-if="(webpage_data.type == 'storefront' || webpage_data.model_type == 'ProductCategory') && (review?.enabled ?? true)">
+                v-if="webpage_data.model_type != 'Product' && (review?.enabled ?? true)">
                 <div>
-                 <!--    <ReviewByStore :code="'review-by-store'" /> -->
                      <ReviewsIris :webpage_id="webpage_id" />
                 </div>
             </div>

@@ -41,6 +41,7 @@ import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
+import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
 
@@ -751,6 +752,7 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
 
             <!-- Section: DNI Expired date -->
             <div v-if="false" class="flex items-center flex-wrap">
@@ -822,6 +824,23 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                 </div>
             </div>
             <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
+        </template>
+
+        <!-- Column: Batch Codes -->
+        <template #cell(batch_codes)="{ item }">
+            <div v-if="item.batch_codes?.length" class="flex flex-wrap gap-1">
+                <span
+                    v-for="code in item.batch_codes"
+                    :key="code"
+                    class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
+                >
+                    <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                    {{ code }}
+                </span>
+            </div>
+            <span v-else class="text-gray-400 italic text-xs">
+                {{ trans("No batch code set") }}
+            </span>
         </template>
 
         <!-- Column: Quantity Required -->

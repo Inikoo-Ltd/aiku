@@ -14,16 +14,22 @@ enum OrgStockMovementTypeEnum: string
 {
     use EnumHelperTrait;
 
-    case PURCHASE           = 'purchase';
-    case RETURN_DISPATCH    = 'return-dispatch';
-    case RETURN_PICKED      = 'return-picked';
-    case RETURN_CONSUMPTION = 'return-consumption';
-    case PICKED             = 'picked';
-    case LOCATION_TRANSFER  = 'location-transfer';
-    case FOUND              = 'found';
-    case CONSUMPTION        = 'consumption';
-    case WRITE_OFF          = 'write-off';
-    case ADJUSTMENT         = 'adjustment';
+    case PURCHASE                   = 'purchase';
+    case CANCEL_PURCHASE            = 'cancel-purchase';
+
+    case RETURN_DISPATCH            = 'return-dispatch';
+    case RETURN_PICKED              = 'return-picked';
+    case CANCEL_RETURN_PICKED       = 'cancel-return-picked';
+
+    case PICKED                     = 'picked';
+    case CANCEL_PICKED              = 'cancel-picked';
+
+    case RETURN_CONSUMPTION         = 'return-consumption';
+    case LOCATION_TRANSFER          = 'location-transfer';
+    case FOUND                      = 'found';
+    case CONSUMPTION                = 'consumption';
+    case WRITE_OFF                  = 'write-off';
+    case ADJUSTMENT                 = 'adjustment';
 
     case ASSOCIATE    = 'associate';
     case DISASSOCIATE = 'disassociate';
@@ -33,10 +39,17 @@ enum OrgStockMovementTypeEnum: string
     {
         return match ($this) {
             self::PURCHASE              => __('Purchase'),
+            self::CANCEL_PURCHASE       => __('Cancel Purchase'),
+
             self::RETURN_DISPATCH       => __('Return Dispatch'),
+
             self::RETURN_PICKED         => __('Return Picked'),
-            self::RETURN_CONSUMPTION    => __('Return Consumption'),
+            self::CANCEL_RETURN_PICKED  => __('Cancel Return Picked'),
+
             self::PICKED                => __('Picked'),
+            self::CANCEL_PICKED         => __('Cancel Picking'),
+
+            self::RETURN_CONSUMPTION    => __('Return Consumption'),
             self::LOCATION_TRANSFER     => __('Location Transfer'),
             self::FOUND                 => __('Found'),
             self::CONSUMPTION           => __('Consumption'),

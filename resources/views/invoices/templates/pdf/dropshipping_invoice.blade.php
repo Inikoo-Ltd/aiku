@@ -176,6 +176,13 @@
                     ({{ $invoice->customer['reference'] }})
                 </div>
 
+                @if($invoice->customer['contact_name'] && $invoice->customer['contact_name'] !== $invoice->customer['name'])
+                    <div>
+                        <span class="address_label">{{ __('Contact Name') }}:</span> <span
+                                class="address_value">{{ $invoice->customer['contact_name'] }}</span>
+                    </div>
+                @endif
+
                 <div>
                     <span class="address_label">{{ __('Email') }}:</span> <span
                             class="address_value">{{ $invoice->customer['email'] }}</span>

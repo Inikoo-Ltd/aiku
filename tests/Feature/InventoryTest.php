@@ -696,9 +696,51 @@ test("UI show org stock", function (OrgStock $orgStock) {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
             )
+            ->has("showcase.latest_movements")
             ->has("tabs");
     });
 })->depends('create org stock');
+
+test("UI show org stock navigation follows the bucket and sort", function () {
+    $warehouse = $this->organisation->warehouses->first() ?? createWarehouse();
+    $this->withoutExceptionHandling();
+
+    $makeOrgStock = function (string $code) {
+        $stock = StoreStock::make()->action(
+            $this->group,
+            array_merge(Stock::factory()->definition(), ['code' => $code, 'state' => StockStateEnum::ACTIVE])
+        );
+
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+
+        return $orgStock->refresh();
+    };
+
+    $first  = $makeOrgStock('NAVSTOCKA');
+    $middle = $makeOrgStock('NAVSTOCKB');
+    $last   = $makeOrgStock('NAVSTOCKC');
+
+    $showRoute = fn ($orgStock) => route("grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.show", [
+        $this->organisation->slug,
+        $warehouse->slug,
+        $orgStock->slug
+    ]);
+
+    get($showRoute($middle))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket_sort=-code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $last->name)
+            ->where('navigation.next.label', $first->name)
+            ->etc()
+    );
+});
 
 test("UI index org stocks all", function () {
     $warehouse = Warehouse::first();
@@ -716,7 +758,7 @@ test("UI index org stocks all", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKOs')->etc()
             );
     });
 });
@@ -737,7 +779,7 @@ test("UI index org stocks discontinued", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKOs')->etc()
             );
     });
 });
@@ -758,7 +800,7 @@ test("UI index org stocks abnormally", function () {
             ->has("breadcrumbs")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKOs')->etc()
             );
     });
 });
@@ -826,7 +868,7 @@ test("UI Index Org Stocks", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Current SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Current SKOs')->etc()
             );
     });
 });
@@ -847,7 +889,7 @@ test("UI Index Org Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKU Families')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKO Families')->etc()
             );
     });
 });
@@ -887,7 +929,7 @@ test("UI Index Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Master SKO Families')->etc()
             );
     });
 });
@@ -903,7 +945,7 @@ test("UI Create stock family", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "New SKU family")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "New SKO family")->etc()
             )
             ->has("formData");
     });
@@ -923,7 +965,7 @@ test("UI index inventory stored item", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "Customer's SKUs")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "Customer's SKOs")->etc()
             )
             ->has("tabs");
     });
@@ -1148,13 +1190,14 @@ test('OrgStockHydrateQuantityInLocations recomputes quantities and short-circuit
     $orgStock         = OrgStock::first();
     $expectedQuantity = (float) $orgStock->locationOrgStocks()->sum('quantity');
 
-    $orgStock->update(['quantity_in_locations' => 9999, 'quantity_available' => 9999]);
+    $orgStock->update(['quantity_in_locations' => 9999, 'quantity_available' => 9999, 'sku_value' => 7, 'value_in_locations' => 0]);
 
     OrgStockHydrateQuantityInLocations::run($orgStock->id);
 
     $orgStock->refresh();
     expect((float) $orgStock->quantity_in_locations)->toBe($expectedQuantity)
-        ->and((float) $orgStock->quantity_available)->toBe($expectedQuantity);
+        ->and((float) $orgStock->quantity_available)->toBe($expectedQuantity)
+        ->and((float) $orgStock->value_in_locations)->toBe($expectedQuantity * 7);
 
     // Guard clauses: null id and missing id return early without throwing
     OrgStockHydrateQuantityInLocations::run(null);
@@ -1576,3 +1619,25 @@ test('UI Index and Show OrganisationStockHistory', function () {
 
     return $history;
 })->depends('create warehouse');
+
+test('org stock indexes use time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    createWarehouse();
+    $stocks = createStocks($this->group);
+    createOrgStocks($this->organisation, $stocks);
+
+    $organisation = $this->organisation;
+
+    $indexOrgStocks = \App\Actions\Inventory\OrgStock\UI\IndexOrgStocks::make();
+    (function () use ($organisation) {
+        $this->organisation = $organisation;
+    })->call($indexOrgStocks);
+
+    $indexOrgStocksWithNoProducts = \App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts::make();
+    (function () use ($organisation) {
+        $this->organisation = $organisation;
+    })->call($indexOrgStocksWithNoProducts);
+
+    expect($indexOrgStocks->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(1)
+        ->and($indexOrgStocksWithNoProducts->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(0);
+});

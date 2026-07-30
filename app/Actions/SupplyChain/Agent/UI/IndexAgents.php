@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Http\Resources\SupplyChain\AgentsResource;
@@ -24,14 +25,9 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexAgents extends GrpAction
+class IndexAgents extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('supply-chain.edit');
-        return $request->user()->authTo('supply-chain.view');
-    }
-
+    use WithSupplyChainAuthorisation;
     protected function getElementGroups(Group $group): array
     {
         return
@@ -148,7 +144,7 @@ class IndexAgents extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
 
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle();
     }

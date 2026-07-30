@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\Ebay\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
@@ -28,6 +29,7 @@ class StoreEbayProduct extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
+    use WithPortfolioErrorResponse;
 
     /**
      * @throws \Exception
@@ -69,7 +71,8 @@ class StoreEbayProduct extends RetinaAction
                         }
                     }
 
-                    $displayError = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
+                    $displayError  = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
+                    $errorResponse = $this->portfolioErrorResponse($displayError) ?? [];
 
                     UpdatePlatformPortfolioLog::dispatch($logs, [
                         'status' => PlatformPortfolioLogsStatusEnum::FAIL,
@@ -77,11 +80,8 @@ class StoreEbayProduct extends RetinaAction
                     ]);
 
                     UpdatePortfolio::make()->action($portfolio, [
-                        'upload_warning' => $displayError,
-                        'errors_response' => [
-                            'params' => $params,
-                            'message' => $displayError
-                        ]
+                        'upload_warning' => Arr::get($errorResponse, 'message'),
+                        'errors_response' => ['params' => $params] + $errorResponse
                     ]);
 
                     if (!blank($params)) {
@@ -293,7 +293,7 @@ class StoreEbayProduct extends RetinaAction
                 'platform_product_id' => Arr::get($offer, 'offerId'),
                 'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
                 'upload_warning' => null,
-                'errors_response' => []
+                'errors_response' => null
             ]);
 
             CheckEbayPortfolio::run($portfolio);
@@ -307,7 +307,16 @@ class StoreEbayProduct extends RetinaAction
             }
 
             return $portfolio;
-        } catch (\Exception) {
+        } catch (\Exception $e) {
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
+            ]);
+
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
+            ]);
+
             return $portfolio;
 
         }

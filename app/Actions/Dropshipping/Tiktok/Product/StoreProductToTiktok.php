@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Tiktok\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
@@ -29,6 +30,7 @@ class StoreProductToTiktok extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithPortfolioErrorResponse;
 
     /**
      * @throws \Exception
@@ -176,14 +178,6 @@ class StoreProductToTiktok extends RetinaAction
 
             $tiktokProduct = $tiktokUser->uploadProductToTiktok($productData);
 
-            if (Arr::get($tiktokProduct, 'error')) {
-                UpdatePortfolio::run($portfolio, [
-                    'errors_response' => [
-                        'message' => Arr::get($tiktokProduct, 'data')
-                    ]
-                ]);
-            }
-
             /*$result = $tiktokUser->activateProduct([
                 'product_ids' => [Arr::get($tiktokProduct, 'data.product_id')]
             ]);*/
@@ -198,10 +192,18 @@ class StoreProductToTiktok extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => null
+                ]);
+
                 UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             } else {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => $this->portfolioErrorResponse(Arr::get($tiktokProduct, 'data'))
+                ]);
+
                 UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => Arr::get($tiktokProduct, 'data')
@@ -211,9 +213,7 @@ class StoreProductToTiktok extends RetinaAction
             return $portfolio;
         } catch (\Exception $e) {
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [
-                    'message' => $e->getMessage()
-                ]
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
             ]);
 
             if ($logs) {

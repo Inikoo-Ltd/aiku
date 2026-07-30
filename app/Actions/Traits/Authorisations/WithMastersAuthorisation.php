@@ -19,6 +19,8 @@ trait WithMastersAuthorisation
         }
 
         $this->canEdit = $request->user()->authTo("masters.edit");
+        $this->canEditPrices = $request->user()->authTo("masters.price_edit");
+        $this->canEditOffers = $request->user()->authTo("masters.offer_edit");
 
         return $request->user()->authTo("masters.view");
     }

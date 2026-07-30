@@ -587,6 +587,17 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    ...($user->chatAgent ? [
+                        [
+                            "label" => __("Inbox"),
+                            "icon"  => ["fal", "fa-inbox"],
+                            "root"  => "grp.org.shops.show.chat.inbox",
+                            "route" => [
+                                "name"       => "grp.org.shops.show.chat.inbox",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                    ] : []),
                 ],
             ],
         ];
@@ -629,6 +640,16 @@ class GetShopNavigation
                             'root'    => 'grp.org.shops.show.ordering.orders.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.ordering.orders.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Invoices"),
+                            "tooltip" => __("Invoices"),
+                            "icon"    => ["fal", "fa-file-invoice-dollar"],
+                            'root'    => 'grp.org.shops.show.ordering.invoices.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.ordering.invoices.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],

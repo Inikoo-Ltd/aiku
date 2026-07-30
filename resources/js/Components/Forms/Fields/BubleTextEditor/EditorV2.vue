@@ -89,7 +89,7 @@ import { ulid } from "ulid"
 
 const props = withDefaults(defineProps<{
     modelValue: string | null,
-    toogle?: string[],
+    toggle?: string[],
     type?: string,
     editable?: boolean
     placeholder?: any | String
@@ -98,7 +98,7 @@ const props = withDefaults(defineProps<{
 }>(), {
     editable: true,
     type: 'Bubble',
-    toogle: () => [
+    toggle: () => [
         'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'query', "fontFamily",
         'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
         'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear', "image", "video", "table"
@@ -123,15 +123,33 @@ const showAddImageDialog = ref<boolean>(false)
 const showLinkDialog = ref<boolean>()
 const CustomLinkConfirm = ref(false)
 const attrsCustomLink = ref<Object>(null)
-const tippyOptions = ref({})
+const tippyOptions = {
+    placement: 'bottom',
+    offset: [0, 8],
+    appendTo: () => document.body,
+    maxWidth: 'none',
+    popperOptions: {
+        strategy: 'fixed',
+        modifiers: [
+            { name: 'preventOverflow', options: { padding: 8 } },
+            { name: 'flip', options: { padding: 8 } },
+        ],
+    },
+}
 const key = ref(ulid())
+const isPickingColor = ref(false)
+const colorSelection = ref<{ from: number; to: number } | null>(null)
 const editorInstance = useEditor({
     content: props.modelValue,
     editable: props.editable,
     onFocus: () => {
+        if (isPickingColor.value) return
+
         emits('focus')
     },
     onBlur: () => {
+        if (isPickingColor.value) return
+
         emits('blur')
     },
     editorProps: {
@@ -485,8 +503,48 @@ const lastSelection = ref<{ from: number; to: number } | null>(null)
 
 const shouldShowBubble = ({ editor }: any) => {
   if (!editor) return false
+  if (isPickingColor.value) return true
   if (!showBubble.value) return false
   return editor.isFocused && !showDialog.value
+}
+
+const startPickingColor = () => {
+  const selection = editorInstance.value?.state.selection
+  colorSelection.value = selection ? { from: selection.from, to: selection.to } : null
+  isPickingColor.value = true
+}
+
+const applyTextColor = (color: string) => {
+  const chain = editorInstance.value?.chain()
+  if (!chain) return
+
+  if (colorSelection.value) {
+    chain.setTextSelection(colorSelection.value)
+  }
+
+  chain.setColor(color).run()
+}
+
+const finishPickingColor = () => {
+  if (!isPickingColor.value) return
+
+  editorInstance.value?.commands.focus()
+  isPickingColor.value = false
+  colorSelection.value = null
+}
+
+const cancelPickingColor = () => {
+  if (!isPickingColor.value) return
+
+  isPickingColor.value = false
+  colorSelection.value = null
+
+  if (!editorInstance.value?.isFocused) {
+    showBubble.value = false
+    lastSelection.value = null
+    key.value = ulid()
+    emits('blur')
+  }
 }
 
 
@@ -499,8 +557,10 @@ const closeBubble = () => {
 watch(editorInstance, (editor) => {
   if (!editor) return
 
-  // BLUR: always hide
+  // BLUR: always hide, except while the color picker holds the focus
   editor.on('blur', () => {
+    if (isPickingColor.value) return
+
     showBubble.value = false
     lastSelection.value = null
   })
@@ -546,11 +606,9 @@ onMounted(async () => {
         <Teleport to="body">
             <BubbleMenu  
                 :key="key"
-                :shouldShow="shouldShowBubble" 
-                :tippy-options="{
-                placement: 'bottom',
-                offset: [0, 8],}" 
-                ref="_bubbleMenu"  
+                :shouldShow="shouldShowBubble"
+                :tippy-options="tippyOptions"
+                ref="_bubbleMenu"
                 :editor="editorInstance"
                 v-if="editorInstance && !showDialog"
                 class="w-max max-w-[92vw]"
@@ -558,7 +616,7 @@ onMounted(async () => {
 
                 <div class="bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate">
 
-                    <div v-if="props.toogle.length" class="relative bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate py-3">
+                    <div v-if="props.toggle.length" class="relative bg-gray-100 rounded-xl p-2 divide-y divide-gray-400 isolate py-3">
                         <button type="button" class="absolute top-[-1px] right-0  z-10 text-gray-500 hover:text-gray-800"
                             @click="closeBubble" aria-label="Close toolbar">
                             <FontAwesomeIcon :icon="faTimes" class="h-4 w-4 text-red-500" />
@@ -569,12 +627,12 @@ onMounted(async () => {
                     <section id="tiptap-toolbar"
                         class="flex flex-wrap items-center gap-2 sm:gap-0 overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
                         <TiptapToolbarGroup>
-                            <TiptapToolbarButton v-if="toogle.includes('undo')" label="Undo"
+                            <TiptapToolbarButton v-if="toggle.includes('undo')" label="Undo"
                                 @click="editorInstance?.chain().focus().undo().run()"
                                 :disabled="!editorInstance?.can().chain().focus().undo().run()">
                                 <FontAwesomeIcon :icon="faRedo" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
-                            <TiptapToolbarButton v-if="toogle.includes('redo')" label="Redo"
+                            <TiptapToolbarButton v-if="toggle.includes('redo')" label="Redo"
                                 @click="editorInstance?.chain().focus().redo().run()"
                                 :disabled="!editorInstance?.can().chain().focus().redo().run()">
                                 <FontAwesomeIcon :icon="faUndo" class="h-5 w-5 sm:h-4 sm:w-4" />
@@ -583,21 +641,21 @@ onMounted(async () => {
 
                         <!-- Section: Heading 1,2,3 -->
                         <TiptapToolbarGroup>
-                            <TiptapToolbarButton v-if="toogle.includes('heading1')" label="Heading 1"
+                            <TiptapToolbarButton v-if="toggle.includes('heading1')" label="Heading 1"
                                 :is-active="editorInstance?.isActive('heading', { level: 1 })"
                                 @click="editorInstance?.chain().focus().toggleHeading({ level: 1 }).run()"
                                 class="toolbar-button">
                                 <FontAwesomeIcon :icon="faH1" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('heading2')" label="Heading 2"
+                            <TiptapToolbarButton v-if="toggle.includes('heading2')" label="Heading 2"
                                 :is-active="editorInstance?.isActive('heading', { level: 2 })"
                                 @click="editorInstance?.chain().focus().toggleHeading({ level: 2 }).run()"
                                 class="toolbar-button">
                                 <FontAwesomeIcon :icon="faH2" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('heading3')" label="Heading 3"
+                            <TiptapToolbarButton v-if="toggle.includes('heading3')" label="Heading 3"
                                 :is-active="editorInstance?.isActive('heading', { level: 3 })"
                                 @click="editorInstance?.chain().focus().toggleHeading({ level: 3 }).run()"
                                 class="toolbar-button">
@@ -606,7 +664,7 @@ onMounted(async () => {
                         </TiptapToolbarGroup>
 
                         <!-- Section: Font size -->
-                        <div  v-if="toogle.includes('fontSize')" class="my-1.5 inline-flex flex-row flex-wrap items-center space-x-1 px-2">
+                        <div  v-if="toggle.includes('fontSize')" class="my-1.5 inline-flex flex-row flex-wrap items-center space-x-1 px-2">
                             <div :class="[
                                 'inline-flex h-8 shrink-0 flex-row items-center justify-center rounded-md disabled:bg-transparent disabled:text-gray-300',
                                 'text-gray-600 hover:bg-blue-50',
@@ -663,36 +721,39 @@ onMounted(async () => {
                         </div>
 
                         <TiptapToolbarGroup>
-                            <TiptapToolbarButton v-if="toogle.includes('bold')" label="Bold"
+                            <TiptapToolbarButton v-if="toggle.includes('bold')" label="Bold"
                                 :is-active="editorInstance?.isActive('bold')"
                                 @click="editorInstance?.chain().focus().toggleBold().run()">
                                 <FontAwesomeIcon :icon="faBold" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('italic')" label="Italic"
+                            <TiptapToolbarButton v-if="toggle.includes('italic')" label="Italic"
                                 :is-active="editorInstance?.isActive('italic')"
                                 @click="editorInstance?.chain().focus().toggleItalic().run()">
                                 <FontAwesomeIcon :icon="faItalic" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('underline')" label="Underline"
+                            <TiptapToolbarButton v-if="toggle.includes('underline')" label="Underline"
                                 :is-active="editorInstance?.isActive('underline')"
                                 @click="editorInstance?.chain().focus().toggleUnderline().run()">
                                 <FontAwesomeIcon :icon="faUnderline" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('strikethrough')" label="Strikethrough"
+                            <TiptapToolbarButton v-if="toggle.includes('strikethrough')" label="Strikethrough"
                                 :is-active="editorInstance?.isActive('strike')"
                                 @click="editorInstance?.chain().focus().toggleStrike().run()">
                                 <FontAwesomeIcon :icon="faStrikethrough" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('color')" label="Text Color">
+                            <TiptapToolbarButton v-if="toggle.includes('color')" label="Text Color">
                                 <div class="relative w-7 h-7">
                                     <!-- Color Input -->
                                     <input type="color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                        @input="editorInstance?.chain().focus().setColor($event.target.value).run()"
-                                        :value="editorInstance.getAttributes('textStyle').color" />
+                                        @mousedown="startPickingColor"
+                                        @input="applyTextColor($event.target.value)"
+                                        @change="finishPickingColor"
+                                        @blur="cancelPickingColor"
+                                        :value="editorInstance.getAttributes('textStyle').color || '#000000'" />
                                     <!-- Icon -->
                                     <div class="flex items-center justify-center w-full h-full rounded"
                                         :style="{ color: editorInstance.getAttributes('textStyle').color || 'gray' }">
@@ -701,7 +762,7 @@ onMounted(async () => {
                                 </div>
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('highlight')" label="Text highlight">
+                            <TiptapToolbarButton v-if="toggle.includes('highlight')" label="Text highlight">
                                 <div class="relative w-7 h-7">
                                     <!-- Color Input -->
                                     <input type="color" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -717,13 +778,13 @@ onMounted(async () => {
                         </TiptapToolbarGroup>
 
                         <TiptapToolbarGroup>
-                            <TiptapToolbarButton v-if="toogle.includes('bulletList')" label="Bullet List"
+                            <TiptapToolbarButton v-if="toggle.includes('bulletList')" label="Bullet List"
                                 :is-active="editorInstance?.isActive('bulletList')"
                                 @click="editorInstance?.chain().focus().toggleBulletList().run()">
                                 <FontAwesomeIcon :icon="faList" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('orderedList')" label="Ordered List"
+                            <TiptapToolbarButton v-if="toggle.includes('orderedList')" label="Ordered List"
                                 :is-active="editorInstance?.isActive('orderedList')"
                                 @click="editorInstance?.chain().focus().toggleOrderedList().run()">
                                 <FontAwesomeIcon :icon="faListOl" class="h-5 w-5 sm:h-4 sm:w-4" />
@@ -731,19 +792,19 @@ onMounted(async () => {
                         </TiptapToolbarGroup>
 
                         <TiptapToolbarGroup>
-                            <TiptapToolbarButton v-if="toogle.includes('alignLeft')" label="Align Left"
+                            <TiptapToolbarButton v-if="toggle.includes('alignLeft')" label="Align Left"
                                 :is-active="editorInstance?.isActive('textAlign', 'left')"
                                 @click="editorInstance?.chain().focus().setTextAlign('left').run()">
                                 <FontAwesomeIcon :icon="faAlignLeft" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('alignCenter')" label="Align Center"
+                            <TiptapToolbarButton v-if="toggle.includes('alignCenter')" label="Align Center"
                                 :is-active="editorInstance?.isActive('textAlign', 'center')"
                                 @click="editorInstance?.chain().focus().setTextAlign('center').run()">
                                 <FontAwesomeIcon :icon="faAlignCenter" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('alignRight')" label="Align Right"
+                            <TiptapToolbarButton v-if="toggle.includes('alignRight')" label="Align Right"
                                 :is-active="editorInstance?.isActive('textAlign', 'right')"
                                 @click="editorInstance?.chain().focus().setTextAlign('right').run()">
                                 <FontAwesomeIcon :icon="faAlignRight" class="h-5 w-5 sm:h-4 sm:w-4" />
@@ -751,16 +812,16 @@ onMounted(async () => {
                         </TiptapToolbarGroup>
 
                         <TiptapToolbarGroup>
-                            <TiptapToolbarButton v-if="toogle.includes('link')" label="Link" @click="openLinkDialog"
+                            <TiptapToolbarButton v-if="toggle.includes('link')" label="Link" @click="openLinkDialog"
                                 :is-active="editorInstance?.isActive('link')">
                                 <FontAwesomeIcon :icon="faLink" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
-                            <TiptapToolbarButton v-if="toogle.includes('customLink')" label="Link Internal & External"
+                            <TiptapToolbarButton v-if="toggle.includes('customLink')" label="Link Internal & External"
                                 @click="openLinkDialogCustom" :is-active="editorInstance?.isActive('link')">
                                 <FontAwesomeIcon :icon="faLink" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('customLink') || toogle.includes('link')"
+                            <TiptapToolbarButton v-if="toggle.includes('customLink') || toggle.includes('link')"
                                 label="unlink" @click="editorInstance.chain().focus().unsetLink().run()"
                                 :disabled="!editorInstance?.isActive('link')">
                                 <FontAwesomeIcon :icon="faUnlink" class="h-5 w-5 sm:h-4 sm:w-4" />
@@ -769,23 +830,23 @@ onMounted(async () => {
                         </TiptapToolbarGroup>
 
                         <TiptapToolbarGroup>
-                            <TiptapToolbarButton v-if="toogle.includes('image')" label="Image"
+                            <TiptapToolbarButton v-if="toggle.includes('image')" label="Image"
                                 @click="() => { showAddImageDialog = true, showDialog = true }">
                                 <FontAwesomeIcon :icon="faImage" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('video')" label="Youtube Video"
+                            <TiptapToolbarButton v-if="toggle.includes('video')" label="Youtube Video"
                                 @click="() => { showAddYoutubeDialog = true, showDialog = true }">
                                 <FontAwesomeIcon :icon="faFileVideo" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('blockquote')" label="Blockquote"
+                            <TiptapToolbarButton v-if="toggle.includes('blockquote')" label="Blockquote"
                                 :is-active="editorInstance?.isActive('blockquote')"
                                 @click="editorInstance?.chain().focus().toggleBlockquote().run()">
                                 <FontAwesomeIcon :icon="faQuoteLeft" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
 
-                            <TiptapToolbarButton v-if="toogle.includes('divider')"
+                            <TiptapToolbarButton v-if="toggle.includes('divider')"
                                 @click="editorInstance?.chain().focus().setHorizontalRule().run()"
                                 label="Horizontal Line">
                                 <FontAwesomeIcon :icon="faMinus" class="h-5 w-5 sm:h-4 sm:w-4" />
@@ -796,11 +857,11 @@ onMounted(async () => {
                     <!-- 2nd row -->
                     <section  id="tiptap-toolbar"
                         class="flex flex-wrap items-center gap-2 sm:gap-0 overflow-visible bg-gray-50  divide-y sm:divide-y-0 sm:divide-x divide-gray-400 p-2 sm:p-0">
-                        <Select v-if="toogle.includes('query')" @change="(e) => setVariabel(e.value.value)"
+                        <Select v-if="toggle.includes('query')" @change="(e) => setVariabel(e.value.value)"
                             :options="irisVariable" optionLabel="label" size="small"
                             :placeholder="trans('Select a variable to put')" class="w-full md:w-56 max-w-56 mr-2" />
 
-                        <div v-if="toogle.includes('fontFamily')" class="my-1.5 inline-flex flex-row flex-wrap items-center space-x-1 px-2">
+                        <div v-if="toggle.includes('fontFamily')" class="my-1.5 inline-flex flex-row flex-wrap items-center space-x-1 px-2">
                             <div :class="[
                                 'inline-flex h-8 shrink-0 flex-row items-center justify-center rounded-md disabled:bg-transparent disabled:text-gray-300',
                                 'text-gray-600 hover:bg-blue-50',
@@ -833,7 +894,7 @@ onMounted(async () => {
                             </div>
                         </div>
 
-                        <TiptapToolbarGroup v-if="toogle.includes('table')">
+                        <TiptapToolbarGroup v-if="toggle.includes('table')">
                             <TiptapToolbarButton label="Table"
                                 @click="() => { showAddTableDialog = true, showDialog = true }">
                                 <FontAwesomeIcon :icon="faTable" class="h-5 w-5 sm:h-4 sm:w-4" />
@@ -842,7 +903,7 @@ onMounted(async () => {
 
                         <TiptapToolbarGroup v-if="editorInstance?.isActive('table')">
                             <!-- Table: background color -->
-                            <TiptapToolbarButton v-if="toogle.includes('color')" :label="trans('Color background')">
+                            <TiptapToolbarButton v-if="toggle.includes('color')" :label="trans('Color background')">
                                 <!-- {{ editorInstance.getAttributes('table')?.backgroundColor || editorInstance.getAttributes('tableCell')?.backgroundColor }} -->
                                 <div class="relative w-7 h-7">
                                     <!-- {{ editorInstance.getAttributes('table') }} -->
@@ -865,7 +926,7 @@ onMounted(async () => {
                             </TiptapToolbarButton>
 
                             <!-- Table: border color -->
-                            <TiptapToolbarButton v-if="toogle.includes('color')" :label="trans('Color border')">
+                            <TiptapToolbarButton v-if="toggle.includes('color')" :label="trans('Color border')">
                                 <div class="relative w-7 h-7">
                                     <UtilsColorPicker key="picker_table_border_color"
                                         :color="editorInstance.getAttributes('tableCell')?.borderColor" class=""
@@ -963,7 +1024,7 @@ onMounted(async () => {
                         </TiptapToolbarGroup>
 
                         <TiptapToolbarGroup >
-                            <TiptapToolbarButton  v-if="toogle.includes('clear')" @click="editorInstance?.chain().focus().unsetAllMarks().run()"
+                            <TiptapToolbarButton  v-if="toggle.includes('clear')" @click="editorInstance?.chain().focus().unsetAllMarks().run()"
                                 label="Unset Style">
                                 <FontAwesomeIcon :icon="faEraser" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
@@ -1063,15 +1124,6 @@ onMounted(async () => {
   transform: translateX(-50%);
   z-index: 50;
 } */
-
-:deep(.tippy-box) {
-    min-width: 10px !important;
-    max-width: 92vw !important;
-    background-color: transparent
-}
-
-
-
 
 :deep(.font-inter) {
     font-family: "Inter", sans-serif;

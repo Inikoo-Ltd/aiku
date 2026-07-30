@@ -32,6 +32,21 @@ trait WithOrdersSubNavigation
                 ],
             ],
             [
+                "number"   => $shop->orderingStats->number_invoices_type_invoice,
+                "label"    => __("Invoices"),
+                "route"     => [
+                    "name"       => 'grp.org.shops.show.ordering.invoices.index',
+                    "parameters" => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug
+                    ],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-file-invoice-dollar"],
+                    "tooltip" => __("Invoices"),
+                ],
+            ],
+            [
                 "number"   => $shop->orderingStats->number_purges,
                 "label"    => __("Purges"),
                 "route"     => [

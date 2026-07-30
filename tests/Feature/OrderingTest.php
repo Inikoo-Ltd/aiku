@@ -16,8 +16,10 @@ use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\ShippingZone\HydrateShippingZones;
+use App\Actions\Billables\ShippingZone\DeleteShippingZone;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\DeleteShippingZoneSchema;
 use App\Actions\Billables\ShippingZoneSchema\HydrateShippingZoneSchemas;
 use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
@@ -27,6 +29,7 @@ use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
+use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
@@ -65,7 +68,9 @@ use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\StoreUpcomingTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\UI\Grp\Layout\GetShopNavigation;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
@@ -102,14 +107,19 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Adjustment;
+use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Imports\Ordering\TransactionImport;
+use App\Models\Helpers\Upload;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
+use App\Models\SysAdmin\Permission;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia;
@@ -800,6 +810,65 @@ test('UI show ordering backlog', function () {
     });
 });
 
+test('UI show order navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeOrder = function (string $date, int $netAmount) {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        $order->update(['state' => OrderStateEnum::IN_WAREHOUSE, 'date' => $date, 'net_amount' => $netAmount, 'submitted_at' => null]);
+
+        return $order->refresh();
+    };
+
+    $newest = $makeOrder('2026-07-20 10:00:00', 300);
+    $middle = $makeOrder('2026-07-19 10:00:00', 200);
+    $oldest = $makeOrder('2026-07-18 10:00:00', 100);
+
+    $routeParameters = [$this->organisation->slug, $this->shop->slug, $middle->slug];
+
+    $response = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop');
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    $ascendingByAmount = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=net_amount');
+    $ascendingByAmount->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    $byJoinedColumn = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=-customer_name');
+    $byJoinedColumn->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    $byNullColumn = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters).'?bucket=in_warehouse&bucket_scope=shop&bucket_sort=submitted_at');
+    $byNullColumn->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    $withoutBucket = get(route('grp.org.shops.show.ordering.orders.show', $routeParameters));
+    $withoutBucket->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+
+});
+
 test('UI show ordering backlog waiting crm items', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $this->shop]));
@@ -834,6 +903,66 @@ test('UI index ordering purges', function () {
                     ->etc()
             );
     });
+});
+
+test('UI index ordering invoices by payment status', function () {
+    $this->withoutExceptionHandling();
+
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $this->user->givePermissionTo(
+        Permission::where('name', "orders.{$this->shop->id}.view")->firstOrFail()
+    );
+    Cache::tags('auth-user:'.$this->user->id)->flush();
+    actingAs($this->user->fresh());
+
+    $orderingNavigation = GetShopNavigation::run($this->shop, $this->user->fresh());
+    expect(collect(data_get($orderingNavigation, 'ordering.topMenu.subSections'))->pluck('route.name')->all())
+        ->toContain('grp.org.shops.show.ordering.invoices.index');
+
+    StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+    $paidInvoice = StoreInvoice::make()->action($this->customer, Invoice::factory()->definition());
+    $paidInvoice->updateQuietly([
+        'pay_status' => InvoicePayStatusEnum::PAID,
+    ]);
+
+    $invoiceQuery = Invoice::query()
+        ->where('shop_id', $this->shop->id)
+        ->where('type', InvoiceTypeEnum::INVOICE)
+        ->whereNot('in_process', true);
+
+    $allInvoicesCount    = (clone $invoiceQuery)->count();
+    $paidInvoicesCount   = (clone $invoiceQuery)->where('pay_status', InvoicePayStatusEnum::PAID)->count();
+    $unpaidInvoicesCount = (clone $invoiceQuery)->where('pay_status', InvoicePayStatusEnum::UNPAID)->count();
+
+    $routeParameters = [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+    ];
+
+    get(route('grp.org.shops.show.ordering.invoices.index', $routeParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Ordering/Invoices')
+            ->where('title', 'Invoices')
+            ->where('tabs.current', 'all')
+            ->has('tabs.navigation', 3)
+            ->where('all.meta.total', $allInvoicesCount)
+            ->where('pageHead.subNavigation.1.route.name', 'grp.org.shops.show.ordering.invoices.index')
+            ->has('breadcrumbs', 3));
+
+    get(route('grp.org.shops.show.ordering.invoices.index', [
+        ...$routeParameters,
+        'tab' => 'paid',
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('tabs.current', 'paid')
+        ->where('paid.meta.total', $paidInvoicesCount));
+
+    get(route('grp.org.shops.show.ordering.invoices.index', [
+        ...$routeParameters,
+        'tab' => 'unpaid',
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('tabs.current', 'unpaid')
+        ->where('unpaid.meta.total', $unpaidInvoicesCount));
 });
 
 test('UI create ordering purge', function () {
@@ -1050,6 +1179,30 @@ test('update shipping zone schema', function ($shippingZoneSchema) {
     $this->assertModelExists($shippingZoneSchema);
 })->depends('create shipping zone schema');
 
+test('delete shipping zone schema action removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    DeleteShippingZoneSchema::make()->action($shippingZoneSchema);
+
+    expect(ShippingZoneSchema::query()->whereKey($shippingZoneSchema->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone schema command removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+
+    $this->artisan('delete:shipping_zone_schema '.$shippingZoneSchema->slug)
+        ->expectsOutput('Shipping zone schema '.$shippingZoneSchema->name.' deleted')
+        ->assertSuccessful();
+
+    expect(ShippingZoneSchema::query()->whereKey($shippingZoneSchema->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone schema command reports a missing schema', function () {
+    $this->artisan('delete:shipping_zone_schema missing-shipping-zone-schema')
+        ->expectsOutput('Shipping zone schema not found')
+        ->assertFailed();
+});
+
 test('create shipping zone', function ($shippingZoneSchema) {
     $shippingZone = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
     $this->assertModelExists($shippingZoneSchema);
@@ -1061,6 +1214,34 @@ test('update shipping zone', function ($shippingZone) {
     $shippingZone = UpdateShippingZone::make()->action($shippingZone, ShippingZone::factory()->definition());
     $this->assertModelExists($shippingZone);
 })->depends('create shipping zone');
+
+test('delete shipping zone action removes zone and dependants', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    DeleteShippingZone::make()->action($shippingZone);
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse()
+        ->and($shippingZone->stats()->exists())->toBeFalse()
+        ->and($shippingZone->asset?->trashed())->toBeTrue();
+});
+
+test('delete shipping zone command removes model', function () {
+    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
+    $shippingZone       = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
+
+    $this->artisan('delete:shipping_zone '.$shippingZone->slug)
+        ->expectsOutput('Shipping zone '.$shippingZone->name.' deleted')
+        ->assertSuccessful();
+
+    expect(ShippingZone::query()->whereKey($shippingZone->id)->exists())->toBeFalse();
+});
+
+test('delete shipping zone command reports a missing zone', function () {
+    $this->artisan('delete:shipping_zone missing-shipping-zone')
+        ->expectsOutput('Shipping zone not found')
+        ->assertFailed();
+});
 
 
 test('shipping zone schemas hydrators', function () {
@@ -1557,4 +1738,85 @@ test('transactions resource adds bonus to ordered quantity for follow-on', funct
     expect((float)$array['quantity_ordered'])->toBe(6.0)
         ->and((float)$array['quantity_bonus'])->toBe(6.0)
         ->and($array['is_follow_on'])->toBeTrue();
+});
+
+test('transaction import marks rows with missing code or quantity as failed', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+
+    $upload = Upload::create([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'model'             => 'Transaction',
+        'parent_type'       => $order->getMorphClass(),
+        'parent_id'         => $order->id,
+        'original_filename' => 'test.xlsx',
+        'filename'          => 'test.xlsx',
+        'filesize'          => 0,
+        'number_rows'       => 0,
+        'number_success'    => 0,
+        'number_fails'      => 0,
+    ]);
+
+    $import = new TransactionImport($order, $upload);
+
+    $makeUploadRecord = fn () => $upload->records()->create([
+        'values' => [],
+        'status' => UploadRecordStatusEnum::PROCESSING,
+    ]);
+
+    $missingCodeRecord = $makeUploadRecord();
+    $import->storeModel(collect(['quantity' => 3]), $missingCodeRecord);
+    expect($missingCodeRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
+        ->and($missingCodeRecord->errors)->toContain('Missing product code.');
+
+    $missingQuantityRecord = $makeUploadRecord();
+    $import->storeModel(collect(['code' => $this->product->code]), $missingQuantityRecord);
+    expect($missingQuantityRecord->refresh()->status)->toBe(UploadRecordStatusEnum::FAILED->value)
+        ->and($missingQuantityRecord->errors[0])->toContain('invalid quantity');
+});
+
+test('recalculating basket totals skips orders that are no longer baskets', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 111.11, 'total_amount' => 111.11]);
+
+    // A bulk run selects baskets when it queues the jobs, but drains for hours. An order submitted
+    // in the meantime must not be repriced from current prices after the fact.
+    \App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket::make()->handle($order->id);
+
+    expect((float) $order->refresh()->net_amount)->toBe(111.11)
+        ->and((float) $order->total_amount)->toBe(111.11)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('bulk basket recalculation skips orders submitted while the job was waiting', function () {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE, 'net_amount' => 222.22, 'total_amount' => 222.22]);
+
+    // Offer activation lists baskets then queues one job each with a delay. An order submitted
+    // inside that window must be left alone by both halves of the recalculation.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()
+        ->handle($order, true, true, false, true, true);
+    \App\Actions\Ordering\Order\CalculateOrderDiscounts::make()->handle($order, true);
+
+    expect((float) $order->refresh()->net_amount)->toBe(222.22)
+        ->and((float) $order->total_amount)->toBe(222.22);
+
+    // Without the flag the same call still works on a submitted order, as other callers rely on.
+    \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::make()->handle($order);
+
+    expect((float) $order->refresh()->total_amount)->not->toBe(222.22);
 });

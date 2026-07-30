@@ -8,18 +8,20 @@
 
 namespace App\Actions\Masters\MasterAsset\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetTradeUnitDataForMasterProductCreation extends GrpAction
+class GetTradeUnitDataForMasterProductCreation extends OrgAction
 {
     use HasBucketImages;
 
@@ -34,7 +36,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): \Illuminate\Http\Response|array
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle(masterProductCategory: $masterProductCategory, modelData: $this->validatedData);
     }
@@ -52,69 +54,101 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             ];
         }
 
+        $totalUnit = 1;
+        if (count($tradeUnits) == 1) {
+            $totalUnit = array_first($tradeUnits)['quantity'];
+        }
+
         $masterShop = $masterProductCategory->masterShop;
 
-        $openShops = $masterShop->shops()->where('state', ShopStateEnum::OPEN)->get();
+        $openShopsQuery = $masterShop->shops()->where('state', ShopStateEnum::OPEN);
 
-        $organisationsData = [];
-        /** @var Shop $shop */
-        foreach ($openShops as $shop) {
-            $organisationsData[$shop->organisation_id]['org_stocks_data'] =
-                $this->getOrgStockData($shop->organisation, $tradeUnits);
+        $priceExchanges = $masterShop->price_exchanges ?? [];
+        $baseCurrencyCode = GetMasterShopCurrenciesRate::baseCurrencyCode($priceExchanges) ?? 'EUR';
+        $baseCurrency     = Currency::where('code', $baseCurrencyCode)->first()
+            ?? Currency::where('code', 'EUR')->first();
+
+        $openOrganisations = Organisation::whereIn('id', $openShopsQuery->pluck('organisation_id'))->get();
+
+        $organisationData = [];
+        $grpCosts         = [];
+        $avgCost          = 0;
+
+        /** @var Organisation $organisation */
+        foreach ($openOrganisations as $organisation) {
+            $organisationData[$organisation->id] = $this->getOrgStockData($organisation, $tradeUnits);
+
+            $grpCost  = data_get($organisationData, "$organisation->id.grp_cost");
+            $baseCost = $grpCost > 0
+                ? formatPrice($grpCost, GetCurrencyExchange::run(group()->currency, $baseCurrency))
+                : null;
+
+            $organisationData[$organisation->id]['base_cost'] = $baseCost;
+
+            if ($baseCost !== null) {
+                $grpCosts[$organisation->code] = $baseCost;
+            }
+        }
+
+        if ($grpCosts !== []) {
+            $avgCost = array_sum($grpCosts) / count($grpCosts);
+        }
+
+        $currenciesRate = GetMasterShopCurrenciesRate::run($masterShop, onlyOpenShops: true);
+
+        $masterPrices = $currenciesRate->map(fn ($ratio) => [
+            'value'       => formatPrice(data_get($ratio, 'ratio_eur', 1), $avgCost),
+            'independent' => false
+        ]);
+        $masterRrps   = $currenciesRate->map(fn ($ratio) => [
+            'value'       => formatPrice(data_get($ratio, 'ratio_eur', 1), round(($avgCost / $totalUnit) * 2.4, 2)),
+            'independent' => false
+        ]);
+
+
+        if ($masterShop->type == ShopTypeEnum::DROPSHIPPING) {
+            $costPriceRatio = 3.5;
+        } else {
+            $costPriceRatio = 2;
         }
 
 
         $finalData = [];
-
         /** @var Shop $shop */
-        foreach ($openShops as $shop) {
-            $orgStocksData = $organisationsData[$shop->organisation_id]['org_stocks_data'];
+        foreach ($openShopsQuery->get() as $shop) {
+            $orgStocksData    = $organisationData[$shop->organisation_id];
+            $shopCurrencyCode = $shop->currency->code;
 
-            // TODO MasterLevel Price RRP (Raul)
-            // TODO Update logic to check for Shop settings (follow master price or not)
-
-            if ($orgStocksData['org_cost'] === null) {
-                $shopCost       = null;
-                $warehouseValue = null;
-                $price          = null;
-                $rrp            = null;
+            if (!$avgCost) {
+                $shopCost = null;
+                $price    = null;
+                $rrp      = null;
             } else {
-                $shopCost       = round($orgStocksData['org_cost'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
-                $warehouseValue = round($orgStocksData['org_value_in_warehouse'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
-
-                $price = round($shopCost * $shop->cost_price_ratio, 2);
-                $rrp   = round($price * 2.4, 2);
+                $shopCost = $masterPrices->get($shopCurrencyCode)['value'];
+                $price    = round($shopCost * $costPriceRatio, 2);
+                $rrp      = round($price * 2.4, 2);
             }
 
-
-            $orgStocksData['shop_currency']        = $shop->currency->code;
-            $orgStocksData['shop_cost']            = $shopCost;
-            $orgStocksData['shop_warehouse_value'] = $warehouseValue;
-            $orgStocksData['id']                   = $shop->id;
-            $orgStocksData['price']                = $price ?? 0.01;
-            $orgStocksData['rrp']                  = $rrp ?? 0.01;
-            $orgStocksData['gross_weight']         = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
-            $orgStocksData['margin']               = ($orgStocksData['price'] > 0)
+            $orgStocksData['org_value_in_warehouse_per_shop'] = GetCurrencyExchange::run($organisation->currency, $shop->currency) * $orgStocksData['org_value_in_warehouse'];
+            $orgStocksData['shop_currency']                   = $shopCurrencyCode;
+            $orgStocksData['shop_cost']                       = $shopCost;
+            $orgStocksData['id']                              = $shop->id;
+            $orgStocksData['price']                           = $price ?? 0.01;
+            $orgStocksData['rrp']                             = $rrp ?? 0.01;
+            $orgStocksData['gross_weight']                    = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
+            $orgStocksData['margin']                          = ($orgStocksData['price'] > 0)
                 ? round((($orgStocksData['price'] - $orgStocksData['shop_cost']) / $orgStocksData['price']) * 100, 2)
                 : null;
 
-            $finalData['shops'][] =
-                $orgStocksData;
+            $finalData['shops'][] = $orgStocksData;
         }
 
-        foreach ($tradeUnits as $tradeUnit) {
-            $packedIn = DB::table('model_has_trade_units')
-                ->select('quantity')
-                ->where('model_has_trade_units.model_type', 'Stock')
-                ->where('model_has_trade_units.trade_unit_id', $tradeUnit['id'])
-                ->first();
-
-            $finalData['trade_units'][] = [
-                'id'              => $tradeUnit['id'],
-                'images'          => $tradeUnit['images'],
-                'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit['quantity'] / $packedIn->quantity)), $packedIn->quantity),
-            ];
-        }
+        data_set($finalData, 'currencies', $currenciesRate);
+        data_set($finalData, 'total_units', $totalUnit);
+        data_set($finalData, 'master_prices', $masterPrices);
+        data_set($finalData, 'master_rrps', $masterRrps);
+        data_set($finalData, 'org_data', $organisationData);
+        data_set($finalData, 'avg_org_cost', $avgCost);
 
         return $finalData;
     }
@@ -179,6 +213,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
 
         return [
+            'org_code'               => $organisation->code,
             'stock'                  => $stock,
             'org_currency'           => $organisation->currency->code,
             'grp_currency'           => $organisation->group->currency->code,

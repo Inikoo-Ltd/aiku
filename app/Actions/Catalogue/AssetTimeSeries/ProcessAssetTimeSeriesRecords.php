@@ -15,6 +15,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\AssetTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -34,8 +36,7 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $assetId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $asset = Asset::find($assetId);
 
@@ -62,6 +63,7 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(AssetTimeSeries $timeSeries, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->where('asset_id', $timeSeries->asset_id)
@@ -76,13 +78,11 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
 
             $metrics = $this->getPortfolioStats($timeSeries->asset_id, $periodFrom, $periodTo);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'asset_time_series_id' => $timeSeries->id,
-                    'period'               => $period,
-                    'frequency'            => $timeSeries->frequency->singleLetter()
-                ],
-                [
+            $rows[] = [
+                'asset_time_series_id' => $timeSeries->id,
+                'period'               => $period,
+                'frequency'            => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
                     'sales_external'              => $result->sales_external,
@@ -95,16 +95,20 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
                     'sold'                        => $result->sold,
                     ...$metrics,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['asset_time_series_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(AssetTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(AssetTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
     {
+        $rows = [];
+
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
         foreach ($nonInvoicePeriods as $periodData) {
@@ -116,13 +120,11 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
                 continue;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'asset_time_series_id' => $timeSeries->id,
-                    'period'               => $periodData['period'],
-                    'frequency'            => $timeSeries->frequency->singleLetter()
-                ],
-                [
+            $rows[] = [
+                'asset_time_series_id' => $timeSeries->id,
+                'period'               => $periodData['period'],
+                'frequency'            => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
                     'sales_external'              => 0,
@@ -135,8 +137,10 @@ class ProcessAssetTimeSeriesRecords implements ShouldBeUnique
                     'sold'                        => 0,
                     ...$metrics,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 
     protected function getPortfolioStats(int $assetId, Carbon $periodFrom, Carbon $periodTo): array

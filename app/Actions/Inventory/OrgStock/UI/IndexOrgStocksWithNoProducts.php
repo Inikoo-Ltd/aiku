@@ -197,14 +197,6 @@ class IndexOrgStocksWithNoProducts extends OrgAction
         );
 
 
-        // stock_value
-        // on_the_way_po_value
-        // invoices
-        // invoices_delta
-        // sales_grp_currency_external
-        // sales_grp_currency_external_delta
-        // health_rank
-
         $selects = [
             'org_stocks.id',
             'org_stocks.code',
@@ -252,8 +244,6 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-            $selects[] = 'org_stock_intervals.dispatched_ytd as dispatched';
-            $selects[] = 'org_stock_sales_intervals.revenue_org_currency_ytd as revenue';
             $selects[] = DB::raw(
                 "(
                     SELECT COALESCE(SUM(os2.quantity_in_locations), 0)
@@ -303,6 +293,20 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                     AND it.deleted_at IS NULL
                 ) as woc"
             );
+        } else {
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'org_stock_time_series',
+                timeSeriesRecordsTable: 'org_stock_time_series_records',
+                foreignKey: 'org_stock_id',
+                aggregateColumns: [
+                    'sales_org_currency_external' => 'revenue',
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: false
+            );
+
+            $selects[] = $timeSeriesData['selectRaw']['revenue'];
         }
 
         $allowedSorts = [
@@ -315,8 +319,6 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             'discontinued_in_organisation_at',
             'organisation_name',
             'value_in_locations',
-            'dispatched',
-            'revenue',
             'quantity_available',
             'on_the_way_po_value',
             'health_rank',
@@ -327,6 +329,8 @@ class IndexOrgStocksWithNoProducts extends OrgAction
         if ($prefix === OrgStocksTabsEnum::SALES->value) {
             $allowedSorts[] = 'sales_grp_currency_external';
             $allowedSorts[] = 'invoices';
+        } else {
+            $allowedSorts[] = 'revenue';
         }
 
         return $queryBuilder
@@ -337,8 +341,6 @@ class IndexOrgStocksWithNoProducts extends OrgAction
             ->leftJoin('warehouses', 'warehouses.organisation_id', 'organisations.id')
             ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
-            ->leftJoin('org_stock_intervals', 'org_stock_intervals.org_stock_id', 'org_stocks.id')
-            ->leftJoin('org_stock_sales_intervals', 'org_stock_sales_intervals.org_stock_id', 'org_stocks.id')
             ->allowedSorts($allowedSorts)
             ->allowedFilters([$globalSearch, AllowedFilter::exact('state')])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -366,7 +368,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
 
             $table
                 ->defaultSort('code')
-                ->withLabelRecord([__('sku'), __('SKUs')])
+                ->withLabelRecord([__('sku'), __('SKOs')])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->column(key: 'code', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
@@ -392,8 +394,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                     $table
                         ->column(key: 'sku_value', label: __('Sku value'), canBeHidden: false, sortable: true, type: 'currency')
                         ->column(key: 'woc', label: __('WOC'), canBeHidden: false, align: 'right')
-                        ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency')
-                        ->column(key: 'dispatched', label: __('Dispatched'), sortable: true);
+                        ->column(key: 'revenue', label: __('Revenue'), sortable: true, type: 'currency');
                 }
 
                 if ($bucket == 'discontinued' || $bucket == 'abnormality') {
@@ -478,11 +479,11 @@ class IndexOrgStocksWithNoProducts extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $stocks, ActionRequest $request): Response
     {
-        $title      = __('SKUs');
+        $title      = __('SKOs');
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-box'],
-            'title' => __('SKUs'),
+            'title' => __('SKOs'),
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -490,7 +491,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
         $subNavigation = $this->getOrgStocksSubNavigation();
 
         if ($this->bucket == 'current') {
-            $title = __('Current SKUs');
+            $title = __('Current SKOs');
         }
 
         return Inertia::render(
@@ -535,7 +536,7 @@ class IndexOrgStocksWithNoProducts extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => 'SKUs',
+                        'label' => 'SKOs',
                         'icon'  => 'fal fa-bars',
                     ],
                     'suffix' => $suffix,

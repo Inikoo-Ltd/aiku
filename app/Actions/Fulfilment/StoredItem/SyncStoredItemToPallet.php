@@ -41,7 +41,7 @@ class SyncStoredItemToPallet extends OrgAction
 
             $storedItem = StoredItem::find($key);
             if ($storedItem && !$storedItem->state->canBeStored()) {
-                throw ValidationException::withMessages(['stored_item_ids' => __('The SKU ":reference" is :state and cannot be stored.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
+                throw ValidationException::withMessages(['stored_item_ids' => __('The SKO ":reference" is :state and cannot be stored.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
             }
         });
 

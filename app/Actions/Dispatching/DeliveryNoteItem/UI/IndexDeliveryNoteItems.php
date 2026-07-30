@@ -107,6 +107,11 @@ class IndexDeliveryNoteItems extends OrgAction
 
 
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction);
+
+            if ($this->hasPickingsWithBatchCodes($parent)) {
+                $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
+            }
+
             if ($allowAction && $isEditable) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, className: 'w-[250px]');
             }

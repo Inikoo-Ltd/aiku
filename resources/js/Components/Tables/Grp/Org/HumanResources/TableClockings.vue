@@ -131,6 +131,18 @@ const submitNotes = async () => {
                 </div>
             </template>
 
+            <template #cell(employee_name)="{ item }">
+                <div class="text-gray-700">{{ item.employee_name ?? "-" }}</div>
+            </template>
+
+            <template #cell(clocking_machine_name)="{ item }">
+                <div class="text-gray-500">{{ item.clocking_machine_name ?? "-" }}</div>
+            </template>
+
+            <template #cell(clocking_machine_qr_code)="{ item }">
+                <div class="text-gray-500">{{ item.clocking_machine_qr_code ?? "-" }}</div>
+            </template>
+
             <template v-if="canEdit" #cell(actions)="{ item }">
                 <div class="flex">
                     <Button

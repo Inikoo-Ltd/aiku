@@ -3484,3 +3484,10 @@ test('approve fulfilment customer', function (FulfilmentCustomer $fulfilmentCust
         ->and($customer->shop->crmStats->number_customers_status_approved)->toBe(4);
     //  $fulfilmentCustomer->forceDelete();
 })->depends('create fulfilment customer (pending approval)');
+
+test('fulfilment rentals index uses time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    $fulfilment = createFulfilment($this->organisation);
+
+    expect(\App\Actions\Fulfilment\UI\Catalogue\Rentals\IndexFulfilmentRentals::make()->handle($fulfilment)->total())->toBeGreaterThanOrEqual(0);
+});

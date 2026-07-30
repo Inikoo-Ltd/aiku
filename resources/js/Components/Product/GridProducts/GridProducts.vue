@@ -9,7 +9,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, onMounted } from "vue"
 import { router, usePage } from "@inertiajs/vue3"
 import { debounce, forEach, findKey } from "lodash-es"
 import qs from "qs"
@@ -100,10 +100,10 @@ const props = defineProps({
 		required: false,
 	},
 	label: {
-		type: String,
-		default: true,
+		type: [String, Number, Object, Boolean],
+		default: '',
 		required: false,
-	},
+	}
 })
 
 // console.log(props);
@@ -115,6 +115,11 @@ const updates = ref(0)
 const isVisiting = ref(false)
 const visitCancelToken = ref<{ cancel: Function } | null>(null)
 const isLoading = ref(false)
+const key = ref(1)
+
+onMounted(() => {
+	key.value++
+})
 
 // ============================================================================
 // QUERY BUILDER SETUP
@@ -212,7 +217,6 @@ const hasData = computed(() => {
     }
     return props.basketTransactions[product.id] || null
 } */
-console.log("basketTransactions", props.basketTransactions)
 
 // ============================================================================
 // SEARCH & FILTER FUNCTIONS
@@ -375,6 +379,19 @@ function generateNewQueryString(): string {
 	return !query || query === pageName.value + "=1" ? "" : query
 }
 
+// TableElements reports the selection it read from the URL right after mount. The server already
+// rendered that selection, so the state is stored without letting the watcher fire off a visit for
+// a query string identical to the current one.
+let skipNextVisit = false
+
+function onElementFilterChanged(data: Record<string, string[]>, isInitial = false): void {
+	if (isInitial) {
+		skipNextVisit = true
+	}
+
+	queryBuilderData.value.elementFilter = data
+}
+
 function onSortChange(value: string): void {
 	queryBuilderData.value.sort = value || null
 	queryBuilderData.value.cursor = null
@@ -429,6 +446,11 @@ const visit = (url?: string): void => {
 watch(
 	queryBuilderData,
 	async () => {
+		const skipThisVisit = skipNextVisit
+		skipNextVisit = false
+
+		if (skipThisVisit) return
+
 		try {
 			visit(location.pathname + "?" + generateNewQueryString())
 		} catch (error) {
@@ -528,7 +550,7 @@ watch(
 								<TableElements
 									:elements="queryBuilderProps.elementGroups"
 									@checkboxChanged="
-										(data) => (queryBuilderData.elementFilter = data)
+										(data, isInitial) => onElementFilterChanged(data, isInitial)
 									"
 									:inPopover="true"
 									:tableName="props.name" />
@@ -553,7 +575,7 @@ watch(
 					<slot name="card" :item="item">
 						<ProductRenderEcom
 							:product="item"
-							:key="index"
+							:key="`${index}-${key}`"
 							:hasInBasket="item"
 							:detach-to-favourite-route="{
 								name: 'retina.models.product.unfavourite',

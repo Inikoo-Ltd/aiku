@@ -142,8 +142,6 @@ const onSearchInput = (event: Event) => {
 
 
 const LBInitAutocompleteNew = async () => {
-    // console.log('layout.iris.luigisbox_tracker_id:', layout.iris?.luigisbox_tracker_id)
-
     if (!layout.iris?.luigisbox_tracker_id) {
         console.error("Luigi tracker id didn't provided")
         return
@@ -152,9 +150,7 @@ const LBInitAutocompleteNew = async () => {
     const xxx = await AutoComplete(
         {
             Layout: "heromobile",
-            // TrackerId: '483878-588294',
             TrackerId: layout.iris?.luigisbox_tracker_id,
-            // Locale: layout.iris?.website_i18n?.current_language?.code || 'en',
             PriceFilter: {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -234,22 +230,15 @@ const LBInitAutocompleteNew = async () => {
                             row.type === 'item'
                         )
                     },
-                    // iconUrl: 'https://cdn-icons-png.freepik.com/256/275/275790.png',
                     iconText: '➔',
-                    // title: "Visit product's page",
                     action: function(e, result) {
-                        // console.log('zzzzzzzzz', e, result)
                         window.location.href = result?.attributes?.web_url?.[0]
-                        // router.visit(result.attributes.web_url[0])
-
                     }
                 }
             ]
         },
         `#${props.id || 'inputLuigi'}`
     )
-
-    console.log(`Init autocomplete: ${props.id}`)
 }
 
 
@@ -269,7 +258,6 @@ onMounted(() => {
 })
 
 const visitSearchPage = () => {
-    console.log('vzzzisit', inputValue.value)
     if (inputValue.value) {
         if (route().current()?.startsWith('iris.')) {
             router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
@@ -471,16 +459,6 @@ const visitSearchPage = () => {
 .luigi-ac-no-result {
     color: var(--theme-color-0) !important;
 }
-
-// .luigi-ac-queries {
-//     line-height: 0px !important;
-// }
-
-/* .luigi-ac-query .luigi-ac-other-content {
-    color: #fff !important;
-}
-*/
-
 
 /* Top Product styling (luigi-ac-first-main) */
 .luigi-ac-first-main .luigi-ac-attr--formatted_price {

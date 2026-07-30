@@ -35,6 +35,8 @@ class OrgAction
 
     protected bool $asAction = false;
     protected bool $canEdit = false;
+    protected bool $canEditPrices = false;
+    protected bool $canEditOffers = false;
     protected bool $canDelete = false;
     protected bool $isSupervisor = false;
     public int $hydratorsDelay = 0;

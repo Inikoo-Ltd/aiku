@@ -7,7 +7,7 @@ import Tag from "@/Components/Tag.vue"
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
 import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt, faPlus, faMinus } from "@far"
-import { faBarcode, faGift, faRepeat } from "@fal"
+import { faBarcode, faGift, faRepeat, faTrash, faUndo } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -17,8 +17,9 @@ import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelect
 import { ulid } from "ulid"
 import Image from "@common/Components/Image.vue"
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { faBadgePercent, faFragile } from "@fas"
+import { faBan, faPercentage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import { InputNumber, InputText } from "primevue"
@@ -27,6 +28,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
 import error from "@iris/Pages/Errors/Error.vue"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode, faGift, faRepeat)
 
@@ -34,6 +36,7 @@ type ProductRow = {
     id: number
     asset_code: string
     asset_name: string
+    is_discretionary_offer?: boolean
     quantity_ordered: number
     available_quantity?: number
     product_slug?: string
@@ -127,7 +130,7 @@ const onUpdateQuantity = (
         {
             onError: (e: any) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.message,
                     type: "error"
                 })
@@ -202,14 +205,14 @@ async function onSave() {
                 Object.keys(createNewQty).forEach((k) => delete createNewQty[k])
                 editingIds.value.clear()
                 notify({
-                    title: trans("Success"),
-                    text: trans("Changes saved successfully"),
+                    title: ctrans("Success"),
+                    text: ctrans("Changes saved successfully"),
                     type: "success"
                 })
             },
             onError: (e: any) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.message,
                     type: "error"
                 })
@@ -259,7 +262,6 @@ const onDeleteNewRow = (index) => {
     props.data.data.splice(index, 1)
 }
 
-
 defineExpose({
     openModal,
     onSave,
@@ -280,6 +282,75 @@ const onCloseModalNetAmount = () => {
 }
 const isLoadingSubmitNetAmount = ref(false)
 const isOpenModalEditNetAmount = ref(false)
+
+const removeDiscount = (item) => {
+    router.patch(
+        route("grp.models.transaction.remove_discount", {
+            transaction: item.id
+        }),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+            },
+            onSuccess: () => {
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully removed discount from the product"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: errors?.discretionary_offer || ctrans("Failed to remove discount for the product. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+            }
+        }
+    )
+}
+
+const restoreDiscount = (item) => {
+    router.patch(
+        route("grp.models.transaction.update_discretionary_discount", {
+            transaction: item.id
+        }),
+        {
+            discretionary_offer: 0,
+            discretionary_offer_label: ''
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmitNetAmount.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully restored submitted discount data"),
+                    type: "success"
+                })
+                onCloseModalNetAmount()
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: errors?.discretionary_offer || ctrans("Failed to set restore submitted discount data. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitNetAmount.value = false
+            }
+        }
+    )
+}
+
 const onSubmitEditNetAmount = () => {
 
     console.log("ccc", selectedItemToEditNetAmount.value)
@@ -304,16 +375,16 @@ const onSubmitEditNetAmount = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully set discretionary discount percentage"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully set discretionary discount percentage"),
                     type: "success"
                 })
                 onCloseModalNetAmount()
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors?.discretionary_offer || trans("Failed to set discretionary discount percentage. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: errors?.discretionary_offer || ctrans("Failed to set discretionary discount percentage. Try again"),
                     type: "error"
                 })
             },
@@ -335,6 +406,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             is_cut_view: newVal
         },
         {
+            preserveScroll: true,
             onStart: () => {
                 set(proxyItem, 'is_transaction_loading', true)
 
@@ -342,8 +414,8 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             onError: () => {
                 console.log('eeerr', error)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: error.message || trans("Please try again or contact administrator"),
+                    title: ctrans("Something went wrong"),
+                    text: error.message || ctrans("Please try again or contact administrator"),
                     type: 'error'
                 })
             },
@@ -357,7 +429,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
 const isOffersData = (offersData: any): boolean => {
     if (!offersData) return false
     const parsed = typeof offersData === 'string' ? JSON.parse(offersData) : offersData
-    return Object.keys(parsed || {}).length > 0
+    return Object.keys(parsed || {}).length > 0 && parseFloat(offersData.o.p ?? 0)
 }
 </script>
 
@@ -405,8 +477,11 @@ const isOffersData = (offersData: any): boolean => {
                         <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>
                         <div v-if="item.upcoming_transaction_private_notes">{{ item.upcoming_transaction_private_notes }}</div>
                     </div>
-
-                    <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />
+                    <Discount 
+                        v-if="isOffersData(item.offers_data)" 
+                        :offers_data="item.offers_data" 
+                        :is_discretionary_offer="item.discretionary_offer"
+                    />
                 </div>
             </template>
 
@@ -442,7 +517,9 @@ const isOffersData = (offersData: any): boolean => {
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         /> -->
                         <InputNumber 
-                            :model-value="item.quantity_ordered_fractional[0]" 
+                            :model-value="proxyItem.is_cut_view ? (
+                                (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
+                            ) : item.quantity_ordered" 
                             @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
                             inputId="horizontal-buttons" 
                             showButtons 
@@ -478,7 +555,7 @@ const isOffersData = (offersData: any): boolean => {
                             xv-if="layout.app.environment == 'local'"
                             v-if="Number(item.product_units) !== 1"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
-                            v-tooltip="trans('Cut view')"
+                            v-tooltip="ctrans('Cut view')"
                             class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
                             :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
                         >
@@ -546,9 +623,9 @@ const isOffersData = (offersData: any): boolean => {
 
             <!-- Column: Batch Codes -->
             <template #cell(batch_codes)="{ item }">
-                <div class="flex flex-wrap gap-1">
+                <div v-if="item.batch_codes" class="flex flex-wrap gap-1">
                     <span
-                        v-for="code in (item.batch_codes ? item.batch_codes.split(', ') : [])"
+                        v-for="code in item.batch_codes.split(', ')"
                         :key="code"
                         class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
                     >
@@ -556,6 +633,9 @@ const isOffersData = (offersData: any): boolean => {
                         {{ code }}
                     </span>
                 </div>
+                <span v-else class="text-gray-400 italic text-xs">
+                    {{ ctrans("No batch code set") }}
+                </span>
             </template>
 
             <!-- Section: Price -->
@@ -593,11 +673,39 @@ const isOffersData = (offersData: any): boolean => {
                                   class="text-gray-500 line-through mr-1 opacity-70">{{
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
-                            <Button
-                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift"
-                                @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
-                                v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
-                                :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400" />
+                            <span v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift">
+                                <Button
+                                    @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
+                                    v-tooltip="ctrans('Edit discretionary discount')" type="transparent" size="xs" key="1"
+                                    :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400 hover:text-purple-600" />
+                                <Button
+                                    @click="() => {
+                                        removeDiscount(item)
+                                    }"
+                                    v-tooltip="ctrans('Remove discount from this product')" type="transparent" key="1"
+                                    class="ml-1 !px-0 text-pink-400 hover:text-pink-600 w-max"
+                                >
+                                    <template #icon>
+                                        <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
+                                            <FontAwesomeIcon
+                                                :icon="faTrash"
+                                                class="!text-lg !w-fit"
+                                            />
+                                            <FontAwesomeIcon
+                                                :icon="faPercentage"
+                                                class="text-xs !top-[25%]"
+                                            />
+                                        </FontAwesomeLayers>
+                                    </template>
+                                </Button>
+                                <Button
+                                    @click="() => {
+                                        restoreDiscount(item)
+                                    }"
+                                    v-tooltip="ctrans('Restore original discount data')" type="transparent" size="md" key="1"
+                                    :icon="faUndo" class="ml-1 !px-1 text-red-500 hover:text-red-700" 
+                                />
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -609,7 +717,7 @@ const isOffersData = (offersData: any): boolean => {
                     <!-- Delete / Unselect -->
                     <Link v-if="state === 'creating'" :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
                           as="button" :method="item.deleteRoute.method" @start="() => (isLoading = 'unselect' + item.id)"
-                          @finish="() => (isLoading = null)" v-tooltip="trans('Unselect this product')"
+                          @finish="() => (isLoading = null)" v-tooltip="ctrans('Unselect this product')"
                           :preserveScroll="true">
                         <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
                                 :loading="isLoading === 'unselect' + item.id" />
@@ -649,7 +757,7 @@ const isOffersData = (offersData: any): boolean => {
                 <!-- Input: Percentage -->
                 <div class="w-full ">
                     <label class="block text-sm font-medium mb-2">
-                        {{ trans("Discretionary discount percentage") }}:
+                        {{ ctrans("Discretionary discount percentage") }}:
                     </label>
                     <InputNumber
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
@@ -663,7 +771,7 @@ const isOffersData = (offersData: any): boolean => {
                 <!-- Input: Label -->
                 <div class="w-full ">
                     <label class="block text-sm font-medium mb-2">
-                        {{ trans("Discretionary discount Label") }}:
+                        {{ ctrans("Discretionary discount Label") }}:
                     </label>
                     <InputText
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer_label', '')"
@@ -694,7 +802,7 @@ const isOffersData = (offersData: any): boolean => {
 
                 <div class="w-full flex gap-4 mt-4">
                     <Button type="negative" size="md" :disabled="isLoadingSubmitNetAmount" icon="far fa-arrow-left"
-                            @click="onCloseModalNetAmount" :label="trans('Cancel')">
+                            @click="onCloseModalNetAmount" :label="ctrans('Cancel')">
                     </Button>
 
                     <Button type="primary" size="md" :loading="isLoadingSubmitNetAmount" icon="fad fa-save"
@@ -706,7 +814,7 @@ const isOffersData = (offersData: any): boolean => {
 
         <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
             <ProductsSelectorAutoSelect
-                :headLabel="trans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"
+                :headLabel="ctrans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"
                 :routeFetch="props.routesProductsListModification" :isLoadingSubmit="false" :listLoadingProducts="false"
                 withQuantity @submit="addNewProduct" />
         </Modal>

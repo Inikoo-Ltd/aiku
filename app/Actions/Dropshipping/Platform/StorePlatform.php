@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\Platform;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Group;
@@ -17,7 +17,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StorePlatform extends GrpAction
+class StorePlatform extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -54,7 +54,7 @@ class StorePlatform extends GrpAction
 
     public function action(Group $group, array $modelData): Platform
     {
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $modelData);
     }

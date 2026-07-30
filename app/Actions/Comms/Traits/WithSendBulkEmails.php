@@ -235,6 +235,8 @@ trait WithSendBulkEmails
             'blade-review-images' => Arr::get($additionalData, 'blade_review_images'),
 
             'review-reminder-links' => Arr::get($additionalData, 'review_reminder_links'),
+            'last-invoice-date' => Arr::get($additionalData, 'last_invoice_date'),
+            'gold-reward-deadline' => Arr::get($additionalData, 'gold_reward_deadline'),
 
             default => $originalPlaceholder,
         };

@@ -274,7 +274,7 @@ class UpdateOrganisation extends OrgAction
             if (!$shouldAudit || $oldValue === $newValue) {
                 continue;
             }
-            
+
             $settingAudits[] = [
                 'key' => str_replace('.', '_', $path),
                 'old' => $oldValue,

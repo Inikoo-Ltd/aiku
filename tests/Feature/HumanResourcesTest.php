@@ -28,6 +28,8 @@ use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\UpdateEmployeeContract;
 use App\Actions\HumanResources\EmployeeContract\DeleteEmployeeContract;
 use App\Actions\HumanResources\Clocking\StoreClocking;
+use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\StoreClockingMachineQRCode;
 use App\Actions\HumanResources\Clocking\UpdateClocking;
 use App\Actions\HumanResources\Clocking\UpdateClockingNotes;
 use App\Actions\HumanResources\Clocking\DeleteClocking;
@@ -80,6 +82,8 @@ use App\Models\HumanResources\LeaveType;
 use App\Models\HumanResources\HolidayYear;
 use App\Models\HumanResources\EmployeeContract;
 use App\Models\HumanResources\Clocking;
+use App\Models\HumanResources\ClockingMachine;
+use App\Models\HumanResources\ClockingMachineQRCode;
 use App\Models\HumanResources\OvertimeRequest;
 use App\Models\HumanResources\OvertimeType;
 use App\Models\HumanResources\AttendanceAdjustment;
@@ -97,6 +101,21 @@ use Illuminate\Support\Facades\Storage;
 use App\Actions\Helpers\Avatars\GetDiceBearAvatar;
 
 use function Pest\Laravel\actingAs;
+
+class CollidingStoreClockingMachineQRCode extends StoreClockingMachineQRCode
+{
+    protected static array $hashes = [];
+
+    public static function useHashes(string ...$hashes): void
+    {
+        self::$hashes = $hashes;
+    }
+
+    protected static function generateHash(): string
+    {
+        return array_shift(self::$hashes);
+    }
+}
 
 beforeAll(function () {
     loadDB();
@@ -397,6 +416,53 @@ test('can store clocking', function () {
     expect($clocking)->toBeInstanceOf(Clocking::class)
         ->and($clocking->subject_id)->toBe($employee->id);
 });
+
+test('can store clocking machine QR code', function () {
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'QR Workplace',
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'QR Clocking Machine',
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'Main entrance',
+    ]);
+
+    expect($qrCode)->toBeInstanceOf(ClockingMachineQRCode::class)
+        ->and($qrCode->exists)->toBeTrue()
+        ->and($qrCode->clocking_machine_id)->toBe($clockingMachine->id)
+        ->and($qrCode->clockingMachine->id)->toBe($clockingMachine->id)
+        ->and($qrCode->label)->toBe('Main entrance')
+        ->and($qrCode->active)->toBeTrue()
+        ->and($qrCode->hash)->toMatch('/^[a-f0-9]{8}$/');
+
+    return $clockingMachine;
+});
+
+test('clocking machine QR code gets a generated label when none is provided', function (ClockingMachine $clockingMachine) {
+    $qrCode = StoreClockingMachineQRCode::make()->handle($clockingMachine, []);
+
+    expect($qrCode->label)->toMatch('/^[a-z]+-[a-z]+$/');
+})->depends('can store clocking machine QR code');
+
+test('clocking machine QR code hash is regenerated on collision', function (ClockingMachine $clockingMachine) {
+    $clockingMachine->clockingMachineQrCodes()->create([
+        'label' => 'Existing QR code',
+        'hash'  => 'aaaaaaaa',
+    ]);
+
+    CollidingStoreClockingMachineQRCode::useHashes('aaaaaaaa', 'bbbbbbbb');
+
+    $qrCode = CollidingStoreClockingMachineQRCode::make()->handle($clockingMachine, [
+        'label' => 'New QR code',
+    ]);
+
+    expect($qrCode->hash)->toBe('bbbbbbbb');
+})->depends('can store clocking machine QR code');
 
 test('can store attendance adjustment', function () {
     $employee = Employee::factory()->create([

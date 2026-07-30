@@ -89,6 +89,20 @@ trait WithProductNavigation
         }
     }
 
+    protected function getNavigationDefaultSort(Model $model): array
+    {
+        return ['products.code', false];
+    }
+
+    protected function getNavigationSortColumns(Model $model): array
+    {
+        return [
+            'code'       => 'products.code',
+            'name'       => 'products.name',
+            'created_at' => 'products.created_at',
+        ];
+    }
+
     protected function getNavigationLabel(Model $model): string
     {
         /** @var Product $model */

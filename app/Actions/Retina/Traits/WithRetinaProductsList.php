@@ -53,6 +53,7 @@ trait WithRetinaProductsList
             'products.available_quantity',
             'products.price',
             'products.rrp',
+            'products.family_id',
             'products.state',
             'products.status',
             'products.created_at',

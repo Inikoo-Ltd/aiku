@@ -64,7 +64,12 @@ const fetchProductList = async (url) => {
     const urlToFetch = url || route(props.fetchRoute.name, props.fetchRoute.parameters)
 
     try {
-        const xxx = await axios.get(urlToFetch)
+        let xxx = null
+        if (props.fetchRoute.method == 'post') {
+            xxx = await axios.post(urlToFetch, props.fetchRoute.body ?? {});
+        } else {
+            xxx = await axios.get(urlToFetch);
+        }
 
 
         if (xxx?.data?.data) {

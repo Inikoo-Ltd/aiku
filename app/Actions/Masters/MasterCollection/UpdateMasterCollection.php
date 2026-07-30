@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\UpdateCollection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
@@ -24,7 +24,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterCollection extends GrpAction
+class UpdateMasterCollection extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -152,7 +152,7 @@ class UpdateMasterCollection extends GrpAction
         $this->asAction   = true;
         $this->masterCollection = $masterCollection;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($masterCollection->group, $modelData);
+        $this->initialisationFromGroup($masterCollection->group, $modelData);
 
         return $this->handle($masterCollection, $this->validatedData);
     }
@@ -161,7 +161,7 @@ class UpdateMasterCollection extends GrpAction
     {
         $this->masterCollection = $masterCollection;
 
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterCollection, $this->validatedData);
     }

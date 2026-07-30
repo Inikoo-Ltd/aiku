@@ -886,7 +886,7 @@ test('UI show fulfilment customer stored item', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'New SKU')
+                    ->where('title', 'New SKO')
                     ->etc()
             )
             ->has('formData')
@@ -2064,6 +2064,44 @@ test('UI show Recurring Bill in operation (current)', function () {
     });
 });
 
+test('UI show Recurring Bill navigation stays inside its status bucket', function () {
+    $this->withoutExceptionHandling();
+
+    $current = RecurringBill::where('fulfilment_id', $this->fulfilment->id)
+        ->where('status', RecurringBillStatusEnum::CURRENT)
+        ->orderBy('reference')
+        ->get();
+
+    $former = RecurringBill::where('fulfilment_id', $this->fulfilment->id)
+        ->where('status', RecurringBillStatusEnum::FORMER)
+        ->get();
+
+    expect($current)->not->toBeEmpty();
+
+    $currentReferences = $current->pluck('reference')->all();
+    $formerReferences  = $former->pluck('reference')->all();
+
+    foreach ($current as $recurringBill) {
+        $response = get(route('grp.org.fulfilments.show.operations.recurring_bills.current.show', [
+            $this->organisation->slug,
+            $this->fulfilment->slug,
+            $recurringBill->slug
+        ]));
+
+        $response->assertInertia(function (AssertableInertia $page) use ($currentReferences, $formerReferences) {
+            $navigation = $page->toArray()['props']['navigation'];
+
+            foreach (['previous', 'next'] as $direction) {
+                if ($navigation[$direction]) {
+                    expect($navigation[$direction]['label'])
+                        ->toBeIn($currentReferences)
+                        ->not->toBeIn($formerReferences);
+                }
+            }
+        });
+    }
+});
+
 test('UI show Recurring Bill in operation (former)', function () {
     $this->withoutExceptionHandling();
     $recurringBill = RecurringBill::where("status", RecurringBillStatusEnum::FORMER)->first();
@@ -2170,7 +2208,7 @@ test('UI show stored item audit', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', "Customer's SKUs audit")
+                    ->where('title', "Customer's SKOs audit")
                     ->has('subNavigation')
                     ->etc()
             )

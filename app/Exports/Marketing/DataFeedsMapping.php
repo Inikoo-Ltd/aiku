@@ -92,7 +92,8 @@ trait DataFeedsMapping
             $row->available_quantity_updated_at ?? '',
             $row->price_updated_at ?? '',
             $row->images_updated_at ?? '',
-            $availableQuantity
+            $availableQuantity,
+            (bool)$row->is_for_sale ? 'Yes' : 'No'
 
 
         ];
@@ -134,7 +135,8 @@ trait DataFeedsMapping
             'Stock updated',
             'Price updated',
             'Images updated',
-            'Available Quantity'
+            'Available Quantity',
+            'For sale'
         ];
     }
 
