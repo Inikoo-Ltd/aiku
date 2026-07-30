@@ -154,7 +154,7 @@ class StoreProduct extends OrgAction
             CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
         }
 
-        if ($parent instanceof ProductCategory && $parent->sub_type == ProductCategoryTypeEnum::FAMILY) {
+        if ($parent instanceof ProductCategory && $parent->type == ProductCategoryTypeEnum::FAMILY) {
             $offer = Offer::where('trigger_id', $parent->id)
                 ->where('trigger_type', class_basename(ProductCategory::class))
                 ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
