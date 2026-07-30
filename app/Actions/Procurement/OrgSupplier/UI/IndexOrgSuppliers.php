@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Http\Resources\Procurement\OrgSuppliersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\OrgAgent;
@@ -29,6 +30,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexOrgSuppliers extends OrgAction
 {
     use WithOrgAgentSubNavigation;
+    use WithAgentOrganisation;
 
     private Organisation|OrgAgent $parent;
 
@@ -41,6 +43,10 @@ class IndexOrgSuppliers extends OrgAction
 
     protected function getSupplierElementGroups(Organisation|OrgAgent $parent): array
     {
+        if ($this->getParentOrganisationAgent($parent)) {
+            return [];
+        }
+
         if ($parent instanceof OrgAgent) {
             $elements = [
                 'through_agent' => [
@@ -134,8 +140,12 @@ class IndexOrgSuppliers extends OrgAction
             ->leftJoin('suppliers', 'org_suppliers.supplier_id', 'suppliers.id')
             ->leftJoin('org_supplier_stats', 'org_supplier_stats.org_supplier_id', 'org_suppliers.id');
 
+        $organisationAgent = $this->getParentOrganisationAgent($parent);
+
         if ($parent instanceof OrgAgent) {
             $queryBuilder->where('org_suppliers.org_agent_id', $parent->id);
+        } elseif ($organisationAgent) {
+            $queryBuilder->where('org_suppliers.agent_id', $organisationAgent->id);
         } else {
             $queryBuilder->where('org_suppliers.organisation_id', $parent->id);
         }
@@ -149,18 +159,25 @@ class IndexOrgSuppliers extends OrgAction
             );
         }
 
+        $queryBuilder->select([
+            'suppliers.code',
+            'suppliers.name',
+            'suppliers.location',
+            'org_supplier_stats.number_org_supplier_products',
+            'org_supplier_stats.number_purchase_orders',
+            'org_supplier_stats.number_stock_deliveries',
+            'org_suppliers.status as status',
+            'org_suppliers.slug as org_supplier_slug',
+        ]);
+
+        if ($organisationAgent) {
+            $queryBuilder
+                ->leftJoin('organisations', 'org_suppliers.organisation_id', 'organisations.id')
+                ->addSelect(['organisations.name as organisation_name']);
+        }
+
         return $queryBuilder
             ->defaultSort('suppliers.code')
-            ->select([
-                'suppliers.code',
-                'suppliers.name',
-                'suppliers.location',
-                'org_supplier_stats.number_org_supplier_products',
-                'org_supplier_stats.number_purchase_orders',
-                'org_supplier_stats.number_stock_deliveries',
-                'org_suppliers.status as status',
-                'org_suppliers.slug as org_supplier_slug',
-            ])
             ->allowedSorts([
                 'code',
                 'name',
@@ -208,7 +225,13 @@ class IndexOrgSuppliers extends OrgAction
                 ->column(key: 'status', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
+                ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true);
+
+            if ($this->getParentOrganisationAgent($parent)) {
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
+            }
+
+            $table
                 ->column(key: 'number_org_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
