@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Goods\Ingredient\Json\ParseIngredientsList;
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\Stock\HydrateStocks;
@@ -146,6 +147,24 @@ test('update ingredient', function (Ingredient $ingredient) {
 
     return $ingredient;
 })->depends('store ingredient');
+
+test('parse pasted ingredients list', function () {
+    StoreIngredient::make()->action($this->group, ['name' => 'Aqua']);
+
+    $parsed = ParseIngredientsList::make()->handle($this->group, "aqua, Linalool*\nGlycerin, , Glycerin", false);
+
+    expect($parsed)->toHaveCount(3)
+        ->and($parsed[0])->toBe(['name' => 'Aqua', 'slug' => 'aqua', 'is_new' => false])
+        ->and($parsed[1]['name'])->toBe('Linalool')
+        ->and($parsed[1]['is_new'])->toBeTrue()
+        ->and($parsed[1]['slug'])->toBeNull()
+        ->and(Ingredient::where('name', 'Linalool')->exists())->toBeFalse();
+
+    $committed = ParseIngredientsList::make()->handle($this->group, 'Linalool*', true);
+
+    expect($committed[0]['slug'])->not->toBeNull()
+        ->and(Ingredient::where('name', 'Linalool')->exists())->toBeTrue();
+});
 
 test('index ingredients', function () {
     $count = Ingredient::count();
