@@ -259,7 +259,7 @@ class OrgStock extends Model implements Auditable
         return $this->belongsTo(BatchCode::class, 'main_batch_code_id');
     }
 
-    public function deliveryNoteItem(): HasMany
+    public function deliveryNoteItems(): HasMany
     {
         return $this->hasMany(DeliveryNoteItem::class);
     }

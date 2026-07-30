@@ -34,7 +34,6 @@ const props = defineProps<{
     fieldData: {
         type: string
         withQuantity?: boolean
-        singleSelect?: boolean
         routeFetch: routeType
         key_quantity?: string
         tabs: {

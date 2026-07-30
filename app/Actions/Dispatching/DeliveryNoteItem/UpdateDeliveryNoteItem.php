@@ -59,6 +59,9 @@ class UpdateDeliveryNoteItem extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'quantity_required'          => ['sometimes', 'numeric'],
+            'original_quantity_required' => ['sometimes', 'numeric'],
+            'estimated_required_weight'  => ['sometimes', 'numeric'],
             'quantity_picked'    => ['sometimes', 'numeric'],
             'quantity_packed'    => ['sometimes', 'numeric'],
             'state'              => ['sometimes', new Enum(DeliveryNoteItemStateEnum::class)],

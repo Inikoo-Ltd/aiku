@@ -37,13 +37,10 @@ const props = withDefaults(defineProps<{
     no_data_label?: string
     tabs?: Array<{ label: string, routeFetch: routeType }>
     is_dropship?:boolean
-    showSKOLabel: boolean
-    singleSelect?: boolean
 }>(), {
     key_quantity: 'quantity_selected',
     head_label: 'Selected Products',
-    no_data_label: 'No Data Available',
-    singleSelect: false
+    no_data_label: 'No Data Available'
 })
 
 const emits = defineEmits<{
@@ -142,15 +139,13 @@ const selectProduct = (item: Portfolio) => {
     const exists = selectedProduct.value.find(p => p.id === item.id)
     if (exists) {
         selectedProduct.value = selectedProduct.value.filter(p => p.id !== item.id)
-        return
+    } else {
+        const newItem: any = { ...item }
+        if (props.withQuantity && !newItem[props.key_quantity]) {
+            newItem[props.key_quantity] = 1
+        }
+        selectedProduct.value = [...selectedProduct.value, newItem]
     }
-
-    const newItem: any = { ...item }
-    if (props.withQuantity && !newItem[props.key_quantity]) {
-        newItem[props.key_quantity] = 1
-    }
-
-    selectedProduct.value = props.singleSelect ? [newItem] : [...selectedProduct.value, newItem]
 }
 
 
@@ -312,12 +307,7 @@ defineExpose({
                                 </template>
                                  <template #prefix>
                                 <div class="text-sm  px-3 w-24 text-teal-600 whitespace-nowrap w-full">
-                                    <span class=""> 
-                                        &#8623;  
-                                        <span v-if="showSKOLabel">
-                                            {{ ctrans("SKO") }}
-                                        </span>
-                                    </span>
+                                    <span class=""> &#8623; SKO </span>
                                     <span class="font-bold">
                                         <FractionDisplay v-if="item.pick_fractional" :fractionData="item.pick_fractional" />
                                     </span>
@@ -398,7 +388,7 @@ defineExpose({
                                 {{ props.label_result ?? trans("Result") }} ({{ locale?.number(meta?.total || 0) }})
                             </div>
                             <div class="flex gap-2">
-                                <div v-if="!singleSelect" @click="selectAllProducts"
+                                <div @click="selectAllProducts"
                                     :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'">
                                     {{ trans("Select :number products in this page", { number: list.length }) }}
                                 </div>

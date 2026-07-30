@@ -95,41 +95,23 @@ class EditStock extends OrgAction
                             'icon'   => 'fa-light fa-atom',
                             'fields' => [
                                 'trade_units' => [
-                                    'label'                 => __('Trade units'),
-                                    'type'                  => 'list-selector-trade-unit',
-                                    'key_quantity'          => 'quantity',
-                                    'showSKOLabel'          => false,
-                                    'withQuantity'          => true,
-                                    'full'                  => true,
-                                    'noSaveButton'          => true,
-                                    'use_confirm'           => true,
-                                    'singleSelect'          => true,
-                                    'warn_modal_route'      => [
-                                        'name'          => 'grp.json.validate-stock-trade-unit-changes',
-                                        'parameters'    => [
+                                    'label'       => __('Trade units'),
+                                    'type'        => 'trade-units-for-stock',
+                                    'fetchRoute'  => [
+                                        'name' => 'grp.json.master_product_category.all_trade_units',
+                                    ],
+                                    'impactRoute' => [
+                                        'name'       => 'grp.json.stock.trade-unit-changes-impact',
+                                        'parameters' => [
                                             'stock' => $stock->slug
                                         ]
                                     ],
-                                    'tabs' => array_values(array_filter([
-                                        [
-                                            'label'      => __('All'),
-                                            'search'     => true,
-                                            'routeFetch' => [
-                                                'name' => 'grp.json.master_product_category.all_trade_units',
-                                            ],
-                                        ],
-                                    ])),
-                                    'value'        => $stock->tradeUnits->map(function ($item) {
-                                        $quantity = $item->pivot->quantity;
-
-                                        return [
-                                            'quantity'          => $quantity,
-                                            'fraction'          => $quantity / 1,
-                                            'packed_in'         => 1,
-                                            'pick_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($quantity / 1)), 1),
-                                            ...$item->toArray()
-                                        ];
-                                    }),
+                                    'value'       => $stock->tradeUnits->map(fn ($tradeUnit) => [
+                                        'id'       => $tradeUnit->id,
+                                        'code'     => $tradeUnit->code,
+                                        'name'     => $tradeUnit->name,
+                                        'quantity' => $tradeUnit->pivot->quantity,
+                                    ])->values(),
                                 ],
                             ],
                         ],

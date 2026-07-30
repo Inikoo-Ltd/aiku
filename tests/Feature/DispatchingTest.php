@@ -31,6 +31,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
@@ -2380,3 +2381,55 @@ test('UI show pallet return navigation orders the new bucket by its latest activ
             ->etc()
     );
 });
+
+test('sync required pick quantity updates delivery note items in place', function () {
+    $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock    = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $transaction = $this->order->transactions()->where('model_type', 'Product')->first();
+    $transaction->updateQuietly(['quantity_ordered' => 4]);
+
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'SYNC-'.$orgStock->id,
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 10
+    ]);
+
+    DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $transaction->model_id, 'org_stock_id' => $orgStock->id],
+        ['quantity' => 3]
+    );
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($orgStock);
+
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(12.0)
+        ->and((float) $deliveryNoteItem->original_quantity_required)->toBe(12.0)
+        ->and(DeliveryNoteItem::find($deliveryNoteItem->id))->not->toBeNull();
+
+    return $deliveryNoteItem;
+});
+
+test('sync required pick quantity skips non product transactions', function (DeliveryNoteItem $deliveryNoteItem) {
+    $deliveryNoteItem->transaction->updateQuietly(['model_type' => 'Service']);
+
+    DB::table('product_has_org_stocks')
+        ->where('org_stock_id', $deliveryNoteItem->org_stock_id)
+        ->update(['quantity' => 5]);
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($deliveryNoteItem->orgStock);
+
+    expect((float) $deliveryNoteItem->refresh()->quantity_required)->toBe(12.0);
+})->depends('sync required pick quantity updates delivery note items in place');

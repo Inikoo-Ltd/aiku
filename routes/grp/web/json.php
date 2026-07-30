@@ -344,4 +344,4 @@ Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelec
 // Families list under department page
 Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
 
-Route::get('{stock}/validate-stock-trade-unit-changes', ValidateStockTradeUnitChanges::class)->name('validate-stock-trade-unit-changes');
+Route::get('stock/{stock}/trade-unit-changes-impact', ValidateStockTradeUnitChanges::class)->name('stock.trade-unit-changes-impact');

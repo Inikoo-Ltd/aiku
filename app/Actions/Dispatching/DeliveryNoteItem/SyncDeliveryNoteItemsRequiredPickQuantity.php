@@ -10,6 +10,8 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Models\Catalogue\Product;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -18,29 +20,54 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
 {
     use AsAction;
 
-    public function handle(OrgStock $orgStock)
+    /**
+     * Delivery note items still ahead of picking, so their required quantity can be recalculated in place.
+     */
+    public const SYNCED_STATES = [
+        DeliveryNoteItemStateEnum::UNASSIGNED,
+        DeliveryNoteItemStateEnum::QUEUED,
+        DeliveryNoteItemStateEnum::HANDLING,
+    ];
+
+    public function handle(OrgStock $orgStock): void
     {
-        foreach (
-            $orgStock->deliveryNoteItem()->with(['deliveryNote', 'transaction'])->whereIn('state', [
-                DeliveryNoteItemStateEnum::QUEUED,
-                DeliveryNoteItemStateEnum::UNASSIGNED,
-                DeliveryNoteItemStateEnum::HANDLING,
-            ])->get() as $deliveryNoteItem
-        ) {
+        $deliveryNoteItems = $orgStock->deliveryNoteItems()
+            ->with('transaction')
+            ->whereIn('state', collect(self::SYNCED_STATES)->map(fn ($state) => $state->value))
+            ->get();
 
-            $transaction          = $deliveryNoteItem->transaction;
-            $productQty           = DB::table('product_has_org_stocks')->where('product_id', $transaction->model_id)->where('org_stock_id', $orgStock->id)->first()?->quantity;
-            $quantity             = $productQty * $transaction->quantity_ordered;
+        foreach ($deliveryNoteItems as $deliveryNoteItem) {
+            $quantityRequired = $this->getQuantityRequired($orgStock, $deliveryNoteItem);
 
-            DeleteDeliveryNoteItem::run($deliveryNoteItem);
+            if (is_null($quantityRequired) || $quantityRequired == $deliveryNoteItem->quantity_required) {
+                continue;
+            }
 
-            StoreDeliveryNoteItem::make()->action($deliveryNoteItem->deliveryNote, [
-                "org_stock_id" => $orgStock->id,
-                "transaction_id" => $deliveryNoteItem->transaction_id,
-                "quantity_required" => $quantity,
-                "original_quantity_required" => $quantity,
+            UpdateDeliveryNoteItem::make()->action($deliveryNoteItem, [
+                'quantity_required'          => $quantityRequired,
+                'original_quantity_required' => $quantityRequired,
+                'estimated_required_weight'  => (int)($quantityRequired * $orgStock->stock->gross_weight),
             ]);
-
         }
+    }
+
+    private function getQuantityRequired(OrgStock $orgStock, DeliveryNoteItem $deliveryNoteItem): ?float
+    {
+        $transaction = $deliveryNoteItem->transaction;
+
+        if (!$transaction || $transaction->model_type != class_basename(Product::class)) {
+            return null;
+        }
+
+        $quantityPerProduct = DB::table('product_has_org_stocks')
+            ->where('product_id', $transaction->model_id)
+            ->where('org_stock_id', $orgStock->id)
+            ->value('quantity');
+
+        if (is_null($quantityPerProduct)) {
+            return null;
+        }
+
+        return $quantityPerProduct * $transaction->quantity_ordered;
     }
 }

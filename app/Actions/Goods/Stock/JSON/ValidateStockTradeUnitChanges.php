@@ -9,83 +9,63 @@
 
 namespace App\Actions\Goods\Stock\JSON;
 
+use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
-use App\Http\Resources\Dispatching\DeliveryNotesResource;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Goods\Stock;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class ValidateStockTradeUnitChanges extends OrgAction
 {
+    use WithGoodsEditAuthorisation;
+
+    /**
+     * Delivery notes that keep their picking untouched, but whose quantities no longer match the new composition.
+     */
+    public const AFFECTED_STATES = [
+        DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
+        DeliveryNoteItemStateEnum::PICKED,
+        DeliveryNoteItemStateEnum::PACKING,
+        DeliveryNoteItemStateEnum::PACKED,
+    ];
+
     public function handle(Stock $stock): array
     {
-        $query =  function (array $statesIn, array $orgStockId) {
-            return DB::table('delivery_note_items')
-                ->leftJoin('delivery_notes as dn', 'dn.id', 'delivery_note_items.delivery_note_id')
-                ->whereIn('dn.state', $statesIn)
-                ->whereIn('delivery_note_items.org_stock_id', $orgStockId)
-                ->where('dn.created_at', '>=', now()->subMonth())
-                ->pluck('dn.id');
-        };
-
-        $orgStocksId = $stock->orgStocks->pluck('id')->toArray();
-        $selects = [
-            'delivery_notes.id',
-            'delivery_notes.slug',
-            'delivery_notes.reference',
-            'delivery_notes.date',
-            'delivery_notes.state',
-            'delivery_notes.type',
-            'delivery_notes.created_at',
-            'delivery_notes.updated_at',
-            'delivery_notes.is_premium_dispatch',
-            'shops.slug as shop_slug',
-            'shops.name as shop_name',
-        ];
-
-        $deliveryNoteWillBeModified = DeliveryNote::whereIn('delivery_notes.id', $query([
-                DeliveryNoteStateEnum::UNASSIGNED,
-                DeliveryNoteStateEnum::QUEUED,
-                DeliveryNoteStateEnum::HANDLING,
-            ], $orgStocksId))
-            ->leftJoin('shops', 'shops.id', 'delivery_notes.shop_id')
-            ->select($selects)
-            ->get();
-
-        $deliveryNoteWillBeAffected = DeliveryNote::whereIn('delivery_notes.id', $query([
-                DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
-                DeliveryNoteItemStateEnum::PICKED,
-                DeliveryNoteItemStateEnum::PACKING,
-                DeliveryNoteItemStateEnum::PACKED,
-            ], $orgStocksId))
-            ->leftJoin('shops', 'shops.id', 'delivery_notes.shop_id')
-            ->select($selects)
-            ->get();
-
         return [
-            'to_be_modified'    => DeliveryNotesResource::collection($deliveryNoteWillBeModified),
-            'to_be_affected'    => DeliveryNotesResource::collection($deliveryNoteWillBeAffected)
+            'to_be_modified' => $this->getDeliveryNotes($stock, SyncDeliveryNoteItemsRequiredPickQuantity::SYNCED_STATES),
+            'to_be_affected' => $this->getDeliveryNotes($stock, self::AFFECTED_STATES),
         ];
     }
 
-    public function rules()
+    private function getDeliveryNotes(Stock $stock, array $itemStates): Collection
     {
-        return [
-            'trade_units'   => ['sometimes', 'array', 'nullable'],
-        ];
+        return DB::table('delivery_note_items')
+            ->join('delivery_notes', 'delivery_notes.id', 'delivery_note_items.delivery_note_id')
+            ->join('shops', 'shops.id', 'delivery_notes.shop_id')
+            ->whereIn('delivery_note_items.state', collect($itemStates)->map(fn ($state) => $state->value))
+            ->whereIn('delivery_note_items.org_stock_id', $stock->orgStocks->pluck('id'))
+            ->distinct()
+            ->select([
+                'delivery_notes.id',
+                'delivery_notes.reference',
+                'delivery_notes.state',
+                'shops.name as shop_name',
+                'delivery_notes.is_premium_dispatch',
+            ])
+            ->get();
     }
 
     public function asController(Stock $stock, ActionRequest $request): array
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromGroup($stock->group, $request);
 
         return $this->handle($stock);
     }
 
-    public function jsonResponse(array $result)
+    public function jsonResponse(array $result): array
     {
         return $result;
     }
