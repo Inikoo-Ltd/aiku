@@ -296,7 +296,6 @@ class CallApiGlsEsShipping extends OrgAction
 
     public function getGlsEsLabel(Shipper $shipper, array $modelData): array
     {
-        $status    = 'fail';
         $errorData = [];
 
         $uidClient = $this->getAccessToken($shipper);
@@ -339,6 +338,17 @@ class CallApiGlsEsShipping extends OrgAction
             ];
         }
 
+        return $this->parseLabelResponse($postResult, $modelData, $errorData);
+    }
+
+    /**
+     * @param  array<string, mixed>  $modelData
+     * @param  array<string, string>  $errorData
+     */
+    protected function parseLabelResponse(string|bool $postResult, array $modelData, array $errorData = []): array
+    {
+        $status = 'fail';
+
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($postResult);
 
@@ -365,8 +375,20 @@ class CallApiGlsEsShipping extends OrgAction
             } else {
                 $status        = 'success';
                 $numberParcels = count($result);
-                for ($i = 0; $i < count($result); $i++) {
-                    $modelData['label'] = (string)$result[$i];
+
+                if ($numberParcels === 1) {
+                    $modelData['label'] = (string)$result[0];
+                } else {
+                    try {
+                        $modelData['label'] = $this->mergePdfStrings(
+                            array_map(fn ($etiqueta) => base64_decode((string)$etiqueta), $result)
+                        );
+                    } catch (\Throwable $e) {
+                        $status    = 'fail';
+                        $errorData = [
+                            'message' => 'Failed to merge parcel labels: '.$e->getMessage(),
+                        ];
+                    }
                 }
             }
         }
