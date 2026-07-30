@@ -149,7 +149,7 @@ class ShowOrder extends OrgAction
         $timeline = [];
         foreach (OrderStateEnum::cases() as $state) {
             if ($state === OrderStateEnum::CREATING) {
-                $timestamp = $order->created_at;
+                $timestamp = $order->date;
             } else {
                 $timestamp = $order->{$state->snake().'_at'} ? $order->{$state->snake().'_at'} : null;
             }
