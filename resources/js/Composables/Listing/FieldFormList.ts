@@ -97,6 +97,7 @@ import BannedCountries from '@/Components/Forms/Fields/BannedCountries.vue'
 import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
 import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
 import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
+import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -153,6 +154,7 @@ export const componentsList: { [key: string]: Component } = {
     'button': ButtonForm,
     'input_translation': InputTranslation,
     'select_infinite': SelectInfiniteScroll,
+    'ingredients': IngredientsField,
     'textEditor_translation': TextEditorTranslation,
     'pricing_zone': Pricing_zone,
     'territory_zone': TerritoryZone,
