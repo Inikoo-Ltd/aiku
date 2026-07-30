@@ -300,6 +300,16 @@ onMounted(() => {
         button: props.fieldValue?.button
     }
 
+    const urlParams = new URLSearchParams(window.location.search)
+	const sortParam = urlParams.get("order_by")
+
+	if (sortParam) {
+		orderBy.value = sortParam
+		const key = sortParam.replace("-", "")
+		sortKey.value = key as typeof sortKey.value
+		isAscending.value = !sortParam.startsWith("-")
+	}
+
     if (layout?.iris?.is_logged_in) {
         firstLoad.value = 1
         fetchProducts(); // break chace from product dont deleted
