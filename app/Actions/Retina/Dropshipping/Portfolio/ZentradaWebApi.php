@@ -128,7 +128,7 @@ class ZentradaWebApi extends RetinaAction
             'available_quantity_in_packing_units'     => floor($row->available_quantity ?? 0),
             'recommended_retail_price'                => ($row->rrp ?? 0) / $unitsPerPackage,
             'activ_until'                             => '',
-            'weight'                                  => $row->marketing_weight,
+            'weight'                                  => round(($row->marketing_weight ?? 0) / 1000),
             'collection'                              => '',
             'statistical_number'                      => $row->tariff_code,
             'country_of_origin'                       => $row->country_of_origin,
