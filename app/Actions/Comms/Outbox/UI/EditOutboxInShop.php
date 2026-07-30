@@ -106,12 +106,22 @@ class EditOutboxInShop extends OrgAction
                     'title' => '',
                     'fields' => [
                         'days_after' => [
-                            'type' => 'input_number',
-                            'label' => __('Follow-up Interval (Days)'),
+                            'type' => 'select',
+                            'label' => __('Follow-up After subcribe (In Days)'),
                             'placeholder' => __('Days after last contact'),
-                            'information' => __('Number of days to wait after the prospect was last emailed before sending this follow-up.'),
+                            'information' => __('Number of days to wait after the prospect was register as subscriber'),
                             'required' => true,
-                            'value' => $outbox->days_after,
+                            'searchable' => true,
+                            'mode' => 'single',
+                            'options' => [
+                                ['value' => 0, 'label' => __('Same Day')],
+                                ['value' => 1, 'label' => __('1 Day later')],
+                                ...array_map(
+                                    fn (int $days) => ['value' => $days, 'label' => __(':days Days later', ['days' => $days])],
+                                    range(2, 30)
+                                ),
+                            ],
+                            'value' => $outbox->days_after ?? null,
                         ],
                     ]
                 ];

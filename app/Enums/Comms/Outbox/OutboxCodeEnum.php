@@ -98,10 +98,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             OutboxCodeEnum::REVIEW_REMINDER,
-            OutboxCodeEnum::INVOICE_PAID,
-            OutboxCodeEnum::PROSPECT_CONVERTION_1,
-            OutboxCodeEnum::PROSPECT_CONVERTION_2,
-            OutboxCodeEnum::PROSPECT_CONVERTION_3
+            OutboxCodeEnum::INVOICE_PAID
             => OutboxTypeEnum::CUSTOMER_NOTIFICATION,
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
@@ -134,7 +131,10 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_3
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1,
+            OutboxCodeEnum::PROSPECT_CONVERTION_2,
+            OutboxCodeEnum::PROSPECT_CONVERTION_3
             => OutboxTypeEnum::PUSH,
         };
     }
@@ -391,10 +391,6 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::PRICE_CHANGE
             => OutboxBuilderEnum::BLADE,
-            OutboxCodeEnum::PROSPECT_CONVERTION_1,
-            OutboxCodeEnum::PROSPECT_CONVERTION_2,
-            OutboxCodeEnum::PROSPECT_CONVERTION_3
-            => OutboxBuilderEnum::BEEFREE,
             default => null
         };
     }
