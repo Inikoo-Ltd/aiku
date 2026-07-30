@@ -9,6 +9,7 @@
 use App\Mcp\Resources\AikuDataGuideResource;
 use App\Mcp\Servers\AikuServer;
 use App\Mcp\Tools\DescribeTablesTool;
+use Illuminate\Support\Facades\DB;
 
 use function Pest\Laravel\actingAs;
 
@@ -73,6 +74,18 @@ test('describe returns columns and foreign keys', function () {
         ->assertSee('total_amount')
         ->assertSee('deleted_at')
         ->assertSee('foreign_keys');
+});
+
+test('describe reports enum-like column values from pg_stats', function () {
+    DB::statement('ANALYZE countries');
+
+    $response = AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, [
+        'tables' => ['countries'],
+    ]);
+
+    $response->assertOk()
+        ->assertSee('enum_values')
+        ->assertSee('independent');
 });
 
 test('describe reports unknown tables instead of failing', function () {
