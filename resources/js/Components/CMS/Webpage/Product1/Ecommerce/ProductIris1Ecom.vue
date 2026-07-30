@@ -159,6 +159,15 @@ const bestOffer = computed(() => {
   return getBestOffer(props.product?.offers_data)
 })
 
+const _desktopAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
+const _mobileAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
+
+const orderedQuantity = computed<number>(() =>
+    Number(props.customerData?.quantity_ordered_new ?? props.customerData?.quantity_ordered ?? 0)
+)
+
+const onSelectStepQuantityDesktop = (quantity: number) => _desktopAddToBasket.value?.setQuantity(quantity)
+const onSelectStepQuantityMobile = (quantity: number) => _mobileAddToBasket.value?.setQuantity(quantity)
 
 const variantPrevEl = ref<HTMLElement | null>(null)
 const variantNextEl = ref<HTMLElement | null>(null)
@@ -383,13 +392,15 @@ onMounted(async () => {
                     :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
                     :originalPrice="product.price"
                     :unit="product.unit"
+                    :quantity="orderedQuantity"
+                    @selectQuantity="onSelectStepQuantityDesktop"
                 />
 
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="product.status !== 'coming-soon' && layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock" v-model:product="product" :customerData="customerData"
+                        <EcomAddToBasketv2 v-if="product.stock" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
@@ -672,12 +683,15 @@ onMounted(async () => {
             :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
             :originalPrice="product.price"
             :unit="product.unit"
+            :quantity="orderedQuantity"
+            @selectQuantity="onSelectStepQuantityMobile"
         />
         
         <!-- ADD TO CART -->
         <div class="mt-5 space-y-2">
             <EcomAddToBasketv2
                 v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
+                ref="_mobileAddToBasket"
                 v-model:product="product"
                 :customerData="customerData"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"

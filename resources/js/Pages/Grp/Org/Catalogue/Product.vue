@@ -136,6 +136,8 @@ const props = defineProps<{
         }
     }
     product_id: number
+    product_units?: number
+    product_unit?: string
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -355,6 +357,8 @@ const saveProductReview = async () => {
                         v-tooltip="'Create New Offer'"
                         :shop_data="props.shop_data"
                         :product_id="props.product_id"
+                        :product_units="props.product_units"
+                        :product_unit="props.product_unit"
                     />
                 </div>
             </template>
