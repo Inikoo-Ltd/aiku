@@ -89,6 +89,7 @@ use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentServices;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexRecentPalletDeliveryUploads;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
+use App\Actions\Goods\Ingredient\Json\ParseIngredientsList;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitsForTradeUnitFamily;
 use App\Actions\Helpers\Address\GetGeocode;
 use App\Actions\Helpers\Brand\Json\GetBrands;
@@ -342,3 +343,5 @@ Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelec
 
 // Families list under department page
 Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
+
+Route::post('ingredients/parse', ParseIngredientsList::class)->name('ingredients.parse');
