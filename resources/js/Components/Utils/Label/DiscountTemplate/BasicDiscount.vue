@@ -29,20 +29,20 @@ const props = defineProps<{
 
 <template>
     <div v-if="is_discretionary_offer" class="bg-[#b084e2] px-1 py-0.5 text-xs border flex items-center border-[#b084e2] rounded-sm w-fit text-white">
-        {{ offers_data.o.l }}
+        {{ offers_data?.o?.l }}
         <span class="ml-0.5 font-bold mr-1">
-            {{ formatPercentage(offers_data.o.p) }}
+            {{ formatPercentage(offers_data?.o?.p) }}
         </span>
         {{ ctrans("OFF") }}
         <FontAwesomeIcon :icon="faMoneyCheckEditAlt" class="text-white text-[0.8333rem] align-middle ml-1 mb-1" fixed-width aria-hidden="true" />
     </div>
 
     <!-- Label: First Order Bonus -->
-    <div v-else-if="offers_data.o.st === 'fob'" class="bg-[#2a919e] text-white px-1 py-[3px] text-xs flex items-center rounded-sm w-fit">
-        {{ offers_data.o.l }}
+    <div v-else-if="offers_data?.o?.st === 'fob'" class="bg-[#2a919e] text-white px-1 py-[3px] text-xs flex items-center rounded-sm w-fit">
+        {{ offers_data?.o?.l }}
         <span class="mr-0.5 font-bold ml-1">
             {{ ctrans(":percentage_discount OFF", {
-                percentage_discount: formatPercentage(offers_data.o.p)
+                percentage_discount: formatPercentage(offers_data?.o?.p)
             }) }}
         </span>
     </div>
