@@ -41,8 +41,9 @@ class ShowIrisBlogDashboard
                 ->limit(100)
                 ->get() as $webpageBlog
         ) {
-            $publishedLayout = json_decode($webpageBlog->published_layout, true);
-            $imageData       = Arr::get($publishedLayout, 'web_blocks.0.web_block.layout.data.fieldValue.image');
+            $publishedLayout                = json_decode($webpageBlog->published_layout, true);
+            $imageData                      = Arr::get($publishedLayout, 'web_blocks.0.web_block.layout.data.fieldValue.image');
+            $third_party_image_preview      = Arr::get($publishedLayout, 'web_blocks.0.web_block.layout.data.fieldValue.third_party_image_preview');
 
             $publishedAt = null;
             if ($webpageBlog->last_published_at) {
@@ -50,12 +51,13 @@ class ShowIrisBlogDashboard
             }
 
             $blogs[] = [
-                'id'           => $webpageBlog->id,
-                'title'        => $webpageBlog->title,
-                'image_src'    => Arr::get($imageData, 'source'),
-                'image_alt'    => Arr::get($imageData, 'alt'),
-                'url'          => ShowIrisWebpage::make()->getEnvironmentUrl($webpageBlog->canonical_url),
-                'published_at' => $publishedAt
+                'id'                            => $webpageBlog->id,
+                'title'                         => $webpageBlog->title,
+                'image_src'                     => Arr::get($imageData, 'source'),
+                'third_party_image_preview'     => $third_party_image_preview,
+                'image_alt'                     => Arr::get($imageData, 'alt'),
+                'url'                           => ShowIrisWebpage::make()->getEnvironmentUrl($webpageBlog->canonical_url),
+                'published_at'                  => $publishedAt
             ];
         }
 
