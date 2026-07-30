@@ -101,7 +101,34 @@ class EditOutboxInShop extends OrgAction
                 ]
             ];
             $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
-        }if (in_array($outbox->code, [OutboxCodeEnum::REVIEW_REMINDER])) {
+        }
+
+        if (in_array($outbox->code, [
+            OutboxCodeEnum::PROSPECT_CONVERTION_1,
+            OutboxCodeEnum::PROSPECT_CONVERTION_2,
+            OutboxCodeEnum::PROSPECT_CONVERTION_3 ])) {
+            $fields[] = $subjectField;
+
+            if ($outbox->code != OutboxCodeEnum::PROSPECT_CONVERTION_1) {
+                $fields[] = [
+                    'title' => '',
+                    'fields' => [
+                        'days_after' => [
+                            'type' => 'input_number',
+                            'label' => __('Follow-up Interval (Days)'),
+                            'placeholder' => __('Days after last contact'),
+                            'information' => __('Number of days to wait after the prospect was last emailed before sending this follow-up.'),
+                            'required' => true,
+                            'value' => $outbox->days_after,
+                        ],
+                    ]
+                ];
+            }
+
+            $outbox->state != OutboxStateEnum::IN_PROCESS ? $fields[] = $isApplicableField : null;
+        }
+
+        if (in_array($outbox->code, [OutboxCodeEnum::REVIEW_REMINDER])) {
             $fields[] = $subjectField;
             $fields[] = [
                 'title' => '',

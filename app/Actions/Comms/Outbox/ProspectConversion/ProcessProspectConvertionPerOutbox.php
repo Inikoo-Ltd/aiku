@@ -4,13 +4,14 @@ namespace App\Actions\Comms\Outbox\ProspectConversion;
 
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunRecipientStoredAt;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessProspectConvertion1PerOutbox
+class ProcessProspectConvertionPerOutbox
 {
     use WithGenerateEmailBulkRuns;
     use AsAction;
@@ -21,6 +22,12 @@ class ProcessProspectConvertion1PerOutbox
     {
         $currentDateTime = Carbon::now()->utc();
 
+        $isFirstContact = $outbox->code == OutboxCodeEnum::PROSPECT_CONVERTION_1;
+
+        if (!$isFirstContact && !$outbox->days_after) {
+            return;
+        }
+
         $baseQuery = DB::table('prospects');
         $baseQuery->where('prospects.shop_id', $outbox->shop_id);
         $baseQuery->where('prospects.state', ProspectStateEnum::NO_CONTACTED->value);
@@ -28,6 +35,16 @@ class ProcessProspectConvertion1PerOutbox
         $baseQuery->where('prospects.can_contact_by_email', true);
         $baseQuery->whereNotNull('prospects.email');
         $baseQuery->whereNull('prospects.deleted_at');
+
+        if ($isFirstContact) {
+            $baseQuery->whereNull('prospects.last_contacted_at');
+        } else {
+            $baseQuery->whereDate(
+                'prospects.last_contacted_at',
+                '=',
+                $currentDateTime->copy()->subDays($outbox->days_after)->toDateString()
+            );
+        }
 
         $baseQuery->select(
             'prospects.id',
@@ -54,7 +71,7 @@ class ProcessProspectConvertion1PerOutbox
                 ->values()
                 ->all();
 
-            ProcessProspectConvertion1Recipients::dispatch($emailBulkRun->id, $prospectData);
+            ProcessProspectConvertionRecipients::dispatch($emailBulkRun->id, $prospectData);
             $this->countRecipients += count($prospectData);
         });
 

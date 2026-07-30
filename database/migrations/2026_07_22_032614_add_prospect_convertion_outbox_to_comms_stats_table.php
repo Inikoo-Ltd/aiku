@@ -22,6 +22,8 @@ return new class () extends Migration {
 
         $columns = [
             'number_outboxes_type_' . OutboxCodeEnum::PROSPECT_CONVERTION_1->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::PROSPECT_CONVERTION_2->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::PROSPECT_CONVERTION_3->snake(),
         ];
 
         foreach ($tables as $table) {
@@ -58,6 +60,8 @@ return new class () extends Migration {
 
         $columns = [
             'number_outboxes_type_' . OutboxCodeEnum::PROSPECT_CONVERTION_1->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::PROSPECT_CONVERTION_2->snake(),
+            'number_outboxes_type_' . OutboxCodeEnum::PROSPECT_CONVERTION_3->snake(),
         ];
 
         foreach ($tables as $table) {

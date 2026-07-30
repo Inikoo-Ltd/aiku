@@ -15,7 +15,7 @@ use App\Models\CRM\Prospect;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessProspectConvertion1Recipients implements ShouldQueue
+class ProcessProspectConvertionRecipients implements ShouldQueue
 {
     use AsAction;
 

@@ -70,6 +70,8 @@ class UpdateOutbox extends OrgAction
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::PROSPECT_CONVERTION_2,
+            OutboxCodeEnum::PROSPECT_CONVERTION_3,
         ])) {
             $daysAfterRules[] = 'max:30';
         }
