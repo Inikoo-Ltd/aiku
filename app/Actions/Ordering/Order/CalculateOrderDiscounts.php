@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Traits\WithGiftOptOut;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\OfferAllowance;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CalculateOrderDiscounts implements ShouldBeUnique
 {
     use AsAction;
+    use WithGiftOptOut;
 
     public string $jobQueue = 'urgent';
 
@@ -249,6 +251,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function getGiftsMeters(Order $order): void
     {
+        if ($this->isGiftOptedOut($order)) {
+            return;
+        }
+
         foreach (
             DB::table('offers')
                 ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
@@ -289,12 +295,18 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
+        $isGift = $voucherData->allowance_type === 'gift';
+
+        if ($isGift && $this->isGiftOptedOut($order)) {
+            return;
+        }
+
         $triggerData = json_decode($voucherData->trigger_data, true);
 
         $this->offerMeters[$voucherData->allowance_signature] = [
             'offer_id' => $voucherData->id,
             'label'    => $voucherData->name,
-            'is_gift'  => $voucherData->allowance_type === 'gift',
+            'is_gift'  => $isGift,
             'metadata' => [
                 'current' => $order->gross_amount,
                 'target'  => Arr::get($triggerData, 'item_amount', 0),
