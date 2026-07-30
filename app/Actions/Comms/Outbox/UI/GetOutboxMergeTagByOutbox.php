@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Outbox\UI;
 
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\OrgAction;
+use App\Enums\Comms\Mailshot\ProspectMailshotMergeTagsEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxMergeTagsEnum;
 use App\Models\Comms\Outbox;
@@ -48,6 +49,12 @@ class GetOutboxMergeTagByOutbox extends OrgAction
                         OutboxMergeTagsEnum::CUSTOMER_NAME,
                         OutboxMergeTagsEnum::ORDER_NUMBER,
                         OutboxMergeTagsEnum::ORDER,
+                    ]);
+            case OutboxCodeEnum::PROSPECT_CONVERTION_1:
+            case OutboxCodeEnum::PROSPECT_CONVERTION_2:
+            case OutboxCodeEnum::PROSPECT_CONVERTION_3:
+                return ProspectMailshotMergeTagsEnum::filterTags([
+                        ProspectMailshotMergeTagsEnum::PROSPECT_NAME,
                     ]);
             default:
                 return GetMailshotMergeTags::run();

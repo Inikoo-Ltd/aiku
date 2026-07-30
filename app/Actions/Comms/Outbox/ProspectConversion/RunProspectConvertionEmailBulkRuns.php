@@ -26,6 +26,7 @@ class RunProspectConvertionEmailBulkRuns
         $queryOutbox->where('state', OutboxStateEnum::ACTIVE);
         $queryOutbox->where('is_applicable', true);
         $queryOutbox->whereNotNull('shop_id');
+        $queryOutbox->whereNotNull('outboxes.days_after');
         $queryOutbox->select('outboxes.id', 'outboxes.shop_id', 'outboxes.code', 'outboxes.days_after', 'outboxes.last_sent_at');
         $outboxes = $queryOutbox->get();
 

@@ -4,8 +4,6 @@ namespace App\Actions\Comms\Outbox\ProspectConversion;
 
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunRecipientStoredAt;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
-use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -21,36 +19,25 @@ class ProcessProspectConvertionPerOutbox
     public function handle(Outbox $outbox): void
     {
         $currentDateTime = Carbon::now()->utc();
+        $compareDate = $currentDateTime->copy()->subDays($outbox->days_after)->endOfDay();
 
-        $isFirstContact = $outbox->code == OutboxCodeEnum::PROSPECT_CONVERTION_1;
 
-        if (!$isFirstContact && !$outbox->days_after) {
-            return;
-        }
 
         $baseQuery = DB::table('prospects');
         $baseQuery->where('prospects.shop_id', $outbox->shop_id);
-        $baseQuery->where('prospects.state', ProspectStateEnum::NO_CONTACTED->value);
         $baseQuery->where('prospects.dont_contact_me', false);
         $baseQuery->where('prospects.can_contact_by_email', true);
+        $baseQuery->whereNull('prospects.customer_id');
         $baseQuery->whereNotNull('prospects.email');
         $baseQuery->whereNull('prospects.deleted_at');
-
-        if ($isFirstContact) {
-            $baseQuery->whereNull('prospects.last_contacted_at');
-        } else {
-            $baseQuery->whereDate(
-                'prospects.last_contacted_at',
-                '=',
-                $currentDateTime->copy()->subDays($outbox->days_after)->toDateString()
-            );
-        }
+        $baseQuery->whereDate('prospects.created_at', '=', $compareDate->toDateString());
 
         $baseQuery->select(
             'prospects.id',
             'prospects.email',
             'prospects.name',
         );
+
         $baseQuery->orderBy('prospects.id');
 
         $totalItems = (clone $baseQuery)->count();
