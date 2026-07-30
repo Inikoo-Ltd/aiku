@@ -8,6 +8,8 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\Traits;
 
+use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateStockDeliveries;
+use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateStockDeliveries;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateStockDeliveries;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydrateStockDeliveries;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateStockDeliveries;
@@ -25,8 +27,10 @@ trait HasStockDeliveryHydrators
         $parent = $stockDelivery->parent;
 
         if (class_basename($parent) == 'OrgSupplier') {
+            OrgSupplierHydrateStockDeliveries::dispatch($parent)->delay($this->hydratorsDelay);
             SupplierHydrateStockDeliveries::dispatch($parent->supplier)->delay($this->hydratorsDelay);
         } elseif (class_basename($parent) == 'OrgAgent') {
+            OrgAgentHydrateStockDeliveries::dispatch($parent)->delay($this->hydratorsDelay);
             AgentHydrateStockDeliveries::dispatch($parent->agent)->delay($this->hydratorsDelay);
         }
 

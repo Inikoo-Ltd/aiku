@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\OrgAgent;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSupplierProducts;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
+use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateStockDeliveries;
 use App\Models\Procurement\OrgAgent;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,6 +27,7 @@ class HydrateOrgAgent
         OrgAgentHydrateOrgSuppliers::run($orgAgent);
         OrgAgentHydratePurchaseOrders::run($orgAgent);
         OrgAgentHydrateOrgSupplierProducts::run($orgAgent);
+        OrgAgentHydrateStockDeliveries::run($orgAgent);
     }
 
     public function asCommand(Command $command): int
