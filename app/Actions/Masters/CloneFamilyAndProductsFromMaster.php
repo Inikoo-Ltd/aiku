@@ -26,15 +26,17 @@ class CloneFamilyAndProductsFromMaster extends OrgAction implements ShouldBeUniq
         return $masterProductCategory->id;
     }
 
-    public function handle(MasterProductCategory $masterFamily, array $modelData, User $user)
+    public function handle(MasterProductCategory $masterFamily, array $modelData, User $user): void
     {
         $shops          = Shop::whereIn('id', data_get($modelData, 'shop_ids', []))->get();
-        $masterProducts = $masterFamily->masterAssets()->where('master_assets.status', true)->get() ?? [];
+        $masterProducts = $masterFamily->masterAssets()->where('master_assets.status', true)->get();
 
         $doneFamilies           = 0;
         $doneProducts           = 0;
-        $pendingCount           = count($shops);
-        $pendingCountProducts   = count($masterProducts);
+        $pendingCount           = $shops->count();
+        $pendingCountProducts   = $masterProducts->count();
+
+        BroadcastCloneFamilyAndProductsFromMaster::dispatch($user, $masterFamily, $pendingCount, $doneFamilies, $pendingCountProducts, $doneProducts);
 
         foreach ($shops as $shop) {
             // Could bulk at once, but just gonna do this since this is a dispatch anyway, to handle event broadcast easier (For the soketi progress information)
@@ -49,7 +51,7 @@ class CloneFamilyAndProductsFromMaster extends OrgAction implements ShouldBeUniq
             ]
             );
             $doneFamilies++;
-            BroadcastCloneFamilyAndProductsFromMaster::dispatch($user, $masterFamily, $doneFamilies, $pendingCount, $pendingCountProducts, $doneProducts);
+            BroadcastCloneFamilyAndProductsFromMaster::dispatch($user, $masterFamily, $pendingCount, $doneFamilies, $pendingCountProducts, $doneProducts);
         }
 
         foreach ($masterProducts as $masterProduct) {
@@ -57,29 +59,29 @@ class CloneFamilyAndProductsFromMaster extends OrgAction implements ShouldBeUniq
                 'shop_products'     => $shops->mapWithKeys(function ($item) {
                     return [
                         $item->id   => [
-                            'create_in_shop'    => true
+                            'create_in_shop'    => 'Yes'
                         ]
                     ];
-                }),
+                })->toArray(),
                 'is_minion_variant' => $masterProduct->is_minion_variant,
                 'is_for_sale'       => $masterProduct->is_for_sale
             ]);
             $doneProducts++;
-            BroadcastCloneFamilyAndProductsFromMaster::dispatch($user, $masterFamily, $doneFamilies, $pendingCount, $pendingCountProducts, $doneProducts);
+            BroadcastCloneFamilyAndProductsFromMaster::dispatch($user, $masterFamily, $pendingCount, $doneFamilies, $pendingCountProducts, $doneProducts);
         }
     }
 
     public function rules(): array
     {
         return [
-            'shop_ids'  => ['required', 'array']
+            'shop_ids'  => ['required', 'array', 'min:1']
         ];
     }
 
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): void
     {
-        $this->initialisationFromGroup($masterProductCategory, group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
-        SELF::dispatch($this->masterFamily, $this->validatedData, $request->user());
+        self::dispatch($masterProductCategory, $this->validatedData, $request->user());
     }
 }

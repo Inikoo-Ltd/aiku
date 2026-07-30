@@ -24,8 +24,11 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
+import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal'
 import Dialog from "primevue/dialog"
 import { Checkbox } from 'primevue'
+import { watch } from 'vue'
+import axios from 'axios'
 library.add(faSeedling, faPenAlt)
 
 const props = defineProps<{
@@ -51,7 +54,7 @@ const props = defineProps<{
 
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-const isOpenModalPortfolios = ref(false)
+const isOpenModalAddToShop = ref(false)
 const locale = inject('locale', aikuLocaleStructure)
 
 const component = computed(() => {
@@ -132,7 +135,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                 text: trans("Successfully added families"),
                 type: "success"
             })
-            isOpenModalPortfolios.value = false
+            isOpenModalAddToShop.value = false
         },
         onFinish: () => isLoadingSubmit.value = false
     })
@@ -149,14 +152,52 @@ const allShopSelected = computed({
     }
 })
 
-const submitCloneFromMaster = async () => {
-    if (!props.master_product_category_id) return;
-    
-    await router.patch(route('grp.models.master_product_category.clone-to-child-shops', {
-        masterProductCategory: props.master_product_category_id
-    }), {
-        shop_ids: selectedShops.value
+const echoPersonal = useEchoGrpPersonal()
+
+const cloneProgress = computed(() => props.master_product_category_id
+    ? echoPersonal.cloneFamilyProgress[props.master_product_category_id] ?? null
+    : null
+)
+
+const isCloningFromMaster = computed(() => !!cloneProgress.value && !cloneProgress.value.isFinished)
+
+watch(() => cloneProgress.value?.isFinished, (isFinished) => {
+    if (!isFinished || !props.master_product_category_id) return
+
+    const masterFamilyId = props.master_product_category_id
+    showDialog.value = false
+    selectedShops.value = []
+
+    notify({
+        title: trans("Success"),
+        text: trans("Family and its products have been added to the selected shops."),
+        type: "success",
     })
+
+    router.reload({ only: ['shops_do_not_have_family', 'pageHead', currentTab.value] })
+
+    setTimeout(() => echoPersonal.clearCloneFamilyProgress(masterFamilyId), 4000)
+})
+
+const submitCloneFromMaster = async () => {
+    if (!props.master_product_category_id || isCloningFromMaster.value) return
+
+    echoPersonal.startCloneFamilyProgress(props.master_product_category_id, props.title)
+
+    try {
+        await axios.patch(route('grp.models.master_product_category.clone-to-child-shops', {
+            masterProductCategory: props.master_product_category_id
+        }), {
+            shop_ids: selectedShops.value
+        })
+    } catch (error: any) {
+        echoPersonal.clearCloneFamilyProgress(props.master_product_category_id)
+        notify({
+            title: trans("Something went wrong."),
+            text: error?.response?.data?.message || trans("Failed to add family to the selected shops, please try again."),
+            type: "error",
+        })
+    }
 }
 
 </script>
@@ -177,7 +218,7 @@ const submitCloneFromMaster = async () => {
             />
             <Button
                 v-if="routes?.fetch_families"
-                @click="() => isOpenModalPortfolios = true"
+                @click="() => isOpenModalAddToShop = true"
                 type="tertiary"
                 icon="fas fa-plus"
                 :label="trans('Attach families')"
@@ -262,6 +303,8 @@ const submitCloneFromMaster = async () => {
                         <Button
                             @click="submitCloneFromMaster()"
                             :label="ctrans('Save')"
+                            :loading="isCloningFromMaster"
+                            :disabled="isCloningFromMaster || !selectedShops.length"
                         />
                     </div>
                 </template>
@@ -312,7 +355,7 @@ const submitCloneFromMaster = async () => {
         />
     </Modal>
 
-    <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
+    <Modal v-if="true" :isOpen="isOpenModalAddToShop" @onClose="isOpenModalAddToShop = false" width="w-full max-w-6xl">
         <ProductsSelector
             v-if="routes?.fetch_families"
             :headLabel="trans('Add Family to portfolios')"

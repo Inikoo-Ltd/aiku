@@ -62,6 +62,9 @@ library.add(faHeart, faComputerClassic, faDiscord)
                 <div id="help-articles" class="h-full">
 
                 </div>
+                <div id="clone-from-master-progress" class="h-full">
+
+                </div>
                <!--  <FooterCurrency /> -->
                 <FooterLanguage />
                 <FooterMessage v-if="layout?.user?.is_agent" />
