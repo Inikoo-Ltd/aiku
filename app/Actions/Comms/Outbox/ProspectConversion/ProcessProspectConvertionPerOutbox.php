@@ -16,11 +16,10 @@ class ProcessProspectConvertionPerOutbox
     public string $jobQueue = 'ses';
     protected int $countRecipients = 0;
 
-    public function handle(Outbox $outbox): void
+    public function handle(Outbox $outbox, ?int $prospoectId): void
     {
         $currentDateTime = Carbon::now()->utc();
         $compareDate = $currentDateTime->copy()->subDays($outbox->days_after)->endOfDay();
-
 
 
         $baseQuery = DB::table('prospects');
@@ -30,7 +29,12 @@ class ProcessProspectConvertionPerOutbox
         $baseQuery->whereNull('prospects.customer_id');
         $baseQuery->whereNotNull('prospects.email');
         $baseQuery->whereNull('prospects.deleted_at');
-        $baseQuery->whereDate('prospects.created_at', '=', $compareDate->toDateString());
+        if ($prospoectId) {
+            $baseQuery->where('prospects.id', $prospoectId);
+        } else {
+            $baseQuery->whereDate('prospects.created_at', '=', $compareDate->toDateString());
+        }
+
 
         $baseQuery->select(
             'prospects.id',

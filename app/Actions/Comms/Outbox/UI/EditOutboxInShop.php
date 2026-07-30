@@ -114,7 +114,7 @@ class EditOutboxInShop extends OrgAction
                             'searchable' => true,
                             'mode' => 'single',
                             'options' => [
-                                ['value' => 0, 'label' => __('Same Day')],
+                                ...($outbox->code == OutboxCodeEnum::PROSPECT_CONVERTION_1 ? [['value' => 0, 'label' => __('Directly')]] : []),
                                 ['value' => 1, 'label' => __('1 Day later')],
                                 ...array_map(
                                     fn (int $days) => ['value' => $days, 'label' => __(':days Days later', ['days' => $days])],
