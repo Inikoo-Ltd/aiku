@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\Amazon\Product;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\RetinaAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Events\UploadProductToAmazonProgressEvent;
@@ -28,6 +29,7 @@ class RequestApiUploadProductAmazon extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
+    use WithPortfolioErrorResponse;
 
     /**
      * @throws \Exception
@@ -44,6 +46,7 @@ class RequestApiUploadProductAmazon extends RetinaAction
             if (Arr::get($product, 'status') === "ACCEPTED") {
                 $portfolio = UpdatePortfolio::run($portfolio, [
                     'platform_product_id' => Arr::get($product, 'sku'),
+                    'errors_response'     => null,
                 ]);
 
                 if (! in_array($amazonUser->customerSalesChannel->state, [CustomerSalesChannelStateEnum::WITH_PORTFOLIO])) {
@@ -53,12 +56,16 @@ class RequestApiUploadProductAmazon extends RetinaAction
                 }
             } elseif (Arr::get($product, 'status') === "INVALID") {
                 $portfolio = UpdatePortfolio::run($portfolio, [
-                    'errors_response' => Arr::get($product, 'issues', []),
+                    'errors_response' => $this->portfolioErrorResponse(Arr::get($product, 'issues', [])),
                 ]);
             }
 
             UploadProductToAmazonProgressEvent::dispatch($amazonUser, $portfolio);
         } catch (\Exception $e) {
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
+            ]);
+
             Log::info("Failed to upload product due to: " . $e->getMessage());
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
         }

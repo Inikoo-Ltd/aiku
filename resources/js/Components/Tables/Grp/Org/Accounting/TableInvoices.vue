@@ -16,6 +16,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
 import { trans } from "laravel-vue-i18n";
 import { RouteParams } from "@/types/route-params";
+import { bucketQuery } from "@/Composables/bucketQuery";
 
 
 library.add(faFileInvoiceDollar, faCircle, faCheckCircle, faQuestionCircle);
@@ -27,6 +28,13 @@ const props = defineProps<{
 }>();
 
 const locale = useLocaleStore();
+
+function invoiceHref(invoice: Invoice) {
+  const name = route().current() ?? ''
+  const bucket = name.includes('unpaid_invoices') ? 'unpaid' : name.includes('paid_invoices') ? 'paid' : ''
+
+  return invoiceRoute(invoice) + bucketQuery(bucket)
+}
 
 function invoiceRoute(invoice: Invoice) {
   'grp.org.shops.show.dashboard.invoices.index'
@@ -119,7 +127,7 @@ function customerRoute(invoice: Invoice) {
     </template>
 
     <template #cell(reference)="{ item: invoice }">
-      <Link :href="invoiceRoute(invoice)" class="primaryLink py-0.5">
+      <Link :href="invoiceHref(invoice)" class="primaryLink py-0.5">
         {{ invoice.reference }}
       </Link>
       <FontAwesomeIcon v-if="invoice.in_process" v-tooltip="trans('In process')" icon="fal fa-seedling" class="text-green-500" fixed-width aria-hidden="true" />

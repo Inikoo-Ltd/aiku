@@ -3,11 +3,11 @@ import { ref, computed, inject, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes } from '@fal'
+import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt } from '@fal'
 import CustomerTimeline from '@/Components/Showcases/Grp/CustomerTimeline.vue'
 import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt)
 
 type SidePanelTab = 'profile' | 'statistics' | 'timeline' | 'log'
 
@@ -60,7 +60,7 @@ const badgeStyle = computed(() => ({ backgroundColor: themePrimary.value + '1A',
 const activeTab = ref<SidePanelTab>('profile')
 const isCopied = ref(false)
 
-const customerProfile = ref<{ tags: CustomerTag[]; stats: CustomerStats | null }>({ tags: [], stats: null })
+const customerProfile = ref<{ tags: CustomerTag[]; stats: CustomerStats | null; email: string | null; profile_url: string | null }>({ tags: [], stats: null, email: null, profile_url: null })
 const isLoadingProfile = ref(false)
 const profileLoaded = ref(false)
 
@@ -114,7 +114,7 @@ const loadTimeline = async () => {
 const resetAndLoad = () => {
     profileLoaded.value = false
     timelineLoaded.value = false
-    customerProfile.value = { tags: [], stats: null }
+    customerProfile.value = { tags: [], stats: null, email: null, profile_url: null }
     activeTab.value = 'profile'
     loadCustomerProfile()
 }
@@ -187,7 +187,22 @@ const copyChatId = async () => {
                     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Contact</p>
                     <div class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">Name</div>
-                        <div class="col-span-2 text-xs font-medium text-gray-800">{{ session.contact_name || '-' }}</div>
+                        <div class="col-span-2 text-xs font-medium text-gray-800">
+                            <a v-if="!session.is_guest && customerProfile.profile_url"
+                                :href="customerProfile.profile_url" target="_blank" rel="noopener"
+                                class="inline-flex items-center gap-1 hover:underline"
+                                :style="{ color: themePrimary }">
+                                {{ session.contact_name || '-' }}
+                                <FontAwesomeIcon :icon="['fal', 'fa-external-link-alt']" class="text-[10px]" />
+                            </a>
+                            <span v-else>{{ session.contact_name || '-' }}</span>
+                        </div>
+                    </div>
+                    <div v-if="!session.is_guest && customerProfile.email" class="grid grid-cols-3 gap-2 items-start">
+                        <div class="text-gray-500 text-xs">Email</div>
+                        <div class="col-span-2 text-xs font-medium text-gray-800 break-all">
+                            <a :href="`mailto:${customerProfile.email}`" class="hover:underline" :style="{ color: themePrimary }">{{ customerProfile.email }}</a>
+                        </div>
                     </div>
                     <div v-if="session.shop_name" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">Shop</div>

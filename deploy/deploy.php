@@ -74,10 +74,23 @@ task('npm:my_install', function () {
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
-    if (!$frontEndChanged && !test('[ -d {{previous_release}}/public/iris/assets ]')) {
-        writeln('Previous release has no built assets (failed/first deploy). Forcing build.');
-        $frontEndChanged = true;
-        set('front_end_changed', true);
+    if (!$frontEndChanged) {
+        $requiredArtifacts = [
+            '{{previous_release}}/public/retina',
+            '{{previous_release}}/public/iris/assets',
+            '{{previous_release}}/public/grp',
+            '{{previous_release}}/public/pupil',
+            '{{previous_release}}/public/aiku-public',
+            '{{previous_release}}/bootstrap/ssr',
+        ];
+        foreach ($requiredArtifacts as $artifact) {
+            if (!test("[ -d $artifact ]")) {
+                writeln("Previous release is missing $artifact (failed/cancelled/first deploy). Forcing build.");
+                $frontEndChanged = true;
+                set('front_end_changed', true);
+                break;
+            }
+        }
     }
     if ($frontEndChanged) {
         run("cd {{release_path}} && {{bin/npm}} run build");
@@ -146,11 +159,13 @@ task('artisan:octane:reload', function () {
 
 desc('Save ssr checksums');
 task('deploy:save-ssr-checksums', function () {
-    $manifestPath = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
-    $irisPath     = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
+    $manifestPath       = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
+    $irisPath           = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
+    $clientManifestPath = '{{release_path}}/public/iris/manifest.json';
 
-    $manifestChecksum = '';
-    $irisChecksum     = '';
+    $manifestChecksum       = '';
+    $irisChecksum           = '';
+    $clientManifestChecksum = '';
 
     try {
         if (test('[ -f '.$manifestPath.' ]')) {
@@ -172,10 +187,26 @@ task('deploy:save-ssr-checksums', function () {
         writeln('Error computing iris checksum: '.$e->getMessage());
     }
 
-    // Combine both checksums and write a single checksum file
-    $combined = hash('sha256', $manifestChecksum.'|'.$irisChecksum);
+    try {
+        if (test('[ -f '.$clientManifestPath.' ]')) {
+            $clientManifestChecksum = trim(run("sha256sum $clientManifestPath | awk '{print $1}'"));
+        } else {
+            writeln("Warning: $clientManifestPath not found");
+        }
+    } catch (\Throwable $e) {
+        writeln('Error computing client manifest checksum: '.$e->getMessage());
+    }
 
     $checksumFile = '{{release_path}}/SSR_CHECKSUM';
+
+    if ($manifestChecksum === '' || $irisChecksum === '' || $clientManifestChecksum === '') {
+        writeln('One or more SSR checksum components missing; not writing SSR_CHECKSUM so downstream tasks err on flushing/restarting.');
+        run('rm -f '.$checksumFile);
+
+        return;
+    }
+
+    $combined = hash('sha256', $manifestChecksum.'|'.$irisChecksum.'|'.$clientManifestChecksum);
     run('printf %s '.escapeshellarg($combined).' > '.$checksumFile);
     writeln('SSR checksum saved to '.$checksumFile);
 });
@@ -215,10 +246,8 @@ task(
 
         $shouldFlush = false;
 
-        $frontEndChanged = get('front_end_changed');
-
-        if ($previous === '' || $current === '' || $previous !== $current || $frontEndChanged) {
-            $shouldFlush = true; // missing values, err on flushing
+        if ($previous === '' || $current === '' || $previous !== $current) {
+            $shouldFlush = true;
         }
 
         if ($shouldFlush) {
@@ -270,9 +299,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
 
     $shouldRestartSSR = false;
 
-    $frontEndChanged = get('front_end_changed');
-
-    if ($previous === '' || $current === '' || $previous !== $current || $frontEndChanged) {
+    if ($previous === '' || $current === '' || $previous !== $current) {
         $shouldRestartSSR = true;
     }
 

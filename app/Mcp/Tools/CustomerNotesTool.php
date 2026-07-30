@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Notes recorded against a customer, newest first, optionally filtered by search text.')]
+#[IsReadOnly]
 class CustomerNotesTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum
@@ -35,7 +37,7 @@ class CustomerNotesTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $customer = Customer::where('shop_id', $shop->id)
@@ -76,10 +78,10 @@ class CustomerNotesTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop'     => $schema->string()->description('Shop slug')->required(),
+            'shop'     => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'customer' => $schema->string()->description('Customer slug')->required(),
             'search'   => $schema->string()->description('Optional text to search within notes'),
-            'limit'    => $schema->integer()->description('Maximum notes to return, default 10')->minimum(1)->maximum(50),
+            'limit'    => $schema->integer()->description('Maximum notes to return, default 10')->min(1)->max(50),
         ];
     }
 }

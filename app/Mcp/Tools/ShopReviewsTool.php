@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Customer review sentiment for a shop: rating distribution, average rating, and the most recent review messages.')]
+#[IsReadOnly]
 class ShopReviewsTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum
@@ -32,7 +34,7 @@ class ShopReviewsTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $stats = $shop->reviewStats;
@@ -71,8 +73,8 @@ class ShopReviewsTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop'  => $schema->string()->description('Shop slug')->required(),
-            'limit' => $schema->integer()->description('Maximum recent review messages to return, default 10')->minimum(1)->maximum(50),
+            'shop'  => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
+            'limit' => $schema->integer()->description('Maximum recent review messages to return, default 10')->min(1)->max(50),
         ];
     }
 }

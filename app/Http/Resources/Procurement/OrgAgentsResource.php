@@ -13,26 +13,26 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * @property string $code
  * @property string $name
- * @property string $slug
  * @property mixed $location
  * @property numeric $number_org_suppliers
- * @property numeric $number_org_supplier_products
  * @property numeric $number_purchase_orders
  * @property numeric $number_stock_deliveries
+ * @property string $status
+ * @property string $slug
  */
 class OrgAgentsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'slug'                         => $this->slug,
-            'code'                         => $this->code,
-            'name'                         => $this->name,
-            'location'                     => json_decode($this->location),
-            'number_org_suppliers'         => $this->number_org_suppliers,
-            'number_org_supplier_products' => $this->number_org_supplier_products,
-            'number_purchase_orders'       => $this->number_purchase_orders,
-            'number_stock_deliveries'       => $this->number_stock_deliveries
+            'code'                    => $this->code,
+            'name'                    => $this->name,
+            'location'                => json_decode($this->location),
+            'number_org_suppliers'    => $this->number_org_suppliers,
+            'number_purchase_orders'  => $this->number_purchase_orders,
+            'number_stock_deliveries' => $this->number_stock_deliveries,
+            'status'                  => $this->status,
+            'slug'                    => $this->slug,
         ];
     }
 }

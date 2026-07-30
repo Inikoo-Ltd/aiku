@@ -53,6 +53,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
         $query->leftJoin('batch_codes as org_stock_batch_code', 'org_stocks.main_batch_code_id', '=', 'org_stock_batch_code.id');
         $query->leftjoin('shops', 'shops.id', '=', 'delivery_note_items.shop_id');
+        $query->leftJoin('transactions', 'transactions.id', '=', 'delivery_note_items.transaction_id');
 
         return $query
             ->defaultSort(['locations.sort_code', 'org_stocks.code'])
@@ -64,6 +65,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                     'org_stocks.main_batch_code_id as org_stocks_batch_code_id',
                     'org_stocks.current_batch_codes as org_stocks_batch_code_count',
                     'org_stock_batch_code.code as org_stocks_batch_code',
+                    'transactions.quantity_ordered as transaction_quantity_ordered',
                     'shops.slug as shop_slug',
                     'shops.type as shop_type',
                     DB::raw("'{$parent->organisation->slug}' as organisation_slug"),

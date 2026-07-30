@@ -5,7 +5,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
 import { inject, ref, watch, computed } from 'vue'
-import { debounce, set } from 'lodash-es'
+import { debounce, set, toInteger } from 'lodash-es'
 import axios from 'axios'
 
 import { ProductResource } from '@/types/Iris/Products'
@@ -284,7 +284,7 @@ const numerator = computed(() => {
 })
 
 const onNumeratorInput = (e: Event) => {
-    const value = Number((e.target as HTMLInputElement).value)
+    const value = Math.round(Number((e.target as HTMLInputElement).value))
     if (Number.isNaN(value) || value < 0) return
 
     const units = product.value.units ?? 1
@@ -328,8 +328,9 @@ watch(
                 <span class="opacity-70 xtext-sm select-none px-1">/{{ product.units }}</span>
             </template>
 
+           
             <input v-else type="number" class="qty-input" :disabled="isLoadingSubmitQuantityProduct"
-                :value="customer.quantity_ordered_new ?? customer.quantity_ordered ?? 0" @input="onManualInput" />
+                :value="toInteger(customer.quantity_ordered_new) ?? toInteger(customer.quantity_ordered) ?? 0" @input="onManualInput" />
 
             <button class="qty-btn" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
                 <FontAwesomeIcon icon="fas fa-plus" />

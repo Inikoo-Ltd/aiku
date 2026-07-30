@@ -10,7 +10,6 @@ namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
-use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
@@ -55,7 +54,6 @@ class StoreMailshot extends OrgAction
 
         GroupHydrateMailshots::dispatch($outbox->group)->delay($this->hydratorsDelay);
         OrganisationHydrateMailshots::dispatch($outbox->organisation)->delay($this->hydratorsDelay);
-        OutboxHydrateMailshots::dispatch($outbox)->delay($this->hydratorsDelay);
         ShopHydrateMailshots::dispatch($outbox->shop)->delay($this->hydratorsDelay);
 
         $outboxCode = match ($mailshot->type) {

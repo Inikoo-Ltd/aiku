@@ -64,6 +64,7 @@ class UpdateOutbox extends OrgAction
     public function rules(): array
     {
         $daysAfterRules = ['sometimes', 'required', 'integer', 'gt:0'];
+        $intervalRules = ['sometimes', 'required', 'integer', 'gt:0'];
 
         if (in_array($this->outbox->code, [
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
@@ -73,13 +74,20 @@ class UpdateOutbox extends OrgAction
             $daysAfterRules[] = 'max:30';
         }
 
+        if (in_array($this->outbox->code, [
+            OutboxCodeEnum::PRICE_CHANGE
+        ])) {
+            $intervalRules = ['sometimes', 'required', 'integer', 'min:0'];
+        }
+
+
         return [
             'name'       => ['sometimes', 'required', 'string'],
             'subject'    => ['sometimes', 'required', 'string'],
             'days_after' => $daysAfterRules,
             'send_time'  => ['sometimes', 'required', 'date_format:H:i:s'],
             'threshold'  => ['sometimes', 'required', 'integer', 'gt:0'],
-            'interval'   => ['sometimes', 'required', 'integer', 'gt:0'],
+            'interval'   => $intervalRules,
             'state'      => ['sometimes', 'required', Rule::enum(OutboxStateEnum::class)],
             'is_applicable' => ['sometimes', 'required', 'boolean'],
         ];

@@ -134,6 +134,7 @@ class ShowOutbox extends OrgAction
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::PRICE_CHANGE,
         ])) {
             unset($navigation[OutboxTabsEnum::EMAIL_RUNS->value]);
         }

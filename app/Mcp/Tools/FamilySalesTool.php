@@ -16,8 +16,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Sales by product family for a shop over a date range, sorted worst-first to surface underperforming families. Families with no sales in the range are included.')]
+#[IsReadOnly]
 class FamilySalesTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum
@@ -36,7 +38,7 @@ class FamilySalesTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $families = ProductCategory::where('product_categories.shop_id', $shop->id)
@@ -79,10 +81,10 @@ class FamilySalesTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop'  => $schema->string()->description('Shop slug')->required(),
+            'shop'  => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'from'  => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'    => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
-            'limit' => $schema->integer()->description('Maximum families to return, default 15')->minimum(1)->maximum(50),
+            'limit' => $schema->integer()->description('Maximum families to return, default 15')->min(1)->max(50),
         ];
     }
 }

@@ -183,6 +183,7 @@ const component = computed(() => {
 		:todayTimesheet="scan_qr_code?.today_timesheet"
 		:lastClockIn="scan_qr_code?.last_clock_in"
 		:lastClockOut="scan_qr_code?.last_clock_out"
+		:clockingSessions="scan_qr_code?.clocking_sessions"
 		:timezone="scan_qr_code?.timezone"
 		@update:isRequestLeaveModalOpen="isRequestLeaveModalOpen = $event"
 		@update:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen = $event">

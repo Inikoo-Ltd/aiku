@@ -20,10 +20,10 @@ trait WithRecalculateOrdersInBasket
         /** @var Order $order */
         foreach ($orders as $order) {
             if ($order->updated_by_customer_at && $order->updated_by_customer_at->isAfter(Carbon::now()->subHours(3))) {
-                CalculateOrderDiscounts::dispatch($order);
+                CalculateOrderDiscounts::dispatch($order, true);
             } else {
-                $randomDelay = rand(300, 7200);
-                CalculateOrderDiscounts::dispatch($order)->delay($randomDelay)->onQueue('hydrators-slave-low-priority');
+                $randomDelay = rand(30, 600);
+                CalculateOrderDiscounts::dispatch($order, true)->delay($randomDelay)->onQueue('hydrators-slave-low-priority');
             }
         }
     }

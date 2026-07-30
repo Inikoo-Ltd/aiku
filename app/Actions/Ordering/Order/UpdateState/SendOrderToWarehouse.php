@@ -224,7 +224,9 @@ class SendOrderToWarehouse extends OrgAction
         if (!$this->has('warehouse_id')) {
             /** @var Warehouse $warehouse */
             $warehouse = $this->shop->organisation->warehouses()->first();
-            $this->set('warehouse_id', $warehouse->id);
+            if ($warehouse) {
+                $this->set('warehouse_id', $warehouse->id);
+            }
         }
     }
 

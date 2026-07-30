@@ -261,7 +261,13 @@ use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UndispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UnreceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\FinishStockDeliveryCosting;
+use App\Actions\GoodsIn\StockDelivery\DistributeStockDeliveryExtraCost;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
+use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToReadyToShipStockDeliveryItem;
@@ -317,6 +323,7 @@ use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\CloneFamilyAndProductsFromMaster;
 use App\Actions\Masters\MasterAsset\CloneMasterAssetToOtherShop;
 use App\Actions\Masters\MasterAsset\DeleteImageFromMasterProduct;
 use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
@@ -551,6 +558,8 @@ Route::prefix('upcoming-transaction/{upcomingTransaction:id}')->name('upcoming_t
 });
 
 Route::patch('master-product-category/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product_category.update')->withoutScopedBindings();
+Route::patch('master-product-category/{masterProductCategory:id}', CloneFamilyAndProductsFromMaster::class)->name('master_product_category.clone-to-child-shops')->withoutScopedBindings();
+
 Route::post('master-product-category/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_category_image.upload')->withoutScopedBindings();
 Route::patch('master-product-category/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
 Route::patch('master-product-category/{masterProductCategory:id}/master-sub-department/parent', UpdateMasterSubDepartmentsMasterDepartment::class)->name('master_product_category.master_sub_department.parent.update');
@@ -1212,6 +1221,9 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::patch('receive', ReceiveStockDelivery::class)->name('receive');
     Route::patch('unreceive', UnreceiveStockDelivery::class)->name('unreceive');
     Route::patch('cancel', CancelStockDelivery::class)->name('cancel');
+    Route::patch('start-costing', StartStockDeliveryCosting::class)->name('start-costing');
+    Route::patch('finish-costing', FinishStockDeliveryCosting::class)->name('finish-costing');
+    Route::patch('distribute-extra-cost', DistributeStockDeliveryExtraCost::class)->name('distribute-extra-cost');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inStockDelivery'])->name('attachment.detach')->withoutScopedBindings();
@@ -1221,7 +1233,10 @@ Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryI
     Route::patch('confirm', UpdateStateToConfirmedStockDeliveryItem::class)->name('confirm')->withoutScopedBindings();
     Route::patch('ready-to-ship', UpdateStateToReadyToShipStockDeliveryItem::class)->name('ready-to-ship')->withoutScopedBindings();
     Route::patch('set-checked', SetStockDeliveryItemCheckedQuantity::class)->name('set-checked')->withoutScopedBindings();
+    Route::patch('set-all-checked', SetStockDeliveryItemAsChecked::class)->name('set-all-checked')->withoutScopedBindings();
     Route::patch('place', UpsertStockDeliveryItemPlaced::class)->name('place')->withoutScopedBindings();
+    Route::patch('place-all', SetStockDeliveryItemAsPlaced::class)->name('place-all')->withoutScopedBindings();
+    Route::patch('update-cost', UpdateStockDeliveryItemCost::class)->name('update-cost')->withoutScopedBindings();
 });
 
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {

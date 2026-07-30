@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Organisation-wide sales per stock item (SKU) over a date range combined with current stock on hand, in organisation currency. Sort by best or worst sales; each row includes quantity and value in warehouse, so it can surface best sellers running low or overstocked slow movers.')]
+#[IsReadOnly]
 class OrgStockSalesTool extends AikuOrganisationTool
 {
     protected function permission(): OrganisationPermissionsEnum
@@ -36,7 +38,7 @@ class OrgStockSalesTool extends AikuOrganisationTool
 
         $organisation = $this->authorisedOrganisation($request);
         if (!$organisation) {
-            return Response::error('Organisation not found or permission denied.');
+            return $this->organisationNotFoundError($request);
         }
 
         $direction = (string) $request->string('sort', 'best') === 'worst' ? 'asc' : 'desc';
@@ -84,11 +86,11 @@ class OrgStockSalesTool extends AikuOrganisationTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'organisation' => $schema->string()->description('Organisation slug')->required(),
+            'organisation' => $schema->string()->description('Organisation slug or code')->required(),
             'from'         => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'           => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
             'sort'         => $schema->string()->description('best (highest sales first, default) or worst (lowest first)'),
-            'limit'        => $schema->integer()->description('Maximum stock items to return, default 15')->minimum(1)->maximum(50),
+            'limit'        => $schema->integer()->description('Maximum stock items to return, default 15')->min(1)->max(50),
         ];
     }
 }

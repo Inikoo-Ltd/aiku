@@ -17,6 +17,7 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -41,6 +42,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowPurchaseOrder extends OrgAction
 {
     use WithPurchaseOrderWeightAndVolume;
+    use WithAgentOrganisation;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -58,6 +60,7 @@ class ShowPurchaseOrder extends OrgAction
     public function asController(Organisation $organisation, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
         $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
     }
@@ -66,6 +69,7 @@ class ShowPurchaseOrder extends OrgAction
     {
         $this->maya = true;
         $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
     }
@@ -73,6 +77,7 @@ class ShowPurchaseOrder extends OrgAction
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
         $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
     }
@@ -80,6 +85,7 @@ class ShowPurchaseOrder extends OrgAction
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
         $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
     }
@@ -87,6 +93,7 @@ class ShowPurchaseOrder extends OrgAction
     public function inOrgPartner(Organisation $organisation, OrgPartner $orgPartner, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
         $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
     }
@@ -201,15 +208,14 @@ class ShowPurchaseOrder extends OrgAction
                         'org_currency' => $purchaseOrder->organisation?->currency?->code,
                         'org_exchange' => $purchaseOrder->org_exchange,
                         'items'        => $purchaseOrder->cost_items,
-                        'extra'        => $purchaseOrder->cost_extra + $purchaseOrder->cost_shipping + $purchaseOrder->cost_duties + $purchaseOrder->cost_tax,
+                        'extra'        => $purchaseOrder->cost_extra,
+                        'shipping'     => $purchaseOrder->cost_shipping,
+                        'duties'       => $purchaseOrder->cost_duties,
+                        'tax'          => $purchaseOrder->cost_tax,
                         'total'        => $purchaseOrder->cost_total,
                         'org_items'    => $purchaseOrder->purchaseOrderTransactions()->sum('org_net_amount'),
                     ],
                 ],
-
-                PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
-                    fn () => GetPurchaseOrderData::run($purchaseOrder)
-                    : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
 
                 PurchaseOrderTabsEnum::ITEMS->value => $this->tab == PurchaseOrderTabsEnum::ITEMS->value ?
                     fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value))
@@ -218,6 +224,10 @@ class ShowPurchaseOrder extends OrgAction
                 PurchaseOrderTabsEnum::PRODUCTS->value => $showProductsTab && $this->tab == PurchaseOrderTabsEnum::PRODUCTS->value ?
                     fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value))
                     : Inertia::optional(fn () => $showProductsTab ? PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value)) : null),
+
+                PurchaseOrderTabsEnum::SHOWCASE->value => $this->tab == PurchaseOrderTabsEnum::SHOWCASE->value ?
+                    fn () => GetPurchaseOrderData::run($purchaseOrder)
+                    : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
 
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))

@@ -31,6 +31,17 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
+use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\Inventory\OrgStock\RepairIal01OrgStockConsumables;
+use App\Actions\Inventory\OrgStock\RetireIal01OrgStocks;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Actions\Maintenance\Catalogue\RemoveIal01FromBillsOfMaterials;
+use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use Illuminate\Routing\Route;
+use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
@@ -96,12 +107,14 @@ use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\Box;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Goods\TradeUnit;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dispatching\Trolley;
 use App\Models\Fulfilment\Pallet;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Goods\Stock;
 use App\Models\Helpers\Address;
@@ -115,6 +128,11 @@ use App\Models\Ordering\Transaction;
 use Config;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
+use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
+use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
+use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
+use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -1819,6 +1837,53 @@ function createPalletReturnWithPallet($ctx): PalletReturn
     return $palletReturn->refresh();
 }
 
+test('stored item return rows do not add queries as they grow', function () {
+    $palletReturn = createPalletReturnWithPallet($this);
+    $pallet       = $palletReturn->pallets()->first();
+
+    $addStoredItems = function (int $count) use ($palletReturn, $pallet) {
+        foreach (range(1, $count) as $index) {
+            $storedItem = StoreStoredItem::make()->action(
+                $palletReturn->fulfilmentCustomer,
+                ['reference' => 'NQ'.Str::random(6)]
+            );
+
+            $pallet->storedItems()->attach($storedItem->id, [
+                'quantity' => 1,
+                'state'    => PalletStoredItemStateEnum::ACTIVE,
+            ]);
+
+            $storedItem->update(['total_quantity' => 1]);
+        }
+
+        $pallet->update(['state' => \App\Enums\Fulfilment\Pallet\PalletStateEnum::STORING]);
+    };
+
+    $route = (new \Illuminate\Routing\Route(['GET'], 'x', []))->name('grp.org.warehouses.show.dispatching.pallet-returns.show');
+    request()->setRouteResolver(fn () => $route);
+
+    $countQueries = function () use ($palletReturn) {
+        $queries = 0;
+        DB::listen(function () use (&$queries) {
+            $queries++;
+        });
+
+        PalletReturnItemsWithStoredItemsResource::collection(
+            IndexStoredItemsInReturn::run($palletReturn->refresh(), 'stored_items')
+        )->toArray(request());
+
+        return $queries;
+    };
+
+    $addStoredItems(2);
+    $withTwo = $countQueries();
+
+    $addStoredItems(6);
+    $withEight = $countQueries();
+
+    expect($withEight)->toBe($withTwo);
+});
+
 test('UI goods out pallet return show pages', function () {
     $palletReturn = createPalletReturnWithPallet($this);
 
@@ -2036,4 +2101,282 @@ test('marks record as failed with a clear message when sku is not found', functi
 
     expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::FAILED->value)
         ->and($uploadRecord->errors)->toContain("SKO 'NON-EXISTENT-SKU' not found.");
+});
+
+test('org stock notes and consumables reach the picking screen', function () {
+    /** @var DeliveryNoteItem $deliveryNoteItem */
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+
+    UpdateOrgStock::make()->action(
+        orgStock: $deliveryNoteItem->orgStock,
+        modelData: [
+            'note_to_pickers' => 'Include :qty import address label(s)',
+            'note_to_packers' => 'Fold the label inside the box',
+            'consumables'     => "IAL01 x 1\nLEAF-02 x 2",
+        ]
+    );
+
+    expect($deliveryNoteItem->orgStock->refresh()->consumables)->toEqual([
+        ['code' => 'IAL01', 'quantity' => 1.0],
+        ['code' => 'LEAF-02', 'quantity' => 2.0],
+    ]);
+
+    $deliveryNoteItem->update(['quantity_picked' => $deliveryNoteItem->quantity_required]);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $items = IndexDeliveryNoteItemsStateHandling::run(
+        $deliveryNoteItem->deliveryNote,
+        deliveryNoteItemId: $deliveryNoteItem->id
+    );
+
+    $item = DeliveryNoteItemsStateHandlingResource::collection($items)->resolve()[0];
+
+    $quantityOrdered = (int) $deliveryNoteItem->transaction->quantity_ordered;
+
+    expect($item['note_to_pickers'])->toBe("Include $quantityOrdered import address label(s)")
+        ->and($item['note_to_packers'])->toBe('Fold the label inside the box')
+        ->and(GetDeliveryNoteConsumables::run($deliveryNoteItem->deliveryNote))->toEqual([
+            ['code' => 'IAL01', 'quantity' => (float) $quantityOrdered],
+            ['code' => 'LEAF-02', 'quantity' => 2.0 * $quantityOrdered],
+        ]);
+
+    $deliveryNoteItem->update(['quantity_picked' => 0]);
+
+    expect(GetDeliveryNoteConsumables::run($deliveryNoteItem->deliveryNote))
+        ->toBe([]);
+});
+
+test('repair ial01 org stock consumables dry run writes nothing', function () {
+    $result = RepairIal01OrgStockConsumables::run(apply: false);
+
+    expect($result['org_stocks'])->toBe(0)
+        ->and($result['written'])->toBe(0);
+});
+
+test('ial01 bom removal is blocked until a consumable replaces the instruction', function () {
+    /** @var DeliveryNoteItem $deliveryNoteItem */
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+    $orgStock         = $deliveryNoteItem->orgStock;
+    $product          = $deliveryNoteItem->transaction->model;
+
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, array_merge(
+        TradeUnit::factory()->definition(),
+        ['code' => 'IAL01', 'name' => 'Import Address Labels']
+    ));
+
+    $product->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock->update(['consumables' => null]);
+
+    $action = new RemoveIal01FromBillsOfMaterials();
+
+    expect($action->getProductIds($tradeUnit))->toContain($product->id);
+
+    $blocked = $action->handle(apply: true);
+    expect($blocked['blocked'])->toBeTrue()
+        ->and($product->fresh()->tradeUnits->pluck('id'))->toContain($tradeUnit->id);
+
+    $product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+    $orgStock->update(['consumables' => [['code' => 'IAL01', 'quantity' => 1]]]);
+
+    $done = $action->handle(apply: true);
+    expect($done['blocked'])->toBeFalse()
+        ->and($product->fresh()->tradeUnits->pluck('id'))->not->toContain($tradeUnit->id);
+});
+
+test('ial01 org stock retirement is blocked until boms are clear and labels are picked', function () {
+    $tradeUnit = TradeUnit::where('code', 'IAL01')->firstOr(fn () => StoreTradeUnit::make()->action($this->group, array_merge(
+        TradeUnit::factory()->definition(),
+        ['code' => 'IAL01', 'name' => 'Import Address Labels']
+    )));
+
+    /** @var DeliveryNoteItem $deliveryNoteItem */
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('org_stock_id')->firstOrFail();
+    $labelOrgStock    = $deliveryNoteItem->orgStock;
+
+    $labelOrgStock->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+    $labelOrgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action($labelOrgStock, $location, [
+        'quantity'   => 500,
+        'type'       => LocationStockTypeEnum::PICKING,
+        'fetched_at' => now(),
+    ], strict: false);
+
+    $action = new RetireIal01OrgStocks();
+
+    // A bill of materials line still naming the label blocks the write off.
+    $product = $deliveryNoteItem->transaction->model;
+    $product->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+
+    expect($action->handle(apply: true)['blocked'])->toBeTrue()
+        ->and($locationOrgStock->refresh()->quantity)->toEqual(500);
+
+    $product->tradeUnits()->detach($tradeUnit->id);
+
+    // A label still waiting to be picked blocks it too, a picker cannot pick from an empty location.
+    $deliveryNoteItem->update(['quantity_required' => 5, 'quantity_picked' => 1]);
+    $deliveryNoteItem->deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING]);
+
+    expect($action->countUnpickedLabels($tradeUnit))->toEqual(4.0)
+        ->and($action->handle(apply: true)['blocked'])->toBeTrue()
+        ->and($locationOrgStock->refresh()->quantity)->toEqual(500);
+
+    // Once picked, the stock is written off through an audited movement and the SKO discontinued.
+    $deliveryNoteItem->update(['quantity_picked' => 5]);
+
+    $movementsBefore = $labelOrgStock->orgStockMovements()->count();
+    $result          = $action->handle(apply: true);
+
+    expect($result['blocked'])->toBeFalse()
+        ->and($result['written_off'])->toBeGreaterThan(0)
+        ->and($locationOrgStock->refresh()->quantity)->toEqual(0)
+        ->and($labelOrgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUED)
+        ->and($labelOrgStock->orgStockMovements()->count())->toBe($movementsBefore + $result['written_off']);
+
+    $movement = $labelOrgStock->orgStockMovements()
+        ->where('location_id', $locationOrgStock->location_id)
+        ->latest('id')
+        ->first();
+
+    expect($movement->reason)->toBe(OrgStockMovementReasonEnum::DATA_FIX)
+        ->and((float) $movement->quantity)->toEqual(-500.0)
+        ->and((float) $movement->audited_quantity)->toEqual(0.0);
+});
+
+test('UI show delivery note navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeNoteOn = function (string $date, bool $isPremiumDispatch = false) {
+        $deliveryNote = makeDeliveryNote($this);
+        $deliveryNote->update([
+            'state'               => DeliveryNoteStateEnum::UNASSIGNED,
+            'date'                => $date,
+            'is_premium_dispatch' => $isPremiumDispatch,
+        ]);
+
+        return $deliveryNote->refresh();
+    };
+
+    DeliveryNote::query()->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+
+    $oldest  = $makeNoteOn('2026-07-18 10:00:00');
+    $middle  = $makeNoteOn('2026-07-19 10:00:00');
+    $premium = $makeNoteOn('2026-07-20 10:00:00', isPremiumDispatch: true);
+
+    $showRoute = fn (DeliveryNote $deliveryNote) => route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
+        $this->organisation->slug, $this->warehouse->slug, $deliveryNote->slug,
+    ]);
+
+    get($showRoute($oldest).'?bucket=unassigned')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $premium->reference)
+            ->where('navigation.next.label', $middle->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket=unassigned&bucket_sort=-reference')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('navigation.previous')
+            ->has('navigation.next')
+            ->etc()
+    );
+
+    get($showRoute($middle))->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+
+});
+
+test('UI show pallet return navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeReturnOn = function (string $confirmedAt) {
+        $palletReturn = createPalletReturnWithPallet($this);
+        $palletReturn->update([
+            'state'        => PalletReturnStateEnum::CONFIRMED,
+            'confirmed_at' => $confirmedAt,
+            'date'         => $confirmedAt,
+        ]);
+
+        return $palletReturn->refresh();
+    };
+
+    PalletReturn::query()->update(['state' => PalletReturnStateEnum::DISPATCHED]);
+
+    $oldest = $makeReturnOn('2026-07-18 10:00:00');
+    $middle = $makeReturnOn('2026-07-19 10:00:00');
+    $newest = $makeReturnOn('2026-07-20 10:00:00');
+
+    $showRoute = fn (PalletReturn $palletReturn) => route('grp.org.warehouses.show.dispatching.pallet-returns.show', [
+        $this->organisation->slug, $this->warehouse->slug, $palletReturn->slug,
+    ]);
+
+    get($showRoute($middle).'?bucket=confirmed')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket=confirmed&bucket_sort=date')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle))->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+
+    PalletReturn::whereIn('id', [$oldest->id, $middle->id, $newest->id])->update(['confirmed_at' => null, 'date' => null]);
+
+    get($showRoute($middle).'?bucket=confirmed')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+});
+
+test('UI show pallet return navigation orders the new bucket by its latest activity', function () {
+    $this->withoutExceptionHandling();
+
+    PalletReturn::query()->update(['state' => PalletReturnStateEnum::DISPATCHED]);
+
+    $makeReturn = function (PalletReturnStateEnum $state, array $timestamps) {
+        $palletReturn = createPalletReturnWithPallet($this);
+        $palletReturn->update(array_merge(['state' => $state, 'date' => null], $timestamps));
+
+        return $palletReturn->refresh();
+    };
+
+    $confirmed = $makeReturn(PalletReturnStateEnum::CONFIRMED, [
+        'confirmed_at' => '2026-07-20 10:00:00',
+        'submitted_at' => '2026-07-14 10:00:00',
+    ]);
+
+    $submitted = $makeReturn(PalletReturnStateEnum::SUBMITTED, [
+        'confirmed_at' => null,
+        'submitted_at' => '2026-07-19 10:00:00',
+    ]);
+
+    $inProcess = $makeReturn(PalletReturnStateEnum::IN_PROCESS, [
+        'confirmed_at' => null,
+        'submitted_at' => null,
+    ]);
+    $inProcess->forceFill(['created_at' => '2026-07-18 10:00:00'])->saveQuietly();
+
+    $showRoute = fn (PalletReturn $palletReturn) => route('grp.org.warehouses.show.dispatching.pallet-returns.show', [
+        $this->organisation->slug, $this->warehouse->slug, $palletReturn->slug,
+    ]);
+
+    get($showRoute($submitted).'?bucket=new')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $confirmed->reference)
+            ->where('navigation.next.label', $inProcess->reference)
+            ->etc()
+    );
 });

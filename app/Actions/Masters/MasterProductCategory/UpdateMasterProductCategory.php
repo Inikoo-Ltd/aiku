@@ -111,7 +111,7 @@ class UpdateMasterProductCategory extends OrgAction
         $grUpdating = false;
         $grDeleting = false;
         if (Arr::has($modelData, 'vol_gr_offer')) {
-            $volGR = Arr::pull($modelData, 'vol_gr_offer');
+            $volGR      = Arr::pull($modelData, 'vol_gr_offer');
             if ($volGR) {
                 data_set($modelData, 'has_gr_vol_discount', true);
                 data_set($modelData, 'gr_vol_discount_percentage', $volGR['percentage_off']);
@@ -156,7 +156,11 @@ class UpdateMasterProductCategory extends OrgAction
             }
         }
 
-        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'faq'])) {
+        if (Arr::has($changed, 'faq')) {
+            CascadeMasterProductCategoryFaqToChildren::dispatch($masterProductCategory);
+        }
+
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code'])) {
 
             $english      = Language::where('code', 'en')->first();
 
@@ -192,18 +196,6 @@ class UpdateMasterProductCategory extends OrgAction
 
                 if (Arr::has($changed, 'code')) {
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
-                }
-
-                // Temporary setup, auto translate FAQ
-                if (Arr::has($changed, 'faq')) {
-                    if ($shop->language->code != 'en') {
-                        $translatedFaq = Translate::run(json_encode($masterProductCategory->faq), $english, $shopLanguage, 'gpt-5-nano');
-                        if (is_string($translatedFaq)) {
-                            $dataToBeUpdated['faq'] = json_decode($translatedFaq, true);
-                        }
-                    } else {
-                        $dataToBeUpdated['faq'] = $masterProductCategory->faq;
-                    }
                 }
 
                 if ($dataToBeUpdated) {

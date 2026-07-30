@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Attendance and timesheet summary for one employee over a date range. Returns days with timesheets and total working duration.')]
+#[IsReadOnly]
 class EmployeeAttendanceTool extends AikuOrganisationTool
 {
     protected function permission(): OrganisationPermissionsEnum
@@ -34,7 +36,7 @@ class EmployeeAttendanceTool extends AikuOrganisationTool
 
         $organisation = $this->authorisedOrganisation($request);
         if (!$organisation) {
-            return Response::error('Organisation not found or permission denied.');
+            return $this->organisationNotFoundError($request);
         }
 
         $employee = Employee::where('slug', $request->string('employee'))
@@ -69,7 +71,7 @@ class EmployeeAttendanceTool extends AikuOrganisationTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'organisation' => $schema->string()->description('Organisation slug')->required(),
+            'organisation' => $schema->string()->description('Organisation slug or code')->required(),
             'employee'     => $schema->string()->description('Employee slug')->required(),
             'from'         => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'           => $schema->string()->description('End date (Y-m-d), inclusive')->required(),

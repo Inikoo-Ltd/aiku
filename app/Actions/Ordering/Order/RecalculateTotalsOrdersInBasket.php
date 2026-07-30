@@ -79,6 +79,20 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
             return;
         }
 
+        /**
+         * This reprices every transaction from the product's CURRENT price, which is only correct
+         * while the order is still a basket. Callers select their orders when they queue the jobs,
+         * but the jobs run later - a bulk run drains for hours - and an order the customer submits
+         * in the meantime would otherwise be repriced after the fact, losing its agreed prices and
+         * discounts and leaving the total out of step with what was already paid. Recheck at
+         * execution time, not just at dispatch time.
+         */
+        if ($order->state !== OrderStateEnum::CREATING) {
+            $command?->line("Order $order->reference is $order->state->value, no longer a basket, skipped");
+
+            return;
+        }
+
         $oldTotal = $order->total_amount;
         foreach ($order->transactions as $transaction) {
             if ($transaction->model instanceof Product) {

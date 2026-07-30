@@ -15,8 +15,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Sales summary for a shop over a date range: orders, invoices, sales revenue and customers invoiced.')]
+#[IsReadOnly]
 class ShopSalesTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum
@@ -34,7 +36,7 @@ class ShopSalesTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $sales = ShopTimeSeries::where('shop_id', $shop->id)
@@ -63,7 +65,7 @@ class ShopSalesTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop' => $schema->string()->description('Shop slug')->required(),
+            'shop' => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'from' => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'   => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
         ];

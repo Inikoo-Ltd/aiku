@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Offers for a shop with usage stats: which are currently active and which performed best (orders and revenue attributed).')]
+#[IsReadOnly]
 class OffersOverviewTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum
@@ -32,7 +34,7 @@ class OffersOverviewTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $status = (string) $request->string('status', 'active');
@@ -82,7 +84,7 @@ class OffersOverviewTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop' => $schema->string()->description('Shop slug')->required(),
+            'shop' => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'status' => $schema->string()->description('Filter by status (active or all) - default active'),
         ];
     }

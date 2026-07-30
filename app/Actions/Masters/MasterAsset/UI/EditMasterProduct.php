@@ -290,6 +290,7 @@ class EditMasterProduct extends OrgAction
                         'updateRoute'   => $pricesUpdateRoute,
                         'noSaveButton'  => true,
                         'costs'         => $costs,
+                        'units'         => (float) $masterProduct->units,
                         'type_input'          => 'price'
                     ],
                     'master_rrps'            => [

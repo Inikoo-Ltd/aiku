@@ -107,6 +107,7 @@ use App\Actions\CRM\Customer\Json\GetCustomersInShop;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\Goods\Stock\JSON\ValidateStockTradeUnitChanges;
+use App\Actions\Masters\MasterAsset\Json\GetMasterUpdatedBadge;
 use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
@@ -336,6 +337,7 @@ Route::get('{warehouse}/return/select-delivery-notes', GetDeliveryNoteValidForRe
 Route::get('dispatching/waiting-badge', GetDispatchingWaitingBadge::class)->name('dispatching_waiting_badge');
 Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('crm_waiting_badge');
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
+Route::get('shops/master-updated-badge', GetMasterUpdatedBadge::class)->name('master_updated_badge');
 
 Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
 

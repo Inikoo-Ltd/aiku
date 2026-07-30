@@ -5,8 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { computed } from "vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { computed, ref, watch } from "vue"
+import { Head, Link, router } from "@inertiajs/vue3"
+import DatePicker from "primevue/datepicker"
 import {
 	Chart as ChartJS,
 	ArcElement,
@@ -23,9 +24,9 @@ import { useFormatTime, useSecondsToMS } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight } from "@fal"
+import { faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical } from "@fal"
 
-library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight)
+library.add(faUserCheck, faUmbrellaBeach, faClock, faUserSlash, faBirthdayCake, faUsers, faBuilding, faSitemap, faArrowRight, faChevronLeft, faChevronRight, faChessClock, faStopwatch, faUserPlus, faNotesMedical)
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 interface AttendanceRow {
@@ -63,6 +64,12 @@ interface StatCard {
 	route?: { name: string; parameters: Record<string, unknown> }
 }
 
+interface QuickAction {
+	label: string
+	icon: [string, string]
+	route: { name: string; parameters: Record<string, unknown> }
+}
+
 interface LeaveOverviewDay {
 	label: string
 	count: number
@@ -85,16 +92,78 @@ interface LeaveTypeSlice {
 	percentage: number
 }
 
+interface AttendanceDate {
+	date: string
+	label: string
+	is_today: boolean
+	max_date: string
+	route: { name: string; parameters: Record<string, unknown> }
+}
+
 const props = defineProps<{
 	title: string
 	pageHead: object
 	stats: StatCard[]
+	attendanceStats: StatCard[]
+	quickActions: QuickAction[]
 	attendance: AttendanceRow[]
+	attendanceDate: AttendanceDate
 	birthdays: BirthdayRow[]
 	leaveOverview: LeaveOverviewDay[]
 	employeeLeaves: EmployeeLeave[]
 	leaveTypes: { total: number; types: LeaveTypeSlice[] }
 }>()
+
+const toDateString = (date: Date) =>
+	`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+
+const parseDateString = (value: string) => {
+	const [year, month, day] = value.split("-").map(Number)
+	return new Date(year, month - 1, day)
+}
+
+const selectedDate = ref<Date>(parseDateString(props.attendanceDate.date))
+const maxDate = computed(() => parseDateString(props.attendanceDate.max_date))
+
+watch(
+	() => props.attendanceDate.date,
+	(value) => {
+		selectedDate.value = parseDateString(value)
+	}
+)
+
+const goToDate = (date: Date) => {
+	const dateString = toDateString(date)
+
+	if (dateString === props.attendanceDate.date) {
+		return
+	}
+
+	router.get(
+		route(props.attendanceDate.route.name, props.attendanceDate.route.parameters),
+		{ date: dateString },
+		{ preserveScroll: true, preserveState: true }
+	)
+}
+
+const shiftDay = (days: number) => {
+	const next = parseDateString(props.attendanceDate.date)
+	next.setDate(next.getDate() + days)
+
+	if (next > maxDate.value) {
+		return
+	}
+
+	goToDate(next)
+}
+
+const onDatePicked = (value: Date | null) => {
+	if (!value) {
+		return
+	}
+
+	goToDate(value)
+}
 
 const leaveOverviewData = computed(() => ({
 	labels: props.leaveOverview.map((d) => d.label),
@@ -161,52 +230,122 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 	amber: { icon: "text-amber-500", bg: "bg-amber-50" },
 	red: { icon: "text-red-500", bg: "bg-red-50" },
 }
-
-const todayLabel = useFormatTime(new Date(), { formatTime: "aiku" })
 </script>
 
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead"></PageHeading>
 
-	<div class="grid grid-cols-2 gap-4 px-4 pt-4 md:grid-cols-4 xl:grid-cols-7">
-		<component
-			:is="card.route ? Link : 'div'"
-			v-for="card in stats"
-			:key="card.name"
-			:href="card.route ? route(card.route.name, card.route.parameters) : undefined"
-			class="group flex flex-col gap-3 overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
-			:class="{ 'cursor-pointer': card.route }">
-			<div class="flex items-center justify-between">
+	<!-- Left: row 1 (5 overview) + row 2 (4 attendance) · Right: Quick actions spanning both rows -->
+	<div class="flex flex-col gap-4 px-4 pt-4 xl:flex-row xl:items-stretch">
+		<div class="flex flex-1 flex-col gap-4">
+			<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+				<component
+					:is="card.route ? Link : 'div'"
+					v-for="card in stats"
+					:key="card.name"
+					:href="card.route ? route(card.route.name, card.route.parameters) : undefined"
+					class="group flex flex-col gap-3 overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100 transition"
+					:class="card.route ? 'cursor-pointer hover:shadow-md' : ''">
+					<div class="flex items-center justify-between">
+						<div
+							class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+							:class="iconColors[card.color]?.bg ?? 'bg-gray-100'">
+							<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-500'" fixed-width />
+						</div>
+						<FontAwesomeIcon
+							v-if="card.route"
+							:icon="['fal', 'fa-arrow-right']"
+							class="text-gray-300 opacity-0 transition group-hover:opacity-100"
+							fixed-width />
+					</div>
+					<div>
+						<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
+						<dt class="mt-0.5 truncate text-sm font-medium text-gray-500">{{ card.name }}</dt>
+					</div>
+				</component>
+			</div>
+
+			<div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
 				<div
-					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-					:class="iconColors[card.color]?.bg ?? 'bg-gray-100'">
-					<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-500'" fixed-width />
+					v-for="card in attendanceStats"
+					:key="card.name"
+					class="flex flex-col gap-3 overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100">
+					<div
+						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+						:class="iconColors[card.color]?.bg ?? 'bg-gray-100'">
+						<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-500'" fixed-width />
+					</div>
+					<div>
+						<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
+						<dt class="mt-0.5 truncate text-sm font-medium text-gray-500">{{ card.name }}</dt>
+					</div>
 				</div>
-				<FontAwesomeIcon
-					v-if="card.route"
-					:icon="['fal', 'fa-arrow-right']"
-					class="text-gray-300 opacity-0 transition group-hover:opacity-100"
-					fixed-width />
 			</div>
-			<div>
-				<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
-				<dt class="mt-0.5 truncate text-sm font-medium text-gray-500">{{ card.name }}</dt>
+		</div>
+
+		<div class="flex shrink-0 flex-col overflow-hidden rounded-xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-100 xl:w-64">
+			<h3 class="mb-2.5 text-sm font-semibold text-gray-700">{{ trans("Quick actions") }}</h3>
+			<div class="flex flex-col gap-2">
+				<Link
+					v-for="action in quickActions"
+					:key="action.label"
+					:href="route(action.route.name, action.route.parameters)"
+					class="flex items-center gap-2.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100 hover:text-indigo-900">
+					<FontAwesomeIcon :icon="action.icon" class="text-indigo-500" fixed-width />
+					{{ action.label }}
+				</Link>
 			</div>
-		</component>
+		</div>
 	</div>
 
 	<!-- Today's attendance (full width) -->
 	<div class="mt-6 px-4 pb-6">
 		<div class="bg-white shadow-sm rounded-lg p-4">
-			<div class="flex items-center justify-between mb-4">
+			<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
 				<div>
-					<h2 class="text-lg font-bold text-gray-800">{{ trans("Today's attendance") }}</h2>
-					<p class="text-xs text-gray-500">{{ todayLabel }} · {{ trans("earliest arrivals first") }}</p>
+					<h2 class="text-lg font-bold text-gray-800">
+						{{ attendanceDate.is_today ? trans("Today's attendance") : trans("Attendance") }}
+					</h2>
+					<p class="text-xs text-gray-500">
+						{{ attendanceDate.label }} · {{ trans("earliest arrivals first") }}
+					</p>
 				</div>
-				<span class="inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-sm font-medium text-green-800">
-					{{ attendance.length }} {{ trans("present") }}
-				</span>
+				<div class="flex items-center gap-2">
+					<button
+						type="button"
+						class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50"
+						:title="trans('Previous day')"
+						@click="shiftDay(-1)">
+						<FontAwesomeIcon :icon="faChevronLeft" fixed-width />
+					</button>
+					<DatePicker
+						v-model="selectedDate"
+						dateFormat="dd M yy"
+						showIcon
+						iconDisplay="input"
+						:maxDate="maxDate"
+						class="w-44"
+						@update:modelValue="onDatePicked" />
+					<button
+						type="button"
+						class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+						:title="trans('Next day')"
+						:disabled="attendanceDate.is_today"
+						@click="shiftDay(1)">
+						<FontAwesomeIcon :icon="faChevronRight" fixed-width />
+					</button>
+					<button
+						v-if="!attendanceDate.is_today"
+						type="button"
+						class="rounded-md px-3 py-1.5 text-sm font-medium text-indigo-600 ring-1 ring-indigo-200 transition hover:bg-indigo-50"
+						@click="goToDate(maxDate)">
+						{{ trans("Today") }}
+					</button>
+					<span class="inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-sm font-medium text-green-800">
+						{{ attendance.length }} {{ trans("present") }}
+					</span>
+				</div>
 			</div>
 
 			<div class="overflow-x-auto">

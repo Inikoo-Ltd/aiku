@@ -107,6 +107,7 @@ class PalletReturnsResource extends JsonResource
             'packer_name'              => $this->packer_name,
             'picked'                   => (int) ($this->picked ?? 0),
             'date'                     => $this->date,
+            'activity_at'              => $this->confirmed_at ?? $this->submitted_at ?? $this->created_at,
             'total_amount'             => $this->total_amount,
             'currency_code'            => $this->currency_code,
             'confirmed_at'             => $this->confirmed_at,

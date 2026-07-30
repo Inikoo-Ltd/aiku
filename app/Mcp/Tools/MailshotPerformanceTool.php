@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Performance metrics of a shop\'s mailshots: sent, delivered, opened, clicked, unsubscribed with engagement rates.')]
+#[IsReadOnly]
 class MailshotPerformanceTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum
@@ -34,7 +36,7 @@ class MailshotPerformanceTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $query = Mailshot::where('shop_id', $shop->id)
@@ -87,7 +89,7 @@ class MailshotPerformanceTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop'  => $schema->string()->description('Shop slug')->required(),
+            'shop'  => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'from'  => $schema->string()->description('Start date (Y-m-d), optional')->nullable(),
             'to'    => $schema->string()->description('End date (Y-m-d), optional')->nullable(),
             'limit' => $schema->integer()->description('Maximum mailshots to return, default 10, max 50')->default(10),

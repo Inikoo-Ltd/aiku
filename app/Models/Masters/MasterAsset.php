@@ -149,6 +149,8 @@ use App\Models\Traits\HasSearch;
  * @property bool $has_missing_child_description True when at least one linked product has a null or empty description
  * @property array<array-key, mixed> $master_prices
  * @property array<array-key, mixed> $master_rrps
+ * @property string|null $units_review
+ * @property numeric|null $effective_cost stock-weighted avg cost across organisations, group currency, per outer
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -173,7 +175,6 @@ use App\Models\Traits\HasSearch;
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
  * @property-read \App\Models\Masters\MasterVariant|null $masterVariant
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
- * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read LaravelCollection<int, Product> $products
  * @property-read MasterAssetReviewStat|null $reviewStats
  * @property-read Media|null $rightImage
@@ -293,12 +294,12 @@ class MasterAsset extends Model implements Auditable, HasMedia
 
     public function getPriceFromCurrency(Currency $currency): float
     {
-        return data_get($this->master_prices, "{$currency->code}.value", 0);
+        return data_get($this->master_prices, "$currency->code.value", 0);
     }
 
     public function getRrpFromCurrency(Currency $currency): float
     {
-        return data_get($this->master_rrps, "{$currency->code}.value", 0);
+        return data_get($this->master_rrps, "$currency->code.value", 0);
     }
 
     public function assets(): HasMany
@@ -344,11 +345,6 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function reviewStats(): HasOne
     {
         return $this->hasOne(MasterAssetReviewStat::class);
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(MasterAssetOrderingIntervals::class);
     }
 
     public function timeSeries(): HasMany

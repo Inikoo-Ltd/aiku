@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Http\Resources\Procurement\OrgSuppliersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\OrgAgent;
@@ -29,50 +30,97 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexOrgSuppliers extends OrgAction
 {
     use WithOrgAgentSubNavigation;
+    use WithAgentOrganisation;
 
     private Organisation|OrgAgent $parent;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+
+        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
+    }
+
     protected function getSupplierElementGroups(Organisation|OrgAgent $parent): array
     {
-        if ($parent instanceof OrgAgent) {
-            $stats = $parent->stats;
-        } else {
-            $stats = $parent->procurementStats;
+        if ($this->getParentOrganisationAgent($parent)) {
+            return [];
         }
 
-        return
-            [
-                'status' => [
-                    'label'    => __('Status'),
-                    'elements' => [
-                        'active'   => [
-                            __('Active'),
-                            $stats->number_active_org_suppliers,
-                            null,
-                            [
-                                'icon'  => 'fal fa-check',
-                                'class' => 'text-green-500'
-                            ]
-                        ],
-                        'archived' => [
-                            __('Archived'),
-                            $stats->number_archived_org_suppliers,
-                            null,
-                            [
-                                'icon'  => 'fal fa-check',
-                                'class' => 'text-red-500'
-                            ]
-                        ]
+        if ($parent instanceof OrgAgent) {
+            $elements = [
+                'through_agent' => [
+                    __('Through Agent'),
+                    $parent->stats->number_active_org_suppliers,
+                    null,
+                    [
+                        'icon'  => 'fal fa-people-arrows',
+                        'class' => 'text-blue-500',
                     ],
-                    'engine'   => function ($query, $elements) {
-                        if (count($elements) == 1) {
-                            $query->where('org_suppliers.status', reset($elements) == 'active');
-                        }
-                    }
-
                 ],
-
+                'archived'      => [
+                    __('Archived'),
+                    $parent->stats->number_archived_org_suppliers,
+                    null,
+                    [
+                        'icon'  => 'fal fa-archive',
+                        'class' => 'text-red-500',
+                    ],
+                ],
             ];
+        } else {
+            $elements = [
+                'free'          => [
+                    __('Free'),
+                    $parent->procurementStats->number_active_independent_org_suppliers,
+                    null,
+                    [
+                        'icon'  => 'fal fa-person-dolly',
+                        'class' => 'text-green-500',
+                    ],
+                ],
+                'through_agent' => [
+                    __('Through Agent'),
+                    $parent->procurementStats->number_active_org_suppliers_in_agents,
+                    null,
+                    [
+                        'icon'  => 'fal fa-people-arrows',
+                        'class' => 'text-blue-500',
+                    ],
+                ],
+                'archived'      => [
+                    __('Archived'),
+                    $parent->procurementStats->number_archived_org_suppliers,
+                    null,
+                    [
+                        'icon'  => 'fal fa-archive',
+                        'class' => 'text-red-500',
+                    ],
+                ],
+            ];
+        }
+
+        return [
+            'type' => [
+                'label'    => __('Type'),
+                'elements' => $elements,
+                'engine'   => function ($query, $elements) {
+                    $query->where(function ($query) use ($elements) {
+                        foreach ($elements as $element) {
+                            $query->orWhere(function ($query) use ($element) {
+                                match ($element) {
+                                    'free'          => $query->where('org_suppliers.status', true)
+                                        ->whereNull('org_suppliers.org_agent_id'),
+                                    'through_agent' => $query->where('org_suppliers.status', true)
+                                        ->whereNotNull('org_suppliers.org_agent_id'),
+                                    'archived'      => $query->where('org_suppliers.status', false),
+                                };
+                            });
+                        }
+                    });
+                },
+            ],
+        ];
     }
 
     public function handle(OrgAgent|Organisation $parent, $prefix = null): LengthAwarePaginator
@@ -88,15 +136,18 @@ class IndexOrgSuppliers extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $queryBuilder = QueryBuilder::for(OrgSupplier::class)
+            ->leftJoin('suppliers', 'org_suppliers.supplier_id', 'suppliers.id')
+            ->leftJoin('org_supplier_stats', 'org_supplier_stats.org_supplier_id', 'org_suppliers.id');
 
-        $queryBuilder = QueryBuilder::for(OrgSupplier::class);
+        $organisationAgent = $this->getParentOrganisationAgent($parent);
 
-
-        if (class_basename($parent) == 'OrgAgent') {
+        if ($parent instanceof OrgAgent) {
             $queryBuilder->where('org_suppliers.org_agent_id', $parent->id);
+        } elseif ($organisationAgent) {
+            $queryBuilder->where('org_suppliers.agent_id', $organisationAgent->id);
         } else {
             $queryBuilder->where('org_suppliers.organisation_id', $parent->id);
-            $queryBuilder->whereNull('org_suppliers.org_agent_id');
         }
 
         foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
@@ -108,23 +159,33 @@ class IndexOrgSuppliers extends OrgAction
             );
         }
 
+        $queryBuilder->select([
+            'suppliers.code',
+            'suppliers.name',
+            'suppliers.location',
+            'org_supplier_stats.number_org_supplier_products',
+            'org_supplier_stats.number_purchase_orders',
+            'org_supplier_stats.number_stock_deliveries',
+            'org_suppliers.status as status',
+            'org_suppliers.slug as org_supplier_slug',
+        ]);
+
+        if ($organisationAgent) {
+            $queryBuilder
+                ->leftJoin('organisations', 'org_suppliers.organisation_id', 'organisations.id')
+                ->addSelect(['organisations.name as organisation_name']);
+        }
 
         return $queryBuilder
             ->defaultSort('suppliers.code')
-            ->select([
-                'suppliers.code',
-                'suppliers.slug',
-                'suppliers.name',
-                'suppliers.location',
+            ->allowedSorts([
+                'code',
+                'name',
+                'location',
                 'number_org_supplier_products',
-                'number_purchase_orders_delivery_state_in_process',
                 'number_purchase_orders',
-                'org_suppliers.status as status',
-                'org_suppliers.slug as org_supplier_slug'
+                'number_stock_deliveries',
             ])
-            ->leftJoin('suppliers', 'org_suppliers.supplier_id', 'suppliers.id')
-            ->leftJoin('org_supplier_stats', 'org_supplier_stats.org_supplier_id', 'org_suppliers.id')
-            ->allowedSorts(['code', 'name', 'agent_name', 'location', 'number_org_supplier_products', 'number_purchase_orders', 'number_purchase_orders_delivery_state_in_process'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -132,7 +193,7 @@ class IndexOrgSuppliers extends OrgAction
 
     public function tableStructure(Organisation|OrgAgent $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $canEdit) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($parent instanceof OrgAgent) {
                 $organisation = $parent->organisation;
             } else {
@@ -144,6 +205,7 @@ class IndexOrgSuppliers extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+
             foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,
@@ -156,29 +218,33 @@ class IndexOrgSuppliers extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withLabelRecord([__('Supplier'), __('Suppliers')])
                 ->withGlobalSearch()
-                ->withEmptyState(
-                    [
-                        'title' => __('No Suppliers Found'),
-                        'count' => $organisation->inventoryStats->number_warehouse_areas,
-
-                    ]
-                )
+                ->withEmptyState([
+                    'title' => __('No Suppliers Found'),
+                    'count' => $organisation->inventoryStats->number_warehouse_areas,
+                ])
                 ->column(key: 'status', label: '', canBeHidden: false, searchable: true, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true)
-                ->column(key: 'number_org_supplier_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'location', label: __('Location'), canBeHidden: false, sortable: true);
+
+            if ($this->getParentOrganisationAgent($parent)) {
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
+            }
+
+            $table
+                ->column(key: 'number_org_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'number_purchase_orders_delivery_state_in_process', label: __('Orders Delivery'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
                 ->defaultSort('code');
         };
     }
 
-    public function authorize(ActionRequest $request): bool
+    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        $this->parent = $organisation;
+        $this->initialisation($organisation, $request);
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
+        return $this->handle($organisation);
     }
 
     public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
@@ -190,55 +256,38 @@ class IndexOrgSuppliers extends OrgAction
         return $this->handle(parent: $organisation);
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($organisation);
-    }
-
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $orgAgent;
-
         $this->initialisation($organisation, $request);
-        $this->getSupplierElementGroups($orgAgent);
 
         return $this->handle($orgAgent);
     }
 
-    public function jsonResponse(LengthAwarePaginator $suppliers): AnonymousResourceCollection
-    {
-        return OrgSuppliersResource::collection($suppliers);
-    }
-
-
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
-        $subNavigation = null;
         $title         = __('Suppliers');
-        $model         = '';
         $icon          = [
             'icon'  => ['fal', 'fa-person-dolly'],
-            'title' => __('Suppliers')
+            'title' => __('Suppliers'),
         ];
+        $subNavigation = null;
+        $model         = '';
         $afterTitle    = null;
         $iconRight     = null;
 
         if ($this->parent instanceof OrgAgent) {
-            $subNavigation = $this->getOrgAgentNavigation($this->parent);
             $title         = $this->parent->agent->organisation->name;
             $icon          = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('Suppliers')
+                'title' => __('Suppliers'),
+            ];
+            $subNavigation = $this->getOrgAgentNavigation($this->parent);
+            $afterTitle    = [
+                'label' => __('Suppliers'),
             ];
             $iconRight     = [
                 'icon' => 'fal fa-person-dolly',
-            ];
-            $afterTitle    = [
-
-                'label' => __('Suppliers')
             ];
         }
 
@@ -259,10 +308,13 @@ class IndexOrgSuppliers extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => OrgSuppliersResource::collection($suppliers),
-
-
             ]
         )->table($this->tableStructure($this->parent));
+    }
+
+    public function jsonResponse(LengthAwarePaginator $suppliers): AnonymousResourceCollection
+    {
+        return OrgSuppliersResource::collection($suppliers);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -274,14 +326,14 @@ class IndexOrgSuppliers extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
+                            'label' => __('Suppliers'),
+                            'icon'  => 'fal fa-bars',
                             'route' => [
                                 'name'       => 'grp.org.procurement.org_suppliers.index',
-                                'parameters' => $routeParameters
+                                'parameters' => $routeParameters,
                             ],
-                            'label' => __('Suppliers'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             ),
             'grp.org.procurement.org_agents.show.suppliers.index' => array_merge(
@@ -290,14 +342,14 @@ class IndexOrgSuppliers extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
+                            'label' => __('Suppliers'),
+                            'icon'  => 'fal fa-bars',
                             'route' => [
                                 'name'       => 'grp.org.procurement.org_agents.show.suppliers.index',
-                                'parameters' => $routeParameters
+                                'parameters' => $routeParameters,
                             ],
-                            'label' => __('Suppliers'),
-                            'icon'  => 'fal fa-bars'
-                        ]
-                    ]
+                        ],
+                    ],
                 ]
             )
         };

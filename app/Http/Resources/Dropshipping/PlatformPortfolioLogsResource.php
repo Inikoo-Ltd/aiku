@@ -8,8 +8,10 @@
 
 namespace App\Http\Resources\Dropshipping;
 
+use App\Helpers\PlatformResponseFormatter;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $id
@@ -29,17 +31,22 @@ class PlatformPortfolioLogsResource extends JsonResource
 
     public function toArray($request): array
     {
+        $response = PlatformResponseFormatter::make()->format($this->response);
+
         return [
-            'id'            => $this->id,
-            'created_at'    => $this->created_at,
-            'type'          => $this->type,
-            'status'        => $this->status,
-            'response'      => $this->response ?? '-',
-            'platform_id'   => $this->platform_id,
-            'platform_type' => $this->platform_type,
-            'platform_name' => $this->platform_name,
-            'portfolio_id'  => $this->portfolio_id,
-            'item_code'     => $this->item_code,
+            'id'              => $this->id,
+            'created_at'      => $this->created_at,
+            'type'            => $this->type,
+            'status'          => $this->status,
+            'response'        => Arr::get($response, 'message'),
+            'response_hint'   => Arr::get($response, 'hint'),
+            'response_code'   => Arr::get($response, 'code'),
+            'response_detail' => Arr::get($response, 'detail'),
+            'platform_id'     => $this->platform_id,
+            'platform_type'   => $this->platform_type,
+            'platform_name'   => $this->platform_name,
+            'portfolio_id'    => $this->portfolio_id,
+            'item_code'       => $this->item_code,
         ];
     }
 }

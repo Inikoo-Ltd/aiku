@@ -32,10 +32,10 @@ import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
 
 
-import "@/Composables/Icon/Grp/ImportIconFal"
-import "@/Composables/Icon/Grp/ImportIconFar"
-import "@/Composables/Icon/Grp/ImportIconFad"
-import "@/Composables/Icon/Grp/ImportIconFas"
+import "@/Composables/Icon/ImportGrpFalIcon"
+import "@/Composables/Icon/ImportGrpFarIcon"
+import "@/Composables/Icon/ImportGrpFadIcon"
+import "@/Composables/Icon/ImportGrpFasIcon"
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())

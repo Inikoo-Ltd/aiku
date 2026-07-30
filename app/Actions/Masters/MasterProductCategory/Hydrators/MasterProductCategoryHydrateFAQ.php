@@ -9,22 +9,18 @@
 
 namespace App\Actions\Masters\MasterProductCategory\Hydrators;
 
-use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Masters\MasterProductCategory\CascadeMasterProductCategoryFaqToChildren;
 use App\Actions\OrgAction;
 use App\Models\Masters\MasterProductCategory;
 
 class MasterProductCategoryHydrateFAQ extends OrgAction
 {
-    public function handle(MasterProductCategory $masterProductCategory)
+    public function handle(MasterProductCategory $masterProductCategory): void
     {
-        foreach ($masterProductCategory->productCategories as $productCategory) {
-            UpdateProductCategory::make()->action($productCategory, [
-                'faq' => $masterProductCategory->faq,
-            ]);
-        }
+        CascadeMasterProductCategoryFaqToChildren::run($masterProductCategory);
     }
 
-    public function action(MasterProductCategory $masterProductCategory)
+    public function action(MasterProductCategory $masterProductCategory): void
     {
         $this->initialisationFromGroup($masterProductCategory->group, []);
 

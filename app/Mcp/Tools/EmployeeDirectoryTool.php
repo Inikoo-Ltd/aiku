@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Search employees in an organisation by name, worker number or job title. Returns work contact info and employment state, never salary or personal data.')]
+#[IsReadOnly]
 class EmployeeDirectoryTool extends AikuOrganisationTool
 {
     protected function permission(): OrganisationPermissionsEnum
@@ -32,7 +34,7 @@ class EmployeeDirectoryTool extends AikuOrganisationTool
 
         $organisation = $this->authorisedOrganisation($request);
         if (!$organisation) {
-            return Response::error('Organisation not found or permission denied.');
+            return $this->organisationNotFoundError($request);
         }
 
         $query   = $request->string('query');
@@ -73,7 +75,7 @@ class EmployeeDirectoryTool extends AikuOrganisationTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'organisation' => $schema->string()->description('Organisation slug')->required(),
+            'organisation' => $schema->string()->description('Organisation slug or code')->required(),
             'query'        => $schema->string()->description('Search text (name, worker number, or job title)')->required(),
         ];
     }

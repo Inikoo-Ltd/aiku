@@ -22,7 +22,7 @@ use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
-use App\Actions\Comms\Outbox\ReorderRemainder\RunReorderRemainderEmailBulkRuns;
+use App\Actions\Comms\Outbox\PriceChange\RunPriceChangeEmailBulkRunsToSubscribers;
 use App\Actions\Comms\Outbox\ReviewReminder\RunReviewReminderEmailBulkRuns;
 use App\Actions\CRM\Customer\HydrateCustomersClv;
 use App\Actions\CRM\Customer\PruneCustomerWebActivities;
@@ -470,16 +470,6 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-
-            // $this->logSchedule(
-            //     $schedule->job(RunReorderRemainderEmailBulkRuns::makeJob())->dailyAt('15:00')->timezone('UTC')->onOneServer()->sentryMonitor(
-            //         monitorSlug: 'RunReorderRemainderEmailBulkRuns',
-            //     ),
-            //     name: 'RunReorderRemainderEmailBulkRuns',
-            //     type: 'job',
-            //     scheduledAt: now()->format('H:i')
-            // );
-
             $this->logSchedule(
                 $schedule->job(RunGoldRewardReminderEmailBulkRuns::makeJob())->dailyAt('15:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'RunGoldRewardReminderEmailBulkRuns',
@@ -522,6 +512,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunPriceChangeNotificationEmailBulkRuns',
                 ),
                 name: 'RunPriceChangeNotificationEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunPriceChangeEmailBulkRunsToSubscribers::makeJob())->everyTenMinutes()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunPriceChangeEmailBulkRunsToSubscribers',
+                ),
+                name: 'RunPriceChangeEmailBulkRunsToSubscribers',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -670,6 +669,15 @@ class Kernel extends ConsoleKernel
                 ),
                 name: 'RedoDailyInvoiceTimeSeries',
                 type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('users:process_time_series')->dailyAt('22:30')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ProcessUserTimeSeriesRecords',
+                ),
+                name: 'ProcessUserTimeSeriesRecords',
+                type: 'command',
                 scheduledAt: now()->format('H:i')
             );
 

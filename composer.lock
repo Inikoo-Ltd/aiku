@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1c1bb536491a591554a29cba42f07b6a",
+    "content-hash": "ae719ae03ce48e759e6eddd33e083dd9",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -5618,6 +5618,80 @@
             "time": "2026-06-03T15:11:37+00:00"
         },
         {
+            "name": "laravel/mcp",
+            "version": "v0.8.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/mcp.git",
+                "reference": "0c32bf369c6432cab21458f9f4479da33a49ba37"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/mcp/zipball/0c32bf369c6432cab21458f9f4479da33a49ba37",
+                "reference": "0c32bf369c6432cab21458f9f4479da33a49ba37",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "illuminate/console": "^11.45.3|^12.41.1|^13.0",
+                "illuminate/container": "^11.45.3|^12.41.1|^13.0",
+                "illuminate/contracts": "^11.45.3|^12.41.1|^13.0",
+                "illuminate/http": "^11.45.3|^12.41.1|^13.0",
+                "illuminate/json-schema": "^12.41.1|^13.0",
+                "illuminate/routing": "^11.45.3|^12.41.1|^13.0",
+                "illuminate/support": "^11.45.3|^12.41.1|^13.0",
+                "illuminate/validation": "^11.45.3|^12.41.1|^13.0",
+                "php": "^8.2",
+                "symfony/process": "^7.4.5|^8.0.5"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.20",
+                "orchestra/testbench": "^9.15|^10.8|^11.0",
+                "pestphp/pest": "^3.8.5|^4.3.2",
+                "phpstan/phpstan": "^2.1.27",
+                "rector/rector": "^2.2.4"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Mcp": "Laravel\\Mcp\\Facades\\Mcp"
+                    },
+                    "providers": [
+                        "Laravel\\Mcp\\Server\\McpServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Laravel\\Mcp\\": "src/",
+                    "Laravel\\Mcp\\Server\\": "src/Server/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylor@laravel.com"
+                }
+            ],
+            "description": "Rapidly build MCP servers for your Laravel applications.",
+            "homepage": "https://github.com/laravel/mcp",
+            "keywords": [
+                "laravel",
+                "mcp"
+            ],
+            "support": {
+                "issues": "https://github.com/laravel/mcp/issues",
+                "source": "https://github.com/laravel/mcp"
+            },
+            "time": "2026-06-25T14:00:45+00:00"
+        },
+        {
             "name": "laravel/nightwatch",
             "version": "v1.28.0",
             "source": {
@@ -9217,16 +9291,16 @@
         },
         {
             "name": "nightowl/agent",
-            "version": "v1.2.2",
+            "version": "v1.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lemed99/nightowl-agent.git",
-                "reference": "e95a66385373a8e11241966adb04aa1dde550256"
+                "reference": "996635b44e9ad80672b5dc83b4dcc80e3adbf5c4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lemed99/nightowl-agent/zipball/e95a66385373a8e11241966adb04aa1dde550256",
-                "reference": "e95a66385373a8e11241966adb04aa1dde550256",
+                "url": "https://api.github.com/repos/lemed99/nightowl-agent/zipball/996635b44e9ad80672b5dc83b4dcc80e3adbf5c4",
+                "reference": "996635b44e9ad80672b5dc83b4dcc80e3adbf5c4",
                 "shasum": ""
             },
             "require": {
@@ -9242,6 +9316,7 @@
             "require-dev": {
                 "laravel/boost": "^2.3",
                 "mockery/mockery": "^1.6",
+                "nightowl/agent-simulator": "^0.1",
                 "phpunit/phpunit": "^11.5"
             },
             "suggest": {
@@ -9274,7 +9349,7 @@
             ],
             "support": {
                 "issues": "https://github.com/lemed99/nightowl-agent/issues",
-                "source": "https://github.com/lemed99/nightowl-agent/tree/v1.2.2"
+                "source": "https://github.com/lemed99/nightowl-agent/tree/v1.4.1"
             },
             "funding": [
                 {
@@ -9282,7 +9357,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2026-06-07T18:41:06+00:00"
+            "time": "2026-07-20T17:01:27+00:00"
         },
         {
             "name": "nikic/php-parser",
@@ -23864,80 +23939,6 @@
                 "source": "https://github.com/laravel/boost"
             },
             "time": "2026-06-09T10:21:08+00:00"
-        },
-        {
-            "name": "laravel/mcp",
-            "version": "v0.8.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/mcp.git",
-                "reference": "fdc39c9e21048801508765cb4d72bd9e8501b51f"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/mcp/zipball/fdc39c9e21048801508765cb4d72bd9e8501b51f",
-                "reference": "fdc39c9e21048801508765cb4d72bd9e8501b51f",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "illuminate/console": "^11.45.3|^12.41.1|^13.0",
-                "illuminate/container": "^11.45.3|^12.41.1|^13.0",
-                "illuminate/contracts": "^11.45.3|^12.41.1|^13.0",
-                "illuminate/http": "^11.45.3|^12.41.1|^13.0",
-                "illuminate/json-schema": "^12.41.1|^13.0",
-                "illuminate/routing": "^11.45.3|^12.41.1|^13.0",
-                "illuminate/support": "^11.45.3|^12.41.1|^13.0",
-                "illuminate/validation": "^11.45.3|^12.41.1|^13.0",
-                "php": "^8.2",
-                "symfony/process": "^7.4.5|^8.0.5"
-            },
-            "require-dev": {
-                "laravel/pint": "^1.20",
-                "orchestra/testbench": "^9.15|^10.8|^11.0",
-                "pestphp/pest": "^3.8.5|^4.3.2",
-                "phpstan/phpstan": "^2.1.27",
-                "rector/rector": "^2.2.4"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "Mcp": "Laravel\\Mcp\\Facades\\Mcp"
-                    },
-                    "providers": [
-                        "Laravel\\Mcp\\Server\\McpServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laravel\\Mcp\\": "src/",
-                    "Laravel\\Mcp\\Server\\": "src/Server/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Taylor Otwell",
-                    "email": "taylor@laravel.com"
-                }
-            ],
-            "description": "Rapidly build MCP servers for your Laravel applications.",
-            "homepage": "https://github.com/laravel/mcp",
-            "keywords": [
-                "laravel",
-                "mcp"
-            ],
-            "support": {
-                "issues": "https://github.com/laravel/mcp/issues",
-                "source": "https://github.com/laravel/mcp"
-            },
-            "time": "2026-06-11T13:59:49+00:00"
         },
         {
             "name": "laravel/pint",

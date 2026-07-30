@@ -100,6 +100,13 @@ class DeliveryNoteItemsResource extends JsonResource
             $packedQuantity = $this->packings_quantity;
         }
 
+        $pickingBatchCodes = collect($pickings)
+            ->map(fn ($picking) => $picking->batch_code ?? null)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
 
 
         return [
@@ -121,6 +128,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_id'                   => $this->org_stock_id,
             'batch_code'                     => $this->batch_code,
             'batch_code_id'                  => $this->batch_code_id,
+            'batch_codes'                    => $pickingBatchCodes,
             'expiry_date'                    => $this->expiry_date,
             'organisation_id'                => $this->organisation_id,
             'batch_codes_fetch_route'        => [

@@ -221,7 +221,15 @@ onMounted(() => {
     <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :handleTabUpdate :currency="currency" />
 
     <!-- ✅ PrimeVue Dialog -->
-    <Dialog v-model:visible="showDialog" modal :closable="false"  :style="{ width: '60vw'  }">
+    <Dialog 
+        v-model:visible="showDialog" 
+        modal 
+        :header="ctrans('Add to Other Shops')"
+        :closable="true" 
+        :dismissableMask=true 
+        :style="{ width: '60vw'  }" 
+        :contentClass="'!pb-0 mb-2'"
+    >
         <EditProductPriceAllShop
             :shops-data="props.shopsData"
             :trade-units="props.tradeUnits"

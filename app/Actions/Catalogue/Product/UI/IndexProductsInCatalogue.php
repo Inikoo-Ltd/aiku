@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithFamilySubNavigation;
+use App\Actions\Masters\MasterAsset\GetMasterUpdatedBadgeData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -51,13 +52,23 @@ class IndexProductsInCatalogue extends OrgAction
 
             'state' => [
                 'label'    => __('State'),
-                'elements' => array_merge_recursive(
-                    ProductStateEnum::labels($bucket),
-                    ProductStateEnum::count($shop, $bucket)
+                'elements' => array_merge(
+                    array_merge_recursive(
+                        ProductStateEnum::labels($bucket),
+                        ProductStateEnum::count($shop, $bucket)
+                    ),
+                    ['price_not_match_master' => [__('Price/RRP ≠ Master'), null]]
                 ),
 
                 'engine' => function ($query, $elements) {
-                    $query->whereIn('products.state', $elements);
+                    if (in_array('price_not_match_master', $elements)) {
+                        GetMasterUpdatedBadgeData::make()->applyDriftConstraints($query);
+                    }
+
+                    $states = array_diff($elements, ['price_not_match_master']);
+                    if ($states) {
+                        $query->whereIn('products.state', $states);
+                    }
                 }
 
             ],

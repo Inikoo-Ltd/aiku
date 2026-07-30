@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Counts of delivery notes by state for a warehouse over a date range.')]
+#[IsReadOnly]
 class DeliveryNotesSummaryTool extends AikuWarehouseTool
 {
     protected function permission(): WarehousePermissionsEnum
@@ -33,7 +35,7 @@ class DeliveryNotesSummaryTool extends AikuWarehouseTool
 
         $warehouse = $this->authorisedWarehouse($request);
         if (!$warehouse) {
-            return Response::error('Warehouse not found or permission denied.');
+            return $this->warehouseNotFoundError($request);
         }
 
         $notes = DeliveryNote::where('warehouse_id', $warehouse->id)
@@ -65,7 +67,7 @@ class DeliveryNotesSummaryTool extends AikuWarehouseTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'warehouse' => $schema->string()->description('Warehouse slug')->required(),
+            'warehouse' => $schema->string()->description('Warehouse slug or code')->required(),
             'from'      => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'        => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
         ];

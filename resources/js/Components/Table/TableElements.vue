@@ -40,7 +40,7 @@ const props = defineProps<{
 }>()
 // console.log('element', props.elements)
 const emits = defineEmits<{
-	(e: "checkboxChanged", value: SelectedFilters): void
+	(e: "checkboxChanged", value: SelectedFilters, isInitial?: boolean): void
 }>()
 
 interface SelectedFilters {
@@ -180,7 +180,7 @@ onMounted(() => {
 
 	if (stateParam) {
 		selectedFilters[selectedGroup.value] = stateParam.split(",")
-		emits("checkboxChanged", selectedFilters)
+		emits("checkboxChanged", selectedFilters, true)
 	} else if (props.elements[selectedGroup.value]?.default) {
 		selectedFilters[selectedGroup.value] = [
 			...props.elements[selectedGroup.value].default.split(","),

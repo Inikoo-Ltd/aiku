@@ -19,14 +19,20 @@ class RepairMasterAssetRrpAnomalies
 
     public const float NUMERIC_12_3_MAX = 999999999.999;
 
-    public string $commandSignature = 'repair:master_asset_rrp_anomalies {master_shop} {--tolerance=0.5 : Max relative deviation from FX rate before a RRP is flagged} {--fix : Write corrections (default is report only)}';
+    public const float MARKUP_MIN = 1.5;
+
+    public const float MARKUP_MAX = 5.0;
+
+    public const float IMPLAUSIBLE_MARKUP = 5.9;
+
+    public string $commandSignature = 'repair:master_asset_rrp_anomalies {master_shop} {--tolerance=0.5 : Max relative deviation from FX rate before a RRP is flagged} {--include-inactive : Also process masters with status false} {--fix : Write corrections (default is report only)}';
 
     /**
      * @param array<string, float> $exchangeRates  currency code => rate from GBP
      */
-    public function handle(MasterAsset $masterAsset, array $exchangeRates, float $tolerance, bool $fix, ?Command $command = null): array
+    public function handle(MasterAsset $masterAsset, array $exchangeRates, float $tolerance, bool $fix, ?Command $command = null, bool $includeInactive = false): array
     {
-        if (!$masterAsset->status) {
+        if (!$masterAsset->status && !$includeInactive) {
             return [];
         }
 
@@ -35,7 +41,13 @@ class RepairMasterAssetRrpAnomalies
         $gbpValue = (float) data_get($rrps, 'GBP.value');
         $findings = [];
 
-        foreach ($rrps as $currencyCode => $entry) {
+        foreach ($this->unitsInflatedCurrencies($masterAsset, $rrps, $units) as $currencyCode => $entry) {
+            $value     = (float) data_get($entry, 'value');
+            $suggested = round($value / $units, 2);
+            $findings[] = $this->finding($masterAsset, $currencyCode, $entry, $value, $suggested, $suggested, $units, false);
+        }
+
+        foreach ($findings ? [] : $rrps as $currencyCode => $entry) {
             $value = (float) data_get($entry, 'value');
             if ($value <= 0) {
                 continue;
@@ -97,6 +109,50 @@ class RepairMasterAssetRrpAnomalies
     private function currenciesById(): \Illuminate\Support\Collection
     {
         return $this->currenciesById ??= Currency::all()->keyBy('id');
+    }
+
+    /**
+     * The rrp×units defect: the undivided markup is already implausible, every major carries the
+     * identical corrupt ratio, and dividing by units restores a plausible retail markup. All three
+     * conditions are required — a healthy low-units asset can show a 3x markup that survives a
+     * division, and a high ratio alone also describes legitimate multipacks whose rrp is quoted
+     * per single item, which dividing would price at cost.
+     *
+     * @param  array<string, mixed>  $rrps
+     * @return array<string, mixed>  currencies to divide, empty when the defect is not proven
+     */
+    private function unitsInflatedCurrencies(MasterAsset $masterAsset, array $rrps, float $units): array
+    {
+        if ($units <= 1) {
+            return [];
+        }
+
+        $prices  = $masterAsset->master_prices ?? [];
+        $markups = [];
+
+        foreach (['GBP', 'EUR'] as $code) {
+            $price = (float) data_get($prices, "$code.value");
+            $rrp   = (float) data_get($rrps, "$code.value");
+            if ($price <= 0 || $rrp <= 0) {
+                return [];
+            }
+
+            if ($rrp / $price <= self::IMPLAUSIBLE_MARKUP) {
+                return [];
+            }
+
+            $markup = ($rrp / $units) / $price;
+            if ($markup < self::MARKUP_MIN || $markup > self::MARKUP_MAX) {
+                return [];
+            }
+            $markups[] = $markup;
+        }
+
+        if (abs($markups[0] / $markups[1] - 1) > 0.01) {
+            return [];
+        }
+
+        return array_filter($rrps, fn ($entry) => (float) data_get($entry, 'value') > 0);
     }
 
     private function suggestedValue(float $value, float $expected, float $units): ?float
@@ -239,14 +295,16 @@ class RepairMasterAssetRrpAnomalies
             $exchangeRates[$currency->code] = $rate;
         }
 
+        $includeInactive = (bool) $command->option('include-inactive');
+
         $totalFindings = 0;
         MasterAsset::where('master_shop_id', $masterShop->id)
             ->whereNotNull('master_rrps')
-            ->where('status', true)
+            ->when(!$includeInactive, fn ($query) => $query->where('status', true))
             ->orderBy('id')
-            ->chunkById(250, function ($masterAssets) use ($exchangeRates, $tolerance, $fix, $command, &$totalFindings) {
+            ->chunkById(250, function ($masterAssets) use ($exchangeRates, $tolerance, $fix, $command, $includeInactive, &$totalFindings) {
                 foreach ($masterAssets as $masterAsset) {
-                    $totalFindings += count($this->handle($masterAsset, $exchangeRates, $tolerance, $fix, $command));
+                    $totalFindings += count($this->handle($masterAsset, $exchangeRates, $tolerance, $fix, $command, $includeInactive));
                 }
             });
 

@@ -35,7 +35,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull } from "@fas"
 
 library.add(
@@ -59,7 +59,8 @@ library.add(
 	faArrowCircleLeft,
 	faExclamationCircle,
 	faBoxOpen,
-	faBoxFull
+	faBoxFull,
+	faClipboardList
 )
 
 const props = defineProps<{
@@ -71,6 +72,10 @@ const props = defineProps<{
 	timelines: {
 		[key: string]: TSTimeline
 	}
+	purchase_order: {
+		reference: string
+		route: routeType
+	} | null
 	box_stats: {
 		first_block: {
 			orderer: {
@@ -105,8 +110,11 @@ const props = defineProps<{
 			currency: string | null
 			org_currency: string | null
 			org_exchange: number | string | null
-			items: number | string
-			extra: number | string
+			items: number | string | null
+			extra: number | string | null
+			shipping: number | string | null
+			duties: number | string | null
+			tax: number | string | null
 			total: number | string
 			org_items: number | string
 		}
@@ -119,8 +127,14 @@ const props = defineProps<{
 		attachRoute: routeType
 		detachRoute: routeType
 	}
-	showcase?: {}
+	costing: {
+		is_costed: boolean
+		currency: string | null
+		distributeExtraCostRoute: routeType | null
+	}
 	items?: {}
+	under_over_delivered?: {}
+	showcase?: {}
 	attachments?: {}
 	history?: {}
 }>()
@@ -132,8 +146,9 @@ const isModalUploadOpen = ref(false)
 
 const component = computed(() => {
 	const components: Component = {
-		showcase: ProcurementOrderData,
 		items: TableStockDeliveryItems,
+		under_over_delivered: TableStockDeliveryItems,
+		showcase: ProcurementOrderData,
 		attachments: TableAttachments,
 		history: TableHistories,
 	}
@@ -193,8 +208,20 @@ const orgPerOrder = computed(() => {
 	return Number(org_exchange) || null
 })
 
+const costRows = computed(() => {
+	const { items, extra, shipping, duties, tax } = props.box_stats.third_block
+
+	return [
+		{ key: "items", label: trans("Items"), amount: Number(items) || 0, alwaysShown: true },
+		{ key: "extra", label: trans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
+		{ key: "shipping", label: trans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
+		{ key: "duties", label: trans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
+		{ key: "tax", label: trans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
+	].filter(row => row.alwaysShown || row.amount !== 0)
+})
+
 const costBlocks = computed(() => {
-	const { currency, org_currency, items, extra, total, org_items } = props.box_stats.third_block
+	const { currency, org_currency, items, total, org_items } = props.box_stats.third_block
 
 	const money = (code: string | null, amount: number) => locale.currencyFormat(code ?? "", amount)
 
@@ -202,8 +229,7 @@ const costBlocks = computed(() => {
 		key: "supplier",
 		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
 		rows: [
-			{ label: trans("Items"), value: money(currency, Number(items)) },
-			{ label: trans("Extra costs"), value: money(currency, Number(extra)) },
+			...costRows.value.map(row => ({ label: row.label, value: money(currency, row.amount) })),
 			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
 		],
 	}
@@ -211,8 +237,11 @@ const costBlocks = computed(() => {
 	const sameCurrency = !org_currency || org_currency === currency
 	const orgCurrency = org_currency || currency
 	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
-	const orgItems = sameCurrency ? Number(items) : Number(org_items)
-	const orgExtra = Number(extra) * rate
+
+	const orgAmount = (row: { key: string; amount: number }) =>
+		row.key === "items" && !sameCurrency ? Number(org_items) : row.amount * rate
+
+	const orgTotal = costRows.value.reduce((sum, row) => sum + orgAmount(row), 0)
 
 	const orderPerOrg = rate ? 1 / rate : null
 	const rateLabel = sameCurrency
@@ -227,9 +256,8 @@ const costBlocks = computed(() => {
 			key: "org",
 			title: rateLabel,
 			rows: [
-				{ label: trans("Items"), value: money(orgCurrency, orgItems) },
-				{ label: trans("Extra costs"), value: money(orgCurrency, orgExtra) },
-				{ label: trans("Total"), value: money(orgCurrency, orgItems + orgExtra), isTotal: true },
+				...costRows.value.map(row => ({ label: row.label, value: money(orgCurrency, orgAmount(row)) })),
+				{ label: trans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
 			],
 		},
 	]
@@ -360,6 +388,55 @@ const confirmCancelStockDelivery = (action: any) => {
 	})
 }
 
+const startCostingLoading = ref(false)
+const finishCostingLoading = ref(false)
+
+const confirmStartStockDeliveryCosting = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to start checking the costs? This stock delivery will be placed."),
+		header: trans("Start checking costs"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Start checking costs"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { startCostingLoading.value = true },
+				onFinish: () => { startCostingLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to start checking the costs"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
+const confirmFinishStockDeliveryCosting = (action: any) => {
+	confirm.require({
+		group: "stock-delivery",
+		message: trans("Are you sure you want to finish the costing? This stock delivery will be final and can not be changed anymore."),
+		header: trans("Finish costing"),
+		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: trans("Finish costing"), severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), {}, {
+				onStart: () => { finishCostingLoading.value = true },
+				onFinish: () => { finishCostingLoading.value = false },
+				onError: () => {
+					notify({
+						title: trans("Something went wrong"),
+						text: trans("Failed to finish the costing"),
+						type: "error",
+					})
+				},
+			})
+		},
+	})
+}
+
 const confirmDeleteStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
@@ -451,6 +528,28 @@ const confirmDeleteStockDelivery = (action: any) => {
 			/>
 		</template>
 
+		<template #button-start-stock-delivery-costing="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="startCostingLoading"
+				@click="() => confirmStartStockDeliveryCosting(action)"
+			/>
+		</template>
+
+		<template #button-finish-stock-delivery-costing="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:loading="finishCostingLoading"
+				@click="() => confirmFinishStockDeliveryCosting(action)"
+			/>
+		</template>
+
 		<template #button-delete-stock-delivery="{ action }">
 			<Button
 				:style="action.style"
@@ -464,8 +563,17 @@ const confirmDeleteStockDelivery = (action: any) => {
 	</PageHeading>
 
 	<!-- Stock Delivery Timeline -->
-	<div v-if="timelines" class="py-2 border-b border-gray-300">
+	<div v-if="timelines" class="flex items-center gap-x-4 py-2 border-b border-gray-300" :class="purchase_order ? 'pl-4' : ''">
+		<Link
+			v-if="purchase_order"
+			:href="route(purchase_order.route.name, purchase_order.route.parameters)"
+			class="primaryLink flex items-center gap-x-2 text-sm whitespace-nowrap"
+		>
+			<FontAwesomeIcon icon="fal fa-clipboard-list" fixed-width aria-hidden="true" />
+			{{ purchase_order.reference }}
+		</Link>
 		<Timeline
+			class="flex-1 min-w-0"
 			:options="timelines"
 			:state="stock_delivery.state"
 			:slidesPerView="6"
@@ -685,8 +793,10 @@ const confirmDeleteStockDelivery = (action: any) => {
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component
 		:is="component"
+		:key="currentTab"
 		:data="props[currentTab]"
 		:tab="currentTab"
+		:costing="currentTab === 'items' ? costing : undefined"
 		:detachRoute="attachmentRoutes.detachRoute"
 	/>
 

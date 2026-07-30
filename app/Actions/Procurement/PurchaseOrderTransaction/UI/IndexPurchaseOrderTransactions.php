@@ -10,7 +10,6 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
-use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
@@ -188,7 +187,6 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
-                // ->column(key: 'state', label: __('State'), canBeHidden: false);
 
                 if ($purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED) {
                     $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');

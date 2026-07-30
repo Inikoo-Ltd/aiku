@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Overview of a shop\'s website: webpage counts by state, registered web users, and failed login totals.')]
+#[IsReadOnly]
 class WebsiteOverviewTool extends AikuTool
 {
     protected function permission(): ShopPermissionsEnum
@@ -31,7 +33,7 @@ class WebsiteOverviewTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $website = $shop->website;
@@ -68,7 +70,7 @@ class WebsiteOverviewTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop' => $schema->string()->description('Shop slug')->required(),
+            'shop' => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
         ];
     }
 }

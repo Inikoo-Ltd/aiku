@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowOrgSupplier extends OrgAction
 {
     use WithOrgSupplierSubNavigation;
+    use WithAgentOrganisation;
 
     private OrgAgent|Organisation $parent;
 
@@ -42,6 +44,7 @@ class ShowOrgSupplier extends OrgAction
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request)->withTab(SupplierTabsEnum::values());
+        $this->authorizeProcurementRecord($orgSupplier);
 
         return $this->handle($orgSupplier);
     }
@@ -50,6 +53,8 @@ class ShowOrgSupplier extends OrgAction
     {
         $this->maya   = true;
         $this->initialisation($organisation, $request)->withTab(SupplierTabsEnum::values());
+        $this->authorizeProcurementRecord($orgSupplier);
+
         return $this->handle($orgSupplier);
     }
     /** @noinspection PhpUnusedParameterInspection */
@@ -57,6 +62,7 @@ class ShowOrgSupplier extends OrgAction
     {
         $this->parent = $orgAgent;
         $this->initialisation($organisation, $request)->withTab(SupplierTabsEnum::values());
+        $this->authorizeProcurementRecord($orgSupplier);
 
         return $this->handle($orgSupplier);
     }

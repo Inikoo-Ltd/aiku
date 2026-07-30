@@ -123,24 +123,11 @@ class StoreOrganisation extends OrgAction
                 $organisation->timeSeries()->create(['frequency' => $frequency]);
             }
 
-            if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
-                $organisation->outboxNewsletterIntervals()->create();
-                $organisation->outboxMarketingIntervals()->create();
-                $organisation->outboxMarketingNotificationIntervals()->create();
-                $organisation->outboxCustomerNotificationIntervals()->create();
-                $organisation->outboxColdEmailsIntervals()->create();
-                $organisation->outboxPushIntervals()->create();
-            }
-
-            $organisation->outboxUserNotificationIntervals()->create();
-            $organisation->outboxTestIntervals()->create();
-
 
             if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
                 $organisation->crmStats()->create();
                 $organisation->catalogueStats()->create();
                 $organisation->discountsStats()->create();
-                $organisation->mailshotsIntervals()->create();
                 $organisation->orderingStats()->create();
 
                 $paymentServiceProvider = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::ACCOUNT)->first();

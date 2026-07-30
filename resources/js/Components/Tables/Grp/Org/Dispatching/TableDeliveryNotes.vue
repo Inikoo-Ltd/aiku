@@ -35,8 +35,30 @@ defineProps<{
 const routeParams = route().routeParams
 const routeCurrent = route().current()
 
+function deliveryNoteHref(deliveryNote: DeliveryNote) {
+	return deliveryNoteRoute(deliveryNote) + bucketQuery()
+}
+
+function bucketQuery() {
+	const bucket = routeCurrent?.match(/^grp\.org\.warehouses\.show\.dispatching\.([^.]+)\.delivery-notes/)?.[1]
+
+	if (!bucket) return ''
+
+	const query = new URLSearchParams({ bucket: bucket.replace('handling-blocked', 'handling_blocked') })
+	const sort = new URLSearchParams(location.search).get('sort')
+
+	if (routeParams["shopType"]) {
+		query.set('bucket_shop_type', routeParams["shopType"] as string)
+	}
+
+	if (sort) {
+		query.set('bucket_sort', sort)
+	}
+
+	return `?${query.toString()}`
+}
+
 function deliveryNoteRoute(deliveryNote: DeliveryNote) {
-	console.log(routeCurrent)
 	switch (routeCurrent) {
 		case "shops.show.orders.show":
 			return route("shops.show.orders.show.delivery-notes.show", [
@@ -213,7 +235,7 @@ const generateRouteDeliveryNote = (id: string) => {
 		<template #cell(status)="{ item: deliveryNote }">
 			<!-- {{deliveryNote.state_icon}} -->
 			<Icon :data="deliveryNote.state_icon" />
-			<!-- <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
+			<!-- <Link :href="deliveryNoteHref(deliveryNote)" class="primaryLink">
                 {{ deliveryNote["reference"] }}
             </Link> -->
 		</template>
@@ -225,7 +247,7 @@ const generateRouteDeliveryNote = (id: string) => {
 		<template #cell(reference)="{ item: deliveryNote }">
             <div class="flex flex-rows gap-2">
 				<div class="flex gap-2 flex-wrap items-center">
-					<Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
+					<Link :href="deliveryNoteHref(deliveryNote)" class="primaryLink">
 						{{ deliveryNote["reference"] }}
 					</Link>
 					<FontAwesomeIcon
@@ -254,13 +276,13 @@ const generateRouteDeliveryNote = (id: string) => {
 						v-if="Number(deliveryNote.waiting_warehouse_count) > 0"
 						:count="Number(deliveryNote.waiting_warehouse_count)"
 						type="warehouse"
-						:href="deliveryNoteRoute(deliveryNote)"
+						:href="deliveryNoteHref(deliveryNote)"
 					/>
 					<WaitingOppositeCountBadge
 						v-if="Number(deliveryNote.waiting_crm_count) > 0"
 						:count="Number(deliveryNote.waiting_crm_count)"
 						type="crm"
-						:href="deliveryNoteRoute(deliveryNote)"
+						:href="deliveryNoteHref(deliveryNote)"
 					/>
 				</div>
 				<span

@@ -159,25 +159,15 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
 
 const idxSlideLoading = ref<number | null>(null)
 
-const activeEditorIndex = ref<number | null>(null)
-
-const onEditorFocus = (key: string, index: number) => {
-  activeEditorIndex.value = index
+const onEditorFocus = (key: string) => {
   sendMessageToParent('activeChildBlock', key)
 }
-
-const onEditorBlur = () => {
-  activeEditorIndex.value = null
-}
-
-const isEditing = computed(() => activeEditorIndex.value !== null)
-
 
 </script>
 
 <template>
-  <div :id="modelValue?.id ? modelValue?.id : 'carousel' + indexBlock" component="carousel" class="relative"
-    :class="isEditing ? 'overflow-visible' : 'overflow-hidden'">
+  <div :id="modelValue?.id ? modelValue?.id : 'carousel' + indexBlock" component="carousel"
+    class="relative overflow-hidden">
     <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
@@ -220,7 +210,7 @@ const isEditing = computed(() => activeEditorIndex.value !== null)
               <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
                 class="p-4 flex flex-col flex-1 justify-between">
                 <div class="text-center leading-relaxed">
-                  <EditorV2 v-model="data.text" @focus="() => onEditorFocus(bKeys[1], index)" @blur="onEditorBlur"
+                  <EditorV2 v-model="data.text" @focus="() => onEditorFocus(bKeys[1])"
                     @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
                       name: webpageData.images_upload_route.name,
                       parameters: {
@@ -236,10 +226,10 @@ const isEditing = computed(() => activeEditorIndex.value !== null)
         </div>
       </DefineCard>
 
-      <div class="mx-10" :class="isEditing ? 'overflow-visible' : 'overflow-hidden'">
+      <div class="mx-10 overflow-hidden">
         <div v-if="hasCards && isMobileGrid" class="grid w-full" :style="gridStyle">
           <div v-for="(data, index) in modelValue.carousel_data.cards" :key="index"
-            class="flex justify-center items-center" :style="{ zIndex: activeEditorIndex === index ? 99 : 1 }">
+            class="flex justify-center items-center">
             <ReuseCard :data="data" :index="index" />
           </div>
         </div>
@@ -254,7 +244,7 @@ const isEditing = computed(() => activeEditorIndex.value !== null)
             : false" @swiper="onSwiper" class="w-full">
 
         <SwiperSlide v-for="(data, index) in modelValue.carousel_data.cards" :key="index"
-            class="!flex !justify-center !items-center" :style="{ zIndex: activeEditorIndex === index ? 99 : 1 }">
+            class="!flex !justify-center !items-center">
             <ReuseCard :data="data" :index="index" />
           </SwiperSlide>
         </Swiper>

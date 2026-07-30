@@ -28,6 +28,7 @@ use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Models\Fulfilment\RecurringBill;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\SysAdmin\Organisation;
@@ -41,6 +42,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowRecurringBill extends OrgAction
 {
+    use WithBucketNavigation;
+
     use WithFulfilmentShopAuthorisation;
     use WithFulfilmentCustomerSubNavigation;
     private Fulfilment|FulfilmentCustomer $parent;
@@ -350,20 +353,53 @@ class ShowRecurringBill extends OrgAction
 
     public function getPrevious(RecurringBill $recurringBill, ActionRequest $request): ?array
     {
-        $previous = RecurringBill::where('slug', '<', $recurringBill->slug)
-            ->where('recurring_bills.fulfilment_id', $recurringBill->fulfilment_id)
-            ->orderBy('slug', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getRecurringBillNeighbour($recurringBill, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(RecurringBill $recurringBill, ActionRequest $request): ?array
     {
-        $next = RecurringBill::where('slug', '>', $recurringBill->slug)
-            ->where('recurring_bills.fulfilment_id', $recurringBill->fulfilment_id)
-            ->orderBy('slug')->first();
+        return $this->getNavigation($this->getRecurringBillNeighbour($recurringBill, $request, forward: true), $request->route()->getName());
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    private function getRecurringBillNeighbour(RecurringBill $recurringBill, ActionRequest $request, bool $forward): ?RecurringBill
+    {
+        $routeName = $request->route()->getName();
+        $query     = RecurringBill::query();
+
+        if (str_contains($routeName, 'crm.customers.show.recurring_bills')) {
+            $query->where('recurring_bills.fulfilment_customer_id', $recurringBill->fulfilment_customer_id);
+        } else {
+            $query->where('recurring_bills.fulfilment_id', $recurringBill->fulfilment_id);
+
+            $bucket = $request->input('bucket');
+
+            if (!$bucket && preg_match('/\.recurring_bills\.(current|former)\./', $routeName, $matches)) {
+                $bucket = $matches[1];
+            }
+
+            $status = match ($bucket) {
+                'current' => RecurringBillStatusEnum::CURRENT,
+                'former'  => RecurringBillStatusEnum::FORMER,
+                default   => null,
+            };
+
+            if ($status) {
+                $query->where('recurring_bills.status', $status);
+            }
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $recurringBill,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'reference'  => 'recurring_bills.reference',
+                'start_date' => 'recurring_bills.start_date',
+                'end_date'   => 'recurring_bills.end_date',
+            ],
+            defaultSort: ['recurring_bills.reference', false],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?RecurringBill $recurringBill, string $routeName): ?array

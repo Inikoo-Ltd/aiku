@@ -17,6 +17,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $parent_name
  * @property mixed $state
  * @property mixed $date
+ * @property mixed $organisation_name
  */
 class StockDeliveryResource extends JsonResource
 {
@@ -30,6 +31,7 @@ class StockDeliveryResource extends JsonResource
             'state'         => $this->state,
             'state_icon'    => $this->state->stateIcon()[$this->state->value],
             'date'          => $this->date,
+            'organisation_name' => $this->organisation_name,
         ];
     }
 }

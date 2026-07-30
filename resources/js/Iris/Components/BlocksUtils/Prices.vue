@@ -59,7 +59,7 @@ defineProps<{
       </span>
 
       <span class="font-semibold">
-        {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
+        {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit || 0) }}
         <span class="text-gray-600">/{{ product.unit }}</span>
       </span>
     </div>

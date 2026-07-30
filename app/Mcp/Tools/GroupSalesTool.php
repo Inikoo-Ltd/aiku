@@ -14,8 +14,10 @@ use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Total sales across ALL organisations in the group over a date range, from invoices, in group currency. Includes invoice and refund counts and distinct customers invoiced.')]
+#[IsReadOnly]
 class GroupSalesTool extends AikuGroupTool
 {
     protected function permission(): GroupPermissionsEnum

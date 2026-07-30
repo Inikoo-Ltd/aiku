@@ -181,7 +181,7 @@ defineExpose({
     <div id="product-card-ecom-3" class="text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
-        <div class="text-gray-800 isolate h-full">
+        <div class="text-gray-800 isolate">
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
                 :screenType="screenType" />
 
@@ -201,18 +201,19 @@ defineExpose({
                                 class="mobile-slider flex w-full h-full overflow-x-auto scroll-smooth snap-x snap-mandatory"
                                 @scroll="onScroll">
 
-                                <div v-for="(img, i) in images" :key="i" class="w-full h-full flex-shrink-0 snap-start">
+                                <div v-for="(img, i) in images" :key="i"
+                                    class="relative w-full h-full flex-shrink-0 snap-start">
 
                                     <Image :src="img" :alt="product.name"
-                                        class="w-full h-full select-none pointer-events-none"
-                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                        class="absolute inset-0 w-full h-full select-none pointer-events-none"
+                                        :style="{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
                             </div>
 
                             <!-- SINGLE IMAGE -->
-                            <div v-else class="w-full h-full">
-                                <Image :src="images[0]" :alt="product.name" class="w-full h-full"
-                                    :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                            <div v-else class="relative w-full h-full">
+                                <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                    :style="{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }" />
                             </div>
 
                             <!-- DOTS -->
@@ -235,6 +236,8 @@ defineExpose({
                                 <div class="w-full h-full flex-shrink-0 relative">
                                     <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
                                         :style="{
+                                            width: '100%',
+                                            height: '100%',
                                             objectFit: 'contain',
                                             objectPosition: 'center'
                                         }" />
@@ -244,6 +247,8 @@ defineExpose({
                                 <div v-if="images.length > 1" class="w-full h-full flex-shrink-0 relative">
                                     <Image :src="images[1]" :alt="product.name" class="absolute inset-0 w-full h-full"
                                         :style="{
+                                            width: '100%',
+                                            height: '100%',
                                             objectFit: 'contain',
                                             objectPosition: 'center'
                                         }" />
@@ -337,7 +342,7 @@ defineExpose({
                 <div class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
                     <!-- RRP + UNIT  -->
                     <span class="truncate min-w-0 overflow-hidden text-primary">
-                     {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
+                     {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
                     </span>
 
                 </div>
