@@ -206,12 +206,20 @@ class ShowOrder extends OrgAction
                     "field"       => "public_notes"
                 ],
                 [
-                    "label"       => __("Order private note"),
+                    "label"       => __("Private CRM note"),
                     "note"        => $order->internal_notes ?? '',
-                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
+                    "information" => __("This note is only visible to staff members in the order. It is not shown in the delivery note."),
                     "editable"    => true,
                     "bgColor"     => "#FCF4A3",
                     "field"       => "internal_notes"
+                ],
+                [
+                    "label"       => __("Private warehouse note"),
+                    "note"        => $order->private_warehouse_note ?? '',
+                    "information" => __("This note is only visible to staff members and is shown in the delivery note."),
+                    "editable"    => true,
+                    "bgColor"     => "#FFD8A8",
+                    "field"       => "private_warehouse_note"
                 ]
             ]
         ];
