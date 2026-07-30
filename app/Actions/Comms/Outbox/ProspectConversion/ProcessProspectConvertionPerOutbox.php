@@ -20,7 +20,7 @@ class ProcessProspectConvertionPerOutbox
     {
         $currentDateTime = Carbon::now()->utc();
         $compareDate = $currentDateTime->copy()->subDays($outbox->days_after)->endOfDay();
-
+        $lastOutBoxSent = $outbox->last_sent_at ?? $currentDateTime->copy()->subDay();
 
         $baseQuery = DB::table('prospects');
         $baseQuery->where('prospects.shop_id', $outbox->shop_id);
@@ -33,6 +33,7 @@ class ProcessProspectConvertionPerOutbox
             $baseQuery->where('prospects.id', $prospoectId);
         } else {
             $baseQuery->whereDate('prospects.created_at', '=', $compareDate->toDateString());
+            $baseQuery->where('prospects.created_at', '>', $lastOutBoxSent);
         }
 
 
