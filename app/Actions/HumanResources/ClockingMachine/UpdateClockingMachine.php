@@ -34,12 +34,13 @@ class UpdateClockingMachine extends OrgAction
 
     public function handle(ClockingMachine $clockingMachine, array $modelData): ClockingMachine
     {
-        $qrKeys = [
+        $configKeys = [
             'config.qr.enable',
             'config.qr.refresh_interval',
             'config.qr.allow_coordinates',
             'config.qr.coordinates',
             'config.qr.radius',
+            'config.pin.enable',
         ];
 
         $configPayload = Arr::get($modelData, 'config', []);
@@ -47,9 +48,9 @@ class UpdateClockingMachine extends OrgAction
             $configPayload = [];
         }
 
-        foreach ($qrKeys as $qrKey) {
-            if (array_key_exists($qrKey, $modelData)) {
-                data_set($configPayload, str_replace('config.', '', $qrKey), $modelData[$qrKey]);
+        foreach ($configKeys as $configKey) {
+            if (array_key_exists($configKey, $modelData)) {
+                data_set($configPayload, str_replace('config.', '', $configKey), $modelData[$configKey]);
             }
         }
 
@@ -104,6 +105,7 @@ class UpdateClockingMachine extends OrgAction
             'config.qr.allow_coordinates'    => ['nullable', 'boolean'],
             'config.qr.coordinates'          => ['nullable', 'string'],
             'config.qr.radius'               => ['nullable', 'numeric', 'min:0'],
+            'config.pin.enable'              => ['nullable', 'boolean'],
 
         ];
 

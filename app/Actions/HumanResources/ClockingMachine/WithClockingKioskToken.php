@@ -16,7 +16,7 @@ trait WithClockingKioskToken
     /**
      * Resolve a clocking machine from its public kiosk token.
      *
-     * Anything other than an exact match on a non empty token for a machine with QR clocking
+     * Anything other than an exact match on a non empty token for a machine with PIN clocking
      * enabled is a 404, so an invalid, revoked or disabled kiosk link leaks nothing.
      */
     protected function resolveKioskMachine(string $kioskToken): ClockingMachine
@@ -31,7 +31,7 @@ trait WithClockingKioskToken
             throw new NotFoundHttpException();
         }
 
-        if (!($clockingMachine->config['qr']['enable'] ?? false)) {
+        if (!data_get($clockingMachine->config, 'pin.enable', false)) {
             throw new NotFoundHttpException();
         }
 

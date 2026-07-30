@@ -19,6 +19,7 @@ enum ClockingMachineTypeEnum: string
     case MOBILE_APP = 'mobile-app';
     case LEGACY     = 'legacy';
     case QR_CODE    = 'qr-code';
+    case PIN        = 'pin';
 
     public static function labels(): array
     {
@@ -28,6 +29,7 @@ enum ClockingMachineTypeEnum: string
             'mobile-app'     => __('Mobile App').' (Han)',
             'legacy'         => __('Legacy'),
             'qr-code'        => __('QR Code'),
+            'pin'            => __('PIN'),
         ];
     }
 

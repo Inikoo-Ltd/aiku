@@ -34,12 +34,11 @@ class SetEmployeePin extends OrgAction
         try {
 
 
-            list($letters, $emojis, $numbers) = $this->pinCharacterSet();
+            list($letters, $numbers) = $this->pinCharacterSet();
 
             $pin = $employee->organisation_id.':'.
-                $letters[array_rand($letters)].$letters[array_rand($letters)].
-                $emojis[array_rand($emojis)].$emojis[array_rand($emojis)].
-                $numbers[array_rand($numbers)].$numbers[array_rand($numbers)];
+                $letters[array_rand($letters)].$letters[array_rand($letters)].$letters[array_rand($letters)].
+                $numbers[array_rand($numbers)].$numbers[array_rand($numbers)].$numbers[array_rand($numbers)];
 
             if ($this->needGeneratedPin) {
                 return $pin;
@@ -68,12 +67,11 @@ class SetEmployeePin extends OrgAction
     public function pinCharacterSet(): array
     {
         $letters = array('A', 'B', 'C', 'D', 'E', 'F', 'G', 'X', 'Y', 'Z');
-        $emojis  = array('🌴', '😀', '👽', '🍄', '👻', '👍🏼', '🚀', '🦄', '🐋', '☘️');
         $numbers = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
 
 
         return [
-            $letters,$emojis,$numbers
+            $letters,$numbers
         ];
 
 

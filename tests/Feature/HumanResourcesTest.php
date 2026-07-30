@@ -714,6 +714,153 @@ test('can validate employee pin', function () {
     expect($found->id)->toBe($employee->id);
 });
 
+// CLOCKING KIOSK PIN
+
+test('can clock in via kiosk pin', function () {
+    $suffix = 'A'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update([
+        'kiosk_token' => 'kiosk-token-'.$clockingMachine->id.'-'.$suffix,
+        'config'      => ['pin' => ['enable' => true]],
+    ]);
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':AB'.rand(10, 99)]);
+    $employee->workplaces()->attach($workplace->id);
+
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, substr($employee->fresh()->pin, strlen((string) $this->organisation->id) + 1))['clocking'];
+
+    expect($clocking)->toBeInstanceOf(Clocking::class)
+        ->and($clocking->subject_id)->toBe($employee->id)
+        ->and($clocking->clocking_machine_id)->toBe($clockingMachine->id)
+        ->and($clocking->type)->toBe(\App\Enums\HumanResources\Clocking\ClockingTypeEnum::CLOCKING_MACHINE);
+
+    return [$clockingMachine, $employee];
+});
+
+test('wrong kiosk pin is rejected', function (array $context) {
+    [$clockingMachine] = $context;
+
+    \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()->handle($clockingMachine, 'WRONG');
+})->depends('can clock in via kiosk pin')->throws(\Exception::class, 'Invalid PIN.');
+
+test('kiosk pin typed with the leading organisation digits still clocks in', function () {
+    $suffix = 'B'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['config' => ['pin' => ['enable' => true]]]);
+
+    $code = 'EF'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+    $employee->workplaces()->attach($workplace->id);
+
+    // Employees only ever see the full pin (e.g. "5:EF56"); since the kiosk keypad has no
+    // ':' key, typing the leading organisation digits without the colon must still resolve.
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, $this->organisation->id.$code)['clocking'];
+
+    expect($clocking->subject_id)->toBe($employee->id);
+});
+
+test('kiosk pin does not require the employee to belong to the machine workplace', function () {
+    $suffix = 'C'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['config' => ['pin' => ['enable' => true]]]);
+
+    $code = 'CD'.rand(10, 99);
+
+    // The employee is never attached to any workplace, matching real employees whose
+    // employee_workplace pivot is empty - the kiosk PIN check no longer depends on it.
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    expect($clocking->subject_id)->toBe($employee->id);
+});
+
+test('kiosk pin for a non working employee is rejected', function () {
+    $suffix = 'D'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['config' => ['pin' => ['enable' => true]]]);
+
+    $code = 'GH'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+        'state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::HIRED,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+
+    \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskPin::make()->handle($clockingMachine, $code);
+})->throws(\Exception::class, 'Invalid PIN.');
+
+test('kiosk endpoint 404s when pin mode is disabled', function () {
+    $suffix = 'E'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Disabled Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update(['kiosk_token' => 'kiosk-token-disabled-'.$clockingMachine->id.'-'.$suffix]);
+
+    \Pest\Laravel\postJson(route('grp.kiosk.pin.submit', ['kioskToken' => $clockingMachine->kiosk_token]), [
+        'pin' => 'AB12',
+    ])->assertNotFound();
+});
+
 test('can adjust employee leave balance creating a new balance', function () {
     $employee = Employee::factory()->create([
         'organisation_id' => $this->organisation->id,

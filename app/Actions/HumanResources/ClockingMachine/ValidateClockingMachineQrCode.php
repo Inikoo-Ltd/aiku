@@ -3,15 +3,13 @@
 namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Actions\HumanResources\Clocking\StoreClocking;
-use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
-use App\Enums\HumanResources\Clocking\ClockingActionEnum;
+use App\Actions\HumanResources\Clocking\Traits\DeterminesClockingResult;
 use App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\ClockingMachineCoordinatePolicy;
 use App\Models\HumanResources\ClockingMachineQRCode;
 use App\Models\HumanResources\ClockingMachineCoordinatePolicyRule;
-use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\WorkSchedule;
 use App\Notifications\LateClockInNotification;
 use Exception;
@@ -24,6 +22,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ValidateClockingMachineQrCode
 {
     use AsAction;
+    use DeterminesClockingResult;
 
     public function handle(string $qrCodeToken, ?float $userLat = null, ?float $userLng = null, ?int $workScheduleId = null): array
     {
@@ -105,14 +104,7 @@ class ValidateClockingMachineQrCode
             throw new Exception(__('User is not associated with an employee record.'));
         }
 
-        $lastClocking = Clocking::where('subject_type', $employee->getMorphClass())
-            ->where('subject_id', $employee->id)
-            ->latest('clocked_at')
-            ->first();
-
-        if ($lastClocking && $lastClocking->clocked_at->diffInSeconds(now()) < 5) {
-            throw new Exception(__('Scan too frequent. Please wait a moment.'));
-        }
+        $this->guardAgainstFrequentClocking($employee);
 
         $clockedInAt = now();
 
@@ -132,7 +124,7 @@ class ValidateClockingMachineQrCode
             modelData: $modelData
         );
 
-        $isLate = $this->calculateLate($employee, $clockedInAt, $clocking->workSchedule);
+        $isLate = $this->calculateLateClocking($employee, $clockedInAt, $clocking->workSchedule);
         $clocking->is_late = $isLate;
         $clocking->saveQuietly();
 
@@ -142,23 +134,9 @@ class ValidateClockingMachineQrCode
 
         $this->updateQrCodeUsage($clockingMachineQRCode, $clockedInAt);
 
-        $timeTracker = null;
-        if ($clocking->time_tracker_id) {
-            $timeTracker = TimeTracker::find($clocking->time_tracker_id);
-        }
-
-        $actionType = null;
-        if ($timeTracker) {
-            if ($timeTracker->start_clocking_id == $clocking->id) {
-                $actionType = ClockingActionEnum::CLOCK_IN;
-            } elseif ($timeTracker->end_clocking_id == $clocking->id) {
-                $actionType = ClockingActionEnum::CLOCK_OUT;
-            }
-        }
-
         return [
             'clocking' => $clocking,
-            'action_type' => $actionType
+            'action_type' => $this->resolveClockingActionType($clocking)
         ];
     }
 
@@ -187,33 +165,6 @@ class ValidateClockingMachineQrCode
                 ->count(DB::raw('concat(subject_type, subject_id)')),
             'last_used_at'           => $clockedInAt,
         ]);
-    }
-
-    private function calculateLate($employee, Carbon $clockedInAt, ?WorkSchedule $selectedSchedule = null): bool
-    {
-        if ($employee->employment_type === EmploymentTypeEnum::PART_TIME) {
-            return false;
-        }
-
-        $gracePeriod = $employee->organisation->late_grace_period_minutes ?? 15;
-        $schedule = $selectedSchedule ?? $employee->organisation->getDefaultWorkSchedule();
-
-        if (!$schedule) {
-            return false;
-        }
-
-        $timezone = $schedule->timezone?->name ?? $employee->organisation->timezone?->name ?? config('app.timezone');
-        $todayIso = $clockedInAt->dayOfWeekIso;
-        $todaySchedule = $schedule->days()->where('day_of_week', $todayIso)->first();
-
-        if (!$todaySchedule || !$todaySchedule->is_working_day) {
-            return false;
-        }
-
-        $scheduledStart = Carbon::today($timezone)->setTimeFromTimeString($todaySchedule->start_time);
-        $allowedTime = $scheduledStart->copy()->addMinutes($gracePeriod);
-
-        return $clockedInAt->gt($allowedTime);
     }
 
     private function getWorkingHours(ClockingMachine $machine): ?array

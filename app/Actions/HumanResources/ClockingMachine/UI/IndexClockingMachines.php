@@ -71,6 +71,7 @@ class IndexClockingMachines extends OrgAction
                 'clocking_machines.name',
                 'clocking_machines.id',
                 'clocking_machines.slug',
+                'clocking_machines.kiosk_token',
                 'workplaces.name as workplace_name',
                 'workplaces.slug as workplace_slug',
                 'organisations.name as organisation_name',

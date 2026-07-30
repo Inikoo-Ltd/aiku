@@ -13,6 +13,7 @@ defineProps<{
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
+import ModalClockingMachineKioskLink from "@/Components/HumanResources/ModalClockingMachineKioskLink.vue";
 import { trans } from "laravel-vue-i18n";
 import { faPencil } from '@fortawesome/free-solid-svg-icons';
 import { ClockingMachine } from "@/types/clocking-machine";
@@ -100,9 +101,13 @@ function workplaceRoute(clockingMachine: ClockingMachine) {
       </Link>
     </template>
     <template #cell(actions)="{ item: clockingMachine }">
-      <Link :href="editClockingMachineRoute(clockingMachine)">
-        <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="trans('Edit')" />
-      </Link>
+      <div class="flex items-center gap-x-1">
+        <ModalClockingMachineKioskLink v-if="clockingMachine.type === 'pin'" :clocking-machine="clockingMachine" />
+
+        <Link :href="editClockingMachineRoute(clockingMachine)">
+          <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="trans('Edit')" />
+        </Link>
+      </div>
     </template>
   </Table>
 </template>

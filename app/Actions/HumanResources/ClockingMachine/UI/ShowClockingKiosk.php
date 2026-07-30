@@ -9,6 +9,7 @@
 namespace App\Actions\HumanResources\ClockingMachine\UI;
 
 use App\Actions\HumanResources\ClockingMachine\WithClockingKioskToken;
+use App\Actions\HumanResources\Employee\SetEmployeePin;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,12 +24,15 @@ class ShowClockingKiosk
     {
         $clockingMachine = $this->resolveKioskMachine($kioskToken);
 
+        [$letters, $numbers] = SetEmployeePin::make()->pinCharacterSet();
+
         return Inertia::render(
             'Org/HumanResources/ClockingKiosk',
             [
-                'title'       => __('Employee Scan'),
-                'machineName' => $clockingMachine->name,
-                'kioskToken'  => $kioskToken,
+                'title'           => __('Employee Clocking'),
+                'machineName'     => $clockingMachine->name,
+                'kioskToken'      => $kioskToken,
+                'pinCharacterSet' => compact('letters', 'numbers'),
             ]
         );
     }

@@ -108,6 +108,20 @@ class EditClockingMachine extends OrgAction
             ];
         }
 
+        if ($clockingMachine->type === ClockingMachineTypeEnum::PIN->value) {
+            $blueprint[] = [
+                'title'  => __('PIN Configuration'),
+                'label'  => __('PIN Settings'),
+                'fields' => [
+                    'config.pin.enable' => [
+                        'type'  => 'toggle',
+                        'label' => __('Enable PIN'),
+                        'value' => (bool) data_get($clockingMachine->config, 'pin.enable', false),
+                    ],
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [

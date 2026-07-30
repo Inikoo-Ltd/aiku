@@ -6,7 +6,7 @@ import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faQrcode } from '@fal'
+import { faQrcode, faHashtag } from '@fal'
 import { faAsterisk } from '@fas'
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -14,7 +14,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 
-library.add(faQrcode, faAsterisk)
+library.add(faQrcode, faHashtag, faAsterisk)
 
 const props = defineProps<{
     route: {
@@ -28,18 +28,26 @@ const props = defineProps<{
 }>()
 
 const CLOCKING_MACHINE_TYPE_QR_CODE = 'qr-code'
+const CLOCKING_MACHINE_TYPE_PIN = 'pin'
+
+const machineTypes = [
+    { value: CLOCKING_MACHINE_TYPE_QR_CODE, label: trans('QR Code'), icon: 'fal fa-qrcode' },
+    { value: CLOCKING_MACHINE_TYPE_PIN, label: trans('PIN'), icon: 'fal fa-hashtag' },
+]
 
 const isModalOpen = ref(false)
 const isSubmitting = ref(false)
 const machineName = ref('')
+const machineType = ref(CLOCKING_MACHINE_TYPE_QR_CODE)
 const workplaceId = ref<number | null>(null)
 
 const hasWorkplaceChoice = computed(() => props.workplaces.length > 1)
 const defaultWorkplaceId = computed(() => (props.workplaces.length === 1 ? props.workplaces[0].value : null))
-const isFormInvalid = computed(() => !machineName.value.trim() || !workplaceId.value)
+const isFormInvalid = computed(() => !machineName.value.trim() || !machineType.value || !workplaceId.value)
 
 const resetForm = () => {
     machineName.value = ''
+    machineType.value = CLOCKING_MACHINE_TYPE_QR_CODE
     workplaceId.value = defaultWorkplaceId.value
 }
 
@@ -61,7 +69,7 @@ const submit = async () => {
     try {
         await axios.post(route(props.route.name, props.route.parameters), {
             name: machineName.value.trim(),
-            type: CLOCKING_MACHINE_TYPE_QR_CODE,
+            type: machineType.value,
             workplace_id: workplaceId.value,
         })
 
@@ -117,9 +125,20 @@ const submit = async () => {
                 <div class="space-y-2">
                     <div class="font-medium">{{ trans('Type') }}:</div>
 
-                    <div class="inline-flex items-center gap-x-2 rounded-lg border border-green-500 bg-green-50 px-3 py-2 font-semibold text-green-700">
-                        <FontAwesomeIcon icon="fal fa-qrcode" />
-                        {{ trans('QR Code') }}
+                    <div class="flex flex-wrap gap-2">
+                        <button
+                            v-for="option in machineTypes"
+                            :key="option.value"
+                            type="button"
+                            class="inline-flex items-center gap-x-2 rounded-lg border px-3 py-2 font-semibold"
+                            :class="machineType === option.value
+                                ? 'border-green-500 bg-green-50 text-green-700'
+                                : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'"
+                            @click="machineType = option.value"
+                        >
+                            <FontAwesomeIcon :icon="option.icon" />
+                            {{ option.label }}
+                        </button>
                     </div>
                 </div>
 

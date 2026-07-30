@@ -19,6 +19,7 @@ use JsonSerializable;
  * @property mixed $name
  * @property mixed $type
  * @property mixed $workplace_slug
+ * @property mixed $kiosk_token
  */
 class ClockingMachinesResource extends JsonResource
 {
@@ -32,6 +33,9 @@ class ClockingMachinesResource extends JsonResource
             'type'                   => $this->type,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
+            'kiosk_url'          => $this->kiosk_token
+                ? route('grp.kiosk.show', ['kioskToken' => $this->kiosk_token])
+                : null,
         ];
     }
 }
