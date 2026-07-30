@@ -20,6 +20,8 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
+use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
+use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -30,9 +32,11 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Discounts\Offer;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\AlphaDashDot;
@@ -148,6 +152,20 @@ class StoreProduct extends OrgAction
 
         if ($product->exclusive_for_customer_id) {
             CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
+        }
+
+        if ($parent instanceof ProductCategory && $parent->sub_type == ProductCategoryTypeEnum::FAMILY) {
+            $offer = Offer::where('trigger_id', $parent->id)
+                ->where('trigger_type', class_basename(ProductCategory::class))
+                ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL->value)
+                ->with('offerAllowances')
+                ->first();
+
+            if ($offer) {
+                // Generate offers data based on the parents offer data
+                $offerData = UpdateProductCategoryOffersData::make()->getBasicOfferData($offer);
+                UpdateProductCategoryOffersData::make()->updateModelOfferData($product, $offerData, $offer);
+            }
         }
 
         $this->productHydrators($product);
