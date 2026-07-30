@@ -11,11 +11,13 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Pallet;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Sentry;
@@ -72,6 +74,40 @@ trait WithInvoicesExport
     }
 
     /**
+     * Splits off the lines that were entirely undispatched because of a stock shortage.
+     *
+     * A line only qualifies when every one of its delivery note items is out of stock and it carries
+     * no money at all, so partially dispatched lines and any priced line always stay in the main
+     * table and the invoice totals are untouched.
+     *
+     * @return array{0: Collection, 1: Collection} [outOfStock, remaining]
+     */
+    public function splitOutOfStockTransactions(Collection $transactions): array
+    {
+        $transactionIds = $transactions->pluck('transaction_id')->filter();
+
+        if ($transactionIds->isEmpty()) {
+            return [collect(), $transactions];
+        }
+
+        $outOfStockTransactionIds = DB::table('delivery_note_items')
+            ->whereIn('transaction_id', $transactionIds)
+            ->groupBy('transaction_id')
+            ->havingRaw('bool_and(state = ?)', [DeliveryNoteItemStateEnum::OUT_OF_STOCK->value])
+            ->pluck('transaction_id')
+            ->all();
+
+        return $transactions->partition(fn ($transaction) => $this->isFullyOutOfStockLine($transaction, $outOfStockTransactionIds))->all();
+    }
+
+    public function isFullyOutOfStockLine(object $transaction, array $outOfStockTransactionIds): bool
+    {
+        return in_array($transaction->transaction_id, $outOfStockTransactionIds)
+            && (float)$transaction->net_amount === 0.0
+            && (float)$transaction->gross_amount === 0.0;
+    }
+
+    /**
      * @return array{0: \Mccarlosen\LaravelMpdf\LaravelMpdf, 1: string}
      */
     private function buildInvoicePdf(Invoice $invoice, array $options = []): array
@@ -81,7 +117,7 @@ trait WithInvoicesExport
 
         $totalNet = $totalItemsNet + $totalShipping;
 
-        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset'])->get();
+        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset', 'transaction'])->get();
 
         if ($invoice->customer->is_fulfilment) {
             $transactionModel = $invoiceTransactions;
@@ -118,6 +154,17 @@ trait WithInvoicesExport
 
             return $transaction;
         })->sortBy(fn ($transaction) => strtolower($transaction->historicAsset?->code ?? ''));
+
+        $separateOutOfStock = (bool)Arr::get(
+            $options,
+            'separate_out_of_stock',
+            Arr::get($invoice->shop->settings, 'invoicing.download_pdf_columns.separate_out_of_stock', false)
+        );
+
+        $outOfStockTransactions = collect();
+        if ($separateOutOfStock) {
+            [$outOfStockTransactions, $transactions] = $this->splitOutOfStockTransactions($transactions);
+        }
 
         $orderData     = $invoice->order?->data ?? [];
         $recipientName = null;
@@ -192,6 +239,7 @@ trait WithInvoicesExport
             'dateLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice date') : __('Refund Date'),
             'typeLabel'               => $invoice->type == InvoiceTypeEnum::INVOICE ? __('Invoice') : __('Refund'),
             'transactions'            => $transactions,
+            'outOfStockTransactions'  => $outOfStockTransactions,
             'totalNet'                => number_format($totalNet, 2, '.', ''),
             'refunds'                 => $refundData,
             'pro_mode'                => Arr::get($options, 'pro_mode', false),
