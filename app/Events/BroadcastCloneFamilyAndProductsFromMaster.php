@@ -17,6 +17,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Arr;
 
 class BroadcastCloneFamilyAndProductsFromMaster implements ShouldBroadcastNow
 {
@@ -43,27 +44,43 @@ class BroadcastCloneFamilyAndProductsFromMaster implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        return [
+        $familyProgress = [
+            'action_type'       => 'add_missing_family',
+            'action_id'         => $this->masterFamily->id,
+            'number_rows'       => $this->pendingFamilies,
+            'number_success'    => $this->doneFamilies,
+            'number_fail'       => 0
+        ];
+
+        $productProgress = [
+            'action_type'       => 'add_missing_product',
+            'action_id'         => $this->masterFamily->id,
+            'number_rows'       => $this->pendingProducts,
+            'number_success'    => $this->doneProducts,
+            'number_fail'       => 0
+        ];
+
+        $sentData = [
             'master_family'      =>  $this->masterFamily->code,
-            'family_progress'    => [
-                'action_type'       => 'add_missing_family',
-                'action_id'         => $this->masterFamily->id,
-                'number_rows'       => $this->pendingFamilies,
-                'number_success'    => $this->doneFamilies,
-                'number_fail'       => 0
-            ],
-            'product_progress'   => [
-                'action_type'       => 'add_missing_product',
-                'action_id'         => $this->masterFamily->id,
-                'number_rows'       => $this->pendingProducts,
-                'number_success'    => $this->doneProducts,
-                'number_fail'       => 0
-            ],
+            
+            'family_progress'    =>  $familyProgress,
             'pending_families'   =>  $this->pendingFamilies,
             'done_families'      =>  $this->doneFamilies,
+
+            'product_progress'   =>  $productProgress,
             'pending_products'   =>  $this->pendingProducts,
             'done_products'      =>  $this->doneProducts,
         ];
+
+        if ($this->doneFamilies == $this->pendingFamilies) {
+            $sentData = Arr::except($sentData, [
+                'family_progress',
+                'pending_families',
+                'done_families',
+            ]);
+        }
+
+        return $sentData;
     }
 
     public function broadcastOn(): PrivateChannel
