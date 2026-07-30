@@ -521,7 +521,7 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
         $shippingNotes = $parent->shipping_notes ?? '';
-        $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60));
+        $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes)), 60, '');
 
         $weight = $splitWeight ?? ($parent->effective_weight / 1000);
 
@@ -559,7 +559,7 @@ class CallApiGlsEsShipping extends OrgAction
         if (app()->environment('local')) {
             $shipmentData["RefC"] = 'test+' . rand(1000, 9999) . ' ' . strtoupper($parent->reference) . ' V2';
         } else {
-            $shipmentData["RefC"] = strtoupper($parent->reference) . ' V2' . ($suffix !== null ? '-b-' . ($suffix + 1) : '');
+            $shipmentData["RefC"] = $this->buildRefC($parent->reference, $suffix);
         }
 
 
@@ -614,6 +614,27 @@ class CallApiGlsEsShipping extends OrgAction
 </GrabaServicios>
 </soap:Body>
 </soap:Envelope>';
+    }
+
+    /**
+     * RefC (Referencia tipo C) allows at most 15 characters and must stay unique per
+     * shipment, so when it runs over the decorative " V2" marker goes first and only then
+     * the reference itself is trimmed; the "-b-N" parcel suffix is never cut, otherwise the
+     * parcels of one split order would collide on the same reference.
+     */
+    public function buildRefC(string $reference, ?int $suffix): string
+    {
+        $tail = $suffix !== null ? '-b-' . ($suffix + 1) : '';
+        $refC = strtoupper($reference) . ' V2';
+
+        if (strlen($refC . $tail) > 15) {
+            $refC = strtoupper($reference);
+        }
+        if (strlen($refC . $tail) > 15) {
+            $refC = substr($refC, 0, 15 - strlen($tail));
+        }
+
+        return $refC . $tail;
     }
 
     /**

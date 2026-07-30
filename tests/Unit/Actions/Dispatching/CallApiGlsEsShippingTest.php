@@ -73,6 +73,16 @@ it('fails cleanly when the response holds no labels', function () {
         ->and($result['errorData']['message'])->toBe('No se encontraron etiquetas');
 });
 
+it('keeps RefC within 15 characters without ever cutting the parcel suffix', function (string $reference, ?int $suffix, string $expected) {
+    expect((new CallApiGlsEsShipping())->buildRefC($reference, $suffix))->toBe($expected);
+})->with([
+    'short ref, no suffix'          => ['AWS38309', null, 'AWS38309 V2'],
+    'short ref, parcel 8'           => ['AWS38309', 7, 'AWS38309 V2-b-8'],
+    'short ref, parcel 10 drops V2' => ['AWS38309', 9, 'AWS38309-b-10'],
+    'long ref trims base not tail'  => ['REFERENCE12345', 9, 'REFERENCE1-b-10'],
+    'long ref, no suffix'           => ['REFERENCE12345678', null, 'REFERENCE123456'],
+]);
+
 it('escapes customer data so the SOAP body stays valid XML', function () {
     $action     = new CallApiGlsEsShipping();
     $reflection = new ReflectionMethod(CallApiGlsEsShipping::class, 'xmlEscape');
