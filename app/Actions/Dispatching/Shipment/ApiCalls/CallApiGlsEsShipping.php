@@ -54,7 +54,7 @@ class CallApiGlsEsShipping extends OrgAction
         $totalWeight = $parent->effective_weight / 1000;
         $totalParcel = count($parent->parcels ?? []);
 
-        if ($totalWeight > $limit && ! in_array($countryCode, ['ES', 'PT']) && $totalParcel > 1) {
+        if ($this->requiresPerParcelShipments($countryCode, $totalParcel)) {
             return $this->splitByWeightLimit($parent, $shipper, $limit, $totalWeight);
         }
 
@@ -70,6 +70,17 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
         return $this->getGlsEsLabel($shipper, $modelData);
+    }
+
+    /**
+     * EuroBusinessParcel (service 74) rejects Envio with Bultos > 1: in 120 days of production
+     * traffic not one light multi parcel international shipment got through the single Envio
+     * path, while every one sent as one Envio per parcel succeeded. ES and PT (service 1)
+     * accept multi parcel Envios, so they keep the single call.
+     */
+    public function requiresPerParcelShipments(?string $countryCode, int $totalParcel): bool
+    {
+        return !in_array($countryCode, ['ES', 'PT']) && $totalParcel > 1;
     }
 
     public function splitByWeightLimit(DeliveryNote|PalletReturn $parent, Shipper $shipper, float $limit, float $totalWeight)
@@ -536,6 +547,8 @@ class CallApiGlsEsShipping extends OrgAction
             $shipmentData["reem"] = $amount;
         }
 
+        $shipmentData = $this->xmlEscape($shipmentData);
+
         return '<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
 <soap:Body>
@@ -579,6 +592,21 @@ class CallApiGlsEsShipping extends OrgAction
 </GrabaServicios>
 </soap:Body>
 </soap:Envelope>';
+    }
+
+    /**
+     * Customer supplied values go straight into hand built SOAP XML, so a name like
+     * "Boulangerie & Fils" used to produce an invalid document and a failed shipment.
+     *
+     * @param  array<string, mixed>  $values
+     * @return array<string, string>
+     */
+    protected function xmlEscape(array $values): array
+    {
+        return array_map(
+            fn ($value) => htmlspecialchars((string)$value, ENT_XML1 | ENT_QUOTES, 'UTF-8'),
+            $values
+        );
     }
 
     private function mergePdfStrings(array $pdfStrings): string
