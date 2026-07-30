@@ -5,6 +5,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFire } from "@fas"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faFire)
 
@@ -29,6 +30,7 @@ const props = defineProps<{
     unit?: string
     units?: number
     quantity?: number
+    isSubmitting?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -98,6 +100,10 @@ const isActiveStep = (step: StepDiscountStep): boolean =>
     step.min_quantity === activeMinQuantity.value
 
 const onSelectStep = (step: StepDiscountStep) => {
+    if (props.isSubmitting || props.quantity === step.min_quantity) {
+        return
+    }
+
     activeMinQuantity.value = step.min_quantity
     emits("selectQuantity", step.min_quantity)
 }
@@ -117,8 +123,14 @@ const onSelectStep = (step: StepDiscountStep) => {
                 :key="step.min_quantity"
                 type="button"
                 class="step-tier relative flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left"
-                :class="{ 'is-active': isActiveStep(step), 'is-popular': isPopularStep(step) }"
+                :class="{
+                    'is-active': isActiveStep(step),
+                    'is-popular': isPopularStep(step),
+                    'is-dimmed': isSubmitting && !isActiveStep(step),
+                }"
                 :aria-pressed="isActiveStep(step)"
+                :aria-busy="isSubmitting && isActiveStep(step)"
+                :disabled="isSubmitting"
                 @click="onSelectStep(step)"
                 >
                 <span v-if="isPopularStep(step)" class="popular-badge">
@@ -126,7 +138,8 @@ const onSelectStep = (step: StepDiscountStep) => {
                     {{ trans("Popular") }}
                 </span>
 
-                <span class="radio" :class="{ 'radio-checked': isActiveStep(step) }">
+                <LoadingIcon v-if="isSubmitting && isActiveStep(step)" class="radio-loading" />
+                <span v-else class="radio" :class="{ 'radio-checked': isActiveStep(step) }">
                     <span class="radio-dot" />
                 </span>
 
@@ -193,8 +206,23 @@ const onSelectStep = (step: StepDiscountStep) => {
     cursor: pointer;
 }
 
-.step-tier:hover {
+.step-tier:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--theme-color-4) 60%, white);
+}
+
+.step-tier:disabled {
+    cursor: default;
+}
+
+.step-tier.is-dimmed {
+    opacity: 0.5;
+}
+
+.radio-loading {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: var(--theme-color-4);
 }
 
 .step-tier.is-popular {

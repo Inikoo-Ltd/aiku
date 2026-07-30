@@ -262,12 +262,19 @@ const decrementQty = () => {
     debouncedSync()
 }
 
-const setQuantity = (quantity: number) => {
+const setQuantity = async (quantity: number) => {
     const next = Math.min(Math.max(0, quantity), customer.value.stock)
     if (next !== quantity) showWarning()
 
+    debouncedSync.cancel()
     set(customer.value, ['quantity_ordered_new'], next)
-    debouncedSync()
+
+    if (!customer.value.transaction_id && next > 0) {
+        await onAddToBasket(product.value, next)
+        return
+    }
+
+    await onUpdateQuantity()
 }
 
 const onManualInput = (e: Event) => {

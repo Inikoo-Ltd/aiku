@@ -166,8 +166,34 @@ const orderedQuantity = computed<number>(() =>
     Number(props.customerData?.quantity_ordered_new ?? props.customerData?.quantity_ordered ?? 0)
 )
 
-const onSelectStepQuantityDesktop = (quantity: number) => _desktopAddToBasket.value?.setQuantity(quantity)
-const onSelectStepQuantityMobile = (quantity: number) => _mobileAddToBasket.value?.setQuantity(quantity)
+const isDesktopStepSyncing = ref(false)
+const isMobileStepSyncing = ref(false)
+
+const onSelectStepQuantityDesktop = async (quantity: number) => {
+    if (isDesktopStepSyncing.value) {
+        return
+    }
+
+    isDesktopStepSyncing.value = true
+    try {
+        await _desktopAddToBasket.value?.setQuantity(quantity)
+    } finally {
+        isDesktopStepSyncing.value = false
+    }
+}
+
+const onSelectStepQuantityMobile = async (quantity: number) => {
+    if (isMobileStepSyncing.value) {
+        return
+    }
+
+    isMobileStepSyncing.value = true
+    try {
+        await _mobileAddToBasket.value?.setQuantity(quantity)
+    } finally {
+        isMobileStepSyncing.value = false
+    }
+}
 
 const variantPrevEl = ref<HTMLElement | null>(null)
 const variantNextEl = ref<HTMLElement | null>(null)
@@ -393,6 +419,7 @@ onMounted(async () => {
                     :originalPrice="product.price"
                     :unit="product.unit"
                     :quantity="orderedQuantity"
+                    :isSubmitting="isDesktopStepSyncing"
                     @selectQuantity="onSelectStepQuantityDesktop"
                 />
 
@@ -684,6 +711,7 @@ onMounted(async () => {
             :originalPrice="product.price"
             :unit="product.unit"
             :quantity="orderedQuantity"
+            :isSubmitting="isMobileStepSyncing"
             @selectQuantity="onSelectStepQuantityMobile"
         />
         
