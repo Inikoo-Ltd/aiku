@@ -1376,6 +1376,17 @@ test('delivery note address actions and temp picker and shipping data', function
     \App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote::run($deliveryNote, ['picker_user_id' => $this->user->id]);
 
     expect(\App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote))->toBeArray();
+
+    $deliveryNote->update(['is_cash_on_delivery' => true]);
+    $order = $deliveryNote->orders->first();
+    $order->update(['total_amount' => 2695.42, 'payment_amount' => 0.32]);
+
+    $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote->refresh());
+    expect($shippingData['cash_on_delivery']['amount'])->toBe(2695.10);
+
+    $order->update(['payment_amount' => 2695.42]);
+    $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote->refresh());
+    expect($shippingData['cash_on_delivery'])->toBeNull();
 });
 
 test('change picking bay on delivery note', function () {
