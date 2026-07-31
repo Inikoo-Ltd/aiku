@@ -359,7 +359,7 @@ return [
             'maxJobs'         => 0,
             'memory'          => 1280,
             'tries'           => 1,
-            'timeout'         => 5,
+            'timeout'         => 60,
             'nice'            => 5,
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
