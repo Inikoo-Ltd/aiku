@@ -751,15 +751,23 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
-            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <div>
+                {{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
+                <FontAwesomeIcon
+                    v-if="deliveryNoteItem.org_stock_barcode"
+                    v-tooltip="deliveryNoteItem.org_stock_barcode"
+                    icon="fal fa-barcode"
+                    class="ml-1 opacity-70 cursor-pointer"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
             <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
 
             <!-- Section: DNI Expired date -->
-            <div v-if="false" class="flex items-center flex-wrap">
-                <!-- Label: expired date -->
+            <!-- <div v-if="false" class="flex items-center flex-wrap">
                 <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
 
-                <!-- Button: add/edit expiry date and batch code -->
                 <div v-if="(deliveryNoteItem.is_picked || Number(deliveryNoteItem.quantity_picked) > 0) && state !== 'cancelled'">
                     <Button
                         v-if="deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code"
@@ -782,7 +790,7 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                         </template>
                     </Button>
                 </div>
-            </div>
+            </div> -->
         </template>
 
         <!-- Section: Pickings -->

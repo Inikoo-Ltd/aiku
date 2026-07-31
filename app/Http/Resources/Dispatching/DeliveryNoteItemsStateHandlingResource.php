@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_picked
  * @property mixed $org_stock_code
  * @property mixed $org_stock_name
+ * @property mixed $org_stock_barcode
  * @property mixed $is_handled
  * @property mixed $quantity_packed
  * @property mixed $quantity_not_picked
@@ -168,6 +169,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_code'                 => $this->org_stock_code,
             'org_stock_slug'                 => $this->org_stock_slug,
             'org_stock_name'                 => $this->org_stock_name,
+            'org_stock_barcode'              => $this->org_stock_barcode,
             'org_stock_image_thumbnail'      => null,
             'locations'                      => LocationOrgStocksForPickingActionsResource::collection($pickingLocations),
             'pickings'                       => PickingResourceForDeliveryNoteItemsStateHandling::collection($pickings),
