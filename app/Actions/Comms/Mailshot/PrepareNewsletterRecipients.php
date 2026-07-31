@@ -18,7 +18,7 @@ class PrepareNewsletterRecipients
 {
     use AsAction;
 
-    public string $jobQueue = 'urgent';
+    public string $jobQueue = 'long-running';
     protected int $countRecipients = 0;
 
     public function tags(): array
