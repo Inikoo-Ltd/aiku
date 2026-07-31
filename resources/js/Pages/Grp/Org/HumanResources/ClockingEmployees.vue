@@ -83,7 +83,7 @@ const props = defineProps<{
 		navigation: Record<string, any>
 	}
 	timesheets?: Record<string, any>
-	scan_qr_code?: Record<string, any>
+	clock_in_out?: Record<string, any>
 	leaves?: Record<string, any>
 	adjustments?: Record<string, any>
 	overtime?: Record<string, any>
@@ -120,7 +120,7 @@ const handleTabUpdate = (tabSlug: string) => {
 const component = computed(() => {
 	const components = {
 		timesheets: TableTimesheetsEmployee,
-		scan_qr_code: EmployeeClockingPanel,
+		clock_in_out: EmployeeClockingPanel,
 		leaves: TableLeaves,
 		adjustments: TableAttendanceAdjustments,
 		overtime: TableOvertimeEmployee,
@@ -178,15 +178,15 @@ const component = computed(() => {
 		:tab="currentTab"
 		:isRequestLeaveModalOpen="isRequestLeaveModalOpen"
 		:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen"
-		:activeTimeTracker="scan_qr_code?.active_time_tracker"
-		:clockingStatus="scan_qr_code?.clocking_status"
-		:todayTimesheet="scan_qr_code?.today_timesheet"
-		:lastClockIn="scan_qr_code?.last_clock_in"
-		:lastClockOut="scan_qr_code?.last_clock_out"
-		:clockingSessions="scan_qr_code?.clocking_sessions"
-		:timezone="scan_qr_code?.timezone"
-		:availableMethods="scan_qr_code?.available_methods"
-		:pin="scan_qr_code?.pin"
+		:activeTimeTracker="clock_in_out?.active_time_tracker"
+		:clockingStatus="clock_in_out?.clocking_status"
+		:todayTimesheet="clock_in_out?.today_timesheet"
+		:lastClockIn="clock_in_out?.last_clock_in"
+		:lastClockOut="clock_in_out?.last_clock_out"
+		:clockingSessions="clock_in_out?.clocking_sessions"
+		:timezone="clock_in_out?.timezone"
+		:availableMethods="clock_in_out?.available_methods"
+		:pin="clock_in_out?.pin"
 		@update:isRequestLeaveModalOpen="isRequestLeaveModalOpen = $event"
 		@update:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen = $event">
 	</component>

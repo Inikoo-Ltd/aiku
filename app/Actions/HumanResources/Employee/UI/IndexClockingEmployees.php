@@ -50,9 +50,9 @@ class IndexClockingEmployees extends OrgAction
     {
         $this->tab = $request->input('tab');
         if (!$this->tab) {
-            $this->tab = ClockingEmployeesTabsEnum::SCAN_QR_CODE->value;
+            $this->tab = ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value;
         }
-        $tab = $request->input('tab') ?? ClockingEmployeesTabsEnum::SCAN_QR_CODE->value;
+        $tab = $request->input('tab') ?? ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value;
 
         $user = Auth::user();
         $this->employee = null;
@@ -98,7 +98,7 @@ class IndexClockingEmployees extends OrgAction
         $timezone = null;
         $availableClockingMethods = [];
 
-        if ($this->employee && $tab == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value) {
+        if ($this->employee && $tab == ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value) {
             $timezone = $this->employee->organisation->timezone?->name ?? config('app.timezone');
             $availableClockingMethods = $this->getAvailableClockingMethods($this->employee->organisation_id);
 
@@ -688,15 +688,15 @@ class IndexClockingEmployees extends OrgAction
                         'icon'  => ['fal', 'fa-user-clock'],
                         'title' => __('Employee Clocking')
                     ],
-                    'title' => __('Clock In/Out'),
+                    'title' => __('In/Out'),
                     'model' => __('Clocking'),
                 ],
                 'tabs' => [
                     'current'       => $data['tab'],
                     'navigation'    => ClockingEmployeesTabsEnum::navigation(),
                 ],
-                ClockingEmployeesTabsEnum::SCAN_QR_CODE->value =>
-                $data['tab'] == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value
+                ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value =>
+                $data['tab'] == ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value
                     ? fn () => [
                         'status' => 'ready_to_scan',
                         'active_time_tracker' => $data['active_time_tracker'],
