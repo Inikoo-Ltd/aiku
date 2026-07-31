@@ -18,6 +18,7 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -208,16 +209,21 @@ class ShowOrgAgent extends OrgAction
 
     public function getPrevious(OrgAgent $orgAgent, ActionRequest $request): ?array
     {
-        $previous = OrgAgent::where('slug', '<', $orgAgent->slug)->orderBy('slug', 'desc')->first();
+        $previous = $this->siblings($orgAgent)->where('slug', '<', $orgAgent->slug)->orderBy('slug', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(OrgAgent $orgAgent, ActionRequest $request): ?array
     {
-        $next = OrgAgent::where('slug', '>', $orgAgent->slug)->orderBy('slug')->first();
+        $next = $this->siblings($orgAgent)->where('slug', '>', $orgAgent->slug)->orderBy('slug')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
+    }
+
+    private function siblings(OrgAgent $orgAgent): Builder
+    {
+        return OrgAgent::where('organisation_id', $orgAgent->organisation_id)->whereHas('agent');
     }
 
     private function getNavigation(?OrgAgent $orgAgent, string $routeName): ?array
@@ -228,7 +234,7 @@ class ShowOrgAgent extends OrgAction
 
         return match ($routeName) {
             'grp.org.procurement.org_agents.show' => [
-                'label' => $orgAgent->organisation->name,
+                'label' => $orgAgent->agent->organisation->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
@@ -237,7 +243,8 @@ class ShowOrgAgent extends OrgAction
                     ]
 
                 ]
-            ]
+            ],
+            default => null,
         };
     }
 
