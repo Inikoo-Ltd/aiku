@@ -213,10 +213,13 @@ class ShowWebsite extends OrgAction
             'webpage'      => 'welcome-'.$shop->slug,
         ];
 
-        $route_restricted_country = [
-            'name'       => str_replace('websites.show', 'websites.restricted_country', $request->route()->getName()),
-            'parameters' => $request->route()->originalParameters(),
-        ];
+        $route_restricted_country = [];
+        if (!empty($website->blocked_country_regions)) {
+            $route_restricted_country = [
+                'name'       => str_replace('websites.show', 'websites.restricted_country', $request->route()->getName()),
+                'parameters' => $request->route()->originalParameters(),
+            ];
+        }
 
         return Inertia::render(
             'Org/Web/Website',

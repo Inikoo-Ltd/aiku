@@ -290,7 +290,7 @@ const currentPage = ref(1);
                         {{ ctrans('New Quantity') }}
                     </div>
                 </div>
-                <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-8 gap-2 border-b pb-2">
+                <div v-for="(location, idx) in cloneLocations" :key="location.id" class="grid grid-cols-8 gap-2 border-b pb-2 space-y-2 md:space-y-0 pt-2 md:pt-1 items-center">
                     <div class="col-span-2 md:col-span-3 flex items-center gap-x-2">
                         {{ location.code }}
                     </div>
@@ -427,6 +427,8 @@ const currentPage = ref(1);
                             :hideSelected="false"
                             :searchable="true"
                             :filter-results="false"
+                            appendToBody
+                            :classes="{ dropdown: 'multiselect-dropdown !z-[1400]' }"
                         />
                     </div>
                     <div class="col-span-2 min-w-0">
