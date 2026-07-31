@@ -29,9 +29,7 @@ const props = defineProps<{
 const openWebsite = (href: string) => {
     window.open(href, '_blank')
 }
-function webpageRoute(webpage: Webpage) {
-
-//   console.log(route().current())
+function resolveWebpageRoute(webpage: Webpage) {
 
     switch (route().current()) {
 
@@ -130,7 +128,7 @@ function webpageRoute(webpage: Webpage) {
     }
 }
 
-function subDepartmentsRoute(webpage: Webpage) {
+function resolveSubDepartmentsRoute(webpage: Webpage) {
     switch (route().current()) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department':
@@ -149,7 +147,7 @@ function subDepartmentsRoute(webpage: Webpage) {
     }
 }
 
-function familiesRoute(webpage: Webpage) {
+function resolveFamiliesRoute(webpage: Webpage) {
     switch (route().current()) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
@@ -178,7 +176,7 @@ function familiesRoute(webpage: Webpage) {
     }
 }
 
-function productsRoute(webpage: Webpage) {
+function resolveProductsRoute(webpage: Webpage) {
     switch (route().current()) {
 
         case 'grp.org.shops.show.web.webpages.index.sub_type.department.families_overview':
@@ -225,9 +223,34 @@ type SelectedWebpage = {
     title: string
 }
 
+/**
+ * Ziggy's route() is rebuilt on every render and each row asks for up to four urls,
+ * twice each (v-if + :href), so the resolved urls are cached per webpage id.
+ */
+function memoizeRouteResolver(resolver: (webpage: Webpage) => string) {
+    const resolvedRoutes = new Map<string, string>()
+
+    return (webpage: Webpage) => {
+        const cacheKey = String(webpage.id ?? webpage.slug)
+
+        if (!resolvedRoutes.has(cacheKey)) {
+            resolvedRoutes.set(cacheKey, resolver(webpage))
+        }
+
+        return resolvedRoutes.get(cacheKey) as string
+    }
+}
+
+const webpageRoute = memoizeRouteResolver(resolveWebpageRoute)
+const subDepartmentsRoute = memoizeRouteResolver(resolveSubDepartmentsRoute)
+const familiesRoute = memoizeRouteResolver(resolveFamiliesRoute)
+const productsRoute = memoizeRouteResolver(resolveProductsRoute)
+
 const selectedWebpages = defineModel<SelectedWebpage[]>('selectedWebpages');
 
 const webpageRows = computed<WebpageRow[]>(() => (props.data as { data?: WebpageRow[] })?.data ?? [])
+
+const selectedWebpageIds = computed(() => new Set((selectedWebpages.value ?? []).map(item => item.id)))
 
 const toSelectedWebpage = (webpage: WebpageRow): SelectedWebpage => ({
     id: webpage.id,
@@ -239,8 +262,8 @@ const onChangeChecked = (checked: boolean, selectedItem: WebpageRow) => {
     if (!selectedWebpages.value) return
 
     if (checked) {
-        if (!selectedWebpages.value.some(item => item.id == selectedItem.id)) {
-            selectedWebpages.value.push(toSelectedWebpage(selectedItem))
+        if (!selectedWebpageIds.value.has(selectedItem.id)) {
+            selectedWebpages.value = [...selectedWebpages.value, toSelectedWebpage(selectedItem)]
         }
     } else {
         selectedWebpages.value = selectedWebpages.value.filter(item => item.id != selectedItem.id)
@@ -248,26 +271,27 @@ const onChangeChecked = (checked: boolean, selectedItem: WebpageRow) => {
 }
 
 const isWebpageChecked = (webpage: WebpageRow) => {
-    return !!selectedWebpages.value?.some(item => item.id == webpage.id)
+    return selectedWebpageIds.value.has(webpage.id)
 }
 
 const isAllWebpagesChecked = computed(() => {
-    return webpageRows.value.length > 0 && webpageRows.value.every(row => isWebpageChecked(row))
+    const ids = selectedWebpageIds.value
+
+    return webpageRows.value.length > 0 && webpageRows.value.every(row => ids.has(row.id))
 })
 
 const onCheckedAll = ({ data, allChecked }: { data: WebpageRow[], allChecked: boolean }) => {
     if (!selectedWebpages.value) return
 
     if (allChecked) {
-        const newItems = data
-            .filter(row => !selectedWebpages.value!.some(item => item.id == row.id))
-            .map(row => toSelectedWebpage(row))
+        const ids = selectedWebpageIds.value
+        const newItems = data.filter(row => !ids.has(row.id)).map(row => toSelectedWebpage(row))
 
         selectedWebpages.value = [...selectedWebpages.value, ...newItems]
     } else {
-        const rowIds = data.map(row => row.id)
+        const rowIds = new Set(data.map(row => row.id))
 
-        selectedWebpages.value = selectedWebpages.value.filter(item => !rowIds.includes(item.id))
+        selectedWebpages.value = selectedWebpages.value.filter(item => !rowIds.has(item.id))
     }
 }
 
