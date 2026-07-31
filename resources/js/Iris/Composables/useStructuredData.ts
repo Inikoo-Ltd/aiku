@@ -1,3 +1,5 @@
+import { expandGallery } from "@/Common/Composables/useCompactImage"
+
 export type StructuredDataNode = Record<string, any>
 export type StructuredDataValue = StructuredDataNode | StructuredDataNode[]
 
