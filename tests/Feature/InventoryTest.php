@@ -12,6 +12,7 @@ namespace Tests\Feature;
 
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\HydrateLocation;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
@@ -30,6 +31,7 @@ use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\AddLostAndFoundOrgStock;
 use App\Actions\Inventory\OrgStock\AssociateOrgStockToOrgStockFamily;
 use App\Actions\Inventory\OrgStock\DeleteOrgStock;
+use App\Actions\Inventory\OrgStock\FillOrgStockWithTradeUnitsBarcodes;
 use App\Actions\Inventory\OrgStock\HydrateOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
@@ -88,6 +90,7 @@ use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
+use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\LostAndFoundStock;
@@ -1640,4 +1643,74 @@ test('org stock indexes use time series aggregation', function () {
 
     expect($indexOrgStocks->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(1)
         ->and($indexOrgStocksWithNoProducts->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(0);
+});
+
+test('fill org stock barcode from its single trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000017']);
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBe('5050000000017')
+        ->and($orgStock->refresh()->barcode)->toBe('5050000000017');
+});
+
+test('guess a barcode for org stocks holding several copies of one trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000048']);
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 6]]);
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBe('5050000000048');
+});
+
+test('do not guess a barcode for org stocks that are not a single trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000024']);
+
+    $otherTradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $orgStock->tradeUnits()->sync([
+        $tradeUnit->id      => ['quantity' => 1],
+        $otherTradeUnit->id => ['quantity' => 1],
+    ]);
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull();
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock->update(['independent_barcode' => true]);
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull()
+        ->and($orgStock->refresh()->barcode)->toBeNull();
+});
+
+test('do not guess a barcode shared by two org stocks of the same organisation', function () {
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000031']);
+
+    $orgStocks = collect([1, 2])->map(function () use ($tradeUnit) {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+            'state' => StockStateEnum::ACTIVE
+        ]));
+
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+        return $orgStock->refresh();
+    });
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->first()))->toBeNull()
+        ->and(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->last()))->toBeNull();
 });

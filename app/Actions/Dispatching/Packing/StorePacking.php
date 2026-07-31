@@ -56,12 +56,17 @@ class StorePacking extends OrgAction
         ];
     }
 
-    public function prepareForValidation(ActionRequest $request)
+    /**
+     * Defaults are read from the action's own attributes rather than the request, so a quantity
+     * handed over by a calling action is honoured instead of being overwritten by the full picked
+     * quantity just because the surrounding HTTP request carries no quantity field.
+     */
+    public function prepareForValidation(): void
     {
-        if (!$request->has('packer_user_id')) {
+        if (!$this->has('packer_user_id')) {
             $this->set('packer_user_id', $this->user->id);
         }
-        if (!$request->has('quantity')) {
+        if (!$this->has('quantity')) {
             $this->set('quantity', $this->deliveryNoteItem->quantity_picked);
         }
     }

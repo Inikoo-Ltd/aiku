@@ -63,6 +63,7 @@ import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import ScanToPackDeliveryNote from "@/Components/DeliveryNote/ScanToPackDeliveryNote.vue"
 
 
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck);
@@ -153,6 +154,9 @@ const props = defineProps<{
 	showChangePickerPacker: boolean
 	is_editable: boolean  // To distinguish DN in Shops and DN in Wwarehouse
 	consumables?: { code: string, quantity: number }[]
+	scan_to_pack?: {
+		scan_route: routeType
+	}
 }>();
 
 
@@ -371,6 +375,39 @@ const debReloadPage = debounce(() => {
         except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
     })
 }, 1200)
+
+// A scan packs one item, so only the scanned row and the counters change. Patching that row in
+// place keeps the packer on the same scroll position instead of re-rendering the whole page.
+const onItemPackedByScan = (outcome: {
+	status: string
+	item?: { id: number } | null
+	row?: Record<string, any> | null
+	delivery_note_state?: string
+}) => {
+	if (outcome.status !== 'packed' || !outcome.item?.id) {
+		return
+	}
+
+	const tableData = props[currentTab.value as keyof typeof props] as { data: any[], meta?: { total?: number } } | undefined
+	const rows = tableData?.data
+	const rowIndex = rows?.findIndex((row: any) => row.id === outcome.item?.id) ?? -1
+
+	if (rows && rowIndex > -1) {
+		if (outcome.row) {
+			Object.assign(rows[rowIndex], outcome.row)
+		} else {
+			rows.splice(rowIndex, 1)
+
+			if (tableData?.meta && typeof tableData.meta.total === 'number') {
+				tableData.meta.total = Math.max(0, tableData.meta.total - 1)
+			}
+		}
+	}
+
+	if (outcome.delivery_note_state === 'packed') {
+		debReloadPage()
+	}
+}
 
 const selectSocketBasedPlatform = (porto) => {
     return {
@@ -690,6 +727,14 @@ watch(
 		:warehouse
 		:quick_pickers
 		:isEditable="is_editable"
+	/>
+
+	<!-- Section: Scan a barcode to pack the matching item straight away -->
+	<ScanToPackDeliveryNote
+		v-if="scan_to_pack"
+		:scanRoute="scan_to_pack.scan_route"
+		:tab="currentTab"
+		@scanned="onItemPackedByScan"
 	/>
 
 	<Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />

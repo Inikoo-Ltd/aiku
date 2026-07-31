@@ -65,6 +65,7 @@ use App\Actions\Dispatching\PickingSession\Json\GetDeliveryNotesForPickingSessio
 use App\Actions\Fulfilment\PickingSession\Json\GetPalletReturnsForPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchSingleDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemRow;
+use App\Actions\Dispatching\DeliveryNoteItem\PackDeliveryNoteItemByScan;
 use App\Actions\Dispatching\PickingSession\Json\FetchPickingSessionItemRow;
 use App\Actions\Dispatching\PickedBay\Json\ListAvailablePickedBays;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
@@ -260,6 +261,7 @@ Route::get('picking-session/{pickingSession:id}/pallet-returns', GetPalletReturn
 Route::get('delivery-note-item/{deliveryNoteItem:id}', FetchSingleDeliveryNoteItem::class)->name('fetch_single_delivery_note_item');
 Route::get('delivery-note-item/{deliveryNoteItem:id}/row', FetchDeliveryNoteItemRow::class)->name('delivery_note_item_row');
 Route::get('delivery-note-item/{deliveryNoteItem:id}/image', FetchDeliveryNoteItemImage::class)->name('fetch_single_delivery_note_item.image');
+Route::post('delivery-note/{deliveryNote:id}/pack-by-scan', PackDeliveryNoteItemByScan::class)->name('delivery_note.pack_by_scan');
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');

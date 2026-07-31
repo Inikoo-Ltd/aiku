@@ -92,6 +92,10 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.orders.allow_stock_controller_set_not_picked', Arr::pull($modelData, 'allow_stock_controller_set_not_picked'));
         }
 
+        if (Arr::has($modelData, 'allow_scan_to_pack')) {
+            data_set($modelData, 'settings.orders.allow_scan_to_pack', Arr::pull($modelData, 'allow_scan_to_pack'));
+        }
+
 
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
@@ -211,6 +215,7 @@ class UpdateOrganisation extends OrgAction
             'allow_waiting'                         => ['sometimes', 'boolean'],
             'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
+            'allow_scan_to_pack'                    => ['sometimes', 'boolean'],
             'banned_countries'                      => ['sometimes', 'nullable', 'array'],
             'banned_countries.banned_list'          => ['sometimes', 'nullable', 'array'],
             'banned_countries.banned_list.*'        => ['required', 'array'],

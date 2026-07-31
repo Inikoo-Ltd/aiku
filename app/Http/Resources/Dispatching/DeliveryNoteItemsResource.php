@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_picked
  * @property mixed $org_stock_code
  * @property mixed $org_stock_name
+ * @property mixed $barcode
  * @property mixed $is_handled
  * @property mixed $quantity_packed
  * @property mixed $quantity_not_picked
@@ -31,7 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_waiting_warehouse
  * @property mixed $quantity_waiting_crm
  * @property mixed $pickings
- * @property mixed $packing_id
+ * @property mixed $packings_count
  * @property mixed $is_picked
  * @property mixed $is_packed
  * @property mixed $warehouse_slug
@@ -100,53 +101,59 @@ class DeliveryNoteItemsResource extends JsonResource
             $packedQuantity = $this->packings_quantity;
         }
 
+        $quantityToPack    = max(0, round((float)$this->quantity_picked - (float)$packedQuantity, 3));
+        $isFullyPacked     = round((float)$packedQuantity, 3) >= round((float)$this->quantity_picked, 3);
+        $hasAnyPacking     = (int)$this->packings_count > 0;
         $pickingBatchCodes = collect($pickings)
-            ->map(fn ($picking) => $picking->batch_code ?? null)
+            ->map(fn($picking) => $picking->batch_code ?? null)
             ->filter()
             ->unique()
             ->values()
             ->all();
 
 
-
         return [
-            'id'                             => $this->id,
-            'state'                          => $this->state,
-            'state_icon'                     => $this->state->stateIcon()[$this->state->value],
-            'quantity_required'              => $this->quantity_required,
-            'quantity_required_fractional'   => $requiredFactionalData,
-            'quantity_dispatched'            => $this->quantity_dispatched,
-            'quantity_dispatched_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($quantityDispatched)), $packedIn),
-            'quantity_picked'                => $this->quantity_picked,
-            'quantity_picked_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked ?? 0)), $packedIn),
-            'quantity_packed'                => $packedQuantity,
-            'quantity_packed_fractional'     => riseDivisor(divideWithRemainder(findSmallestFactors($packedQuantity ?? 0)), $packedIn),
-            'quantity_not_picked'            => $this->quantity_not_picked,
-            'org_stock_code'                 => $this->org_stock_code,
-            'org_stock_name'                 => $this->org_stock_name,
-            'org_stock_slug'                 => $this->org_stock_slug,
-            'org_stock_id'                   => $this->org_stock_id,
-            'batch_code'                     => $this->batch_code,
-            'batch_code_id'                  => $this->batch_code_id,
-            'batch_codes'                    => $pickingBatchCodes,
-            'expiry_date'                    => $this->expiry_date,
-            'organisation_id'                => $this->organisation_id,
-            'batch_codes_fetch_route'        => [
+            'id'                                       => $this->id,
+            'state'                                    => $this->state,
+            'state_icon'                               => $this->state->stateIcon()[$this->state->value],
+            'quantity_required'                        => $this->quantity_required,
+            'quantity_required_fractional'             => $requiredFactionalData,
+            'quantity_dispatched'                      => $this->quantity_dispatched,
+            'quantity_dispatched_fractional'           => riseDivisor(divideWithRemainder(findSmallestFactors($quantityDispatched)), $packedIn),
+            'quantity_picked'                          => $this->quantity_picked,
+            'quantity_picked_fractional'               => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked ?? 0)), $packedIn),
+            'quantity_packed'                          => $packedQuantity,
+            'quantity_packed_fractional'               => riseDivisor(divideWithRemainder(findSmallestFactors($packedQuantity ?? 0)), $packedIn),
+            'quantity_not_picked'                      => $this->quantity_not_picked,
+            'org_stock_code'                           => $this->org_stock_code,
+            'org_stock_name'                           => $this->org_stock_name,
+            'barcode'                                  => $this->barcode,
+            'org_stock_slug'                           => $this->org_stock_slug,
+            'org_stock_id'                             => $this->org_stock_id,
+            'batch_code'                               => $this->batch_code,
+            'batch_code_id'                            => $this->batch_code_id,
+            'batch_codes'                              => $pickingBatchCodes,
+            'expiry_date'                              => $this->expiry_date,
+            'organisation_id'                          => $this->organisation_id,
+            'batch_codes_fetch_route'                  => [
                 'name'       => 'grp.json.org_stock.batch_codes.index',
                 'parameters' => [
                     'organisation' => $this->organisation_id,
                     'orgStock'     => $this->org_stock_id,
                 ],
             ],
-            'packed_in_message'              => $packedInMessage,
-            'is_done_packing'                => (bool)$this->packing_id,
-            'is_picked'                      => $this->is_picked,
-            'is_packed'                      => $this->is_packed,
-            'quantity_waiting_warehouse'     => $this->quantity_waiting_warehouse,
+            'packed_in_message'                        => $packedInMessage,
+            'is_done_packing'                          => $hasAnyPacking && $isFullyPacked,
+            'is_partially_packed'                      => $hasAnyPacking && !$isFullyPacked,
+            'quantity_to_pack'                         => $quantityToPack,
+            'quantity_to_pack_fractional'              => riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPack)), $packedIn),
+            'is_picked'                                => $this->is_picked,
+            'is_packed'                                => $this->is_packed,
+            'quantity_waiting_warehouse'               => $this->quantity_waiting_warehouse,
             'quantity_waiting_warehouse_fractional_ds' => $waitingWarehouseFractionalDS,
-            'quantity_waiting_crm'           => $this->quantity_waiting_crm,
-            'quantity_waiting_crm_fractional_ds' => $waitingCrmFractionalDS,
-            'picking_locations'              => collect($pickings)
+            'quantity_waiting_crm'                     => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds'       => $waitingCrmFractionalDS,
+            'picking_locations'                        => collect($pickings)
                 ->map(function ($picking, $pickingId) {
                     return [
                         'id'                      => $pickingId,
@@ -177,14 +184,14 @@ class DeliveryNoteItemsResource extends JsonResource
                         ],
                     ];
                 })->values()->toArray(),
-            'not_picking_route'              => [
+            'not_picking_route'                        => [
                 'name'       => 'grp.models.delivery_note_item.not_picking.store',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id
                 ],
                 'method'     => 'post'
             ],
-            'un_numbers'                     => $unNumbers
+            'un_numbers'                               => $unNumbers
         ];
     }
 }
