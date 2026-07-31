@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Traits\WithGiftOptOut;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\OfferAllowance;
@@ -37,6 +38,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     private bool $isGrAmnestyOfferIdSet = false;
     private int|null $daysSinceLastInvoiced = null;
     private int|null $grAmnestyOfferId = null;
+    private \Illuminate\Support\Carbon|null $honorOffersAt = null;
 
     public function __construct()
     {
@@ -74,6 +76,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
         $this->transactions = collect();
         $this->amountOff    = 0.0;
+
+        $this->honorOffersAt = $order->state == OrderStateEnum::CREATING ? null : $order->submitted_at;
 
         $this->setEnabledOffers($order);
 
@@ -320,11 +324,11 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
 
         foreach (
-            DB::table('offers')
-                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])
-                ->where('customer_id', $order->customer_id)
-                ->where('status', true)
-                ->get() as $customerExclusiveOfferData
+            $this->scopeOffersValidity(
+                DB::table('offers')
+                    ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])
+                    ->where('customer_id', $order->customer_id)
+            )->get() as $customerExclusiveOfferData
         ) {
             if ($customerExclusiveOfferData->type == OfferTypeEnum::CUSTOMER_ANY_ORDER->value) {
                 $enabledOffers[$customerExclusiveOfferData->allowance_signature] = [
@@ -345,13 +349,13 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
 
         if ($order->offer_voucher_id) {
-            $voucherData = DB::table('offers')
-                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
-                ->where('shop_id', $order->shop_id)
-                ->where('status', true)
-                ->whereIn('allowance_type', ['percentage_off', 'amount_off'])
-                ->where('id', $order->offer_voucher_id)
-                ->first();
+            $voucherData = $this->scopeOffersValidity(
+                DB::table('offers')
+                    ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
+                    ->where('shop_id', $order->shop_id)
+                    ->whereIn('allowance_type', ['percentage_off', 'amount_off'])
+                    ->where('id', $order->offer_voucher_id)
+            )->first();
 
             if ($voucherData) {
                 if ($voucherData->type == OfferTypeEnum::VOUCHER_ANY_ORDER->value) {
@@ -373,11 +377,11 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
 
-        $offersData = DB::table('offers')
-            ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
-            ->where('shop_id', $order->shop_id)
-            ->where('status', true)
-            ->whereIn('trigger_type', [
+        $offersData = $this->scopeOffersValidity(
+            DB::table('offers')
+                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
+                ->where('shop_id', $order->shop_id)
+        )->whereIn('trigger_type', [
                 'Customer',
                 'Product',
                 'ProductCategory',
@@ -575,6 +579,33 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
 
         $this->enabledOffers = $enabledOffers;
+    }
+
+    /**
+     * Orders past the basket stage honor the promotions that were valid when the customer
+     * submitted, even if those offers have since finished. Recalculations on such orders
+     * select offers by their validity window at submission time instead of current status,
+     * so a post-submission recalculation (adding a line, replacing an out of stock product)
+     * cannot strip discounts the customer already paid for. Suspended offers stay excluded:
+     * suspension is a deliberate kill switch, unlike an offer reaching its end date.
+     */
+    private function scopeOffersValidity(\Illuminate\Database\Query\Builder $query): \Illuminate\Database\Query\Builder
+    {
+        if (!$this->honorOffersAt) {
+            return $query->where('status', true);
+        }
+
+        return $query
+            ->whereNull('deleted_at')
+            ->where(function ($subQuery) {
+                $subQuery->where('status', true)->orWhere('state', OfferStateEnum::FINISHED->value);
+            })
+            ->where(function ($subQuery) {
+                $subQuery->whereNull('start_at')->orWhere('start_at', '<=', $this->honorOffersAt);
+            })
+            ->where(function ($subQuery) {
+                $subQuery->whereNull('end_at')->orWhere('end_at', '>=', $this->honorOffersAt);
+            });
     }
 
 
