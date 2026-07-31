@@ -37,6 +37,8 @@ class StoreOrgStockMovement extends OrgAction
 
     public int $jobTries = 1;
 
+    public string $jobQueue = 'stock-control';
+
     public function handle(OrgStock $orgStock, Location $location, array $modelData, null|Picking|Sowing $process = null): OrgStockMovement
     {
         data_set($modelData, 'group_id', $location->group_id);
@@ -104,7 +106,6 @@ class StoreOrgStockMovement extends OrgAction
 
         if ($locationOrgStock) {
             if ($this->strict) {
-
                 $runningQuantity = $locationOrgStock->quantity + $orgStockMovement->quantity;
 
                 UpdateLocationOrgStock::run(
@@ -117,7 +118,6 @@ class StoreOrgStockMovement extends OrgAction
 
                 $runningQuantityOrg = DB::table('location_org_stocks')
                     ->where('org_stock_id', $orgStock->id)->sum('quantity');
-
 
 
                 $orgStockMovement->update([
@@ -153,18 +153,18 @@ class StoreOrgStockMovement extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'date'              => ['sometimes', 'date'],
-            'quantity'          => ['sometimes', 'nullable', 'numeric'],
-            'audited_quantity'  => ['sometimes', 'nullable', 'numeric'],
-            'org_amount'        => ['sometimes', 'numeric'],
-            'data'              => ['sometimes', 'array'],
-            'type'              => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
-            'is_delivered'      => ['sometimes', 'boolean'],
-            'is_received'       => ['sometimes', 'boolean'],
-            'fixed'             => ['sometimes', 'boolean'],
-            'user_id'           => ['sometimes', 'nullable', 'numeric'],
-            'reason'            => ['sometimes', 'nullable', Rule::enum(OrgStockMovementReasonEnum::class)],
-            'note'              => ['sometimes', 'nullable', 'string'],
+            'date'             => ['sometimes', 'date'],
+            'quantity'         => ['sometimes', 'nullable', 'numeric'],
+            'audited_quantity' => ['sometimes', 'nullable', 'numeric'],
+            'org_amount'       => ['sometimes', 'numeric'],
+            'data'             => ['sometimes', 'array'],
+            'type'             => ['required', Rule::enum(OrgStockMovementTypeEnum::class)],
+            'is_delivered'     => ['sometimes', 'boolean'],
+            'is_received'      => ['sometimes', 'boolean'],
+            'fixed'            => ['sometimes', 'boolean'],
+            'user_id'          => ['sometimes', 'nullable', 'numeric'],
+            'reason'           => ['sometimes', 'nullable', Rule::enum(OrgStockMovementReasonEnum::class)],
+            'note'             => ['sometimes', 'nullable', 'string'],
         ];
 
         if (!$this->strict) {

@@ -38,12 +38,14 @@ const props = withDefaults(defineProps<{
     buttonStyleLogin?: object | undefined
     addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
-    isLoadingFavourite: boolean
-    isLoadingRemindBackInStock: boolean
+    isLoadingFavourite?: boolean
+    isLoadingRemindBackInStock?: boolean
     screenType: string
     hideLogin?:boolean
     routeGettransactionProductData?:routeType
 }>(), {
+    isLoadingFavourite: false,
+    isLoadingRemindBackInStock: false,
     basketButton: true,
     addToBasketRoute: {
         name: 'iris.models.transaction.store',

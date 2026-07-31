@@ -49,7 +49,7 @@ const props = defineProps<{
 
 const layout = inject('layout', layoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
-
+const screenType = inject('screenType', ref('desktop'))
 // Active picking location state
 const activePickingLocationWholesale = ref<number | null>(null)
 const isLoadingActiveLocationWholesale = ref<number | null>(null)
@@ -469,7 +469,7 @@ const onAddLocationShow = () => {
                 v-model:visible="isStockCheckModalOpen"
                 :header="`${ctrans('Audit Stock')} - ${props.trade_units[0]?.code}`"
                 modal
-                xdismissableMask="true"
+                :dismissableMask="screenType === 'desktop'"
                 :closeOnEscape="true"
                 :focusOnShow="false"
                 :style="{ width: '60vw' }"
@@ -494,7 +494,7 @@ const onAddLocationShow = () => {
 
             <Dialog v-model:visible="isMoveStockModalOpen" modal :header="ctrans('Move Stock')"
                 :style="{ width: '50vw' }"
-                xdismissableMask="true"
+                :dismissableMask="screenType === 'desktop'"
                 :closeOnEscape="true"
                 :breakpoints="{
                     '1200px': '75vw',
@@ -512,8 +512,8 @@ const onAddLocationShow = () => {
             </Dialog>
 
             <Dialog v-model:visible="isEditLocationModalOpen" modal :header="ctrans('Remove Locations')"
-                :style="{ width: '50vw' }"
-                xdismissableMask="true"
+                :dismissableMask="screenType === 'desktop'"
+                :style="{ width: '50vw' }"                
                 :closeOnEscape="true"
                 :breakpoints="{
                     '1200px': '76vw',
@@ -521,7 +521,7 @@ const onAddLocationShow = () => {
                     '768px': '90vw',
                     '576px': '95vw'
                 }"
-                :contentStyle="{ overflow: 'visible' }">
+                >
                 <EditLocations
                     :locations="props.stocks_management.locations"
                     :routes="props.stocks_management.routes"
@@ -532,7 +532,7 @@ const onAddLocationShow = () => {
             <Dialog v-model:visible="isAddLocationModalOpen" modal :header="ctrans('Add Location')"
                 @show="onAddLocationShow"
                 :style="{ width: '50vw' }"
-                xdismissableMask="true"
+                :dismissableMask="screenType === 'desktop'"
                 :closeOnEscape="true"
                 :breakpoints="{
                     '1200px': '75vw',
