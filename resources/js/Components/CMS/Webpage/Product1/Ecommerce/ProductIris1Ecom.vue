@@ -129,7 +129,7 @@ const emits = defineEmits<{
 
 const product = ref(props.product)
 const layout = inject("layout", {})
-const webpage_id = inject("webpage_id", {})
+const webpage_id = inject<number | null>("webpage_id", null)
 const isPriceVisible = computed(() =>
     Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price)
 )

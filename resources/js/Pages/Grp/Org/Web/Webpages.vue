@@ -77,7 +77,6 @@ const processingBulkDelete = ref(false)
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
 
@@ -258,6 +257,7 @@ const processingBulkDelete = ref(false)
             <span v-else></span>
         </template>
     </PageHeading>
+    
     <TableWebpages 
         :data="data" 
         v-model:selectedWebpages="selectedWebpages"

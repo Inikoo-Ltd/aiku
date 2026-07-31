@@ -336,6 +336,20 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'stock-control'               => [
+            'connection'      => 'redis',
+            'queue'           => ['stock-control'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 20,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 10,
+            'timeout'         => 3600,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'analytics'            => [
             'connection'      => 'redis',
             'queue'           => ['analytics'],
@@ -570,6 +584,9 @@ return [
             'urgent'               => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 16),
             ],
+            'stock-control'               => [
+                'maxProcesses' => env('HORIZON_STOCK_COMTROL_WORKERS', 16),
+            ],
             'low-priority'         => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 24),
             ],
@@ -635,6 +652,9 @@ return [
             ],
             'urgent'               => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 2),
+            ],
+            'stock-control'               => [
+                'maxProcesses' => env('HORIZON_STOCK_COMTROL_WORKERS', 2),
             ],
             'low-priority'         => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
@@ -706,6 +726,9 @@ return [
             ],
             'urgent'               => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 5),
+            ],
+            'stock-control'               => [
+                'maxProcesses' => env('HORIZON_STOCK_COMTROL_WORKERS', 2),
             ],
             'low-priority'         => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
