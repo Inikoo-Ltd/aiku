@@ -44,11 +44,22 @@ class LogMcpRequest
                 'user_id'     => $user->id,
                 'tool'        => Arr::get($payload, 'params.name', 'unknown'),
                 'arguments'   => Arr::get($payload, 'params.arguments', []),
-                'is_error'    => str_contains($response->getContent() ?: '', '"isError":true'),
+                'is_error'    => $this->responseHasError($response->getContent() ?: ''),
                 'duration_ms' => (int) ((microtime(true) - $request->attributes->get('mcp_request_start', microtime(true))) * 1000),
             ]);
         } catch (Throwable $e) {
             Log::warning('Failed to log MCP request', ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Tool-level failures set isError; protocol failures such as calling a tool the
+     * user does not have come back as a top-level JSON-RPC error object. Tool payloads
+     * are JSON-encoded strings with escaped quotes, so a bare "error":{ is protocol-level.
+     */
+    protected function responseHasError(string $content): bool
+    {
+        return str_contains($content, '"isError":true')
+            || (bool) preg_match('/"error"\s*:\s*\{/', $content);
     }
 }
