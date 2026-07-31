@@ -13,6 +13,7 @@ use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
 use App\Models\Web\Website;
+use GuzzleHttp\Promise\RejectionException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -64,17 +65,31 @@ class CrawlWebsite
             $crawler->executeJavaScript();
         }
 
-        $crawler->internalOnly()
-            ->concurrency($crawl->concurrency)
-            ->shouldStopCallback(function () {
-                return $this->shouldStop;
-            })
-            ->depth($crawl->depth)
-            ->shouldCrawl($this->shouldCrawlUrl(...))
-            ->onCrawled($this->onCrawledUrl(...))
-            ->onCrawled($this->checkIfShouldStop(...))
-            ->onFinished($this->onFinished(...))
-            ->start();
+        try {
+            $crawler->internalOnly()
+                ->concurrency($crawl->concurrency)
+                ->shouldStopCallback(function () {
+                    return $this->shouldStop;
+                })
+                ->depth($crawl->depth)
+                ->shouldCrawl($this->shouldCrawlUrl(...))
+                ->onCrawled($this->onCrawledUrl(...))
+                ->onCrawled($this->checkIfShouldStop(...))
+                ->onFinished($this->onFinished(...))
+                ->start();
+        } catch (RejectionException $e) {
+            if (!$this->shouldStop) {
+                throw $e;
+            }
+            $this->crawl->update(
+                [
+                    'state'         => CrawlStateEnum::FINISH,
+                    'end_at'        => now(),
+                    'running'       => false,
+                    'finish_reason' => FinishReason::Interrupted->value,
+                ]
+            );
+        }
     }
 
 
