@@ -10,6 +10,7 @@ namespace App\Actions\Search;
 use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -303,8 +304,9 @@ class SearchIrisCataloguePage extends IrisAction
 
         return Collection::query()
             ->whereIn('id', $ids)
-            ->with(['webpage' => fn ($webpageQuery) => $webpageQuery->where('website_id', $this->website->id)->with('shop')])
+            ->with(['webpage' => fn ($webpageQuery) => $webpageQuery->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE)->with('shop')])
             ->get()
+            ->filter(fn (Collection $collection) => $collection->webpage?->getCanonicalUrl())
             ->map(fn (Collection $collection) => [
                 'id'    => $collection->id,
                 'code'  => $collection->code,
@@ -319,7 +321,7 @@ class SearchIrisCataloguePage extends IrisAction
     public function rules(): array
     {
         return [
-            'q'            => ['required', 'string'],
+            'q'            => ['required', 'string', 'max:100'],
             'categories'   => ['sometimes', 'array'],
             'categories.*' => ['integer'],
             'brands'       => ['sometimes', 'array'],

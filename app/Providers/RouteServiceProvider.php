@@ -119,5 +119,9 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('kiosk', function (Request $request) {
             return Limit::perMinute(600)->by($request->ip());
         });
+
+        RateLimiter::for('iris-search', function (Request $request) {
+            return Limit::perMinute(6000)->by($request->ip());
+        });
     }
 }

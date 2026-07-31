@@ -81,8 +81,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('product/{product:id}/alternatives', GetIrisProductAlternatives::class)->name('product.alternatives')->withoutScopedBindings()->whereNumber('product');
     Route::get('product-trends', GetIrisProductTrends::class)->name('product_trends.index');
 
-    Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue');
-    Route::get('search/catalogue-page', SearchIrisCataloguePage::class)->name('search.catalogue_page');
+    Route::get('search/catalogue', SearchIrisCatalogue::class)->name('search.catalogue')->middleware('throttle:iris-search');
+    Route::get('search/catalogue-page', SearchIrisCataloguePage::class)->name('search.catalogue_page')->middleware('throttle:iris-search');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
     Route::get('/footer', GetIrisFooterData::class)->name('footer');
