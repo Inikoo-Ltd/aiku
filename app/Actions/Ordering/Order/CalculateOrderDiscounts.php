@@ -49,9 +49,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     }
 
     /**
+     * Added affectedTransaction there to select only 1 transaction (Only for UpdateTransactionDiscretionaryDiscount)
      * @throws \Throwable
      */
-    public function handle(Order $order, bool $onlyIfInBasket = false): Order
+    public function handle(Order $order, bool $onlyIfInBasket = false, ?Transaction $affectedTransaction = null): Order
     {
         if (in_array($order->state, [
             OrderStateEnum::CANCELLED,
@@ -91,6 +92,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     'department_id'
                 ])
                 ->where('order_id', $order->id)
+                ->when($affectedTransaction, fn ($q) => $q->where('id', $affectedTransaction->id))
                 ->where('quantity_ordered', '>', 0)
                 ->where('model_type', 'Product')
                 ->whereNull('deleted_at')
@@ -109,6 +111,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     'department_id'
                 ])
                 ->where('order_id', $order->id)
+                ->when($affectedTransaction, fn ($q) => $q->where('id', $affectedTransaction->id))
                 ->where('quantity_bonus', '>', 0)
                 ->where('model_type', 'Product')
                 ->whereNull('deleted_at')
@@ -119,14 +122,16 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
         $this->processDiscretionaryOffers($order);
 
-        DB::transaction(function () use ($order) {
+        DB::transaction(function () use ($order, $affectedTransaction) {
             DB::table('orders')->where('id', $order->id)->lockForUpdate()->first();
 
             DB::table('transaction_has_offer_allowances')
                 ->where('is_gift', false)
                 ->where('order_id', $order->id)->delete();
 
-            DB::table('transactions')->where('order_id', $order->id)
+            DB::table('transactions')
+                ->where('order_id', $order->id)
+                ->when($affectedTransaction, fn ($q) => $q->where('id', $affectedTransaction->id))
                 ->where('quantity_ordered', '>', 0)
                 ->update([
                     'net_amount'              => DB::raw('gross_amount'),
@@ -193,7 +198,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             }
 
             if ($order->state != OrderStateEnum::CREATING) {
-                $this->regenerateSubmittedTransactionDiscounts($order);
+                $this->regenerateSubmittedTransactionDiscounts($order, $affectedTransaction);
             }
         });
 
@@ -217,18 +222,24 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         return $order;
     }
 
-    public function regenerateSubmittedTransactionDiscounts(Order $order): void
+    public function regenerateSubmittedTransactionDiscounts(Order $order, ?Transaction $transaction = null): void
     {
         $offerAllowancePivots = [];
 
         /** @var Transaction $transactionWithSubmittedDiscount */
         foreach (
             $order->transactions()
+                ->when($transaction, fn ($q) => $q->where('transactions.id', $transaction->id))
                 ->where('has_discount_when_submitted', true)
                 ->whereRaw("submitted_offers_data <> '{}'::jsonb")
                 ->where('submitted_discount_factor', '<', DB::raw('current_discount_factor'))
                 ->get() as $transactionWithSubmittedDiscount
         ) {
+            // So that discretionary is still prioritized
+            if (isset($this->transactions->get($transactionWithSubmittedDiscount->id)?->is_discretionary) && $this->transactions->get($transactionWithSubmittedDiscount->id)?->is_discretionary) {
+                continue;
+            }
+
             DB::table('transaction_has_offer_allowances')->where('is_gift', false)->where('transaction_id', $transactionWithSubmittedDiscount->id)->delete();
 
             $percentageOff    = 1 - $transactionWithSubmittedDiscount->submitted_discount_factor;
@@ -318,6 +329,22 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     {
         $enabledOffers = [];
 
+        if (in_array($order->state, [ 
+                OrderStateEnum::IN_WAREHOUSE,
+                OrderStateEnum::HANDLING,
+                OrderStateEnum::HANDLING_BLOCKED,
+                OrderStateEnum::PICKED,
+                OrderStateEnum::PACKING,
+                OrderStateEnum::PACKED,
+                OrderStateEnum::FINALISED,
+                OrderStateEnum::DISPATCHED,
+                OrderStateEnum::CANCELLED
+            ])
+        ) {
+            $this->enabledOffers = $enabledOffers;
+            return;
+        }
+
 
         foreach (
             DB::table('offers')
@@ -381,8 +408,9 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 'Customer',
                 'Product',
                 'ProductCategory',
-                'ShopAiku'//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
+                'ShopAiku' //todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
             ])->get();
+
         foreach ($offersData as $offerData) {
             if ($offerData->type == 'Amount AND Order Number') {
                 list($passAmount, $passOrderNumber, $metadata) = $this->checkAmountAndOrderNumber($order, $offerData);
@@ -925,7 +953,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     private function applyDiscretionaryOffer(object $transaction, float $percentageOff, string $label, OfferAllowance $allowance): void
     {
-        $this->applyOfferToTransaction($transaction, $percentageOff, $label, $allowance);
+        $this->applyOfferToTransaction($transaction, $percentageOff, $label, $allowance, isDiscretionary: true);
     }
 
     private function applyOfferToTransaction(
@@ -934,7 +962,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         string $label,
         object $allowance,
         ?string $subTrigger = null,
-        ?int $subTriggerOfferId = null
+        ?int $subTriggerOfferId = null,
+        bool $isDiscretionary = false
     ): void {
         $discountedAmount = round((float)$transaction->gross_amount * $percentageOff, 2);
 
@@ -949,6 +978,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $transaction->allowance_type        = 'percentage';
         $transaction->sub_trigger           = $subTrigger;
         $transaction->sub_trigger_offer_id  = $subTriggerOfferId;
+        $transaction->is_discretionary      = (bool) $isDiscretionary;
     }
 
     /**

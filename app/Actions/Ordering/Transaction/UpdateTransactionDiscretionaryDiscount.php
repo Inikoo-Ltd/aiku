@@ -39,7 +39,7 @@ class UpdateTransactionDiscretionaryDiscount extends OrgAction
 
         $transaction->update($modelData);
         OrderHydrateDiscretionaryOffersData::run($transaction->order);
-        CalculateOrderDiscounts::run($transaction->order);
+        CalculateOrderDiscounts::run($transaction->order, affectedTransaction: $transaction);
 
 
         return $transaction;
