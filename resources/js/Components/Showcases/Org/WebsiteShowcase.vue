@@ -216,26 +216,6 @@ const links = computed(() => {
                             type="secondary" :disabled="item?.disabled" />
                     </div>
 
-                    <!-- Section: Search Engine radio -->
-                    <div class="p-2 mt-1 border-t border-gray-200"
-                        :class="layout.app.environment === 'local' ? '' : 'hidden'"
-                    >
-                        <div class="flex items-center gap-x-1.5 text-sm font-medium text-gray-600 mb-2">
-                            <FontAwesomeIcon :icon="faSearch" class="text-gray-400" fixed-width aria-hidden="true" />
-                            {{ trans('Search Engine') }}
-                            <FontAwesomeIcon icon="fal fa-info-circle" fixed-width aria-hidden="true"
-                                class="text-gray-400 hover:text-gray-700"
-                                v-tooltip="trans('Choose which engine powers the website search. Internal disables the Luigi search script.')" />
-                        </div>
-                        <PureRadio
-                            v-model="searchModel"
-                            mode="compact"
-                            by="value"
-                            label="name"
-                            :options="searchModelOptions"
-                            :class="{ 'opacity-50 pointer-events-none': isSavingSearchModel }" />
-                    </div>
-
                     <div class="p-2 space-y-2">
                         <ModalConfirmationDelete
                             :description="trans('Purge all cached files. Purging your cache may slow your website temporarily')"
@@ -297,6 +277,24 @@ const links = computed(() => {
                         }) }}
                         <br>
                         {{ props.luigi_data.last_reindexed }} -->
+                    </div>
+
+                    <!-- Section: Search Engine radio -->
+                    <div class="p-2 mt-1 border-t border-gray-200">
+                        <div class="flex items-center gap-x-1.5 text-sm font-medium text-gray-600 mb-2">
+                            <FontAwesomeIcon :icon="faSearch" class="text-gray-400" fixed-width aria-hidden="true" />
+                            {{ ctrans('Search Engine') }}
+                            <FontAwesomeIcon icon="fal fa-info-circle" fixed-width aria-hidden="true"
+                                class="text-gray-400 hover:text-gray-700"
+                                v-tooltip="ctrans('Choose which engine powers the website search.')" />
+                        </div>
+                        <PureRadio
+                            v-model="searchModel"
+                            mode="compact"
+                            by="value"
+                            label="name"
+                            :options="searchModelOptions"
+                            :class="{ 'opacity-50 pointer-events-none': isSavingSearchModel }" />
                     </div>
                 </div>
             </div>
