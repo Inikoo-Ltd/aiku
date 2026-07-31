@@ -1660,6 +1660,20 @@ test('fill org stock barcode from its single trade unit', function () {
         ->and($orgStock->refresh()->barcode)->toBe('5050000000017');
 });
 
+test('guess a barcode for org stocks holding several copies of one trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000048']);
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 6]]);
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBe('5050000000048');
+});
+
 test('do not guess a barcode for org stocks that are not a single trade unit', function () {
     $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
         'state' => StockStateEnum::ACTIVE
@@ -1668,9 +1682,6 @@ test('do not guess a barcode for org stocks that are not a single trade unit', f
     $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
     $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
     $tradeUnit->update(['barcode' => '5050000000024']);
-
-    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 6]]);
-    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull();
 
     $otherTradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
     $orgStock->tradeUnits()->sync([
