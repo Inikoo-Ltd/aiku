@@ -97,6 +97,7 @@ trait WithDeliveryNoteItemUI
     {
         $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
         $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+        $table->column(key: 'barcode', label: __('Barcode'), align: 'center');
     }
 
     protected function applyDeliveryNoteItemPickingJoins($query): void
@@ -137,6 +138,7 @@ trait WithDeliveryNoteItemUI
             'org_stocks.name as org_stock_name',
             'org_stocks.slug as org_stock_slug',
             'org_stocks.packed_in as packed_in',
+            'org_stocks.barcode',
             'org_stocks.note_to_pickers as org_stock_note_to_pickers',
             'org_stocks.note_to_packers as org_stock_note_to_packers',
             'delivery_note_items.quantity_waiting_crm',
