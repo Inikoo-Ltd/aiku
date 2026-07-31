@@ -133,7 +133,7 @@ class SearchIrisCataloguePage extends IrisAction
      */
     private function matchedProductIds(string $query): array
     {
-        $searchQuery = Product::search($query)->where('shop_id', $this->shop->id);
+        $searchQuery = Product::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true);
 
         return array_values(array_unique(array_map('intval', array_filter(array_column($this->rawDocuments($searchQuery), 'id')))));
     }
@@ -295,7 +295,7 @@ class SearchIrisCataloguePage extends IrisAction
      */
     private function matchedCollections(string $query): array
     {
-        $collectionsQuery = Collection::search($query)->where('shop_id', $this->shop->id);
+        $collectionsQuery = Collection::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true);
         $ids              = array_map('intval', array_filter(array_column($this->rawDocuments($collectionsQuery), 'id')));
 
         if (empty($ids)) {

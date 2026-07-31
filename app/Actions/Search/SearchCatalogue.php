@@ -30,6 +30,12 @@ class SearchCatalogue
             $collectionsQuery->where('shop_id', $shopId);
         }
 
+        if (Arr::get($options, 'is_in_website')) {
+            $productsQuery->where('is_in_website', true);
+            $productCategoriesQuery->where('is_in_website', true);
+            $collectionsQuery->where('is_in_website', true);
+        }
+
         $productsQuery->take(11);
         $productCategoriesQuery->take(10);
         $collectionsQuery->take(10);

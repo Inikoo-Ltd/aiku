@@ -19,7 +19,7 @@ class SearchIrisCatalogue extends IrisAction
 {
     public function handle(string $query): array
     {
-        $results = Search::run('catalogue', $query, ['shop_id' => $this->shop->id]);
+        $results = Search::run('catalogue', $query, ['shop_id' => $this->shop->id, 'is_in_website' => true]);
 
         data_set($results, 'results.products', $this->enrichItems(Arr::get($results, 'results.products', []), Product::class, largeImage: true));
         data_set($results, 'results.product_categories', $this->enrichItems(Arr::get($results, 'results.product_categories', []), ProductCategory::class));
@@ -31,8 +31,9 @@ class SearchIrisCatalogue extends IrisAction
     /**
      * Attach the storefront canonical url and an image to each search hit.
      * Products use a larger 150x150 image; categories and collections keep the small thumbnail.
-     * Hits without a live webpage on this website are dropped: the shared Typesense index
-     * also holds items not published on the storefront, which must not leak to the public.
+     * Hits are filtered by is_in_website (live webpage + sellable) as a backstop for a
+     * stale Typesense index: the shared index also holds items not published on the
+     * storefront, which must not leak to the public.
      *
      * @param array<int, array<string, mixed>> $items
      * @param class-string $modelClass
@@ -59,6 +60,10 @@ class SearchIrisCatalogue extends IrisAction
             $model = $models->get($item['id']);
             $url   = $model?->webpage?->getCanonicalUrl();
             if (!$url) {
+                continue;
+            }
+
+            if (!$model->is_in_website) {
                 continue;
             }
 

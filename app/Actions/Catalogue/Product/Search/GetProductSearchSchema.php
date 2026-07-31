@@ -52,6 +52,11 @@ class GetProductSearchSchema
                         'type' => 'bool',
                     ],
                     [
+                        'name'     => 'is_in_website',
+                        'type'     => 'bool',
+                        'optional' => true,
+                    ],
+                    [
                         'name' => 'created_at',
                         'type' => 'int64',
                     ],

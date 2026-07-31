@@ -110,8 +110,9 @@ test('iris search click endpoint records the click once', function () {
         ->and($log->clicked_at->equalTo($firstClickedAt))->toBeTrue();
 });
 
-test('iris search only returns hits with a live webpage on the website', function () {
+test('iris search only returns hits flagged is_in_website', function () {
     [, $product] = createProduct($this->shop);
+    $webpage = $product->webpage ?: StoreProductWebpage::make()->action($product);
 
     Search::shouldRun()->andReturn(irisSearchResults([
         [
@@ -122,18 +123,28 @@ test('iris search only returns hits with a live webpage on the website', functio
         ],
     ]));
 
+    $webpage->update(['state' => WebpageStateEnum::CLOSED]);
+    expect((bool) $product->refresh()->is_in_website)->toBeFalse();
+
     $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$product->code);
     $response->assertOk();
     expect($response->json('results.products'))->toBe([]);
 
-    $webpage = StoreProductWebpage::make()->action($product);
     $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    expect((bool) $product->refresh()->is_in_website)->toBeTrue();
 
-    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$product->code);
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$product->code.'&v=2');
     $response->assertOk();
 
     $products = $response->json('results.products');
     expect($products)->toHaveCount(1)
         ->and($products[0]['id'])->toBe($product->id)
         ->and($products[0]['url'])->not->toBeNull();
+
+    $product->update(['is_for_sale' => false]);
+    expect((bool) $product->refresh()->is_in_website)->toBeFalse();
+
+    $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q='.$product->code.'&v=3');
+    $response->assertOk();
+    expect($response->json('results.products'))->toBe([]);
 });
