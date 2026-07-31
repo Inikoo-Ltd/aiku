@@ -271,17 +271,12 @@ const hydrateModifiedLocationsQuantity = (location: StockLocation) => {
 }
 
 const currentPage = ref(1);
-const scrollableList = ref<HTMLElement | null>(null)
-
-watch(currentPage, () => {
-    scrollableList.value?.scrollTo({ top: 0 })
-})
 </script>
 
 <template>
     <div class="flex flex-col min-h-0 max-h-[65vh]">
         <!-- list -->
-        <div ref="scrollableList" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-2 pr-4 pb-3">
+        <div :key="currentPage" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-2 pr-4 pb-3">
         <template v-if="cloneLocations.length > 0">
             <div v-if="currentPage == 1">
                 <div class="grid grid-cols-8 gap-2 border-b pb-2 pt-1 font-semibold sticky top-0 z-10 bg-white">
