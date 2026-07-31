@@ -221,7 +221,7 @@ class ShowWebsite extends OrgAction
         return Inertia::render(
             'Org/Web/Website',
             [
-                'title'       => __('Website'),
+                'title'       => __('Website') . ' ' . $website->name,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $website,
                     $request->route()->getName(),
