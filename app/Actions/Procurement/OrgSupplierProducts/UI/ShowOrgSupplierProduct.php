@@ -41,6 +41,15 @@ class ShowOrgSupplierProduct extends OrgAction
         return $orgSupplierProduct;
     }
 
+    private function getTabs(): array
+    {
+        return [
+            OrgSupplierProductTabsEnum::SHOWCASE->value,
+            OrgSupplierProductTabsEnum::PURCHASE_ORDERS->value,
+            OrgSupplierProductTabsEnum::HISTORY->value,
+        ];
+    }
+
 
     public function authorize(ActionRequest $request): bool
     {
@@ -52,7 +61,7 @@ class ShowOrgSupplierProduct extends OrgAction
     public function asController(Organisation $organisation, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab($this->getTabs());
         $this->authorizeProcurementRecord($orgSupplierProduct);
 
         return $this->handle($orgSupplierProduct);
@@ -61,7 +70,7 @@ class ShowOrgSupplierProduct extends OrgAction
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
     {
         $this->parent = $orgAgent;
-        $this->initialisation($organisation, $request)->withTab(OrgSupplierProductTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab($this->getTabs());
         $this->authorizeProcurementRecord($orgSupplierProduct);
 
         return $this->handle($orgSupplierProduct);
@@ -70,7 +79,7 @@ class ShowOrgSupplierProduct extends OrgAction
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): OrgSupplierProduct
     {
         $this->parent = $orgSupplier;
-        $this->initialisation($organisation, $request);
+        $this->initialisation($organisation, $request)->withTab($this->getTabs());
         $this->authorizeProcurementRecord($orgSupplierProduct);
 
         return $this->handle($orgSupplierProduct);
@@ -99,7 +108,14 @@ class ShowOrgSupplierProduct extends OrgAction
                 'supplier'                                           => new SupplierProductResource($orgSupplierProduct),
                 'tabs'                                               => [
                     'current'    => $this->tab,
-                    'navigation' => OrgSupplierProductTabsEnum::navigation()
+                    'navigation' => OrgSupplierProductTabsEnum::navigationExcept([
+                        OrgSupplierProductTabsEnum::PURCHASE_SALES,
+                        OrgSupplierProductTabsEnum::SUPPLIER_PRODUCTS,
+                        OrgSupplierProductTabsEnum::DELIVERIES,
+                        OrgSupplierProductTabsEnum::FEEDBACKS,
+                        OrgSupplierProductTabsEnum::ATTACHMENTS,
+                        OrgSupplierProductTabsEnum::IMAGES,
+                    ])
                 ],
                 OrgSupplierProductTabsEnum::SHOWCASE->value          => $this->tab == OrgSupplierProductTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgSupplierProductShowcase::run($orgSupplierProduct)
@@ -197,13 +213,16 @@ class ShowOrgSupplierProduct extends OrgAction
                 ),
             'grp.org.procurement.org_suppliers.show.supplier_products.show' =>
                 array_merge(
-                    (new ShowOrgSupplier())->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'orgSupplier'])),
+                    (new ShowOrgSupplier())->getBreadcrumbs(
+                        'grp.org.procurement.org_suppliers.show',
+                        Arr::only($routeParameters, ['organisation', 'orgSupplier'])
+                    ),
                     $headCrumb(
                         $orgSupplierProduct,
                         [
                             'index' => [
-                                'name'       => 'grp.org.procurement.org_suppliers.show',
-                                'parameters' => $routeParameters
+                                'name'       => 'grp.org.procurement.org_suppliers.show.supplier_products.index',
+                                'parameters' => Arr::only($routeParameters, ['organisation', 'orgSupplier'])
                             ],
                             'model' => [
                                 'name'       => 'grp.org.procurement.org_suppliers.show.supplier_products.show',
