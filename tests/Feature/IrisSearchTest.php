@@ -74,7 +74,21 @@ test('iris search stores a website search log with the response ulid', function 
         ->and($log->shop_id)->toBe($this->shop->id)
         ->and($log->scope)->toBe('catalogue')
         ->and($log->query)->toBe('candles')
-        ->and($log->results_count)->toBe(0);
+        ->and($log->results_count)->toBe(0)
+        ->and($log->web_user_id)->toBeNull()
+        ->and($log->customer_id)->toBeNull();
+
+    $customer = createCustomer($this->shop);
+    $webUser  = createWebUser($customer);
+
+    $response = $this->actingAs($webUser, 'retina')
+        ->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=lavender');
+    $response->assertOk();
+
+    $log = WebsiteSearchLog::where('ulid', $response->json('search_log_ulid'))->first();
+    expect($log)->not->toBeNull()
+        ->and($log->web_user_id)->toBe($webUser->id)
+        ->and($log->customer_id)->toBe($customer->id);
 });
 
 test('iris search click endpoint records the click once', function () {

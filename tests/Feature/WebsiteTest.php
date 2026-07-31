@@ -914,6 +914,7 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
         'grp.org.shops.show.web.websites.restricted_country' => $base,
         'grp.org.shops.show.web.analytics.dashboard'         => $base,
         'grp.org.shops.show.web.analytics.visitors.index'    => $base,
+        'grp.org.shops.show.web.analytics.search'            => $base,
         'grp.org.shops.show.web.announcements.index'         => $base,
         'grp.org.shops.show.web.announcements.create'        => $base,
         'grp.org.shops.show.web.announcements.show'          => [$org, $shop, $w, $announcement->ulid],

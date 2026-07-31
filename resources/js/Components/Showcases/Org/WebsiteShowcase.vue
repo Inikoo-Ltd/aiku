@@ -26,6 +26,18 @@ library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChar
 
 import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
 
+// Deep link to the website's search analytics page; null (hidden) when the route
+// doesn't apply, e.g. fulfilment websites
+const showSearchInsights = computed(() => savedSearchModel.value === "internal" || props.data.search_insights?.total_searches)
+
+const searchAnalyticsUrl = (() => {
+    try {
+        return route("grp.org.shops.show.web.analytics.search", route().params)
+    } catch {
+        return null
+    }
+})()
+
 const props = defineProps<{
     data: {
         id: number
@@ -138,47 +150,53 @@ const links = computed(() => {
     <!-- Box: Url and Buttons in a single row -->
     <div class="px-6 py-12 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- URL Box -->
+            <!-- URL Box + compact visitor stats -->
             <div class="">
-                <div class="bg-white w-fit h-fit flex items-center gap-x-3 md:w-96">
-                    <a :href="props.data.url" target="_blank" v-tooltip="trans('Go To Website')"
-                        class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
-                        <div class="bg-gray-200 py-2 px-2">
-                            <FontAwesomeIcon :icon="faGlobe" class="px-1" aria-hidden="true" />
-                        </div>
-                        <div class="flex items-center px-4">
-                            {{ props.data.url }}
-                        </div>
-                    </a>
+                <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+                    <div class="bg-white w-fit h-fit flex items-center gap-x-3">
+                        <a :href="props.data.url" target="_blank" v-tooltip="trans('Go To Website')"
+                            class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
+                            <div class="bg-gray-200 py-2 px-2">
+                                <FontAwesomeIcon :icon="faGlobe" class="px-1" aria-hidden="true" />
+                            </div>
+                            <div class="flex items-center px-4">
+                                {{ props.data.url }}
+                            </div>
+                        </a>
+                    </div>
+
+                    <div v-for="stat in props.data.website_stats" :key="stat.label" class="flex items-baseline gap-2">
+                        <FontAwesomeIcon v-if="typeof stat.icon === 'string'" :icon="stat.icon" :style="{ color: stat.color }" fixed-width aria-hidden="true" />
+                        <span class="text-2xl font-semibold tabular-nums">{{ (stat.value ?? 0).toLocaleString() }}</span>
+                        <span class="text-sm text-gray-400">{{ stat.label }}</span>
+                    </div>
                 </div>
 
                 <div class="border-t border-gray-300 mt-6 pt-4">
-                    <div class="font-semibold w-fit text-lg mb-2">
-                        {{ trans('Product Catalogue') }}
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
-                        <StatsBox v-for="stat in props.data.stats" :stat />
-                    </div>
-                    <div class="mt-6 font-semibold w-fit text-lg mb-2">
-                        {{ trans('Content & Blog') }}
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
-                        <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
-                    </div>
-                    <div class="mt-6 font-semibold w-fit text-lg mb-2">
-                        {{ trans('Stats') }}
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
-                        <StatsBox v-for="stat in props.data.website_stats" :stat />
-                    </div>
-
-                    <template v-if="savedSearchModel === 'internal' || props.data.search_insights?.total_searches">
-                        <div class="mt-6 font-semibold w-fit text-lg mb-2">
-                            {{ trans('Website Search') }}
+                    <div class="flex flex-col xl:flex-row gap-6">
+                        <div v-if="showSearchInsights" class="flex-1 min-w-0">
+                            <div class="font-semibold w-fit text-lg mb-2">
+                                {{ trans('Website Search') }}
+                            </div>
+                            <SearchAnalyticsDisplay :widget="props.data.search_insights" :logs-url="searchAnalyticsUrl" :logs-label="trans('Search analytics')" />
                         </div>
-                        <SearchAnalyticsDisplay :widget="props.data.search_insights" />
-                    </template>
+
+                        <div :class="showSearchInsights ? 'w-full xl:w-56 shrink-0' : ''">
+                            <div class="font-semibold w-fit text-lg mb-2">
+                                {{ trans('Product Catalogue') }}
+                            </div>
+                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
+                                <StatsBox v-for="stat in props.data.stats" :stat />
+                            </div>
+
+                            <div class="mt-6 font-semibold w-fit text-lg mb-2">
+                                {{ trans('Content & Blog') }}
+                            </div>
+                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
+                                <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Section: PIC Webmaster and SEO -->

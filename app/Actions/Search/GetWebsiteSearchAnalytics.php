@@ -19,12 +19,13 @@ class GetWebsiteSearchAnalytics
 
     public function handle(Website $website, int $days = 30): array
     {
-        $base = WebsiteSearchLog::where('website_id', $website->id)
-            ->where('created_at', '>=', now()->subDays($days));
+        $base = WebsiteSearchLog::where('website_search_logs.website_id', $website->id)
+            ->where('website_search_logs.created_at', '>=', now()->subDays($days));
 
-        $totalSearches = (clone $base)->count();
-        $clicked       = (clone $base)->whereNotNull('clicked_at')->count();
-        $zeroResults   = (clone $base)->where('results_count', 0)->count();
+        $totalSearches   = (clone $base)->count();
+        $clicked         = (clone $base)->whereNotNull('clicked_at')->count();
+        $zeroResults     = (clone $base)->where('results_count', 0)->count();
+        $loggedInSearches = (clone $base)->whereNotNull('web_user_id')->count();
 
         $topQueries = $this->groupedQueries(clone $base)
             ->orderByDesc('searches')
@@ -39,13 +40,53 @@ class GetWebsiteSearchAnalytics
             ->limit(10)
             ->get();
 
+        $topAbandonedQueries = $this->groupedQueries(
+            (clone $base)->where('results_count', '>', 0)->whereNull('clicked_at')
+        )
+            ->orderByDesc('searches')
+            ->orderBy('query')
+            ->limit(10)
+            ->get();
+
+        $topCustomers = (clone $base)
+            ->join('customers', 'customers.id', '=', 'website_search_logs.customer_id')
+            ->selectRaw('customers.name as username, count(*) as searches, count(website_search_logs.clicked_at) as clicks')
+            ->groupBy('customers.name')
+            ->orderByDesc('searches')
+            ->orderBy('customers.name')
+            ->limit(10)
+            ->get();
+
+        $topClickedPages = (clone $base)
+            ->whereNotNull('clicked_url')
+            ->selectRaw('clicked_url, count(*) as clicks')
+            ->groupBy('clicked_url')
+            ->orderByDesc('clicks')
+            ->orderBy('clicked_url')
+            ->limit(10)
+            ->get();
+
+        $devices = (clone $base)
+            ->whereNotNull('device')
+            ->selectRaw('device, count(*) as searches, count(clicked_at) as clicks')
+            ->groupBy('device')
+            ->orderByDesc('searches')
+            ->limit(10)
+            ->get();
+
         return [
-            'days'              => $days,
-            'total_searches'    => $totalSearches,
-            'click_through'     => $totalSearches ? round($clicked / $totalSearches * 100, 1) : 0,
-            'zero_results_rate' => $totalSearches ? round($zeroResults / $totalSearches * 100, 1) : 0,
-            'top_queries'       => $topQueries,
-            'top_zero_queries'  => $topZeroQueries,
+            'days'               => $days,
+            'total_searches'     => $totalSearches,
+            'logged_in_searches' => $loggedInSearches,
+            'guest_searches'     => $totalSearches - $loggedInSearches,
+            'click_through'      => $totalSearches ? round($clicked / $totalSearches * 100, 1) : 0,
+            'zero_results_rate'  => $totalSearches ? round($zeroResults / $totalSearches * 100, 1) : 0,
+            'top_queries'           => $topQueries,
+            'top_zero_queries'      => $topZeroQueries,
+            'top_abandoned_queries' => $topAbandonedQueries,
+            'top_searchers'         => $topCustomers,
+            'top_clicked_pages' => $topClickedPages,
+            'devices'           => $devices,
         ];
     }
 

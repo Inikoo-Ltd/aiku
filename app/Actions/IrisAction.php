@@ -10,6 +10,8 @@ namespace App\Actions;
 
 use App\Actions\Search\StoreWebsiteSearchLog;
 use App\Actions\Traits\WithTab;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
+use Illuminate\Support\Arr;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -61,6 +63,8 @@ class IrisAction
     {
         $ulid = (string)Str::ulid();
 
+        $browserInfo = $request->userAgent() ? GetBrowserInfo::run($request->userAgent()) : [];
+
         StoreWebsiteSearchLog::dispatchAfterResponse([
             'ulid'            => $ulid,
             'group_id'        => $this->group->id,
@@ -68,10 +72,14 @@ class IrisAction
             'shop_id'         => $this->shop->id,
             'website_id'      => $this->website->id,
             'web_user_id'     => $request->user()?->id,
+            'customer_id'     => $request->user()?->customer_id,
             'scope'           => $scope,
             'query'           => mb_substr($query, 0, 255),
             'session_id'      => $request->hasSession() ? $request->session()->getId() : null,
             'results_count'   => $resultsCount,
+            'device'          => Arr::get($browserInfo, 'device'),
+            'browser'         => Arr::get($browserInfo, 'browser'),
+            'os'              => Arr::get($browserInfo, 'os'),
         ]);
 
         return $ulid;
