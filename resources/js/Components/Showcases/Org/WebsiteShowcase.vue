@@ -24,6 +24,8 @@ import { faDoorOpen } from "@far"
 
 library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChartLine)
 
+import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
+
 const props = defineProps<{
     data: {
         id: number
@@ -41,6 +43,7 @@ const props = defineProps<{
         website_type: string
         route_restricted_country?: routeType
         iris_search_model?: "luigi" | "internal"
+        search_insights?: any
     }
     route_storefront: routeType
     route_landing_page?: routeType
@@ -169,6 +172,13 @@ const links = computed(() => {
                     <div class="grid grid-cols-2 gap-2 md:max-w-lg">
                         <StatsBox v-for="stat in props.data.website_stats" :stat />
                     </div>
+
+                    <template v-if="savedSearchModel === 'internal' || props.data.search_insights?.total_searches">
+                        <div class="mt-6 font-semibold w-fit text-lg mb-2">
+                            {{ trans('Website Search') }}
+                        </div>
+                        <SearchAnalyticsDisplay :widget="props.data.search_insights" />
+                    </template>
                 </div>
 
                 <!-- Section: PIC Webmaster and SEO -->

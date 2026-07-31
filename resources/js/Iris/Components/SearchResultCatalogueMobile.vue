@@ -44,7 +44,20 @@ const props = defineProps<{
     } | null
     isLoading: boolean
     query: string
+    searchLogUlid?: string | null
 }>()
+
+// keepalive fetch survives the navigation the click triggers
+const recordClick = (url?: string | null) => {
+    if (!props.searchLogUlid || !url) return
+    const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '')
+    fetch(route('iris.json.search.click'), {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': token },
+        body: JSON.stringify({ ulid: props.searchLogUlid, url }),
+    }).catch(() => {})
+}
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = useLocaleStore()
@@ -136,6 +149,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     :key="chip.key"
                     :href="chip.url"
                     class="shrink-0 max-w-[60vw] truncate rounded-full border border-[var(--theme-color-0)] text-[var(--theme-color-0)] text-sm px-4 py-1.5 active:bg-[color-mix(in_srgb,var(--theme-color-0)_15%,transparent)]"
+                    @click="() => recordClick(chip.url)"
                     @success="() => model = false"
                     v-html="highlightMatch(chip.name)"
                 />
@@ -148,6 +162,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     :key="product.id"
                     :href="product.url"
                     class="group flex items-center gap-3 min-w-0 rounded-md px-2 py-2.5 active:bg-[color-mix(in_srgb,var(--theme-color-0)_10%,var(--theme-color-1))]"
+                    @click="() => recordClick(product.url)"
                     @success="() => model = false"
                 >
                     <div

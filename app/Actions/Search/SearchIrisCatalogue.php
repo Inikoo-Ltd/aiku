@@ -93,6 +93,12 @@ class SearchIrisCatalogue extends IrisAction
     {
         $this->initialisation($request);
 
-        return $this->handle($this->validatedData['q']);
+        $results = $this->handle($this->validatedData['q']);
+
+        $resultsCount = collect(Arr::get($results, 'results', []))->sum(fn ($items) => is_array($items) ? count($items) : 0);
+
+        $results['search_log_ulid'] = $this->recordWebsiteSearchLog($request, 'catalogue', $this->validatedData['q'], $resultsCount);
+
+        return $results;
     }
 }

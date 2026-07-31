@@ -32,6 +32,7 @@ onBeforeMount(() => {
 })
 
 const internalResults = ref<any>(null)
+const searchLogUlid = ref<string | null>(null)
 const isInternalLoading = ref(false)
 const showDropdown = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -115,6 +116,7 @@ const fetchResults = debounce(async (query: string) => {
         }
         cacheResponse(query, data)
         internalResults.value = data.results ?? null
+        searchLogUlid.value = data.search_log_ulid ?? null
     } catch (error) {
         if (axios.isCancel(error) || requestId !== internalRequestId) {
             return
@@ -146,6 +148,7 @@ const onSearchInput = (event: Event) => {
         internalAbort?.abort()
         isInternalLoading.value = false
         internalResults.value = cached.results ?? null
+        searchLogUlid.value = cached.search_log_ulid ?? null
         return
     }
 
@@ -207,6 +210,7 @@ const visitSearchPage = () => {
                     :results="internalResults"
                     :is-loading="isInternalLoading"
                     :query="inputValue"
+                    :search-log-ulid="searchLogUlid"
                 />
             </div>
         </Popover>
