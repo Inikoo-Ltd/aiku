@@ -73,7 +73,7 @@ const activeComponent = computed(() => {
 
 <template>
 	<div class="mx-auto w-full max-w-2xl p-3 sm:p-6 lg:w-1/2">
-		<div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+		<div class="overflow-hidden rounded-2xl sm:border sm:border-gray-200 bg-white shadow-sm">
 			<div class="border-b border-gray-200 px-4 py-4 text-center sm:px-5">
 				<h2 class="text-base sm:text-lg md:text-xl font-bold text-gray-800">
 					{{ trans("Employee Clocking") }}
@@ -98,7 +98,7 @@ const activeComponent = computed(() => {
 					:clocking-sessions="clockingSessions"
 					:timezone="timezone" />
 
-				<div class="px-4 pt-4 sm:px-5 sm:pt-5">
+				<div class="px-4 pt-2 sm:px-5 sm:pt-5">
 					<div class="flex w-full gap-1 rounded-xl bg-gray-100 p-1 sm:gap-1.5">
 						<button
 							v-for="option in methodOptions"

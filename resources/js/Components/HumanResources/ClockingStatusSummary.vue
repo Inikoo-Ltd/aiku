@@ -2,8 +2,9 @@
 import { computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faCheck, faClock } from "@fal"
+import { faTimes, faCheck, faClock, faChevronDown } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
 interface ClockingRecord {
@@ -34,7 +35,7 @@ const props = defineProps<{
 	timezone?: string
 }>()
 
-library.add(faTimes, faCheck, faClock)
+library.add(faTimes, faCheck, faClock, faChevronDown)
 
 const isClockedIn = computed(() => props.clockingStatus === "clocked_in")
 
@@ -83,7 +84,7 @@ const formatDurationLocal = (seconds: number) => {
 
 const clockingSessions = computed<ClockingSession[]>(() => props.clockingSessions ?? [])
 
-const hasMultipleSessions = computed(() => clockingSessions.value.length > 1)
+const hasDetails = computed(() => Boolean(props.todayTimesheet) || clockingSessions.value.length > 0)
 
 const sessionElapsedSeconds = (session: ClockingSession) => {
 	if (session.duration !== null && session.duration !== undefined) return session.duration
@@ -125,88 +126,106 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 			</div>
 		</div>
 
-		<div
-			v-if="todayTimesheet?.start_at || todayTimesheet?.end_at"
-			class="grid grid-cols-2 gap-2 sm:gap-3 pt-3 border-t"
+		<Disclosure
+			v-if="hasDetails"
+			v-slot="{ open }"
+			as="div"
+			class=""
 			:class="statusClasses.divider">
-			<div class="min-w-0 text-center p-2 rounded-lg bg-white/70">
-				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("First Clock In") }}</p>
-				<p class="text-xs sm:text-sm font-semibold text-gray-800">
-					{{ displayTime(todayTimesheet?.start_at) }}
-				</p>
-			</div>
-			<div class="min-w-0 text-center p-2 rounded-lg bg-white/70">
-				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Last Clock Out") }}</p>
-				<p class="text-xs sm:text-sm font-semibold text-gray-800">
-					{{ displayTime(todayTimesheet?.end_at) }}
-				</p>
-			</div>
-		</div>
+			<DisclosureButton
+				class="flex w-full items-center justify-between gap-2 rounded-lg bg-white/70 px-3 py-2.5 text-left transition hover:bg-white focus:outline-none focus-visible:ring focus-visible:ring-indigo-500/50">
+				<span class="text-xs font-semibold text-gray-500">
+					{{ trans("Clocking Details") }}
+					<template v-if="clockingSessions.length">({{ clockingSessions.length }})</template>
+				</span>
+				<FontAwesomeIcon
+					:icon="faChevronDown"
+					class="w-3 shrink-0 text-gray-400 transition-transform duration-200"
+					:class="open ? 'rotate-180' : ''" />
+			</DisclosureButton>
 
-		<div
-			v-if="todayTimesheet"
-			class="grid grid-cols-2 gap-2 sm:gap-3 mt-3 pt-3 border-t"
-			:class="statusClasses.divider">
-			<div class="min-w-0 text-center">
-				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Working") }}</p>
-				<p class="text-xs sm:text-sm font-semibold text-gray-700">
-					{{ formatDurationLocal(todayTimesheet.working_duration || 0) }}
-				</p>
-			</div>
-			<div class="min-w-0 text-center">
-				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Breaks") }}</p>
-				<p class="text-xs sm:text-sm font-semibold text-gray-700">
-					{{ formatDurationLocal(todayTimesheet.breaks_duration || 0) }}
-				</p>
-			</div>
-		</div>
-
-		<div v-if="hasMultipleSessions" class="mt-3 pt-3 border-t" :class="statusClasses.divider">
-			<p class="text-xs font-semibold text-gray-500 mb-2">
-				{{ trans("Clocking Details") }} ({{ clockingSessions.length }})
-			</p>
-			<div class="max-h-56 sm:max-h-72 space-y-2 overflow-y-auto pr-1">
+			<DisclosurePanel class="mt-2">
 				<div
-					v-for="session in clockingSessions"
-					:key="session.id"
-					class="rounded-lg bg-white/80 border border-gray-200 p-2">
-					<div class="grid grid-cols-2 gap-2">
-						<div class="text-center p-1 rounded-lg bg-gray-50">
-							<p class="text-[10px] text-gray-400">{{ trans("Clock In") }}</p>
-							<p class="text-xs font-semibold text-gray-800">
-								{{ displayTime(session.clock_in?.clocked_at ?? session.starts_at ?? undefined) }}
-							</p>
-						</div>
-						<div class="text-center p-1 rounded-lg bg-gray-50">
-							<p class="text-[10px] text-gray-400">{{ trans("Clock Out") }}</p>
-							<p class="text-xs font-semibold text-gray-800">
-								{{
-									session.is_open
-										? "—"
-										: displayTime(session.clock_out?.clocked_at ?? session.ends_at ?? undefined)
-								}}
-							</p>
-						</div>
+					v-if="todayTimesheet?.start_at || todayTimesheet?.end_at"
+					class="grid grid-cols-2 gap-2 sm:gap-3">
+					<div class="min-w-0 text-center p-2 rounded-lg bg-white/70">
+						<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("First Clock In") }}</p>
+						<p class="text-xs sm:text-sm font-semibold text-gray-800">
+							{{ displayTime(todayTimesheet?.start_at) }}
+						</p>
 					</div>
-					<div class="mt-1 flex items-center justify-center gap-1.5 text-[10px]">
-						<FontAwesomeIcon
-							v-if="session.is_open"
-							:icon="faClock"
-							class="text-amber-500"
-							:title="trans('Ongoing')" />
-						<template v-else>
-							<FontAwesomeIcon
-								:icon="faCheck"
-								class="text-green-600"
-								:title="trans('Completed')" />
-							<span class="text-gray-500">
-								{{ trans("Duration") }}:
-								{{ formatDurationLocal(sessionElapsedSeconds(session) || 0) }}
-							</span>
-						</template>
+					<div class="min-w-0 text-center p-2 rounded-lg bg-white/70">
+						<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Last Clock Out") }}</p>
+						<p class="text-xs sm:text-sm font-semibold text-gray-800">
+							{{ displayTime(todayTimesheet?.end_at) }}
+						</p>
 					</div>
 				</div>
-			</div>
-		</div>
+
+				<div
+					v-if="todayTimesheet"
+					class="grid grid-cols-2 gap-2 sm:gap-3 mt-3 pt-3 border-t"
+					:class="statusClasses.divider">
+					<div class="min-w-0 text-center">
+						<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Working") }}</p>
+						<p class="text-xs sm:text-sm font-semibold text-gray-700">
+							{{ formatDurationLocal(todayTimesheet.working_duration || 0) }}
+						</p>
+					</div>
+					<div class="min-w-0 text-center">
+						<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Breaks") }}</p>
+						<p class="text-xs sm:text-sm font-semibold text-gray-700">
+							{{ formatDurationLocal(todayTimesheet.breaks_duration || 0) }}
+						</p>
+					</div>
+				</div>
+
+				<div
+					v-if="clockingSessions.length"
+					class="mt-3 pt-3 border-t max-h-56 sm:max-h-72 space-y-2 overflow-y-auto pr-1"
+					:class="statusClasses.divider">
+					<div
+						v-for="session in clockingSessions"
+						:key="session.id"
+						class="rounded-lg bg-white/80 border border-gray-200 p-2">
+						<div class="grid grid-cols-2 gap-2">
+							<div class="text-center p-1 rounded-lg bg-gray-50">
+								<p class="text-[10px] text-gray-400">{{ trans("Clock In") }}</p>
+								<p class="text-xs font-semibold text-gray-800">
+									{{ displayTime(session.clock_in?.clocked_at ?? session.starts_at ?? undefined) }}
+								</p>
+							</div>
+							<div class="text-center p-1 rounded-lg bg-gray-50">
+								<p class="text-[10px] text-gray-400">{{ trans("Clock Out") }}</p>
+								<p class="text-xs font-semibold text-gray-800">
+									{{
+										session.is_open
+											? "—"
+											: displayTime(session.clock_out?.clocked_at ?? session.ends_at ?? undefined)
+									}}
+								</p>
+							</div>
+						</div>
+						<div class="mt-1 flex items-center justify-center gap-1.5 text-[10px]">
+							<FontAwesomeIcon
+								v-if="session.is_open"
+								:icon="faClock"
+								class="text-amber-500"
+								:title="trans('Ongoing')" />
+							<template v-else>
+								<FontAwesomeIcon
+									:icon="faCheck"
+									class="text-green-600"
+									:title="trans('Completed')" />
+								<span class="text-gray-500">
+									{{ trans("Duration") }}:
+									{{ formatDurationLocal(sessionElapsedSeconds(session) || 0) }}
+								</span>
+							</template>
+						</div>
+					</div>
+				</div>
+			</DisclosurePanel>
+		</Disclosure>
 	</div>
 </template>
