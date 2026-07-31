@@ -54,7 +54,8 @@ class GetOutboxMergeTagByOutbox extends OrgAction
             case OutboxCodeEnum::PROSPECT_CONVERTION_2:
             case OutboxCodeEnum::PROSPECT_CONVERTION_3:
                 return ProspectMailshotMergeTagsEnum::filterTags([
-                        ProspectMailshotMergeTagsEnum::PROSPECT_NAME,
+                        ProspectMailshotMergeTagsEnum::PROSPECT_EMAIL,
+                        ProspectMailshotMergeTagsEnum::PROSPECT_REGISTRATION_DATE,
                     ]);
             default:
                 return GetMailshotMergeTags::run();

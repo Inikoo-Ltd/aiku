@@ -121,7 +121,7 @@ class EditOutboxInShop extends OrgAction
                                     range(2, 30)
                                 ),
                             ],
-                            'value' => $outbox->days_after ?? null,
+                            'value' => $outbox->days_after,
                         ],
                     ]
                 ];

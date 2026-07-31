@@ -54,6 +54,10 @@ class ProcessProspectConvertionRecipients implements ShouldQueue
                 [
                     'outbox_id'     => $emailBulkRun->outbox_id,
                     'email_address' => $prospectModel->email,
+                    'data->additional_data' => [
+                        'prospect_email' => $prospectModel->email,
+                        'prospect_registration_date' => $prospectModel->created_at->format('Y-m-d'),
+                    ]
                 ]
             );
 

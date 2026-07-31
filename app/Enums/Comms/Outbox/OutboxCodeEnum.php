@@ -591,9 +591,6 @@ enum OutboxCodeEnum: string
             self::GOLD_REWARD_REMINDER_2,
             self::GOLD_REWARD_REMINDER_3,
             self::BASKET_LOW_STOCK,
-            self::PROSPECT_CONVERTION_1,
-            self::PROSPECT_CONVERTION_2,
-            self::PROSPECT_CONVERTION_3,
             self::PRICE_CHANGE_NOTIFICATION => true,
             default => false,
         };

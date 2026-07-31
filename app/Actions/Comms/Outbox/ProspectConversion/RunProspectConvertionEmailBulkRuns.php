@@ -16,7 +16,7 @@ class RunProspectConvertionEmailBulkRuns
     public string $commandSignature = 'run:prospect-convertion-email-bulk-runs';
     public string $jobQueue = 'ses';
 
-    public function handle(?int $prospectId): void
+    public function handle(?int $prospectId = null): void
     {
         $prospect = null;
         if ($prospectId) {
