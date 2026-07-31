@@ -6,7 +6,7 @@ import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faQrcode, faHashtag } from '@fal'
+import { faQrcode, faHashtag, faBarcodeScan } from '@fal'
 import { faAsterisk } from '@fas'
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -14,7 +14,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 
-library.add(faQrcode, faHashtag, faAsterisk)
+library.add(faQrcode, faHashtag, faBarcodeScan, faAsterisk)
 
 const props = defineProps<{
     route: {
@@ -29,10 +29,12 @@ const props = defineProps<{
 
 const CLOCKING_MACHINE_TYPE_QR_CODE = 'qr-code'
 const CLOCKING_MACHINE_TYPE_PIN = 'pin'
+const CLOCKING_MACHINE_TYPE_BARCODE_SCANNER = 'barcode-scanner'
 
 const machineTypes = [
     { value: CLOCKING_MACHINE_TYPE_QR_CODE, label: trans('QR Code'), icon: 'fal fa-qrcode' },
     { value: CLOCKING_MACHINE_TYPE_PIN, label: trans('PIN'), icon: 'fal fa-hashtag' },
+    { value: CLOCKING_MACHINE_TYPE_BARCODE_SCANNER, label: trans('Barcode Scanner'), icon: 'fal fa-barcode-scan' },
 ]
 
 const isModalOpen = ref(false)
