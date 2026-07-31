@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowOrgSupplier extends OrgAction
 {
+    use WithAgentOrganisation;
     use WithOrgSupplierSubNavigation;
 
     private OrgAgent|Organisation $parent;
@@ -36,12 +38,11 @@ class ShowOrgSupplier extends OrgAction
         return $orgSupplier;
     }
 
-
-
     public function asController(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
         $this->parent = $organisation;
         $this->initialisation($organisation, $request)->withTab(SupplierTabsEnum::values());
+        $this->authorizeProcurementRecord($orgSupplier);
 
         return $this->handle($orgSupplier);
     }
@@ -49,14 +50,19 @@ class ShowOrgSupplier extends OrgAction
     public function maya(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
         $this->maya   = true;
+        $this->parent = $organisation;
         $this->initialisation($organisation, $request)->withTab(SupplierTabsEnum::values());
+        $this->authorizeProcurementRecord($orgSupplier);
+
         return $this->handle($orgSupplier);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {
         $this->parent = $orgAgent;
         $this->initialisation($organisation, $request)->withTab(SupplierTabsEnum::values());
+        $this->authorizeProcurementRecord($orgSupplier);
 
         return $this->handle($orgSupplier);
     }
@@ -66,24 +72,21 @@ class ShowOrgSupplier extends OrgAction
         return Inertia::render(
             'Procurement/OrgSupplier',
             [
-                'title'       => __('supplier'),
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($orgSupplier, $request),
                     'next'     => $this->getNext($orgSupplier, $request),
                 ],
+                'title'       => __('Supplier'),
                 'pageHead'    => [
-                    'icon'    => [
+                    'title'         => $orgSupplier->supplier->name,
+                    'icon'          => [
                         'icon'  => 'fal fa-person-dolly',
                         'title' => __('Supplier')
                     ],
-                    'title'   => $orgSupplier->supplier->name,
-                    'model'     => __('Supplier'),
+                    'model'         => __('Supplier'),
                     'subNavigation' => $this->getOrgSupplierNavigation($orgSupplier),
-                    'actions' => [
+                    'actions'       => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -105,7 +108,7 @@ class ShowOrgSupplier extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => SupplierTabsEnum::navigation()
+                    'navigation' => SupplierTabsEnum::navigation(),
                 ],
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
@@ -114,7 +117,7 @@ class ShowOrgSupplier extends OrgAction
 
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgSupplier))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplier)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplier))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
     }
@@ -123,7 +126,6 @@ class ShowOrgSupplier extends OrgAction
     {
         $headCrumb = function (OrgSupplier $orgSupplier, array $routeParameters, $suffix) {
             return [
-
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
@@ -137,9 +139,7 @@ class ShowOrgSupplier extends OrgAction
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
-
             ];
         };
 
@@ -220,24 +220,23 @@ class ShowOrgSupplier extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'    => $orgSupplier->organisation->slug,
-                        'orgSupplier'     => $orgSupplier->slug
-                    ]
-
-                ]
+                        'organisation' => $orgSupplier->organisation->slug,
+                        'orgSupplier'  => $orgSupplier->slug,
+                    ],
+                ],
             ],
             'grp.org.procurement.org_agents.show.suppliers.show' => [
                 'label' => $orgSupplier->supplier->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'    => $orgSupplier->organisation->slug,
-                        'orgAgent'        => $this->parent->slug,
-                        'orgSupplier'     => $orgSupplier->slug
-                    ]
-
-                ]
+                        'organisation' => $orgSupplier->organisation->slug,
+                        'orgAgent'     => $this->parent->slug,
+                        'orgSupplier'  => $orgSupplier->slug,
+                    ],
+                ],
             ],
+            default => null,
         };
     }
 }

@@ -9,38 +9,25 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
-use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\SupplierProduct;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetSupplierProductShowcase
 {
     use AsObject;
+    use WithSupplierProductShowcase;
 
     public function handle(SupplierProduct $supplierProduct): array
     {
-        $data = [
-            'contactCard' => [
-                'company'  => $supplierProduct->supplier->name,
-                'contact'  => $supplierProduct->supplier->contact_name ?? '',
-                'email'    => $supplierProduct->supplier->email ?? '',
-                'phone'    => $supplierProduct->supplier->phone ?? '',
-                'location' => $supplierProduct->supplier->location ?? '',
-                // 'address'  => AddressResource::make($agent->organisation->address)->getArray(),
-                'photo'    => $supplierProduct->supplier->imageSources()
-            ],
-            'stats'       => [
-                [
-                    'label' => __('purchase orders'),
-                    'count' => $supplierProduct->stats->number_purchase_orders,
-                    'full'  => true
-                ],
-                [
-                    'label' => __('deliveries'),
-                    'count' => $supplierProduct->stats->number_stock_deliveries
-                ],
+        return array_merge(
+            $this->getSupplierProductShowcase($supplierProduct),
+            [
+                'parties' => array_values(array_filter([
+                    $this->getSupplierParty($supplierProduct->supplier),
+                    $this->getAgentParty($supplierProduct->agent),
+                ])),
+                'stats'   => $this->getProcurementStatsBoxes($supplierProduct->stats),
             ]
-        ];
-        return $data;
+        );
     }
 }

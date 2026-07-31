@@ -15,6 +15,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -41,6 +42,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowStockDelivery extends OrgAction
 {
     use WithStockDeliveryWeightAndVolume;
+    use WithAgentOrganisation;
 
     public function authorize(): bool
     {
@@ -63,6 +65,7 @@ class ShowStockDelivery extends OrgAction
     {
         $this->stockDelivery = $stockDelivery;
         $this->initialisation($organisation, $request)->withTab($this->getTabs($stockDelivery));
+        $this->authorizeProcurementRecord($stockDelivery);
 
         return $this->handle($stockDelivery);
     }
@@ -73,6 +76,7 @@ class ShowStockDelivery extends OrgAction
         $this->stockDelivery = $stockDelivery;
 
         $this->initialisation($organisation, $request)->withTab($this->getTabs($stockDelivery));
+        $this->authorizeProcurementRecord($stockDelivery);
     }
 
     public function htmlResponse(StockDelivery $stockDelivery, ActionRequest $request): Response

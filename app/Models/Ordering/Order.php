@@ -367,6 +367,7 @@ class Order extends Model implements HasMedia, Auditable
         'public_notes',
         'internal_notes',
         'shipping_notes',
+        'private_warehouse_note',
 
         // Totals & Quantities
         'number_item_transactions',

@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,6 +22,7 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -53,6 +55,7 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(TradeUnitTimeSeries $timeSeries, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_trade_units as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
@@ -66,13 +69,11 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'trade_unit_time_series_id' => $timeSeries->id,
-                    'period'                    => $period,
-                    'frequency'                 => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'trade_unit_time_series_id' => $timeSeries->id,
+                'period'                    => $period,
+                'frequency'                 => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
                     'sales_external'              => $result->sales_external,
@@ -89,26 +90,28 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['trade_unit_time_series_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(TradeUnitTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(TradeUnitTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
     {
+        $rows = [];
+
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
         foreach ($nonInvoicePeriods as $periodData) {
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'trade_unit_time_series_id' => $timeSeries->id,
-                    'period'                    => $periodData['period'],
-                    'frequency'                 => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'trade_unit_time_series_id' => $timeSeries->id,
+                'period'                    => $periodData['period'],
+                'frequency'                 => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
                     'sales_external'              => 0,
@@ -125,7 +128,9 @@ class ProcessTradeUnitTimeSeriesRecords implements ShouldBeUnique
                     'refunds'                     => 0,
                     'orders'                      => 0,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 }

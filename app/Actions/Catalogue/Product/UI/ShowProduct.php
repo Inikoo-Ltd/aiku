@@ -438,6 +438,8 @@ class ShowProduct extends OrgAction
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
                 ],
                 'product_id'           => $product->id,
+                'product_units'        => (int)$product->units,
+                'product_unit'         => $product->unit,
                 'shop_data'            => [
                     'id'            => $product->shop_id,
                     'slug'          => $product->shop->slug,

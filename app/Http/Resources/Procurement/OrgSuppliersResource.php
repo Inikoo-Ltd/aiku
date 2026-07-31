@@ -19,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $number_org_supplier_products
  * @property int $number_purchase_orders
  * @property int $number_stock_deliveries
+ * @property string|null $organisation_name
  */
 class OrgSuppliersResource extends JsonResource
 {
@@ -39,6 +40,7 @@ class OrgSuppliersResource extends JsonResource
             'number_org_supplier_products' => $this->number_org_supplier_products,
             'number_purchase_orders'       => $this->number_purchase_orders,
             'number_stock_deliveries'      => $this->number_stock_deliveries,
+            'organisation_name'            => $this->organisation_name,
         ];
     }
 }

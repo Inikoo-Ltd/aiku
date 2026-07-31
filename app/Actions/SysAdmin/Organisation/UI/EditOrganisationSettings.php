@@ -292,7 +292,7 @@ class EditOrganisationSettings extends OrgAction
                         ],
                         [
                             'label' => __('Leave Quota'),
-                            'icon' => 'fa-light fa-calendar-clock',
+                            'icon' => 'fa-light fa-calendar-check',
                             'fields' => [
                                 'hr_annual_leave_days' => [
                                     'type' => 'input',

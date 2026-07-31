@@ -4,7 +4,7 @@ import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { ctrans } from "@/Composables/useTrans"
-import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
 import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -117,10 +117,11 @@ console.log('related product :', props)
           <SwiperSlide v-for="(product, index) in products" :key="product?.id || index" class="!h-auto">
             <div class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
               <div v-if="product" class="flex-1 flex flex-col product-card">
-                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'" :key="`ecom-${key}`"
+                <ProductRenderEcom v-if="layout?.retina?.type === 'b2b'" :key="`ecom-${key}`" code="products-1"
                   :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover"
                   :buttonStyle="layout?.buttonBasket?.buttonStyle" :product="product" :hideLogin="true"
-                  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" />
+                  :screenType="screenType"
+                  :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], {})" />
                 <ProductRender v-else :product="product" :productHasPortfolio="[]"  :key="`ds-${key}`" />
               </div>
             </div>

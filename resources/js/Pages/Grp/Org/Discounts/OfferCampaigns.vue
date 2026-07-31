@@ -7,8 +7,8 @@
 
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
+import { defineAsyncComponent } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import TableOfferCampaigns from "@/Components/Shop/Offers/TableOfferCampaigns.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Table as TableTS } from "@/types/Table"
@@ -18,6 +18,8 @@ import { faStop } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faRepeat, faPercentage, faFlag, faUsers, faTags, faBox, faHandHoldingUsd, faStop)
+
+const TableOfferCampaigns = defineAsyncComponent(() => import("@/Components/Shop/Offers/TableOfferCampaigns.vue"))
 
 defineProps<{
     data: TableTS
@@ -29,5 +31,17 @@ defineProps<{
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <TableOfferCampaigns :data="data" />
+
+    <Suspense>
+        <template #default>
+            <TableOfferCampaigns :data="data" />
+        </template>
+
+        <template #fallback>
+            <div class="px-4 py-3 space-y-2" aria-hidden="true">
+                <div class="h-10 w-full rounded-sm bg-gray-200 animate-pulse"></div>
+                <div v-for="row in 5" :key="row" class="h-8 w-full rounded-sm bg-gray-100 animate-pulse"></div>
+            </div>
+        </template>
+    </Suspense>
 </template>

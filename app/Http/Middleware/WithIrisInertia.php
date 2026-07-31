@@ -96,6 +96,7 @@ trait WithIrisInertia
                 "website"              => WebsiteIrisResource::make($website)->getArray(),
                 'theme'                => Arr::get($website->published_layout, 'theme'),
                 'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
+                'iris_search_model'    => Arr::get($website->settings, 'iris_search_model', 'luigi'),
                 'is_have_gtm'          => (bool)Arr::get($website->settings, 'google_tag_id'),
                 'currency'             => [
                     'code'   => $shop->currency->code,

@@ -18,6 +18,7 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import FooterMessage from '@/Components/Footer/FooterMessage.vue'
 import TimezoneDisplay from './TimezoneDisplay.vue'
 import { useFormatTime } from '@/Composables/useFormatTime.js'
+import { Link } from '@inertiajs/vue3'
 
 
 const layout = inject('layout', layoutStructure)
@@ -40,7 +41,7 @@ library.add(faHeart, faComputerClassic, faDiscord)
                             target="_blank"
                             rel="noopener noreferrer"
                             class="hover:underline hover:text-gray-900"
-                        >{{ layout.app.last_deployment_hash.slice(0, 7) }}</a><span v-tooltip="ctrans('Last time of the system updated')" class="ml-2 italic opacity-80 text-sm">{{ useFormatTime(layout?.app?.last_deployment_at ?? undefined, { formatTime: 'hms'}) }}</span>
+                        >{{ layout.app.last_deployment_hash.slice(0, 7) }}</a><Link :href="route('grp.deploys')" v-tooltip="ctrans('Last time of the system updated')" class="ml-2 italic opacity-80 text-sm">{{ useFormatTime(layout?.app?.last_deployment_at ?? undefined, { formatTime: 'hms'}) }}</Link>
                     </div>
                     <img class="h-3 select-none hidden lg:inline pl-1 pr-1" src="/art/logo-yellow.svg" alt="aiku" />
                     <span class="text-xs hidden lg:inline">
@@ -59,6 +60,9 @@ library.add(faHeart, faComputerClassic, faDiscord)
             <!-- Right: Tab Section -->
             <div class="flex items-center text-sm">
                 <div id="help-articles" class="h-full">
+
+                </div>
+                <div id="clone-from-master-progress" class="h-full">
 
                 </div>
                <!--  <FooterCurrency /> -->

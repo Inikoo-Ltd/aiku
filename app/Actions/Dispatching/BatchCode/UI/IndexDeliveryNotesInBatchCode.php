@@ -96,7 +96,7 @@ class IndexDeliveryNotesInBatchCode
                 'delivery_notes.has_extra_packing',
                 'delivery_notes.shipping_data',
                 'delivery_notes.customer_notes',
-                'delivery_notes.internal_notes',
+                'delivery_notes.private_warehouse_note as internal_notes',
                 'delivery_notes.public_notes',
                 'delivery_notes.shipping_notes',
                 'customers.slug as customer_slug',

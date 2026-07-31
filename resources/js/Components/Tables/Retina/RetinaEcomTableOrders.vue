@@ -25,9 +25,9 @@ defineProps<{
 
 const locale = inject("locale", null)
 
+const routeCurrent = route().current()
 function orderRoute(order) {
-    console.log(route().current())
-    switch (route().current()) {
+    switch (routeCurrent) {
         case "retina.ecom.orders.index":
             return route(
                 "retina.ecom.orders.show",

@@ -14,6 +14,7 @@ use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Http\Resources\Procurement\OrgSupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\OrgAgent;
@@ -34,6 +35,7 @@ class IndexOrgSupplierProducts extends OrgAction
 {
     use WithOrgAgentSubNavigation;
     use WithOrgSupplierSubNavigation;
+    use WithAgentOrganisation;
 
     private OrgSupplier|OrgAgent|Organisation $parent;
 
@@ -58,21 +60,36 @@ class IndexOrgSupplierProducts extends OrgAction
         $queryBuilder = QueryBuilder::for(OrgSupplierProduct::class);
         $queryBuilder->leftJoin('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id');
 
+        $organisationAgent = $this->getParentOrganisationAgent($parent);
+
         if ($parent instanceof OrgAgent) {
             $queryBuilder->where('org_supplier_products.org_agent_id', $parent->id);
         } elseif ($parent instanceof OrgSupplier) {
             $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id);
+        } elseif ($organisationAgent) {
+            $queryBuilder->whereIn('org_supplier_products.org_agent_id', function ($query) use ($organisationAgent) {
+                $query->select('id')
+                    ->from('org_agents')
+                    ->where('org_agents.agent_id', $organisationAgent->id);
+            });
         } else {
             $queryBuilder->where('org_supplier_products.organisation_id', $parent->id);
         }
 
+        $queryBuilder->select([
+            'org_supplier_products.slug',
+            'supplier_products.code',
+            'supplier_products.name',
+        ]);
+
+        if ($organisationAgent) {
+            $queryBuilder
+                ->leftJoin('organisations', 'org_supplier_products.organisation_id', 'organisations.id')
+                ->addSelect(['organisations.name as organisation_name']);
+        }
+
         return $queryBuilder
             ->defaultSort('supplier_products.code')
-            ->select([
-                'org_supplier_products.slug',
-                'supplier_products.code',
-                'supplier_products.name'
-            ])
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -92,8 +109,13 @@ class IndexOrgSupplierProducts extends OrgAction
                 ->withGlobalSearch()
                 ->withLabelRecord([__('Supplier Product'), __('Supplier Products')])
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->defaultSort('code');
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($this->getParentOrganisationAgent($this->parent)) {
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
+            }
+
+            $table->defaultSort('code');
         };
     }
 
