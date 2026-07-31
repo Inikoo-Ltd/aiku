@@ -2,7 +2,7 @@
 import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue";
 
-defineProps<{
+const props = defineProps<{
     blogs: any
 }>()
 
@@ -26,12 +26,13 @@ defineProps<{
                 <article v-for="post in blogs" :key="post.id"
                     class="rounded-2xl bg-white h-fit shadow-md transition duration-300 overflow-hidden border border-gray-200">
                     <a :href="post.url ? post.url : '#' " class="block">
-                        <Image
+                        <Image v-if="post.image_src"
                             :src="post.image_src"
                             :alt="post.image_alt"
                             class="w-full h-56 cursor-pointer"
                             :imageCover="true"
                         />
+                        <img v-if="post.third_party_image_preview" :alt="post.image_alt ? post.image_alt : post.title"  :src="post.third_party_image_preview"  class="w-full h-56 cursor-pointer" />
                     </a>
                     
                     <div class="p-6 flex flex-col h-full justify-between">

@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Describe the Aiku database schema: list tables matching a name, or get columns, types and foreign keys for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
+#[Description('Describe the Aiku database schema: list tables matching a name, or get columns, types, foreign keys and the observed values of enum-like columns (type, state, status) for specific tables. Use this before writing SQL instead of querying information_schema by hand.')]
 #[IsReadOnly]
 class DescribeTablesTool extends Tool
 {
@@ -87,6 +87,15 @@ class DescribeTablesTool extends Tool
                 'type'     => $column->data_type,
                 'nullable' => $column->is_nullable === 'YES',
             ];
+        }
+        $enumStats = DB::connection('aiku_read_only')->select("
+            SELECT tablename, attname, array_to_json(most_common_vals::text::text[]) AS vals
+            FROM pg_stats
+            WHERE schemaname = 'public' AND tablename = ANY(?)
+              AND attname IN ('type', 'state', 'status') AND most_common_vals IS NOT NULL
+        ", ['{'.implode(',', $tables).'}']);
+        foreach ($enumStats as $stat) {
+            $schema[$stat->tablename]['enum_values'][$stat->attname] = json_decode($stat->vals);
         }
         foreach ($foreignKeys as $foreignKey) {
             $schema[$foreignKey->table_name]['foreign_keys'][] = $foreignKey->column_name.' → '.$foreignKey->references_table;

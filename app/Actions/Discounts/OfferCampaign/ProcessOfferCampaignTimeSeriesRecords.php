@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Discounts\OfferCampaignTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,6 +22,7 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -61,6 +63,7 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(OfferCampaignTimeSeries $timeSeries, string $from, string $to, int $offerCampaignId): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transactions')
             ->join('invoice_transaction_has_offer_allowances as itoha', function ($join) use ($offerCampaignId) {
@@ -82,13 +85,11 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'offer_campaign_time_series_id' => $timeSeries->id,
-                    'period'                        => $period,
-                    'frequency'                     => $timeSeries->frequency->singleLetter()
-                ],
-                [
+            $rows[] = [
+                'offer_campaign_time_series_id' => $timeSeries->id,
+                'period'                        => $period,
+                'frequency'                     => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                           => $periodFrom,
                     'to'                             => $periodTo,
                     'sales_external'                 => $result->sales_external,
@@ -102,26 +103,28 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
                     'discount_org_currency_external' => $result->discount_org_currency_external,
                     'discount_grp_currency_external' => $result->discount_grp_currency_external,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['offer_campaign_time_series_id', 'period', 'frequency']);
     }
 
-    protected function processPeriodsWithoutInvoices(OfferCampaignTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(OfferCampaignTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
     {
+        $rows = [];
+
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
         foreach ($nonInvoicePeriods as $periodData) {
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'offer_campaign_time_series_id' => $timeSeries->id,
-                    'period'                        => $periodData['period'],
-                    'frequency'                     => $timeSeries->frequency->singleLetter()
-                ],
-                [
+            $rows[] = [
+                'offer_campaign_time_series_id' => $timeSeries->id,
+                'period'                        => $periodData['period'],
+                'frequency'                     => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                           => $periodData['from'],
                     'to'                             => $periodData['to'],
                     'sales_external'                 => 0,
@@ -135,7 +138,9 @@ class ProcessOfferCampaignTimeSeriesRecords implements ShouldBeUnique
                     'discount_org_currency_external' => 0,
                     'discount_grp_currency_external' => 0,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 }

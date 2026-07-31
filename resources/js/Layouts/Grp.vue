@@ -28,6 +28,7 @@ import { setColorStyleRoot } from "@/Composables/useApp"
 import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
+import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgress.vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
 
@@ -267,6 +268,8 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
     </div>
 
     <Footer />
+
+    <CloneFromMasterProgress />
 
     <Dialog
         v-model:visible="isModalOpen"

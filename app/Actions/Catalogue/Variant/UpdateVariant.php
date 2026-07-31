@@ -81,14 +81,22 @@ class UpdateVariant extends OrgAction
                         'comment' => 'first publish'
                     ]);
                     $leader->refresh();
+                } else {
+                    UpdateWebpage::make()->action($leader->webpage()->first(), [
+                        'state_data' => [
+                            'state'                 => WebpageStateEnum::LIVE->value,
+                        ]
+                    ]);
                 }
 
                 foreach ($productsInVariant as $product) {
+                    if ($product->id == $leader->id) continue; // Skip if leader
+
                     if ($product->webpage()->exists()) {
                         UpdateWebpage::make()->action($product->webpage()->first(), [
                              'state_data' => [
                                  'state'                 => $product->id == $variant->leader_id ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
-                                 'redirect_webpage_id'   => $variant->leaderProduct->webpage?->id
+                                 'redirect_webpage_id'   => $leader->webpage->id,
                              ]
                         ]);
                     } else {

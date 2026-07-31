@@ -104,8 +104,6 @@ class ValidateClockingMachineQrCode
             throw new Exception(__('User is not associated with an employee record.'));
         }
 
-        $this->guardAgainstFrequentClocking($employee);
-
         $clockedInAt = now();
 
         $modelData = [

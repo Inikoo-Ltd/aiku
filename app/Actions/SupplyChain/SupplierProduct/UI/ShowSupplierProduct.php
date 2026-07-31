@@ -11,6 +11,8 @@ namespace App\Actions\SupplyChain\SupplierProduct\UI;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\InertiaAction;
+use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
+use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\UI\SupplyChain\SupplierProductTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\SupplyChain\SupplierProductResource;
@@ -31,17 +33,25 @@ class ShowSupplierProduct extends InertiaAction
         return $supplierProduct;
     }
 
+    private function getTabs(): array
+    {
+        return [
+            SupplierProductTabsEnum::SHOWCASE->value,
+            SupplierProductTabsEnum::HISTORY->value,
+        ];
+    }
+
 
     public function asController(SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct
     {
-        $this->initialisation($request)->withTab(SupplierProductTabsEnum::values());
+        $this->initialisation($request)->withTab($this->getTabs());
 
         return $this->handle($supplierProduct);
     }
 
     public function inSupplier(Supplier $supplier, SupplierProduct $supplierProduct, ActionRequest $request): SupplierProduct
     {
-        $this->initialisation($request)->withTab(SupplierProductTabsEnum::values());
+        $this->initialisation($request)->withTab($this->getTabs());
 
         return $this->handle($supplierProduct);
     }
@@ -77,7 +87,15 @@ class ShowSupplierProduct extends InertiaAction
                 'supplier'    => new SupplierProductResource($supplierProduct),
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => SupplierProductTabsEnum::navigation()
+                    'navigation' => SupplierProductTabsEnum::navigationExcept([
+                        SupplierProductTabsEnum::PURCHASE_SALES,
+                        SupplierProductTabsEnum::SUPPLIER_PRODUCTS,
+                        SupplierProductTabsEnum::PURCHASE_ORDERS,
+                        SupplierProductTabsEnum::DELIVERIES,
+                        SupplierProductTabsEnum::FEEDBACKS,
+                        SupplierProductTabsEnum::ATTACHMENTS,
+                        SupplierProductTabsEnum::IMAGES,
+                    ])
                 ],
                 SupplierProductTabsEnum::SHOWCASE->value => $this->tab == SupplierProductTabsEnum::SHOWCASE->value ?
                     fn () => GetSupplierProductShowcase::run($supplierProduct)
@@ -124,20 +142,46 @@ class ShowSupplierProduct extends InertiaAction
         return match ($routeName) {
             'grp.supply-chain.suppliers.supplier_products.show' =>
             array_merge(
-                IndexSupplierProducts::make()->getBreadcrumbs($routeName, $routeParameters, $supplierProduct->supplier),
+                ShowSupplier::make()->getBreadcrumbs(
+                    $supplierProduct->supplier,
+                    'grp.supply-chain.suppliers.show',
+                    ['supplier' => $supplierProduct->supplier->slug]
+                ),
                 $headCrumb(
                     $supplierProduct,
                     [
                         'index' => [
                             'name'       => 'grp.supply-chain.suppliers.supplier_products.index',
-                            'parameters' => []
+                            'parameters' => [
+                                'supplier' => $supplierProduct->supplier->slug
+                            ]
                         ],
                         'model' => [
                             'name'       => 'grp.supply-chain.suppliers.supplier_products.show',
                             'parameters' => [
-                                'supplier' => $supplierProduct->supplier->slug,
+                                'supplier'        => $supplierProduct->supplier->slug,
                                 'supplierProduct' => $supplierProduct->slug
-                                ]
+                            ]
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+            'grp.supply-chain.supplier_products.show' =>
+            array_merge(
+                ShowSupplyChainDashboard::make()->getBreadcrumbs(),
+                $headCrumb(
+                    $supplierProduct,
+                    [
+                        'index' => [
+                            'name'       => 'grp.supply-chain.supplier_products.index',
+                            'parameters' => []
+                        ],
+                        'model' => [
+                            'name'       => 'grp.supply-chain.supplier_products.show',
+                            'parameters' => [
+                                'supplierProduct' => $supplierProduct->slug
+                            ]
                         ]
                     ],
                     $suffix

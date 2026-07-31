@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Rules\NoDomainString;
@@ -51,7 +52,10 @@ class UpdateRedirect extends OrgAction
         return [
             'type'                     => ['sometimes', Rule::enum(RedirectTypeEnum::class)],
             'path'                     => ['sometimes', 'string', new NoDomainString()],
-            'to_webpage_id'            => ['sometimes', 'nullable', 'exists:webpages,id'],
+            'to_webpage_id' => [
+                'required',
+                Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
+            ],
         ];
     }
 

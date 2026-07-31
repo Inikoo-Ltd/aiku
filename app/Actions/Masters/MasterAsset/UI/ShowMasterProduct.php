@@ -243,14 +243,10 @@ class ShowMasterProduct extends OrgAction
                             ]
                         ] : false,
                         [
-                            'key'   => 'assign',
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Add to Other Shop'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
+                            'key'       => 'assign',
+                            'type'      => 'button',
+                            'style'     => 'create',
+                            'label'     => __('Add to Other Shop'),
                         ],
                     ],
                     'subNavigation'        => $this->getMasterProductsSubNavigation($masterAsset),

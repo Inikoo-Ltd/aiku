@@ -58,8 +58,8 @@ class UpdateWebpage extends OrgAction
         if (Arr::has($modelData, 'product_description_extra')) {
             $productData['description_extra'] = Arr::pull($modelData, 'product_description_extra');
         }
-        // Prepare new SEO data
-        $newData = [];
+        // Prepare new SEO data, keeping the keys that are not being submitted
+        $newData = $oldSeoData ?? [];
 
         // Merge structured_data properly
         data_set(
@@ -67,6 +67,10 @@ class UpdateWebpage extends OrgAction
             'structured_data',
             Arr::pull($modelData, 'structured_data', Arr::get($oldSeoData, 'structured_data', []))
         );
+
+        if (Arr::has($modelData, 'seo_image_alt')) {
+            data_set($newData, 'image_alt', Arr::pull($modelData, 'seo_image_alt'));
+        }
 
         // Example: reassign back to model or continue processing
         $modelData['seo_data'] = $newData;
@@ -199,6 +203,7 @@ class UpdateWebpage extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
+            'seo_image_alt'                  => ['sometimes', 'nullable', 'string', 'max:255'],
             'seo_data'                       => ['sometimes', 'array'],
             'structured_data'                => ['sometimes', 'nullable', 'string'],
             'level'                          => ['sometimes', 'integer'],

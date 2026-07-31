@@ -54,7 +54,9 @@ export const retinaLayoutStructure = {
             shop_language: {} as Language,
             language_options: {} as { [key: string]: Language },
         },
-        is_logged_in: false
+        is_logged_in: false,
+        iris_search_model: 'luigi' as 'luigi' | 'internal',
+        luigisbox_tracker_id: '' as string | null,
     },
     iris_variables: {
         cart_count: 0,
