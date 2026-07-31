@@ -149,7 +149,7 @@ const links = computed(() => {
 <template>
     <!-- Box: Url and Buttons in a single row -->
     <div class="px-6 py-12 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_20rem] gap-6">
             <!-- URL Box + compact visitor stats -->
             <div class="">
                 <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
