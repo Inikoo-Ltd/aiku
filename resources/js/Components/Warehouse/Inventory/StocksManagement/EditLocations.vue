@@ -2,20 +2,18 @@
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedling, faTrash } from "@fal"
-import { faBan, faDotCircle as fasDotCircle } from "@fas"
+import { faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, inject } from 'vue'
+import { computed, ref, inject } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router } from '@inertiajs/vue3'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { StockLocation, StockManagementRoutes } from '@/types/Inventory/StocksManagement'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
-import { stockLocation } from '@/types/StockLocation'
+import { Dialog } from 'primevue'
 library.add(faDotCircle, fasDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedling, faTrash)
 
-const layout = inject('layout', layoutStructure)
+const screenType = inject('screenType', ref('desktop'))
 
 const props = defineProps<{
     locations: StockLocation[]
@@ -23,50 +21,16 @@ const props = defineProps<{
 }>()
 
 
-const emits = defineEmits(['close', 'confirm-open', 'confirm-close'])
+const emits = defineEmits(['close'])
 
-const isLoadingAddNewLocation = ref(false)
-const onAddNewLocation = () => {
-    // Section: Submit
-    router.post(
-        route(props.routes.associate_location_route.name, {
-            ...props.routes.associate_location_route.parameters,
-            location: newLocation.value?.id
-        }),
-        {
+const locationToUnlink = ref<StockLocation | null>(null)
+const isConfirmUnlinkOpen = computed({
+    get: () => locationToUnlink.value !== null,
+    set: (value: boolean) => {
+        if (!value) locationToUnlink.value = null
+    }
+})
 
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingAddNewLocation.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully add new location :xlocation", { xlocation: newLocation.value?.code || 'no_code' }),
-                    type: "success"
-                })
-                newLocation.value = null
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add new location"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingAddNewLocation.value = false
-            },
-        }
-    )
-}
-
-const isConfirmOpen = ref(false)
-
-const newLocation = ref<stockLocation | null>(null)
 const unlinkingLocationId = ref<any>(null)
 const handleUnlink = (loc: { id: any }) => {
     router.delete(
@@ -84,6 +48,7 @@ const handleUnlink = (loc: { id: any }) => {
                     text: trans("Location unlinked successfully"),
                     type: "success"
                 })
+                locationToUnlink.value = null
             },
             onFinish: () => {
                 unlinkingLocationId.value = null
@@ -121,37 +86,11 @@ const handleUnlink = (loc: { id: any }) => {
                         </span>
                     </div>
                     <div class="col-span-2 md:col-span-1 flex justify-end items-center gap-x-2">
-                        <ModalConfirmationDelete
-                            v-if="Number(loc.quantity) > 0"
-                            :routeDelete="{
-                                name: props.routes.disassociate_location_route.name,
-                                parameters: { locationOrgStock: loc.id }
-                            }"
-                            :title="trans('Are you sure you want to unlink location?')"
-                           :description="trans(
-                                ':qty stock will be removed and marked as lost!',
-                                { qty: Number(loc.quantity) }
-                            )"
-                            isFullLoading
-                            :noLabel="trans('Yes, unlink location :xloc', { xloc: loc.code })"
-                            noIcon="fal fa-unlink"
-                        >
-                        <!-- x  -->
-                            <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
-                                <div @click="() => {
-                                    changeModel()
-                                }" xclick="handleUnlink(loc)" class="cursor-pointer text-red-500 opacity-50 hover:opacity-100" v-tooltip="trans('Unlink Location')">
-                                    <LoadingIcon v-if="isLoadingdelete" />
-                                    <FontAwesomeIcon v-else icon="fal fa-unlink" class="" fixed-width aria-hidden="true" />
-                                </div>
-                            </template>
-                        </ModalConfirmationDelete>
                         <div
-                            v-else
-                            @click="unlinkingLocationId === loc.id ? null : handleUnlink(loc)"
+                            @click="unlinkingLocationId === loc.id ? null : (Number(loc.quantity) > 0 ? locationToUnlink = loc : handleUnlink(loc))"
                             class="cursor-pointer text-red-500 opacity-50 hover:opacity-100"
                             :class="{ 'pointer-events-none': unlinkingLocationId === loc.id }"
-                            v-tooltip="trans('Unlink Location (no stock)')"
+                            v-tooltip="Number(loc.quantity) > 0 ? trans('Unlink Location') : trans('Unlink Location (no stock)')"
                         >
                             <LoadingIcon v-if="unlinkingLocationId === loc.id" />
                             <FontAwesomeIcon v-else icon="fal fa-unlink" fixed-width />
@@ -177,5 +116,38 @@ const handleUnlink = (loc: { id: any }) => {
             <Button :label="trans('Cancel')" type="tertiary" icon="far fa-arrow-left" @click="() => emits('close')" />
         </div>
 
+        <Dialog
+            v-model:visible="isConfirmUnlinkOpen"
+            modal
+            :header="trans('Are you sure you want to unlink location?')"
+            :dismissableMask="screenType === 'desktop'"
+            :draggable="false"
+            :style="{ width: '32rem' }"
+            :breakpoints="{ '640px': '90vw' }"
+        >
+            <div class="flex items-start gap-x-3">
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-600" fixed-width aria-hidden="true" />
+                </div>
+                <p class="text-sm text-gray-500">
+                    {{ trans(':qty stock will be removed and marked as lost!', { qty: Number(locationToUnlink?.quantity ?? 0) }) }}
+                </p>
+            </div>
+
+            <div class="mt-5 flex flex-row-reverse gap-2">
+                <Button
+                    type="red"
+                    icon="fal fa-unlink"
+                    :label="trans('Yes, unlink location :xloc', { xloc: locationToUnlink?.code ?? '' })"
+                    :loading="unlinkingLocationId === locationToUnlink?.id"
+                    @click="() => locationToUnlink && handleUnlink(locationToUnlink)"
+                />
+                <Button
+                    type="tertiary"
+                    :label="trans('Cancel')"
+                    @click="locationToUnlink = null"
+                />
+            </div>
+        </Dialog>
     </div>
 </template>
