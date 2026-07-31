@@ -1714,3 +1714,26 @@ test('do not guess a barcode shared by two org stocks of the same organisation',
     expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->first()))->toBeNull()
         ->and(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->last()))->toBeNull();
 });
+
+test('set org stock barcode by hand marks it independent and enforces uniqueness', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => ' 5050000000055 ']);
+    expect($orgStock->barcode)->toBe('5050000000055')
+        ->and($orgStock->independent_barcode)->toBeTrue();
+
+    $otherStock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $otherOrgStock = StoreOrgStock::make()->action($this->organisation, $otherStock);
+
+    expect(fn () => UpdateOrgStock::make()->action($otherOrgStock, ['barcode' => '5050000000055']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => null]);
+    expect($orgStock->barcode)->toBeNull()
+        ->and($orgStock->independent_barcode)->toBeFalse();
+});

@@ -39,6 +39,11 @@ class UpdateOrgStock extends OrgAction
             $modelData['consumables'] = $this->parseConsumables($modelData['consumables']) ?: null;
         }
 
+        if (Arr::exists($modelData, 'barcode')) {
+            $modelData['barcode']             = blank($modelData['barcode']) ? null : trim($modelData['barcode']);
+            $modelData['independent_barcode'] = $modelData['barcode'] !== null;
+        }
+
         $orgStock = $this->update($orgStock, $modelData, ['data', 'settings']);
 
         $changes = $orgStock->getChanges();
@@ -75,6 +80,16 @@ class UpdateOrgStock extends OrgAction
             'is_on_demand' => ['sometimes', 'boolean'],
             'name'         => ['sometimes', 'string', 'max:255'],
             'packed_in'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'barcode'      => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:54',
+                Rule::unique('org_stocks', 'barcode')
+                    ->where('organisation_id', $this->orgStock->organisation_id)
+                    ->whereNull('deleted_at')
+                    ->ignore($this->orgStock->id),
+            ],
             'note_to_pickers' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'note_to_packers' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'consumables'     => [
