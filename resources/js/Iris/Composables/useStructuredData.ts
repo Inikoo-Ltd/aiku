@@ -114,8 +114,7 @@ export const generateProductsStructureFromProductsList = ({
             const imageUrl =
                 product.web_images?.main?.original?.original ??
                 product.web_images?.main?.original ??
-                product.web_images?.main?.gallery?.original ??
-                product.web_images?.main?.gallery ??
+                expandGallery(product.web_images?.main?.gallery)?.original ??
                 product.image?.source?.original
 
             if (imageUrl) {
@@ -178,12 +177,10 @@ export const getEntityImageUrls = (entity: Record<string, any> | null | undefine
     const candidates = [
         entity?.web_images?.main?.original?.original,
         entity?.web_images?.main?.original,
-        entity?.web_images?.main?.gallery?.original,
-        entity?.web_images?.main?.gallery,
+        expandGallery(entity?.web_images?.main?.gallery)?.original,
         entity?.web_images?.all?.[0]?.original?.original,
         entity?.web_images?.all?.[0]?.original,
-        entity?.web_images?.all?.[0]?.gallery?.original,
-        entity?.web_images?.all?.[0]?.gallery,
+        expandGallery(entity?.web_images?.all?.[0]?.gallery)?.original,
         entity?.image?.source?.original,
         entity?.image,
     ]
