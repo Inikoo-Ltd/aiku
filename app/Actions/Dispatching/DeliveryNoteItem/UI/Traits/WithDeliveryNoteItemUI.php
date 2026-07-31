@@ -139,6 +139,15 @@ trait WithDeliveryNoteItemUI
             'org_stocks.slug as org_stock_slug',
             'org_stocks.packed_in as packed_in',
             'org_stocks.barcode as org_stock_barcode',
+            DB::raw("(
+                SELECT trade_units.barcode
+                FROM model_has_trade_units
+                    JOIN trade_units ON trade_units.id = model_has_trade_units.trade_unit_id
+                WHERE model_has_trade_units.model_type = 'OrgStock'
+                    AND model_has_trade_units.model_id = org_stocks.id
+                ORDER BY model_has_trade_units.id
+                LIMIT 1
+            ) as trade_unit_barcode"),
             'org_stocks.note_to_pickers as org_stock_note_to_pickers',
             'org_stocks.note_to_packers as org_stock_note_to_packers',
             'delivery_note_items.quantity_waiting_crm',

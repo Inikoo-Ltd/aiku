@@ -754,14 +754,17 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>
                 {{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
-                <FontAwesomeIcon
-                    v-if="deliveryNoteItem.org_stock_barcode"
-                    v-tooltip="deliveryNoteItem.org_stock_barcode"
-                    icon="fal fa-barcode"
-                    class="ml-1 opacity-70 cursor-pointer"
-                    fixed-width
-                    aria-hidden="true"
-                />
+                <span
+                    v-if="deliveryNoteItem.trade_unit_barcode"
+                    v-tooltip="ctrans('Trade unit barcode') + ' ' + deliveryNoteItem.trade_unit_barcode"
+                >
+                    <FontAwesomeIcon
+                        icon="fal fa-barcode"
+                        class="ml-2 xopacity-70 cursor-pointer"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                </span>
             </div>
             <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
 

@@ -65,6 +65,7 @@ class FetchSingleDeliveryNoteItem extends OrgAction
             'org_stock_code'                 => $deliveryNoteItem->orgStock->code,
             'org_stock_name'                 => $deliveryNoteItem->orgStock->name,
             'org_stock_barcode'              => $deliveryNoteItem->orgStock->barcode,
+            'trade_unit_barcode'             => $deliveryNoteItem->orgStock->tradeUnits->first()?->barcode,
             'org_stock_slug'                 => $deliveryNoteItem->orgStock->slug,
             'org_stock_id'                   => $deliveryNoteItem->orgStock->id,
             'batch_code'                     => $deliveryNoteItem->batch_code,
