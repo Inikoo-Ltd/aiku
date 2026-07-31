@@ -48,6 +48,12 @@ let statusTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isLoadingSubmitQuantityProduct = ref(false)
 
+const availableStock = computed(() => {
+    const stock = customer.value.stock ?? product.value.stock
+
+    return Number.isFinite(Number(stock)) ? Number(stock) : Infinity
+})
+
 
 const pushAddToCart = (quantity: number) => {
     if (quantity <= 0) {
@@ -72,7 +78,7 @@ const setStatus = (newStatus: typeof status.value) => {
 const showWarning = () => {
     notify({
         title: trans('Stock limit reached'),
-        text: trans('You cannot add more than :stock items.', { stock: customer.value.stock }),
+        text: trans('You cannot add more than :stock items.', { stock: String(availableStock.value) }),
         type: 'error'
     })
 }
@@ -89,9 +95,12 @@ const fetchCustomerOrderingProduct = async () => {
                 })
             )
 
-            console.log('sdfsdf', response.data)
             Object.keys(response.data).forEach(key => {
-                props.customerData[key] = response.data[key]
+                if (props.customerData) {
+                    props.customerData[key] = response.data[key]
+                }
+
+                customer.value[key] = response.data[key]
             })
         } else throw new Error("Product ID is required")
 
@@ -247,7 +256,7 @@ const debouncedSync = debounce(() => {
 const incrementQty = () => {
     const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
 
-    if (current >= customer.value.stock) {
+    if (current >= availableStock.value) {
         showWarning()
         return
     }
@@ -262,8 +271,10 @@ const decrementQty = () => {
     debouncedSync()
 }
 
+
 const setQuantity = async (quantity: number) => {
     const next = Math.min(Math.max(0, quantity), customer.value.stock)
+
     if (next !== quantity) showWarning()
 
     debouncedSync.cancel()
@@ -281,7 +292,7 @@ const onManualInput = (e: Event) => {
     const value = Number((e.target as HTMLInputElement).value)
     if (Number.isNaN(value)) return
 
-    const next = Math.min(Math.max(0, value), customer.value.stock)
+    const next = Math.min(Math.max(0, value), availableStock.value)
     if (next !== value) showWarning()
 
     set(customer.value, ['quantity_ordered_new'], next)
@@ -305,9 +316,9 @@ const onNumeratorInput = (e: Event) => {
     const units = product.value.units ?? 1
     const next = value / units
 
-    if (next > customer.value.stock) {
+    if (next > availableStock.value) {
         showWarning()
-        set(customer.value, ['quantity_ordered_new'], customer.value.stock)
+        set(customer.value, ['quantity_ordered_new'], availableStock.value)
     } else {
         set(customer.value, ['quantity_ordered_new'], next)
     }
