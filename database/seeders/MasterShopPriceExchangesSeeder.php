@@ -18,7 +18,7 @@ class MasterShopPriceExchangesSeeder extends Seeder
         'aw'    => [
             'GBP' => ['is_major' => true],
             'EUR' => ['is_major' => true],
-            'PLN' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 4.3],
+            'PLN' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 4.3, 'increment' => 0.05],
             'CZK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 25.5, 'fraction_digits' => 0],
             'HUF' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 375, 'fraction_digits' => 0],
             'RON' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 5],

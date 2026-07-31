@@ -58,6 +58,8 @@ class IntrastatExportTimeSeriesRecord extends Model
     protected function casts(): array
     {
         return [
+            'quantity' => 'decimal:2',
+            'value_org_currency' => 'decimal:2',
             'from'                  => 'datetime',
             'to'                    => 'datetime',
             'partner_tax_numbers'   => 'array',

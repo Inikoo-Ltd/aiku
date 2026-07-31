@@ -44,7 +44,7 @@ test('user without stocks permission is denied', function () {
         'query'     => 'x',
     ]);
 
-    $response->assertHasErrors(['Warehouse not found or permission denied.']);
+    $response->assertHasErrors(['You do not have access to any warehouse.']);
 });
 
 test('admin user can search stock levels', function () {

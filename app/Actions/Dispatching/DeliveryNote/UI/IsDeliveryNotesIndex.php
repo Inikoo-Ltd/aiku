@@ -218,7 +218,7 @@ trait IsDeliveryNotesIndex
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
             'delivery_notes.customer_notes',
-            'delivery_notes.internal_notes',
+            'delivery_notes.private_warehouse_note as internal_notes',
             'delivery_notes.public_notes',
             'delivery_notes.shipping_notes',
             'delivery_notes.shipping_data',

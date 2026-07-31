@@ -9,9 +9,7 @@ namespace App\Actions\Helpers\Intervals;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrdersDispatchedToday;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateFinalised;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervals;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,7 +20,7 @@ class ProcessResetIntervalsShops
 
     public string $commandSignature = 'aiku:process-reset-intervals-shops';
 
-    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
+    public function handle(array $intervals = []): void
     {
         /** @var Shop $shop */
         foreach (
@@ -37,30 +35,6 @@ class ProcessResetIntervalsShops
             ])) {
                 ShopHydrateOrderStateFinalised::dispatch($shop->id);
                 ShopHydrateOrdersDispatchedToday::dispatch($shop->id);
-            }
-
-
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-                ShopHydratePlatformSalesIntervals::dispatch(
-                    shop: $shop,
-                    intervals: $intervals,
-                    doPreviousPeriods: $doPreviousPeriods
-                );
-            }
-        }
-
-        foreach (
-            Shop::whereNotIn('state', [
-                ShopStateEnum::OPEN,
-                ShopStateEnum::CLOSING_DOWN
-            ])->get() as $shop
-        ) {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-                ShopHydratePlatformSalesIntervals::dispatch(
-                    shop: $shop,
-                    intervals: $intervals,
-                    doPreviousPeriods: $doPreviousPeriods
-                )->delay(now()->addMinute())->onQueue('low-priority');
             }
         }
     }

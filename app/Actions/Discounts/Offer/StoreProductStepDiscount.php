@@ -39,6 +39,7 @@ class StoreProductStepDiscount extends OrgAction
             ->map(fn (array $step) => [
                 'min_quantity'   => (int)$step['min_quantity'],
                 'percentage_off' => (float)$step['percentage_off'],
+                'is_popular'     => (bool)Arr::get($step, 'is_popular', false),
             ])
             ->values()
             ->all();
@@ -102,6 +103,7 @@ class StoreProductStepDiscount extends OrgAction
             'steps'                  => ['required', 'array', 'min:1'],
             'steps.*.min_quantity'   => ['required', 'integer', 'min:1', 'distinct'],
             'steps.*.percentage_off' => ['required', 'numeric', 'gt:0', 'lte:1'],
+            'steps.*.is_popular'     => ['sometimes', 'boolean'],
             'start_at'               => [
                 'required',
                 'date',

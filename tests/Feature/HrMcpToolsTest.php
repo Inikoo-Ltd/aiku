@@ -49,7 +49,7 @@ test('user without hr permission is denied', function () {
         'query'        => 'x',
     ]);
 
-    $response->assertHasErrors(['Organisation not found or permission denied.']);
+    $response->assertHasErrors(['You do not have access to any organisation.']);
 });
 
 test('admin can search employee directory', function () {

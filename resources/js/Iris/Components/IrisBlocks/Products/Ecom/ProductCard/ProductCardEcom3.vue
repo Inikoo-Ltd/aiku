@@ -302,8 +302,14 @@ defineExpose({
                 <div v-if="layout?.iris?.is_logged_in && product.variant"
                     class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
                     <div class="flex justify-center">
-                        <Button :label="trans('Choose variants')" size="xs"
-                            @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" />
+                        <Button  size="xs"
+                            @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" >
+                        <template #label>
+                            <span>
+                                {{ ctrans('Choose variants') }}
+                            </span>
+                        </template>
+                        </Button>
                     </div>
                 </div>
 

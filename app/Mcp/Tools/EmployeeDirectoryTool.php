@@ -34,7 +34,7 @@ class EmployeeDirectoryTool extends AikuOrganisationTool
 
         $organisation = $this->authorisedOrganisation($request);
         if (!$organisation) {
-            return Response::error('Organisation not found or permission denied.');
+            return $this->organisationNotFoundError($request);
         }
 
         $query   = $request->string('query');
@@ -75,7 +75,7 @@ class EmployeeDirectoryTool extends AikuOrganisationTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'organisation' => $schema->string()->description('Organisation slug')->required(),
+            'organisation' => $schema->string()->description('Organisation slug or code')->required(),
             'query'        => $schema->string()->description('Search text (name, worker number, or job title)')->required(),
         ];
     }

@@ -116,7 +116,7 @@ const props = withDefaults(
     }>(),
     {}
 )
-console.log('product',props.fieldValue)
+
 const locale = inject('locale', aikuLocaleStructure)
 
 const emits = defineEmits<{
@@ -155,20 +155,45 @@ watch(
 
 
 const _popoverProfit = ref(null)
-
-// console.log('fdsfds', props.fieldValue.product)
-/* const getBestOffer = (offerId: string) => {
-    if (!offerId) {
-        return
-    }
-
-    return product.value?.offers_data?.offers?.[offerId] 
-} */
-
 const bestOffer = computed(() => {
   return getBestOffer(props.product?.offers_data)
 })
 
+const _desktopAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
+const _mobileAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
+
+const orderedQuantity = computed<number>(() =>
+    Number(props.customerData?.quantity_ordered_new ?? props.customerData?.quantity_ordered ?? 0)
+)
+
+const isDesktopStepSyncing = ref(false)
+const isMobileStepSyncing = ref(false)
+
+const onSelectStepQuantityDesktop = async (quantity: number) => {
+    if (isDesktopStepSyncing.value) {
+        return
+    }
+
+    isDesktopStepSyncing.value = true
+    try {
+        await _desktopAddToBasket.value?.setQuantity(quantity)
+    } finally {
+        isDesktopStepSyncing.value = false
+    }
+}
+
+const onSelectStepQuantityMobile = async (quantity: number) => {
+    if (isMobileStepSyncing.value) {
+        return
+    }
+
+    isMobileStepSyncing.value = true
+    try {
+        await _mobileAddToBasket.value?.setQuantity(quantity)
+    } finally {
+        isMobileStepSyncing.value = false
+    }
+}
 
 const variantPrevEl = ref<HTMLElement | null>(null)
 const variantNextEl = ref<HTMLElement | null>(null)
@@ -185,11 +210,6 @@ const showDiscount = computed(() => {
         !(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) &&
         bestOffer.value?.type === 'Category Quantity Ordered Order Interval'
     )
-})
-
-const showIntervalOffer = computed(() => {
-    return getBestOfferfromComposable(props.product?.product_offers_data)?.type
-        === 'Category Quantity Ordered Order Interval'
 })
 
 
@@ -398,13 +418,16 @@ onMounted(async () => {
                     :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
                     :originalPrice="product.price"
                     :unit="product.unit"
+                    :quantity="orderedQuantity"
+                    :isSubmitting="isDesktopStepSyncing"
+                    @selectQuantity="onSelectStepQuantityDesktop"
                 />
 
                 <!-- Section: ADD TO CART -->
                 <div class="mt-4 flex gap-2 mb-6">
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="product.status !== 'coming-soon' && layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock" v-model:product="product" :customerData="customerData"
+                        <EcomAddToBasketv2 v-if="product.stock" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
@@ -687,12 +710,16 @@ onMounted(async () => {
             :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
             :originalPrice="product.price"
             :unit="product.unit"
+            :quantity="orderedQuantity"
+            :isSubmitting="isMobileStepSyncing"
+            @selectQuantity="onSelectStepQuantityMobile"
         />
         
         <!-- ADD TO CART -->
         <div class="mt-5 space-y-2">
             <EcomAddToBasketv2
                 v-if="layout?.iris?.is_logged_in && product.stock && product.status !== 'coming-soon'"
+                ref="_mobileAddToBasket"
                 v-model:product="product"
                 :customerData="customerData"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"

@@ -103,6 +103,13 @@ class DeliveryNoteItemsResource extends JsonResource
         $quantityToPack  = max(0, round((float)$this->quantity_picked - (float)$packedQuantity, 3));
         $isFullyPacked   = round((float)$packedQuantity, 3) >= round((float)$this->quantity_picked, 3);
         $hasAnyPacking   = (int)$this->packings_count > 0;
+        $pickingBatchCodes = collect($pickings)
+            ->map(fn ($picking) => $picking->batch_code ?? null)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
 
 
         return [
@@ -124,6 +131,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'org_stock_id'                   => $this->org_stock_id,
             'batch_code'                     => $this->batch_code,
             'batch_code_id'                  => $this->batch_code_id,
+            'batch_codes'                    => $pickingBatchCodes,
             'expiry_date'                    => $this->expiry_date,
             'organisation_id'                => $this->organisation_id,
             'batch_codes_fetch_route'        => [

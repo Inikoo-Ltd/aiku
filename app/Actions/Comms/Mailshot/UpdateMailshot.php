@@ -9,7 +9,6 @@
 namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
-use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
@@ -43,7 +42,6 @@ class UpdateMailshot extends OrgAction
         if ($mailshot->wasChanged('state')) {
             GroupHydrateMailshots::dispatch($mailshot->group)->delay($this->hydratorsDelay);
             OrganisationHydrateMailshots::dispatch($mailshot->organisation)->delay($this->hydratorsDelay);
-            OutboxHydrateMailshots::dispatch($mailshot->outbox)->delay($this->hydratorsDelay);
             ShopHydrateMailshots::dispatch($mailshot->shop)->delay($this->hydratorsDelay);
         }
 

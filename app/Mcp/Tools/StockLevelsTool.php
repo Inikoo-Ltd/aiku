@@ -34,7 +34,7 @@ class StockLevelsTool extends AikuWarehouseTool
 
         $warehouse = $this->authorisedWarehouse($request);
         if (!$warehouse) {
-            return Response::error('Warehouse not found or permission denied.');
+            return $this->warehouseNotFoundError($request);
         }
 
         $query = '%'.$request->string('query').'%';
@@ -67,7 +67,7 @@ class StockLevelsTool extends AikuWarehouseTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'warehouse' => $schema->string()->description('Warehouse slug')->required(),
+            'warehouse' => $schema->string()->description('Warehouse slug or code')->required(),
             'query'     => $schema->string()->description('Search text matched against stock code or name')->required(),
         ];
     }

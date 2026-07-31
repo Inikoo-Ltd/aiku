@@ -16,6 +16,7 @@ use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Http\Resources\Procurement\StockDeliveriesResource;
 use App\Http\Resources\Procurement\StockDeliveryResource;
@@ -40,6 +41,7 @@ class IndexStockDeliveries extends OrgAction
     use WithOrgAgentSubNavigation;
     use WithOrgPartnerSubNavigation;
     use WithOrgSupplierSubNavigation;
+    use WithAgentOrganisation;
 
     private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier $parent;
 
@@ -76,6 +78,8 @@ class IndexStockDeliveries extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $organisationAgent = $this->getParentOrganisationAgent($this->parent);
+
         $query = QueryBuilder::for(StockDelivery::class);
 
         if ($this->parent instanceof OrgAgent) {
@@ -86,6 +90,8 @@ class IndexStockDeliveries extends OrgAction
             $query->where('stock_deliveries.parent_type', 'OrgSupplier')->where('stock_deliveries.parent_id', $this->parent->id);
         } elseif ($this->parent instanceof Warehouse) {
             $query->where('stock_deliveries.organisation_id', $this->parent->organisation_id);
+        } elseif ($organisationAgent) {
+            $query->where('stock_deliveries.agent_id', $organisationAgent->id);
         } elseif ($this->parent instanceof Organisation) {
             $query->where('stock_deliveries.organisation_id', $this->parent->id);
         }
@@ -99,16 +105,23 @@ class IndexStockDeliveries extends OrgAction
             );
         }
 
+        $query->select([
+            'stock_deliveries.id',
+            'stock_deliveries.slug',
+            'stock_deliveries.reference',
+            'stock_deliveries.parent_name',
+            'stock_deliveries.state',
+            'stock_deliveries.date',
+        ]);
+
+        if ($organisationAgent) {
+            $query
+                ->leftJoin('organisations', 'stock_deliveries.organisation_id', 'organisations.id')
+                ->addSelect(['organisations.name as organisation_name']);
+        }
+
         return $query
             ->defaultSort('-stock_deliveries.date')
-            ->select([
-                'id',
-                'slug',
-                'reference',
-                'parent_name',
-                'state',
-                'date',
-            ])
             ->allowedSorts(['reference', 'parent_name', 'date'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
@@ -144,8 +157,13 @@ class IndexStockDeliveries extends OrgAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true)
-                ->defaultSort('-date');
+                ->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($this->getParentOrganisationAgent($this->parent)) {
+                $table->column(key: 'organisation_name', label: __('Organisation'), canBeHidden: false, searchable: true);
+            }
+
+            $table->defaultSort('-date');
         };
     }
 
@@ -253,7 +271,7 @@ class IndexStockDeliveries extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'create'        => $this->canEdit && $request->route()->getName() == 'grp.org.procurement.stock_deliveries.index' ? [
+                    'create'        => $this->canEdit && !$this->getParentOrganisationAgent($this->parent) && $request->route()->getName() == 'grp.org.procurement.stock_deliveries.index' ? [
                         'route' => [
                             'name'       => 'grp.org.procurement.stock_deliveries.create',
                             'parameters' => array_values($request->route()->originalParameters()),
@@ -308,7 +326,7 @@ class IndexStockDeliveries extends OrgAction
                 ]
             ),
             'grp.org.procurement.org_agents.show.stock-deliveries.index' => array_merge(
-                ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
+                ShowOrgAgent::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

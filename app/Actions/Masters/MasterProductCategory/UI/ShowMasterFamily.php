@@ -300,7 +300,7 @@ class ShowMasterFamily extends OrgAction
                 'vol_gr_reward'           => [
                     'show_gr_vol'                   => $masterFamily->masterShop->gold_reward_eligible && $masterFamily->has_gr_vol_discount,
                     'gr_vol_discount_quantity'      => $masterFamily->gr_vol_discount_quantity,
-                    'gr_vol_discount_percentage'    => $masterFamily->gr_vol_discount_percentage,
+                    'gr_vol_discount_percentage'    => trimDecimalZeros($masterFamily->gr_vol_discount_percentage),
                     'missing_gr_children_count'     => $masterFamily->has_gr_vol_discount
                         ? $masterFamily->productCategories()->where('has_gr_vol_discount', false)->count()
                         : 0,

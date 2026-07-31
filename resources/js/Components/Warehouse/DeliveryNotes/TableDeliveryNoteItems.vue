@@ -105,7 +105,7 @@ const initSocketListener = () => {
             return;
         }
 
-        let locationOrgStock = itemToSet.locations.find(
+        let locationOrgStock = itemToSet.locations?.find(
             item => item.location_id === affectedData.location_id
         )
 
@@ -114,7 +114,7 @@ const initSocketListener = () => {
             (parseFloat(itemToSet.quantity_not_picked ?? 0) +
             parseFloat(itemToSet.quantity_picked ?? 0));
 
-        const shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
+        const shouldRefetch = (remainingItem > 0) && (locationOrgStock?.quantity != affectedData.new_quantity)
 
         if (shouldRefetch) {
             const response = await axios.get(
@@ -824,6 +824,23 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                 </div>
             </div>
             <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
+        </template>
+
+        <!-- Column: Batch Codes -->
+        <template #cell(batch_codes)="{ item }">
+            <div v-if="item.batch_codes?.length" class="flex flex-wrap gap-1">
+                <span
+                    v-for="code in item.batch_codes"
+                    :key="code"
+                    class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
+                >
+                    <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                    {{ code }}
+                </span>
+            </div>
+            <span v-else class="text-gray-400 italic text-xs">
+                {{ trans("No batch code set") }}
+            </span>
         </template>
 
         <!-- Column: Quantity Required -->

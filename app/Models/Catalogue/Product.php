@@ -187,6 +187,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $index_under_family
  * @property bool $is_on_demand
  * @property bool $not_follow_master_prices
+ * @property string|null $units_review
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

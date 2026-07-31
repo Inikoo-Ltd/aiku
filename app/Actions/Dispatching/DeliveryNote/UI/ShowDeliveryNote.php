@@ -1173,12 +1173,12 @@ class ShowDeliveryNote extends OrgAction
                     "field"       => "customer_notes"
                 ],
                 [
-                    "label"       => __("Order private note"),
-                    "note"        => $deliveryNote->internal_notes ?? '',
+                    "label"       => __("Private warehouse note"),
+                    "note"        => $deliveryNote->private_warehouse_note ?? '',
                     "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
                     "editable"    => true,
-                    "bgColor"     => "#FCF4A3",
-                    "field"       => "internal_notes"
+                    "bgColor"     => "#FFD8A8",
+                    "field"       => "private_warehouse_note"
                 ]
             ]
         ];

@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\OrgSupplier;
 
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateOrgSupplierProducts;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydratePurchaseOrders;
+use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateStockDeliveries;
 use App\Models\Procurement\OrgSupplier;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
@@ -25,7 +26,7 @@ class HydrateOrgSupplier
     {
         OrgSupplierHydrateOrgSupplierProducts::run($orgSupplier);
         OrgSupplierHydratePurchaseOrders::run($orgSupplier);
-
+        OrgSupplierHydrateStockDeliveries::run($orgSupplier);
     }
 
     public function asCommand(Command $command): int

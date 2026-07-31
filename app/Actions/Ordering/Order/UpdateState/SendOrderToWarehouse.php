@@ -81,7 +81,7 @@ class SendOrderToWarehouse extends OrgAction
             'shipping_zone_schema_id'   => $order->shipping_zone_schema_id,
             'shipping_zone_id'          => $order->shipping_zone_id,
             'is_shipping_by_external'   => $order->is_shipping_by_external,
-            'internal_notes'            => $order->internal_notes
+            'private_warehouse_note'    => $order->private_warehouse_note
 
         ];
 
@@ -224,7 +224,9 @@ class SendOrderToWarehouse extends OrgAction
         if (!$this->has('warehouse_id')) {
             /** @var Warehouse $warehouse */
             $warehouse = $this->shop->organisation->warehouses()->first();
-            $this->set('warehouse_id', $warehouse->id);
+            if ($warehouse) {
+                $this->set('warehouse_id', $warehouse->id);
+            }
         }
     }
 

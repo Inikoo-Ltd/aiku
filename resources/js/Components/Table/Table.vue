@@ -662,13 +662,14 @@ let isMounted = false;
 let skipNextDebouncedVisit = false;
 
 watch(queryBuilderData, async () => {
-        if (!isMounted) return;
-        if (skipNextDebouncedVisit) {
-            skipNextDebouncedVisit = false;
-            return;
-        }
-        debouncedFilter();
-    },
+    const skipThisVisit = skipNextDebouncedVisit;
+    skipNextDebouncedVisit = false;
+
+    if (!isMounted) return;
+    if (skipThisVisit) return;
+
+    debouncedFilter();
+},
     {deep: true},
 );
 
@@ -677,6 +678,17 @@ const immediateVisit = () => {
     skipNextDebouncedVisit = true;
     debouncedFilter.cancel();
     visit(location.pathname + '?' + generateNewQueryString());
+};
+
+// TableElements reports the selection it read from the URL right after mount. The server already
+// rendered that selection, so the state is stored without letting the watcher fire off a visit for
+// a query string identical to the current one.
+const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false) => {
+    if (isInitial) {
+        skipNextDebouncedVisit = true;
+    }
+
+    queryBuilderData.value[key] = data;
 };
 
 const inertiaListener = () => {
@@ -967,14 +979,14 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                     'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
                 }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
-                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('elementFilter', data, isInitial)"
                         :tableName="props.name"
                     />
                 </div>
 
                 <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
                     <TableElements :elements="queryBuilderProps.additionalElementGroups"
-                        @checkboxChanged="(data) => queryBuilderData.additionalElementFilter = data"
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('additionalElementFilter', data, isInitial)"
                         :tableName="props.name"
                         :isAdditional="true"
                     />

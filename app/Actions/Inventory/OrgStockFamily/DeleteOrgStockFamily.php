@@ -31,7 +31,6 @@ class DeleteOrgStockFamily extends OrgAction
     {
         DB::transaction(function () use ($orgStockFamily) {
             $orgStockFamily->stats()->forceDelete();
-            $orgStockFamily->intervals()->forceDelete();
             $orgStockFamily->timeSeries()->forceDelete();
 
 

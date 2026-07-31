@@ -1775,7 +1775,7 @@ test('GetChatCustomerProfile returns empty defaults when session has no web user
 
     $result = GetChatCustomerProfile::make()->handle($chatSession);
 
-    expect($result)->toBe(['tags' => [], 'stats' => null]);
+    expect($result)->toBe(['tags' => [], 'stats' => null, 'email' => null, 'profile_url' => null]);
 });
 
 test('GetChatCustomerTimeline returns empty events when session has no customer', function () {

@@ -403,9 +403,9 @@ onMounted(() => {
     }
 </style> -->
 <template>
-    <div class="space-y-4">
+    <div class="flex flex-col min-h-0 max-h-[70vh]">
         <!-- Section: Move summary + instructions -->
-        <div class="border border-gray-200 rounded p-3 bg-gray-50 relative">
+        <div class="shrink-0 border border-gray-200 rounded p-3 bg-gray-50 relative">
             <button
                 v-if="moveStock.from || moveStock.to"
                 @click="closeMoveStock"
@@ -537,6 +537,7 @@ onMounted(() => {
             </div>
         </div> -->
 
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-1 pr-4 pb-3 mt-4">
         <template v-if="form.stockCheck.length > 0">
             <div v-for="(form, idx) in form.stockCheck" :key="form.id"
                 :class="[
@@ -684,8 +685,9 @@ onMounted(() => {
                 {{ ctrans("You haven't added any locations yet") }}
             </div>
         </div>
+        </div>
         <!-- Section: buttons -->
-        <div class="relative flex gap-x-2 z-40 mt-4">
+        <div class="shrink-0 relative flex gap-x-2 z-40 pt-3 mt-2 border-t bg-white">
             <Button
                 label="Cancel"
                 type="tertiary" icon="far fa-arrow-left"

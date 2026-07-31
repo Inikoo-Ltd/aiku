@@ -28,14 +28,15 @@ import { setColorStyleRoot } from "@/Composables/useApp"
 import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
+import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgress.vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
 
 
-import "@/Composables/Icon/Grp/ImportIconFal"
-import "@/Composables/Icon/Grp/ImportIconFar"
-import "@/Composables/Icon/Grp/ImportIconFad"
-import "@/Composables/Icon/Grp/ImportIconFas"
+import "@/Composables/Icon/ImportGrpFalIcon"
+import "@/Composables/Icon/ImportGrpFarIcon"
+import "@/Composables/Icon/ImportGrpFadIcon"
+import "@/Composables/Icon/ImportGrpFasIcon"
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())
@@ -267,6 +268,8 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
     </div>
 
     <Footer />
+
+    <CloneFromMasterProgress />
 
     <Dialog
         v-model:visible="isModalOpen"

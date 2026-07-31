@@ -36,7 +36,7 @@ class MailshotPerformanceTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $query = Mailshot::where('shop_id', $shop->id)
@@ -89,7 +89,7 @@ class MailshotPerformanceTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop'  => $schema->string()->description('Shop slug')->required(),
+            'shop'  => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'from'  => $schema->string()->description('Start date (Y-m-d), optional')->nullable(),
             'to'    => $schema->string()->description('End date (Y-m-d), optional')->nullable(),
             'limit' => $schema->integer()->description('Maximum mailshots to return, default 10, max 50')->default(10),

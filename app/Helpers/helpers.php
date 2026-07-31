@@ -20,14 +20,18 @@ if (!function_exists('group')) {
 if (!function_exists('formatPrice')) {
     /**
      * Multiply two numbers into a price string. With fewer than 2 fraction digits the
-     * result is rounded UP at that precision (retail whole-number pricing, e.g. CZK/HUF),
-     * so converted prices never lose margin; at 2 digits it rounds to nearest as before.
+     * result is rounded UP at that precision (retail whole-number pricing, e.g. CZK/HUF);
+     * an increment rounds UP to its next multiple instead (e.g. 0.05 for PLN grosz
+     * steps). Both keep converted prices from ever losing margin; at 2 digits with no
+     * increment it rounds to nearest as before.
      */
-    function formatPrice(int|float|null $num1 = 0, int|float|null $num2 = 0, int $fractionDigits = 2)
+    function formatPrice(int|float|null $num1 = 0, int|float|null $num2 = 0, int $fractionDigits = 2, ?float $increment = null)
     {
         $value = ($num1 ?? 0) * ($num2 ?? 0);
 
-        if ($fractionDigits < 2) {
+        if ($increment > 0) {
+            $value = ceil(round($value / $increment, 6)) * $increment;
+        } elseif ($fractionDigits < 2) {
             $factor = 10 ** $fractionDigits;
             $value  = ceil(round($value * $factor, 6)) / $factor;
         }

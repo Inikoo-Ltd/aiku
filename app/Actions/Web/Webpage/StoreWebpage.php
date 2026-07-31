@@ -79,8 +79,13 @@ class StoreWebpage extends OrgAction
             ];
         }
 
-        if ($modelData['sub_type'] == WebpageSubTypeEnum::MAILSHOT && Arr::exists($modelData, 'fieldValue')) {
+        $isFromCSV = Arr::pull($modelData, 'fromCSV', false); // unset basically, safer this way. keep it be
+
+        if (
+            ($modelData['sub_type'] == WebpageSubTypeEnum::MAILSHOT || $isFromCSV) && Arr::exists($modelData, 'fieldValue')
+        ) {
             $newBlogModelData['fieldValue'] = Arr::pull($modelData, 'fieldValue');
+
         }
 
         data_set($modelData, 'url', '', overwrite: false);
@@ -97,7 +102,7 @@ class StoreWebpage extends OrgAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
-        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData) {
+        $webpage = DB::transaction(function () use ($parent, $modelData, $newBlogModelData, $isFromCSV) {
             /** @var Webpage $webpage */
             $webpage = $parent->webpages()->create($modelData);
             $webpage->stats()->create();
@@ -141,7 +146,7 @@ class StoreWebpage extends OrgAction
             }
 
 
-            if ($this->strict) {
+            if ($this->strict || $isFromCSV) {
                 $usedProductsTemplateCode               = FetchUsedProductsWebBlock::run($this->website);
                 $usedProductTemplateCode                = FetchUsedProductWebBlock::run($this->website);
                 $usedFamiliesTemplateCode               = FetchUsedFamiliesWebBlock::run($this->website);
@@ -205,7 +210,7 @@ class StoreWebpage extends OrgAction
                 }
 
                 if ($webpage->type == WebpageTypeEnum::BLOG) {
-                    if ($webpage->sub_type == WebpageSubTypeEnum::MAILSHOT) {
+                    if ($webpage->sub_type == WebpageSubTypeEnum::MAILSHOT || $isFromCSV) {
                         $this->createWebBlock($webpage, 'blog', $newBlogModelData);
                     } else {
                         $this->createWebBlock($webpage, 'blog', $webpage);
@@ -312,9 +317,10 @@ class StoreWebpage extends OrgAction
             'model_id'           => ['sometimes', 'integer'],
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
+            'seo_data'           => ['sometimes', 'array'],
             'layout_style'       => ['sometimes', 'string'],
             'fieldValue'         => ['sometimes', 'array'],
-
+            'fromCSV'            => ['sometimes', 'boolean']
         ];
 
         if ($this->parent instanceof Webpage) {

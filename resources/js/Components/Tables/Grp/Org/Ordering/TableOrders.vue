@@ -76,7 +76,15 @@ function orderRoute(order: Order) {
             return route(
                 "grp.org.shops.show.ordering.orders.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, order.slug])
-
+        case "grp.org.shops.show.catalogue.products.pending_back_in_stock_reminders.show":
+        case "grp.org.shops.show.catalogue.products.missing_description_products.show":
+        case "grp.org.shops.show.catalogue.products.independent_products.all.show":
+        case "grp.org.shops.show.catalogue.products.rrp_violation_products.show":
+        case "grp.org.shops.show.catalogue.products.discontinued_products.show":
+        case "grp.org.shops.show.catalogue.products.in_process_products.show":
+        case "grp.org.shops.show.catalogue.products.not_online_products.show":
+        case "grp.org.shops.show.catalogue.products.current_products.show":
+        case "grp.org.shops.show.catalogue.products.orphan_products.show":
         case "grp.org.shops.show.catalogue.products.all_products.show":
         case "grp.org.overview.ordering.backlog":
         case "grp.overview.ordering.backlog":

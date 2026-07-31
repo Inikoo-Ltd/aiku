@@ -155,7 +155,7 @@ const bestOfferClass = computed(() => {
 watch(
     () => props.hasInBasket?.quantity_ordered,
     (newValue) => {
-        console.log('quantity changed', newValue)
+        // console.log('quantity changed', newValue)
     },
     { immediate: true }
 )

@@ -94,11 +94,11 @@ const handleUnlink = (loc: { id: any }) => {
 </script>
 
 <template>
-    <div class="space-y-6">
+    <div class="flex flex-col min-h-0 max-h-[65vh]">
         <!-- V-FOR 1: Existing locations -->
-        <div class="flex flex-col gap-y-6">
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-y-4 pr-4 pb-3">
             <template v-if="props.locations.length > 0">
-                <div class="grid grid-cols-7 gap-x-4 border-b pb-2 items-center gap-1">
+                <div class="grid grid-cols-7 gap-x-4 border-b pb-2 pt-1 items-center gap-1 sticky top-0 z-10 bg-white">
                     <div class="col-span-2 md:col-span-4 flex items-center gap-x-2 font-medium">
                         {{ ctrans("Code") }}
                     </div>
@@ -173,7 +173,7 @@ const handleUnlink = (loc: { id: any }) => {
             </div>
         </div>
         <!-- Section: buttons -->
-        <div class="relative flex gap-x-2 isolate z-30 mt-4 justify-self-end">
+        <div class="shrink-0 relative flex gap-x-2 isolate z-30 pt-3 mt-2 border-t bg-white">
             <Button :label="trans('Cancel')" type="tertiary" icon="far fa-arrow-left" @click="() => emits('close')" />
         </div>
 

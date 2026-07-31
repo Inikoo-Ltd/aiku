@@ -49,7 +49,12 @@ test('user without can_use_mcp flag is rejected with 403', function () {
 test('oauth discovery endpoints are published', function () {
     getJson('/.well-known/oauth-authorization-server')
         ->assertOk()
-        ->assertJsonStructure(['issuer', 'authorization_endpoint', 'token_endpoint', 'registration_endpoint']);
+        ->assertJsonStructure(['issuer', 'authorization_endpoint', 'token_endpoint', 'registration_endpoint'])
+        ->assertJsonPath('token_endpoint_auth_methods_supported.0', 'none');
+
+    getJson('/.well-known/oauth-authorization-server/mcp/aiku')
+        ->assertOk()
+        ->assertJsonPath('token_endpoint_auth_methods_supported.0', 'none');
 
     getJson('/.well-known/oauth-protected-resource')
         ->assertOk()

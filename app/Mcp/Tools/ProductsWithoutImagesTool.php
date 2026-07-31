@@ -35,7 +35,7 @@ class ProductsWithoutImagesTool extends AikuTool
 
         $shop = $this->authorisedShop($request);
         if (!$shop) {
-            return Response::error('Shop not found or permission denied.');
+            return $this->shopNotFoundError($request);
         }
 
         $limit = $request->integer('limit', 20);
@@ -69,7 +69,7 @@ class ProductsWithoutImagesTool extends AikuTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'shop' => $schema->string()->description('Shop slug')->required(),
+            'shop' => $schema->string()->description('Shop slug or code, e.g. eu or EU')->required(),
             'limit' => $schema->integer()->description('Maximum number of products to return (default 20, max 100)'),
         ];
     }

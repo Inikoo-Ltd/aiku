@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -25,9 +26,14 @@ class LastOrderedProductsResource extends JsonResource
     {
         $webImages = json_decode($this->web_images, true);
 
+        $canonicalUrl = $this->canonical_url;
+        if ($canonicalUrl && !app()->environment('production')) {
+            $canonicalUrl = ShowIrisWebpage::make()->getEnvironmentUrl($canonicalUrl);
+        }
+        
         return [
             'code'          => $this->code,
-            'canonical_url' => $this->canonical_url,
+            'canonical_url' => $canonicalUrl,
             'name'          => $this->name,
             'submitted_at'  => $this->submitted_at,
             'image'         => Arr::get($webImages, 'main.gallery'),

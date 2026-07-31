@@ -8,6 +8,8 @@
 
 namespace App\Actions\Web\Webpage\UI;
 
+use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\UI\WithInertia;
@@ -26,6 +28,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Actions\Web\Webpage\GetWebpageGoogleCloud;
+use App\Http\Resources\Helpers\SnapshotResource;
+use App\Http\Resources\History\HistoryResource;
 
 class ShowBlogWebpage extends OrgAction
 {
@@ -63,7 +68,7 @@ class ShowBlogWebpage extends OrgAction
                 'pageHead'    => [
                     'title'         => $webpage->code,
                     'afterTitle'    => [
-                        'label' => '../'.$webpage->url,
+                        'label' => '../' . $webpage->url,
                     ],
                     'icon'          => [
                         'title' => __('Webpage'),
@@ -81,9 +86,32 @@ class ShowBlogWebpage extends OrgAction
                 'webpage_canonical_url' => $webpage->canonical_url,
 
                 BlogWebpageTabsEnum::SHOWCASE->value => $this->tab == BlogWebpageTabsEnum::SHOWCASE->value ?
-                    fn () => WebpageResource::make($webpage)->getArray()
-                    : Inertia::optional(fn () => WebpageResource::make($webpage)->getArray()),
+                    fn() => WebpageResource::make($webpage)->getArray()
+                    : Inertia::optional(fn() => WebpageResource::make($webpage)->getArray()),
+
+                WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
+                    fn() => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
+                    : Inertia::optional(fn() => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
+                
+                WebpageTabsEnum::SNAPSHOTS->value => $this->tab == WebpageTabsEnum::SNAPSHOTS->value ?
+                    fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))
+                    : Inertia::optional(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))),
+
+                WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
+                    fn() => HistoryResource::collection(IndexHistory::run($webpage))
+                    : Inertia::optional(fn() => HistoryResource::collection(IndexHistory::run($webpage))),
             ]
+        )->table(
+            IndexWebpages::make()->tableStructure(parent: $webpage, prefix: 'webpages')
+        )->table(
+            IndexHistory::make()->tableStructure(
+                prefix: WebpageTabsEnum::CHANGELOG->value
+            )
+        )->table(
+            IndexSnapshots::make()->tableStructure(
+                parent: $webpage,
+                prefix: 'snapshots'
+            )
         );
     }
 

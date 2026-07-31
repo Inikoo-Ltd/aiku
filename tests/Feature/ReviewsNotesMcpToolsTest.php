@@ -46,7 +46,7 @@ test('user without crm permission is denied on reviews', function () {
         'shop' => $this->shop->slug,
     ]);
 
-    $response->assertHasErrors(['Shop not found or permission denied.']);
+    $response->assertHasErrors(['You do not have access to any shop.']);
 });
 
 test('admin gets shop reviews overview', function () {

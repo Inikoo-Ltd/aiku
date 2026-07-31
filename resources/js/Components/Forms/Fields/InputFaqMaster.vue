@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { onMounted, onUnmounted, ref, watch } from "vue"
 import { ulid } from "ulid"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { EditorContent } from "@tiptap/vue-3"
 import EditorV2 from "./BubleTextEditor/EditorV2.vue"
 import { faTrashAlt } from "@far"
+import { faCheck } from "@fal"
+import { faSpinnerThird } from "@fad"
+import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { get, set } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
+
+library.add(faTrashAlt, faCheck, faSpinnerThird)
 
 interface FaqItem {
     question: string
@@ -21,8 +26,31 @@ const props = defineProps<{
     fieldData: {
         toggle?: string[]
         routeGetInternalLink?: routeType
+        master_product_category_id?: number
     }
 }>()
+
+// Cascade progress broadcast by CascadeMasterProductCategoryFaqToChildren after a save:
+// "n/total shops updated" while the FAQ is translated and copied down, then "Shops updated".
+const cascadeProgress = ref<{ state: string, done: number, total: number } | null>(null)
+
+const onCascadeProgress = (event: { state: string, done: number, total: number }) => {
+    cascadeProgress.value = event
+}
+
+onMounted(() => {
+    if (window.Echo && props.fieldData.master_product_category_id) {
+        window.Echo.private(`grp.master-product-category.${props.fieldData.master_product_category_id}`)
+            .listen('.faq-cascade-progress', onCascadeProgress)
+    }
+})
+
+onUnmounted(() => {
+    if (window.Echo && props.fieldData.master_product_category_id) {
+        window.Echo.private(`grp.master-product-category.${props.fieldData.master_product_category_id}`)
+            .stopListening('.faq-cascade-progress', onCascadeProgress)
+    }
+})
 
 const normaliseFaqItems = (value: unknown): FaqItem[] => {
     if (!Array.isArray(value)) {
@@ -92,6 +120,27 @@ const removeFaq = (index: number) => {
 
 <template>
     <div class="space-y-4">
+        <div
+            v-if="cascadeProgress"
+            class="flex h-5 items-center justify-end gap-x-1.5 text-xs"
+            :class="cascadeProgress.state === 'done' ? 'text-green-600' : 'text-gray-500'"
+        >
+            <FontAwesomeIcon
+                v-if="cascadeProgress.state !== 'done'"
+                icon="fad fa-spinner-third"
+                class="animate-spin"
+                fixed-width
+                aria-hidden="true"
+            />
+            <FontAwesomeIcon v-else :icon="faCheck" fixed-width aria-hidden="true" />
+            <span v-if="cascadeProgress.state !== 'done'">
+                {{ cascadeProgress.done }}/{{ cascadeProgress.total }} {{ trans('shops updated') }}
+            </span>
+            <span v-else>
+                {{ trans('Shops updated') }} ({{ cascadeProgress.total }})
+            </span>
+        </div>
+
         <div
             v-for="(faq, index) in items"
             :key="index"

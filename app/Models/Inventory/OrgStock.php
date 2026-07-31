@@ -81,10 +81,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $current_supplier_sku_cost
  * @property int $current_batch_codes
  * @property int|null $main_batch_code_id
+ * @property string|null $note_to_pickers
+ * @property string|null $note_to_packers
+ * @property array<array-key, mixed>|null $consumables [{"code": "IAL01", "quantity": 1}] the packer adds per product ordered
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read BatchCode|null $mainBatchCode
@@ -213,11 +215,6 @@ class OrgStock extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(OrgStockStats::class);
-    }
-
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(OrgStockIntervals::class);
     }
 
     public function orgSupplierProducts(): BelongsToMany

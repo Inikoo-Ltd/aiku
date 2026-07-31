@@ -37,11 +37,13 @@ class GetIrisWebBlockBlog
         ) {
             $publishedLayout = json_decode($webpageBlog->published_layout, true);
             $imageData       = Arr::get($publishedLayout, 'web_blocks.0.web_block.layout.data.fieldValue.image');
+            $third_party_image_preview      = Arr::get($publishedLayout, 'web_blocks.0.web_block.layout.data.fieldValue.third_party_image_preview');
             $latestBlogs[]   = [
                 'id'        => $webpageBlog->id,
                 'title'     => $webpageBlog->title,
                 'image_src' => Arr::get($imageData, 'source'),
                 'image_alt' => Arr::get($imageData, 'alt'),
+                'third_party_image_preview'     => $third_party_image_preview,
                 'url'       => ShowIrisWebpage::make()->getEnvironmentUrl($webpageBlog->canonical_url)
             ];
         }

@@ -63,7 +63,7 @@ class ShowSupplier extends OrgAction
         return Inertia::render(
             'SupplyChain/Supplier',
             [
-                'title'       => __('supplier'),
+                'title'       => __('Supplier'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $supplier,
                     $request->route()->getName(),
@@ -74,13 +74,12 @@ class ShowSupplier extends OrgAction
                     'next'     => $this->getNext($supplier, $request),
                 ],
                 'pageHead'    => [
-                    'model'   => __('Supplier'),
-                    'icon'    =>
-                        [
-                            'icon'  => 'fal fa-person-dolly',
-                            'title' => __('Supplier')
-                        ],
-                    'title'   => $supplier->name,
+                    'title'         => $supplier->name,
+                    'icon'          => [
+                        'icon'  => 'fal fa-person-dolly',
+                        'title' => __('Supplier')
+                    ],
+                    'model'         => __('Supplier'),
                     'subNavigation' => $this->getSupplierNavigation($supplier),
                     // 'actions' => [
                     //     $this->canEdit ? [
@@ -109,7 +108,7 @@ class ShowSupplier extends OrgAction
                     //         'label' => __('Purchase Order')
                     //     ] : false,
                     // ],
-                    'meta'    => [
+                    'meta'          => [
                         [
                             'name'     => trans_choice('Purchases|Sales', $supplier->stats->number_open_purchase_orders),
                             'number'   => $supplier->stats->number_open_purchase_orders,
@@ -135,21 +134,20 @@ class ShowSupplier extends OrgAction
                             ]
                         ],
                     ]
-
                 ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
-                        'name' => 'grp.models.supplier.attachment.attach',
+                        'name'       => 'grp.models.supplier.attachment.attach',
                         'parameters' => [
                             'supplier' => $supplier->id,
                         ]
                     ],
                     'detachRoute' => [
-                        'name' => 'grp.models.supplier.attachment.detach',
+                        'name'       => 'grp.models.supplier.attachment.detach',
                         'parameters' => [
                             'supplier' => $supplier->id,
                         ],
-                        'method'    => 'delete'
+                        'method'     => 'delete'
                     ]
                 ],
                 'tabs'        => [
@@ -161,51 +159,51 @@ class ShowSupplier extends OrgAction
                     fn () => GetSupplierShowcase::run($supplier)
                     : Inertia::optional(fn () => GetSupplierShowcase::run($supplier)),
 
-                SupplierTabsEnum::PURCHASES_SALES->value => $this->tab == SupplierTabsEnum::PURCHASES_SALES->value ?
-                    fn () => SupplierProductResource::collection(
-                        IndexSupplierProducts::run(
-                            parent: $supplier,
-                            prefix: 'supplier_products'
-                        )
-                    )
-                    : Inertia::optional(fn () => SupplierProductResource::collection(IndexSupplierProducts::run($supplier))),
-
-
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplier))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplier))),
 
-                SupplierTabsEnum::ATTACHMENTS->value => $this->tab == SupplierTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))
-                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier)))
+                // SupplierTabsEnum::PURCHASES_SALES->value => $this->tab == SupplierTabsEnum::PURCHASES_SALES->value ?
+                //     fn () => SupplierProductResource::collection(
+                //         IndexSupplierProducts::run(
+                //             parent: $supplier,
+                //             prefix: SupplierTabsEnum::PURCHASES_SALES->value
+                //         )
+                //     )
+                //     : Inertia::optional(fn () => SupplierProductResource::collection(
+                //         IndexSupplierProducts::run(
+                //             parent: $supplier,
+                //             prefix: SupplierTabsEnum::PURCHASES_SALES->value
+                //         )
+                //     )),
+
+                // SupplierTabsEnum::ATTACHMENTS->value => $this->tab == SupplierTabsEnum::ATTACHMENTS->value ?
+                //     fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))
+                //     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier))),
             ]
-        )->table(IndexSupplierProducts::make()->tableStructure(parent: $supplier))
-            ->table(IndexAttachments::make()->tableStructure(SupplierTabsEnum::ATTACHMENTS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
+        // ->table(IndexSupplierProducts::make()->tableStructure(parent: $supplier, prefix: SupplierTabsEnum::PURCHASES_SALES->value))
+        // ->table(IndexAttachments::make()->tableStructure(SupplierTabsEnum::ATTACHMENTS->value))
     }
 
 
     public function getBreadcrumbs(Supplier $supplier, string $routeName, array $routeParameters, string $suffix = ''): array
     {
-
         $headCrumb = function (Supplier $supplier, array $routeParameters, string $suffix) {
             return [
                 [
-
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
+                            'label' => __('Suppliers'),
                             'route' => $routeParameters['index'],
-                            'label' => __('Suppliers')
                         ],
                         'model' => [
-                            'route' => $routeParameters['model'],
                             'label' => $supplier->name,
+                            'route' => $routeParameters['model'],
                         ],
-
                     ],
-                    'suffix'         => $suffix
-
+                    'suffix'         => $suffix,
                 ],
             ];
         };
@@ -220,42 +218,41 @@ class ShowSupplier extends OrgAction
                     [
                         'index' => [
                             'name'       => 'grp.supply-chain.suppliers.index',
-                            'parameters' => []
+                            'parameters' => [],
                         ],
                         'model' => [
                             'name'       => 'grp.supply-chain.suppliers.show',
-                            'parameters' => [$supplier->slug]
-                        ]
+                            'parameters' => [$supplier->slug],
+                        ],
                     ],
-                    $suffix
+                    $suffix,
                 ),
             ),
             'grp.supply-chain.agents.show.suppliers.show' =>
             array_merge(
                 (new ShowAgent())->getBreadcrumbs(
                     $supplier->agent,
-                    $routeParameters
+                    $routeName,
+                    $routeParameters,
                 ),
                 $headCrumb(
                     $supplier,
                     [
                         'index' => [
                             'name'       => 'grp.supply-chain.agents.show.suppliers.index',
-                            'parameters' => Arr::only($routeParameters, 'agent')
-
+                            'parameters' => Arr::only($routeParameters, 'agent'),
                         ],
                         'model' => [
                             'name'       => 'grp.supply-chain.agents.show.suppliers.show',
-                            'parameters' => $routeParameters
-                        ]
+                            'parameters' => $routeParameters,
+                        ],
                     ],
-                    $suffix
-                )
+                    $suffix,
+                ),
             ),
-            default => []
+            default => [],
         };
     }
-
 
     public function jsonResponse(Supplier $supplier): SupplierResource
     {
@@ -293,7 +290,7 @@ class ShowSupplier extends OrgAction
                 'name' => 'suppliers.name',
             ],
             defaultSort: ['suppliers.code', false],
-            forward: $forward
+            forward: $forward,
         );
     }
 
@@ -309,10 +306,9 @@ class ShowSupplier extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'supplier' => $supplier->slug
-                    ]
-
-                ]
+                        'supplier' => $supplier->slug,
+                    ],
+                ],
             ],
             'grp.supply-chain.agents.show.suppliers.show' => [
                 'label' => $supplier->code,
@@ -320,12 +316,10 @@ class ShowSupplier extends OrgAction
                     'name'       => $routeName,
                     'parameters' => [
                         'agent'    => $supplier->agent->slug,
-                        'supplier' => $supplier->slug
-                    ]
-
-                ]
-            ]
+                        'supplier' => $supplier->slug,
+                    ],
+                ],
+            ],
         };
     }
-
 }

@@ -44,7 +44,7 @@ test('user without accounting permission is denied on org family sales', functio
         'to'           => '2026-12-31',
     ]);
 
-    $response->assertHasErrors(['Organisation not found or permission denied.']);
+    $response->assertHasErrors(['You do not have access to any organisation.']);
 });
 
 test('admin gets org family sales', function () {

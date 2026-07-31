@@ -17,11 +17,19 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Mcp\Server\Tool;
 use Throwable;
 
-#[Description('Run a read-only SQL SELECT against the Aiku PostgreSQL database. Only available to users with SQL access enabled. The database is PostgreSQL; discover the schema by querying information_schema.columns. Always add your own LIMIT.')]
+#[Description('Run a read-only SQL SELECT against the Aiku PostgreSQL database. Only available to users with SQL access enabled. Use describe-tables-tool to discover schema. Always add your own LIMIT. Gotchas: never guess the values of enum-like columns (type, state, status) — describe-tables-tool reports their actual values; the legacy *_intervals tables were dropped — use *_time_series and *_time_series_records instead; filter suppliers by country via their address country_id, not by matching location text. Read the aiku data guide resource before writing revenue queries.')]
 #[IsReadOnly]
 class SqlQueryTool extends Tool
 {
     use WithMcpSqlAccess;
+
+    /**
+     * Only offered to users with direct SQL access enabled.
+     */
+    public function shouldRegister(Request $request): bool
+    {
+        return (bool) $request->user()?->can_use_mcp_sql;
+    }
 
     public function handle(Request $request): Response
     {

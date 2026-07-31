@@ -18,6 +18,7 @@ interface CurrencyRate {
     is_major?: boolean
     major?: string | null
     fraction_digits?: number | null
+    increment?: number | null
 }
 
 interface CurrencyPrice {
@@ -107,6 +108,7 @@ const currencyList = computed(
         code: rate.currency,
         symbol: rate.currency_symbol,
         fraction_digits: rate.fraction_digits ?? null,
+        increment: rate.increment ?? null,
         ratio_eur: rate.ratio_eur,
         is_major: rate.is_major ?? false,
         major: rate.major ?? null
@@ -347,21 +349,31 @@ const recalculateDerivedPrices = (changedCode: string) => {
 
         entry.value = majorPrice == null || ratio == null
             ? null
-            : Math.round(majorPrice * ratio * 100) / 100
+            : roundToCurrency(currency.code, Math.round(majorPrice * ratio * 100) / 100)
     })
 }
 
-// Stored values must respect the currency's own decimal places (e.g. HUF has 0),
-// otherwise a derived value like 5137.5 is displayed rounded but charged as-is
+// Stored values must respect the currency's rounding policy (e.g. HUF whole numbers,
+// PLN 0.05 steps), otherwise a derived value like 5137.5 is displayed rounded but
+// charged as-is. Rounds UP to mirror the server-side snap in UpdateMasterAssetPrices.
 const roundToCurrency = (code: string, value: number | null): number | null => {
-    const digits = currencyList.value.find(currency => currency.code === code)?.fraction_digits
-    if (value == null || digits == null || digits >= 2) {
+    const currency = currencyList.value.find(currency => currency.code === code)
+    if (value == null || !currency) {
+        return value
+    }
+
+    if (currency.increment) {
+        return Number((Math.ceil(Number((value / currency.increment).toFixed(6))) * currency.increment).toFixed(2))
+    }
+
+    const digits = currency.fraction_digits
+    if (digits == null || digits >= 2) {
         return value
     }
 
     const factor = Math.pow(10, digits)
 
-    return Math.round(value * factor) / factor
+    return Math.ceil(Number((value * factor).toFixed(6))) / factor
 }
 
 const onUpdate = (changedCode: string) => {

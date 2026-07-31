@@ -57,7 +57,6 @@ use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
-use App\Models\Masters\MasterAssetOrderingIntervals;
 use App\Models\Masters\MasterAssetStats;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterCollectionOrderingStats;
@@ -807,7 +806,6 @@ test('update master asset', function (MasterAsset $masterAsset) {
 
     expect($masterAsset)->toBeInstanceOf(MasterAsset::class)
         ->and($masterAsset->stats)->toBeInstanceOf(MasterAssetStats::class)
-        ->and($masterAsset->orderingIntervals)->toBeInstanceOf(MasterAssetOrderingIntervals::class)
         ->and($masterAsset->timeSeries()->count())->toBe(5)
         ->and($masterAsset)->not->toBeNull()
         ->and($masterAsset->code)->toBe('MASTER_ASSET1')
@@ -2184,7 +2182,7 @@ test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from mast
     // Reflects a shop where GBP (not EUR) is the configured major currency.
     $masterShop->update(['price_exchanges' => [
         'GBP' => ['is_major' => true],
-        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
+        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18, 'increment' => 0.05],
     ]]);
 
     $this->shop->updateQuietly(['master_shop_id' => $masterShop->id, 'currency_id' => $gbp->id]);
@@ -2200,9 +2198,11 @@ test('GetMasterShopCurrenciesRate reads major/minor and exchange rates from mast
     expect($rates['GBP']['is_major'])->toBeTrue()
         ->and($rates['GBP']['ratio_eur'])->toBe(1.0)
         ->and($rates['GBP']['major'])->toBeNull()
+        ->and($rates['GBP']['increment'])->toBeNull()
         ->and($rates['EUR']['is_major'])->toBeFalse()
         ->and($rates['EUR']['ratio_eur'])->toBe(1.18)
-        ->and($rates['EUR']['major'])->toBe('GBP');
+        ->and($rates['EUR']['major'])->toBe('GBP')
+        ->and($rates['EUR']['increment'])->toBe(0.05);
 });
 
 test('updating master prices merges per currency, skips nulls and syncs legacy columns from the base major', function () {
@@ -2461,7 +2461,76 @@ test('minor currency with zero fraction digits rounds converted prices up to who
     expect(formatPrice(9.76, 25.5))->toBe('248.88')
         ->and(formatPrice(9.76, 25.5, 0))->toBe('249')
         ->and(formatPrice(10, 25.5, 0))->toBe('255')
-        ->and(formatPrice(1, 3, 0))->toBe('3');
+        ->and(formatPrice(1, 3, 0))->toBe('3')
+        ->and(formatPrice(5.97, 4.3, 2, 0.05))->toBe('25.7')
+        ->and(formatPrice(5, 4.3, 2, 0.05))->toBe('21.5')
+        ->and(formatPrice(5.98, 4.3, 2, 0.05))->toBe('25.75');
+});
+
+test('minor currency with increment rounds converted prices and rrps up to the step', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => [
+        'EUR' => ['is_major' => true],
+        'PLN' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 4.3, 'increment' => 0.05],
+    ]]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PLNDEP-'.uniqid(),
+        'name' => 'PLN Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PLNFAM-'.uniqid(),
+        'name' => 'PLN Family',
+    ]);
+
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PLNAST-'.uniqid(),
+        'name'    => 'PLN Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 5.97,
+        'stocks'  => [],
+    ]);
+
+    $masterAsset->updateQuietly([
+        'status'        => true,
+        'master_prices' => [
+            'EUR' => ['value' => 5.97, 'independent' => false],
+            'PLN' => ['value' => 25.67, 'independent' => false],
+        ],
+        'master_rrps'   => [
+            'EUR' => ['value' => 19.98, 'independent' => false],
+        ],
+    ]);
+
+    \App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices::run($masterShop, 'PLN');
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe('25.7')
+        ->and(data_get($masterAsset->master_rrps, 'PLN.value'))->toBe('85.95');
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [
+            'EUR' => ['value' => 8.8, 'independent' => false],
+            'PLN' => ['value' => 37.84, 'independent' => false],
+        ],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe('37.85')
+        ->and(data_get($masterAsset->master_prices, 'EUR.value'))->toBe(8.8);
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => [
+            'PLN' => ['value' => 37.84, 'independent' => true],
+        ],
+    ]);
+
+    $masterAsset->refresh();
+
+    expect(data_get($masterAsset->master_prices, 'PLN.value'))->toBe(37.84);
 });
 
 test('master shop currencies rate can restrict to open shops only', function () {
@@ -2499,4 +2568,11 @@ test('master shop currencies rate can restrict to open shops only', function () 
         // Master product creation only seeds currencies of shops that will actually sell.
         ->and($openShops->keys()->all())->toContain('GBP')
         ->and($openShops->keys()->all())->not->toContain('EUR');
+});
+
+test('master products in trade unit index uses time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    $tradeUnits = createTradeUnits($this->group);
+
+    expect(\App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit::make()->handle($tradeUnits[0])->total())->toBeGreaterThanOrEqual(0);
 });
