@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { trans } from "laravel-vue-i18n"
-import ClockingStatusSummary from "@/Components/HumanResources/ClockingStatusSummary.vue"
 
 interface ClockingRecord {
 	id: number
@@ -38,21 +37,21 @@ const displayCode = computed(() => props.pin?.replace(/^\d+:/, "") ?? null)
 </script>
 
 <template>
-	<ClockingStatusSummary
-		:active-time-tracker="props.activeTimeTracker"
-		:clocking-status="props.clockingStatus"
-		:today-timesheet="props.todayTimesheet"
-		:clocking-sessions="props.clockingSessions"
-		:timezone="props.timezone" />
+	<div class="space-y-3 text-center sm:space-y-4">
+		<p class="text-xs sm:text-sm text-gray-500">
+			{{ trans("Enter this PIN on the clocking machine to clock in or out") }}
+		</p>
 
-	<div class="rounded-xl border border-gray-200 bg-white p-6 text-center space-y-3">
-		<p class="text-sm text-gray-500">{{ trans("Enter this PIN on the clocking machine to clock in or out") }}</p>
-
-		<div v-if="displayCode" class="inline-flex rounded-lg border border-gray-200 bg-gray-50 px-6 py-4 text-3xl font-bold tracking-widest">
-			{{ displayCode }}
-		</div>
-		<div v-else class="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
-			{{ trans("No PIN has been generated for you yet. Please contact HR.") }}
+		<div
+			class="flex min-h-[120px] sm:min-h-[140px] w-full min-w-0 items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-3 py-5 sm:px-4 sm:py-6">
+			<span
+				v-if="displayCode"
+				class="break-all text-2xl sm:text-3xl font-bold tracking-widest text-gray-800">
+				{{ displayCode }}
+			</span>
+			<span v-else class="text-xs sm:text-sm text-amber-700">
+				{{ trans("No PIN has been generated for you yet. Please contact HR.") }}
+			</span>
 		</div>
 	</div>
 </template>

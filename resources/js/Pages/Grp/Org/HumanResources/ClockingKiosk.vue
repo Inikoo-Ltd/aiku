@@ -190,103 +190,152 @@ onUnmounted(() => {
 
 	<div
 		ref="kioskContainer"
-		class="flex w-full items-center justify-center bg-gradient-to-bl from-indigo-400 to-indigo-600 p-4">
+		class="relative min-h-[100dvh] w-full flex items-center justify-center bg-gradient-to-bl from-indigo-400 to-indigo-600 px-3 py-5 sm:px-6 sm:py-6 lg:px-8">
 		<div class="w-full max-w-[820px]">
-			<div class="relative rounded-2xl bg-white p-6 sm:p-10 shadow-xl text-center space-y-5 sm:space-y-7">
-				<Button
-					@click="toggleFullscreen"
-					type="secondary"
-					class="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
-					:icon="isFullscreen ? faCompress : faExpand"
-					:tooltip="trans('Toggle Fullscreen')" />
+			<div
+				class="w-full overflow-hidden rounded-2xl border border-white/40 bg-white shadow-2xl">
+				<div
+					class="relative border-b border-gray-200 px-4 py-3.5 text-center sm:px-10 sm:py-6">
+					<Button
+						@click="toggleFullscreen"
+						type="secondary"
+						class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 sm:top-3 sm:right-3"
+						:icon="isFullscreen ? faCompress : faExpand"
+						:tooltip="trans('Toggle Fullscreen')" />
 
-				<div>
-					<h1 class="text-3xl font-bold text-gray-800">{{ trans("Employee Clocking") }}</h1>
-					<p class="mt-1 text-base text-gray-500">
-						{{ mode === "pin" ? trans("Enter your PIN to clock in or out") : trans("Scan your barcode to clock in or out") }}
+					<h1 class="px-8 text-lg sm:text-3xl font-bold text-gray-800 sm:px-0">
+						{{ trans("Employee Clocking") }}
+					</h1>
+					<p class="mt-1 text-xs sm:text-base text-gray-500">
+						{{
+							mode === "pin"
+								? trans("Enter your PIN to clock in or out")
+								: trans("Scan your barcode to clock in or out")
+						}}
 					</p>
-					<p class="mt-2 text-xs font-medium uppercase tracking-wider text-gray-400">{{ machineName }}</p>
+					<span
+						class="mt-2 sm:mt-3 inline-block max-w-full truncate rounded-full bg-gray-100 px-3 py-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+						{{ machineName }}
+					</span>
 				</div>
 
-				<!-- SUCCESS RESULT -->
-				<div v-if="result" class="rounded-xl border border-green-200 bg-green-50 px-4 py-10 space-y-2">
-					<font-awesome-icon :icon="faCheckCircle" class="text-5xl text-green-500" />
-					<div class="text-xl font-semibold text-gray-800">{{ result.alias }}</div>
-					<div class="text-3xl font-bold text-green-700">
-						{{ result.actionType === "clock_in" ? trans("Clocked In") : result.actionType === "clock_out" ? trans("Clocked Out") : trans("Clocked") }}
+				<div class="px-4 py-4 sm:px-10 sm:py-8 text-center space-y-3.5 sm:space-y-5">
+					<div
+						v-if="result"
+						class="flex flex-col items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-6 sm:py-10">
+						<font-awesome-icon :icon="faCheckCircle" class="text-4xl sm:text-5xl text-green-500" />
+						<div class="text-lg sm:text-xl font-semibold text-gray-800 break-all">
+							{{ result.alias }}
+						</div>
+						<div class="text-2xl sm:text-3xl font-bold text-green-700">
+							{{
+								result.actionType === "clock_in"
+									? trans("Clocked In")
+									: result.actionType === "clock_out"
+										? trans("Clocked Out")
+										: trans("Clocked")
+							}}
+						</div>
+						<div class="text-sm sm:text-base text-gray-500">{{ formattedClockedAt }}</div>
 					</div>
-					<div class="text-base text-gray-500">{{ formattedClockedAt }}</div>
+
+					<template v-else>
+						<div
+							v-if="errorMessage"
+							class="flex items-center justify-center gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-xs sm:px-4 sm:py-3 sm:text-sm text-red-700">
+							<font-awesome-icon :icon="faTimesCircle" />
+							{{ errorMessage }}
+						</div>
+
+						<template v-if="mode === 'pin' && pinCharacterSet">
+							<div
+								class="flex min-h-[3.5rem] sm:min-h-[5rem] items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-3 py-2.5 sm:px-4 sm:py-4 text-xl sm:text-3xl font-bold tracking-[0.2em] sm:tracking-widest text-gray-800">
+								<span v-if="pinDisplay" class="break-all">{{ pinDisplay }}</span>
+								<span
+									v-else
+									class="text-sm sm:text-base font-normal tracking-normal text-gray-400">
+									{{ trans("Tap your PIN") }}
+								</span>
+							</div>
+
+							<div class="space-y-2 sm:space-y-2.5">
+								<div class="grid grid-cols-5 gap-1.5 sm:gap-2.5 sm:grid-cols-10">
+									<button
+										v-for="letter in pinCharacterSet.letters"
+										:key="`letter-${letter}`"
+										type="button"
+										:disabled="isSubmitting"
+										@click="tapCharacter(letter)"
+										class="min-h-[2.75rem] sm:min-h-0 rounded-lg sm:rounded-xl border border-gray-200 bg-white py-2.5 sm:py-4 text-base sm:text-xl font-semibold text-gray-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 disabled:opacity-50">
+										{{ letter }}
+									</button>
+								</div>
+
+								<div class="grid grid-cols-5 gap-1.5 sm:gap-2.5 sm:grid-cols-10">
+									<button
+										v-for="number in pinCharacterSet.numbers"
+										:key="`number-${number}`"
+										type="button"
+										:disabled="isSubmitting"
+										@click="tapCharacter(number)"
+										class="min-h-[2.75rem] sm:min-h-0 rounded-lg sm:rounded-xl border border-gray-200 bg-white py-2.5 sm:py-4 text-base sm:text-xl font-semibold text-gray-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 disabled:opacity-50">
+										{{ number }}
+									</button>
+								</div>
+							</div>
+
+							<div
+								class="grid grid-cols-2 gap-2 border-t border-gray-200 pt-4 sm:flex sm:flex-wrap sm:justify-center sm:gap-3 sm:pt-5">
+								<Button
+									:label="trans('Clear')"
+									type="cancel"
+									size="l"
+									class="w-full justify-center sm:w-auto"
+									:disabled="!enteredPin.length || isSubmitting"
+									@click="clearPin" />
+								<Button
+									:icon="faBackspace"
+									type="secondary"
+									size="l"
+									class="w-full justify-center sm:w-auto"
+									:disabled="!enteredPin.length || isSubmitting"
+									@click="backspace"
+									:tooltip="trans('Backspace')" />
+								<Button
+									:label="trans(isSubmitting ? 'Checking...' : 'Clock In / Out')"
+									type="primary"
+									size="l"
+									class="col-span-2 w-full justify-center sm:w-auto"
+									:loading="isSubmitting"
+									:disabled="!canSubmit"
+									@click="submitPin" />
+							</div>
+						</template>
+
+						<template v-else-if="mode === 'barcode'">
+							<div
+								class="flex flex-col items-center gap-3 sm:gap-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-3 py-6 sm:px-4 sm:py-12">
+								<font-awesome-icon
+									:icon="faBarcode"
+									class="text-4xl sm:text-5xl text-gray-400"
+									:class="{ 'animate-pulse': isSubmitting }" />
+								<p class="text-sm sm:text-base font-medium text-gray-600">
+									{{ isSubmitting ? trans("Checking...") : trans("Ready to scan") }}
+								</p>
+
+								<input
+									id="kioskBarcodeValue"
+									:value="barcodeValue"
+									type="text"
+									readonly
+									autocomplete="off"
+									:aria-label="trans('Scanned barcode')"
+									class="w-full max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3 text-center text-base sm:text-lg tracking-widest text-gray-700"
+									:placeholder="trans('Waiting for scan…')" />
+							</div>
+						</template>
+					</template>
 				</div>
-
-				<template v-else>
-					<div v-if="errorMessage" class="flex items-center justify-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-						<font-awesome-icon :icon="faTimesCircle" />
-						{{ errorMessage }}
-					</div>
-
-					<!-- PIN ENTRY -->
-					<template v-if="mode === 'pin' && pinCharacterSet">
-						<div class="flex min-h-[3.5rem] items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-3xl tracking-widest">
-							<span v-if="pinDisplay">{{ pinDisplay }}</span>
-							<span v-else class="text-gray-300">{{ trans("Tap your PIN") }}</span>
-						</div>
-
-						<div class="space-y-2.5">
-							<div class="grid grid-cols-5 gap-2.5 sm:grid-cols-10">
-								<button
-									v-for="letter in pinCharacterSet.letters"
-									:key="`letter-${letter}`"
-									type="button"
-									:disabled="isSubmitting"
-									@click="tapCharacter(letter)"
-									class="rounded-xl border border-gray-200 bg-white py-4 text-xl font-semibold text-gray-700 shadow-sm hover:bg-gray-100 active:scale-95 disabled:opacity-50">
-									{{ letter }}
-								</button>
-							</div>
-
-							<div class="grid grid-cols-5 gap-2.5 sm:grid-cols-10">
-								<button
-									v-for="number in pinCharacterSet.numbers"
-									:key="`number-${number}`"
-									type="button"
-									:disabled="isSubmitting"
-									@click="tapCharacter(number)"
-									class="rounded-xl border border-gray-200 bg-white py-4 text-xl font-semibold text-gray-700 shadow-sm hover:bg-gray-100 active:scale-95 disabled:opacity-50">
-									{{ number }}
-								</button>
-							</div>
-						</div>
-
-						<div class="flex justify-center gap-3 pt-1">
-							<Button :label="trans('Clear')" type="cancel" :disabled="!enteredPin.length || isSubmitting" @click="clearPin" />
-							<Button :icon="faBackspace" type="secondary" :disabled="!enteredPin.length || isSubmitting" @click="backspace" :tooltip="trans('Backspace')" />
-							<Button
-								:label="trans(isSubmitting ? 'Checking...' : 'Clock In / Out')"
-								type="primary"
-								:loading="isSubmitting"
-								:disabled="!canSubmit"
-								@click="submitPin" />
-						</div>
-					</template>
-
-					<!-- BARCODE SCAN -->
-					<template v-else-if="mode === 'barcode'">
-						<div class="flex flex-col items-center gap-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-12">
-							<font-awesome-icon :icon="faBarcode" class="text-5xl text-gray-400" :class="{ 'animate-pulse': isSubmitting }" />
-							<p class="text-base font-medium text-gray-600">
-								{{ isSubmitting ? trans("Checking...") : trans("Ready to scan") }}
-							</p>
-
-							<input
-								:value="barcodeValue"
-								type="text"
-								readonly
-								autocomplete="off"
-								class="w-full max-w-xs rounded-lg border border-gray-200 px-4 py-3 text-center text-lg tracking-widest text-gray-700"
-								:placeholder="trans('Waiting for scan…')" />
-						</div>
-					</template>
-				</template>
 			</div>
 		</div>
 	</div>

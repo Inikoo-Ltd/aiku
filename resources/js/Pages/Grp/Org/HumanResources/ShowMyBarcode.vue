@@ -2,7 +2,6 @@
 import { computed, onMounted, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import JsBarcode from "jsbarcode"
-import ClockingStatusSummary from "@/Components/HumanResources/ClockingStatusSummary.vue"
 
 interface ClockingRecord {
 	id: number
@@ -56,21 +55,19 @@ watch(displayCode, renderBarcode)
 </script>
 
 <template>
-	<ClockingStatusSummary
-		:active-time-tracker="props.activeTimeTracker"
-		:clocking-status="props.clockingStatus"
-		:today-timesheet="props.todayTimesheet"
-		:clocking-sessions="props.clockingSessions"
-		:timezone="props.timezone" />
+	<div class="space-y-3 text-center sm:space-y-4">
+		<p class="text-xs sm:text-sm text-gray-500">
+			{{ trans("Show this barcode to the scanner to clock in or out") }}
+		</p>
 
-	<div class="rounded-xl border border-gray-200 bg-white p-6 text-center space-y-3">
-		<p class="text-sm text-gray-500">{{ trans("Show this barcode to the scanner to clock in or out") }}</p>
-
-		<div v-if="displayCode" class="flex justify-center overflow-x-auto">
-			<svg id="employeeBarcode" class="bg-white"></svg>
-		</div>
-		<div v-else class="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
-			{{ trans("No barcode has been generated for you yet. Please contact HR.") }}
+		<div
+			class="flex min-h-[120px] sm:min-h-[140px] w-full min-w-0 items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-3 py-5 sm:px-4 sm:py-6">
+			<div v-if="displayCode" class="w-full min-w-0 rounded-lg bg-white px-2 py-2">
+				<svg id="employeeBarcode" class="mx-auto block h-auto max-w-full"></svg>
+			</div>
+			<span v-else class="text-xs sm:text-sm text-amber-700">
+				{{ trans("No barcode has been generated for you yet. Please contact HR.") }}
+			</span>
 		</div>
 	</div>
 </template>

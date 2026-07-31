@@ -39,12 +39,11 @@ library.add(faTimes, faCheck, faClock)
 const isClockedIn = computed(() => props.clockingStatus === "clocked_in")
 
 const statusClasses = computed(() => ({
-	container: isClockedIn.value
-		? "bg-green-50 border border-green-200"
-		: "bg-gray-50 border border-gray-200",
+	container: isClockedIn.value ? "bg-green-50/70" : "bg-gray-50/70",
 	iconWrapper: isClockedIn.value ? "bg-green-100" : "bg-gray-200",
 	icon: isClockedIn.value ? "text-green-600" : "text-gray-500",
 	text: isClockedIn.value ? "text-green-800" : "text-gray-700",
+	divider: isClockedIn.value ? "border-green-200/70" : "border-gray-200",
 }))
 
 const statusText = computed(() =>
@@ -95,30 +94,32 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 </script>
 
 <template>
-	<div v-if="clockingStatus" class="mb-6 p-4 rounded-lg" :class="statusClasses.container">
-		<div class="flex items-center justify-between mb-3">
-			<div class="flex items-center gap-3">
+	<div v-if="clockingStatus" class="px-4 py-4 sm:px-5" :class="statusClasses.container">
+		<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
+			<div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
 				<div
-					class="w-10 h-10 rounded-full flex items-center justify-center"
+					class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full flex items-center justify-center"
 					:class="statusClasses.iconWrapper">
 					<FontAwesomeIcon
 						:icon="isClockedIn ? faCheck : faTimes"
-						class="text-lg"
+						class="text-base sm:text-lg"
 						:class="statusClasses.icon" />
 				</div>
-				<div>
-					<p class="text-sm font-medium" :class="statusClasses.text">
+				<div class="min-w-0">
+					<p class="text-xs sm:text-sm font-medium" :class="statusClasses.text">
 						{{ statusText }}
 					</p>
-					<p v-if="isClockedIn && activeTimeTracker?.starts_at" class="text-xs text-gray-500">
+					<p
+						v-if="isClockedIn && activeTimeTracker?.starts_at"
+						class="text-[11px] sm:text-xs text-gray-500 truncate">
 						{{ trans("Since") }}:
 						{{ useFormatTime(activeTimeTracker.starts_at, { formatTime: "hms" }) }}
 					</p>
 				</div>
 			</div>
-			<div class="text-right">
-				<p class="text-xs text-gray-400">{{ trans("Date") }}</p>
-				<p class="text-sm font-semibold text-gray-700">
+			<div class="shrink-0 text-right">
+				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Date") }}</p>
+				<p class="text-xs sm:text-sm font-semibold text-gray-700">
 					{{ displayDate }}
 				</p>
 			</div>
@@ -126,49 +127,57 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 
 		<div
 			v-if="todayTimesheet?.start_at || todayTimesheet?.end_at"
-			class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
-			<div v-if="todayTimesheet?.start_at" class="text-center p-2 rounded bg-white/50">
-				<p class="text-xs text-gray-400">{{ trans("First Clock In") }}</p>
-				<p class="text-sm font-semibold text-gray-800">
-					{{ displayTime(todayTimesheet.start_at) }}
+			class="grid grid-cols-2 gap-2 sm:gap-3 pt-3 border-t"
+			:class="statusClasses.divider">
+			<div class="min-w-0 text-center p-2 rounded-lg bg-white/70">
+				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("First Clock In") }}</p>
+				<p class="text-xs sm:text-sm font-semibold text-gray-800">
+					{{ displayTime(todayTimesheet?.start_at) }}
 				</p>
 			</div>
-			<div v-if="todayTimesheet?.end_at" class="text-center p-2 rounded bg-white/50">
-				<p class="text-xs text-gray-400">{{ trans("Last Clock Out") }}</p>
-				<p class="text-sm font-semibold text-gray-800">
-					{{ displayTime(todayTimesheet.end_at) }}
+			<div class="min-w-0 text-center p-2 rounded-lg bg-white/70">
+				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Last Clock Out") }}</p>
+				<p class="text-xs sm:text-sm font-semibold text-gray-800">
+					{{ displayTime(todayTimesheet?.end_at) }}
 				</p>
 			</div>
 		</div>
 
-		<div v-if="todayTimesheet" class="flex gap-4 mt-3 pt-3 border-t border-gray-200">
-			<span class="text-xs text-gray-500">
-				{{ trans("Working") }}:
-				{{ formatDurationLocal(todayTimesheet.working_duration || 0) }}
-			</span>
-			<span class="text-xs text-gray-500">
-				{{ trans("Breaks") }}:
-				{{ formatDurationLocal(todayTimesheet.breaks_duration || 0) }}
-			</span>
+		<div
+			v-if="todayTimesheet"
+			class="grid grid-cols-2 gap-2 sm:gap-3 mt-3 pt-3 border-t"
+			:class="statusClasses.divider">
+			<div class="min-w-0 text-center">
+				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Working") }}</p>
+				<p class="text-xs sm:text-sm font-semibold text-gray-700">
+					{{ formatDurationLocal(todayTimesheet.working_duration || 0) }}
+				</p>
+			</div>
+			<div class="min-w-0 text-center">
+				<p class="text-[11px] sm:text-xs text-gray-400">{{ trans("Breaks") }}</p>
+				<p class="text-xs sm:text-sm font-semibold text-gray-700">
+					{{ formatDurationLocal(todayTimesheet.breaks_duration || 0) }}
+				</p>
+			</div>
 		</div>
 
-		<div v-if="hasMultipleSessions" class="mt-3 pt-3 border-t border-gray-200">
+		<div v-if="hasMultipleSessions" class="mt-3 pt-3 border-t" :class="statusClasses.divider">
 			<p class="text-xs font-semibold text-gray-500 mb-2">
 				{{ trans("Clocking Details") }} ({{ clockingSessions.length }})
 			</p>
-			<div class="max-h-72 space-y-2 overflow-y-auto pr-1">
+			<div class="max-h-56 sm:max-h-72 space-y-2 overflow-y-auto pr-1">
 				<div
 					v-for="session in clockingSessions"
 					:key="session.id"
-					class="rounded-lg bg-white/70 border border-gray-200 p-2">
+					class="rounded-lg bg-white/80 border border-gray-200 p-2">
 					<div class="grid grid-cols-2 gap-2">
-						<div class="text-center p-1 rounded bg-gray-50">
+						<div class="text-center p-1 rounded-lg bg-gray-50">
 							<p class="text-[10px] text-gray-400">{{ trans("Clock In") }}</p>
 							<p class="text-xs font-semibold text-gray-800">
 								{{ displayTime(session.clock_in?.clocked_at ?? session.starts_at ?? undefined) }}
 							</p>
 						</div>
-						<div class="text-center p-1 rounded bg-gray-50">
+						<div class="text-center p-1 rounded-lg bg-gray-50">
 							<p class="text-[10px] text-gray-400">{{ trans("Clock Out") }}</p>
 							<p class="text-xs font-semibold text-gray-800">
 								{{
