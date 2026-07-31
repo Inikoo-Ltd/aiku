@@ -426,7 +426,7 @@ const trackFunction = () => ({
 				<div
 					v-if="hasLocation"
 					class="h-44 sm:h-52 md:h-64 rounded-lg overflow-hidden border border-green-200">
-					<LMap :zoom="mapZoom" :center="[lat, lng]" style="height: 80%">
+					<LMap :zoom="mapZoom" :center="[lat, lng]" style="height: 100%">
 						<LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 						<LMarker :lat-lng="[lat, lng]">
 							<LTooltip>
