@@ -18,38 +18,43 @@ class GetOrgAgentShowcase
 
     public function handle(OrgAgent $orgAgent): array
     {
-        $agent = $orgAgent->agent;
+        $agent        = $orgAgent->agent;
+        $organisation = $agent->organisation;
+
         return [
             'contactCard' => [
-                'company'  => $agent->organisation->name,
-                'contact'  => $agent->organisation->contact_name,
-                'email'    => $agent->organisation->email,
-                'phone'    => $agent->organisation->phone,
-                'location' => $agent->organisation->location,
-                // 'address'  => AddressResource::make($agent->organisation->address)->getArray(),
-                'photo'    => $agent->organisation->imageSources()
+                'created_at' => $agent->created_at,
+                'company'    => $organisation->name,
+                'contact'    => $organisation->contact_name,
+                'location'   => $organisation->location,
+                'email'      => $organisation->email,
+                'phone'      => $organisation->phone,
+                'currency'   => $agent->currency ?? $organisation->currency,
+                'address'    => AddressResource::make($organisation->address)->getArray(),
+                'photo'      => $organisation->imageSources(),
             ],
             'stats'       => [
                 [
-                    'label' => __('Purchase Orders'),
-                    'count' => $orgAgent->stats->number_purchase_orders,
-                    'full'  => true
-                ],
-                [
                     'label' => __('Suppliers'),
-                    'count' => $orgAgent->stats->number_org_suppliers
+                    'icon'  => 'fal fa-person-dolly',
+                    'count' => $orgAgent->stats->number_active_org_suppliers,
                 ],
                 [
                     'label' => __('Products'),
-                    'count' => $orgAgent->stats->number_org_supplier_products
+                    'icon'  => 'fal fa-box-usd',
+                    'count' => $orgAgent->stats->number_current_org_supplier_products,
+                ],
+                [
+                    'label' => __('Purchase Orders'),
+                    'icon'  => 'fal fa-clipboard-list',
+                    'count' => $orgAgent->stats->number_purchase_orders,
                 ],
                 [
                     'label' => __('Deliveries'),
+                    'icon'  => 'fal fa-truck-container',
                     'count' => $orgAgent->stats->number_stock_deliveries,
-                    'full'  => true
                 ],
-
-            ]
+            ],
         ];
     }
 }

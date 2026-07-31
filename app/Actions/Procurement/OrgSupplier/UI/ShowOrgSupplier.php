@@ -169,7 +169,7 @@ class ShowOrgSupplier extends OrgAction
             ),
             'grp.org.procurement.org_agents.show.suppliers.show' =>
             array_merge(
-                ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
+                ShowOrgAgent::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     $orgSupplier,
                     [

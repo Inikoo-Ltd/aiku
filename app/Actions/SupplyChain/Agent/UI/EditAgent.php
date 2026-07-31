@@ -153,6 +153,7 @@ class EditAgent extends OrgAction
     {
         return ShowAgent::make()->getBreadcrumbs(
             $agent,
+            routeName: 'grp.supply-chain.agents.edit',
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'
         );

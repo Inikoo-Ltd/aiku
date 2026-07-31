@@ -232,6 +232,7 @@ class ShowSupplier extends OrgAction
             array_merge(
                 (new ShowAgent())->getBreadcrumbs(
                     $supplier->agent,
+                    $routeName,
                     $routeParameters,
                 ),
                 $headCrumb(

@@ -310,7 +310,7 @@ class IndexSuppliers extends OrgAction
     {
         return match ($routeName) {
             'grp.supply-chain.agents.show.suppliers.index' => array_merge(
-                ShowAgent::make()->getBreadcrumbs($this->parent, $routeParameters),
+                ShowAgent::make()->getBreadcrumbs($this->parent, $routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',
