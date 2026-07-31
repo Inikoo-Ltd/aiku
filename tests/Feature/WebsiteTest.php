@@ -1413,3 +1413,10 @@ it('creates ruleset if none of zone kind exists', function () {
 
     expect($result['result']['id'])->toBe('new_zone_ruleset_id');
 });
+
+test('luigi object from blog webpage without model', function (array $cat) {
+    $object = (new ReindexWebpageLuigiData())->getObjectFromWebpage($cat['blogWebpage']);
+
+    expect($object['type'])->toBe('news')
+        ->and($object['fields']['slug'])->toBe('webpage-'.$cat['blogWebpage']->slug);
+})->depends('create catalogue webpages');
