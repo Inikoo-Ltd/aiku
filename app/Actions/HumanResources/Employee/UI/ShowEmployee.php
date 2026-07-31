@@ -111,7 +111,7 @@ class ShowEmployee extends OrgAction
                     'current' => $this->tab,
                     'navigation' => EmployeeTabsEnum::navigation()
                 ],
-
+                'employee_id'   => $employee->id,
                 EmployeeTabsEnum::SHOWCASE->value => $this->tab == EmployeeTabsEnum::SHOWCASE->value ?
                     fn () => GetEmployeeShowcase::run($employee)
                     : Inertia::optional(fn () => GetEmployeeShowcase::run($employee)),

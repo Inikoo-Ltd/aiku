@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
     faEnvelope,
@@ -89,6 +89,7 @@ const props = defineProps<{
     attachments?: {}
     attachmentRoutes?:object
     showcase? : object
+    employee_id : number
 }>()
 
 let currentTab = ref(props.tabs.current);
@@ -110,12 +111,44 @@ const component = computed(() => {
 });
 
 const showDialog = ref(false);
-const isLoadingCreateUser = ref(false);
-const username = ref('');
-const password = ref('');
+
+
+const createUserForm = useForm<{
+    username: string
+    password: string
+    password_confirmation: string
+}>({
+    username: '',
+    password: '',
+    password_confirmation: '',
+});
+
+const openCreateUserDialog = (action: { route?: { name: string, parameters?: object, method?: string } }) => {
+    createUserForm.reset();
+    createUserForm.clearErrors();
+    showDialog.value = true;
+}
 
 const createUser = () => {
-    
+    createUserForm.clearErrors();
+
+    if (createUserForm.password !== createUserForm.password_confirmation) {
+        createUserForm.setError('password_confirmation', trans('The password confirmation does not match.'));
+        return;
+    }
+
+    createUserForm.post(
+        route(
+             'grp.models.employee.create_user', { employee  : props.employee_id}
+        ),
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                createUserForm.reset();
+                showDialog.value = false;
+            }
+        }
+    );
 }
 
 </script>
@@ -126,10 +159,10 @@ const createUser = () => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-create-user="{ action }">
-            <Button 
-                :icon="faPlus" 
-                :label="action.label" 
-                @click="()=> {showDialog = true}" 
+            <Button
+                :icon="faPlus"
+                :label="action.label"
+                @click="() => openCreateUserDialog(action)"
                 :style="action.style"
             />
             <Dialog
@@ -148,68 +181,68 @@ const createUser = () => {
                         </div>
                     </div>
                 </template>
-                <div class="h-full overflow-y-auto overflow-x-none" style="scrollbar-width: thin;">
-                    <div class="">
-                        <div>
-                            <label> 
-                                {{ ctrans('Username') }}:
-                            </label>
-                        </div>
-                        <div>
-                            <PureInput
-                                v-model="username"
-                                @update:modelValue="() => username = ''"
-                                :class="username ? 'errorShake' : ''"
-                                class="col-span-2"
-                                :placeholder="trans(`Customer's SKO name`)"
-                            />
-                        </div>
-                    </div>
-                </div>
-                <div class="h-full overflow-y-auto overflow-x-none" style="scrollbar-width: thin;">
-                    <div class="">
-                        <div>
-                            <label> 
-                                {{ ctrans('Password') }}:
-                            </label>
-                        </div>
-                        <div>
-                            <PureInput
-                                v-model="username"
-                                @update:modelValue="() => username = ''"
-                                :class="username ? 'errorShake' : ''"
-                                class="col-span-2"
-                                :placeholder="trans(`Customer's SKO name`)"
-                                :type=""
-                            />
+                <form
+                    @submit.prevent="createUser()"
+                    class="grid gap-y-4 h-full overflow-y-auto overflow-x-hidden px-5 pb-2"
+                    style="scrollbar-width: thin;"
+                >
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ ctrans('Username') }}:
+                        </label>
+                        <PureInput
+                            v-model="createUserForm.username"
+                            autofocus
+                            autocomplete="off"
+                            :isError="!!createUserForm.errors.username"
+                            :placeholder="trans('Username')"
+                        />
+                        <div v-if="createUserForm.errors.username" class="mt-1 text-xs text-red-600">
+                            {{ createUserForm.errors.username }}
                         </div>
                     </div>
-                </div>
-                <div class="h-full overflow-y-auto overflow-x-none" style="scrollbar-width: thin;">
-                    <div class="">
-                        <div>
-                            <label> 
-                                {{ ctrans('Confirm password') }}:
-                            </label>
-                        </div>
-                        <div>
-                            <PureInput
-                                v-model="username"
-                                @update:modelValue="() => username = ''"
-                                :class="username ? 'errorShake' : ''"
-                                class="col-span-2"
-                                :placeholder="trans(`Customer's SKO name`)"
-                            />
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ ctrans('Password') }}:
+                        </label>
+                        <PureInput
+                            v-model="createUserForm.password"
+                            type="password"
+                            autocomplete="new-password"
+                            :isError="!!createUserForm.errors.password"
+                            :placeholder="trans('Password')"
+                        />
+                        <div v-if="createUserForm.errors.password" class="mt-1 text-xs text-red-600">
+                            {{ createUserForm.errors.password }}
                         </div>
                     </div>
-                </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ ctrans('Confirm password') }}:
+                        </label>
+                        <PureInput
+                            v-model="createUserForm.password_confirmation"
+                            type="password"
+                            autocomplete="new-password"
+                            :isError="!!createUserForm.errors.password_confirmation"
+                            :placeholder="trans('Retype password')"
+                        />
+                        <div v-if="createUserForm.errors.password_confirmation" class="mt-1 text-xs text-red-600">
+                            {{ createUserForm.errors.password_confirmation }}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="hidden" />
+                </form>
                 <template #footer>
                     <div class="flex justify-end pt-2 w-full">
                         <Button
                             @click="createUser()"
                             :label="ctrans('Save')"
-                            :loading="isLoadingCreateUser"
-                            :disabled="isLoadingCreateUser"
+                            :loading="createUserForm.processing"
+                            :disabled="createUserForm.processing || !createUserForm.username || !createUserForm.password || !createUserForm.password_confirmation"
                         />
                     </div>
                 </template>

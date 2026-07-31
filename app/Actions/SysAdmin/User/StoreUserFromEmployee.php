@@ -13,8 +13,8 @@ use App\Actions\OrgAction;
 use App\Models\HumanResources\Employee;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreUserFromEmployee extends OrgAction
@@ -52,7 +52,7 @@ class StoreUserFromEmployee extends OrgAction
                 Rule::notIn(['export', 'create'])
             ],
             'password'                  => ['required', app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)],
-            'confirmation_password'     => ['required', 'same:password']
+            'password_confirmation'     => ['required', 'same:password']
         ];
 
         if (!$this->strict) {
