@@ -18,6 +18,7 @@ use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
 use App\Actions\Traits\WithBase64FileConverter;
 use App\Actions\Traits\WithUpdateModelImage;
 use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
+use App\Events\BroadcastEmployeeClockingUpdated;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Http\Resources\HumanResources\ClockingHanResource;
 use App\Http\Resources\HumanResources\ClockingResource;
@@ -121,6 +122,7 @@ class StoreClocking extends OrgAction
 
         if ($subject instanceof Employee) {
             EmployeeHydrateClockings::dispatch($subject)->delay($this->hydratorsDelay);
+            BroadcastEmployeeClockingUpdated::dispatch($subject);
         } else {
             GuestHydrateClockings::dispatch($subject)->delay($this->hydratorsDelay);
         }

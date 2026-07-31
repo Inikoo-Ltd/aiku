@@ -17,5 +17,6 @@ export interface ClockingMachine {
     org_id: number,
     workplace_id: number,
     kiosk_url?: string | null,
+    kiosk_enabled?: boolean | null,
     delete_route?: routeType,
 }

@@ -13,6 +13,7 @@ defineProps<{
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
+import Tag from "@/Components/Tag.vue";
 import ModalClockingMachineKioskLink from "@/Components/HumanResources/ModalClockingMachineKioskLink.vue";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import { trans } from "laravel-vue-i18n";
@@ -100,6 +101,15 @@ function workplaceRoute(clockingMachine: ClockingMachine) {
       <Link :href="workplaceRoute(clockingMachine)" class="secondaryLink">
         {{ clockingMachine["workplace_name"] }}
       </Link>
+    </template>
+    <template #cell(kiosk_enabled)="{ item: clockingMachine }">
+      <Tag
+        v-if="clockingMachine.kiosk_enabled !== null"
+        :label="trans(clockingMachine.kiosk_enabled ? 'On' : 'Off')"
+        :class="clockingMachine.kiosk_enabled
+          ? 'bg-green-100 border border-green-200 text-green-600'
+          : 'bg-gray-100 border border-gray-200 text-gray-500'" />
+      <span v-else class="text-gray-300">—</span>
     </template>
     <template #cell(actions)="{ item: clockingMachine }">
       <div class="flex items-center gap-x-1">

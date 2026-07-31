@@ -72,6 +72,7 @@ class IndexClockingMachines extends OrgAction
                 'clocking_machines.id',
                 'clocking_machines.slug',
                 'clocking_machines.kiosk_token',
+                'clocking_machines.config',
                 'workplaces.name as workplace_name',
                 'workplaces.slug as workplace_slug',
                 'organisations.name as organisation_name',
@@ -108,7 +109,8 @@ class IndexClockingMachines extends OrgAction
                     ]
                 )
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'kiosk_enabled', label: __('Enabled'), canBeHidden: false);
             if ($parent instanceof Organisation) {
                 $table->column(key: 'workplace_name', label: __('workplace'), canBeHidden: false, sortable: true, searchable: true);
             } elseif ($parent instanceof Group) {

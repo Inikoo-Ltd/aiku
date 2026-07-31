@@ -9,8 +9,9 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
+import { useEchoEmployeeClocking } from "@/Stores/echo-employee-clocking"
 import EmployeeClockingPanel from "./EmployeeClockingPanel.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
@@ -77,6 +78,7 @@ type EmployeeCalendarData = {
 const props = defineProps<{
 	data: object
 	title: string
+	employeeId?: number | null
 	pageHead: PageHeadingTypes
 	tabs: {
 		current: string
@@ -91,6 +93,14 @@ const props = defineProps<{
 }>()
 
 let currentTab = ref(props.tabs.current)
+
+// Any clock in/out from any device (kiosk PIN/barcode, or the employee's own QR scan)
+// broadcasts here, so this page's status refreshes live without a manual reload.
+onMounted(() => {
+	if (props.employeeId) {
+		useEchoEmployeeClocking().subscribe(props.employeeId)
+	}
+})
 const isRequestLeaveModalOpen = ref(false)
 const isRequestOvertimeModalOpen = ref(false)
 

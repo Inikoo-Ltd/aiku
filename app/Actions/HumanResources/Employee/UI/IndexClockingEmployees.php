@@ -682,6 +682,7 @@ class IndexClockingEmployees extends OrgAction
             'Org/HumanResources/ClockingEmployees',
             [
                 'title'       => __('Employee Clocking'),
+                'employeeId'  => $this->employee?->id,
                 'breadcrumbs' => $this->getBreadcrumbs($request),
                 'pageHead'    => [
                     'icon'  => [

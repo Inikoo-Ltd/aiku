@@ -61,6 +61,10 @@ Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });
 
+Broadcast::channel('grp.employee.{employeeID}.clocking', function (User $user, int $employeeID) {
+    return $user->employees()->where('id', $employeeID)->exists();
+});
+
 Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {
     return MasterShop::where('id', $masterShopId)->value('group_id') === $user->group_id;
 });
