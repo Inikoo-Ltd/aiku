@@ -4,12 +4,16 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Catalogue\IrisProductTrendResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -18,10 +22,10 @@ use Lorisleiva\Actions\ActionRequest;
  * Most popular products of a shop. The catalogue reach can be narrowed to a single department, sub
  * department, family, brand or collection so the same recommender serves the homepage (whole shop),
  * a product listing (this category/brand only) and the product detail page (e.g. popular products of
- * the same collection). Popularity is measured against the product's sales interval, so a shorter
+ * the same collection). Popularity is measured against the product's sales time series, so a shorter
  * window surfaces what is trending right now while a wider one surfaces evergreen best sellers.
  * Short windows are sparse, so the requested one only decides the primary ranking and every wider
- * window breaks its ties. The ranking attribute is configurable: instead of popularity the products can be
+ * window of the same frequency breaks its ties. The ranking attribute is configurable: instead of popularity the products can be
  * ordered by price or by their best discount, which is useful when the block is used to promote the
  * cheapest or the most heavily discounted popular products.
  */
@@ -36,18 +40,24 @@ class GetIrisProductTrends extends IrisAction
     public const string DEFAULT_PERIOD = '3d';
 
     /**
-     * Narrowest first: a period also acts as the entry point of the fallback chain below it.
+     * Narrowest first: a period also acts as the entry point of the fallback chain below it. A period
+     * is resolved from the coarsest time series frequency that still matches its window, so a wide
+     * window aggregates a handful of records per product instead of a year of daily ones.
+     *
+     * @var array<string, array{frequency: TimeSeriesFrequencyEnum, records: int|null}>
      */
-    private const array SALES_PERIOD_COLUMNS = [
-        'tdy' => 'sales_tdy',
-        'ld'  => 'sales_ld',
-        '3d'  => 'sales_3d',
-        '1w'  => 'sales_1w',
-        '1m'  => 'sales_1m',
-        '1q'  => 'sales_1q',
-        '1y'  => 'sales_1y',
-        'all' => 'sales_all',
+    private const array SALES_PERIODS = [
+        'tdy' => ['frequency' => TimeSeriesFrequencyEnum::DAILY,   'records' => 1],
+        'ld'  => ['frequency' => TimeSeriesFrequencyEnum::DAILY,   'records' => 2],
+        '3d'  => ['frequency' => TimeSeriesFrequencyEnum::DAILY,   'records' => 3],
+        '1w'  => ['frequency' => TimeSeriesFrequencyEnum::DAILY,   'records' => 7],
+        '1m'  => ['frequency' => TimeSeriesFrequencyEnum::DAILY,   'records' => 30],
+        '1q'  => ['frequency' => TimeSeriesFrequencyEnum::WEEKLY,  'records' => 13],
+        '1y'  => ['frequency' => TimeSeriesFrequencyEnum::MONTHLY, 'records' => 12],
+        'all' => ['frequency' => TimeSeriesFrequencyEnum::YEARLY,  'records' => null],
     ];
+
+    private const string SALES_EXPRESSION = 'coalesce(asset_time_series_records.sales_external, 0) + coalesce(asset_time_series_records.sales_internal, 0)';
 
     private const string DISCOUNT_EXPRESSION = "coalesce((products.offers_data -> 'best_percentage_off' ->> 'percentage_off')::float8, 0)";
 
@@ -55,39 +65,44 @@ class GetIrisProductTrends extends IrisAction
     {
         $orderBy      = $modelData['order_by'] ?? self::ORDER_POPULARITY;
         $direction    = ($modelData['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
-        $salesColumns = $this->getSalesColumns($modelData['period'] ?? self::DEFAULT_PERIOD);
+        $salesPeriods = $this->getSalesPeriods($modelData['period'] ?? self::DEFAULT_PERIOD);
         $limit        = max(1, min((int) ($modelData['limit'] ?? self::MAX_PRODUCTS), self::MAX_PRODUCTS));
 
-        $queryBuilder = $this->getScopedProducts($shop, $modelData, $salesColumns[0]);
+        $queryBuilder = $this->getScopedProducts($shop, $modelData, $salesPeriods);
 
-        $this->applyOrder($queryBuilder, $orderBy, $direction, $salesColumns);
+        $this->applyOrder($queryBuilder, $orderBy, $direction, $salesPeriods);
 
         return $queryBuilder->limit($limit)->get();
     }
 
     /**
-     * The requested period followed by every wider one. Short periods are sparse: on a quiet day
-     * hardly any product has sales_3d, and ordering by it alone collapses the ranking onto the
-     * tiebreakers, which reads as a fixed list rather than as trending products. Products with no
-     * sales in the requested period are ranked by the next wider period instead.
+     * The requested period followed by every wider one sharing its frequency. Short periods are
+     * sparse: on a quiet day hardly any product sold in the last 3 days, and ordering by that window
+     * alone collapses the ranking onto the tiebreakers, which reads as a fixed list rather than as
+     * trending products. Products with no sales in the requested window are ranked by the next wider
+     * one instead, and keeping the chain within one frequency keeps it a single aggregation.
      *
      * @return array<int, string>
      */
-    private function getSalesColumns(string $period): array
+    private function getSalesPeriods(string $period): array
     {
-        $offset = array_search($period, array_keys(self::SALES_PERIOD_COLUMNS), true);
-
-        if ($offset === false) {
-            $offset = array_search(self::DEFAULT_PERIOD, array_keys(self::SALES_PERIOD_COLUMNS), true);
+        if (!isset(self::SALES_PERIODS[$period])) {
+            $period = self::DEFAULT_PERIOD;
         }
 
-        return array_values(array_slice(self::SALES_PERIOD_COLUMNS, $offset));
+        $frequency = self::SALES_PERIODS[$period]['frequency'];
+        $offset    = array_search($period, array_keys(self::SALES_PERIODS), true);
+
+        return array_values(array_filter(
+            array_slice(array_keys(self::SALES_PERIODS), $offset),
+            fn (string $widerPeriod): bool => self::SALES_PERIODS[$widerPeriod]['frequency'] === $frequency
+        ));
     }
 
     /**
-     * @param array<int, string> $salesColumns
+     * @param array<int, string> $salesPeriods
      */
-    private function applyOrder(Builder $queryBuilder, string $orderBy, string $direction, array $salesColumns): void
+    private function applyOrder(Builder $queryBuilder, string $orderBy, string $direction, array $salesPeriods): void
     {
         switch ($orderBy) {
             case self::ORDER_PRICE:
@@ -95,10 +110,10 @@ class GetIrisProductTrends extends IrisAction
                 break;
             case self::ORDER_DISCOUNT:
                 $queryBuilder->orderByRaw(self::DISCOUNT_EXPRESSION.' '.$direction);
-                $this->applySalesOrder($queryBuilder, $salesColumns, 'desc');
+                $this->applySalesOrder($queryBuilder, $salesPeriods, 'desc');
                 break;
             default:
-                $this->applySalesOrder($queryBuilder, $salesColumns, $direction);
+                $this->applySalesOrder($queryBuilder, $salesPeriods, $direction);
                 $queryBuilder->orderByRaw('products.top_seller asc nulls last');
                 break;
         }
@@ -108,20 +123,94 @@ class GetIrisProductTrends extends IrisAction
     }
 
     /**
-     * @param array<int, string> $salesColumns
+     * @param array<int, string> $salesPeriods
      */
-    private function applySalesOrder(Builder $queryBuilder, array $salesColumns, string $direction): void
+    private function applySalesOrder(Builder $queryBuilder, array $salesPeriods, string $direction): void
     {
-        foreach ($salesColumns as $salesColumn) {
-            $queryBuilder->orderByRaw('coalesce(asset_sales_intervals.'.$salesColumn.', 0) '.$direction);
+        foreach ($salesPeriods as $salesPeriod) {
+            $queryBuilder->orderByRaw('coalesce(product_sales.'.$this->getSalesAlias($salesPeriod).', 0) '.$direction);
         }
     }
 
-    private function getScopedProducts(Shop $shop, array $modelData, string $salesColumn): Builder
+    private function getSalesAlias(string $period): string
+    {
+        return 'sales_'.$period;
+    }
+
+    /**
+     * One aggregation per request: a single frequency partition of the records, bounded by the widest
+     * window of the chain, with every narrower window of the chain summed conditionally within it.
+     *
+     * @param array<int, string> $salesPeriods
+     */
+    private function getSalesAggregation(Shop $shop, array $salesPeriods): QueryBuilder
+    {
+        $frequency = self::SALES_PERIODS[$salesPeriods[0]]['frequency'];
+
+        $aggregation = DB::table('asset_time_series')
+            ->join('asset_time_series_records', 'asset_time_series_records.asset_time_series_id', '=', 'asset_time_series.id')
+            ->where('asset_time_series.shop_id', $shop->id)
+            ->where('asset_time_series.frequency', $frequency->value)
+            ->where('asset_time_series_records.frequency', $frequency->singleLetter())
+            ->groupBy('asset_time_series.asset_id')
+            ->select('asset_time_series.asset_id');
+
+        foreach ($salesPeriods as $salesPeriod) {
+            $windowStart = $this->getWindowStart($salesPeriod);
+            $alias       = $this->getSalesAlias($salesPeriod);
+
+            if (!$windowStart instanceof Carbon) {
+                $aggregation->selectRaw('coalesce(sum('.self::SALES_EXPRESSION.'), 0) as '.$alias);
+
+                continue;
+            }
+
+            $aggregation->selectRaw(
+                'coalesce(sum(case when asset_time_series_records."from" >= ? then '.self::SALES_EXPRESSION.' else 0 end), 0) as '.$alias,
+                [$windowStart]
+            );
+        }
+
+        $widestWindowStart = $this->getWindowStart(end($salesPeriods));
+
+        if ($widestWindowStart instanceof Carbon) {
+            $aggregation->where('asset_time_series_records.from', '>=', $widestWindowStart);
+        }
+
+        return $aggregation;
+    }
+
+    private function getWindowStart(string $period): ?Carbon
+    {
+        $records = self::SALES_PERIODS[$period]['records'];
+
+        if ($records === null) {
+            return null;
+        }
+
+        return match (self::SALES_PERIODS[$period]['frequency']) {
+            TimeSeriesFrequencyEnum::DAILY   => now()->startOfDay()->subDays($records - 1),
+            TimeSeriesFrequencyEnum::WEEKLY  => now()->startOfWeek()->subWeeks($records - 1),
+            TimeSeriesFrequencyEnum::MONTHLY => now()->startOfMonth()->subMonths($records - 1),
+            TimeSeriesFrequencyEnum::YEARLY  => now()->startOfYear()->subYears($records - 1),
+            default                          => null,
+        };
+    }
+
+    /**
+     * @param array<int, string> $salesPeriods
+     */
+    private function getScopedProducts(Shop $shop, array $modelData, array $salesPeriods): Builder
     {
         $queryBuilder = Product::query()
             ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id')
-            ->leftJoin('asset_sales_intervals', 'asset_sales_intervals.asset_id', '=', 'products.asset_id')
+            ->leftJoinSub(
+                $this->getSalesAggregation($shop, $salesPeriods),
+                'product_sales',
+                'product_sales.asset_id',
+                '=',
+                'products.asset_id'
+            )
             ->where('products.shop_id', $shop->id)
             ->where('products.state', ProductStateEnum::ACTIVE->value)
             ->where('products.has_live_webpage', true)
@@ -181,7 +270,7 @@ class GetIrisProductTrends extends IrisAction
             'products.top_seller',
             'webpages.canonical_url',
             'products.offers_data as product_offers_data',
-        ])->selectRaw('coalesce(asset_sales_intervals.'.$salesColumn.', 0) as trend_sales');
+        ])->selectRaw('coalesce(product_sales.'.$this->getSalesAlias($salesPeriods[0]).', 0) as trend_sales');
     }
 
     public function rules(): array
@@ -195,7 +284,7 @@ class GetIrisProductTrends extends IrisAction
             'exclude_product_id' => ['sometimes', 'nullable', 'integer'],
             'order_by'           => ['sometimes', 'nullable', 'string', 'in:'.self::ORDER_POPULARITY.','.self::ORDER_PRICE.','.self::ORDER_DISCOUNT],
             'direction'          => ['sometimes', 'nullable', 'string', 'in:asc,desc'],
-            'period'             => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_keys(self::SALES_PERIOD_COLUMNS))],
+            'period'             => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_keys(self::SALES_PERIODS))],
             'limit'              => ['sometimes', 'nullable', 'integer', 'min:1', 'max:'.self::MAX_PRODUCTS],
         ];
     }
