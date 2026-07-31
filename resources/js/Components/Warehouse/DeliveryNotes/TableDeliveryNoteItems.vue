@@ -754,17 +754,6 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>
                 {{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
-                <span
-                    v-if="deliveryNoteItem.trade_unit_barcode"
-                    v-tooltip="ctrans('Trade unit barcode') + ' ' + deliveryNoteItem.trade_unit_barcode"
-                >
-                    <FontAwesomeIcon
-                        icon="fal fa-barcode"
-                        class="ml-2 xopacity-70 cursor-pointer"
-                        fixed-width
-                        aria-hidden="true"
-                    />
-                </span>
             </div>
             <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
 
@@ -798,8 +787,8 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         </template>
 
         <!-- Column: Barcode -->
-        <template #cell(org_stock_barcode)="{ item: deliveryNoteItem }">
-            <BarcodeDisplay :value="deliveryNoteItem.org_stock_barcode" />
+        <template #cell(barcode)="{ item: deliveryNoteItem }">
+            <BarcodeDisplay :value="deliveryNoteItem.barcode" />
         </template>
 
         <!-- Section: Pickings -->
