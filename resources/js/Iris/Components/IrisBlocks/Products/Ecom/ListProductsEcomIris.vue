@@ -300,6 +300,20 @@ onMounted(() => {
         button: props.fieldValue?.button
     }
 
+    const urlParams = new URLSearchParams(window.location.search)
+	const sortParam = urlParams.get("order_by")
+
+   
+
+	if (sortParam) {
+		orderBy.value = sortParam
+		const key = sortParam.replace("-", "")
+		sortKey.value = key
+		isAscending.value = !sortParam.startsWith("-")
+	}
+
+     console.log('sortKey',sortKey)
+
     if (layout?.iris?.is_logged_in) {
         firstLoad.value = 1
         fetchProducts(); // break chace from product dont deleted
@@ -490,7 +504,7 @@ watch(
 
                     <!-- Sort Tabs -->
                     <div class="flex space-x-6 w-fit max-w-full overflow-x-auto mt-2 md:mt-0">
-                        <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
+                        <button v-for="(option,index) in sortOptions" :key="`${renderKey}-${option.value}-${index}`"  @click="toggleSort(option.value)"
                             class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
                             :class="[
                                 sortKey === option.value

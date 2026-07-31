@@ -262,6 +262,21 @@ const decrementQty = () => {
     debouncedSync()
 }
 
+const setQuantity = async (quantity: number) => {
+    const next = Math.min(Math.max(0, quantity), customer.value.stock)
+    if (next !== quantity) showWarning()
+
+    debouncedSync.cancel()
+    set(customer.value, ['quantity_ordered_new'], next)
+
+    if (!customer.value.transaction_id && next > 0) {
+        await onAddToBasket(product.value, next)
+        return
+    }
+
+    await onUpdateQuantity()
+}
+
 const onManualInput = (e: Event) => {
     const value = Number((e.target as HTMLInputElement).value)
     if (Number.isNaN(value)) return
@@ -312,6 +327,7 @@ watch(
     val => (customer.value = { ...val }),
     { deep: true }
 )
+defineExpose({ setQuantity })
 </script>
 
 <template>

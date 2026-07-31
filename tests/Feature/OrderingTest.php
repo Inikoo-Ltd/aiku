@@ -522,6 +522,16 @@ test('update order state to in warehouse', function (Order $order) {
     return $order;
 })->depends('update order state to submitted');
 
+test('update order private warehouse note propagates to delivery note', function (Order $order) {
+    $order = UpdateOrder::make()->action($order, ['private_warehouse_note' => 'fragile, double box']);
+    /** @var DeliveryNote $deliveryNote */
+    $deliveryNote = $order->deliveryNotes()->first();
+    expect($order->private_warehouse_note)->toBe('fragile, double box')
+        ->and($deliveryNote->private_warehouse_note)->toBe('fragile, double box');
+
+    return $order;
+})->depends('update order state to in warehouse');
+
 test('update order state to Handling', function (Order $order) {
     $order = UpdateOrderStateToHandling::make()->action($order);
     $order->refresh();

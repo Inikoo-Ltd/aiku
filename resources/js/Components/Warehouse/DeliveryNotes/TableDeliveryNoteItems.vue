@@ -105,7 +105,7 @@ const initSocketListener = () => {
             return;
         }
 
-        let locationOrgStock = itemToSet.locations.find(
+        let locationOrgStock = itemToSet.locations?.find(
             item => item.location_id === affectedData.location_id
         )
 
@@ -114,7 +114,7 @@ const initSocketListener = () => {
             (parseFloat(itemToSet.quantity_not_picked ?? 0) +
             parseFloat(itemToSet.quantity_picked ?? 0));
 
-        const shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
+        const shouldRefetch = (remainingItem > 0) && (locationOrgStock?.quantity != affectedData.new_quantity)
 
         if (shouldRefetch) {
             const response = await axios.get(

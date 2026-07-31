@@ -81,7 +81,7 @@ class SendOrderToWarehouse extends OrgAction
             'shipping_zone_schema_id'   => $order->shipping_zone_schema_id,
             'shipping_zone_id'          => $order->shipping_zone_id,
             'is_shipping_by_external'   => $order->is_shipping_by_external,
-            'internal_notes'            => $order->internal_notes
+            'private_warehouse_note'    => $order->private_warehouse_note
 
         ];
 

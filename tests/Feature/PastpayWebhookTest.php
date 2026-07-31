@@ -476,6 +476,7 @@ test('order partially paid with balance is financed by pastpay only for the rema
         })
         ->andReturn(['data' => ['redirectUrl' => 'https://app.demo.pastpay.com/buy/test']]);
 
+    $order->unsetRelation('customer');
     $result = PayOrderWithPastpay::make()->handle($order, $orderPaymentApiPoint, ['days' => 30]);
 
     expect($result['status'])->toBe('ok')

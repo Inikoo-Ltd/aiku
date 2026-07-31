@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\DB;
 
 trait BuildsInvoiceTransactionTimeSeriesQuery
 {
+    use BuildsInvoiceTimeSeriesQuery {
+        BuildsInvoiceTimeSeriesQuery::applyFrequencyGrouping as private applyInvoiceFrequencyGrouping;
+    }
+
     protected function fullInvoiceTransactionSelects(): array
     {
         return [
@@ -96,40 +100,6 @@ trait BuildsInvoiceTransactionTimeSeriesQuery
 
     protected function applyFrequencyGrouping(Builder $query, TimeSeriesFrequencyEnum $frequency, ?array $selects = null): Builder
     {
-        $baseSelects = $selects ?? $this->fullInvoiceTransactionSelects();
-
-        return match ($frequency) {
-            TimeSeriesFrequencyEnum::YEARLY => $query
-                ->select([DB::raw('EXTRACT(YEAR FROM invoice_transactions.date) as year'), ...$baseSelects])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoice_transactions.date)')),
-
-            TimeSeriesFrequencyEnum::QUARTERLY => $query
-                ->select([
-                    DB::raw('EXTRACT(YEAR FROM invoice_transactions.date) as year'),
-                    DB::raw('EXTRACT(QUARTER FROM invoice_transactions.date) as quarter'),
-                    ...$baseSelects,
-                ])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoice_transactions.date)'), DB::raw('EXTRACT(QUARTER FROM invoice_transactions.date)')),
-
-            TimeSeriesFrequencyEnum::MONTHLY => $query
-                ->select([
-                    DB::raw('EXTRACT(YEAR FROM invoice_transactions.date) as year'),
-                    DB::raw('EXTRACT(MONTH FROM invoice_transactions.date) as month'),
-                    ...$baseSelects,
-                ])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoice_transactions.date)'), DB::raw('EXTRACT(MONTH FROM invoice_transactions.date)')),
-
-            TimeSeriesFrequencyEnum::WEEKLY => $query
-                ->select([
-                    DB::raw('EXTRACT(YEAR FROM invoice_transactions.date) as year'),
-                    DB::raw('EXTRACT(WEEK FROM invoice_transactions.date) as week'),
-                    ...$baseSelects,
-                ])
-                ->groupBy(DB::raw('EXTRACT(YEAR FROM invoice_transactions.date)'), DB::raw('EXTRACT(WEEK FROM invoice_transactions.date)')),
-
-            TimeSeriesFrequencyEnum::DAILY => $query
-                ->select([DB::raw('CAST(invoice_transactions.date AS DATE) as date'), ...$baseSelects])
-                ->groupBy(DB::raw('CAST(invoice_transactions.date AS DATE)')),
-        };
+        return $this->applyFrequencyGroupingOn($query, $frequency, 'invoice_transactions.date', $selects ?? $this->fullInvoiceTransactionSelects());
     }
 }
