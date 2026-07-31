@@ -10,6 +10,7 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use App\Services\QueryBuilder;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
@@ -60,7 +61,7 @@ class FetchFamilyListCustomSorted extends IrisAction
             ->allowedSorts([ 'code', 'product_categories.created_at', 'name'])
             ->allowedFilters([$globalSearch])
             ->paginate(request('per_page', 100))
-            ->withQueryString();
+            ->appends(Arr::except(request()->query(), ['domain', 'website']));
     }
 
     public function jsonResponse(LengthAwarePaginator $families)

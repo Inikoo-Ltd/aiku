@@ -240,7 +240,7 @@ class IndexIrisCatalogue extends IrisAction
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'name', ...$additionalSortableKeys])
             ->withPaginator($prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->appends(Arr::except(request()->query(), ['domain', 'website']));
     }
 
     public function tableStructure(string $scope, ?string $parent = null, $prefix = null): Closure
