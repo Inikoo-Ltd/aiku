@@ -10,13 +10,11 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUnique
@@ -37,49 +35,25 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        $portfoliosIds = DB::table('portfolios')
-            ->select('id')
-            ->where('customer_sales_channel_id', $customerSalesChannel->id)
+        $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('status', true)
             ->where('platform_status', false)
-            ->whereIn('id', Arr::get($attributes, 'portfolios'));
+            ->whereIn('id', Arr::get($attributes, 'portfolios'))
+            ->get();
 
-        $totalNumber = $portfoliosIds->count();
-
-        // Use a unique key per job/session to avoid cross-request pollution
         $cacheKey = 'upload_progress_' . $customerSalesChannel->id . '_' . uniqid();
         Cache::put($cacheKey . '_success', 0, now()->addHour());
         Cache::put($cacheKey . '_fail', 0, now()->addHour());
 
-        /** @var Portfolio $portfolio */
-        $portfoliosIds->chunkById(20, function ($portfoliosIdChunk) use ($customerSalesChannel, $totalNumber, $cacheKey) {
-            foreach ($portfoliosIdChunk as $portfoliosId) {
-                $portfolio = Portfolio::find($portfoliosId->id);
+        $bulkProgress = [
+            'cache_key' => $cacheKey,
+            'total'     => $portfolios->count(),
+        ];
 
-                try {
-                    if ($portfolio) {
-                        $portfolio = StoreNewProductToCurrentShopify::run($portfolio, []);
-
-                        if ($portfolio->platform_status) {
-                            Cache::increment($cacheKey . '_success');
-                        } else {
-                            Cache::increment($cacheKey . '_fail');
-                        }
-                    }
-                } catch (\Exception $e) {
-                    Cache::increment($cacheKey . '_fail');
-                }
-
-                UploadProductToSalesChannelProgressEvent::dispatch($customerSalesChannel, $portfolio, [
-                    'total' => $totalNumber,
-                    'success' => Cache::get($cacheKey . '_success'),
-                    'fail' => Cache::get($cacheKey . '_fail'),
-                ]);
-            }
-        });
-
-        Cache::forget($cacheKey . '_success');
-        Cache::forget($cacheKey . '_fail');
+        // ponytail: counters cleaned by TTL; a hard-failed product job leaves the progress bar short of total
+        foreach ($portfolios as $portfolio) {
+            StoreNewProductToCurrentShopify::dispatch($portfolio, $bulkProgress);
+        }
     }
 
     public function rules(): array
