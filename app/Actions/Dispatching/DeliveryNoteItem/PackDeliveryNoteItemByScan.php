@@ -147,8 +147,8 @@ class PackDeliveryNoteItemByScan extends OrgAction
     }
 
     /**
-     * Items are matched on the org stock code first, which is what warehouse labels carry,
-     * then on the EAN of any trade unit behind the org stock, which is what supplier
+     * Items are matched on the org stock code and its own barcode first, which is what warehouse
+     * labels carry, then on the EAN of any trade unit behind the org stock, which is what supplier
      * packaging carries.
      *
      * @param  Collection<int, DeliveryNoteItem>  $deliveryNoteItems
@@ -163,6 +163,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
 
         $matchedByCode = $deliveryNoteItems->filter(
             fn (DeliveryNoteItem $item) => strcasecmp(trim((string)$item->orgStock?->code), $scanned) === 0
+                || strcasecmp(trim((string)$item->orgStock?->barcode), $scanned) === 0
         );
 
         if ($matchedByCode->isNotEmpty()) {
