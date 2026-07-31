@@ -42,6 +42,7 @@ import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
+import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
 
@@ -791,6 +792,11 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                     </Button>
                 </div>
             </div> -->
+        </template>
+
+        <!-- Column: Barcode -->
+        <template #cell(org_stock_barcode)="{ item: deliveryNoteItem }">
+            <BarcodeDisplay :value="deliveryNoteItem.org_stock_barcode" />
         </template>
 
         <!-- Section: Pickings -->

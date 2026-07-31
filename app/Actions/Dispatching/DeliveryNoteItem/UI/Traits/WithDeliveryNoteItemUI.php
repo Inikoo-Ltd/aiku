@@ -97,6 +97,7 @@ trait WithDeliveryNoteItemUI
     {
         $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
         $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+        $table->column(key: 'org_stock_barcode', label: __('Barcode'), align: 'center');
     }
 
     protected function applyDeliveryNoteItemPickingJoins($query): void
