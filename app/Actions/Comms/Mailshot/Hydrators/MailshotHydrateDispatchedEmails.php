@@ -23,6 +23,7 @@ class MailshotHydrateDispatchedEmails implements ShouldBeUnique
     use WithEnumStats;
 
     public string $jobQueue = 'analytics';
+    public int $jobTimeout = 60;
 
     public function getJobUniqueId(?int $mailshotId): string
     {
