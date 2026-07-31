@@ -10,11 +10,12 @@ import Table from '@/Components/Table/Table.vue';
 import { Webpage } from "@/types/webpage";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
-    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam, faExternalLink
+    faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam, faExternalLink, faSquare
 } from '@fal'
+import { faCheckSquare } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from '@/Components/Icon.vue';
-import { ref } from 'vue';
+import { computed } from 'vue';
 
 library.add(
     faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam
@@ -216,38 +217,57 @@ function productsRoute(webpage: Webpage) {
     }
 }
 
-const selectedWebpages = defineModel<object[]>('selectedWebpages');
+type WebpageRow = Record<string, any>
 
-const onChangeChecked = (checked: boolean, selectedItem: object) => {
+type SelectedWebpage = {
+    id: string
+    code: string
+    title: string
+}
+
+const selectedWebpages = defineModel<SelectedWebpage[]>('selectedWebpages');
+
+const webpageRows = computed<WebpageRow[]>(() => (props.data as { data?: WebpageRow[] })?.data ?? [])
+
+const toSelectedWebpage = (webpage: WebpageRow): SelectedWebpage => ({
+    id: webpage.id,
+    code: webpage.code,
+    title: webpage.title,
+})
+
+const onChangeChecked = (checked: boolean, selectedItem: WebpageRow) => {
     if (!selectedWebpages.value) return
 
     if (checked) {
         if (!selectedWebpages.value.some(item => item.id == selectedItem.id)) {
-            selectedWebpages.value.push({
-                id: selectedItem.id,
-                code: selectedItem.code,
-                title: selectedItem.title,
-            })
+            selectedWebpages.value.push(toSelectedWebpage(selectedItem))
         }
     } else {
         selectedWebpages.value = selectedWebpages.value.filter(item => item.id != selectedItem.id)
     }
 }
 
-const onCheckedAll = ({ data, allChecked }) => {
+const isWebpageChecked = (webpage: WebpageRow) => {
+    return !!selectedWebpages.value?.some(item => item.id == webpage.id)
+}
+
+const isAllWebpagesChecked = computed(() => {
+    return webpageRows.value.length > 0 && webpageRows.value.every(row => isWebpageChecked(row))
+})
+
+const onCheckedAll = ({ data, allChecked }: { data: WebpageRow[], allChecked: boolean }) => {
     if (!selectedWebpages.value) return
 
     if (allChecked) {
-        const items = data.map(row => {
-            return {
-                    id: row.id,
-                    code: row.code,
-                    title: row.title
-            }
-        })
-        selectedWebpages.value = Array.from(new Set([...selectedWebpages.value, ...items]))
+        const newItems = data
+            .filter(row => !selectedWebpages.value!.some(item => item.id == row.id))
+            .map(row => toSelectedWebpage(row))
+
+        selectedWebpages.value = [...selectedWebpages.value, ...newItems]
     } else {
-        selectedWebpages.value = [];
+        const rowIds = data.map(row => row.id)
+
+        selectedWebpages.value = selectedWebpages.value.filter(item => !rowIds.includes(item.id))
     }
 }
 
@@ -258,13 +278,42 @@ const onCheckedAll = ({ data, allChecked }) => {
     <Table 
         :resource="data"
         :isCheckBox="true"
-        @onChecked="(item) => onChangeChecked(true, item)" 
-        @onUnchecked="(item) => onChangeChecked(false, item)"
-        @onCheckedAll="(data) => onCheckedAll(data)"
+        :isChecked="isWebpageChecked"
         checkboxKey='id'
-        :name="tab" 
+        :name="tab"
         class="mt-5"
     >
+        <template #header-checkbox>
+            <div @click="onCheckedAll({ data: webpageRows, allChecked: !isAllWebpagesChecked })" class="py-1.5 cursor-pointer">
+                <FontAwesomeIcon
+                    :icon="isAllWebpagesChecked ? faCheckSquare : faSquare"
+                    :class="isAllWebpagesChecked ? 'text-green-500' : 'text-gray-500 hover:text-gray-700'"
+                    class="mx-auto block h-5 my-auto"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </div>
+        </template>
+
+        <template #checkbox="{ data: webpage }">
+            <FontAwesomeIcon
+                v-if="isWebpageChecked(webpage)"
+                @click="onChangeChecked(false, webpage)"
+                :icon="faCheckSquare"
+                class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
+                fixed-width
+                aria-hidden="true"
+            />
+            <FontAwesomeIcon
+                v-else
+                @click="onChangeChecked(true, webpage)"
+                :icon="faSquare"
+                class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
+                fixed-width
+                aria-hidden="true"
+            />
+        </template>
+
         <!-- Column: Code -->
         <template #cell(code)="{ item: webpage }">
             <Link v-if="!!webpageRoute(webpage)" :href="webpageRoute(webpage)" class="primaryLink">
