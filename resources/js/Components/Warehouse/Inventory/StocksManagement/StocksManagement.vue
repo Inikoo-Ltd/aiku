@@ -469,7 +469,7 @@ const onAddLocationShow = () => {
                 v-model:visible="isStockCheckModalOpen"
                 :header="`${ctrans('Audit Stock')} - ${props.trade_units[0]?.code}`"
                 modal
-                xdismissableMask="true"
+                :dismissableMask="screenType === 'desktop'"
                 :closeOnEscape="true"
                 :focusOnShow="false"
                 :style="{ width: '60vw' }"
@@ -494,7 +494,7 @@ const onAddLocationShow = () => {
 
             <Dialog v-model:visible="isMoveStockModalOpen" modal :header="ctrans('Move Stock')"
                 :style="{ width: '50vw' }"
-                xdismissableMask="true"
+                :dismissableMask="screenType === 'desktop'"
                 :closeOnEscape="true"
                 :breakpoints="{
                     '1200px': '75vw',
@@ -532,7 +532,7 @@ const onAddLocationShow = () => {
             <Dialog v-model:visible="isAddLocationModalOpen" modal :header="ctrans('Add Location')"
                 @show="onAddLocationShow"
                 :style="{ width: '50vw' }"
-                xdismissableMask="true"
+                :dismissableMask="screenType === 'desktop'"
                 :closeOnEscape="true"
                 :breakpoints="{
                     '1200px': '75vw',
