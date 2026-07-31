@@ -20,6 +20,7 @@ use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -169,7 +170,7 @@ class ShowOrgSupplier extends OrgAction
             ),
             'grp.org.procurement.org_agents.show.suppliers.show' =>
             array_merge(
-                ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
+                ShowOrgAgent::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     $orgSupplier,
                     [
@@ -196,16 +197,27 @@ class ShowOrgSupplier extends OrgAction
 
     public function getPrevious(OrgSupplier $orgSupplier, ActionRequest $request): ?array
     {
-        $previous = OrgSupplier::where('slug', '<', $orgSupplier->slug)->orderBy('slug', 'desc')->first();
+        $previous = $this->siblings($orgSupplier)->where('slug', '<', $orgSupplier->slug)->orderBy('slug', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(OrgSupplier $orgSupplier, ActionRequest $request): ?array
     {
-        $next = OrgSupplier::where('slug', '>', $orgSupplier->slug)->orderBy('slug')->first();
+        $next = $this->siblings($orgSupplier)->where('slug', '>', $orgSupplier->slug)->orderBy('slug')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
+    }
+
+    private function siblings(OrgSupplier $orgSupplier): Builder
+    {
+        $query = OrgSupplier::where('organisation_id', $orgSupplier->organisation_id)->whereHas('supplier');
+
+        if ($this->parent instanceof OrgAgent) {
+            $query->where('org_agent_id', $this->parent->id);
+        }
+
+        return $query;
     }
 
     private function getNavigation(?OrgSupplier $orgSupplier, string $routeName): ?array

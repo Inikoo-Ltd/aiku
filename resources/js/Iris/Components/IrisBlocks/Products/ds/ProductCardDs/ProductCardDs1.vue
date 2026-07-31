@@ -56,14 +56,14 @@ interface ProductResource {
 const props = withDefaults(defineProps<{
     product: ProductResource
     productHasPortfolio?: Array<number>
-    bestSeller: any
+    bestSeller?: any
     buttonStyle?: object
     currency?: {
         code: string
         name: string
     }
     buttonStyleLogin?: object
-    screenType: string
+    screenType?: string
     hideButtonPortofolio?: boolean
 }>(), {
     hideButtonPortofolio: false,

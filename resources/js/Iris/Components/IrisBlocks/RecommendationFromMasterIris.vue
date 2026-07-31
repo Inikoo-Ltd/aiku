@@ -122,7 +122,7 @@ console.log('related product :', props)
                   :buttonStyle="layout?.buttonBasket?.buttonStyle" :product="product" :hideLogin="true"
                   :screenType="screenType"
                   :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], {})" />
-                <ProductRender v-else :product="product" :productHasPortfolio="[]"  :key="`ds-${key}`" />
+                <ProductRender v-else :product="product" :productHasPortfolio="[]"  :key="`ds-${key}`" :screenType="screenType" />
               </div>
             </div>
           </SwiperSlide>

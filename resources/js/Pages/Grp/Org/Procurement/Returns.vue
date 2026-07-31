@@ -22,6 +22,8 @@ import { Dialog, Select } from 'primevue'
 import axios from 'axios'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 
+const screenType = inject('screenType', ref('desktop'))
+
 library.add(faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCheck, faHandPaper, faBoxCheck, faBoxOpen, faCheckDouble, faTasks)
 
 const props = defineProps<{
@@ -106,7 +108,7 @@ const onCreateReturn = () => {
     </PageHeading>
     <TableDeliveryNotes :data="data" />
 
-    <Dialog v-model:visible="isOpenModalCreateReturn" modal closable dismissableMask :showHeader="false"
+    <Dialog v-model:visible="isOpenModalCreateReturn" modal closable :dismissableMask="screenType === 'desktop'" :showHeader="false"
         :style="{ width: '36rem', 'xmin-height': '20rem' }" @hide="() => {
             isOpenModalCreateReturn = false
         }" contentClass="!overflow-visible">

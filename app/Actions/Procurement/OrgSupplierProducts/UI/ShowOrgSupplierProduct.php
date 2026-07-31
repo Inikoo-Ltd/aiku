@@ -195,7 +195,7 @@ class ShowOrgSupplierProduct extends OrgAction
                 ),
             'grp.org.procurement.org_agents.show.supplier_products.show' =>
                 array_merge(
-                    (new ShowOrgAgent())->getBreadcrumbs($routeParameters),
+                    (new ShowOrgAgent())->getBreadcrumbs($routeName, $routeParameters),
                     $headCrumb(
                         $orgSupplierProduct,
                         [

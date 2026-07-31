@@ -12,11 +12,11 @@ import { Product } from "@/types/product"
 import Icon from "@/Components/Icon.vue"
 import { remove as loRemove, cloneDeep} from "lodash-es"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faToolbox, faTools } from "@fal"
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faToolbox, faTools, faDownload } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { onMounted, onUnmounted, ref, inject, shallowRef  } from "vue"
+import { computed, onMounted, onUnmounted, ref, inject, shallowRef, watch  } from "vue"
 import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Invoice } from "@/types/invoice"
@@ -34,6 +34,8 @@ import axios from "axios"
 import { ulid } from "ulid"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { notify } from "@kyvg/vue3-notification"
+import Popover from "primevue/popover"
+import Checkbox from "primevue/checkbox"
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faThumbtack)
@@ -53,7 +55,49 @@ const props = defineProps<{
     variantSlugs?: Record<string, string>;
     mismatch_trade_unit_with_master?: boolean
     hide_sku_in_name_column?: boolean
+    productsExport?: {
+        fields: { key: string; label: string }[]
+        download_route: { xlsx: routeType; csv: routeType }
+    }
 }>()
+
+const exportPanel = ref()
+const exportFields = computed(() => props.productsExport?.fields ?? [])
+const selectedExportColumns = ref<string[]>([])
+
+const allExportColumnsSelected = computed({
+    get: () => !!exportFields.value.length && selectedExportColumns.value.length === exportFields.value.length,
+    set: (value: boolean) => {
+        selectedExportColumns.value = value ? exportFields.value.map(field => field.key) : []
+    }
+})
+
+watch(exportFields, (fields) => {
+    selectedExportColumns.value = fields.map(field => field.key)
+}, { immediate: true })
+
+const exportUrl = (type: 'csv' | 'xlsx') => {
+    const exportRoute = props.productsExport?.download_route?.[type]
+    if (!exportRoute?.name) return ''
+
+    const base = route(exportRoute.name, exportRoute.parameters) as unknown as string
+
+    const query = new URLSearchParams()
+    new URLSearchParams(window.location.search).forEach((value, key) => {
+        if (key.includes('filter[') || key.includes('elements[')) {
+            query.append(key, value)
+        }
+    })
+    selectedExportColumns.value.forEach(column => query.append('columns[]', column))
+
+    const queryString = query.toString()
+    return queryString ? base + (base.includes('?') ? '&' : '?') + queryString : base
+}
+
+const onExport = (type: 'csv' | 'xlsx') => {
+    if (!selectedExportColumns.value.length) return
+    window.open(exportUrl(type), '_blank')
+}
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
@@ -593,6 +637,35 @@ const repairTradeUnitFromChildren = async (product) => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts" key="product-table" ref="_table">
+
+        <template v-if="exportFields.length" #add-on-button>
+            <Button :icon="faDownload" :label="trans('Export')" type="tertiary" size="xs"
+                @click="exportPanel.toggle($event)" />
+
+            <Popover ref="exportPanel">
+                <div class="w-72">
+                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
+                        <Button :icon="faDownload" label="XLSX" type="tertiary"
+                            :disabled="!selectedExportColumns.length" @click="onExport('xlsx')" />
+                        <Button :icon="faDownload" label="CSV" type="tertiary"
+                            :disabled="!selectedExportColumns.length" @click="onExport('csv')" />
+                    </div>
+
+                    <label class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
+                        <Checkbox v-model="allExportColumnsSelected" :binary="true" />
+                        <span>{{ trans("Select all") }}</span>
+                    </label>
+
+                    <div class="max-h-72 overflow-y-auto">
+                        <label v-for="field in exportFields" :key="field.key"
+                            class="flex items-center gap-2 px-1 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded">
+                            <Checkbox v-model="selectedExportColumns" :value="field.key" />
+                            <span>{{ field.label }}</span>
+                        </label>
+                    </div>
+                </div>
+            </Popover>
+        </template>
 
         <template #cell(image_thumbnail)="{ item: product }">
             <div class="flex justify-center">

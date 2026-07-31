@@ -326,7 +326,7 @@ class IndexStockDeliveries extends OrgAction
                 ]
             ),
             'grp.org.procurement.org_agents.show.stock-deliveries.index' => array_merge(
-                ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
+                ShowOrgAgent::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

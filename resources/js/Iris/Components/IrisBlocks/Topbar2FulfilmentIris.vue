@@ -41,6 +41,8 @@ interface ModelTopbar2 {
 	profile: {}
 }
 
+defineOptions({ inheritAttrs: false })
+
 const model = defineModel<ModelTopbar2>()
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)

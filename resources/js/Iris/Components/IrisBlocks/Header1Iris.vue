@@ -78,7 +78,7 @@ const props = defineProps<{
 			}
 		}
 	}
-	screenType: 'mobile' | 'tablet' | 'desktop'
+	screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const layout = inject('layout', layoutStructure)

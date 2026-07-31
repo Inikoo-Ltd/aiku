@@ -54,6 +54,7 @@ class ShowAgent extends OrgAction
                 'title'                        => __("Agent") . " " . $agent->name,
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $agent,
+                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'                   => [
@@ -145,34 +146,55 @@ class ShowAgent extends OrgAction
         return new AgentsResource($agent);
     }
 
-    public function getBreadcrumbs(Agent $agent, array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(Agent $agent, string $routeName, array $routeParameters, $suffix = null): array
     {
-
-        return array_merge(
-            ShowSupplyChainDashboard::make()->getBreadcrumbs(),
-            [
+        $headCrumb = function (Agent $agent, array $routeParameters, $suffix) {
+            return [
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'route' => [
-                                'name' => 'grp.supply-chain.agents.index',
-                            ],
-                            'label' => __("Agents"),
+                            'route' => $routeParameters['index'],
+                            'label' => __('Agents'),
                         ],
                         'model' => [
-                            'route' => [
-                                'name'       => 'grp.supply-chain.agents.show',
-                                'parameters' => $routeParameters
-                            ],
+                            'route' => $routeParameters['model'],
                             'label' => $agent->organisation->code,
                         ],
                     ],
                     'suffix' => $suffix,
-
                 ],
-            ]
-        );
+            ];
+        };
+
+        return match ($routeName) {
+            'grp.supply-chain.agents.show',
+            'grp.supply-chain.agents.edit',
+            'grp.supply-chain.agents.show.supplier_products.index',
+            'grp.supply-chain.agents.show.supplier_products.show',
+            'grp.supply-chain.agents.show.suppliers.index',
+            'grp.supply-chain.agents.show.suppliers.show',
+            'grp.supply-chain.agents.show.suppliers.supplier_products.index',
+            'grp.supply-chain.agents.show.suppliers.supplier_products.show' =>
+            array_merge(
+                ShowSupplyChainDashboard::make()->getBreadcrumbs(),
+                $headCrumb(
+                    $agent,
+                    [
+                        'index' => [
+                            'name'       => 'grp.supply-chain.agents.index',
+                            'parameters' => []
+                        ],
+                        'model' => [
+                            'name'       => 'grp.supply-chain.agents.show',
+                            'parameters' => ['agent' => $agent->slug]
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            default => []
+        };
     }
 
     public function getPrevious(Agent $agent, ActionRequest $request): ?array

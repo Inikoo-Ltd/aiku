@@ -210,7 +210,11 @@ class IndexMarketplaceSupplierProducts extends InertiaAction
 
             'grp.org.procurement.marketplace.org_agents.show.org_supplier_products.index' =>
             array_merge(
-                (new \App\Actions\SupplyChain\Agent\UI\ShowAgent())->getBreadcrumbs($routeParameters),
+                (new \App\Actions\SupplyChain\Agent\UI\ShowAgent())->getBreadcrumbs(
+                    $routeParameters['agent'],
+                    $routeName,
+                    $routeParameters
+                ),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.procurement.marketplace.org_agents.show.org_supplier_products.index',

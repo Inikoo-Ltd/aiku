@@ -52,7 +52,7 @@ class StorePicking extends OrgAction
         }
 
 
-        StoreOrgStockMovement::run(
+        StoreOrgStockMovement::dispatch(
             $locationOrgStock->orgStock,
             $locationOrgStock->location,
             [

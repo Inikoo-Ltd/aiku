@@ -8,65 +8,39 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
-use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
-use Carbon\Carbon;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
+use App\Http\Resources\Web\BlogsIrisResource;
+use App\Models\Web\Website;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Actions\Iris\Blog\IndexIrisBlogs;
 
 class ShowIrisBlogDashboard
 {
     use AsAction;
 
-    public function asController(ActionRequest $request): Response
+    public function handle(Website $website): LengthAwarePaginator
     {
-        return $this->handle($request);
+        return IndexIrisBlogs::make()->handle($website, IndexIrisBlogs::PREFIX);
     }
 
-
-    public function handle(ActionRequest $request): Response
+    public function asController(ActionRequest $request): LengthAwarePaginator
     {
+        /** @var Website $website */
         $website = $request->input('website');
 
-        $blogs = [];
-        foreach (
-            DB::table('webpages')->where('website_id', $website->id)->select('id', 'title', 'published_layout', 'canonical_url', 'last_published_at')
-                ->where('type', WebpageTypeEnum::BLOG)
-                ->where('state', WebpageStateEnum::LIVE)
-                ->latest('live_at')
-                ->limit(100)
-                ->get() as $webpageBlog
-        ) {
-            $publishedLayout                = json_decode($webpageBlog->published_layout, true);
-            $imageData                      = Arr::get($publishedLayout, 'web_blocks.0.web_block.layout.data.fieldValue.image');
-            $third_party_image_preview      = Arr::get($publishedLayout, 'web_blocks.0.web_block.layout.data.fieldValue.third_party_image_preview');
+        return $this->handle($website);
+    }
 
-            $publishedAt = null;
-            if ($webpageBlog->last_published_at) {
-                $publishedAt = Carbon::parse($webpageBlog->last_published_at)->format('D, jS F Y');
-            }
-
-            $blogs[] = [
-                'id'                            => $webpageBlog->id,
-                'title'                         => $webpageBlog->title,
-                'image_src'                     => Arr::get($imageData, 'source'),
-                'third_party_image_preview'     => $third_party_image_preview,
-                'image_alt'                     => Arr::get($imageData, 'alt'),
-                'url'                           => ShowIrisWebpage::make()->getEnvironmentUrl($webpageBlog->canonical_url),
-                'published_at'                  => $publishedAt
-            ];
-        }
-
-
+    public function htmlResponse(LengthAwarePaginator $blogs): Response
+    {
         return Inertia::render(
             'BlogDashboard',
             [
-                'blogs' => $blogs,
+                'data' => BlogsIrisResource::collection($blogs),
             ]
-        );
+        )->table(IndexIrisBlogs::make()->tableStructure(IndexIrisBlogs::PREFIX));
     }
 }
