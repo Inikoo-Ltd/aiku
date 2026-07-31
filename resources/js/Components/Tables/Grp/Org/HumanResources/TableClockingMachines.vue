@@ -14,8 +14,9 @@ import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import ModalClockingMachineKioskLink from "@/Components/HumanResources/ModalClockingMachineKioskLink.vue";
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import { trans } from "laravel-vue-i18n";
-import { faPencil } from '@fortawesome/free-solid-svg-icons';
+import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { ClockingMachine } from "@/types/clocking-machine";
 
 function clockingMachineRoute(clockingMachine: ClockingMachine) {
@@ -107,6 +108,16 @@ function workplaceRoute(clockingMachine: ClockingMachine) {
         <Link :href="editClockingMachineRoute(clockingMachine)">
           <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="trans('Edit')" />
         </Link>
+
+        <ModalConfirmationDelete
+          v-if="clockingMachine.delete_route"
+          :routeDelete="clockingMachine.delete_route"
+          :title="trans('Delete this clocking machine?')"
+          :description="trans('This will also delete all clockings recorded on this machine. This action cannot be undone.')">
+          <template #default="{ changeModel }">
+            <Button type="cancel" :label="trans('Delete')" size="xs" :icon="faTrash" :tooltip="trans('Delete')" @click="changeModel(true)" />
+          </template>
+        </ModalConfirmationDelete>
       </div>
     </template>
   </Table>

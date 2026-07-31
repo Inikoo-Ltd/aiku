@@ -14,6 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
 
 /**
+ * @property mixed $id
  * @property mixed $workplace_name
  * @property mixed $slug
  * @property mixed $name
@@ -36,6 +37,10 @@ class ClockingMachinesResource extends JsonResource
             'kiosk_url'          => $this->kiosk_token
                 ? route('grp.kiosk.show', ['kioskToken' => $this->kiosk_token])
                 : null,
+            'delete_route'       => [
+                'name'       => 'grp.models.clocking_machine..delete',
+                'parameters' => ['clockingMachine' => $this->id],
+            ],
         ];
     }
 }

@@ -4,7 +4,10 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+import { routeType } from "@/types/route"
+
 export interface ClockingMachine {
+    id?: number,
     slug: string,
     code: string,
     name?: string,
@@ -14,4 +17,5 @@ export interface ClockingMachine {
     org_id: number,
     workplace_id: number,
     kiosk_url?: string | null,
+    delete_route?: routeType,
 }
