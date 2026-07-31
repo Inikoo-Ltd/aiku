@@ -271,14 +271,20 @@ const hydrateModifiedLocationsQuantity = (location: StockLocation) => {
 }
 
 const currentPage = ref(1);
+const scrollableList = ref<HTMLElement | null>(null)
+
+watch(currentPage, () => {
+    scrollableList.value?.scrollTo({ top: 0 })
+})
 </script>
 
 <template>
-    <div class="space-y-2">
+    <div class="flex flex-col min-h-0 max-h-[65vh]">
         <!-- list -->
+        <div ref="scrollableList" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-2 pr-4 pb-3">
         <template v-if="cloneLocations.length > 0">
             <div v-if="currentPage == 1">
-                <div class="grid grid-cols-8 gap-2 border-b pb-2 font-semibold">
+                <div class="grid grid-cols-8 gap-2 border-b pb-2 pt-1 font-semibold sticky top-0 z-10 bg-white">
                     <div class="col-span-2 md:col-span-3 flex items-center gap-x-2">
                         {{ ctrans('Location') }}
                     </div>
@@ -379,7 +385,7 @@ const currentPage = ref(1);
                 </div>
             </div>
             <div v-else> 
-                <div class="hidden md:grid grid-cols-6 gap-3 border-b pb-2 font-semibold">
+                <div class="hidden md:grid grid-cols-6 gap-3 border-b pb-2 pt-1 font-semibold sticky top-0 z-10 bg-white">
                     <div class="col-span-1">
                         {{ ctrans('Location Code') }}
                     </div>
@@ -453,8 +459,9 @@ const currentPage = ref(1);
                 {{ trans("You haven't added any locations yet") }}
             </div>
         </div>
+        </div>
         <!-- Section: buttons -->
-         <div class="flex xjustify-end gap-2 pt-3">
+         <div class="shrink-0 flex xjustify-end gap-2 pt-3 mt-2 border-t bg-white">
             <Button 
                 :label="currentPage == 1 ? ctrans('Close') : ctrans('Back')" 
                 type="tertiary" 
