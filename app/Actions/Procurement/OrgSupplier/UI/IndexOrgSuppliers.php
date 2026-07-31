@@ -337,7 +337,7 @@ class IndexOrgSuppliers extends OrgAction
                 ]
             ),
             'grp.org.procurement.org_agents.show.suppliers.index' => array_merge(
-                ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
+                ShowOrgAgent::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

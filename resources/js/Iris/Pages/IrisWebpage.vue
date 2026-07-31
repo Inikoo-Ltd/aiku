@@ -30,7 +30,6 @@ const props = defineProps<{
     webpage_img: any,
     index_page: boolean,
     follow_link: boolean
-    reviews : any
     allow_review_reaction : boolean
     allow_review_reply_reaction : boolean
     minimum_reviews_to_show : number
@@ -63,7 +62,7 @@ provide('minimum_reviews_to_show', props.minimum_reviews_to_show)
 provide('webpage_reviews_count', props.webpage_reviews_count ?? null)
 provide('allow_review_reaction', props.allow_review_reaction)
 provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
-provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
+provide('show_staff_who_reply', props.show_staff_who_reply)
 
 const checkScreenType = () => {
     screenType.value = getScreenType()
@@ -102,8 +101,6 @@ onBeforeUnmount(() => {
     removeStructuredDataScript(structuredDataScript.value)
     window.removeEventListener("resize", checkScreenType)
 })
-
-console.log('props',props)
 </script>
 
 <template>
@@ -138,6 +135,7 @@ console.log('props',props)
                 <IrisBlockRenderer
                     :type="web_block_data.type"
                     :shopType="layout.retina.type"
+                    :searchModel="layout?.iris?.iris_search_model"
                     :screenType="screenType"
                     :code="web_block_data.type"
                     :fieldValue="web_block_data?.web_block?.layout?.data?.fieldValue || web_block_data.structure"

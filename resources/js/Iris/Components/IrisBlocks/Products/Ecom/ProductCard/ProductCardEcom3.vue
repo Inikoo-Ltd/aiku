@@ -38,12 +38,14 @@ const props = withDefaults(defineProps<{
     buttonStyleLogin?: object | undefined
     addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
-    isLoadingFavourite: boolean
-    isLoadingRemindBackInStock: boolean
+    isLoadingFavourite?: boolean
+    isLoadingRemindBackInStock?: boolean
     screenType: string
     hideLogin?:boolean
     routeGettransactionProductData?:routeType
 }>(), {
+    isLoadingFavourite: false,
+    isLoadingRemindBackInStock: false,
     basketButton: true,
     addToBasketRoute: {
         name: 'iris.models.transaction.store',
@@ -302,8 +304,14 @@ defineExpose({
                 <div v-if="layout?.iris?.is_logged_in && product.variant"
                     class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
                     <div class="flex justify-center">
-                        <Button :label="trans('Choose variants')" size="xs"
-                            @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" />
+                        <Button  size="xs"
+                            @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" >
+                        <template #label>
+                            <span>
+                                {{ ctrans('Choose variants') }}
+                            </span>
+                        </template>
+                        </Button>
                     </div>
                 </div>
 

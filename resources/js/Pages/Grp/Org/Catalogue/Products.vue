@@ -53,6 +53,10 @@ const props = defineProps<{
     variantSlugs?: Record<string, string>;
     mismatch_trade_unit_with_master?: boolean
     hide_sku_in_name_column?: boolean
+    products_export?: {
+        fields: { key: string; label: string }[]
+        download_route: { xlsx: routeType; csv: routeType }
+    }
 }>()
 
 const layout = inject<string>('layout')
@@ -276,6 +280,7 @@ const replaceProps = (updatedData) => {
         :selectedProductsId="selectedProductsId"
         @selectedRow="(ids) => selectedProductsId = { ...selectedProductsId, ...ids }"
         :variantSlugs="variantSlugs"
+        :productsExport="currentTab === 'index' ? products_export : undefined"
         :mismatch_trade_unit_with_master="mismatch_trade_unit_with_master"
         :hide_sku_in_name_column="hide_sku_in_name_column"
         @update:data="(updatedData) => replaceProps(updatedData)"

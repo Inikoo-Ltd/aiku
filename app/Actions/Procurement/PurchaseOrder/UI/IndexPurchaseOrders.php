@@ -406,7 +406,7 @@ class IndexPurchaseOrders extends OrgAction
                 ]
             ),
             'grp.org.procurement.org_agents.show.purchase-orders.index' => array_merge(
-                ShowOrgAgent::make()->getBreadcrumbs($routeParameters),
+                ShowOrgAgent::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
                         'type'   => 'simple',

@@ -83,12 +83,18 @@ trait WithFillIrisWebBlocks
             if ($webBlockData) {
                 $parsedWebBlocks[$key] = $webBlockData;
             } else {
+                // if 'trends' and Family page, remove the web block because it is not relevant for Family pages
                 unset($parsedWebBlocks[$key]);
             }
         } elseif ($webBlockType == 'recommendation-from-master') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
-            $parsedWebBlocks[$key] = GetIrisWebBlockLuigiRecommendations::run($webpage, $webBlock);
+        } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1', 'luigi-trends-1'])) {
+            $webBlockData = GetIrisWebBlockLuigiRecommendations::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                unset($parsedWebBlocks[$key]);
+            }
         } elseif ($webBlockType == 'banner') {
             $parsedWebBlocks[$key] = GetIrisWebBlockBanner::run($webpage, $webBlock);
         } elseif ($webBlockType == 'carousel-1') {

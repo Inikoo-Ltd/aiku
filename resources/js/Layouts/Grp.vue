@@ -7,7 +7,7 @@
   -->
 
 <script setup lang="ts">
-import { onMounted, ref, provide, defineAsyncComponent, watch } from "vue"
+import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } from "vue"
 import { initialiseApp } from "@/Composables/initialiseApp"
 import { usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
@@ -168,8 +168,13 @@ const myAgentId = layout.user?.id
 onMounted(() => {
     fetchUnreadCount(baseUrl, "", myAgentId)
     checkScreenType()
+    window.addEventListener("resize", checkScreenType)
     onCheckAppVersion()
     setColorStyleRoot(layout?.app?.theme)
+})
+
+onUnmounted(() => {
+    window.removeEventListener("resize", checkScreenType)
 })
 
 const fallbackTheme = useColorTheme[3]
@@ -274,7 +279,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
     <Dialog
         v-model:visible="isModalOpen"
         modal
-        dismissableMask
+        :dismissableMask="screenType === 'desktop'"
         :showHeader="false"
         :style="{ width: '32rem' }"
         :breakpoints="{ '640px': '90vw' }">
