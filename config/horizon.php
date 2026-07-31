@@ -397,7 +397,7 @@ return [
             'balanceCooldown'     => 3,
         ],
         'dropshipping'         => [
-            'connection'          => 'redis',
+            'connection'          => 'redis-long-running',
             'queue'               =>
                 [
                     'ds',
