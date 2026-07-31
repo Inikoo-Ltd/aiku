@@ -19,6 +19,7 @@ use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -65,6 +66,7 @@ class ShowOrgAgent extends OrgAction
             [
                 'title'       => __('Agent'),
                 'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
@@ -149,41 +151,59 @@ class ShowOrgAgent extends OrgAction
         return new OrgAgentResource($orgAgent);
     }
 
-    public function getBreadcrumbs(array $routeParameters, $suffix = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
     {
-        $orgAgent = OrgAgent::where('slug', $routeParameters['orgAgent'])->first();
-
-        return array_merge(
-            (new ShowProcurementDashboard())->getBreadcrumbs($routeParameters),
-            [
+        $headCrumb = function (OrgAgent $orgAgent, array $routeParameters, $suffix) {
+            return [
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
                         'index' => [
-                            'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.index',
-                                'parameters' => [
-                                    $routeParameters['organisation'],
-                                ]
-                            ],
+                            'route' => $routeParameters['index'],
                             'label' => __('Agents')
                         ],
                         'model' => [
-                            'route' => [
-                                'name'       => 'grp.org.procurement.org_agents.show',
-                                'parameters' => [
-                                    $routeParameters['organisation'],
-                                    $orgAgent->slug
-                                ]
-                            ],
+                            'route' => $routeParameters['model'],
                             'label' => $orgAgent->agent->code,
                         ],
                     ],
                     'suffix'         => $suffix,
-
                 ],
-            ]
-        );
+            ];
+        };
+
+        $orgAgent = OrgAgent::where('slug', $routeParameters['orgAgent'])->first();
+
+        return match ($routeName) {
+            'grp.org.procurement.org_agents.show',
+            'grp.org.procurement.org_agents.show.edit',
+            'grp.org.procurement.org_agents.show.org-stocks.index',
+            'grp.org.procurement.org_agents.show.purchase-orders.index',
+            'grp.org.procurement.org_agents.show.purchase-orders.show',
+            'grp.org.procurement.org_agents.show.stock-deliveries.index',
+            'grp.org.procurement.org_agents.show.supplier_products.index',
+            'grp.org.procurement.org_agents.show.supplier_products.show',
+            'grp.org.procurement.org_agents.show.suppliers.index',
+            'grp.org.procurement.org_agents.show.suppliers.show' =>
+            array_merge(
+                ShowProcurementDashboard::make()->getBreadcrumbs(Arr::only($routeParameters, 'organisation')),
+                $headCrumb(
+                    $orgAgent,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.procurement.org_agents.index',
+                            'parameters' => Arr::only($routeParameters, 'organisation')
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.procurement.org_agents.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'orgAgent'])
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            default => []
+        };
     }
 
     public function getPrevious(OrgAgent $orgAgent, ActionRequest $request): ?array

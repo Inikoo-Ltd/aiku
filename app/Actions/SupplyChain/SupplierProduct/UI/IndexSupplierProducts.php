@@ -366,7 +366,7 @@ class IndexSupplierProducts extends OrgAction
 
             'grp.supply-chain.agents.show.supplier_products.index' =>
             array_merge(
-                ShowAgent::make()->getBreadcrumbs($scope, $routeParameters),
+                ShowAgent::make()->getBreadcrumbs($scope, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.supply-chain.agents.show.supplier_products.index',
