@@ -78,6 +78,16 @@ class ShowEmployee extends OrgAction
                         ],
                     ],
                     'actions' => [
+                        $this->canEdit ? (
+                            !$employee->user ? [
+                                'key'     => 'create-user',
+                                'type'    => 'button',
+                                'tooltip' => __('Create a User for this employee'),
+                                'icon'    => 'fal fa-plus',
+                                'label'   => __('Create User'),
+                                'style'   => 'create',
+                            ] : null
+                        ) : null,
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
                     ],
                 ],

@@ -22,7 +22,8 @@ import {
     faPaperclip,
     faTimes,
     faCameraRetro,
-    faKey
+    faKey,
+    faPlus
 } from '@fal';
 import { faCheckCircle } from '@fas';
 import { router } from '@inertiajs/vue3'
@@ -45,6 +46,8 @@ import Button from '@/Components/Elements/Buttons/Button.vue';
 import UploadAttachment from '@/Components/Upload/UploadAttachment.vue';
 import ShowcaseEmployee from '@/Components/Showcases/Grp/ShowcaseEmployee.vue';
 import { trans } from 'laravel-vue-i18n'
+import Dialog from "primevue/dialog"
+import PureInput from "@/Components/Pure/PureInput.vue"
 
 library.add(
     faIdCard,
@@ -106,6 +109,15 @@ const component = computed(() => {
 
 });
 
+const showDialog = ref(false);
+const isLoadingCreateUser = ref(false);
+const username = ref('');
+const password = ref('');
+
+const createUser = () => {
+    
+}
+
 </script>
 
 
@@ -113,6 +125,96 @@ const component = computed(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #button-create-user="{ action }">
+            <Button 
+                :icon="faPlus" 
+                :label="action.label" 
+                @click="()=> {showDialog = true}" 
+                :style="action.style"
+            />
+            <Dialog
+                v-model:visible="showDialog" 
+                modal 
+                :closable="true" 
+                :dismissableMask="true" 
+                :style="{ width: '40vw', 'max-height': '40vw' }" 
+                :contentClass="'!pb-0 mb-2 p-3'"
+            >
+
+                <template #header>
+                    <div class="grid">
+                        <div class="text-xl font-bold">
+                            {{ ctrans('Create New User') }}
+                        </div>
+                    </div>
+                </template>
+                <div class="h-full overflow-y-auto overflow-x-none" style="scrollbar-width: thin;">
+                    <div class="">
+                        <div>
+                            <label> 
+                                {{ ctrans('Username') }}:
+                            </label>
+                        </div>
+                        <div>
+                            <PureInput
+                                v-model="username"
+                                @update:modelValue="() => username = ''"
+                                :class="username ? 'errorShake' : ''"
+                                class="col-span-2"
+                                :placeholder="trans(`Customer's SKO name`)"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div class="h-full overflow-y-auto overflow-x-none" style="scrollbar-width: thin;">
+                    <div class="">
+                        <div>
+                            <label> 
+                                {{ ctrans('Password') }}:
+                            </label>
+                        </div>
+                        <div>
+                            <PureInput
+                                v-model="username"
+                                @update:modelValue="() => username = ''"
+                                :class="username ? 'errorShake' : ''"
+                                class="col-span-2"
+                                :placeholder="trans(`Customer's SKO name`)"
+                                :type=""
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div class="h-full overflow-y-auto overflow-x-none" style="scrollbar-width: thin;">
+                    <div class="">
+                        <div>
+                            <label> 
+                                {{ ctrans('Confirm password') }}:
+                            </label>
+                        </div>
+                        <div>
+                            <PureInput
+                                v-model="username"
+                                @update:modelValue="() => username = ''"
+                                :class="username ? 'errorShake' : ''"
+                                class="col-span-2"
+                                :placeholder="trans(`Customer's SKO name`)"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <template #footer>
+                    <div class="flex justify-end pt-2 w-full">
+                        <Button
+                            @click="createUser()"
+                            :label="ctrans('Save')"
+                            :loading="isLoadingCreateUser"
+                            :disabled="isLoadingCreateUser"
+                        />
+                    </div>
+                </template>
+            </Dialog>
+        </template>
         <template #tabs-pin="{ data }">
             <div class="flex items-end gap-x-1">
                 <Popover v-if="data.label" class="flex items-end" position="left-0">
