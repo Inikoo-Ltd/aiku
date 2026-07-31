@@ -397,7 +397,7 @@ return [
             'balanceCooldown'     => 3,
         ],
         'dropshipping'         => [
-            'connection'          => 'redis-long-running',
+            'connection'          => 'redis',
             'queue'               =>
                 [
                     'ds',
@@ -415,6 +415,21 @@ return [
             'tries'               => 2,
             'timeout'             => 1000,
             'retry_after'         => 600,
+            'nice'                => 0,
+            'balanceMaxShift'     => 1,
+            'balanceCooldown'     => 3,
+        ],
+        'dropshipping-long'    => [
+            'connection'          => 'redis-long-running',
+            'queue'               => ['dropshipping-long'],
+            'balance'             => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses'        => 2,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            'memory'              => 1280,
+            'tries'               => 1,
+            'timeout'             => 7200,
             'nice'                => 0,
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
@@ -593,6 +608,9 @@ return [
             'dropshipping'         => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 16),
             ],
+            'dropshipping-long'    => [
+                'maxProcesses' => env('HORIZON_DROPSHIPPING_LONG_WORKERS', 2),
+            ],
             'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
             ],
@@ -661,6 +679,9 @@ return [
             ],
             'dropshipping'         => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
+            ],
+            'dropshipping-long'    => [
+                'maxProcesses' => env('HORIZON_DROPSHIPPING_LONG_WORKERS', 1),
             ],
             'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
@@ -735,6 +756,9 @@ return [
             ],
             'dropshipping'         => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
+            ],
+            'dropshipping-long'    => [
+                'maxProcesses' => env('HORIZON_DROPSHIPPING_LONG_WORKERS', 1),
             ],
             'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
