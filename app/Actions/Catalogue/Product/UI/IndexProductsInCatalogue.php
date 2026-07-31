@@ -21,6 +21,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ExternalShop\ProductInExternalShopResource;
+use App\Exports\Catalogue\ProductsExport;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -352,6 +353,43 @@ class IndexProductsInCatalogue extends OrgAction
         ];
     }
 
+    /**
+     * @return array<int, array{key: string, label: string}>
+     */
+    public function getExportFields(): array
+    {
+        $definitions = ProductsExport::fieldDefinitions();
+
+        return array_map(fn ($key) => [
+            'key'   => $key,
+            'label' => __($definitions[$key]['heading']),
+        ], array_keys($definitions));
+    }
+
+    public function getProductsExport(Shop $shop): array
+    {
+        $parameters = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+            'bucket'       => $this->bucket,
+            'prefix'       => ProductsTabsEnum::INDEX->value,
+        ];
+
+        return [
+            'fields'         => $this->getExportFields(),
+            'download_route' => [
+                'xlsx' => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.export',
+                    'parameters' => array_merge($parameters, ['type' => 'xlsx']),
+                ],
+                'csv'  => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.export',
+                    'parameters' => array_merge($parameters, ['type' => 'csv']),
+                ],
+            ],
+        ];
+    }
+
     public function htmlResponse(LengthAwarePaginator $products, ActionRequest $request): Response
     {
         /** @var Shop $shop */
@@ -407,6 +445,7 @@ class IndexProductsInCatalogue extends OrgAction
                     ]
                 ],
                 'data'                         => ProductsResource::collection($products),
+                'products_export'              => $this->getProductsExport($shop),
                 'editable_table'               => $shop->type != ShopTypeEnum::EXTERNAL,
                 'shop_id'                      => $shop->id,
                 'tabs'                         => [

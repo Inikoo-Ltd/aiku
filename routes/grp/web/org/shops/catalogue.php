@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Catalogue\Product\GetProductUploadedImages;
 use App\Actions\Catalogue\Product\UI\CreateProduct;
 use App\Actions\Catalogue\Product\UI\EditProduct;
+use App\Actions\Catalogue\Product\UI\ExportProducts;
 use App\Actions\Catalogue\Product\UI\IndexOutOfStockProducts;
 use App\Actions\Catalogue\Product\UI\IndexPendingBackInStockRemindersProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
@@ -52,6 +53,8 @@ Route::get('', ShowCatalogue::class)->name('dashboard');
 
 Route::prefix('products')->as('products.')
     ->group(function () {
+        Route::get('export', [ExportProducts::class, 'inShop'])->name('export');
+
         Route::prefix('all')->as('all_products.')->group(function () {
             Route::get('', IndexProductsInCatalogue::class)->name('index');
             Route::get('create', CreateProduct::class)->name('create');
