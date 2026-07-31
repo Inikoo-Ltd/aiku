@@ -17,6 +17,10 @@ const props = defineProps<{
     clockingMachine: ClockingMachine
 }>()
 
+const kioskDescription = props.clockingMachine.type === 'barcode-scanner'
+    ? trans('Open this link on the tablet used at this clocking machine so employees can clock in and out by scanning their barcode.')
+    : trans('Open this link on the tablet used at this clocking machine so employees can clock in and out with their PIN.')
+
 const isModalOpen = ref(false)
 const isSubmitting = ref(false)
 const kioskUrl = ref<string | null>(props.clockingMachine.kiosk_url ?? null)
@@ -83,7 +87,7 @@ const copyLink = async () => {
                 </h2>
 
                 <p class="text-sm text-gray-500 text-center">
-                    {{ trans('Open this link on the tablet used at this clocking machine so employees can clock in and out with their PIN.') }}
+                    {{ kioskDescription }}
                 </p>
 
                 <div v-if="kioskUrl" class="space-y-2">

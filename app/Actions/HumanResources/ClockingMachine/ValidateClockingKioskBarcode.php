@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 20 Jul 2026 07:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Fri, 31 Jul 2026 03:00:00 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -16,16 +16,20 @@ use Exception;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ValidateClockingKioskPin
+class ValidateClockingKioskBarcode
 {
     use AsAction;
     use WithClockingKioskToken;
     use ResolvesEmployeeByCode;
     use DeterminesClockingResult;
 
-    public function handle(ClockingMachine $clockingMachine, string $enteredPin): array
+    /**
+     * The barcode an employee shows the scanner encodes their own pin verbatim, so the
+     * scanned value is matched exactly the same way a kiosk-typed pin is.
+     */
+    public function handle(ClockingMachine $clockingMachine, string $scannedCode): array
     {
-        $employee = $this->resolveEmployeeByCode($clockingMachine, $enteredPin, __('Invalid PIN.'));
+        $employee = $this->resolveEmployeeByCode($clockingMachine, $scannedCode, __('Invalid barcode.'));
 
         $clockedInAt = now();
 
@@ -56,19 +60,19 @@ class ValidateClockingKioskPin
     public function rules(): array
     {
         return [
-            'pin' => ['required', 'string', 'max:32'],
+            'barcode' => ['required', 'string', 'max:64'],
         ];
     }
 
     public function asController(string $kioskToken, ActionRequest $request)
     {
         $clockingMachine = $this->resolveKioskMachine($kioskToken);
-        $this->assertKioskModeEnabled($clockingMachine, 'pin');
+        $this->assertKioskModeEnabled($clockingMachine, 'barcode');
 
         $data = $request->validated();
 
         try {
-            $result = $this->handle($clockingMachine, $data['pin']);
+            $result = $this->handle($clockingMachine, $data['barcode']);
 
             return response()->json([
                 'success'  => true,

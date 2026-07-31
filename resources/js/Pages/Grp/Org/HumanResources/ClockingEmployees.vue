@@ -11,7 +11,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import ScanQrUser from "./ScanQrUser.vue"
+import EmployeeClockingPanel from "./EmployeeClockingPanel.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faEnvelope,
@@ -120,7 +120,7 @@ const handleTabUpdate = (tabSlug: string) => {
 const component = computed(() => {
 	const components = {
 		timesheets: TableTimesheetsEmployee,
-		scan_qr_code: ScanQrUser,
+		scan_qr_code: EmployeeClockingPanel,
 		leaves: TableLeaves,
 		adjustments: TableAttendanceAdjustments,
 		overtime: TableOvertimeEmployee,
@@ -185,6 +185,8 @@ const component = computed(() => {
 		:lastClockOut="scan_qr_code?.last_clock_out"
 		:clockingSessions="scan_qr_code?.clocking_sessions"
 		:timezone="scan_qr_code?.timezone"
+		:availableMethods="scan_qr_code?.available_methods"
+		:pin="scan_qr_code?.pin"
 		@update:isRequestLeaveModalOpen="isRequestLeaveModalOpen = $event"
 		@update:isRequestOvertimeModalOpen="isRequestOvertimeModalOpen = $event">
 	</component>

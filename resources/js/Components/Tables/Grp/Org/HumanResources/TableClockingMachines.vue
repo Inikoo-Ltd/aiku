@@ -103,7 +103,9 @@ function workplaceRoute(clockingMachine: ClockingMachine) {
     </template>
     <template #cell(actions)="{ item: clockingMachine }">
       <div class="flex items-center gap-x-1">
-        <ModalClockingMachineKioskLink v-if="clockingMachine.type === 'pin'" :clocking-machine="clockingMachine" />
+        <ModalClockingMachineKioskLink
+          v-if="clockingMachine.type === 'pin' || clockingMachine.type === 'barcode-scanner'"
+          :clocking-machine="clockingMachine" />
 
         <Link :href="editClockingMachineRoute(clockingMachine)">
           <Button type="tertiary" size="xs" :icon="faPencil" :tooltip="trans('Edit')" />

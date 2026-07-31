@@ -34,6 +34,8 @@ use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Models\HumanResources\OvertimeType;
 use App\Models\HumanResources\Holiday;
+use App\Models\HumanResources\ClockingMachine;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Services\HumanResources\LeaveTypeResolver;
 use Illuminate\Support\Collection;
 
@@ -94,9 +96,11 @@ class IndexClockingEmployees extends OrgAction
         $lastClockOut = null;
         $clockingSessions = [];
         $timezone = null;
+        $availableClockingMethods = [];
 
         if ($this->employee && $tab == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value) {
             $timezone = $this->employee->organisation->timezone?->name ?? config('app.timezone');
+            $availableClockingMethods = $this->getAvailableClockingMethods($this->employee->organisation_id);
 
             $todayTimesheet = \App\Models\HumanResources\Timesheet::where('subject_type', 'Employee')
                 ->where('subject_id', $this->employee->id)
@@ -378,6 +382,8 @@ class IndexClockingEmployees extends OrgAction
             'last_clock_out' => $lastClockOut,
             'clocking_sessions' => $clockingSessions,
             'timezone' => $timezone,
+            'available_clocking_methods' => $availableClockingMethods,
+            'employee_pin' => $this->employee?->pin,
         ];
     }
 
@@ -392,6 +398,44 @@ class IndexClockingEmployees extends OrgAction
      *     clock_out: array{id: int, clocked_at: string|null, type: string|null, is_late: bool, notes: string|null}|null
      * }>
      */
+    /**
+     * @return array<int, string>
+     */
+    protected function getAvailableClockingMethods(?int $organisationId): array
+    {
+        if (!$organisationId) {
+            return [];
+        }
+
+        $clockingMachines = ClockingMachine::where('organisation_id', $organisationId)
+            ->get(['type', 'config']);
+
+        $methods = [];
+
+        if ($clockingMachines->contains(
+            fn (ClockingMachine $machine) => $machine->type === ClockingMachineTypeEnum::QR_CODE->value
+                && data_get($machine->config, 'qr.enable', false)
+        )) {
+            $methods[] = 'qr_code';
+        }
+
+        if ($clockingMachines->contains(
+            fn (ClockingMachine $machine) => $machine->type === ClockingMachineTypeEnum::PIN->value
+                && data_get($machine->config, 'pin.enable', false)
+        )) {
+            $methods[] = 'pin';
+        }
+
+        if ($clockingMachines->contains(
+            fn (ClockingMachine $machine) => $machine->type === ClockingMachineTypeEnum::BARCODE_SCANNER->value
+                && data_get($machine->config, 'barcode.enable', false)
+        )) {
+            $methods[] = 'barcode';
+        }
+
+        return $methods;
+    }
+
     protected function getClockingSessions(Timesheet $timesheet, string $timezone): array
     {
         $timeTrackers = TimeTracker::where('timesheet_id', $timesheet->id)
@@ -662,6 +706,8 @@ class IndexClockingEmployees extends OrgAction
                         'last_clock_out' => $data['last_clock_out'],
                         'clocking_sessions' => $data['clocking_sessions'],
                         'timezone' => $data['timezone'],
+                        'available_methods' => $data['available_clocking_methods'],
+                        'pin' => $data['employee_pin'],
                     ]
                     : Inertia::optional(fn () => ['status' => 'loaded_lazy']),
 

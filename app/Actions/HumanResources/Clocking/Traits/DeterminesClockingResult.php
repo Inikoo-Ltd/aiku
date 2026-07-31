@@ -8,23 +8,10 @@ use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\WorkSchedule;
-use Exception;
 use Illuminate\Support\Carbon;
 
 trait DeterminesClockingResult
 {
-    private function guardAgainstFrequentClocking(Employee $employee): void
-    {
-        $lastClocking = Clocking::where('subject_type', $employee->getMorphClass())
-            ->where('subject_id', $employee->id)
-            ->latest('clocked_at')
-            ->first();
-
-        if ($lastClocking && $lastClocking->clocked_at->diffInSeconds(now()) < 5) {
-            throw new Exception(__('Scan too frequent. Please wait a moment.'));
-        }
-    }
-
     private function calculateLateClocking(Employee $employee, Carbon $clockedInAt, ?WorkSchedule $selectedSchedule = null): bool
     {
         if ($employee->employment_type === EmploymentTypeEnum::PART_TIME) {

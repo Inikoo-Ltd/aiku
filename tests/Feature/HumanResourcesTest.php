@@ -861,6 +861,92 @@ test('kiosk endpoint 404s when pin mode is disabled', function () {
     ])->assertNotFound();
 });
 
+// CLOCKING KIOSK BARCODE
+
+test('can clock in via kiosk barcode', function () {
+    $suffix = 'F'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Barcode Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::BARCODE_SCANNER->value,
+    ]);
+    $clockingMachine->update([
+        'kiosk_token' => 'kiosk-token-'.$clockingMachine->id.'-'.$suffix,
+        'config'      => ['barcode' => ['enable' => true]],
+    ]);
+
+    $code = 'BC'.rand(10, 99);
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+    $employee->update(['pin' => $this->organisation->id.':'.$code]);
+
+    // The barcode encodes the employee's own pin verbatim (no human typing involved), so an
+    // exact scanned match is the common case.
+    $clocking = \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskBarcode::make()
+        ->handle($clockingMachine, $code)['clocking'];
+
+    expect($clocking)->toBeInstanceOf(Clocking::class)
+        ->and($clocking->subject_id)->toBe($employee->id)
+        ->and($clocking->clocking_machine_id)->toBe($clockingMachine->id);
+
+    return [$clockingMachine, $employee];
+});
+
+test('wrong kiosk barcode is rejected', function (array $context) {
+    [$clockingMachine] = $context;
+
+    \App\Actions\HumanResources\ClockingMachine\ValidateClockingKioskBarcode::make()->handle($clockingMachine, 'WRONG');
+})->depends('can clock in via kiosk barcode')->throws(\Exception::class, 'Invalid barcode.');
+
+test('kiosk endpoint 404s when barcode mode is disabled', function () {
+    $suffix = 'G'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk Disabled Barcode Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::BARCODE_SCANNER->value,
+    ]);
+    $clockingMachine->update(['kiosk_token' => 'kiosk-token-disabled-'.$clockingMachine->id.'-'.$suffix]);
+
+    \Pest\Laravel\postJson(route('grp.kiosk.barcode.submit', ['kioskToken' => $clockingMachine->kiosk_token]), [
+        'barcode' => 'BC12',
+    ])->assertNotFound();
+});
+
+test('kiosk endpoint 404s when using the wrong mode for the machine', function () {
+    $suffix = 'H'.rand(10000, 99999);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Kiosk Workplace '.$suffix,
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Kiosk PIN Only Machine '.$suffix,
+        'type' => \App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum::PIN->value,
+    ]);
+    $clockingMachine->update([
+        'kiosk_token' => 'kiosk-token-'.$clockingMachine->id.'-'.$suffix,
+        'config'      => ['pin' => ['enable' => true]],
+    ]);
+
+    // pin.enable is true but barcode.enable is not, so the barcode endpoint must still 404.
+    \Pest\Laravel\postJson(route('grp.kiosk.barcode.submit', ['kioskToken' => $clockingMachine->kiosk_token]), [
+        'barcode' => 'AB12',
+    ])->assertNotFound();
+});
+
 test('can adjust employee leave balance creating a new balance', function () {
     $employee = Employee::factory()->create([
         'organisation_id' => $this->organisation->id,

@@ -41,6 +41,7 @@ class UpdateClockingMachine extends OrgAction
             'config.qr.coordinates',
             'config.qr.radius',
             'config.pin.enable',
+            'config.barcode.enable',
         ];
 
         $configPayload = Arr::get($modelData, 'config', []);
@@ -106,6 +107,7 @@ class UpdateClockingMachine extends OrgAction
             'config.qr.coordinates'          => ['nullable', 'string'],
             'config.qr.radius'               => ['nullable', 'numeric', 'min:0'],
             'config.pin.enable'              => ['nullable', 'boolean'],
+            'config.barcode.enable'          => ['nullable', 'boolean'],
 
         ];
 

@@ -122,6 +122,20 @@ class EditClockingMachine extends OrgAction
             ];
         }
 
+        if ($clockingMachine->type === ClockingMachineTypeEnum::BARCODE_SCANNER->value) {
+            $blueprint[] = [
+                'title'  => __('Barcode Scanner Configuration'),
+                'label'  => __('Barcode Scanner Settings'),
+                'fields' => [
+                    'config.barcode.enable' => [
+                        'type'  => 'toggle',
+                        'label' => __('Enable Barcode Scanner'),
+                        'value' => (bool) data_get($clockingMachine->config, 'barcode.enable', false),
+                    ],
+                ],
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
