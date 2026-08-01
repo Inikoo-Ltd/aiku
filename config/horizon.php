@@ -300,7 +300,7 @@ return [
             'maxTime'         => 0,
             'maxJobs'         => 0,
             'memory'          => 1280,
-            'tries'           => 10,
+            'tries'           => 25,
             'timeout'         => 3600,
             'retry_after'     => 120,
             'nice'            => 0,
