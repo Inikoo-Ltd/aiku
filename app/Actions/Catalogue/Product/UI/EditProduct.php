@@ -295,6 +295,18 @@ class EditProduct extends OrgAction
                             'maxFractionDigits' => 2,
                         ],
                         'value'    => $product->price,
+
+                        /*
+                         * Free is a real price for the gifts and samples, but it is also what an
+                         * accidental zero looks like, so it is the one price worth stopping for.
+                         * Only on zero: prices change thousands of times a month here and a dialog
+                         * on all of them would be clicked away without being read.
+                         */
+                        'saveConfirmation' => [
+                            'whenValueIs' => 0,
+                            'title'       => __('Give this product away for free?'),
+                            'description' => __('A price of zero means customers can order it at no charge. Only gifts and samples should be free.'),
+                        ],
                     ],
                     'rrp_per_unit' => [
                         'type'     => 'input_number',

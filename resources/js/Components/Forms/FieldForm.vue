@@ -47,6 +47,7 @@ const props = defineProps<{
             title?: string
             description?: string
             yesLabel?: string
+            whenValueIs?: any  // Confirm only for this value, leave out to confirm every save
         }
     }
     args: {
@@ -133,6 +134,22 @@ defineExpose({
 })
 
 const isModalConfirmation = ref(false)
+
+/*
+ * A confirmation can be limited to one value so that ordinary edits are not interrupted:
+ * pricing a product at zero gives it away and is worth stopping for, changing 12.50 to 11.00
+ * is not, and a dialog on every price save would be dismissed without being read.
+ */
+const needsSaveConfirmation = computed(() => {
+    const confirmation = props.fieldData.saveConfirmation
+    if (!confirmation) {
+        return false
+    }
+    if (confirmation.whenValueIs === undefined) {
+        return true
+    }
+    return Number(form[props.field]) === Number(confirmation.whenValueIs)
+})
 </script>
 
 <template>
@@ -196,7 +213,7 @@ const isModalConfirmation = ref(false)
 
                 </span>
                 <span v-else class="ml-2 flex-shrink-0">
-                    <div v-if="fieldData.saveConfirmation"
+                    <div v-if="needsSaveConfirmation"
                         @click="() => isModalConfirmation = true"
                         class="h-9 align-bottom text-center cursor-pointer"
                         :disabled="form.processing || !form.isDirty"
@@ -230,7 +247,7 @@ const isModalConfirmation = ref(false)
         </dl>
 
         <!-- Modal: Save confirmation -->
-        <Modal v-if="fieldData.saveConfirmation" :isOpen="isModalConfirmation" @onClose="() => isModalConfirmation = false" width="w-full max-w-lg">
+        <Modal v-if="needsSaveConfirmation" :isOpen="isModalConfirmation" @onClose="() => isModalConfirmation = false" width="w-full max-w-lg">
             <div class="relative text-left sm:w-full sm:max-w-lg py-2 flex">
 
                 <div
