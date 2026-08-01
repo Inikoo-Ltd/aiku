@@ -56,35 +56,10 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         if ($tradeUnitData) {
             $metaTradeUnit = TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->first();
             if ($metaTradeUnit) {
+                // Trade units carry group_id only: every organisation reads the same row
+                // and staff maintain them in aiku. Aurora may still send one aiku has
+                // never seen, it may not rewrite an existing one.
                 $tradeUnit = TradeUnit::withTrashed()->where('source_id', $tradeUnitData['trade_unit']['source_id'])->first();
-                if ($tradeUnit) {
-                    try {
-                        $dataToUpdate = Arr::only(
-                            $tradeUnitData['trade_unit'],
-                            [
-                                'name',
-                                'code',
-                                'source_id',
-                                'source_slug',
-                                'fetched_at',
-                                'last_fetched_at'
-                            ]
-                        );
-
-                        $tradeUnit = UpdateTradeUnit::make()->action(
-                            tradeUnit: $tradeUnit,
-                            modelData: $dataToUpdate,
-                            hydratorsDelay: $this->hydratorsDelay,
-                            strict: false,
-                            audit: false
-                        );
-                        $this->recordChange($organisationSource, $tradeUnit->wasChanged());
-                    } catch (Exception $e) {
-                        $this->recordError($organisationSource, $e, $tradeUnitData['trade_unit'], 'TradeUnit', 'update');
-
-                        return null;
-                    }
-                }
 
 
                 if ($organisation->id == 2) {
@@ -295,36 +270,28 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
             $dangerousGoodsInfo = $this->fetchAuroraProductPropertiesInfo($product);
 
-            if ($this->organisation->id == 1) {
+            // Fill gaps only, for every organisation. aw used to overwrite these
+            // outright, which is the one way Aurora could still rewrite a group level
+            // trade unit that staff had already corrected.
+            $filteredDangerousGoodsInfo = array_filter($dangerousGoodsInfo, function ($value) {
+                return !is_null($value);
+            });
+
+            $fieldsToUpdate = [];
+            foreach ($filteredDangerousGoodsInfo as $field => $value) {
+                if (is_null($tradeUnit->$field)) {
+                    $fieldsToUpdate[$field] = $value;
+                }
+            }
+
+            if (!empty($fieldsToUpdate)) {
                 UpdateTradeUnit::make()->action(
                     tradeUnit: $tradeUnit,
-                    modelData: $dangerousGoodsInfo,
+                    modelData: $fieldsToUpdate,
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
-            } else {
-                $filteredDangerousGoodsInfo = array_filter($dangerousGoodsInfo, function ($value) {
-                    return !is_null($value);
-                });
-
-                // Filter dangerous goods info to only update fields that are currently null
-                $fieldsToUpdate = [];
-                foreach ($filteredDangerousGoodsInfo as $field => $value) {
-                    if (is_null($tradeUnit->$field)) {
-                        $fieldsToUpdate[$field] = $value;
-                    }
-                }
-
-                if (!empty($fieldsToUpdate)) {
-                    UpdateTradeUnit::make()->action(
-                        tradeUnit: $tradeUnit,
-                        modelData: $fieldsToUpdate,
-                        hydratorsDelay: $this->hydratorsDelay,
-                        strict: false,
-                        audit: false
-                    );
-                }
             }
         }
     }

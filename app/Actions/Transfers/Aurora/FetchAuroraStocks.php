@@ -154,7 +154,10 @@ class FetchAuroraStocks extends FetchAuroraAction
             }
 
 
-            if ($stock->state == StockStateEnum::IN_PROCESS and $stockData['org_stock']['state'] != StockStateEnum::IN_PROCESS) {
+            // Only promotes a stock this run just created out of IN_PROCESS. On an
+            // existing one it would reactivate a stock staff deliberately parked, which
+            // is the write this whole guard exists to prevent.
+            if ($stock->wasRecentlyCreated and $stock->state == StockStateEnum::IN_PROCESS and $stockData['org_stock']['state'] != StockStateEnum::IN_PROCESS) {
                 $stock = UpdateStock::make()->action(
                     stock: $stock,
                     modelData: [

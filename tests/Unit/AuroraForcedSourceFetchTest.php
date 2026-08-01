@@ -1,15 +1,15 @@
 <?php
 
 use App\Actions\Transfers\Aurora\FetchAuroraOrders;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 
 /**
- * The guard returns 0 without touching Aurora. Letting a fetch through means reaching
- * getOrganisationSource, which cannot connect from a test and makes the parent return 1 —
- * so the two outcomes tell the cases apart without a legacy database.
+ * These tests share one organisation (createOrganisation returns the first one), so each
+ * sets every field it depends on. The guard's decision is read from what it printed
+ * rather than from a return code, which otherwise depends on whether Aurora happens to be
+ * reachable.
  */
-function fetchOrdersCommand(?string $sourceId, bool $force = false): Command
+function fetchOrdersCommand(?string $sourceId, bool $force, array &$lines): Command
 {
     $command = Mockery::mock(Command::class)->shouldIgnoreMissing();
     $command->shouldReceive('hasOption')->with('source_id')->andReturn(true);
@@ -17,52 +17,64 @@ function fetchOrdersCommand(?string $sourceId, bool $force = false): Command
     $command->shouldReceive('hasOption')->with('force')->andReturn(true);
     $command->shouldReceive('option')->with('force')->andReturn($force);
     $command->shouldReceive('getName')->andReturn('fetch:orders');
+    $command->shouldReceive('line')->andReturnUsing(function ($message) use (&$lines) {
+        $lines[] = $message;
+    });
 
     return $command;
 }
 
-function runOrdersFetchFor(Organisation $organisation, ?string $sourceId): int
+function guardRefused(string $slug, ?string $sourceId, bool $force): bool
 {
-    return (new FetchAuroraOrders())->processOrganisation(fetchOrdersCommand($sourceId), $organisation);
+    $organisation = createOrganisation();
+    $organisation->update(['slug' => $slug, 'source' => ['type' => 'Aurora']]);
+
+    $lines = [];
+
+    try {
+        (new FetchAuroraOrders())->processOrganisation(fetchOrdersCommand($sourceId, $force, $lines), $organisation);
+    } catch (Throwable) {
+        // Aurora is unreachable from a test; the guard runs before any of that
+    }
+
+    return (bool)preg_grep('/no longer follows Aurora/', $lines);
 }
 
 beforeEach(function () {
     config(['aurora.following_organisations' => ['aroma']]);
 });
 
-it('still fetches one named order by hand after the organisation left aurora', function () {
-    $organisation = createOrganisation();
-    $organisation->update(['slug' => 'aw']);
+it('refuses a denied fetcher unless both -s and --force are given', function (?string $sourceId, bool $force, bool $refused) {
+    expect(guardRefused('aw', $sourceId, $force))->toBe($refused);
+})->with([
+    'nothing given, refused'       => [null, false, true],
+    '-s alone, still refused'      => ['2788500', false, true],
+    '--force alone, still refused' => [null, true, true],
+    '-s with --force, allowed'     => ['2788500', true, false],
+]);
 
-    expect(runOrdersFetchFor($organisation, '2788500'))->not->toBe(0);
+it('never refuses an organisation that still follows aurora', function () {
+    expect(guardRefused('aroma', null, false))->toBeFalse();
 });
 
-it('refuses a wholesale order fetch for an organisation that left aurora', function () {
+it('hands the forced flag to the source object the parsers read', function (?string $sourceId, bool $force, bool $expected) {
     $organisation = createOrganisation();
-    $organisation->update(['slug' => 'aw']);
+    $organisation->update(['slug' => 'aroma', 'source' => ['type' => 'Aurora']]);
 
-    expect(runOrdersFetchFor($organisation, null))->toBe(0);
-});
-
-it('only overwrites an aiku record when force is asked for out loud', function (?string $sourceId, bool $force, bool $expected) {
-    $organisation = createOrganisation();
-    $organisation->update(['slug' => 'aroma']);
-
-    $action  = new FetchAuroraOrders();
-    $command = fetchOrdersCommand($sourceId, $force);
-
-    $forced = new ReflectionProperty($action, 'forcedSourceFetch');
-    $forced->setAccessible(true);
+    $action = new FetchAuroraOrders();
+    $lines  = [];
 
     try {
-        $action->processOrganisation($command, $organisation);
+        $action->processOrganisation(fetchOrdersCommand($sourceId, $force, $lines), $organisation);
     } catch (Throwable) {
-        // reaching Aurora is not the point, the flag being set before it is
+        // connecting to Aurora is not the point; what the source ends up carrying is
     }
 
-    expect($forced->getValue($action))->toBe($expected);
+    // Read exactly the way FetchAuroraOrder, FetchAuroraInvoice and FetchAuroraDeliveryNote
+    // read it. Fails if the getOrganisationSource override that carries the flag is dropped.
+    expect($action->getOrganisationSource($organisation)->isForcedFetch())->toBe($expected);
 })->with([
-    'named record alone does not overwrite' => ['2788500', false, false],
-    'named record with --force overwrites'  => ['2788500', true, true],
-    'wholesale run overwrites nothing'      => [null, false, false],
+    'forced override reaches the parsers' => ['2788500', true, true],
+    '-s alone does not'                   => ['2788500', false, false],
+    '--force alone does not'              => [null, true, false],
 ]);

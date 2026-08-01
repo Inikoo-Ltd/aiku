@@ -54,16 +54,17 @@ class FetchAuroraAction extends FetchAction
 
     public function processOrganisation(Command $command, Organisation $organisation): int
     {
-        // Two separate intents, deliberately. -s names one record to pull and nothing
-        // schedules it, so it lifts the allowlist and lets the fetcher run for an
-        // organisation that has left Aurora. On its own that is harmless: the per shop
-        // is_aiku gate still refuses to touch a record aiku already owns. --force is the
-        // one that overwrites, and it stays something you ask for out loud, the way
-        // editing force_fetch in Aurora used to be.
-        $forcedSourceId          = $command->hasOption('source_id') ? $command->option('source_id') : null;
-        $this->forcedSourceFetch = $command->hasOption('force') && (bool)$command->option('force');
+        // An override is BOTH flags together: -s names the one record and --force says
+        // overwrite it. Either alone is not an override. -s by itself would still reach
+        // fetchers that have no is_aiku gate of their own (stock locations, deleted
+        // stocks) and update them; --force by itself would run the whole fetchAll sweep
+        // with every gate down, which is a mass overwrite switch, not an override.
+        $forcedSourceId = $command->hasOption('source_id') ? $command->option('source_id') : null;
+        $forcedOverride = $forcedSourceId && $command->hasOption('force') && (bool)$command->option('force');
 
-        if (!$forcedSourceId && !$this->auroraStillFeeds($organisation)) {
+        $this->forcedSourceFetch = (bool)$forcedOverride;
+
+        if (!$forcedOverride && !$this->auroraStillFeeds($organisation)) {
             $command->line('skipped '.$command->getName().' for '.$organisation->slug.': organisation no longer follows Aurora');
 
             return 0;
