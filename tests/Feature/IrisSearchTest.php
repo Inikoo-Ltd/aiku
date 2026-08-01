@@ -78,6 +78,24 @@ test('iris search stores a website search log with the response ulid', function 
         ->and($log->web_user_id)->toBeNull()
         ->and($log->customer_id)->toBeNull();
 
+    $makeLog = fn (array $extra = []) => StoreWebsiteSearchLog::run(array_merge([
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $this->website->id,
+        'session_id'      => 'dedupe-session',
+        'scope'           => 'catalogue',
+        'query'           => 'tealights',
+        'results_count'   => 3,
+    ], $extra));
+
+    $first  = $makeLog();
+    $second = $makeLog(['scope' => 'catalogue_page', 'results_count' => 7]);
+    expect($second->id)->toBe($first->id)
+        ->and($second->scope)->toBe('catalogue_page')
+        ->and(WebsiteSearchLog::where('session_id', 'dedupe-session')->count())->toBe(1);
+
     $customer = createCustomer($this->shop);
     $webUser  = createWebUser($customer);
 
@@ -126,6 +144,7 @@ test('iris search click endpoint records the click once', function () {
 
 test('iris search only returns hits flagged is_in_website', function () {
     [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
     $webpage = $product->webpage ?: StoreProductWebpage::make()->action($product);
 
     Search::shouldRun()->andReturn(irisSearchResults([

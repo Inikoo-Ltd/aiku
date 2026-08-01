@@ -57,6 +57,10 @@ class GetProductSearchSchema
                         'optional' => true,
                     ],
                     [
+                        'name' => 'barcode',
+                        'type' => 'string',
+                    ],
+                    [
                         'name' => 'created_at',
                         'type' => 'int64',
                     ],
@@ -79,7 +83,7 @@ class GetProductSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'code,name,description,description_extra',
+                'query_by' => 'code,name,barcode,description,description_extra',
                 'sort_by'  => '_text_match:desc,popularity:desc,created_at:desc'
             ],
         ];
