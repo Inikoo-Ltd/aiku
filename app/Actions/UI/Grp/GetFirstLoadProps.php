@@ -65,6 +65,12 @@ class GetFirstLoadProps
         data_set($props, 'ziggy', new Ziggy('grp')->toArray());
         data_set($props, 'last_deployment_at', $lastDeployment?->created_at);
         data_set($props, 'last_deployment_hash', $lastDeployment?->commit_hash);
+        data_set($props, 'last_deployment_version', $lastDeployment?->semantic_version);
+
+        // Set outside the cached props so changing the group's clocks does not need a recache of every user
+        if ($user) {
+            data_set($props, 'layout.group.timezones', $user->group->world_clock_timezones);
+        }
 
 
         return $props;

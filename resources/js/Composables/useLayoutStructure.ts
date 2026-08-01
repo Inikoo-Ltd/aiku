@@ -21,6 +21,7 @@ export const layoutStructure = {
         environment: null as string | null, // 'local' | 'staging'
         last_deployment_at: null as string | null, // created_at of the latest app deployment
         last_deployment_hash: null as string | null, // hash of the latest commit
+        last_deployment_version: null as string | null, // semantic version tag of the latest app deployment
         newVersionAvailable: false, // true after a post-deploy event when the user dismissed the refresh modal
     },
     currentModule: "",
