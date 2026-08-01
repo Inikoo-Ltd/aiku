@@ -67,7 +67,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
          * Bulk callers list the baskets of a shop or customer and then queue one job each, with a
          * delay of up to two hours to spread the load. An order the customer submits inside that
          * window would otherwise have its discounts recalculated after the fact, against offers
-         * that may since have changed. They pass true so the order is rechecked at execution time;
+         * that may since have changed. They pass true, so the order is rechecked at execution time;
          * callers acting on one known order keep the previous behaviour.
          */
         if ($onlyIfInBasket && $order->refresh()->state !== OrderStateEnum::CREATING) {
@@ -585,7 +585,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
      * Orders past the basket stage honor the promotions that were valid when the customer
      * submitted, even if those offers have since finished. Recalculations on such orders
      * select offers by their validity window at submission time instead of current status,
-     * so a post-submission recalculation (adding a line, replacing an out of stock product)
+     * so a post-submission recalculation (adding a line, replacing an out-of-stock product)
      * cannot strip discounts the customer already paid for. Suspended offers stay excluded:
      * suspension is a deliberate kill switch, unlike an offer reaching its end date.
      */
