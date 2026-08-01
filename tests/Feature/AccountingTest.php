@@ -2317,8 +2317,20 @@ test('a single day customer redo keeps the whole period totals in the organisati
         ->where('r.period', $monthStart->format('Y-m'))
         ->first();
 
-    expect((float) $record->sales_grp_currency_external)->toBe(350.0)
-        ->and((int) $record->invoices)->toBe(2);
+    // Compared against what the month actually holds, not a constant: other tests in this
+    // file leave invoices in it — some of them dated by hand — and which month that is
+    // moves with the calendar, so a hardcoded 350.0 only held while those dates happened
+    // to sit outside the asserted month.
+    $periodInvoices = DB::table('invoices')
+        ->where('organisation_id', $this->organisation->id)
+        ->whereBetween('date', [$monthStart, $monthStart->copy()->endOfMonth()]);
+
+    // sales_grp_currency_external sums every row, the invoices counter only counts
+    // type=invoice — refunds are counted separately — so the two read differently.
+    expect((float) $record->sales_grp_currency_external)->toBe((float) (clone $periodInvoices)->sum('grp_net_amount'))
+        ->and((int) $record->invoices)->toBe((int) (clone $periodInvoices)->where('type', 'invoice')->count())
+        ->and((float) $record->sales_grp_currency_external)->toBeGreaterThanOrEqual(350.0)
+        ->and((int) $record->invoices)->toBeGreaterThanOrEqual(2);
 });
 
 test('customer time series merges grouped metrics with invoice periods and metric-only periods', function () {
