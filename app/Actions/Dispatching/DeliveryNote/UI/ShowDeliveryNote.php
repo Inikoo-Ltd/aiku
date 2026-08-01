@@ -887,8 +887,12 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->pickingSessions && $deliveryNote->pickingSessions->isNotEmpty()) {
             $pickingSessions = $deliveryNote->pickingSessions->map(function ($pickingSession) {
                 /** @var PickingSession $pickingSession */
+                $picker = $pickingSession->user?->contact_name;
+
                 return [
-                    'reference' => $pickingSession->reference,
+                    'reference' => $picker
+                        ? $pickingSession->reference.' ('.$picker.')'
+                        : $pickingSession->reference,
                     'route'     => [
                         'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.show',
                         'parameters' => [
@@ -900,8 +904,13 @@ class ShowDeliveryNote extends OrgAction
                 ];
             })->toArray();
 
+            /*
+             * Says where the picker is decided rather than only that a session exists: without
+             * it, somebody looking for the missing padlock has no way of knowing why it is gone
+             * or what to do instead.
+             */
             $warning = [
-                'text'             => __('This DeliveryNote is being picked in Picking Sessions'),
+                'text'             => __('Someone is already picking this, so the picker is set on the picking session, not here. To give it to somebody else, open the picking session and change the picker there.'),
                 'picking_sessions' => $pickingSessions,
             ];
         }
@@ -912,13 +921,13 @@ class ShowDeliveryNote extends OrgAction
         }
 
         /**
-         * Dropshipping was excluded in March, most likely because nine in ten of those notes
-         * are picked in a picking session and take their picker from it. That left the tenth,
-         * picked on its own, with no way to be reassigned, and it blocked the warehouse on
-         * notes stuck with an absent picker. Reassigning is allowed everywhere again;
-         * a note in a session still follows the session's picker.
+         * A note being picked as part of a session must not be handed to a second person:
+         * both would pick it and the stock would move twice. Dropshipping was excluded
+         * wholesale in March for this reason, which also blocked the one note in ten that is
+         * picked on its own. Keyed on the session itself, those are free again while the
+         * dangerous case stays shut. To move a note in a session, change the session's picker.
          */
-        $showChangePickerPacker = true;
+        $showChangePickerPacker = $deliveryNote->pickingSessions()->doesntExist();
 
         $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
 

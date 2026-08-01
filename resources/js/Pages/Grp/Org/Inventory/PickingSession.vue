@@ -20,6 +20,9 @@ import SelectPalletReturnsModal from "@/Components/Warehouse/PickingSessions/Sel
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 
 const props = defineProps<{
@@ -33,6 +36,11 @@ const props = defineProps<{
     dispatchableReturns?: any[]
     allow_waiting: boolean
     allow_picker_set_not_picked: boolean
+    picker?: { id: number, contact_name: string } | null
+    routes?: {
+        update: { name: string, parameters: object }
+        pickers_list: { name: string, parameters: object }
+    }
     timelines: {
         [key: string]: TSTimeline
     }
@@ -42,6 +50,32 @@ const props = defineProps<{
     }
 }>()
 
+
+const isModalChangePicker = ref(false)
+const selectedPicker = ref(props.picker)
+const isSavingPicker = ref(false)
+
+// Every note in the session follows this picker, so one change moves the whole run at once
+const onUpdateSessionPicker = () => {
+    if (!selectedPicker.value?.id || !props.routes?.update) {
+        notify({ title: trans("Something went wrong"), text: trans("Picker is not selected"), type: "error" })
+        return
+    }
+
+    router.patch(route(props.routes.update.name, props.routes.update.parameters),
+        { user_id: selectedPicker.value.id },
+        {
+            preserveScroll: true,
+            onStart: () => (isSavingPicker.value = true),
+            onFinish: () => (isSavingPicker.value = false),
+            onSuccess: () => (isModalChangePicker.value = false),
+            onError: (error) => notify({
+                title: trans("Something went wrong"),
+                text: error?.message ?? trans("Unknown error"),
+                type: "error",
+            }),
+        })
+}
 
 let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
@@ -134,6 +168,18 @@ const handleModalSuccess = () => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
+            <div v-if="routes?.update && !isFulfilmentSession" class="flex items-center gap-x-2 mr-2">
+                <div v-if="picker?.contact_name" class="text-sm text-gray-500">
+                    {{ trans('Picker') }}: <span class="text-gray-700">{{ picker.contact_name }}</span>
+                </div>
+                <Button
+                    @click="isModalChangePicker = true"
+                    :label="trans('Change Picker')"
+                    type="tertiary"
+                    size="xs"
+                    v-tooltip="trans('Everything in this picking session is picked by this person. Changing it here moves the whole session at once.')"
+                />
+            </div>
             <div v-if="data.data.state === 'in_process'" class="flex gap-2">
                 <Button
                     class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
@@ -214,4 +260,44 @@ const handleModalSuccess = () => {
         @onClose="closeRemoveModal"
         @success="handleModalSuccess"
     />
+
+    <Modal :isOpen="isModalChangePicker" @close="isModalChangePicker = false" width="w-full max-w-lg">
+        <div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
+            <div class="mx-auto font-semibold text-lg">{{ trans("Select picker") }}</div>
+            <div class="text-sm text-gray-500 mt-2">
+                {{ trans('Everything in this picking session will be picked by the person you choose.') }}
+            </div>
+            <div class="mt-4 w-full">
+                <PureMultiselectInfiniteScroll
+                    v-model="selectedPicker"
+                    required
+                    :fetchRoute="routes.pickers_list"
+                    :placeholder="trans('Select picker')"
+                    labelProp="contact_name"
+                    valueProp="id"
+                    object
+                    clearOnBlur
+                    :disabled="isSavingPicker">
+                    <template #singlelabel="{ value }">
+                        <div class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+                            {{ value.contact_name }}
+                        </div>
+                    </template>
+                    <template #option="{ option }">
+                        <div class="w-full text-left text-sm whitespace-nowrap truncate">
+                            {{ option.contact_name }}
+                        </div>
+                    </template>
+                </PureMultiselectInfiniteScroll>
+            </div>
+            <div class="mt-4 w-full flex justify-end">
+                <Button
+                    @click="onUpdateSessionPicker"
+                    :loading="isSavingPicker"
+                    :disabled="isSavingPicker"
+                    :label="trans('Change Picker')"
+                    type="save" />
+            </div>
+        </div>
+    </Modal>
 </template>
