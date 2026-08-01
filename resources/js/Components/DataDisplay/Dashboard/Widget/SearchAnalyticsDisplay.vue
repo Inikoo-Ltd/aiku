@@ -47,6 +47,7 @@ const pagePath = (url: string) => {
 
 // undefined keeps the historic staff-search target; explicit null hides the link
 const resolvedLogsUrl = props.logsUrl === undefined ? route('grp.sysadmin.search_logs.index') : props.logsUrl
+const statTag = resolvedLogsUrl ? Link : 'div'
 </script>
 
 <template>
@@ -68,21 +69,21 @@ const resolvedLogsUrl = props.logsUrl === undefined ? route('grp.sysadmin.search
 
         <template v-if="widget">
             <div class="flex gap-10 mb-4">
-                <div>
+                <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
                     <p class="text-4xl font-bold">{{ widget.total_searches.toLocaleString() }}</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("Searches") }}</p>
+                    <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("Searches") }}</p>
                     <p v-if="widget.logged_in_searches !== undefined" class="text-xs text-gray-400">
                         {{ ctrans(":logged logged in · :guest guests", { logged: String(widget.logged_in_searches), guest: String(widget.guest_searches ?? 0) }) }}
                     </p>
-                </div>
-                <div>
+                </component>
+                <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
                     <p class="text-4xl font-bold">{{ widget.click_through }}%</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("Click-through") }}</p>
-                </div>
-                <div>
+                    <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("Click-through") }}</p>
+                </component>
+                <component :is="statTag" :href="resolvedLogsUrl" :class="resolvedLogsUrl && 'group'">
                     <p class="text-4xl font-bold">{{ widget.zero_results_rate }}%</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("No results") }}</p>
-                </div>
+                    <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans("No results") }}</p>
+                </component>
             </div>
 
             <div class="grid grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
