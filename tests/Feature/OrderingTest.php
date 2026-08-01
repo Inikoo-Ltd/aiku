@@ -658,7 +658,10 @@ test('delete invoice transaction', function (InvoiceTransaction $invoiceTransact
     DeleteInProcessInvoiceTransaction::make()->action($invoiceTransaction);
     $invoice->refresh();
     expect($invoice)->toBeInstanceOf(Invoice::class)
-        ->and($invoice->stats->number_invoice_transactions)->toBe(0);
+        ->and($invoice->stats->number_invoice_transactions)->toBe(0)
+        ->and((float) $invoice->net_amount)->toBe(0.0)
+        ->and((float) $invoice->tax_amount)->toBe(0.0)
+        ->and((float) $invoice->total_amount)->toBe(0.0);
 
     return $invoice;
 })->depends('update invoice transaction');
