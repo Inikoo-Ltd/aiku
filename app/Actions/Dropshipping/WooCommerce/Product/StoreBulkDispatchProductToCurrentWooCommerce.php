@@ -20,7 +20,7 @@ class StoreBulkDispatchProductToCurrentWooCommerce extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    public string $jobQueue = 'woo';
+    public string $jobQueue = 'dropshipping-long';
 
     /**
      * @throws \Exception

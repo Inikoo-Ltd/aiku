@@ -22,7 +22,7 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
     use WithActionUpdate;
 
 
-    public string $jobQueue = 'shopify';
+    public string $jobQueue = 'dropshipping-long';
     public int $jobTries = 1;
 
     public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): int

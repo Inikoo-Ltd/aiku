@@ -17,7 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreBulkNewProductToCurrentEbay extends RetinaAction
 {
-    public string $jobQueue = 'ebay';
+    public string $jobQueue = 'dropshipping-long';
 
     /**
      * @throws \Exception
