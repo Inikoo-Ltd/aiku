@@ -77,9 +77,12 @@ class CrawlWebsite
                 ->onCrawled($this->checkIfShouldStop(...))
                 ->onFinished($this->onFinished(...))
                 ->start();
-        } catch (RejectionException $e) {
-            if (!$this->shouldStop) {
-                throw $e;
+        } catch (RejectionException) {
+            // ponytail: guzzle promise-pool race (superseded stop or deployment burst), never
+            // actionable at job level — the crawls table records the interrupted outcome
+            $this->crawl->refresh();
+            if ($this->crawl->state == CrawlStateEnum::FINISH) {
+                return;
             }
             $this->crawl->update(
                 [
