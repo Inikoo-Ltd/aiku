@@ -24,6 +24,45 @@ class FetchAuroraAction extends FetchAction
     public string $jobQueue = 'aurora';
     public int $jobTimeout = 60 * 60 * 12;
 
+    /**
+     * An organisation that has left Aurora only accepts the handful of fetchers it still
+     * has no aiku replacement for. Anything else arriving for it is stale by definition:
+     * its staff maintain that data in aiku now, and fetching would quietly revert them.
+     */
+    protected function auroraStillFeeds(Organisation $organisation): bool
+    {
+        if (in_array($organisation->slug, config('aurora.following_organisations', []))) {
+            return true;
+        }
+
+        $fetcher = str_replace('FetchAurora', '', class_basename(static::class));
+
+        return in_array($fetcher, config('aurora.allowed_fetchers', []));
+    }
+
+    public function processOrganisation(Command $command, Organisation $organisation): int
+    {
+        if (!$this->auroraStillFeeds($organisation)) {
+            $command->line('skipped '.$command->getName().' for '.$organisation->slug.': organisation no longer follows Aurora');
+
+            return 0;
+        }
+
+        return parent::processOrganisation($command, $organisation);
+    }
+
+    protected function markFetchStackIgnored(?int $fetchStackId): void
+    {
+        if (!$fetchStackId) {
+            return;
+        }
+
+        FetchStack::where('id', $fetchStackId)->update([
+            'finish_fetch_at' => now(),
+            'state'           => FetchStackStateEnum::IGNORED
+        ]);
+    }
+
     protected function preProcessCommand(Command $command): void
     {
         $this->dbSuffix = $command->option('db_suffix') ?? '';
@@ -215,6 +254,13 @@ class FetchAuroraAction extends FetchAction
         }
 
         $this->with               = $with;
+
+        if (!$this->auroraStillFeeds($organisation)) {
+            $this->markFetchStackIgnored($fetchStackId);
+
+            return;
+        }
+
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
@@ -244,6 +290,11 @@ class FetchAuroraAction extends FetchAction
         }
 
         $this->with               = $with;
+
+        if (!$this->auroraStillFeeds($organisation)) {
+            return null;
+        }
+
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 

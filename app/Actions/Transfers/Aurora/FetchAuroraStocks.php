@@ -62,11 +62,15 @@ class FetchAuroraStocks extends FetchAuroraAction
             }
 
 
-            SyncOrgStockTradeUnits::run($orgStock, [
-                $tradeUnit->id => [
-                    'quantity' => $stockData['stock']['units_per_pack']
-                ]
-            ]);
+            // Composition is group level too. Link a brand new org stock to its trade unit,
+            // but leave an existing one alone: that quantity is edited in aiku.
+            if ($orgStock->wasRecentlyCreated) {
+                SyncOrgStockTradeUnits::run($orgStock, [
+                    $tradeUnit->id => [
+                        'quantity' => $stockData['stock']['units_per_pack']
+                    ]
+                ]);
+            }
 
 
             return [
@@ -77,36 +81,11 @@ class FetchAuroraStocks extends FetchAuroraAction
 
         $stock = Stock::withTrashed()->where('source_id', $stockData['stock']['source_id'])->first();
         if ($stock) {
-            $dataToUpdate = Arr::only($stockData['stock'], [
-                'name',
-                'code',
-                'activated_at',
-                'discontinued_at',
-                'state',
-                'source_id',
-                'source_slug',
-                'fetched_at',
-                'last_fetched_at',
-                'created_at'
-            ]);
-            try {
-                $stock       = UpdateStock::make()->action(
-                    stock: $stock,
-                    modelData: $dataToUpdate,
-                    hydratorsDelay: $this->hydratorsDelay,
-                    strict: false,
-                    audit: false
-                );
-                $isPrincipal = true;
-                $this->recordChange($organisationSource, $stock->wasChanged());
-            } catch (Exception $e) {
-                $this->recordError($organisationSource, $e, $dataToUpdate, 'Stock', 'update');
-
-                return [
-                    'stock'    => null,
-                    'orgStock' => null
-                ];
-            }
+            // Stocks carry group_id only, so all four organisations read the same row and
+            // 44% of them are shared by more than one. Staff maintain these in aiku now,
+            // so an Aurora update here reverts their edits for every organisation at once.
+            // Aurora may still create a stock it has never sent before, never rewrite one.
+            $isPrincipal = true;
         }
 
 
@@ -164,7 +143,7 @@ class FetchAuroraStocks extends FetchAuroraAction
         }
 
         if ($stock) {
-            if ($isPrincipal) {
+            if ($isPrincipal && $stock->wasRecentlyCreated) {
                 $tradeUnit = $stockData['trade_unit'];
 
                 SyncStockTradeUnits::run($stock, [
