@@ -124,6 +124,16 @@ task('deploy:sync-octane-anchor', function () {
     run("rsync -ahHq --delete {{release_path}}/ {{deploy_path}}/anchor/octane");
 });
 
+desc('Restart the NightOwl agent so it picks up the synced anchor');
+task('deploy:restart-owl', function () {
+    // The agent is a daemon: sync-octane-anchor replaces the code on disk but the
+    // running process keeps serving the previous release from memory. Nothing else
+    // in the deploy signals it, so without this it runs stale until it happens to
+    // die. Non-fatal like the other supervisorctl calls — a box where the program
+    // is not installed must not fail the deploy.
+    run("bash -c 'sudo /usr/bin/supervisorctl restart aiku-owl || true'");
+});
+
 desc('Stops inertia SSR server');
 task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod');
 
@@ -437,6 +447,7 @@ task('deploy', [
     'deploy:publish',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
+    'deploy:restart-owl',
     'artisan:octane:reload',
     'deploy:restart-ssr-by-supervisorctl',
     'deploy:log-app-deployment',
