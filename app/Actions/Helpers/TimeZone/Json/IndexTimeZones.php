@@ -24,6 +24,32 @@ class IndexTimeZones
     use AsAction;
 
     /**
+     * Named the way people here refer to a place rather than by the city the IANA zone
+     * happens to be named after: nobody says "Europe/Bratislava", they say Slovakia. The
+     * IANA name stays in the option value, which the search also matches.
+     */
+    private const ZONE_NICKNAMES = [
+        'Europe/London'     => 'UK',
+        'Europe/Dublin'     => 'Ireland',
+        'Europe/Lisbon'     => 'Portugal',
+        'Europe/Madrid'     => 'Spain',
+        'Europe/Paris'      => 'France',
+        'Europe/Brussels'   => 'Belgium',
+        'Europe/Amsterdam'  => 'Netherlands',
+        'Europe/Berlin'     => 'Germany',
+        'Europe/Rome'       => 'Italy',
+        'Europe/Prague'     => 'Czechia',
+        'Europe/Bratislava' => 'Slovakia',
+        'Europe/Warsaw'     => 'Poland',
+        'Europe/Bucharest'  => 'Romania',
+        'Europe/Athens'     => 'Greece',
+        'Europe/Helsinki'   => 'Finland',
+        'Europe/Istanbul'   => 'Türkiye',
+        'Asia/Makassar'     => 'Bali',
+        'Asia/Kuala_Lumpur' => 'Malaysia',
+    ];
+
+    /**
      * Return a curated, searchable list of common timezones.
      *
      * Query params:
@@ -92,29 +118,19 @@ class IndexTimeZones
     }
 
     /**
-     * Places we work from, named the way people here refer to them rather than by the city
-     * the IANA zone happens to be named after. The IANA name stays searchable via the value.
-     */
-    private const CITY_NICKNAMES = [
-        'Asia/Makassar'      => 'Bali',
-        'Asia/Kuala_Lumpur'  => 'Kuala Lumpur',
-        'Europe/Bratislava'  => 'Bratislava (Slovakia)',
-    ];
-
-    /**
-     * Leads with the city, which is what people recognise: "London · Europe · GMT+1"
-     * rather than "GMT+01:00 Europe / London".
+     * Leads with the place, which is what people recognise: "UK · Europe · GMT+1" rather
+     * than "GMT+01:00 Europe / London".
      */
     private function formatLabel(string $tz, int $offsetSeconds): string
     {
-        $city   = self::CITY_NICKNAMES[$tz] ?? str_replace('_', ' ', Str::afterLast($tz, '/'));
+        $place  = self::ZONE_NICKNAMES[$tz] ?? str_replace('_', ' ', Str::afterLast($tz, '/'));
         $offset = $this->formatGmtOffset($offsetSeconds);
 
         if (!Str::contains($tz, '/')) {
-            return $city.' · '.$offset;
+            return $place.' · '.$offset;
         }
 
-        return $city.' · '.str_replace('_', ' ', Str::before($tz, '/')).' · '.$offset;
+        return $place.' · '.str_replace('_', ' ', Str::before($tz, '/')).' · '.$offset;
     }
 
     private function formatGmtOffset(int $offsetSeconds): string
