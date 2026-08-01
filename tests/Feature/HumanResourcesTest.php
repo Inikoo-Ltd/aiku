@@ -417,6 +417,33 @@ test('can store clocking', function () {
         ->and($clocking->subject_id)->toBe($employee->id);
 });
 
+test('clocking is bucketed into the day of the workplace timezone not the organisation one', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $aucklandTimezone = \App\Models\Helpers\Timezone::where('name', 'Pacific/Auckland')->firstOrFail();
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name'        => 'Auckland Workplace',
+        'type'        => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+        'timezone_id' => $aucklandTimezone->id,
+    ]);
+
+    $clockedAt = \Illuminate\Support\Carbon::parse('2026-08-03 22:00:00', 'UTC');
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type'       => 'in',
+        'clocked_at' => $clockedAt,
+    ], 0, true);
+
+    $expectedDate = $clockedAt->copy()->setTimezone('Pacific/Auckland')->toDateString();
+
+    expect($expectedDate)->toBe('2026-08-04')
+        ->and($clocking->timesheet->date->toDateString())->toBe($expectedDate);
+});
+
 test('can store clocking machine QR code', function () {
     $workplace = StoreWorkplace::make()->action($this->organisation, [
         'name' => 'QR Workplace',
