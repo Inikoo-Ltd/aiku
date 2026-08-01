@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\SysAdmin\User\UI\GetLoggedUser;
@@ -107,9 +108,7 @@ class EditProfileSettings
                                 "type"        => "select_infinite",
                                 "label"       => __("Your timezone"),
                                 "information" => __("Times across Aiku are shown in this timezone. Defaults to the timezone of the organisation you work for"),
-                                "options"     => [
-                                    ['label' => $user->timezone_name, 'value' => $user->timezone_name],
-                                ],
+                                "options"     => IndexTimeZones::make()->optionsFor([$user->timezone_name]),
                                 "fetchRoute"  => [
                                     "name" => "grp.json.timezones",
                                 ],

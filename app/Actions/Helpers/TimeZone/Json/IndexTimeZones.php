@@ -109,6 +109,23 @@ class IndexTimeZones
         return $data;
     }
 
+    /**
+     * The option rows for already chosen timezones, so a preselected value reads the same as
+     * it does once the list has been fetched rather than showing its raw IANA name.
+     *
+     * @param  array<int, string>  $timezones
+     * @return array<int, array{value: string, label: string, offset: int, offset_label: string}>
+     */
+    public function optionsFor(array $timezones): array
+    {
+        $known = collect($this->handle())->keyBy('value');
+
+        return collect($timezones)
+            ->map(fn (string $timezone) => $known->get($timezone, ['value' => $timezone, 'label' => $timezone]))
+            ->values()
+            ->all();
+    }
+
     public function asController(): JsonResponse
     {
         // $q = request()->string('q')->toString();
