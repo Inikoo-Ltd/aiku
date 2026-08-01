@@ -8,6 +8,12 @@ use App\Actions\Transfers\Aurora\FetchAuroraSuppliers;
 use App\Actions\Transfers\Aurora\FetchAuroraTimesheets;
 use App\Models\SysAdmin\Organisation;
 
+/**
+ * Nothing here goes near the database. createOrganisation() builds the one organisation the
+ * feature tests share, and creating it from a unit test leaves the suite in a state
+ * InventoryTest cannot work from. The guard only reads a slug, so an unsaved model is all
+ * it needs.
+ */
 function auroraStillFeeds(string $fetcherClass, Organisation $organisation): bool
 {
     $method = new ReflectionMethod($fetcherClass, 'auroraStillFeeds');
@@ -16,12 +22,17 @@ function auroraStillFeeds(string $fetcherClass, Organisation $organisation): boo
     return $method->invoke(new $fetcherClass(), $organisation);
 }
 
-it('only lets a departed organisation keep the fetchers it has no aiku replacement for', function (string $fetcher, bool $expected) {
-    $organisation = createOrganisation();
-    config(['aurora.following_organisations' => ['aroma']]);
-    $organisation->update(['slug' => 'aw']);
+function organisationNamed(string $slug): Organisation
+{
+    return (new Organisation())->forceFill(['slug' => $slug]);
+}
 
-    expect(auroraStillFeeds($fetcher, $organisation))->toBe($expected);
+beforeEach(function () {
+    config(['aurora.following_organisations' => ['aroma']]);
+});
+
+it('only lets a departed organisation keep the fetchers it has no aiku replacement for', function (string $fetcher, bool $expected) {
+    expect(auroraStillFeeds($fetcher, organisationNamed('aw')))->toBe($expected);
 })->with([
     'purchase orders still come from aurora' => [FetchAuroraPurchaseOrders::class, true],
     'suppliers still come from aurora'       => [FetchAuroraSuppliers::class, true],
@@ -32,10 +43,6 @@ it('only lets a departed organisation keep the fetchers it has no aiku replaceme
 ]);
 
 it('leaves an organisation that still follows aurora untouched', function () {
-    $organisation = createOrganisation();
-    config(['aurora.following_organisations' => ['aroma']]);
-    $organisation->update(['slug' => 'aroma']);
-
-    expect(auroraStillFeeds(FetchAuroraCustomers::class, $organisation))->toBeTrue()
-        ->and(auroraStillFeeds(FetchAuroraStockLocations::class, $organisation))->toBeTrue();
+    expect(auroraStillFeeds(FetchAuroraCustomers::class, organisationNamed('aroma')))->toBeTrue()
+        ->and(auroraStillFeeds(FetchAuroraStockLocations::class, organisationNamed('aroma')))->toBeTrue();
 });

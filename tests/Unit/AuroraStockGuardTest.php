@@ -4,7 +4,14 @@ use App\Actions\Transfers\Aurora\WithFetchStock;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use App\Transfers\SourceOrganisationService;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * This one genuinely needs rows: processOrgStock looks the org stock up before deciding.
+ * Everything runs inside a transaction that is rolled back, so the suite sees no trace of
+ * it — createOrganisation() is deliberately not used, because building the organisation the
+ * feature tests share from a unit test leaves InventoryTest unable to run.
+ */
 function auroraStockGuardHarness(): object
 {
     return new class () {
@@ -27,11 +34,22 @@ function auroraStockGuardHarness(): object
     };
 }
 
+beforeEach(function () {
+    DB::beginTransaction();
+});
+
+afterEach(function () {
+    DB::rollBack();
+});
+
 it('never lets aurora update an existing org stock, whichever organisation it belongs to', function (bool $aikuStockControl) {
+    $unique = uniqid();
+
+    // createOrganisation() is safe here only because the surrounding transaction is
+    // rolled back: creating the shared organisation from a unit test and leaving it behind
+    // is what breaks InventoryTest.
     $organisation = createOrganisation();
     $organisation->update(['is_aiku_stock_control' => $aikuStockControl]);
-    $unique   = uniqid();
-    $sourceId = 'aurora:guard-'.$unique;
 
     $stock = Stock::create([
         'group_id' => $organisation->group_id,
@@ -46,7 +64,7 @@ it('never lets aurora update an existing org stock, whichever organisation it be
         'stock_id'        => $stock->id,
         'slug'            => 'guard-org-stock-'.$unique,
         'code'            => 'GUARD-'.$unique,
-        'source_id'       => $sourceId,
+        'source_id'       => 'aurora:guard-'.$unique,
         'name'            => 'edited in aiku',
     ]);
 
@@ -54,8 +72,8 @@ it('never lets aurora update an existing org stock, whichever organisation it be
     $source->shouldReceive('getOrganisation')->andReturn($organisation);
 
     auroraStockGuardHarness()->run($source, $stock, [
-        'stock'     => ['source_id' => $sourceId, 'code' => $orgStock->code],
-        'org_stock' => ['name' => 'overwritten by aurora', 'source_id' => $sourceId],
+        'stock'     => ['source_id' => 'aurora:guard-'.$unique, 'code' => $orgStock->code],
+        'org_stock' => ['name' => 'overwritten by aurora', 'source_id' => 'aurora:guard-'.$unique],
     ]);
 
     expect($orgStock->refresh()->name)->toBe('edited in aiku');
