@@ -172,14 +172,44 @@ class ShowDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * Offered in the same spot the picking and packing buttons occupy, because that is where
+     * whoever is standing at the bench looks when they cannot act on the note. The padlock
+     * beside the picker's name is easy to miss and reads as a refusal rather than a way in.
+     */
+    public function getTakeOverAction(DeliveryNote $deliveryNote): array
+    {
+        return [
+            'type'    => 'button',
+            'style'   => 'tertiary',
+            'icon'    => 'fal fa-lock',
+            'label'   => __('Unlock to pick'),
+            'tooltip' => __('Assigned to somebody else. Click to take it over so you can pick and pack it'),
+            'key'     => 'take-over',
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note.temp-picker',
+                'parameters' => [
+                    'organisation' => $deliveryNote->organisation->slug,
+                    'shop'         => $deliveryNote->shop->slug,
+                    'deliveryNote' => $deliveryNote->slug,
+                ]
+            ]
+        ];
+    }
+
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
+        if (!$this->allowAction) {
+            return [$this->getTakeOverAction($deliveryNote)];
+        }
+
         $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
             ->where('is_handled', false)
             ->exists();
 
         $actions = [];
-        if (!$hasUnHandledItems && $this->allowAction) {
+        if (!$hasUnHandledItems) {
             if ($deliveryNote->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 $actions[] = [
                     'type'    => 'button',
@@ -482,7 +512,7 @@ class ShowDeliveryNote extends OrgAction
                         ]
                     ]
                 ]
-            ] : [],
+            ] : [$this->getTakeOverAction($deliveryNote)],
             DeliveryNoteStateEnum::PICKED => $this->getPickedActions($deliveryNote),
             DeliveryNoteStateEnum::PACKED => [$this->getPackedActions($deliveryNote)],
             DeliveryNoteStateEnum::FINALISED => [
