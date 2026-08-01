@@ -13,6 +13,16 @@ namespace Deployer;
 // fast prod hosts — only allows a slow command to finish instead of being killed.
 set('default_timeout', 2400);
 
+// Added on top of the -A and ControlMaster options deployer builds from
+// forward_agent/ssh_multiplexing. A task that runs silent for minutes (composer's
+// autoload dump, the anchor rsync) leaves the channel idle long enough to be
+// dropped, which surfaces as "exit code -1 (Unknown error)". 30s probes, giving up
+// after 10 minutes unanswered.
+set('ssh_arguments', [
+    '-o ServerAliveInterval=30',
+    '-o ServerAliveCountMax=20',
+]);
+
 set('update_code_strategy', 'clone');
 
 set('bin/php', function () {
