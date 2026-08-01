@@ -135,12 +135,21 @@ class IndexTimeZones
     }
 
     /**
+     * The short name for a timezone, "UK" rather than "Europe/London". The single source of
+     * truth for how a zone is named, so the footer clocks and the picker cannot drift apart.
+     */
+    public function placeFor(string $timezone): string
+    {
+        return self::ZONE_NICKNAMES[$timezone] ?? str_replace('_', ' ', Str::afterLast($timezone, '/'));
+    }
+
+    /**
      * Leads with the place, which is what people recognise: "UK · Europe · GMT+1" rather
      * than "GMT+01:00 Europe / London".
      */
     private function formatLabel(string $tz, int $offsetSeconds): string
     {
-        $place  = self::ZONE_NICKNAMES[$tz] ?? str_replace('_', ' ', Str::afterLast($tz, '/'));
+        $place  = $this->placeFor($tz);
         $offset = $this->formatGmtOffset($offsetSeconds);
 
         if (!Str::contains($tz, '/')) {

@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User\UI;
 
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -38,7 +39,8 @@ class GetLoggedUser
             'is_agent'     => $isAgent,
             'agent_id'     => $user->chatAgent?->id,
             'agent_shops'  => $agentShops,
-            'timezone'     => $user->timezone_name,
+            'timezone'       => $user->timezone_name,
+            'timezone_place' => IndexTimeZones::make()->placeFor($user->timezone_name),
             'settings' => [
                 'app_theme' => Arr::get($user->settings, 'app_theme'),
                 'hide_logo' => Arr::get($user->settings, 'hide_logo', false),

@@ -63,6 +63,7 @@ export const layoutStructure = {
         email: string,
         username: string,
         timezone: string | null,
+        timezone_place: string | null,
         settings: {
             app_theme?: string[]
             hide_logo?: boolean

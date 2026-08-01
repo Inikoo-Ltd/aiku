@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp;
 
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Dispatching\WaitingItems\GetCrmReturnedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
@@ -69,7 +70,12 @@ class GetFirstLoadProps
 
         // Set outside the cached props so changing the group's clocks does not need a recache of every user
         if ($user) {
-            data_set($props, 'layout.group.timezones', $user->group->world_clock_timezones);
+            data_set($props, 'layout.group.timezones', collect($user->group->world_clock_timezones)
+                ->map(fn (string $timezone) => [
+                    'timezone' => $timezone,
+                    'place'    => IndexTimeZones::make()->placeFor($timezone),
+                ])
+                ->all());
         }
 
 
