@@ -65,6 +65,14 @@ class IndexTransactions extends OrgAction
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('upcoming_transactions', 'transactions.id', '=', 'upcoming_transactions.transaction_id');
 
+        /*
+         * The line was charged at the price held on its historic asset, which is a snapshot taken
+         * when it was added. Reading the price off the product instead showed whatever it costs
+         * today, so repackaging something into an outer made every earlier order look as though
+         * it had been undercharged.
+         */
+        $query->leftJoin('historic_assets', 'transactions.historic_asset_id', '=', 'historic_assets.id');
+
         return $query->defaultSort('transactions.id')
             ->select([
                 'transactions.id',
@@ -90,8 +98,8 @@ class IndexTransactions extends OrgAction
                 'assets.name as asset_name',
                 'assets.type as asset_type',
                 'products.id as product_id',
-                'products.price as price',
-                'products.units as product_units',
+                DB::raw('COALESCE(historic_assets.price, products.price) as price'),
+                DB::raw('COALESCE(historic_assets.units, products.units) as product_units'),
                 'products.slug as product_slug',
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
