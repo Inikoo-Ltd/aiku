@@ -57,9 +57,9 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             $shippingAmount = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         }
 
-        $netAmount = $itemsNet + $shippingAmount + $chargesAmount - $order->amount_off;
+        $netAmount = round($itemsNet + $shippingAmount + $chargesAmount - $order->amount_off, 2);
 
-        $taxAmount   = $netAmount * $tax;
+        $taxAmount   = round($netAmount * $tax, 2);
         $totalAmount = $netAmount + $taxAmount;
         $grpNet      = $netAmount * $order->grp_exchange;
         $orgNet      = $netAmount * $order->org_exchange;

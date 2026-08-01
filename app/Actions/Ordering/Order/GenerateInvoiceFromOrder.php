@@ -194,9 +194,9 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $tax = $order->taxCategory->rate;
 
-        $netAmount = $itemsNet + $order->shipping_amount + $order->charges_amount - $order->amount_off;
+        $netAmount = round($itemsNet + $order->shipping_amount + $order->charges_amount - $order->amount_off, 2);
 
-        $taxAmount   = $netAmount * $tax;
+        $taxAmount   = round($netAmount * $tax, 2);
         $totalAmount = $netAmount + $taxAmount;
 
         return [
