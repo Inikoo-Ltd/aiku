@@ -1323,10 +1323,16 @@ test('UI show invoice navigation follows the bucket it was opened from', functio
         return $invoice->refresh();
     };
 
-    $newest = $makeInvoice('2026-07-20 10:00:00', InvoicePayStatusEnum::UNPAID);
-    $paid   = $makeInvoice('2026-07-19 12:00:00', InvoicePayStatusEnum::PAID);
-    $middle = $makeInvoice('2026-07-19 10:00:00', InvoicePayStatusEnum::UNPAID);
-    $oldest = $makeInvoice('2026-07-18 10:00:00', InvoicePayStatusEnum::UNPAID);
+    // Anchored to this month, not fixed dates. These only ever need to be ordered relative
+    // to each other, and a hardcoded date drifts into a neighbouring month as the calendar
+    // moves: 2026-07-18/19/20 sat harmlessly in July and on the first of August landed in
+    // now()->subMonth(), inflating the period totals another test in this file asserts on.
+    $anchor = now()->startOfMonth();
+
+    $newest = $makeInvoice($anchor->copy()->addHours(4)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
+    $paid   = $makeInvoice($anchor->copy()->addHours(3)->toDateTimeString(), InvoicePayStatusEnum::PAID);
+    $middle = $makeInvoice($anchor->copy()->addHours(2)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
+    $oldest = $makeInvoice($anchor->copy()->addHours(1)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
 
     $showRoute = fn ($invoice) => route('grp.org.shops.show.dashboard.invoices.show', [$this->organisation->slug, $this->shop->slug, $invoice->slug]);
 
@@ -2044,9 +2050,14 @@ test('UI show refund navigation walks refunds only', function () {
         return $refund->refresh();
     };
 
-    $newest = $makeRefund('2026-07-20 10:00:00');
-    $middle = $makeRefund('2026-07-19 10:00:00');
-    $oldest = $makeRefund('2026-07-18 10:00:00');
+    // Anchored to this month for the same reason as the invoice navigation test above:
+    // only the ordering matters, and a fixed date eventually drifts into a month some
+    // other test asserts totals on.
+    $anchor = now()->startOfMonth();
+
+    $newest = $makeRefund($anchor->copy()->addHours(3)->toDateTimeString());
+    $middle = $makeRefund($anchor->copy()->addHours(2)->toDateTimeString());
+    $oldest = $makeRefund($anchor->copy()->addHours(1)->toDateTimeString());
 
     get(route('grp.org.accounting.refunds.show', [$this->organisation->slug, $middle->slug]))->assertInertia(
         fn (AssertableInertia $page) => $page
