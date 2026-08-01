@@ -68,7 +68,14 @@ if [[ $DRY_RUN != 1 ]]; then
 fi
 
 echo "supervisor:"
+# Staging configs live in the same directory but name the staging user and its
+# /home/staging paths, and aiku-staging-inertia-ssr.conf declares the same
+# program name as the production one — installing them here would give a
+# production box a duplicate program pointing at a home that does not exist.
 for f in "$DEVOPS"/supervisor/aiku-*.conf; do
+  case "$(basename "$f")" in
+    aiku-staging-*) continue ;;
+  esac
   place "$f" "/etc/supervisor/conf.d/$(basename "$f")"
 done
 # Debian ships supervisor.service with KillMode=process, so a stop that outruns
