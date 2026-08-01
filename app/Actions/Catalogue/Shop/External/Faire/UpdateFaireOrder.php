@@ -204,6 +204,14 @@ class UpdateFaireOrder extends OrgAction
 
         $invoice = $order->invoices()->first();
         if ($invoice) {
+            /**
+             * Faire's discount has to be on both: CalculateInvoiceTotals deducts the invoice's
+             * own amount_off, and the order's is reasserted because everything above this point
+             * recalculates totals and must never be allowed to drop it.
+             */
+            $order->update(['amount_off' => $amountOff]);
+            $invoice->update(['amount_off' => $amountOff]);
+
             CalculateInvoiceTotals::run($invoice);
             $invoice->refresh();
             $invoice->update([
