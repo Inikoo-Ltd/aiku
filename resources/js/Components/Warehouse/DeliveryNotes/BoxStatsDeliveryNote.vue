@@ -588,18 +588,19 @@ function returnNoteRoute(returnDeliveryNote) {
                         </div>
 
                         <template v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker">
-                            <Button
-                                v-if="showLockButton()"
-                                @click="assignSelfTemporarily()"
-                                :loading="isLoadingSelfTemporarily"
-                                :label="allowActions ? trans('Unlocked') : trans('Unlock to pick')"
-                                :icon="allowActions ? faLockOpen : faLock"
-                                :type="allowActions ? 'tertiary' : 'negative'"
-                                size="xs"
-                                v-tooltip="allowActions
-                                    ? ctrans('You can work on this delivery note. Click again if your access runs out')
-                                    : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
-                            />
+                            <div v-if="showLockButton()" @click="assignSelfTemporarily()">
+                                <LoadingIcon v-if="isLoadingSelfTemporarily" />
+                                <FontAwesomeIcon
+                                    v-else
+                                    v-tooltip="allowActions
+                                        ? ctrans('You can work on this delivery note. Click again if your access runs out')
+                                        : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
+                                    class="cursor-pointer focus:outline-none"
+                                    :icon="allowActions ? faLockOpen : faLock"
+                                    :class="allowActions ? 'text-green-500' : 'text-red-500'"
+                                    fixed-width aria-hidden="true"
+                                />
+                            </div>
                             <Button @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
                         </template>
                     </div>
@@ -619,18 +620,19 @@ function returnNoteRoute(returnDeliveryNote) {
                         </div>
 
                         <template v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker">
-                            <Button
-                                v-if="showLockButton()"
-                                @click="assignSelfTemporarily()"
-                                :loading="isLoadingSelfTemporarily"
-                                :label="allowActions ? trans('Unlocked') : trans('Unlock to pick')"
-                                :icon="allowActions ? faLockOpen : faLock"
-                                :type="allowActions ? 'tertiary' : 'negative'"
-                                size="xs"
-                                v-tooltip="allowActions
-                                    ? ctrans('You can work on this delivery note. Click again if your access runs out')
-                                    : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
-                            />
+                            <div v-if="showLockButton()" @click="assignSelfTemporarily()">
+                                <LoadingIcon v-if="isLoadingSelfTemporarily" />
+                                <FontAwesomeIcon
+                                    v-else
+                                    v-tooltip="allowActions
+                                        ? ctrans('You can work on this delivery note. Click again if your access runs out')
+                                        : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
+                                    class="cursor-pointer focus:outline-none"
+                                    :icon="allowActions ? faLockOpen : faLock"
+                                    :class="allowActions ? 'text-green-500' : 'text-red-500'"
+                                    fixed-width aria-hidden="true"
+                                />
+                            </div>
                             <Button @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
                         </template>
                     </div>
