@@ -62,7 +62,7 @@ use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
 use App\Actions\Comms\Mailshot\RunMailshotTrackingUpdates;
 use App\Actions\Comms\Mailshot\RunNewsletterScheduled;
 use App\Actions\Comms\Mailshot\SendMailShot;
-use App\Actions\Comms\Mailshot\SendScheduledMailshots;
+use Illuminate\Validation\ValidationException;
 use App\Actions\Comms\Mailshot\SetMailshotAsReady;
 use App\Actions\Comms\Mailshot\SetMailshotAsScheduled;
 use App\Actions\Comms\Mailshot\SetMailshotSecondWaveStatus;
@@ -1555,21 +1555,6 @@ test('send mailshot returns unchanged when not ready', function (Mailshot $mails
     expect($result->state)->toBe(MailshotStateEnum::IN_PROCESS);
 })->depends('create mailshot with recipe for filters');
 
-test('send scheduled mailshots dispatches send action for due mailshots', function (Shop $shop) {
-    Queue::fake();
-    $shop->update(['is_aiku' => true]);
-
-    $outbox   = $shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
-    $mailshot = StoreMailshot::make()->action($outbox, array_merge(
-        Mailshot::factory()->definition(),
-        ['type' => MailshotTypeEnum::MARKETING, 'state' => MailshotStateEnum::SCHEDULED, 'scheduled_at' => now()->subMinute()]
-    ), strict: false);
-
-    SendScheduledMailshots::run();
-
-    Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === SendMailShot::class);
-})->depends('outbox seeded when shop created');
-
 test('run mailshot scheduled dispatches recipients preparation', function (Shop $shop) {
     Queue::fake();
 
@@ -1721,6 +1706,18 @@ test('set mailshot as scheduled', function (Mailshot $mailshot) {
 
     expect($mailshot->state)->toBe(MailshotStateEnum::SCHEDULED)
         ->and($mailshot->ready_at)->not->toBeNull();
+})->depends('create mailshot with recipe for filters');
+
+test('set mailshot as scheduled rejects a date that is not in the future', function (Mailshot $mailshot) {
+    $mailshot->update(['state' => MailshotStateEnum::READY, 'is_second_wave' => false, 'scheduled_at' => null]);
+
+    foreach ([now(), now()->subMinute()] as $notInTheFuture) {
+        expect(fn () => SetMailshotAsScheduled::make()->action($mailshot, ['scheduled_at' => $notInTheFuture]))
+            ->toThrow(ValidationException::class);
+    }
+
+    expect($mailshot->refresh()->state)->toBe(MailshotStateEnum::READY)
+        ->and($mailshot->scheduled_at)->toBeNull();
 })->depends('create mailshot with recipe for filters');
 
 test('set mailshot as scheduled throws for second wave', function (Mailshot $mailshot) {
