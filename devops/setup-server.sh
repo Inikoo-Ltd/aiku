@@ -67,6 +67,16 @@ echo "supervisor:"
 for f in "$DEVOPS"/supervisor/aiku-*.conf; do
   place "$f" "/etc/supervisor/conf.d/$(basename "$f")"
 done
+# Debian ships supervisor.service with KillMode=process, so a stop that outruns
+# systemd's timeout SIGKILLs supervisord alone and reparents the horizon master
+# to init; the next supervisord then starts a second one and every queue runs
+# twice. TimeoutStopSec is deliberately above the programs' stopwaitsecs so
+# workers still get their full drain window and systemd never cuts in first.
+if [[ -f /lib/systemd/system/supervisor.service || -f /etc/systemd/system/supervisor.service ]]; then
+  place "$DEVOPS/systemd/supervisor.conf" /etc/systemd/system/supervisor.service.d/aiku.conf
+else
+  echo "  skipped drop-in (no supervisor unit on this host)"
+fi
 
 echo "varnish:"
 place "$DEVOPS/varnish/default.vcl" /etc/varnish/default.vcl
