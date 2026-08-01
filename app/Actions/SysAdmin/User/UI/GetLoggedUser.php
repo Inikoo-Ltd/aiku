@@ -40,7 +40,7 @@ class GetLoggedUser
             'agent_id'     => $user->chatAgent?->id,
             'agent_shops'  => $agentShops,
             'timezone'       => $user->timezone_name,
-            'timezone_place' => IndexTimeZones::make()->placeFor($user->timezone_name),
+            'timezone_place' => IndexTimeZones::make()->clockNameFor($user->timezone_name),
             'settings' => [
                 'app_theme' => Arr::get($user->settings, 'app_theme'),
                 'hide_logo' => Arr::get($user->settings, 'hide_logo', false),

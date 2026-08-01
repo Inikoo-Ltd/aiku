@@ -135,12 +135,38 @@ class IndexTimeZones
     }
 
     /**
+     * Names used on the footer clocks, which are coarser than the picker's on purpose: the
+     * offices in Spain and Slovakia keep the same clock, so one "Europe" covers both.
+     */
+    private const CLOCK_NAMES = [
+        'Europe/London' => 'UK',
+        'Asia/Makassar' => 'Bali',
+    ];
+
+    /**
      * The short name for a timezone, "UK" rather than "Europe/London". The single source of
      * truth for how a zone is named, so the footer clocks and the picker cannot drift apart.
      */
     public function placeFor(string $timezone): string
     {
         return self::ZONE_NICKNAMES[$timezone] ?? str_replace('_', ' ', Str::afterLast($timezone, '/'));
+    }
+
+    /**
+     * The name for a clock in the footer. Continental Europe reads as "Europe" rather than
+     * naming whichever one of several countries on that offset the zone happens to be.
+     */
+    public function clockNameFor(string $timezone): string
+    {
+        if (isset(self::CLOCK_NAMES[$timezone])) {
+            return self::CLOCK_NAMES[$timezone];
+        }
+
+        if (Str::startsWith($timezone, 'Europe/')) {
+            return 'Europe';
+        }
+
+        return $this->placeFor($timezone);
     }
 
     /**

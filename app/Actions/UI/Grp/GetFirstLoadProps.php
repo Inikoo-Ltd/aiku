@@ -73,7 +73,7 @@ class GetFirstLoadProps
             data_set($props, 'layout.group.timezones', collect($user->group->world_clock_timezones)
                 ->map(fn (string $timezone) => [
                     'timezone' => $timezone,
-                    'place'    => IndexTimeZones::make()->placeFor($timezone),
+                    'place'    => IndexTimeZones::make()->clockNameFor($timezone),
                 ])
                 ->all());
         }
