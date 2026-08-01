@@ -587,7 +587,7 @@ watch(
 				type="primary" />
 		</template>
 
-		<template #button-cancel="{ action }">
+		<template #wrapped-cancel="{ action }">
 			<ModalConfirmationDelete
 				:routeDelete="action.route"
 				:title="trans('Are you sure you want to cancel the delivery?')"
@@ -601,7 +601,11 @@ watch(
 				noIcon="x"
 				:cancelLabel="trans('No, keep delivery')">
 				<template #default="{ isOpenModal, changeModel }">
-					<Button @click="changeModel" :label="action.label" :type="action.style" />
+					<Button
+						@click="changeModel"
+						:label="action.label"
+						:type="action.style"
+						class="whitespace-nowrap" />
 				</template>
 			</ModalConfirmationDelete>
 		</template>

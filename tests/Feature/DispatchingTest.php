@@ -137,6 +137,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use Illuminate\Support\Facades\Cache;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -1780,6 +1782,33 @@ test('cancel delivery note', function () {
 
     $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::run($deliveryNote, $this->user, true);
     expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
+});
+
+test('only dispatch supervisors can cancel a delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $user = $this->adminGuest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+
+    $user->syncRoles([RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    actingAs($user->refresh());
+    patch(route('grp.models.delivery_note.state.cancel', $deliveryNote->id));
+    expect($deliveryNote->refresh()->state)->not->toBe(DeliveryNoteStateEnum::CANCELLED);
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles([RolesEnum::getRoleName('dispatch-supervisor', $this->warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    actingAs($user->refresh());
+    patch(route('grp.models.delivery_note.state.cancel', $deliveryNote->id));
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    actingAs($user->refresh());
 });
 
 test('UI show delivery note richer states and tabs', function () {
