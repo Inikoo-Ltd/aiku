@@ -103,23 +103,21 @@ class EditProfileSettings
                         "label"  => __("Timezone"),
                         "icon"   => "fal fa-clock",
                         "fields" => [
-                            "timezones"  =>  [
-                                "type"    => "select_infinite",
-                                "label"   => __("Timezone"),
-                                "information"   => __("Select your timezone to show in the footer"),
-                                "options"   => collect(Arr::get($user->settings, 'timezones', []))
-                                    ->map(fn ($tz) => ['label' => $tz, 'value' => $tz])
-                                    ->values()
-                                    ->toArray(),
-                                "mode"      => "multiple",
-                                "fetchRoute"    => [
-                                    "name"       => "grp.json.timezones",
+                            "timezone"  =>  [
+                                "type"        => "select_infinite",
+                                "label"       => __("Your timezone"),
+                                "information" => __("Times across Aiku are shown in this timezone. Defaults to the timezone of the organisation you work for"),
+                                "options"     => [
+                                    ['label' => $user->timezone_name, 'value' => $user->timezone_name],
                                 ],
-                                "valueProp" => "value",
-                                "labelProp" => "label",
-                                "required" => false,
-                                "value"   => Arr::get($user->settings, 'timezones')
-                            ]
+                                "fetchRoute"  => [
+                                    "name" => "grp.json.timezones",
+                                ],
+                                "valueProp"   => "value",
+                                "labelProp"   => "label",
+                                "required"    => false,
+                                "value"       => $user->timezone_name,
+                            ],
                         ],
                     ],
                 ],

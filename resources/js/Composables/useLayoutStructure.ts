@@ -61,8 +61,10 @@ export const layoutStructure = {
         id: number,
         email: string,
         username: string,
+        timezone: string | null,
         settings: {
-            timezones: string[]
+            app_theme?: string[]
+            hide_logo?: boolean
         }
     },
     notifications: [] as Notification[],

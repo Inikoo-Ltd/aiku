@@ -341,6 +341,61 @@ test('set user employed in organisation', function (User $user) {
     return $user;
 })->depends('SetUserAuthorisedModels command');
 
+test('picking the language the account already uses still rebuilds the cached ui props', function (User $user) {
+    $isolatedUser = User::find($user->id);
+    setPermissionsTeamId($isolatedUser->group_id);
+    \Illuminate\Support\Facades\Session::forget('reloadLayout');
+
+    \App\Actions\UI\Profile\UpdateProfile::make()->handle($isolatedUser, ['language_id' => $isolatedUser->language_id]);
+
+    expect(\Illuminate\Support\Facades\Session::get('reloadLayout'))->toBe('1');
+
+    \Illuminate\Support\Facades\Session::forget('reloadLayout');
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+})->depends('SetUserAuthorisedModels command');
+
+test('locale follows the users saved language, not a stale session value', function (User $user) {
+    $spanish = \App\Models\Helpers\Language::where('code', 'es')->firstOrFail();
+    $english = \App\Models\Helpers\Language::where('code', 'en')->firstOrFail();
+
+    $user->update(['language_id' => $spanish->id]);
+    session(['aiku_language' => 'en']);
+
+    $this->actingAs($user);
+
+    expect(new \App\Http\Middleware\SetLocale()->getLocale())->toBe('es');
+
+    $user->update(['language_id' => $english->id]);
+})->depends('SetUserAuthorisedModels command');
+
+test('user timezone falls back to the organisation they work for', function (User $user) {
+    $organisation = $user->authorisedOrganisations()->first();
+    $employee     = Employee::factory()->create([
+        'user_id'         => $user->id,
+        'organisation_id' => $organisation->id,
+        'group_id'        => $user->group_id,
+        'state'           => 'working',
+    ]);
+    $user->employees()->syncWithoutDetaching([$employee->id => ['group_id' => $user->group_id]]);
+
+    $user->refresh();
+
+    expect($user->timezone_id)->toBeNull()
+        ->and($user->timezone_name)->toBe($organisation->timezone->name);
+
+    return $user;
+})->depends('set user employed in organisation');
+
+test('user timezone prefers their own choice over the organisation one', function (User $user) {
+    $auckland = \App\Models\Helpers\Timezone::where('name', 'Pacific/Auckland')->firstOrFail();
+
+    $user->update(['timezone_id' => $auckland->id]);
+
+    expect($user->refresh()->timezone_name)->toBe('Pacific/Auckland');
+
+    $user->update(['timezone_id' => null]);
+})->depends('user timezone falls back to the organisation they work for');
+
 test('set user employed in organisation command', function (User $user) {
     $this->artisan('user:set-employed-organisation', [
         'user' => $user->slug,

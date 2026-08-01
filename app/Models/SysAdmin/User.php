@@ -17,6 +17,7 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\OutBoxHasSubscriber;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\Helpers\Timezone;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\JobPosition;
 use App\Models\Inventory\Warehouse;
@@ -272,6 +273,38 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     public function employedInOrganisation(): BelongsTo
     {
         return $this->belongsTo(Organisation::class, 'employed_in_organisation_id');
+    }
+
+    public function timezone(): BelongsTo
+    {
+        return $this->belongsTo(Timezone::class);
+    }
+
+    private ?string $resolvedTimezoneName = null;
+
+    /**
+     * The timezone this user's clock should be shown in: their own choice when they
+     * have made one, otherwise the timezone of the organisation they work for.
+     *
+     * Resolved rather than stored so users follow their organisation without a backfill.
+     */
+    public function getTimezoneNameAttribute(): string
+    {
+        if ($this->timezone_id) {
+            return $this->timezone->name;
+        }
+
+        // ponytail: memoised per instance only; cache across requests if the join shows up in profiling
+        if ($this->resolvedTimezoneName === null) {
+            $organisation = $this->employees()
+                ->with('organisation.timezone')
+                ->orderBy('employees.organisation_id')
+                ->first()?->organisation;
+
+            $this->resolvedTimezoneName = $organisation?->timezone?->name ?? config('app.timezone');
+        }
+
+        return $this->resolvedTimezoneName;
     }
 
 

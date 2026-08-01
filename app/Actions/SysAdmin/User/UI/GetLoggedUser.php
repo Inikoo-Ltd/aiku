@@ -38,8 +38,8 @@ class GetLoggedUser
             'is_agent'     => $isAgent,
             'agent_id'     => $user->chatAgent?->id,
             'agent_shops'  => $agentShops,
+            'timezone'     => $user->timezone_name,
             'settings' => [
-                'timezones' => Arr::get($user->settings, 'timezones'),
                 'app_theme' => Arr::get($user->settings, 'app_theme'),
                 'hide_logo' => Arr::get($user->settings, 'hide_logo', false),
             ]
