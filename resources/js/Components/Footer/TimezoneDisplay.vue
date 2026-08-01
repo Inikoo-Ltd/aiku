@@ -1,28 +1,45 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, inject } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, inject } from 'vue'
 import { formatInTimeZone } from 'date-fns-tz'
+import { trans } from 'laravel-vue-i18n'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 
 
 const layout = inject('layout', layoutStructure)
 
-const times = ref<Record<string, string>>({})
+const now = ref(new Date())
 
-const updateTimes = () => {
-    const now = new Date()
-    const updated: Record<string, string> = {}
-    for (const tz of layout?.user?.settings?.timezones || []) {
-        //  { "Asia/Makassar": "15:04" }
-        updated[tz] = formatInTimeZone(now, tz, 'HH:mm')
-    }
-    times.value = updated
+/** IANA names nobody recognises, shown as the places we actually work from. */
+const zoneNicknames: Record<string, string> = {
+    'Asia/Makassar': 'KL/Bali',
+    'Asia/Kuala_Lumpur': 'KL/Bali',
+    'Europe/Bratislava': 'Slovakia',
+    'Europe/Madrid': 'Spain',
 }
+
+const zoneLabel = (zone: string) => zoneNicknames[zone] ?? zone.split('/').pop()?.replace(/_/g, ' ') ?? zone
+
+const ownZone = computed<string | null>(() => layout?.user?.timezone ?? null)
+
+const otherZones = computed<string[]>(() =>
+    (layout?.group?.timezones || []).filter((zone: string) => zone !== ownZone.value)
+)
+
+const ownTime = computed(() => (ownZone.value ? formatInTimeZone(now.value, ownZone.value, 'HH:mm') : null))
+
+const times = computed<Record<string, string>>(() =>
+    Object.fromEntries(otherZones.value.map((zone) => [zone, formatInTimeZone(now.value, zone, 'HH:mm')]))
+)
 
 let intervalId: number | undefined
 
+const tick = () => {
+    now.value = new Date()
+}
+
 onMounted(() => {
-    updateTimes()
-    intervalId = window.setInterval(updateTimes, 60000)
+    tick()
+    intervalId = window.setInterval(tick, 60000)
 })
 
 onBeforeUnmount(() => {
@@ -31,15 +48,17 @@ onBeforeUnmount(() => {
     }
 });
 
-watch(() => layout?.user?.settings?.timezones, (newVal) => {
-    updateTimes()
-})
+watch(() => layout?.group?.timezones, tick)
 </script>
 
 <template>
-    <div v-if="layout?.user?.settings?.timezones?.length" class="flex gap-x-6 text-xs h-full items-center">
-        <p v-for="(time, zone) in times" :key="zone" class="tabular-nums">
-            {{ zone.split('/')[1] }}: {{ time }}
+    <div v-if="ownZone || otherZones.length" class="flex gap-x-6 text-xs h-full items-center">
+        <p v-if="ownZone" class="tabular-nums text-slate-200"
+            v-tooltip="trans('Your timezone') + ': ' + ownZone">
+            {{ zoneLabel(ownZone) }}: {{ ownTime }}
+        </p>
+        <p v-for="(time, zone) in times" :key="zone" class="tabular-nums" v-tooltip="zone">
+            {{ zoneLabel(zone as string) }}: {{ time }}
         </p>
     </div>
 </template>

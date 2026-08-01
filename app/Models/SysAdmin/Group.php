@@ -106,6 +106,7 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -304,6 +305,24 @@ class Group extends Authenticatable implements Auditable, HasMedia
         'settings'        => '{}',
         'extra_languages' => '{}'
     ];
+
+    public const DEFAULT_WORLD_CLOCK_TIMEZONES = [
+        'Europe/London',
+        'Europe/Bratislava',
+        'Asia/Makassar',
+    ];
+
+    /**
+     * Timezones shown as clocks in the footer, for everybody in the group.
+     *
+     * @return array<int, string>
+     */
+    public function getWorldClockTimezonesAttribute(): array
+    {
+        $timezones = Arr::get($this->settings, 'timezones');
+
+        return is_array($timezones) && $timezones !== [] ? array_values($timezones) : self::DEFAULT_WORLD_CLOCK_TIMEZONES;
+    }
 
     public function getSlugOptions(): SlugOptions
     {

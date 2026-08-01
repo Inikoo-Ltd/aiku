@@ -1528,6 +1528,19 @@ test('update group settings action', function (Group $group) {
         ->and(Arr::get($group->settings, 'printnode.print_by_printnode'))->toBeTrue();
 })->depends('create group');
 
+test('group world clocks default until the group sets its own', function (Group $group) {
+    expect($group->world_clock_timezones)->toBe(Group::DEFAULT_WORLD_CLOCK_TIMEZONES);
+
+    $chosen = ['Europe/Madrid', 'Asia/Kuala_Lumpur'];
+    $group  = UpdateGroupSettings::make()->action($group, ['timezones' => $chosen]);
+
+    expect($group->refresh()->world_clock_timezones)->toBe($chosen);
+
+    $group->update(['settings' => Arr::except($group->settings, 'timezones')]);
+
+    expect($group->refresh()->world_clock_timezones)->toBe(Group::DEFAULT_WORLD_CLOCK_TIMEZONES);
+})->depends('create group');
+
 test('update user password action', function (User $user) {
     UpdateUserPassword::make()->action($user, ['password' => 'a-new-password']);
     expect(Hash::check('a-new-password', $user->fresh()->password))->toBeTrue();

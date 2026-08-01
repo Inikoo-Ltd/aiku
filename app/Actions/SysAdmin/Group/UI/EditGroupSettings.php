@@ -109,6 +109,29 @@ class EditGroupSettings extends OrgAction
                         ],
                     ],
                      [
+                        'label'  => __('Clocks'),
+                        'icon'   => 'fa-light fa-clock',
+                        'fields' => [
+                            'timezones' => [
+                                'type'        => 'select_infinite',
+                                'label'       => __('Timezones shown in the footer'),
+                                'information' => __('These clocks are shown to everybody in the group'),
+                                'options'     => collect($group->world_clock_timezones)
+                                    ->map(fn ($timezone) => ['label' => $timezone, 'value' => $timezone])
+                                    ->values()
+                                    ->toArray(),
+                                'mode'        => 'multiple',
+                                'fetchRoute'  => [
+                                    'name' => 'grp.json.timezones',
+                                ],
+                                'valueProp'   => 'value',
+                                'labelProp'   => 'label',
+                                'required'    => false,
+                                'value'       => $group->world_clock_timezones,
+                            ],
+                        ],
+                    ],
+                    [
                         'label'  => __('Page Builder'),
                         'icon'   => 'fa-light fa-pager',
                         'fields' => [
