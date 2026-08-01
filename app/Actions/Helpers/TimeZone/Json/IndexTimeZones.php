@@ -91,18 +91,45 @@ class IndexTimeZones
         return response()->json($this->handle($q));
     }
 
+    /**
+     * Places we work from, named the way people here refer to them rather than by the city
+     * the IANA zone happens to be named after. The IANA name stays searchable via the value.
+     */
+    private const CITY_NICKNAMES = [
+        'Asia/Makassar'      => 'Bali',
+        'Asia/Kuala_Lumpur'  => 'Kuala Lumpur',
+        'Europe/Bratislava'  => 'Bratislava (Slovakia)',
+    ];
+
+    /**
+     * Leads with the city, which is what people recognise: "London · Europe · GMT+1"
+     * rather than "GMT+01:00 Europe / London".
+     */
     private function formatLabel(string $tz, int $offsetSeconds): string
     {
-        $prettyTz = str_replace(['_', '/'], [' ', ' / '], $tz);
-        return $this->formatGmtOffset($offsetSeconds).' '.$prettyTz;
+        $city   = self::CITY_NICKNAMES[$tz] ?? str_replace('_', ' ', Str::afterLast($tz, '/'));
+        $offset = $this->formatGmtOffset($offsetSeconds);
+
+        if (!Str::contains($tz, '/')) {
+            return $city.' · '.$offset;
+        }
+
+        return $city.' · '.str_replace('_', ' ', Str::before($tz, '/')).' · '.$offset;
     }
 
     private function formatGmtOffset(int $offsetSeconds): string
     {
-        $sign   = $offsetSeconds >= 0 ? '+' : '-';
-        $abs    = abs($offsetSeconds);
-        $hours  = intdiv($abs, 3600);
+        if ($offsetSeconds === 0) {
+            return 'GMT';
+        }
+
+        $sign    = $offsetSeconds >= 0 ? '+' : '-';
+        $abs     = abs($offsetSeconds);
+        $hours   = intdiv($abs, 3600);
         $minutes = intdiv($abs % 3600, 60);
-        return sprintf('GMT%s%02d:%02d', $sign, $hours, $minutes);
+
+        return $minutes
+            ? sprintf('GMT%s%d:%02d', $sign, $hours, $minutes)
+            : sprintf('GMT%s%d', $sign, $hours);
     }
 }
