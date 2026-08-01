@@ -5,13 +5,29 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+namespace App\Actions\SysAdmin\User;
 
-return new class () extends Migration {
-    public function up(): void
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class BackfillUserTimezones
+{
+    use AsAction;
+
+    public string $commandSignature = 'users:backfill-timezones';
+
+    public string $commandDescription = 'Give any user without a timezone the one of the organisation they work for';
+
+    /**
+     * Idempotent: only ever touches users whose timezone_id is null, so it is safe to run
+     * again after an import creates users outside StoreUser.
+     *
+     * @return array{from_organisation: int, from_app_default: int}
+     */
+    public function handle(): array
     {
-        DB::statement(
+        $fromOrganisation = DB::update(
             "UPDATE users u
              SET timezone_id = organisation_timezone.timezone_id
              FROM (
@@ -29,16 +45,26 @@ return new class () extends Migration {
                AND u.timezone_id IS NULL"
         );
 
-        DB::statement(
+        $fromAppDefault = DB::update(
             'UPDATE users
              SET timezone_id = (SELECT id FROM timezones WHERE name = ? LIMIT 1)
              WHERE timezone_id IS NULL',
             [config('app.timezone')]
         );
+
+        return [
+            'from_organisation' => $fromOrganisation,
+            'from_app_default'  => $fromAppDefault,
+        ];
     }
 
-    public function down(): void
+    public function asCommand(Command $command): int
     {
-        DB::table('users')->update(['timezone_id' => null]);
+        $backfilled = $this->handle();
+
+        $command->info($backfilled['from_organisation'].' users given their organisation timezone');
+        $command->info($backfilled['from_app_default'].' users given '.config('app.timezone').', no organisation found');
+
+        return 0;
     }
-};
+}
