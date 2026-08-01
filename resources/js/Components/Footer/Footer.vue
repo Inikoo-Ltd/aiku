@@ -53,11 +53,12 @@ const deploymentTooltip = computed(() => {
                         {{ layout?.app?.last_deployment_version ?? trans('unreleased') }}
                     </Link>
                     <img class="h-3 select-none hidden lg:inline pl-1 pr-1" src="/art/logo-yellow.svg" alt="aiku" />
-                    <span class="hidden lg:inline">
+                    <span class="hidden lg:inline whitespace-nowrap"
+                        v-tooltip="trans('With help from the teams in the UK, Spain and Slovakia')">
                         {{ trans('Made with') }}
                         <FontAwesomeIcon icon='fas fa-heart' class="text-pink-500 mx-1" fixed-width aria-hidden='true' />
                         {{ trans('and') }}
-                        <FontAwesomeIcon icon='fas fa-computer-classic' class="mx-1" fixed-width aria-hidden='true' /> {{ 'in KL|ES|SK|Sheffield|Bali' }}
+                        <FontAwesomeIcon icon='fas fa-computer-classic' class="mx-1" fixed-width aria-hidden='true' /> {{ 'in KL|Bali' }}
                     </span>
                 </div>
                 
