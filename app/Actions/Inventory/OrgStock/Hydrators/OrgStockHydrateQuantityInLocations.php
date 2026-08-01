@@ -10,6 +10,8 @@ namespace App\Actions\Inventory\OrgStock\Hydrators;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Models\Inventory\OrgStock;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -19,6 +21,8 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
     use AsAction;
 
     public string $jobQueue = 'hydrators-slave';
+
+    public string $commandSignature = 'hydrate:org_stocks_quantity_in_locations {organisations?* : Organisation slugs, all of them when omitted}';
 
     public function getJobUniqueId(int|null $orgStockId): string
     {
@@ -88,4 +92,42 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
     }
 
 
+
+    public function asCommand(Command $command): int
+    {
+        $query = OrgStock::query()->select('org_stocks.id');
+
+        if ($slugs = $command->argument('organisations')) {
+            $organisationIds = Organisation::whereIn('slug', $slugs)->pluck('id');
+
+            if ($organisationIds->count() !== count($slugs)) {
+                $command->error('Unknown organisation slug in: '.implode(', ', $slugs));
+
+                return 1;
+            }
+
+            $query->whereIn('organisation_id', $organisationIds);
+        }
+
+        $total = (clone $query)->count();
+        $command->info("Rehydrating $total org stocks");
+
+        $bar = $command->getOutput()->createProgressBar($total);
+        $bar->setFormat('debug');
+        $bar->start();
+
+        // Chunk by id: handle() writes to the rows being walked, so an offset paginated
+        // chunk would skip some of them.
+        $query->chunkById(1000, function ($orgStocks) use ($bar) {
+            foreach ($orgStocks as $orgStock) {
+                $this->handle($orgStock->id);
+                $bar->advance();
+            }
+        }, 'org_stocks.id', 'id');
+
+        $bar->finish();
+        $command->line('');
+
+        return 0;
+    }
 }
