@@ -6,8 +6,9 @@
 # varnish and supervisor must already be present. Package install is a rare
 # one-time step done by hand; the recurring pain this solves is config drift.
 #
-# Role: production app server (boro-shaped). Staging/helio differ in backend
-# IPs and supervisor program names — review before running elsewhere.
+# Role: production app server. Per host differences (program names, Octane
+# sizing) come from APP_HOST/OCTANE_* in server.env, so the same tree renders
+# boro or helio. Staging still differs in backend IPs — review before running.
 #
 # Usage (as root, on the target box, from a repo checkout):
 #     sudo ./devops/setup-server.sh              # apply
@@ -32,6 +33,9 @@ set -a; source "$ENV_FILE"; set +a
 : "${HAPROXY_STATS_PASSWORD:?set it in $ENV_FILE}"
 : "${VARNISH_HOST_BORO:?set it in $ENV_FILE}"
 : "${VARNISH_HOST_HELIO:?set it in $ENV_FILE}"
+: "${APP_HOST:?set it in $ENV_FILE — boro or helio}"
+: "${OCTANE_WORKERS:?set it in $ENV_FILE}"
+: "${OCTANE_MAX_REQUESTS:?set it in $ENV_FILE}"
 INSTALL_SCHEDULER="${INSTALL_SCHEDULER:-0}"
 
 # place <src> <dst> [mode]
