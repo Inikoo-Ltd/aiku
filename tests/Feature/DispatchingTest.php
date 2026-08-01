@@ -2457,3 +2457,16 @@ test('a temporary claim on a delivery note slides forward while it is being used
 
     $this->travelBack();
 });
+
+test('resuming a blocked delivery note also brings its order out of blocked', function () {
+    $deliveryNote = makeDeliveryNote($this);
+
+    // The state P9KXCX8FAB was left in: both note and order blocked, nothing actually waiting
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+    $this->order->update(['state' => OrderStateEnum::HANDLING_BLOCKED]);
+
+    $deliveryNote = StartHandlingDeliveryNote::make()->action($deliveryNote->refresh(), $this->user);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($this->order->refresh()->state)->toBe(OrderStateEnum::HANDLING);
+});
