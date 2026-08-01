@@ -198,6 +198,44 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    /**
+     * A blocked note waits on items somebody has to decide about, and the state is cleared by
+     * whoever resolves them. If they are resolved another way, by the item being removed from
+     * the order rather than picked, nothing re-evaluates the block and the note is left with
+     * no way forward: the state had no actions at all, so the warehouse could only report it.
+     * Offered only once nothing is genuinely waiting, so a real block still holds.
+     */
+    public function getHandlingBlockedActions(DeliveryNote $deliveryNote): array
+    {
+        $stillWaiting = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
+            ->where(function ($query) {
+                $query->where('has_waiting_crm', true)
+                    ->orWhere('has_waiting_warehouse', true);
+            })
+            ->exists();
+
+        if ($stillWaiting) {
+            return [];
+        }
+
+        return [
+            [
+                'type'    => 'button',
+                'style'   => 'save',
+                'tooltip' => __('Nothing is waiting on this delivery note any more, carry on picking it'),
+                'label'   => __('Resume picking'),
+                'key'     => 'resume-picking',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.handling',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ]
+            ]
+        ];
+    }
+
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
         if (!$this->allowAction) {
@@ -500,6 +538,7 @@ class ShowDeliveryNote extends OrgAction
                 ],
             ],
             DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
+            DeliveryNoteStateEnum::HANDLING_BLOCKED => $this->getHandlingBlockedActions($deliveryNote),
             DeliveryNoteStateEnum::PACKING => $this->allowAction ? [
                 [
                     'type'    => 'button',
@@ -932,7 +971,9 @@ class ShowDeliveryNote extends OrgAction
          */
         $showChangePickerPacker = $deliveryNote->pickingSessions()->doesntExist();
 
-        $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
+        // Never on a marketplace order: the customer changes it there and we follow, see SetAsWaitingCrm
+        $allowWaiting = $deliveryNote->shop->type != ShopTypeEnum::EXTERNAL
+            && (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
 
         if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
