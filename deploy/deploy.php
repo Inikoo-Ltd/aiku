@@ -131,11 +131,11 @@ task('deploy:set-release', function () {
 
 desc('Sync octane anchor');
 task('deploy:sync-octane-anchor', function () {
-    // --info=progress2 instead of -q: this rsync can run silent for 5+ minutes on the
-    // staging HDD, and an idle ssh channel gets dropped mid-task (deployer then reports
-    // "exit code -1"). The progress line keeps the connection busy. One updating line,
-    // not a per-file listing.
-    run("rsync -ahH --info=progress2 --delete {{release_path}}/ {{deploy_path}}/anchor/octane");
+    // Runs silent for 16+ minutes on the staging HDD (158k files, ~670kB/s). The ssh
+    // keepalives set at the top of this file are what keeps the channel from being
+    // dropped underneath it — don't add progress output for that, it costs ~100k lines
+    // of CI log per deploy.
+    run("rsync -ahHq --delete {{release_path}}/ {{deploy_path}}/anchor/octane");
 });
 
 desc('Restart the NightOwl agent so it picks up the synced anchor');
