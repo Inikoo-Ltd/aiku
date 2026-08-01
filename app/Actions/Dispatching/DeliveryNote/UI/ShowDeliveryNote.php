@@ -911,7 +911,14 @@ class ShowDeliveryNote extends OrgAction
             $model = __('Replacement Delivery Note');
         }
 
-        $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
+        /**
+         * Dropshipping was excluded in March, most likely because nine in ten of those notes
+         * are picked in a picking session and take their picker from it. That left the tenth,
+         * picked on its own, with no way to be reassigned, and it blocked the warehouse on
+         * notes stuck with an absent picker. Reassigning is allowed everywhere again;
+         * a note in a session still follows the session's picker.
+         */
+        $showChangePickerPacker = true;
 
         $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
 
