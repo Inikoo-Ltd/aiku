@@ -13,6 +13,8 @@ use App\Enums\Transfers\Fetch\FetchTypeEnum;
 use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use App\Transfers\AuroraOrganisationService;
+use App\Transfers\WowsbarOrganisationService;
 use App\Models\Transfers\FetchStack;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +25,16 @@ class FetchAuroraAction extends FetchAction
 
     public string $jobQueue = 'aurora';
     public int $jobTimeout = 60 * 60 * 12;
+
+    protected bool $forcedSourceFetch = false;
+
+    public function getOrganisationSource(Organisation $organisation): AuroraOrganisationService|WowsbarOrganisationService|null
+    {
+        $organisationSource = parent::getOrganisationSource($organisation);
+        $organisationSource?->setForcedFetch($this->forcedSourceFetch);
+
+        return $organisationSource;
+    }
 
     /**
      * An organisation that has left Aurora only accepts the handful of fetchers it still
@@ -42,11 +54,14 @@ class FetchAuroraAction extends FetchAction
 
     public function processOrganisation(Command $command, Organisation $organisation): int
     {
-        // -s <source_id> is a person naming one record to pull, the way a straggling
-        // order gets fetched by hand. Nothing schedules it, so it stays available for
-        // every fetcher: the allowlist is there to stop Aurora pushing wholesale, not to
-        // stop us reaching for a single record on purpose.
-        $forcedSourceId = $command->hasOption('source_id') ? $command->option('source_id') : null;
+        // Two separate intents, deliberately. -s names one record to pull and nothing
+        // schedules it, so it lifts the allowlist and lets the fetcher run for an
+        // organisation that has left Aurora. On its own that is harmless: the per shop
+        // is_aiku gate still refuses to touch a record aiku already owns. --force is the
+        // one that overwrites, and it stays something you ask for out loud, the way
+        // editing force_fetch in Aurora used to be.
+        $forcedSourceId          = $command->hasOption('source_id') ? $command->option('source_id') : null;
+        $this->forcedSourceFetch = $command->hasOption('force') && (bool)$command->option('force');
 
         if (!$forcedSourceId && !$this->auroraStillFeeds($organisation)) {
             $command->line('skipped '.$command->getName().' for '.$organisation->slug.': organisation no longer follows Aurora');
