@@ -20,6 +20,8 @@ use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
 use App\Actions\Accounting\InvoiceCategory\HydrateInvoiceCategories;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\InvoiceTransaction\RefundTaxTransactions;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
@@ -48,6 +50,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Models\Helpers\TaxCategory;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
@@ -2394,4 +2397,37 @@ test('invoice categories index uses time series aggregation', function () {
 
     expect($result->total())->toBeGreaterThanOrEqual(1)
         ->and(collect($result->items())->firstWhere('id', $invoiceCategory->id)->amount)->not->toBeNull();
+});
+
+test('a tax only refund gives back exactly the tax the invoice charged', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['tax_category_id' => TaxCategory::where('rate', 0.2)->firstOrFail()->id]);
+
+    // Three of these lines shed a rounding fraction and one gains it, so the tax of each
+    // line added up is a penny short of the tax charged on the total of 1901.04.
+    foreach ([260.00, 260.00, 260.00, 59.28, 353.92, 353.92, 353.92] as $netAmount) {
+        StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+            'date'            => now(),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 1,
+            'gross_amount'    => $netAmount,
+            'net_amount'      => $netAmount,
+        ]);
+    }
+
+    $invoice = CalculateInvoiceTotals::make()->action($invoice->refresh());
+
+    expect((float) $invoice->net_amount)->toBe(1901.04)
+        ->and((float) $invoice->tax_amount)->toBe(380.21);
+
+    $refund = RefundTaxTransactions::make()->handle($invoice)->refresh();
+
+    expect((float) $refund->tax_amount)->toBe(-380.21)
+        ->and((float) $refund->total_amount)->toBe(-380.21)
+        ->and(round($refund->invoiceTransactions->sum('tax_amount'), 2))->toBe(380.21);
 });
