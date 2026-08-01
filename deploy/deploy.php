@@ -353,6 +353,19 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 
     /*
+     * The port is baked into the bundle at build time from VITE_INERTIA_SSR_PORT
+     * (resources/js/ssr-iris.js), and staging does not use production's port, so
+     * read it from the release .env rather than assuming 13714.
+     */
+    $ssrPort = trim(run(
+        "cd {{release_path}} && (grep -E '^VITE_INERTIA_SSR_PORT=' .env || true)"
+        ." | head -1 | cut -d= -f2 | tr -d '\"'"
+    ));
+    if ($ssrPort === '') {
+        $ssrPort = '13714';
+    }
+
+    /*
      * Always verify the SSR server answers, even when no restart was needed:
      * supervisor can report RUNNING while the port is dead, and a daemon that
      * died between deploys would otherwise stay dead through every
@@ -360,22 +373,22 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
      */
     $health = run(
         "bash -c 'for i in \$(seq 1 15); do "
-        ."curl -fsS -m 2 http://127.0.0.1:13714/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
+        ."curl -fsS -m 2 http://127.0.0.1:$ssrPort/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
         ."sleep 2; done; echo DEAD; exit 0'"
     );
     if (!str_contains($health, 'OK')) {
         run("bash -c 'sudo /usr/bin/supervisorctl restart inertia-ssr-production || true'");
         $health = run(
             "bash -c 'for i in \$(seq 1 15); do "
-            ."curl -fsS -m 2 http://127.0.0.1:13714/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
+            ."curl -fsS -m 2 http://127.0.0.1:$ssrPort/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
             ."sleep 2; done; echo DEAD; exit 0'"
         );
     }
     writeln('SSR health on '.currentHost()->getAlias().': '.$health);
     if (!str_contains($health, 'OK')) {
-        throw new \RuntimeException('Inertia SSR server is not answering on 127.0.0.1:13714 on host '.currentHost()->getAlias());
+        throw new \RuntimeException('Inertia SSR server is not answering on 127.0.0.1:'.$ssrPort.' on host '.currentHost()->getAlias());
     }
-})->select('env=prod');
+})->select('env=prod|staging');
 
 set('keep_releases', 25);
 
