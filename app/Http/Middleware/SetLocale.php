@@ -31,32 +31,32 @@ class SetLocale
     }
 
 
+    /**
+     * For a signed in user the language stored against their account is the source of truth.
+     * The session and cookie are only a fallback for guests: preferring them meant a language
+     * change made anywhere other than this browser session was ignored until the cookie aged out.
+     */
     public function getLocale(): string
     {
+        /** @var User $user */
+        if ($user = auth()->user()) {
+            /** @var Language $language */
+            $language = Language::find($user->language_id);
+
+            return $language?->code ?: 'en';
+        }
 
         try {
             $locale = session()->get('aiku_language', Cookie::get('aiku_language'));
         } catch (NotFoundExceptionInterface|ContainerExceptionInterface) {
             $locale = null;
         }
-        if ($locale) {
-            return $locale;
-        }
 
-        /** @var User $user */
-        if ($user = auth()->user()) {
-            /** @var Language $language */
-            $language = Language::find($user->language_id);
-            $locale   = $language->code;
-        } else {
+        if (!$locale) {
             $locale = substr(locale_accept_from_http(Arr::get($_SERVER, 'HTTP_ACCEPT_LANGUAGE', 'en')), 0, 2);
         }
 
-        if (!$locale) {
-            $locale = 'en';
-        }
-
-        return $locale;
+        return $locale ?: 'en';
     }
 
 }

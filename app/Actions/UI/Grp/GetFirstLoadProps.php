@@ -70,7 +70,25 @@ class GetFirstLoadProps
         return $props;
     }
 
+    /**
+     * These props are cached per language, so they must be built in that language rather than
+     * in whatever locale the request that happens to warm the cache is running under. Recaches
+     * triggered from the console, from queues, or by another user would otherwise store one
+     * user's language under another's cache key.
+     */
     public function getUserUiProps(?User $user, Language $language): array
+    {
+        $localeOfCaller = App::getLocale();
+        App::setLocale($language->code);
+
+        try {
+            return $this->buildUserUiProps($user, $language);
+        } finally {
+            App::setLocale($localeOfCaller);
+        }
+    }
+
+    private function buildUserUiProps(?User $user, Language $language): array
     {
         $availableLanguages = Language::where('status', true)->pluck('id')->toArray();
 
@@ -81,7 +99,7 @@ class GetFirstLoadProps
 
         return [
             'localeData' => [
-                'locale_iso'            => getIsoLocale(App::getLocale()),
+                'locale_iso'            => getIsoLocale($language->code),
                 'language'              => [
                     'id'          => $language->id,
                     'code'        => $language->code,
