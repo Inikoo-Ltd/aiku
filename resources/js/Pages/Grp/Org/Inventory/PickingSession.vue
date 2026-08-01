@@ -9,7 +9,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { useTabChange } from "@/Composables/tab-change"
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, inject } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableDeliveryNoteItemInPickingSessions from "@/Components/Warehouse/PickingSessions/TableDeliveryNoteItemInPickingSessions.vue"
 import TablePalletReturnInPickingSessions from "@/Components/Warehouse/PickingSessions/TablePalletReturnInPickingSessions.vue"
@@ -23,6 +23,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { notify } from "@kyvg/vue3-notification"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 
 const props = defineProps<{
@@ -51,11 +52,18 @@ const props = defineProps<{
 }>()
 
 
+const layout = inject("layout", layoutStructure)
+
 const isModalChangePicker = ref(false)
 const selectedPicker = ref(props.picker)
 const isSavingPicker = ref(false)
 
 // Every note in the session follows this picker, so one change moves the whole run at once
+const takeSessionMyself = () => {
+    selectedPicker.value = { id: layout?.user?.id, contact_name: layout?.user?.username }
+    onUpdateSessionPicker()
+}
+
 const onUpdateSessionPicker = () => {
     if (!selectedPicker.value?.id || !props.routes?.update) {
         notify({ title: trans("Something went wrong"), text: trans("Picker is not selected"), type: "error" })
@@ -266,6 +274,16 @@ const handleModalSuccess = () => {
             <div class="mx-auto font-semibold text-lg">{{ trans("Select picker") }}</div>
             <div class="text-sm text-gray-500 mt-2">
                 {{ trans('Everything in this picking session will be picked by the person you choose.') }}
+            </div>
+            <div class="w-full flex justify-end mt-2">
+                <Button
+                    v-if="picker?.id != layout?.user?.id"
+                    @click="takeSessionMyself"
+                    :loading="isSavingPicker"
+                    :disabled="isSavingPicker"
+                    :label="trans('I will do the picking myself')"
+                    type="tertiary"
+                    size="xs" />
             </div>
             <div class="mt-4 w-full">
                 <PureMultiselectInfiniteScroll
