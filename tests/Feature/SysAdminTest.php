@@ -378,10 +378,12 @@ test('user timezone falls back to the organisation they work for', function (Use
     ]);
     $user->employees()->syncWithoutDetaching([$employee->id => ['group_id' => $user->group_id]]);
 
-    $user->refresh();
+    // StoreUser gives every user a timezone; clearing it exercises the fallback behind it
+    expect($user->refresh()->timezone_id)->not->toBeNull();
 
-    expect($user->timezone_id)->toBeNull()
-        ->and($user->timezone_name)->toBe($organisation->timezone->name);
+    $user->update(['timezone_id' => null]);
+
+    expect($user->refresh()->timezone_name)->toBe($organisation->timezone->name);
 
     return $user;
 })->depends('set user employed in organisation');
