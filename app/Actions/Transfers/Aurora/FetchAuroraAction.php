@@ -42,7 +42,13 @@ class FetchAuroraAction extends FetchAction
 
     public function processOrganisation(Command $command, Organisation $organisation): int
     {
-        if (!$this->auroraStillFeeds($organisation)) {
+        // -s <source_id> is a person naming one record to pull, the way a straggling
+        // order gets fetched by hand. Nothing schedules it, so it stays available for
+        // every fetcher: the allowlist is there to stop Aurora pushing wholesale, not to
+        // stop us reaching for a single record on purpose.
+        $forcedSourceId = $command->hasOption('source_id') ? $command->option('source_id') : null;
+
+        if (!$forcedSourceId && !$this->auroraStillFeeds($organisation)) {
             $command->line('skipped '.$command->getName().' for '.$organisation->slug.': organisation no longer follows Aurora');
 
             return 0;
