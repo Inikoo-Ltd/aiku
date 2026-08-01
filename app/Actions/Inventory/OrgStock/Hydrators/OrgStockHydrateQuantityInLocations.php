@@ -43,7 +43,14 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
 
         $quantityAvailable = $quantityInLocations - $orgStock->quantity_in_submitted_orders - $orgStock->quantity_to_be_picked;
 
-        $quantityAvailable = $quantityAvailable - $orgStock->source_quantity_in_submitted_orders - $orgStock->source_quantity_to_be_picked;
+        // The source_ columns mirror Aurora's own reservations and only Aurora's stock
+        // locations fetch writes them. Once an organisation runs its stock control in
+        // aiku that fetch no longer runs, so the mirrors freeze at whatever Aurora last
+        // reserved and would withhold that quantity forever. aiku's own
+        // quantity_in_submitted_orders and quantity_to_be_picked already cover it.
+        if (!$orgStock->organisation->is_aiku_stock_control) {
+            $quantityAvailable = $quantityAvailable - $orgStock->source_quantity_in_submitted_orders - $orgStock->source_quantity_to_be_picked;
+        }
 
 
         if ($quantityAvailable < 0) {
