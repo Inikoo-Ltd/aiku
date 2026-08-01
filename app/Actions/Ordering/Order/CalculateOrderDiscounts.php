@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\Traits\WithGiftOptOut;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
@@ -55,6 +56,15 @@ class CalculateOrderDiscounts implements ShouldBeUnique
      */
     public function handle(Order $order, bool $onlyIfInBasket = false): Order
     {
+        /**
+         * External shops are Faire, and Faire owns the pricing of its own orders: the amounts,
+         * the discount and the tax all come from its payload. Such an order carries no Aiku
+         * offers, so this would compute an amount_off of zero and overwrite what Faire sent.
+         */
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL) {
+            return $order;
+        }
+
         if (in_array($order->state, [
             OrderStateEnum::CANCELLED,
             OrderStateEnum::DISPATCHED,

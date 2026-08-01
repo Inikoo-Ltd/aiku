@@ -204,11 +204,6 @@ class UpdateFaireOrder extends OrgAction
 
         $invoice = $order->invoices()->first();
         if ($invoice) {
-            $order->update([
-                'amount_off' => $amountOff,
-            ]);
-
-
             CalculateInvoiceTotals::run($invoice);
             $invoice->refresh();
             $invoice->update([

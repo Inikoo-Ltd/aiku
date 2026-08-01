@@ -1216,6 +1216,21 @@ describe('calculate order discounts', function () {
         expect((float)$transaction->net_amount)->toBe(80.0);
     });
 
+    test('CalculateOrderDiscounts leaves an external shop order alone, Faire owns its pricing', function () {
+        $order = Order::latest('id')->first();
+        $originalType = $order->shop->type;
+
+        $order->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL]);
+        $order->update(['amount_off' => 9.24]);
+
+        CalculateOrderDiscounts::run($order->refresh());
+
+        // Faire sent the discount; recalculating from Aiku's offers would zero it
+        expect((float)$order->refresh()->amount_off)->toBe(9.24);
+
+        $order->shop->update(['type' => $originalType]);
+    });
+
     test('suspend all active offers', function () {
         foreach (Offer::where('state', OfferStateEnum::ACTIVE)->get() as $offer) {
             SuspendOffer::run($offer);
