@@ -22,11 +22,13 @@ library.add(faChevronLeft, faChevronRight)
 const props = defineProps<{
     fieldValue: {
         id?: string
+        product?: {
+            id?: number
+        }
         recommendation_scope?: {
             department_id?: number
             sub_department_id?: number
             family_id?: number
-            exclude_product_id?: number
         }
         settings?: {
             per_row?: {
@@ -77,7 +79,10 @@ const fetchProductTrends = async () => {
             }
         )
 
-        listProducts.value = response.data.data
+        const currentProductId = props.fieldValue?.product?.id
+        listProducts.value = response.data.data.filter(
+            (product: ProductHit) => product.id !== currentProductId
+        )
 
         console.log(`LTrends Internal (${response.data.data?.length}): `, response.data.data)
     } catch (error: any) {

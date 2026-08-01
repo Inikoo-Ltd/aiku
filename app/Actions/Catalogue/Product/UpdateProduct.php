@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
+use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -351,6 +352,8 @@ class UpdateProduct extends OrgAction
             $product->updateQuietly([
                 'price_updated_at' => now()
             ]);
+
+            BreakShopPricesCache::run($product->shop_id);
         }
 
         if (!$this->bulkPriceUpdate && $oldHistoricProduct != $product->current_historic_asset_id) {
