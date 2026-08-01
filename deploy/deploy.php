@@ -125,6 +125,11 @@ task('deploy:build', function () {
 
 desc('Set release');
 task('deploy:set-release', function () {
+    // sed -i replaces the shared .env symlink with a per-release regular file (the
+    // symlink is left behind as .env~). Deliberate, do not "fix" with
+    // --follow-symlinks: it is what lets a live release be tuned in place
+    // (horizon workers and the like) while shared/.env stays the baseline the next
+    // deploy resets to. The cost is that shared/.env edits land one deploy later.
     run("cd {{release_path}} && sed -i~ '/^RELEASE=/s/=.*/=\"{{release_semver}}\"/' .env   ");
 });
 
