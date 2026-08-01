@@ -2785,3 +2785,72 @@ test('finish and update volume gr offer from master', function () {
     $category->refresh();
     expect($category->has_gr_vol_discount)->toBeFalse();
 });
+
+test('repair aurora submitted transaction snapshots', function () {
+    $basketOrder       = StoreOrder::make()->action($this->customer, []);
+    $basketTransaction = StoreTransaction::make()->action($basketOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 1]);
+    $basketTransaction->update([
+        'state'     => TransactionStateEnum::SUBMITTED,
+        'source_id' => '1:12345',
+    ]);
+
+    $inFlightCustomer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $inFlightOrder       = StoreOrder::make()->action($inFlightCustomer, []);
+    $inFlightTransaction = StoreTransaction::make()->action($inFlightOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 2]);
+    SubmitOrder::make()->action($inFlightOrder);
+    $inFlightTransaction->refresh();
+    $inFlightTransaction->update([
+        'submitted_at'                => null,
+        'submitted_quantity_ordered'  => 0,
+        'submitted_gross_amount'      => null,
+        'submitted_net_amount'        => null,
+        'submitted_discount_factor'   => 1,
+        'submitted_offers_data'       => [],
+        'has_discount_when_submitted' => false,
+        'current_discount_factor'     => 0.75,
+        'net_amount'                  => 150,
+    ]);
+
+    $raceVictimCustomer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $raceVictimOrder       = StoreOrder::make()->action($raceVictimCustomer, []);
+    $raceVictimTransaction = StoreTransaction::make()->action($raceVictimOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 3]);
+    SubmitOrder::make()->action($raceVictimOrder);
+    $raceVictimTransaction->refresh();
+    $raceVictimTransaction->update([
+        'state'                       => TransactionStateEnum::CREATING,
+        'source_id'                   => '1:12346',
+        'submitted_at'                => null,
+        'submitted_quantity_ordered'  => 0,
+        'submitted_gross_amount'      => null,
+        'submitted_net_amount'        => null,
+        'submitted_discount_factor'   => 1,
+        'submitted_offers_data'       => [],
+        'has_discount_when_submitted' => false,
+    ]);
+
+    $this->artisan('repair:aurora_submitted_transaction_snapshots --dry_run')->assertSuccessful();
+    $basketTransaction->refresh();
+    expect($basketTransaction->state)->toBe(TransactionStateEnum::SUBMITTED->value);
+
+    $this->artisan('repair:aurora_submitted_transaction_snapshots')->assertSuccessful();
+
+    $basketTransaction->refresh();
+    $inFlightTransaction->refresh();
+
+    $raceVictimTransaction->refresh();
+    expect($raceVictimTransaction->state)->toBe(TransactionStateEnum::SUBMITTED->value)
+        ->and($raceVictimTransaction->status)->toBe(TransactionStatusEnum::PROCESSING->value)
+        ->and($raceVictimTransaction->submitted_at)->not->toBeNull()
+        ->and((float)$raceVictimTransaction->submitted_quantity_ordered)->toBe(3.0)
+        ->and($basketTransaction->state)->toBe(TransactionStateEnum::CREATING->value)
+        ->and($inFlightTransaction->submitted_at)->not->toBeNull()
+        ->and((float)$inFlightTransaction->submitted_quantity_ordered)->toBe(2.0)
+        ->and((float)$inFlightTransaction->submitted_net_amount)->toBe(150.0)
+        ->and((float)$inFlightTransaction->submitted_discount_factor)->toEqualWithDelta(0.75, 0.00001)
+        ->and($inFlightTransaction->has_discount_when_submitted)->toBeTrue();
+
+    SubmitOrder::make()->action($basketOrder->refresh());
+    $basketTransaction->refresh();
+    expect($basketTransaction->submitted_at)->not->toBeNull()
+        ->and((float)$basketTransaction->submitted_quantity_ordered)->toBe(1.0);
+});
