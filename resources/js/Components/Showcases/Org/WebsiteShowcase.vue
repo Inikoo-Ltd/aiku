@@ -268,7 +268,7 @@ const links = computed(() => {
                             </template>
                         </ModalConfirmationDelete>
 
-                        <ButtonWithLink v-if="luigi_data?.luigisbox_tracker_id"
+                        <ButtonWithLink v-if="luigi_data?.luigisbox_tracker_id && savedSearchModel !== 'internal'"
                             :routeTarget="{
                                 name: 'grp.models.website_luigi.reindex',
                                 parameters: {

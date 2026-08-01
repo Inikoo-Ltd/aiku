@@ -68,6 +68,12 @@ trait WithLuigis
             $website = $parent->website;
         }
 
+        if (!$website->usesLuigiSearch()) {
+            Log::info('Luigi request skipped, website '.$website->slug.' uses internal search');
+
+            return [];
+        }
+
         if (!$website->migrated) {
             abort(404, 'Website not migrated');
         }

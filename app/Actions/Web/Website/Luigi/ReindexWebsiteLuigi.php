@@ -40,6 +40,12 @@ class ReindexWebsiteLuigi implements ShouldBeUnique
         Log::info('Running ReindexWebsiteLuigi');
         $command?->info("Reindexing website ".$website->domain);
 
+        if (!$website->usesLuigiSearch()) {
+            $command?->info("Skipped, website uses internal search");
+
+            return;
+        }
+
         $accessToken = $this->getAccessToken($website);
         if (count($accessToken) < 2) {
             Log::error('Luigis Box access token is not configured properly');

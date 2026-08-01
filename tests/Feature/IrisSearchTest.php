@@ -142,6 +142,18 @@ test('iris search click endpoint records the click once', function () {
         ->and($log->clicked_at->equalTo($firstClickedAt))->toBeTrue();
 });
 
+test('luigi actions skip websites on internal search', function () {
+    $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'luigi'])]);
+    expect($this->website->refresh()->usesLuigiSearch())->toBeTrue();
+
+    $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'internal'])]);
+    expect($this->website->refresh()->usesLuigiSearch())->toBeFalse();
+
+    $webpage = \App\Models\Web\Webpage::where('website_id', $this->website->id)->first();
+    $result  = \App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData::run($webpage->id);
+    expect($result['status'])->toBe('skipped');
+});
+
 test('iris search only returns hits flagged is_in_website', function () {
     [, $product] = createProduct($this->shop);
     $product->update(['is_for_sale' => true]);

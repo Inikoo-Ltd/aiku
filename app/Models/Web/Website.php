@@ -188,6 +188,11 @@ class Website extends Model implements Auditable, HasMedia
     use InShop;
     use InteractsWithMedia;
 
+    public function usesLuigiSearch(): bool
+    {
+        return data_get($this->settings, 'iris_search_model', 'luigi') !== 'internal';
+    }
+
     protected $casts = [
         'type'                    => WebsiteTypeEnum::class,
         'data'                    => 'array',
