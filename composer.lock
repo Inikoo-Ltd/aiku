@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e0696415854be9f384dfef5a6782eb5a",
+    "content-hash": "74457548390f12ff14726a94ddecdb09",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -9291,16 +9291,16 @@
         },
         {
             "name": "nightowl/agent",
-            "version": "v1.4.1",
+            "version": "v2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lemed99/nightowl-agent.git",
-                "reference": "996635b44e9ad80672b5dc83b4dcc80e3adbf5c4"
+                "reference": "58a0a4fc68847af888667d5d19749f15a599f69f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lemed99/nightowl-agent/zipball/996635b44e9ad80672b5dc83b4dcc80e3adbf5c4",
-                "reference": "996635b44e9ad80672b5dc83b4dcc80e3adbf5c4",
+                "url": "https://api.github.com/repos/lemed99/nightowl-agent/zipball/58a0a4fc68847af888667d5d19749f15a599f69f",
+                "reference": "58a0a4fc68847af888667d5d19749f15a599f69f",
                 "shasum": ""
             },
             "require": {
@@ -9349,7 +9349,7 @@
             ],
             "support": {
                 "issues": "https://github.com/lemed99/nightowl-agent/issues",
-                "source": "https://github.com/lemed99/nightowl-agent/tree/v1.4.1"
+                "source": "https://github.com/lemed99/nightowl-agent/tree/v2.1.0"
             },
             "funding": [
                 {
@@ -9357,7 +9357,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2026-07-20T17:01:27+00:00"
+            "time": "2026-07-31T20:58:49+00:00"
         },
         {
             "name": "nikic/php-parser",
