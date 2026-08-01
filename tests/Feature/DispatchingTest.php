@@ -19,6 +19,7 @@ use App\Actions\Dispatching\BatchCode\UpdateBatchCode;
 use App\Actions\Dispatching\Box\StoreBox;
 use App\Actions\Dispatching\Box\UpdateBox;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
+use App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
@@ -2390,4 +2391,40 @@ test('UI show pallet return navigation orders the new bucket by its latest activ
             ->where('navigation.next.label', $inProcess->reference)
             ->etc()
     );
+});
+
+test('a temporary claim on a delivery note slides forward while it is being used', function () {
+    $deliveryNote = new DeliveryNote();
+    $deliveryNote->forceFill([
+        'id'             => 999999,
+        'state'          => DeliveryNoteStateEnum::HANDLING,
+        'picker_user_id' => null,
+        'packer_user_id' => null,
+    ]);
+
+    $checker = new class () {
+        use \App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
+
+        public function check(DeliveryNote $deliveryNote): bool
+        {
+            return $this->canHandleDeliveryNote($deliveryNote);
+        }
+    };
+
+    // Nobody is assigned and nothing has been claimed
+    expect($checker->check($deliveryNote))->toBeFalse();
+
+    SetTempPickerToDeliveryNote::claimDeliveryNoteHandling($deliveryNote);
+    $claimedUntil = session('temp_handling_delivery_note.expires_at');
+
+    // Picking a real note runs long; using the claim has to push its expiry out
+    $this->travel(30)->minutes();
+    expect($checker->check($deliveryNote))->toBeTrue()
+        ->and(session('temp_handling_delivery_note.expires_at')->gt($claimedUntil))->toBeTrue();
+
+    // Left alone for longer than the window, it lapses
+    $this->travel(120)->minutes();
+    expect($checker->check($deliveryNote))->toBeFalse();
+
+    $this->travelBack();
 });

@@ -20,6 +20,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
 use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\UI\WithBucketNavigation;
@@ -66,6 +67,7 @@ class ShowDeliveryNote extends OrgAction
     use GetPlatformLogo;
     use WithBucketNavigation;
     use WithOrderForbiddenCountryCheck;
+    use WithDeliveryNoteHandler;
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
@@ -844,18 +846,7 @@ class ShowDeliveryNote extends OrgAction
         }
         $this->countriesAddressData ??= GetAddressData::run();
 
-        $handler = $deliveryNote->picker_user_id;
-
-        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
-            $handler = $deliveryNote->packer_user_id;
-        }
-
-        $allowAction = ($handler && $handler == request()->user()->id);
-
-        if (!$allowAction) {
-            $tempHandler = session('temp_handling_delivery_note') ?? [];
-            $allowAction = $deliveryNote->id == data_get($tempHandler, 'value') && now()->lt(data_get($tempHandler, 'expires_at'));
-        }
+        $allowAction = $this->canHandleDeliveryNote($deliveryNote);
 
         $this->allowAction = $allowAction;
 
