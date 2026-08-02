@@ -25,7 +25,10 @@ class SyncStockTradeUnits
     public function handle(Stock $stock, array $tradeUnitsData): Stock
     {
         $stock->tradeUnits()->sync($tradeUnitsData);
+        $stock->unsetRelation('tradeUnits');
+        $stock->unsetRelation('orgStocks');
         $stock = ModelHydrateSingleTradeUnits::run($stock);
+        $stock->update(['packed_in' => $this->packedIn($stock)]);
 
         foreach ($stock->tradeUnits as $tradeUnit) {
             TradeUnitsHydrateStocks::dispatch($tradeUnit);
@@ -45,5 +48,23 @@ class SyncStockTradeUnits
         }
 
         return $stock;
+    }
+
+    /**
+     * Same rule as OrgStockHydratePackedIn: only a single trade unit with a clean
+     * integer quantity defines how the stock is packed, anything else is unknown.
+     */
+    private function packedIn(Stock $stock): ?int
+    {
+        if ($stock->tradeUnits->count() != 1) {
+            return null;
+        }
+
+        $packedIn = $stock->tradeUnits->first()->pivot->quantity;
+        if (floor($packedIn) != $packedIn || $packedIn <= 0 || $packedIn > 50000) {
+            return null;
+        }
+
+        return (int) $packedIn;
     }
 }

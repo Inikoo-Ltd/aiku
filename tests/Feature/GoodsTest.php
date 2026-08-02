@@ -13,6 +13,7 @@ use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\Stock\HydrateStocks;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
 use App\Actions\Goods\StockFamily\HydrateStockFamily;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -912,4 +913,22 @@ test('stock and stock family indexes use time series aggregation', function () {
 
     expect($indexStocks->handle($this->group, bucket: 'all')->total())->toBeGreaterThanOrEqual(1)
         ->and(\App\Actions\Goods\StockFamily\UI\IndexStockFamilies::make()->handle($this->group, bucket: 'all')->total())->toBeGreaterThanOrEqual(0);
+});
+
+test('changing stock trade units recomputes packed_in on the stock and its org stocks', function () {
+    $stocks   = createStocks($this->group);
+    $stock    = $stocks[0];
+    createOrgStocks($this->organisation, [$stock]);
+    $tradeUnit = $stock->tradeUnits()->first();
+
+    SyncStockTradeUnits::run($stock, [
+        $tradeUnit->id => ['quantity' => 6]
+    ]);
+
+    $stock->refresh();
+    $orgStock = $this->organisation->orgStocks()->where('stock_id', $stock->id)->first();
+
+    expect($stock->packed_in)->toBe(6)
+        ->and($orgStock->packed_in)->toBe(6)
+        ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(6.0);
 });
