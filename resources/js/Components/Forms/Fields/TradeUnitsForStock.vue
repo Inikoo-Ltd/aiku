@@ -22,8 +22,20 @@ const props = defineProps<{
     fieldData: {
         fetchRoute: routeType
         impactRoute?: routeType
+        productsContext?: Record<number, { code: string; shop_code: string; quantity: number }[]>
     }
 }>()
+
+// A product picks quantity/packed_in packs of this SKU; a remainder means either the
+// product's pack size or this SKU's packing is wrong, which is exactly what to show.
+const productPick = (productQuantity: number, packedIn: number | string) => {
+    const packs = Number(packedIn)
+    if (!packs || packs <= 0) return null
+    return {
+        label: `${productQuantity} / ${packs}`,
+        isPartial: productQuantity % packs !== 0,
+    }
+}
 
 const rows = ref<Row[]>(
     (props.form[props.fieldName] ?? []).map((row: Row) => ({
@@ -101,6 +113,31 @@ const removeRow = (index: number) => rows.value.splice(index, 1)
                 <FontAwesomeIcon :icon="faTrash" class="h-4 w-4" />
             </button>
         </div>
+
+        <!-- Context: products selling these trade units, and what this packing means for their picks -->
+        <template v-for="(row, index) in rows" :key="'products-' + index">
+            <div v-if="row.id && fieldData.productsContext?.[row.id]?.length"
+                class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+                <div class="font-medium text-gray-600">
+                    {{ trans('Products on') }} {{ row.code ?? trans('this trade unit') }} ({{ fieldData.productsContext[row.id].length }})
+                    — {{ trans('pick as trade units / pack of :qty', { qty: row.quantity }) }}
+                </div>
+                <div class="mt-1 max-h-32 overflow-y-auto" style="scrollbar-width: thin">
+                    <div v-for="product in fieldData.productsContext[row.id]" :key="product.shop_code + product.code"
+                        class="flex gap-2 items-baseline">
+                        <span class="text-gray-700">{{ product.code }}</span>
+                        <span class="text-gray-400">{{ product.shop_code }}</span>
+                        <span v-if="productPick(product.quantity, row.quantity)"
+                            :class="productPick(product.quantity, row.quantity)!.isPartial ? 'text-amber-600 font-medium' : 'text-gray-500'">
+                            {{ productPick(product.quantity, row.quantity)!.label }}
+                            <FontAwesomeIcon v-if="productPick(product.quantity, row.quantity)!.isPartial"
+                                :icon="faExclamationTriangle" class="text-amber-500"
+                                v-tooltip="trans('Not a whole number of packs: either this product\'s pack size or this SKU packing is wrong')" />
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </template>
 
         <button
             type="button"

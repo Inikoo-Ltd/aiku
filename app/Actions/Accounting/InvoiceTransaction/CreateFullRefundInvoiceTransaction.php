@@ -21,7 +21,7 @@ class CreateFullRefundInvoiceTransaction extends OrgAction
         if ($refund->is_tax_only) {
             if ($invoiceTransaction->tax_amount > 0) {
                 $invoiceTransaction = StoreRefundInvoiceTransaction::make()->action($refund, $invoiceTransaction, [
-                    'tax_amount' => ($invoiceTransaction->net_amount * $refund->taxCategory->rate)
+                    'tax_amount' => ($invoiceTransaction->net_amount * $invoiceTransaction->taxCategory->rate)
                 ]);
             }
         } else {

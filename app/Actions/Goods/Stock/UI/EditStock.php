@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -112,6 +113,13 @@ class EditStock extends OrgAction
                                         'name'     => $tradeUnit->name,
                                         'quantity' => $tradeUnit->pivot->quantity,
                                     ])->values(),
+
+                                    /*
+                                     * The other leg of the triangle: which products sell these trade
+                                     * units and at what pack size, so whoever edits how the SKU is
+                                     * packed can judge whether the SKU or the product is the wrong one.
+                                     */
+                                    'productsContext' => $this->getProductsContext($stock),
                                 ],
                             ],
                         ],
@@ -127,6 +135,35 @@ class EditStock extends OrgAction
                 ]
             ]
         );
+    }
+
+    /**
+     * @return array<int, array<int, array{code: string, shop_code: string, quantity: float}>> keyed by trade unit id
+     */
+    private function getProductsContext(Stock $stock): array
+    {
+        return DB::table('model_has_trade_units')
+            ->join('products', 'products.id', '=', 'model_has_trade_units.model_id')
+            ->join('shops', 'shops.id', '=', 'products.shop_id')
+            ->where('model_has_trade_units.model_type', 'Product')
+            ->whereIn('model_has_trade_units.trade_unit_id', $stock->tradeUnits->pluck('id'))
+            ->whereNull('products.deleted_at')
+            ->where('products.is_for_sale', true)
+            ->select([
+                'model_has_trade_units.trade_unit_id',
+                'products.code',
+                'shops.code as shop_code',
+                'model_has_trade_units.quantity',
+            ])
+            ->orderBy('products.code')
+            ->get()
+            ->groupBy('trade_unit_id')
+            ->map(fn ($products) => $products->map(fn ($product) => [
+                'code'      => $product->code,
+                'shop_code' => $product->shop_code,
+                'quantity'  => (float) $product->quantity,
+            ])->values()->all())
+            ->toArray();
     }
 
     public function getBreadcrumbs(Stock $stock, string $routeName, array $routeParameters): array

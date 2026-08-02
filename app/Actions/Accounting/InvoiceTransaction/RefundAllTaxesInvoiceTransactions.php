@@ -33,8 +33,6 @@ class RefundAllTaxesInvoiceTransactions extends OrgAction
         /** @var Invoice $originalInvoice */
         $originalInvoice = $refund->originalInvoice;
 
-        $taxRate = $originalInvoice->taxCategory->rate;
-
         $totalTaxesRefund = $refund->invoiceTransactions()->sum('tax_amount');
         $totalTaxes = round($originalInvoice->tax_amount - abs($totalTaxesRefund), 2);
 
@@ -43,7 +41,7 @@ class RefundAllTaxesInvoiceTransactions extends OrgAction
             $transactions = $originalInvoice->invoiceTransactions->where('net_amount', '>', 0)->values();
             $tasks = [];
 
-            $taxAmounts = $transactions->map(fn (InvoiceTransaction $transaction) => round($transaction->net_amount * $taxRate, 2));
+            $taxAmounts = $transactions->map(fn (InvoiceTransaction $transaction) => round($transaction->net_amount * $transaction->taxCategory->rate, 2));
 
             if ($taxAmounts->isNotEmpty()) {
                 $lastLine              = $taxAmounts->count() - 1;

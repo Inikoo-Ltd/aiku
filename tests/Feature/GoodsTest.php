@@ -553,6 +553,7 @@ test("UI Edit Stock in Group", function () {
                     'parameters' => $stock->id
                 ],
             ])->etc())
+            ->has('formData.blueprint.1.fields.trade_units.productsContext')
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $stock->name)->etc()
@@ -931,4 +932,22 @@ test('changing stock trade units recomputes packed_in on the stock and its org s
     expect($stock->packed_in)->toBe(6)
         ->and($orgStock->packed_in)->toBe(6)
         ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(6.0);
+});
+
+test('warehouse packing can be edited per org stock from the master editor', function () {
+    $stocks = createStocks($this->group);
+    $stock  = $stocks[0];
+    [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+    $tradeUnit = $stock->tradeUnits()->first();
+
+    $response = \Pest\Laravel\patchJson(route('grp.models.org_stock.trade_units.update', [$orgStock->id]), [
+        'trade_units' => [
+            ['id' => $tradeUnit->id, 'quantity' => 12],
+        ],
+    ]);
+    $response->assertOk();
+
+    $orgStock->refresh();
+    expect($orgStock->packed_in)->toBe(12)
+        ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(12.0);
 });

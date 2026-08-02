@@ -19,6 +19,7 @@ use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShippin
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -43,6 +44,7 @@ use Lorisleiva\Actions\ActionRequest;
 class GenerateInvoiceFromOrder extends OrgAction
 {
     use WithActionUpdate;
+    use WithLineTaxCategories;
     use HasOrderHydrators;
 
     /**
@@ -57,7 +59,7 @@ class GenerateInvoiceFromOrder extends OrgAction
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->first();
 
-            if ($order->deliveryNotes) {
+            if ($deliveryNote) {
                 $updatedData = $this->recalculateTotals($order, $deliveryNote);
             }
 
@@ -105,7 +107,7 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             foreach ($transactions as $transaction) {
                 $data = [
-                    'tax_category_id' => $transaction->order->tax_category_id,
+                    'tax_category_id' => $transaction->tax_category_id,
                     'quantity'        => $transaction->quantity_ordered ?? 0,
                     'gross_amount'    => $transaction->gross_amount,
                     'net_amount'      => $transaction->net_amount,
@@ -183,20 +185,29 @@ class GenerateInvoiceFromOrder extends OrgAction
 
     public function recalculateTotals(Order $order, DeliveryNote $deliveryNote): array
     {
-        $itemsNet   = 0;
         $itemsGross = 0;
+        $lines      = collect();
 
         foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
             $totals     = $this->recalculateTransactionTotals($transaction, $deliveryNote);
-            $itemsNet   += $totals['net_amount'];
             $itemsGross += $totals['gross_amount'];
+            $lines->push((object)[
+                'tax_category_id' => $totals['tax_category_id'],
+                'net_amount'      => $totals['net_amount'],
+            ]);
         }
 
-        $tax = $order->taxCategory->rate;
+        $itemsNet = $lines->sum('net_amount');
 
-        $netAmount = round($itemsNet + $order->shipping_amount + $order->charges_amount - $order->amount_off, 2);
+        $lines->push((object)[
+            'tax_category_id' => $order->tax_category_id,
+            'net_amount'      => $order->shipping_amount + $order->charges_amount,
+        ]);
 
-        $taxAmount   = round($netAmount * $tax, 2);
+        $taxBreakdown = $this->getTaxBreakdown($lines, $order->amount_off);
+
+        $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
+        $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
         $totalAmount = $netAmount + $taxAmount;
 
         return [
@@ -250,7 +261,7 @@ class GenerateInvoiceFromOrder extends OrgAction
         }
 
         return [
-            'tax_category_id' => $transaction->order->tax_category_id,
+            'tax_category_id' => $transaction->tax_category_id,
             'quantity'        => $quantityPicked,
             'gross_amount'    => $gross,
             'net_amount'      => $net,

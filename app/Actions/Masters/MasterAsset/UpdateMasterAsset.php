@@ -30,6 +30,7 @@ use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Helpers\Language;
+use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
@@ -56,6 +57,10 @@ class UpdateMasterAsset extends OrgAction
     {
         $oldMasterAsset      = clone($masterAsset);
         $oldMismatchDetected = $oldMasterAsset->mismatch_detected;
+
+        if (Arr::has($modelData, 'tax_category')) {
+            data_set($modelData, 'tax_category', $this->normaliseTaxCategoryMap(Arr::get($modelData, 'tax_category')));
+        }
 
         if (Arr::has($modelData, 'master_family_id')) {
             $masterFamily = null;
@@ -352,6 +357,41 @@ class UpdateMasterAsset extends OrgAction
         }
 
         return $rules;
+    }
+
+    /**
+     * The edit form sends the tax overrides as a list of rows; everything else already passes
+     * the stored shape, order-category-id => override-category-id. Unknown categories are
+     * dropped rather than trusted, this ends up multiplying invoices.
+     *
+     * @return array<int, int>
+     */
+    private function normaliseTaxCategoryMap(array $taxCategory): array
+    {
+        if (!array_is_list($taxCategory)) {
+            $rows = [];
+            foreach ($taxCategory as $orderTaxCategoryId => $lineTaxCategoryId) {
+                $rows[] = [
+                    'order_tax_category_id' => $orderTaxCategoryId,
+                    'tax_category_id'       => $lineTaxCategoryId,
+                ];
+            }
+            $taxCategory = $rows;
+        }
+
+        $knownIds = TaxCategory::pluck('id')->all();
+
+        $map = [];
+        foreach ($taxCategory as $row) {
+            $orderTaxCategoryId = (int)Arr::get($row, 'order_tax_category_id');
+            $lineTaxCategoryId  = (int)Arr::get($row, 'tax_category_id');
+
+            if (in_array($orderTaxCategoryId, $knownIds) && in_array($lineTaxCategoryId, $knownIds)) {
+                $map[$orderTaxCategoryId] = $lineTaxCategoryId;
+            }
+        }
+
+        return $map;
     }
 
     /**

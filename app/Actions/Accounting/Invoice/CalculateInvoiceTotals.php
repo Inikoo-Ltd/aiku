@@ -12,12 +12,15 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
 
 class CalculateInvoiceTotals extends OrgAction
 {
+    use WithLineTaxCategories;
+
     public function handle(Invoice $invoice): Invoice
     {
 
@@ -26,9 +29,6 @@ class CalculateInvoiceTotals extends OrgAction
         }
 
         $transactions = $invoice->invoiceTransactions;
-
-        $taxRate = $invoice->taxCategory->rate;
-
 
         $rentalNet     = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('net_amount');
         $rentalGross   = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('gross_amount');
@@ -41,9 +41,14 @@ class CalculateInvoiceTotals extends OrgAction
         $chargeNet     = $transactions->where('model_type', 'Charge')->sum('net_amount');
         $chargeGross   = $transactions->where('model_type', 'Charge')->sum('gross_amount');
 
-        $netAmount   = round($rentalNet + $goodsNet + $serviceNet + $shippingNet + $chargeNet - $invoice->amount_off, 2);
+        $taxBreakdown = $this->getTaxBreakdown(
+            $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge']),
+            $invoice->amount_off
+        );
+
+        $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
         $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross;
-        $taxAmount   = round($netAmount * $taxRate, 2);
+        $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
 
         $totalAmount = $netAmount + $taxAmount;
 

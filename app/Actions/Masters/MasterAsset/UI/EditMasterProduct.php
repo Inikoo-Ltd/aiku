@@ -12,6 +12,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
@@ -21,6 +22,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -140,7 +142,28 @@ class EditMasterProduct extends OrgAction
     {
         $packedIn = $masterProduct->getStockPackedInByTradeUnit();
 
-        $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
+        /*
+         * A master covers several organisations and each warehouse can pack the same trade
+         * unit differently. The editor shows every organisation's packed_in and lets it be
+         * edited in place, because the org stock is the physical reality.
+         */
+        $packedInByOrg = DB::table('model_has_trade_units')
+            ->join('org_stocks', 'org_stocks.id', '=', 'model_has_trade_units.model_id')
+            ->join('organisations', 'organisations.id', '=', 'org_stocks.organisation_id')
+            ->where('model_has_trade_units.model_type', 'OrgStock')
+            ->whereIn('model_has_trade_units.trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
+            ->whereNull('org_stocks.deleted_at')
+            ->select([
+                'model_has_trade_units.trade_unit_id',
+                'org_stocks.id as org_stock_id',
+                'organisations.code as org_code',
+                'model_has_trade_units.quantity',
+            ])
+            ->orderBy('organisations.code')
+            ->get()
+            ->groupBy('trade_unit_id');
+
+        $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn, $packedInByOrg) {
             /** @var MorphPivot $pivot */
             $pivot            = $tradeUnit->getRelationValue('pivot');
             $quantity         = $pivot->getAttribute('quantity');
@@ -153,6 +176,11 @@ class EditMasterProduct extends OrgAction
                     'packed_in'       => $packedInQuantity,
                     'fraction'        => $fraction,
                     'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($fraction)), $packedInQuantity),
+                    'packed_in_by_org' => ($packedInByOrg->get($tradeUnit->id) ?? collect())->map(fn ($orgStockPivot) => [
+                        'org_stock_id' => $orgStockPivot->org_stock_id,
+                        'org_code'     => $orgStockPivot->org_code,
+                        'packed_in'    => (float) $orgStockPivot->quantity,
+                    ])->values()->all(),
                 ],
                 $tradeUnit->toArray()
             );
@@ -184,11 +212,51 @@ class EditMasterProduct extends OrgAction
             $unitsReview = null;
         }
 
+        $taxCategoryOptions = TaxCategory::orderBy('name')->get()->map(fn (TaxCategory $taxCategory) => [
+            'value' => $taxCategory->id,
+            'label' => $taxCategory->name.' ('.percentage($taxCategory->rate, 1).') #'.$taxCategory->id,
+        ])->all();
+
         $pricesUpdateRoute = [
             'name'       => 'grp.models.master_asset.prices.update',
             'parameters' => [
                 'masterAsset' => $masterProduct->id
             ]
+        ];
+
+        /*
+         * Price and composition are one decision: changing what the product physically is
+         * either scales the price (repackaging) or the composition was wrong and the price
+         * already fits. The price fields live in both sections so nobody saves one half.
+         */
+        $masterPricesField = [
+            'type'         => 'multiple_price_currency',
+            'label'        => __('Price').' / '.__('Outer'),
+            'required'     => true,
+            'currencies'   => $currenciesRate,
+            'value'        => $masterProduct->master_prices,
+            'masterAsset'  => $masterProduct->id,
+            'unitsReview'  => $unitsReview,
+            'updateRoute'  => $pricesUpdateRoute,
+            'noSaveButton' => true,
+            'costs'        => $costs,
+            'units'        => (float) $masterProduct->units,
+            'type_input'   => 'price'
+        ];
+
+        $masterRRPsField = [
+            'type'              => 'multiple_price_currency',
+            'label'             => __('RRP').' / '.__('Unit'),
+            'required'          => true,
+            'currencies'        => $currenciesRate,
+            'value'             => $masterProduct->master_rrps,
+            'masterAsset'       => $masterProduct->id,
+            'unitsReview'       => $unitsReview,
+            'updateRoute'       => $pricesUpdateRoute,
+            'noSaveButton'      => true,
+            'perUnits'          => (float) $masterProduct->units,
+            'counterpartRecord' => $masterProduct->master_prices,
+            'type_input'        => 'rrp'
         ];
 
         return [
@@ -281,34 +349,8 @@ class EditMasterProduct extends OrgAction
                 'label'  => __('Pricing'),
                 'icon'   => 'fa-light fa-money-bill',
                 'fields' => [
-                    'master_prices'            => [
-                        'type'          => 'multiple_price_currency',
-                        'label'         => __('Price').' / '.__('Outer'),
-                        'required'      => true,
-                        'currencies'    => $currenciesRate,
-                        'value'         => $masterProduct->master_prices,
-                        'masterAsset'   => $masterProduct->id,
-                        'unitsReview'   => $unitsReview,
-                        'updateRoute'   => $pricesUpdateRoute,
-                        'noSaveButton'  => true,
-                        'costs'         => $costs,
-                        'units'         => (float) $masterProduct->units,
-                        'type_input'          => 'price'
-                    ],
-                    'master_rrps'            => [
-                        'type'          => 'multiple_price_currency',
-                        'label'         => __('RRP').' / '.__('Unit'),
-                        'required'      => true,
-                        'currencies'    => $currenciesRate,
-                        'value'         => $masterProduct->master_rrps,
-                        'masterAsset'   => $masterProduct->id,
-                        'unitsReview'   => $unitsReview,
-                        'updateRoute'   => $pricesUpdateRoute,
-                        'noSaveButton'  => true,
-                        'perUnits'      => (float) $masterProduct->units,
-                        'counterpartRecord' => $masterProduct->master_prices,
-                        'type_input'          => 'rrp'
-                    ],
+                    'master_prices' => $masterPricesField,
+                    'master_rrps'   => $masterRRPsField,
                 ]
             ],
             [
@@ -322,6 +364,32 @@ class EditMasterProduct extends OrgAction
                         'value' => $masterProduct->unit,
                     ],
 
+                ]
+            ],
+            [
+                'label'  => __('Tax'),
+                'icon'   => 'fa-light fa-percent',
+                'fields' => [
+                    'tax_category' => [
+                        'type'     => 'dynamic_list',
+                        'label'    => __('Tax overrides'),
+                        'value'    => $this->getTaxCategoryRows($masterProduct),
+                        'fields'   => [
+                            [
+                                'key'         => 'order_tax_category_id',
+                                'label'       => __('When the order is taxed at'),
+                                'placeholder' => __('Order tax category'),
+                                'options'     => $taxCategoryOptions,
+                            ],
+                            [
+                                'key'         => 'tax_category_id',
+                                'label'       => __('Tax this product at'),
+                                'placeholder' => __('Product tax category'),
+                                'options'     => $taxCategoryOptions,
+                            ],
+                        ],
+                        'addLabel' => __('Add tax override'),
+                    ],
                 ]
             ],
             [
@@ -357,6 +425,12 @@ class EditMasterProduct extends OrgAction
                     'trade_units' => [
                         'label'        => __('Trade units'),
                         'saveConfirmation' => $this->getUnitsChangeConfirmation($masterProduct),
+                        'priceContext' => [
+                            'price'    => (float) data_get($masterProduct->master_prices, 'EUR.value', $masterProduct->price),
+                            'rrp'      => (float) data_get($masterProduct->master_rrps, 'EUR.value', $masterProduct->rrp),
+                            'currency' => 'EUR',
+                            'units'    => (float) $masterProduct->units,
+                        ],
                         'type'         => 'list-selector-trade-unit',
                         'key_quantity' => 'quantity',
                         'withQuantity' => true,
@@ -395,6 +469,8 @@ class EditMasterProduct extends OrgAction
                         ])),
                         'value'        => $tradeUnits,
                     ],
+                    'master_prices' => $masterPricesField,
+                    'master_rrps'   => $masterRRPsField,
                 ],
             ],
 
@@ -432,6 +508,25 @@ class EditMasterProduct extends OrgAction
         ];
     }
 
+
+    /**
+     * `master_assets.tax_category` is stored as order-category-id => override-category-id;
+     * the form edits it as a list of rows.
+     *
+     * @return array<int, array{order_tax_category_id: string, tax_category_id: string}>
+     */
+    public function getTaxCategoryRows(MasterAsset $masterProduct): array
+    {
+        $rows = [];
+        foreach ($masterProduct->tax_category ?? [] as $orderTaxCategoryId => $taxCategoryId) {
+            $rows[] = [
+                'order_tax_category_id' => (string)$orderTaxCategoryId,
+                'tax_category_id'       => (string)$taxCategoryId,
+            ];
+        }
+
+        return $rows;
+    }
 
     public function getBreadcrumbs(MasterAsset $masterAsset, string $routeName, array $routeParameters): array
     {

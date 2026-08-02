@@ -1354,6 +1354,9 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
                     ->has('args.updateRoute')
                     ->where('args.updateRoute.name', 'grp.models.master_asset.update')
                     ->where('args.updateRoute.parameters.masterAsset', $masterAsset->id)
+                    ->has('blueprint.5.fields.trade_units.priceContext')
+                    ->has('blueprint.5.fields.master_prices')
+                    ->has('blueprint.5.fields.master_rrps')
                     ->etc()
             );
     });
