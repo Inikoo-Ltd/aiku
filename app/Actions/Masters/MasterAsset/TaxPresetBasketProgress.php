@@ -28,6 +28,9 @@ class TaxPresetBasketProgress
 {
     public const int TTL_SECONDS = 3600;
 
+    /** A basket with more lines than this recalculates for minutes: long-running lane, named wait. */
+    public const int OVERSIZED_LINES = 250;
+
     public static function progressKey(int $masterAssetId): string
     {
         return "master-asset:{$masterAssetId}:tax-preset-baskets";
@@ -94,13 +97,15 @@ class TaxPresetBasketProgress
 
         /**
          * A giant basket recalculates for minutes on the long-running lane and the bar sits
-         * one short of done meanwhile - it reads as stuck unless it says why.
+         * one short of done meanwhile - it reads as stuck unless it says why. Only computed
+         * once the tail is short: early in a big sweep the answer is irrelevant and the
+         * grouped scan over every pending basket's lines is not.
          */
-        $pendingLarge = $pending == 0 ? 0 : DB::table('transactions')
+        $pendingLarge = ($pending == 0 || $pending > 25) ? 0 : DB::table('transactions')
             ->whereIn('order_id', $pendingOrderIds)
             ->whereNull('deleted_at')
             ->groupBy('order_id')
-            ->havingRaw('count(*) > 250')
+            ->havingRaw('count(*) > ?', [static::OVERSIZED_LINES])
             ->pluck('order_id')
             ->count();
 

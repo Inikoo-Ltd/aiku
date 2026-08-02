@@ -301,8 +301,11 @@ trait WithLineTaxCategories
      */
     public function getInvoiceTaxBreakdown(Invoice $invoice): array
     {
+        /** Two columns, not 2,500 hydrated models: this runs on every invoice view and pdf. */
         return $this->getTaxBreakdown(
-            $invoice->invoiceTransactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge']),
+            $invoice->invoiceTransactions()
+                ->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge'])
+                ->get(['tax_category_id', 'net_amount']),
             $invoice->amount_off
         );
     }

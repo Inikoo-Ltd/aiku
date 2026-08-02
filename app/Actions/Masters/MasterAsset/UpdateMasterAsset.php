@@ -313,21 +313,28 @@ class UpdateMasterAsset extends OrgAction
 
             TaxPresetBasketProgress::start($masterAsset, $basketOrderIds, $assetIds);
 
-            foreach ($basketOrderIds as $orderId) {
-                /**
-                 * A giant basket (aws34545 carries 2,496 lines) recalculates for longer than
-                 * the urgent connection's retry_after, so the queue re-serves it mid-run and
-                 * burns its attempts. Oversized baskets go to the long-running connection,
-                 * whose retry_after was sized for exactly this.
-                 */
-                $isOversized = DB::table('transactions')
-                    ->where('order_id', $orderId)
-                    ->whereNull('deleted_at')
-                    ->count() > 250;
+            /**
+             * A giant basket (aws34545 carries 2,496 lines) recalculates for longer than the
+             * urgent connection's retry_after, so the queue re-serves it mid-run and burns
+             * its attempts. Oversized baskets go to the long-running connection, whose
+             * retry_after was sized for exactly this. One grouped query, not one per basket.
+             */
+            $oversizedOrderIds = empty($basketOrderIds) ? [] : DB::table('transactions')
+                ->whereIn('order_id', $basketOrderIds)
+                ->whereNull('deleted_at')
+                ->groupBy('order_id')
+                ->havingRaw('count(*) > ?', [TaxPresetBasketProgress::OVERSIZED_LINES])
+                ->pluck('order_id')
+                ->all();
 
-                $pendingDispatch = RecalculateTotalsOrdersInBasket::dispatch($orderId, null, null, null, $masterAsset->id);
-                if ($isOversized) {
-                    $pendingDispatch->onConnection('redis-long-running')->onQueue('long-running');
+            foreach ($basketOrderIds as $orderId) {
+                /** No held PendingDispatch: on the sync driver it only runs on destruct, and a variable keeps the last one alive past the sweep. */
+                if (in_array($orderId, $oversizedOrderIds)) {
+                    RecalculateTotalsOrdersInBasket::dispatch($orderId, null, null, null, $masterAsset->id)
+                        ->onConnection('redis-long-running')
+                        ->onQueue('long-running');
+                } else {
+                    RecalculateTotalsOrdersInBasket::dispatch($orderId, null, null, null, $masterAsset->id);
                 }
             }
 
