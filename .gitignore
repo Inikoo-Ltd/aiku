@@ -132,3 +132,4 @@ laradumps.yaml
 /devops/server.env
 storage/oauth-*.key
 /docs/gsl-es
+/devops/search

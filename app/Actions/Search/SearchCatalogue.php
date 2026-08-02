@@ -12,7 +12,6 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Arr;
-use Laravel\Scout\Builder;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -33,32 +32,26 @@ class SearchCatalogue
         'min_len_2typo'         => 6,
     ];
 
+    /**
+     * result key => [model class, boost type, hits limit]
+     */
+    protected const array SEARCH_TARGETS = [
+        'products'           => [Product::class, 'product', 11],
+        'product_categories' => [ProductCategory::class, 'product_category', 10],
+        'collections'        => [Collection::class, 'collection', 10],
+    ];
+
     public function handle(string $query, array $options): array
     {
-        $productsQuery          = Product::search($query);
-        $productCategoriesQuery = ProductCategory::search($query);
-        $collectionsQuery       = Collection::search($query);
-        if ($shopId = Arr::get($options, 'shop_id')) {
-            $productsQuery->where('shop_id', $shopId);
-            $productCategoriesQuery->where('shop_id', $shopId);
-            $collectionsQuery->where('shop_id', $shopId);
+        if (config('scout.driver') === 'typesense') {
+            try {
+                $documents = $this->multiSearch($query, $options);
+            } catch (Throwable) {
+                $documents = $this->scoutSearch($query, $options);
+            }
+        } else {
+            $documents = $this->scoutSearch($query, $options);
         }
-
-        if (Arr::get($options, 'is_in_website')) {
-            $productsQuery->where('is_in_website', true);
-            $productCategoriesQuery->where('is_in_website', true);
-            $collectionsQuery->where('is_in_website', true);
-        }
-
-        $boosts   = Arr::get($options, 'boosts', []);
-        $language = Arr::get($options, 'language');
-        $this->applySearchOptions($productsQuery, Arr::get($boosts, 'product'), $language);
-        $this->applySearchOptions($productCategoriesQuery, Arr::get($boosts, 'product_category'), $language);
-        $this->applySearchOptions($collectionsQuery, Arr::get($boosts, 'collection'), $language);
-
-        $productsQuery->take(11);
-        $productCategoriesQuery->take(10);
-        $collectionsQuery->take(10);
 
         $mapCatalogueItem = static fn (array $document) => [
             'id'    => (int)$document['id'],
@@ -69,22 +62,100 @@ class SearchCatalogue
 
         return [
             'scope'   => 'catalogue',
-            'results' => [
-                'products'           => array_map($mapCatalogueItem, $this->rawDocuments($productsQuery)),
-                'product_categories' => array_map($mapCatalogueItem, $this->rawDocuments($productCategoriesQuery)),
-                'collections'        => array_map($mapCatalogueItem, $this->rawDocuments($collectionsQuery)),
-            ],
+            'results' => array_map(
+                static fn (array $docs) => array_map($mapCatalogueItem, $docs),
+                $documents
+            ),
         ];
     }
 
     /**
+     * All three collections in one HTTP round trip instead of three sequential ones.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function multiSearch(string $query, array $options): array
+    {
+        $searches = [];
+        foreach (self::SEARCH_TARGETS as [$modelClass, $boostType, $limit]) {
+            $filters = [];
+            if ($shopId = Arr::get($options, 'shop_id')) {
+                $filters[] = "shop_id:=$shopId";
+            }
+            if (Arr::get($options, 'is_in_website')) {
+                $filters[] = 'is_in_website:=true';
+            }
+
+            $searches[] = array_merge(
+                [
+                    'collection'             => (new $modelClass())->searchableAs(),
+                    'q'                      => $query,
+                    'query_by'               => config("scout.typesense.model-settings.$modelClass.search-parameters.query_by") ?? '',
+                    'filter_by'              => implode(' && ', $filters),
+                    'per_page'               => $limit,
+                    'page'                   => 1,
+                    'prioritize_exact_match' => true,
+                    'enable_overrides'       => true,
+                    'prefix'                 => true,
+                ],
+                $this->extraSearchOptions(Arr::get($options, "boosts.$boostType"), Arr::get($options, 'language'))
+            );
+        }
+
+        $response = $this->typesenseClient()
+            ->post($this->typesenseUrl().'/multi_search', ['searches' => $searches])
+            ->throw();
+
+        $documents = [];
+        foreach (array_keys(self::SEARCH_TARGETS) as $index => $key) {
+            if ($error = $response->json("results.$index.error")) {
+                logger()->warning("Typesense multi_search $key failed: $error");
+            }
+            $documents[$key] = Arr::pluck($response->json("results.$index.hits", []), 'document');
+        }
+
+        return $documents;
+    }
+
+    /**
+     * Fallback for non-typesense drivers (tests) and typesense outages.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function scoutSearch(string $query, array $options): array
+    {
+        $documents = [];
+        foreach (self::SEARCH_TARGETS as $key => [$modelClass, $boostType, $limit]) {
+            $searchQuery = $modelClass::search($query);
+
+            if ($shopId = Arr::get($options, 'shop_id')) {
+                $searchQuery->where('shop_id', $shopId);
+            }
+            if (Arr::get($options, 'is_in_website')) {
+                $searchQuery->where('is_in_website', true);
+            }
+
+            $searchQuery->options($this->extraSearchOptions(
+                Arr::get($options, "boosts.$boostType"),
+                Arr::get($options, 'language')
+            ));
+            $searchQuery->take($limit);
+
+            $documents[$key] = $this->rawDocuments($searchQuery);
+        }
+
+        return $documents;
+    }
+
+    /**
      * Boosted items float to the top of the results they already match: an _eval sort
-     * ranks them first without pinning them into unrelated searches. Builder::options()
-     * replaces rather than merges, so the tuning and the boost sort are set together.
+     * ranks them first without pinning them into unrelated searches.
      *
      * @param array<int, int>|null $boostIds
+     *
+     * @return array<string, mixed>
      */
-    private function applySearchOptions(Builder $searchQuery, ?array $boostIds, ?string $languageCode): void
+    private function extraSearchOptions(?array $boostIds, ?string $languageCode): array
     {
         $searchOptions = self::SEARCH_TUNING;
 
@@ -96,7 +167,7 @@ class SearchCatalogue
             $searchOptions['sort_by'] = '_eval(id:['.implode(',', $boostIds).']):desc,_text_match:desc';
         }
 
-        $searchQuery->options($searchOptions);
+        return $searchOptions;
     }
 
     /**

@@ -1128,6 +1128,25 @@ test('manage search synonyms', function (Website $website) {
         ->assertSessionHasErrors('words');
 })->depends('launch website');
 
+test('import search synonyms command', function () {
+    Http::fake(['*/synonym_sets/*' => Http::response(['id' => 'laboradite'])]);
+
+    $file = tempnam(sys_get_temp_dir(), 'synonyms').'.json';
+    file_put_contents($file, json_encode([
+        ['language' => 'en', 'words' => ['laboradite', 'labradorite']],
+        ['language' => 'en', 'words' => ['only-one']],
+    ]));
+
+    $this->artisan('search:import-synonyms', ['file' => $file])
+        ->expectsOutputToContain('Imported 1 synonyms, 1 failed/skipped')
+        ->assertExitCode(1);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/synonym_sets/catalogue-en/items/laboradite')
+        && $request['synonyms'] === ['laboradite', 'labradorite']);
+
+    unlink($file);
+});
+
 test('UI smoke catalogue webpage routes', function (Website $website, array $cat) {
     $website->refresh();
 
