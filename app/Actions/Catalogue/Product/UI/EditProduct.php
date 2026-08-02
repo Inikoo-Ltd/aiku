@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Models\Catalogue\Product;
@@ -27,6 +28,7 @@ class EditProduct extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
+    use WithUnitsChangeConfirmation;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -328,6 +330,7 @@ class EditProduct extends OrgAction
                 'type'         => 'input_with_warning',
                 'label'        => __('Units'),
                 'value'        => $product->units,
+                'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
                 'showWarning'  => true,
                 'warningTitle' => __('Units mismatch with master product').' ('.$product->units_review.')',
                 'warningBody'  => __('Per-unit prices may be wrong, review units before editing prices'),
@@ -623,6 +626,7 @@ class EditProduct extends OrgAction
                                 'type'  => 'input_number',
                                 'label' => __('Units'),
                                 'value' => $product->units,
+                                'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
                             ],
                             'marketing_weight'     => [
                                 'type'        => 'input_number',
@@ -686,6 +690,7 @@ class EditProduct extends OrgAction
                         ] : [],
                         'trade_units' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
                             'label'        => __('Trade units'),
+                            'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
                             'type'         => 'list-selector-trade-unit',
                             'key_quantity' => 'quantity',
                             'withQuantity' => true,

@@ -18,7 +18,7 @@ import { ulid } from "ulid"
 import Image from "@common/Components/Image.vue"
 
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import { faBadgePercent, faFragile } from "@fas"
+import { faBadgePercent, faFragile, faExclamationTriangle } from "@fas"
 import { faBan, faPercentage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from "@/Components/Utils/Label/Discount.vue"
@@ -30,7 +30,7 @@ import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscou
 import error from "@iris/Pages/Errors/Error.vue"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode, faGift, faRepeat)
+library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode, faGift, faRepeat, faExclamationTriangle)
 
 type ProductRow = {
     id: number
@@ -463,6 +463,13 @@ const isOffersData = (offersData: any): boolean => {
             <template #cell(asset_name)="{ item }">
                 <div>
                     <div xclass="item.offers_data ? 'text-pink-600' : ''">{{ item.asset_name }}</div>
+                    <div v-if="item.units_changed_to"
+                        v-tooltip="ctrans('This line was ordered and priced at :ordered per pack, the product is now sold as :now per pack. Check what the warehouse should ship.', { ordered: item.product_units, now: item.units_changed_to })"
+                        class="text-xs text-amber-600"
+                    >
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500 mr-1" fixed-width aria-hidden="true" />
+                        {{ ctrans('Repacked since ordered') }}: {{ item.product_units }} → {{ item.units_changed_to }}
+                    </div>
                     <div v-if="item.available_quantity !== undefined && item.available_quantity < 1">
                         <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                     </div>

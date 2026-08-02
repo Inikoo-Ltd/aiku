@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,6 +28,7 @@ use App\Models\Masters\MasterShop;
 class EditMasterProduct extends OrgAction
 {
     use WithMasterProductNavigation;
+    use WithUnitsChangeConfirmation;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
@@ -354,6 +356,7 @@ class EditMasterProduct extends OrgAction
                 'fields' => [
                     'trade_units' => [
                         'label'        => __('Trade units'),
+                        'saveConfirmation' => $this->getUnitsChangeConfirmation($masterProduct),
                         'type'         => 'list-selector-trade-unit',
                         'key_quantity' => 'quantity',
                         'withQuantity' => true,

@@ -100,6 +100,13 @@ class IndexTransactions extends OrgAction
                 'products.id as product_id',
                 DB::raw('COALESCE(historic_assets.price, products.price) as price'),
                 DB::raw('COALESCE(historic_assets.units, products.units) as product_units'),
+
+                /*
+                 * The line keeps the quantity and price agreed against the pack size it was
+                 * ordered at, so repacking the product afterwards leaves the warehouse shipping
+                 * a different pack size for the same money. Nothing repricies it, it is flagged.
+                 */
+                DB::raw('CASE WHEN historic_assets.units IS NOT NULL AND historic_assets.units <> products.units THEN products.units END as units_changed_to'),
                 'products.slug as product_slug',
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
