@@ -71,9 +71,21 @@ const component = computed(() => {
 onMounted(() => {
     layout.root_active = "retina.ecom.basket."
     window.scrollTo(0, 0)
+
+    if (window.Echo && layout.user?.customer_id && (props.order as any)?.id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`)
+            .listen(".order-submitted", (eventData: { order_id: number }) => {
+                if (eventData.order_id == (props.order as any)?.id) {
+                    window.location.href = route("retina.ecom.orders.show", { order: (props.order as any)?.slug })
+                }
+            })
+    }
 })
 onUnmounted(() => {
     layout.root_active = ""
+    if (window.Echo && layout.user?.customer_id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
+    }
 })
 
 const locale = inject("locale", aikuLocaleStructure)
