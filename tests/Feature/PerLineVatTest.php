@@ -18,6 +18,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
@@ -27,7 +28,6 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Helpers\Country;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
 use App\Models\Ordering\Order;
@@ -45,7 +45,11 @@ beforeEach(function () {
         $this->shop
     ) = createShop();
 
-    $this->group    = $this->organisation->group;
+    $this->group = $this->organisation->group;
+
+    /** Real selling shops are aiku managed; the basket reprice rails are gated on it. */
+    $this->shop->updateQuietly(['is_aiku' => true]);
+
     $this->customer = createCustomer($this->shop);
 
     list(, $this->standardProduct) = createProduct($this->shop);
@@ -196,37 +200,76 @@ test('an order level discount is split across the rates and still adds up', func
         ->and($tax)->toBe(18.67);
 });
 
-test('the master product edit form round trips the tax treatment', function () {
+test('staff pick a preset and the tax category map is derived from it', function () {
     $masterAsset = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0)
         ->asset->masterAsset;
 
-    $gb = Country::where('code', 'GB')->firstOrFail();
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'food']);
+    $masterAsset->refresh();
 
-    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => '']);
+    /** Food expands to all three discountable categories, and the money map follows. */
+    expect($masterAsset->tax_preset)->toBe('food')
+        ->and($masterAsset->tax_category)->toHaveCount(3)
+        ->and((int)$masterAsset->tax_category[$this->vat20->id])->toBe($this->vat0->id)
+        ->and($masterAsset->assets()->first()->tax_category)->toHaveCount(3);
 
-    expect($masterAsset->refresh()->tax_category)->toBe([]);
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'standard']);
 
-    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => (string)$gb->id]);
-
-    expect($masterAsset->refresh()->tax_category)->toBe([(string)$this->vat20->id => $this->vat0->id])
-        ->and($masterAsset->assets()->first()->tax_category)->toBe([(string)$this->vat20->id => $this->vat0->id])
-        ->and(EditMasterProduct::make()->collapseToReducedRateCountries($masterAsset->tax_category))->toBe([$gb->id]);
+    expect($masterAsset->refresh()->tax_preset)->toBe('standard')
+        ->and($masterAsset->tax_category)->toBe([]);
 });
 
-test('the tax treatment options name the food case', function () {
-    $options = EditMasterProduct::make()->getReducedRateOptions();
-    $labels  = array_column($options, 'label');
+test('an imported map that matches a preset is tagged with it, one that does not stays custom', function () {
+    $masterAsset = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0)
+        ->asset->masterAsset;
 
-    expect($labels[0])->toBe('Standard rate')
-        ->and(collect($labels)->filter(fn ($l) => str_contains($l, 'food')))->toHaveCount(1);
+    /** The Aurora repair posts raw maps; a food shaped one gets the preset for free. */
+    $foodMap = EditMasterProduct::make()->expandTaxPreset('food');
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => $foodMap]);
+
+    expect($masterAsset->refresh()->tax_preset)->toBe('food');
+
+    /** A UK only map matches no preset: stored as is, preset null, shown as custom. */
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => [$this->vat20->id => $this->vat0->id]]);
+    $masterAsset->refresh();
+
+    expect($masterAsset->tax_preset)->toBeNull()
+        ->and($masterAsset->tax_category)->toBe([(string)$this->vat20->id => $this->vat0->id])
+        ->and(EditMasterProduct::make()->inferTaxPreset($masterAsset->tax_category))->toBe('custom');
+
+    /** Re-posting the display value "custom" must not clear the map. */
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'custom']);
+
+    expect($masterAsset->refresh()->tax_category)->toBe([(string)$this->vat20->id => $this->vat0->id]);
+
+    /** Unknown categories in a raw map are dropped, never stored. */
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => [999 => $this->vat0->id]]);
+
+    expect($masterAsset->refresh()->tax_category)->toBe([])
+        ->and($masterAsset->tax_preset)->toBe('standard');
+});
+
+test('the preset cards describe the rates they mean, custom only when it applies', function () {
+    $options = EditMasterProduct::make()->getTaxPresetOptions([]);
+
+    expect(collect($options)->pluck('value')->all())->toBe(['standard', 'food', 'dried_flowers'])
+        ->and(collect($options)->firstWhere('value', 'food')['description'])->toContain('VAT 0%')
+        ->and(collect($options)->firstWhere('value', 'food')['description'])->toContain('IVA 10%');
+
+    /** The Spain-only flowers map is the dried flowers preset, not custom. */
+    expect(EditMasterProduct::make()->inferTaxPreset([30 => 52, 51 => 53]))->toBe('dried_flowers');
+
+    /** A UK-only map matches no preset and rides as custom. */
+    $custom = EditMasterProduct::make()->getTaxPresetOptions([$this->vat20->id => $this->vat0->id]);
+
+    expect(collect($custom)->pluck('value')->all())->toBe(['standard', 'food', 'dried_flowers', 'custom']);
 });
 
 test('changing a product tax treatment repriced baskets and leaves submitted orders alone', function () {
     $tea         = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0);
     $masterAsset = $tea->asset->masterAsset;
-    $gb          = Country::where('code', 'GB')->firstOrFail();
 
-    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => '']);
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'standard']);
 
     $basket = StoreOrder::make()->action($this->customer, []);
     $basket->updateQuietly(['tax_category_id' => $this->vat20->id]);
@@ -240,31 +283,12 @@ test('changing a product tax treatment repriced baskets and leaves submitted ord
     expect((float)$basket->refresh()->tax_amount)->toBe(10.0)
         ->and((float)$submitted->refresh()->tax_amount)->toBe(10.0);
 
-    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => (string)$gb->id]);
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'food']);
 
     expect((float)$basket->refresh()->tax_amount)->toBe(0.0)
         ->and((float)$basket->total_amount)->toBe(50.0)
         ->and((float)$submitted->refresh()->tax_amount)->toBe(10.0)
         ->and((float)$submitted->total_amount)->toBe(60.0);
-});
-
-test('a reduced rate country expands to every one of its live categories, matching special with special', function () {
-    $es = Country::where('code', 'ES')->firstOrFail();
-    $gb = Country::where('code', 'GB')->firstOrFail();
-
-    $map = EditMasterProduct::make()->expandReducedRateCountries([$es->id, $gb->id]);
-
-    foreach ($map as $orderTaxCategoryId => $lineTaxCategoryId) {
-        $order = TaxCategory::find($orderTaxCategoryId);
-        $line  = TaxCategory::find($lineTaxCategoryId);
-
-        expect($order->country_id)->toBe($line->country_id)
-            ->and($line->rate)->toBeLessThan($order->rate)
-            ->and($line->type->value)->toBe($order->type->value == 'special' ? 'reduced_special' : 'reduced');
-    }
-
-    /** Spain charges IVA and IVA+RE, the UK only VAT, so Spain contributes two entries. */
-    expect($map)->toHaveCount(3);
 });
 
 test('the master products index can be filtered to the ones that are not standard rated', function () {
@@ -303,4 +327,66 @@ test('the catalogue index can be filtered the same way, and keeps products with 
         ->and($filter('standard'))->not->toContain($tea->code)
         /** The stock product has no master, and NOT IN would silently drop it. */
         ->and($filter('standard'))->toContain($this->standardProduct->code);
+});
+
+test('a preset change freezes lines already sold and moves baskets, like a price change', function () {
+    $tea         = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0);
+    $masterAsset = $tea->asset->masterAsset;
+
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'food']);
+    $tea->refresh();
+
+    /** The preset change minted a historic carrying the treatment. */
+    expect($tea->currentHistoricProduct->tax_category)->toHaveCount(3);
+
+    $submitted = StoreOrder::make()->action($this->customer, []);
+    $submitted->updateQuietly(['tax_category_id' => $this->vat20->id]);
+    StoreTransaction::make()->action($submitted->refresh(), $tea->currentHistoricProduct, ['quantity_ordered' => 1]);
+    SubmitOrder::make()->action($submitted);
+
+    $basket = StoreOrder::make()->action($this->customer, []);
+    $basket->updateQuietly(['tax_category_id' => $this->vat20->id]);
+    StoreTransaction::make()->action($basket->refresh(), $tea->currentHistoricProduct, ['quantity_ordered' => 1]);
+
+    expect((float)$submitted->refresh()->tax_amount)->toBe(0.0)
+        ->and((float)$basket->refresh()->tax_amount)->toBe(0.0);
+
+    $frozenHistoricId = $submitted->transactions->firstWhere('asset_id', $tea->asset_id)->historic_asset_id;
+
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'standard']);
+    $tea->refresh();
+
+    /** The basket moved to the new historic and is taxed at the standard rate again. */
+    expect($basket->refresh()->transactions->firstWhere('asset_id', $tea->asset_id)->historic_asset_id)
+        ->toBe($tea->current_historic_asset_id)
+        ->and((float)$basket->tax_amount)->toBe(10.0);
+
+    /**
+     * The submitted order keeps the historic it was sold under - and even a forced
+     * recalculation must not re-rate it, that is the whole point of freezing.
+     */
+    CalculateOrderTotalAmounts::run($submitted, false, false);
+
+    expect($submitted->refresh()->transactions->firstWhere('asset_id', $tea->asset_id)->historic_asset_id)
+        ->toBe($frozenHistoricId)
+        ->and((float)$submitted->tax_amount)->toBe(0.0);
+});
+
+test('a preset change leaves external shop products alone, faire is taxed from its payload', function () {
+    $tea         = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0);
+    $masterAsset = $tea->asset->masterAsset;
+
+    $this->shop->updateQuietly(['type' => ShopTypeEnum::EXTERNAL]);
+
+    try {
+        $historicBefore = $tea->refresh()->current_historic_asset_id;
+
+        UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'food']);
+
+        /** The map cascades (masters stay authoritative) but no historic is minted. */
+        expect($masterAsset->refresh()->tax_category)->toHaveCount(3)
+            ->and($tea->refresh()->current_historic_asset_id)->toBe($historicBefore);
+    } finally {
+        $this->shop->updateQuietly(['type' => ShopTypeEnum::B2B]);
+    }
 });

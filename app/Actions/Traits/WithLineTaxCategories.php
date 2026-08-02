@@ -24,47 +24,61 @@ use Illuminate\Support\Collection;
  */
 trait WithLineTaxCategories
 {
-    public function getLineTaxCategoryId(Order $order, ?object $asset): int
+    /**
+     * The map is read from the transaction's historic asset, where it was frozen when the
+     * line was sold - a preset change mints a new historic, so old lines keep their
+     * treatment. Historics predating the column carry null and fall back to the live master.
+     */
+    public function getLineTaxCategoryId(Order $order, ?object $transaction): int
     {
-        $map = $asset?->masterAsset?->tax_category ?? [];
+        $map = $transaction?->historicAsset?->tax_category
+            ?? $transaction?->asset?->masterAsset?->tax_category
+            ?? [];
 
         return (int)Arr::get($map, $order->tax_category_id, $order->tax_category_id);
     }
 
     /**
-     * Countries that levy a reduced rate, so are worth offering as an override. Only these
-     * can appear in a tax map: an override is always the reduced counterpart of the order's
-     * own category in the order's own country, never a rate from somewhere else.
-     *
-     * @return Collection<int, \App\Models\Helpers\Country>
+     * The reduced type an order category can be discounted to: standard pairs with reduced,
+     * special (recargo de equivalencia) with reduced_special.
      */
-    public function getReducedRateCountries(): Collection
+    public function getReducedCounterpartType(TaxCategory $orderTaxCategory): string
     {
-        return Country::whereIn('id', TaxCategory::where('status', true)
-            ->whereIn('type', ['standard', 'special'])
-            ->whereNotNull('country_id')
-            ->pluck('country_id'))
-            ->whereIn('id', TaxCategory::whereIn('type', ['reduced', 'reduced_special'])
-                ->whereNotNull('country_id')
-                ->pluck('country_id'))
-            ->orderBy('name')
-            ->get();
+        return $orderTaxCategory->type->value == 'special' ? 'reduced_special' : 'reduced';
     }
 
     /**
-     * The stored map is one entry per order category, but the decision behind it is per
-     * country: "this product takes the reduced rate in Spain". Spain has two live categories
-     * (IVA and IVA+RE) so it expands to two entries, the UK to one.
+     * The presets staff actually pick from; individual tax codes are never edited by hand.
+     * A preset is a UI artifact only - what is stored, and what the money path reads, is the
+     * expanded `tax_category` map. Definitions live here in code: a preset is the set of
+     * countries whose reduced rate applies.
      *
-     * @param  array<int, int>  $countryIds
+     * @return array<string, array{label: string, countries: array<int, string>}>
+     */
+    public function getTaxPresets(): array
+    {
+        return [
+            'food'          => ['label' => __('Food'), 'countries' => ['GBR', 'ESP']],
+            'dried_flowers' => ['label' => __('Dried flowers'), 'countries' => ['ESP']],
+        ];
+    }
+
+    /**
+     * Expands a preset into the stored shape: for each active standard or special category of
+     * the preset's countries, its reduced counterpart (standard pairs with reduced, special
+     * with reduced_special). Today food gives VAT 20% -> 0%, IVA 21% -> 10% and
+     * IVA+RE 26.2% -> 11.4%.
      *
      * @return array<int, int>
      */
-    public function expandReducedRateCountries(array $countryIds): array
+    public function expandTaxPreset(string $presetName): array
     {
-        if (empty($countryIds)) {
+        $countries = Arr::get($this->getTaxPresets(), $presetName.'.countries');
+        if (!$countries) {
             return [];
         }
+
+        $countryIds = Country::whereIn('iso3', $countries)->pluck('id');
 
         $reduced = TaxCategory::whereIn('country_id', $countryIds)
             ->whereIn('type', ['reduced', 'reduced_special'])
@@ -73,18 +87,24 @@ trait WithLineTaxCategories
             ->get();
 
         $map = [];
-        foreach (TaxCategory::whereIn('country_id', $countryIds)->where('status', true)->whereIn('type', ['standard', 'special'])->get() as $taxCategory) {
-            /** `type` is cast to an enum, so every comparison here goes through ->value. */
-            $reducedType = $taxCategory->type->value == 'special' ? 'reduced_special' : 'reduced';
+        foreach (
+            TaxCategory::where('status', true)
+                ->whereIn('type', ['standard', 'special'])
+                ->whereIn('country_id', $countryIds)
+                ->orderBy('country_id')
+                ->orderBy('id')
+                ->get() as $orderTaxCategory
+        ) {
+            $counterpartType = $this->getReducedCounterpartType($orderTaxCategory);
 
-            /** Ordered above so the last match is the live one, or failing that the newest. */
+            /** Ordered above so ->last() is the live counterpart, or failing that the newest. */
             $counterpart = $reduced
-                ->filter(fn (TaxCategory $candidate) => $candidate->country_id == $taxCategory->country_id
-                    && $candidate->type->value == $reducedType)
+                ->filter(fn (TaxCategory $candidate) => $candidate->country_id == $orderTaxCategory->country_id
+                    && $candidate->type->value == $counterpartType)
                 ->last();
 
             if ($counterpart) {
-                $map[$taxCategory->id] = $counterpart->id;
+                $map[$orderTaxCategory->id] = $counterpart->id;
             }
         }
 
@@ -92,60 +112,110 @@ trait WithLineTaxCategories
     }
 
     /**
-     * @return array<int, int> the countries the stored map already covers
-     */
-    public function collapseToReducedRateCountries(array $taxCategoryMap): array
-    {
-        if (empty($taxCategoryMap)) {
-            return [];
-        }
-
-        return TaxCategory::whereIn('id', array_keys($taxCategoryMap))
-            ->whereNotNull('country_id')
-            ->pluck('country_id')
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
-    }
-
-    /**
-     * One named choice per combination of reduced rate countries, so the everyday answer
-     * ("it's food, don't tax it") is a single pick rather than a row building exercise.
+     * The cards for the preset selector, each describing the rates it means, so picking
+     * "Food" shows exactly what will be charged. "Custom" only appears when the stored map
+     * matches no preset; picking it is a no-op.
      *
-     * ponytail: enumerating subsets, fine while two countries levy a reduced rate. Past
-     * four it wants a multi select instead.
-     *
-     * @return array<int, array{value: string, label: string}>
+     * @return array<int, array{value: string, title: string, description: string}>
      */
-    public function getReducedRateOptions(): array
+    public function getTaxPresetOptions(array $currentMap): array
     {
-        $countries = $this->getReducedRateCountries();
+        $options = [[
+            'value'       => 'standard',
+            'title'       => __('Standard rate'),
+            'description' => __("Charged at the order's own rate, no override"),
+        ]];
 
-        $options = [['value' => '', 'label' => __('Standard rate')]];
-
-        $combinations = [[]];
-        foreach ($countries as $country) {
-            foreach ($combinations as $combination) {
-                $combinations[] = array_merge($combination, [$country]);
-            }
-        }
-
-        foreach ($combinations as $combination) {
-            if (empty($combination)) {
-                continue;
-            }
-
-            $names   = implode(' & ', array_map(fn (Country $country) => $country->name, $combination));
-            $isFood  = count($combination) == count($countries);
+        foreach ($this->getTaxPresets() as $presetName => $preset) {
             $options[] = [
-                'value' => implode(',', array_map(fn (Country $country) => $country->id, $combination)),
-                'label' => __('Reduced or zero rated in :countries', ['countries' => $names])
-                    .($isFood ? ' — '.__('food') : ''),
+                'value'       => $presetName,
+                'title'       => $preset['label'],
+                'description' => $this->describeTaxCategoryMap($this->expandTaxPreset($presetName)),
+            ];
+        }
+
+        if ($this->inferTaxPreset($currentMap) == 'custom') {
+            $options[] = [
+                'value'       => 'custom',
+                'title'       => __('Custom (as imported)'),
+                'description' => $this->describeTaxCategoryMap($currentMap),
             ];
         }
 
         return $options;
+    }
+
+    public function describeTaxCategoryMap(array $taxCategoryMap): string
+    {
+        return collect($taxCategoryMap)
+            ->map(function ($lineTaxCategoryId, $orderTaxCategoryId) {
+                $order = TaxCategory::find((int)$orderTaxCategoryId);
+                $line  = TaxCategory::find((int)$lineTaxCategoryId);
+
+                return $order && $line ? $order->country->iso3.': '.$order->name.' → '.$line->name : null;
+            })
+            ->filter()
+            ->implode('  ·  ');
+    }
+
+    /**
+     * Which preset a stored map is: 'standard' for no overrides, the preset name on a match,
+     * 'custom' for a map no preset produces (hand-set or imported).
+     */
+    public function inferTaxPreset(array $currentMap): string
+    {
+        $normalised = array_map('intval', $currentMap);
+        ksort($normalised);
+
+        if (empty($normalised)) {
+            return 'standard';
+        }
+
+        foreach (array_keys($this->getTaxPresets()) as $presetName) {
+            $expanded = $this->expandTaxPreset($presetName);
+            ksort($expanded);
+
+            if ($expanded == $normalised) {
+                return $presetName;
+            }
+        }
+
+        return 'custom';
+    }
+
+    /**
+     * The tax rows every order summary shows: one per rate with the net it applies to
+     * beside it, so zero rated tea appears as its own line instead of blending into a
+     * figure labelled with the order's headline rate. External (Faire) orders keep the
+     * single payload figure, theirs is not derived from the lines.
+     *
+     * @return array<int, array{label: string, information: string, price_total: mixed}>
+     */
+    public function getOrderTaxRows(Order $order): array
+    {
+        $taxRows = [];
+        if ($order->shop->type != ShopTypeEnum::EXTERNAL) {
+            $taxBreakdown = $order->taxBreakdown();
+            foreach ($taxBreakdown as $taxRow) {
+                $taxRows[] = [
+                    'label'       => __('Tax').' ('.$taxRow['name'].')',
+                    'information' => count($taxBreakdown) > 1
+                        ? __('on').' '.$order->currency->symbol.number_format($taxRow['net_amount'], 2)
+                        : '',
+                    'price_total' => $taxRow['tax_amount'],
+                ];
+            }
+        }
+
+        if (empty($taxRows)) {
+            $taxRows[] = [
+                'label'       => __('Tax').' ('.$order->taxCategory->getLocalizedName().')',
+                'information' => '',
+                'price_total' => $order->tax_amount,
+            ];
+        }
+
+        return $taxRows;
     }
 
     /**
@@ -159,11 +229,11 @@ trait WithLineTaxCategories
         }
 
         $transactions = $order->transactions()
-            ->with(['asset:id,master_asset_id', 'asset.masterAsset:id,tax_category'])
-            ->get(['id', 'order_id', 'asset_id', 'tax_category_id']);
+            ->with(['historicAsset:id,tax_category', 'asset:id,master_asset_id', 'asset.masterAsset:id,tax_category'])
+            ->get(['id', 'order_id', 'asset_id', 'historic_asset_id', 'tax_category_id']);
 
         foreach ($transactions as $transaction) {
-            $taxCategoryId = $this->getLineTaxCategoryId($order, $transaction->asset);
+            $taxCategoryId = $this->getLineTaxCategoryId($order, $transaction);
 
             if ($transaction->tax_category_id !== $taxCategoryId) {
                 $transaction->updateQuietly(['tax_category_id' => $taxCategoryId]);

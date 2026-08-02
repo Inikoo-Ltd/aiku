@@ -327,11 +327,14 @@ class EditMasterProduct extends OrgAction
                 'label'  => __('Tax'),
                 'icon'   => 'fa-light fa-percent',
                 'fields' => [
-                    'tax_category' => [
-                        'type'    => 'select',
-                        'label'   => __('Tax treatment'),
-                        'options' => $this->getReducedRateOptions(),
-                        'value'   => implode(',', $this->collapseToReducedRateCountries($masterProduct->tax_category ?? [])),
+                    'tax_preset' => [
+                        'type'      => 'radio',
+                        'mode'      => 'card',
+                        'columns'   => 1,
+                        'valueProp' => 'value',
+                        'label'     => __('Tax treatment'),
+                        'options'   => $this->getTaxPresetOptions($masterProduct->tax_category ?? []),
+                        'value'     => $masterProduct->tax_preset ?? 'custom',
                     ],
                 ]
             ],

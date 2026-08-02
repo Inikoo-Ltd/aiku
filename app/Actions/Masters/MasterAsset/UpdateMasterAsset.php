@@ -9,6 +9,9 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
+use App\Actions\Catalogue\Product\UpdateHistoricProductInBasketTransactions;
+use App\Actions\Catalogue\Product\UpdateOrdersInBasketsAfterProductUpdated;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
@@ -30,6 +33,7 @@ use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
@@ -60,8 +64,25 @@ class UpdateMasterAsset extends OrgAction
         $oldMasterAsset      = clone($masterAsset);
         $oldMismatchDetected = $oldMasterAsset->mismatch_detected;
 
+        if (Arr::has($modelData, 'tax_preset')) {
+            $presetName = (string)Arr::pull($modelData, 'tax_preset');
+            /** "custom" is display only, re-posting it must not clear the imported map. */
+            if ($presetName != 'custom') {
+                data_set($modelData, 'tax_category', $presetName == 'standard' || $presetName == '' ? [] : $this->expandTaxPreset($presetName));
+            }
+        }
+
         if (Arr::has($modelData, 'tax_category')) {
-            data_set($modelData, 'tax_category', $this->normaliseTaxCategoryMap(Arr::get($modelData, 'tax_category')));
+            $taxCategoryMap = $this->normaliseTaxCategoryMap(Arr::get($modelData, 'tax_category'));
+            data_set($modelData, 'tax_category', $taxCategoryMap);
+
+            /**
+             * The preset column exists so "everything that is food" can be re-expanded in
+             * mass when a rate changes; it is derived, never trusted from the input. A map
+             * no preset produces (imported, or hand set before presets existed) stores null.
+             */
+            $inferredPreset = $this->inferTaxPreset($taxCategoryMap);
+            data_set($modelData, 'tax_preset', $inferredPreset == 'custom' ? null : $inferredPreset);
         }
 
         if (Arr::has($modelData, 'master_family_id')) {
@@ -247,6 +268,28 @@ class UpdateMasterAsset extends OrgAction
                     'tax_category' => $masterAsset->tax_category
                 ]);
             }
+
+            /**
+             * Tax rides the same rails as a price change: a new historic freezes the new
+             * treatment, baskets are moved onto it and recalculated, and every line already
+             * sold keeps the historic - and the treatment - it was sold under.
+             */
+            foreach ($masterAsset->products as $product) {
+                /**
+                 * Faire and other external shops are taxed from the marketplace payload;
+                 * their lines never read the map, so minting historics and sweeping their
+                 * baskets would be churn at best and a payload overwrite at worst.
+                 */
+                if ($product->shop->type == ShopTypeEnum::EXTERNAL) {
+                    continue;
+                }
+
+                $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
+                $product->updateQuietly(['current_historic_asset_id' => $historicAsset->id]);
+
+                UpdateHistoricProductInBasketTransactions::dispatch($product);
+                UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+            }
         }
 
         if ($masterAsset->wasChanged(['name', 'description', 'description_title', 'description_extra', 'code'])) {
@@ -343,7 +386,8 @@ class UpdateMasterAsset extends OrgAction
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'follow_trade_unit_media'      => ['sometimes', 'boolean'],
-            'tax_category'                 => ['sometimes'],
+            'tax_category'                 => ['sometimes', 'array'],
+            'tax_preset'                   => ['sometimes', 'nullable', Rule::in([...array_keys($this->getTaxPresets()), 'standard', 'custom', ''])],
             // Master Prices
             'master_prices'                => ['sometimes', 'array'],
             'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
@@ -362,26 +406,16 @@ class UpdateMasterAsset extends OrgAction
     }
 
     /**
-     * The edit form picks countries ("reduced or zero rated in Spain & United Kingdom"), which
-     * expand into the stored shape of order-category-id => override-category-id. The Aurora
-     * import already passes that stored shape, so both are accepted. Unknown categories are
-     * dropped rather than trusted, this ends up multiplying invoices.
+     * Everything arriving here is the stored shape, order-category-id => override-category-id
+     * (the form itself posts a preset name, resolved before this runs). Unknown categories
+     * are dropped rather than trusted, this value ends up multiplying invoices.
      *
-     * @param  array<int|string, mixed>|string  $taxCategory
+     * @param  array<int|string, mixed>  $taxCategory
      *
      * @return array<int, int>
      */
-    private function normaliseTaxCategoryMap(array|string $taxCategory): array
+    private function normaliseTaxCategoryMap(array $taxCategory): array
     {
-        if (is_string($taxCategory) || array_is_list($taxCategory)) {
-            $countryIds = array_filter(array_map(
-                'intval',
-                is_string($taxCategory) ? explode(',', $taxCategory) : $taxCategory
-            ));
-
-            return $this->expandReducedRateCountries($countryIds);
-        }
-
         $knownIds = TaxCategory::pluck('id')->all();
 
         $map = [];

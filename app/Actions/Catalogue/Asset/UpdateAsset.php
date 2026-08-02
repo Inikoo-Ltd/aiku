@@ -30,10 +30,6 @@ class UpdateAsset extends OrgAction
         $changes = $asset->getChanges();
 
 
-        if (Arr::has($changes, 'tax_category')) {
-            RecalculateBasketsAfterTaxCategoryChange::dispatch($asset);
-        }
-
         if (Arr::hasAny($changes, ['state', 'master_asset_id'])) {
             if ($asset->masterAsset) {
                 MasterAssetHydrateAssets::run($asset->master_asset_id);

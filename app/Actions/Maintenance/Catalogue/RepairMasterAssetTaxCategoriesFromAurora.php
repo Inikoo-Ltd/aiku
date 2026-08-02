@@ -8,6 +8,7 @@
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
@@ -35,6 +36,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class RepairMasterAssetTaxCategoriesFromAurora
 {
     use AsAction;
+    use WithLineTaxCategories;
     use WithOrganisationSource;
     use WithAuroraParsers;
 
@@ -182,6 +184,80 @@ class RepairMasterAssetTaxCategoriesFromAurora
             $command->warn($stray->count().' master products carry a tax map Aurora does not confirm, left untouched:');
             foreach ($stray as $masterAsset) {
                 $command->line(sprintf('  %-14s %-46s %s', $masterAsset->code, mb_strimwidth($masterAsset->name, 0, 45, '…'), json_encode($masterAsset->tax_category)));
+            }
+        }
+
+        /**
+         * Aurora cannot say the tea tins are food in Spain - the range never existed in the
+         * Spanish database - and a Spain-only tea map is byte-identical to the dried flowers
+         * one, so inference alone mislabels both. The business rule is Raul's: everything in
+         * the tea ranges is food. Applied by code prefix, which covers the UK-suffixed tins
+         * and the starter pack, and deliberately not the PF dried flowers.
+         */
+        $command->newLine();
+        $foodRange = MasterAsset::where(function ($query) {
+            $query->whereRaw("lower(code) like 'artea%'")->orWhereRaw("lower(code) like 'arttt%'");
+        })
+            ->whereRaw("(tax_preset is distinct from 'food')")
+            ->get();
+
+        $command->line($foodRange->count().' tea range master products are not yet food');
+        foreach ($foodRange as $masterAsset) {
+            $command->line(sprintf(
+                '  %-14s %-46s %s -> food',
+                $masterAsset->code,
+                mb_strimwidth($masterAsset->name, 0, 45, '…'),
+                $masterAsset->tax_preset ?? 'null (custom)'
+            ));
+
+            if ($apply) {
+                UpdateMasterAsset::make()->action($masterAsset, ['tax_preset' => 'food']);
+            }
+        }
+
+        /**
+         * Masters whose map was already right are skipped above, but their tax_preset column
+         * (defaulted to standard by the migration) can disagree with the map they carry.
+         * Presets are always derived from the map, so re-infer and sync them here - this is
+         * what makes this command the one seeder for the whole feature. The tea range is
+         * excluded (already food above), and on a dry run the inference uses the map phase
+         * one WOULD write, so the report agrees with itself instead of describing a state
+         * half way through the apply.
+         */
+        $plannedMaps = [];
+        foreach ($changed as [$plannedMaster, , $merged]) {
+            $plannedMaps[$plannedMaster->id] = $merged;
+        }
+
+        $command->newLine();
+        $outOfSync = MasterAsset::where(function ($query) {
+            $query->whereRaw("tax_category::text not in ('{}', '[]', 'null')")
+                ->orWhereNot('tax_preset', 'standard')
+                ->orWhereNull('tax_preset');
+        })
+            ->whereRaw("lower(code) not like 'artea%'")
+            ->whereRaw("lower(code) not like 'arttt%'")
+            ->get()
+            ->map(function (MasterAsset $masterAsset) use ($plannedMaps) {
+                $inferred = $this->inferTaxPreset($plannedMaps[$masterAsset->id] ?? $masterAsset->tax_category ?? []);
+                $expected = $inferred == 'custom' ? null : $inferred;
+
+                return $masterAsset->tax_preset === $expected ? null : [$masterAsset, $expected];
+            })
+            ->filter();
+
+        $command->line($outOfSync->count().' master products have a tax preset out of sync with their map');
+        foreach ($outOfSync as [$masterAsset, $expected]) {
+            $command->line(sprintf(
+                '  %-14s %-46s %s -> %s',
+                $masterAsset->code,
+                mb_strimwidth($masterAsset->name, 0, 45, '…'),
+                $masterAsset->tax_preset ?? 'null',
+                $expected ?? 'null (custom)'
+            ));
+
+            if ($apply) {
+                $masterAsset->updateQuietly(['tax_preset' => $expected]);
             }
         }
 
