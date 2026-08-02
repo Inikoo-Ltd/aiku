@@ -969,3 +969,20 @@ test('UI Edit Stock Composition', function () {
             );
     });
 });
+
+test('UI Show Trade Unit composition tab', function () {
+    $this->withoutExceptionHandling();
+    createStocks($this->group);
+    $tradeUnit = $this->group->tradeUnits()->first();
+
+    $response = get(route('grp.goods.trade-units.show', [$tradeUnit->slug]).'?tab=composition');
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/TradeUnit')
+            ->where('tabs.current', 'composition')
+            ->has('composition.stocks')
+            ->has('composition.org_stocks')
+            ->has('composition.master_products')
+            ->has('composition.products');
+    });
+});
