@@ -59,7 +59,11 @@ class MacroServiceProvider extends ServiceProvider
             );
         };
 
-        Builder::macro('whereAnyWordStartWith', function (string $column, string|array $value) use ($quoteAsRegexLiteral): Builder {
+        $escapeLikeWildcards = static function (string $value): string {
+            return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $value);
+        };
+
+        Builder::macro('whereAnyWordStartWith', function (string $column, string|array $value) use ($quoteAsRegexLiteral, $escapeLikeWildcards): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
@@ -68,37 +72,37 @@ class MacroServiceProvider extends ServiceProvider
             $quotedValue = $quoteAsRegexLiteral($value);
 
             return $this->where(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
-                ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
+                ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$escapeLikeWildcards($value).'%');
         });
 
-        Builder::macro('whereStartWith', function (string $column, string|array $value): Builder {
+        Builder::macro('whereStartWith', function (string $column, string|array $value) use ($escapeLikeWildcards): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
 
             /** @var Builder $this */
-            return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", $value.'%');
+            return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", $escapeLikeWildcards($value).'%');
         });
 
-        Builder::macro('whereEndWith', function (string $column, string|array $value): Builder {
+        Builder::macro('whereEndWith', function (string $column, string|array $value) use ($escapeLikeWildcards): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
 
             /** @var Builder $this */
-            return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value);
+            return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$escapeLikeWildcards($value));
         });
 
-        Builder::macro('whereWith', function (string $column, string|array $value): Builder {
+        Builder::macro('whereWith', function (string $column, string|array $value) use ($escapeLikeWildcards): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
 
             /** @var Builder $this */
-            return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
+            return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", "%".$escapeLikeWildcards($value).'%');
         });
 
-        Builder::macro('orWhereAnyWordStartWith', function (string $column, string|array $value) use ($quoteAsRegexLiteral): Builder {
+        Builder::macro('orWhereAnyWordStartWith', function (string $column, string|array $value) use ($quoteAsRegexLiteral, $escapeLikeWildcards): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
@@ -106,34 +110,34 @@ class MacroServiceProvider extends ServiceProvider
             $quotedValue = $quoteAsRegexLiteral($value);
 
             return $this->orWhere(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
-                ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
+                ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$escapeLikeWildcards($value).'%');
         });
 
-        Builder::macro('orWhereStartWith', function (string $column, string|array $value): Builder {
+        Builder::macro('orWhereStartWith', function (string $column, string|array $value) use ($escapeLikeWildcards): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
 
             /** @var Builder $this */
-            return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", $value.'%');
+            return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", $escapeLikeWildcards($value).'%');
         });
 
-        Builder::macro('orWhereEndWith', function (string $column, string|array $value): Builder {
+        Builder::macro('orWhereEndWith', function (string $column, string|array $value) use ($escapeLikeWildcards): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
 
             /** @var Builder $this */
-            return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value);
+            return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$escapeLikeWildcards($value));
         });
 
-        Builder::macro('orWhereWith', function (string $column, string|array $value): Builder {
+        Builder::macro('orWhereWith', function (string $column, string|array $value) use ($escapeLikeWildcards): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
 
             /** @var Builder $this */
-            return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
+            return $this->orWhereRaw("$column COLLATE \"C\" ILIKE ?", "%".$escapeLikeWildcards($value).'%');
         });
 
 
