@@ -415,21 +415,26 @@ test('audit stock in location', function () {
     expect($locationOrgStock->quantity)->toEqual(2);
 });
 
-test('move stock location', function () {
-    /** @var LocationOrgStock $currentLocation */
-    $currentLocation = LocationOrgStock::first();
-    $targetLocation  = LocationOrgStock::latest()->first();
+test('move stock location', function ($warehouseArea) {
+    /** @var LocationOrgStock $sourceSlot */
+    $sourceSlot = LocationOrgStock::first();
 
-    expect($currentLocation->quantity)->toBeNumeric(2)
-        ->and($targetLocation->quantity)->toBeNumeric(0);
+    $targetSlot = StoreLocationOrgStock::make()->action(
+        $sourceSlot->orgStock,
+        StoreLocation::make()->action($warehouseArea, Location::factory()->definition()),
+        ['type' => LocationStockTypeEnum::PICKING]
+    );
 
-    $currentLocation = MoveOrgStockToOtherLocation::make()->action($currentLocation, $targetLocation, [
+    expect($sourceSlot->quantity)->toBeNumeric(2)
+        ->and($targetSlot->quantity)->toBeNumeric(0);
+
+    $sourceSlot = MoveOrgStockToOtherLocation::make()->action($sourceSlot, $targetSlot, [
         'quantity' => 1
     ]);
-    $targetLocation->refresh();
-    expect($currentLocation->quantity)->toBeNumeric(1)
-        ->and($targetLocation->quantity)->toBeNumeric(1);
-})->depends('detach stock from location');
+    $targetSlot->refresh();
+    expect($sourceSlot->quantity)->toBeNumeric(1)
+        ->and($targetSlot->quantity)->toBeNumeric(1);
+})->depends('create warehouse area');
 
 test('update location', function ($location) {
     $location = UpdateLocation::make()->action($location, ['code' => 'AE-3']);
