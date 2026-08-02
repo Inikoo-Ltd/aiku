@@ -56,7 +56,7 @@ class Search extends OrgAction
         }
 
         if (mb_strlen($query) <= 2) {
-            $cacheKey = 'search:'.$scope.':'.implode(':', $options).':'.mb_strtolower($query);
+            $cacheKey = 'search:'.$scope.':'.md5(json_encode($options)).':'.mb_strtolower($query);
 
             return cache()->remember($cacheKey, 30, $actions[$scope]);
         }
