@@ -10,8 +10,7 @@ namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
-use App\Actions\Catalogue\Product\UpdateHistoricProductInBasketTransactions;
-use App\Actions\Catalogue\Product\UpdateOrdersInBasketsAfterProductUpdated;
+use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket;
 use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
@@ -43,6 +42,7 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterAsset extends OrgAction
@@ -56,6 +56,9 @@ class UpdateMasterAsset extends OrgAction
 
     private MasterAsset $masterAsset;
 
+    /** Only a human editing in the UI is guarded against overlapping sweeps; the seeder sequences itself. */
+    private bool $guardTaxSweep = false;
+
     /**
      * @throws \Throwable
      */
@@ -63,6 +66,19 @@ class UpdateMasterAsset extends OrgAction
     {
         $oldMasterAsset      = clone($masterAsset);
         $oldMismatchDetected = $oldMasterAsset->mismatch_detected;
+
+        if ($this->guardTaxSweep && Arr::hasAny($modelData, ['tax_preset', 'tax_category'])) {
+            /**
+             * Two sweeps over the same baskets interleave their recalculations; the second
+             * change must wait for the first to finish, exactly like the price pipelines.
+             */
+            $runningSweep = TaxPresetBasketProgress::get($masterAsset);
+            if ($runningSweep && $runningSweep['state'] != 'finished') {
+                throw ValidationException::withMessages([
+                    'tax_preset' => __('The previous tax change is still repricing baskets, try again when it finishes.'),
+                ]);
+            }
+        }
 
         if (Arr::has($modelData, 'tax_preset')) {
             $presetName = (string)Arr::pull($modelData, 'tax_preset');
@@ -272,8 +288,11 @@ class UpdateMasterAsset extends OrgAction
             /**
              * Tax rides the same rails as a price change: a new historic freezes the new
              * treatment, baskets are moved onto it and recalculated, and every line already
-             * sold keeps the historic - and the treatment - it was sold under.
+             * sold keeps the historic - and the treatment - it was sold under. The affected
+             * baskets are counted up front and each recalculation reports back, so the
+             * person who pressed Food watches a progress bar instead of guessing.
              */
+            $assetIds = [];
             foreach ($masterAsset->products as $product) {
                 /**
                  * Faire and other external shops are taxed from the marketplace payload;
@@ -287,8 +306,38 @@ class UpdateMasterAsset extends OrgAction
                 $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
                 $product->updateQuietly(['current_historic_asset_id' => $historicAsset->id]);
 
-                UpdateHistoricProductInBasketTransactions::dispatch($product);
-                UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+                $assetIds[] = $product->asset_id;
+            }
+
+            $basketOrderIds = $this->getTaxSweepBasketOrderIds($assetIds);
+
+            TaxPresetBasketProgress::start($masterAsset, $basketOrderIds, $assetIds);
+
+            foreach ($basketOrderIds as $orderId) {
+                /**
+                 * A giant basket (aws34545 carries 2,496 lines) recalculates for longer than
+                 * the urgent connection's retry_after, so the queue re-serves it mid-run and
+                 * burns its attempts. Oversized baskets go to the long-running connection,
+                 * whose retry_after was sized for exactly this.
+                 */
+                $isOversized = DB::table('transactions')
+                    ->where('order_id', $orderId)
+                    ->whereNull('deleted_at')
+                    ->count() > 250;
+
+                $pendingDispatch = RecalculateTotalsOrdersInBasket::dispatch($orderId, null, null, null, $masterAsset->id);
+                if ($isOversized) {
+                    $pendingDispatch->onConnection('redis-long-running')->onQueue('long-running');
+                }
+            }
+
+            /**
+             * The watchdog goes on the queue after the reprices so its first run already sees
+             * work done; it reconciles from the data, so dropped or dead jobs cannot wedge
+             * the bar the way a decrementing counter did.
+             */
+            if ($basketOrderIds) {
+                CheckTaxPresetBasketProgress::dispatch($masterAsset->id)->delay(5);
             }
         }
 
@@ -405,6 +454,7 @@ class UpdateMasterAsset extends OrgAction
         return $rules;
     }
 
+
     /**
      * Everything arriving here is the stored shape, order-category-id => override-category-id
      * (the form itself posts a preset name, resolved before this runs). Unknown categories
@@ -455,7 +505,8 @@ class UpdateMasterAsset extends OrgAction
      */
     public function asController(MasterAsset $masterAsset, ActionRequest $request): MasterAsset
     {
-        $this->masterAsset = $masterAsset;
+        $this->guardTaxSweep = true;
+        $this->masterAsset   = $masterAsset;
         $this->initialisationFromGroup($masterAsset->group, $request);
 
         return $this->handle($masterAsset, $this->validatedData);

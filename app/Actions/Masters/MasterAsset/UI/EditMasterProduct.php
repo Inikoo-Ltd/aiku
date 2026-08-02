@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
+use App\Actions\Masters\MasterAsset\TaxPresetBasketProgress;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
@@ -328,13 +329,25 @@ class EditMasterProduct extends OrgAction
                 'icon'   => 'fa-light fa-percent',
                 'fields' => [
                     'tax_preset' => [
-                        'type'      => 'radio',
-                        'mode'      => 'card',
-                        'columns'   => 1,
-                        'valueProp' => 'value',
-                        'label'     => __('Tax treatment'),
-                        'options'   => $this->getTaxPresetOptions($masterProduct->tax_category ?? []),
-                        'value'     => $masterProduct->tax_preset ?? 'custom',
+                        'type'             => 'tax_preset',
+                        'mode'             => 'card',
+                        'columns'          => 1,
+                        'valueProp'        => 'value',
+                        'label'            => __('Tax treatment'),
+                        'options'          => $this->getTaxPresetOptions($masterProduct->tax_category ?? []),
+                        'master_asset_id'  => $masterProduct->id,
+                        /** Only a sweep still running matters on load; a finished one is history. */
+                        'sweep'            => ($sweep = TaxPresetBasketProgress::get($masterProduct)) && $sweep['state'] != 'finished' ? $sweep : null,
+                        'affected_baskets' => $affectedBaskets = $this->getTaxChangeAffectedBasketCount($masterProduct),
+                        'saveConfirmation' => [
+                            'title'       => __('Change the tax treatment?'),
+                            'description' => trans_choice(
+                                '{0} No open basket holds this product right now. Orders already submitted keep the tax they were sold under.|{1} :count open basket holds this product and will be retaxed. Orders already submitted keep the tax they were sold under.|[2,*] :count open baskets hold this product and will be retaxed. Orders already submitted keep the tax they were sold under.',
+                                $affectedBaskets
+                            ),
+                            'yesLabel'    => __('Yes, change the tax'),
+                        ],
+                        'value'            => $masterProduct->tax_preset ?? 'custom',
                     ],
                 ]
             ],

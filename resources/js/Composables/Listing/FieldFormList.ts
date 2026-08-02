@@ -55,6 +55,7 @@ const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/F
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
 const SelectCreate = defineAsyncComponent(() => import('@/Components/Forms/Fields/SelectCreate.vue'))
 const DynamicList = defineAsyncComponent(() => import('@/Components/Forms/Fields/DynamicList.vue'))
+const TaxPreset = defineAsyncComponent(() => import('@/Components/Forms/Fields/TaxPreset.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
@@ -192,6 +193,7 @@ export const componentsList: { [key: string]: Component } = {
     'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
     'select_create': SelectCreate,
     'dynamic_list': DynamicList,
+    'tax_preset': TaxPreset,
     'faq-master' : InputFaqMaster,
     'faq-shop' : InputFaqShop,
     'tags': TagsInput,

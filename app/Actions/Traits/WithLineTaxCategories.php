@@ -11,6 +11,9 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Masters\MasterAsset;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use Illuminate\Support\Facades\DB;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -181,6 +184,42 @@ trait WithLineTaxCategories
         }
 
         return 'custom';
+    }
+
+    /**
+     * The baskets a tax change on these assets will sweep: orders still CREATING, nothing
+     * else - submitted orders keep the treatment they were sold under.
+     *
+     * @param  array<int, int>  $assetIds
+     *
+     * @return array<int, int>
+     */
+    public function getTaxSweepBasketOrderIds(array $assetIds): array
+    {
+        if (empty($assetIds)) {
+            return [];
+        }
+
+        return DB::table('transactions')
+            ->join('orders', 'orders.id', 'transactions.order_id')
+            ->where('orders.state', OrderStateEnum::CREATING)
+            ->whereNull('orders.deleted_at')
+            ->whereNull('transactions.deleted_at')
+            ->whereIn('transactions.asset_id', $assetIds)
+            ->distinct()
+            ->pluck('orders.id')
+            ->all();
+    }
+
+    public function getTaxChangeAffectedBasketCount(MasterAsset $masterAsset): int
+    {
+        $assetIds = $masterAsset->products()
+            ->whereHas('shop', fn ($query) => $query->whereNot('type', ShopTypeEnum::EXTERNAL))
+            ->pluck('asset_id')
+            ->filter()
+            ->all();
+
+        return count($this->getTaxSweepBasketOrderIds($assetIds));
     }
 
     /**

@@ -1390,15 +1390,48 @@ test('UI Edit Master Product Composition', function (MasterAsset $masterAsset) {
     });
 })->depends('create master asset');
 
-test('UI Index Master Products Bulk Edit', function (MasterShop $masterShop) {
-    $response = get(route('grp.masters.master_shops.show.bulk-edit', [$masterShop->slug]));
+test('UI Index Master Products bulk edit tab lists products with their tax preset', function () {
+    $masterShop = createFreshMasterShop();
 
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'BETAB-DEP-'.uniqid(),
+        'name' => 'Bulk Edit Tab Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'BETAB-FAM-'.uniqid(),
+        'name' => 'Bulk Edit Tab Family',
+    ]);
+    StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BETAB-AST-'.uniqid(),
+        'name'    => 'Bulk Edit Tab Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 12.5,
+        'stocks'  => [],
+    ]);
+
+    $response = get(route('grp.masters.master_shops.show.master_families.master_products.index', [
+        $masterFamily->masterShop->slug,
+        $masterFamily->slug,
+        'tab' => 'bulk_edit',
+    ]));
+
+    $response->assertOk();
     $response->assertInertia(
         fn (AssertableInertia $page) => $page
-            ->component('Masters/MasterProductsBulkEdit')
+            ->component('Masters/MasterProducts')
+            ->has('tabs.navigation.bulk_edit')
+            ->has('taxPresetOptions')
+            ->has(
+                'bulk_edit.data.0',
+                fn (AssertableInertia $row) => $row
+                    ->has('code')
+                    ->has('tax_preset')
+                    ->etc()
+            )
             ->etc()
     );
-})->depends('create master shop');
+});
 
 test('UI Index Master Products in family has pricing tab', function () {
     $masterShop = createFreshMasterShop();

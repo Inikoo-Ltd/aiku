@@ -11,6 +11,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
+use App\Actions\Masters\MasterAsset\TaxPresetBasketProgress;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
@@ -360,6 +361,12 @@ test('a preset change freezes lines already sold and moves baskets, like a price
     expect($basket->refresh()->transactions->firstWhere('asset_id', $tea->asset_id)->historic_asset_id)
         ->toBe($tea->current_historic_asset_id)
         ->and((float)$basket->tax_amount)->toBe(10.0);
+
+    /** The sweep counted its baskets and reported itself finished, that is the progress bar. */
+    $progress = TaxPresetBasketProgress::get($masterAsset);
+    expect($progress['state'])->toBe('finished')
+        ->and($progress['baskets_total'])->toBeGreaterThanOrEqual(1)
+        ->and($progress['baskets_done'])->toBe($progress['baskets_total']);
 
     /**
      * The submitted order keeps the historic it was sold under - and even a forced
