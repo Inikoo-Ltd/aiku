@@ -39,6 +39,8 @@ const props = defineProps<{
     queryUrl?: (query: string) => string
     customerUrl?: (row: SearcherStat) => string | null
     pageUrl?: (clickedUrl: string) => string
+    zeroQueryStatus?: Record<string, 'unpublished' | 'not_stocked'>
+    opportunitiesUrl?: string
 }>()
 
 // The full path is unreadable in a narrow column; the last segment is the webpage url
@@ -122,7 +124,12 @@ const searcherHref = (searcher: SearcherStat): string | null => {
                     </div>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Searches without results") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1">
+                        {{ ctrans("Searches without results") }}
+                        <Link v-if="opportunitiesUrl" :href="opportunitiesUrl" class="text-indigo-600 hover:underline font-normal">
+                            · {{ ctrans("opportunities") }}
+                        </Link>
+                    </p>
                     <div class="divide-y divide-gray-100">
                         <component
                             :is="queryUrl ? Link : 'div'"
@@ -133,7 +140,19 @@ const searcherHref = (searcher: SearcherStat): string | null => {
                             :class="queryUrl ? 'hover:bg-slate-50 cursor-pointer' : ''"
                         >
                             <span class="text-gray-600 truncate min-w-0" :class="queryUrl ? 'hover:underline' : ''">{{ q.query }}</span>
-                            <span class="shrink-0 tabular-nums font-medium">{{ q.searches }}</span>
+                            <span class="shrink-0 tabular-nums font-medium flex items-center gap-1">
+                                <span
+                                    v-if="zeroQueryStatus?.[q.query] === 'unpublished'"
+                                    class="text-[10px] font-normal px-1.5 py-0.5 rounded bg-amber-50 text-amber-700"
+                                    v-tooltip="ctrans('We stock matching products, they are not published on the website')"
+                                >{{ ctrans("unpublished") }}</span>
+                                <span
+                                    v-else-if="zeroQueryStatus?.[q.query] === 'not_stocked'"
+                                    class="text-[10px] font-normal px-1.5 py-0.5 rounded bg-green-50 text-green-700"
+                                    v-tooltip="ctrans('Nothing in the catalogue matches, demand we do not sell')"
+                                >{{ ctrans("not sold") }}</span>
+                                {{ q.searches }}
+                            </span>
                         </component>
                         <p v-if="!widget.top_zero_queries.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>

@@ -73,6 +73,17 @@ trait WithWebsiteAnalyticsSubNavigation
                     "tooltip" => __("Website search insights"),
                 ],
             ],
+            [
+                "label"    => __("Opportunities"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.analytics.search.opportunities",
+                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-lightbulb"],
+                    "tooltip" => __("What customers searched for and did not find"),
+                ],
+            ],
 
         ];
     }

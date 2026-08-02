@@ -919,6 +919,7 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
         'grp.org.shops.show.web.analytics.visitors.index'    => $base,
         'grp.org.shops.show.web.analytics.search'            => $base,
         'grp.org.shops.show.web.analytics.search.query'      => array_merge($base, ['q' => 'tea']),
+        'grp.org.shops.show.web.analytics.search.opportunities' => $base,
         'grp.org.shops.show.web.analytics.search.boost_candidates' => array_merge($base, ['q' => 'tea']),
         'grp.org.shops.show.web.analytics.search.page'       => array_merge($base, ['url' => 'https://example.com/p/tea']),
         'grp.org.shops.show.web.analytics.search.customer'   => [$org, $shop, $w, $customer->slug],

@@ -19,7 +19,8 @@ const props = defineProps<{
     title: string
     search_insights: any
     search_merchandising: any
-    drilldown: { query: string, customer: string, params: Record<string, any> }
+    zero_query_status?: Record<string, 'unpublished' | 'not_stocked'>
+    drilldown: { query: string, customer: string, opportunities?: string, params: Record<string, any> }
     data: any
     customers: any
 }>()
@@ -37,6 +38,10 @@ const customerUrl = (row: { customer_slug?: string }) =>
     row.customer_slug ? route(props.drilldown.customer, { ...props.drilldown.params, customer: row.customer_slug }) : null
 
 const pageUrl = (clickedUrl: string) => route('grp.org.shops.show.web.analytics.search.page', { ...props.drilldown.params, url: clickedUrl })
+
+const opportunitiesUrl = props.drilldown.opportunities
+    ? route(props.drilldown.opportunities, props.drilldown.params)
+    : undefined
 </script>
 
 <template>
@@ -58,6 +63,8 @@ const pageUrl = (clickedUrl: string) => route('grp.org.shops.show.web.analytics.
             :query-url="queryUrl"
             :customer-url="customerUrl"
             :page-url="pageUrl"
+            :zero-query-status="zero_query_status"
+            :opportunities-url="opportunitiesUrl"
         />
         <SearchTrendChart :trend="search_insights?.trend" />
     </div>

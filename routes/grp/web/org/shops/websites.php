@@ -66,6 +66,7 @@ use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteSearchAnalytics;
 use App\Actions\Web\Website\UI\ShowWebsiteSearchCustomer;
+use App\Actions\Web\Website\UI\ShowWebsiteSearchOpportunities;
 use App\Actions\Web\Website\UI\ShowWebsiteSearchPage;
 use App\Actions\Web\Website\UI\ShowWebsiteSearchQuery;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
@@ -205,6 +206,7 @@ Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::delete('search/synonyms/{synonym}', DeleteSearchSynonym::class)->name('search.synonyms.delete');
     Route::get('search/synonym-suggestions', IndexSearchSynonymSuggestions::class)->name('search.synonym_suggestions.index');
     Route::post('search/synonym-suggestions/{suggestion}/{decision}', DecideSearchSynonymSuggestion::class)->name('search.synonym_suggestions.decide')->whereIn('decision', ['approve', 'dismiss']);
+    Route::get('search/opportunities', ShowWebsiteSearchOpportunities::class)->name('search.opportunities');
     Route::get('search/query', ShowWebsiteSearchQuery::class)->name('search.query');
     Route::get('search/page', ShowWebsiteSearchPage::class)->name('search.page');
     Route::get('search/customer/{customer}', ShowWebsiteSearchCustomer::class)->name('search.customer');

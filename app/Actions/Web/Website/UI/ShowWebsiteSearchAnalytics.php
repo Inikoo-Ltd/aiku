@@ -10,6 +10,7 @@ namespace App\Actions\Web\Website\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Search\GetWebsiteSearchAnalytics;
+use App\Actions\Search\GetWebsiteZeroResultOpportunities;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\WithWebsiteAnalyticsSubNavigation;
 use App\Http\Resources\Web\WebsiteSearchLogCustomersResource;
@@ -119,9 +120,11 @@ class ShowWebsiteSearchAnalytics extends OrgAction
                 ],
                 'search_insights'      => GetWebsiteSearchAnalytics::run($this->website),
                 'search_merchandising' => $this->searchMerchandisingProps($this->website, $request->route()->originalParameters()),
+                'zero_query_status' => $this->zeroQueryStatuses($this->website),
                 'drilldown'       => [
                     'query'    => 'grp.org.shops.show.web.analytics.search.query',
                     'customer' => 'grp.org.shops.show.web.analytics.search.customer',
+                    'opportunities' => 'grp.org.shops.show.web.analytics.search.opportunities',
                     'params'   => $request->route()->originalParameters(),
                 ],
                 'data'            => WebsiteSearchLogsResource::collection($searchLogs),
@@ -129,6 +132,18 @@ class ShowWebsiteSearchAnalytics extends OrgAction
             ]
         )->table($this->websiteSearchLogsTableStructure($this->website))
             ->table($this->customersTableStructure());
+    }
+
+    /**
+     * Why each failed search failed, keyed by query, so the widget can badge them.
+     *
+     * @return array<string, string>
+     */
+    private function zeroQueryStatuses(Website $website): array
+    {
+        return collect(GetWebsiteZeroResultOpportunities::run($website))
+            ->pluck('status', 'query')
+            ->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

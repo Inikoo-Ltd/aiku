@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Dispatching\Shipper;
@@ -110,6 +111,7 @@ class ShowProcurementDashboard extends OrgAction
                 ],
 
                 'shippers' => Shipper::query()->get(),
+                'search_demand' => GetSearchDemandOpportunities::run($this->group, $this->organisation),
                 'flatTreeMaps' => [
 
                     array_filter([

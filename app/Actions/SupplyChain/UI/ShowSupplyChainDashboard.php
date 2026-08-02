@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
@@ -46,6 +47,7 @@ class ShowSupplyChainDashboard extends OrgAction
                     ],
                     'title' => __('Supply chain'),
                 ],
+                'search_demand' => GetSearchDemandOpportunities::run($this->group),
                 'flatTreeMaps' => [
 
                     [
