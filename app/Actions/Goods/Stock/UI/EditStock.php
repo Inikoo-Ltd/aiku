@@ -72,11 +72,11 @@ class EditStock extends OrgAction
                         ]
                     ]
                 ],
-
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Edit sku'),
+                            'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
@@ -89,7 +89,32 @@ class EditStock extends OrgAction
                                     'value' => $stock->name
                                 ],
                             ],
-                        ]
+                        ],
+                        [
+                            'label'  => __('Trade units'),
+                            'icon'   => 'fa-light fa-atom',
+                            'fields' => [
+                                'trade_units' => [
+                                    'label'       => __('Trade units'),
+                                    'type'        => 'trade-units-for-stock',
+                                    'fetchRoute'  => [
+                                        'name' => 'grp.json.master_product_category.all_trade_units',
+                                    ],
+                                    'impactRoute' => [
+                                        'name'       => 'grp.json.stock.trade-unit-changes-impact',
+                                        'parameters' => [
+                                            'stock' => $stock->slug
+                                        ]
+                                    ],
+                                    'value'       => $stock->tradeUnits->map(fn ($tradeUnit) => [
+                                        'id'       => $tradeUnit->id,
+                                        'code'     => $tradeUnit->code,
+                                        'name'     => $tradeUnit->name,
+                                        'quantity' => $tradeUnit->pivot->quantity,
+                                    ])->values(),
+                                ],
+                            ],
+                        ],
                     ],
 
                     'args' => [
