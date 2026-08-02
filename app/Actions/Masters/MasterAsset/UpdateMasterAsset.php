@@ -26,6 +26,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -45,6 +46,7 @@ class UpdateMasterAsset extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
+    use WithLineTaxCategories;
     use WithMasterAssetTradeUnits;
     use WithCustomTradeUnitAudits;
 
@@ -341,7 +343,7 @@ class UpdateMasterAsset extends OrgAction
             'is_for_sale'                  => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'follow_trade_unit_media'      => ['sometimes', 'boolean'],
-            'tax_category'                 => ['sometimes', 'array'],
+            'tax_category'                 => ['sometimes'],
             // Master Prices
             'master_prices'                => ['sometimes', 'array'],
             'master_prices.*.value'        => ['sometimes', 'numeric', 'gt:0'],
@@ -360,31 +362,32 @@ class UpdateMasterAsset extends OrgAction
     }
 
     /**
-     * The edit form sends the tax overrides as a list of rows; everything else already passes
-     * the stored shape, order-category-id => override-category-id. Unknown categories are
+     * The edit form picks countries ("reduced or zero rated in Spain & United Kingdom"), which
+     * expand into the stored shape of order-category-id => override-category-id. The Aurora
+     * import already passes that stored shape, so both are accepted. Unknown categories are
      * dropped rather than trusted, this ends up multiplying invoices.
+     *
+     * @param  array<int|string, mixed>|string  $taxCategory
      *
      * @return array<int, int>
      */
-    private function normaliseTaxCategoryMap(array $taxCategory): array
+    private function normaliseTaxCategoryMap(array|string $taxCategory): array
     {
-        if (!array_is_list($taxCategory)) {
-            $rows = [];
-            foreach ($taxCategory as $orderTaxCategoryId => $lineTaxCategoryId) {
-                $rows[] = [
-                    'order_tax_category_id' => $orderTaxCategoryId,
-                    'tax_category_id'       => $lineTaxCategoryId,
-                ];
-            }
-            $taxCategory = $rows;
+        if (is_string($taxCategory) || array_is_list($taxCategory)) {
+            $countryIds = array_filter(array_map(
+                'intval',
+                is_string($taxCategory) ? explode(',', $taxCategory) : $taxCategory
+            ));
+
+            return $this->expandReducedRateCountries($countryIds);
         }
 
         $knownIds = TaxCategory::pluck('id')->all();
 
         $map = [];
-        foreach ($taxCategory as $row) {
-            $orderTaxCategoryId = (int)Arr::get($row, 'order_tax_category_id');
-            $lineTaxCategoryId  = (int)Arr::get($row, 'tax_category_id');
+        foreach ($taxCategory as $orderTaxCategoryId => $lineTaxCategoryId) {
+            $orderTaxCategoryId = (int)$orderTaxCategoryId;
+            $lineTaxCategoryId  = (int)$lineTaxCategoryId;
 
             if (in_array($orderTaxCategoryId, $knownIds) && in_array($lineTaxCategoryId, $knownIds)) {
                 $map[$orderTaxCategoryId] = $lineTaxCategoryId;

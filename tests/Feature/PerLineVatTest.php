@@ -25,6 +25,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Helpers\Country;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Order;
 
@@ -191,29 +192,73 @@ test('an order level discount is split across the rates and still adds up', func
         ->and($tax)->toBe(18.67);
 });
 
-test('the master product edit form round trips the tax override map', function () {
+test('the master product edit form round trips the tax treatment', function () {
     $masterAsset = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0)
         ->asset->masterAsset;
 
-    $rows = EditMasterProduct::make()->getTaxCategoryRows($masterAsset);
+    $gb = Country::where('code', 'GB')->firstOrFail();
 
-    expect($rows)->toBe([[
-        'order_tax_category_id' => (string)$this->vat20->id,
-        'tax_category_id'       => (string)$this->vat0->id,
-    ]]);
-
-    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => []]);
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => '']);
 
     expect($masterAsset->refresh()->tax_category)->toBe([]);
 
-    UpdateMasterAsset::make()->action($masterAsset, [
-        'tax_category' => [
-            ['order_tax_category_id' => (string)$this->vat20->id, 'tax_category_id' => (string)$this->vat0->id],
-            ['order_tax_category_id' => '999999', 'tax_category_id' => (string)$this->vat0->id],
-            ['order_tax_category_id' => '', 'tax_category_id' => ''],
-        ],
-    ]);
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => (string)$gb->id]);
 
     expect($masterAsset->refresh()->tax_category)->toBe([(string)$this->vat20->id => $this->vat0->id])
-        ->and($masterAsset->assets()->first()->tax_category)->toBe([(string)$this->vat20->id => $this->vat0->id]);
+        ->and($masterAsset->assets()->first()->tax_category)->toBe([(string)$this->vat20->id => $this->vat0->id])
+        ->and(EditMasterProduct::make()->collapseToReducedRateCountries($masterAsset->tax_category))->toBe([$gb->id]);
+});
+
+test('the tax treatment options name the food case', function () {
+    $options = EditMasterProduct::make()->getReducedRateOptions();
+    $labels  = array_column($options, 'label');
+
+    expect($labels[0])->toBe('Standard rate')
+        ->and(collect($labels)->filter(fn ($l) => str_contains($l, 'food')))->toHaveCount(1);
+});
+
+test('changing a product tax treatment repriced baskets and leaves submitted orders alone', function () {
+    $tea         = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0);
+    $masterAsset = $tea->asset->masterAsset;
+    $gb          = Country::where('code', 'GB')->firstOrFail();
+
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => '']);
+
+    $basket = StoreOrder::make()->action($this->customer, []);
+    $basket->updateQuietly(['tax_category_id' => $this->vat20->id]);
+    StoreTransaction::make()->action($basket->refresh(), $tea->historicAsset, ['quantity_ordered' => 1]);
+
+    $submitted = StoreOrder::make()->action($this->customer, []);
+    $submitted->updateQuietly(['tax_category_id' => $this->vat20->id]);
+    StoreTransaction::make()->action($submitted->refresh(), $tea->historicAsset, ['quantity_ordered' => 1]);
+    SubmitOrder::make()->action($submitted);
+
+    expect((float)$basket->refresh()->tax_amount)->toBe(10.0)
+        ->and((float)$submitted->refresh()->tax_amount)->toBe(10.0);
+
+    UpdateMasterAsset::make()->action($masterAsset, ['tax_category' => (string)$gb->id]);
+
+    expect((float)$basket->refresh()->tax_amount)->toBe(0.0)
+        ->and((float)$basket->total_amount)->toBe(50.0)
+        ->and((float)$submitted->refresh()->tax_amount)->toBe(10.0)
+        ->and((float)$submitted->total_amount)->toBe(60.0);
+});
+
+test('a reduced rate country expands to every one of its live categories, matching special with special', function () {
+    $es = Country::where('code', 'ES')->firstOrFail();
+    $gb = Country::where('code', 'GB')->firstOrFail();
+
+    $map = EditMasterProduct::make()->expandReducedRateCountries([$es->id, $gb->id]);
+
+    foreach ($map as $orderTaxCategoryId => $lineTaxCategoryId) {
+        $order = TaxCategory::find($orderTaxCategoryId);
+        $line  = TaxCategory::find($lineTaxCategoryId);
+
+        expect($order->country_id)->toBe($line->country_id)
+            ->and($line->rate)->toBeLessThan($order->rate)
+            ->and($line->type->value)->toBe($order->type->value == 'special' ? 'reduced_special' : 'reduced');
+    }
+
+    /** Spain charges IVA and IVA+RE, the UK only VAT, so Spain contributes two entries. */
+    expect($map)->toHaveCount(3);
 });
