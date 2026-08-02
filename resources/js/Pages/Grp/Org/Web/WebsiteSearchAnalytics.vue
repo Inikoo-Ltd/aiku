@@ -1,26 +1,101 @@
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { Head, Link, router } from "@inertiajs/vue3"
+import { ref, watch } from "vue"
+import axios from "axios"
+import { debounce } from "lodash-es"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
+import Modal from "@/Components/Utils/Modal.vue"
 import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
 import SearchTrendChart from "@/Components/DataDisplay/Dashboard/Widget/SearchTrendChart.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faTimes, faSearch, faUsers } from "@fal"
+import { faExternalLink, faTimes, faSearch, faUsers, faRocket } from "@fal"
 
-library.add(faExternalLink, faTimes, faSearch, faUsers)
+library.add(faExternalLink, faTimes, faSearch, faUsers, faRocket)
+
+interface BoostItem {
+    type: 'product' | 'product_category' | 'collection'
+    id: number
+    code: string
+    name: string | null
+}
 
 const props = defineProps<{
     pageHead: any
     title: string
     search_insights: any
+    search_boosts: BoostItem[]
+    boost_routes: { update: { name: string, parameters: Record<string, any> }, candidates: { name: string, parameters: Record<string, any> } }
     drilldown: { query: string, customer: string, params: Record<string, any> }
     data: any
     customers: any
 }>()
+
+const isBoostModalOpen = ref(false)
+const boostSelection = ref<BoostItem[]>([...props.search_boosts])
+const boostQuery = ref("")
+const boostCandidates = ref<BoostItem[]>([])
+const isSearchingCandidates = ref(false)
+const isSavingBoosts = ref(false)
+
+const boostTypeLabels: Record<BoostItem['type'], string> = {
+    product: 'Product',
+    product_category: 'Category',
+    collection: 'Collection',
+}
+
+const searchCandidates = debounce(async (q: string) => {
+    if (q.length < 2) {
+        boostCandidates.value = []
+        return
+    }
+    isSearchingCandidates.value = true
+    try {
+        const { data } = await axios.get(route(props.boost_routes.candidates.name, props.boost_routes.candidates.parameters), { params: { q } })
+        boostCandidates.value = data
+    } finally {
+        isSearchingCandidates.value = false
+    }
+}, 300)
+
+watch(boostQuery, (q) => searchCandidates(q))
+
+const isSelected = (item: BoostItem) =>
+    boostSelection.value.some(boost => boost.type === item.type && boost.id === item.id)
+
+const addBoost = (item: BoostItem) => {
+    if (boostSelection.value.length >= 3 || isSelected(item)) return
+    boostSelection.value.push(item)
+}
+
+const removeBoost = (item: BoostItem) => {
+    boostSelection.value = boostSelection.value.filter(boost => !(boost.type === item.type && boost.id === item.id))
+}
+
+const saveBoosts = () => {
+    isSavingBoosts.value = true
+    router.post(
+        route(props.boost_routes.update.name, props.boost_routes.update.parameters),
+        { boosts: boostSelection.value.map(({ type, id }) => ({ type, id })) },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                isSavingBoosts.value = false
+                isBoostModalOpen.value = false
+            },
+        }
+    )
+}
+
+const openBoostModal = () => {
+    boostSelection.value = [...props.search_boosts]
+    boostQuery.value = ""
+    boostCandidates.value = []
+    isBoostModalOpen.value = true
+}
 
 const activeTab = ref<'searches' | 'customers'>('searches')
 
@@ -38,6 +113,99 @@ const customerUrl = (row: { customer_slug?: string }) =>
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+
+    <div class="px-4 pt-4 flex items-center gap-2 flex-wrap">
+        <button
+            type="button"
+            class="px-3 py-1.5 rounded-md text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+            v-tooltip="ctrans('Boost up to 3 items to the top of matching storefront searches')"
+            @click="openBoostModal"
+        >
+            <FontAwesomeIcon icon="fal fa-rocket" fixed-width aria-hidden="true" />
+            {{ ctrans("Boosted items") }}
+        </button>
+        <span
+            v-for="boost in search_boosts"
+            :key="`${boost.type}-${boost.id}`"
+            class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700"
+        >
+            {{ boost.code }} <span class="text-indigo-400">· {{ ctrans(boostTypeLabels[boost.type]) }}</span>
+        </span>
+    </div>
+
+    <Modal :isOpen="isBoostModalOpen" width="w-full max-w-lg" @onClose="isBoostModalOpen = false">
+        <div class="p-2">
+            <h2 class="text-lg font-medium mb-1">
+                <FontAwesomeIcon icon="fal fa-rocket" fixed-width aria-hidden="true" />
+                {{ ctrans("Boosted items") }}
+            </h2>
+            <p class="text-sm text-gray-500 mb-4">
+                {{ ctrans("Boosted items appear first in storefront search results when they match the search. Maximum 3 items.") }}
+            </p>
+
+            <div v-if="boostSelection.length" class="flex flex-wrap gap-2 mb-4">
+                <span
+                    v-for="boost in boostSelection"
+                    :key="`${boost.type}-${boost.id}`"
+                    class="inline-flex items-center gap-1.5 text-sm px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700"
+                >
+                    {{ boost.code }}
+                    <span class="text-indigo-400 text-xs">{{ ctrans(boostTypeLabels[boost.type]) }}</span>
+                    <button type="button" @click="removeBoost(boost)" :aria-label="ctrans('Remove')">
+                        <FontAwesomeIcon icon="fal fa-times" aria-hidden="true" />
+                    </button>
+                </span>
+            </div>
+            <p v-else class="text-sm text-gray-400 mb-4">{{ ctrans("No boosted items yet") }}</p>
+
+            <input
+                v-model="boostQuery"
+                type="text"
+                :placeholder="ctrans('Search products, categories or collections...')"
+                class="w-full rounded-md border-gray-300 text-sm mb-2"
+                :disabled="boostSelection.length >= 3"
+            />
+            <p v-if="boostSelection.length >= 3" class="text-xs text-amber-600 mb-2">{{ ctrans("Limit of 3 reached, remove one to add another") }}</p>
+
+            <div class="max-h-56 overflow-y-auto divide-y divide-gray-100">
+                <div v-if="isSearchingCandidates" class="py-3 text-sm text-gray-400">{{ ctrans("Searching...") }}</div>
+                <template v-else>
+                <button
+                    v-for="candidate in boostCandidates"
+                    :key="`${candidate.type}-${candidate.id}`"
+                    type="button"
+                    class="w-full flex items-center justify-between gap-2 py-2 px-1 text-left text-sm hover:bg-slate-50 disabled:opacity-40"
+                    :disabled="isSelected(candidate) || boostSelection.length >= 3"
+                    @click="addBoost(candidate)"
+                >
+                    <span class="truncate">
+                        <span class="font-medium">{{ candidate.code }}</span>
+                        <span class="text-gray-500"> {{ candidate.name }}</span>
+                    </span>
+                    <span class="text-xs text-gray-400 shrink-0">{{ ctrans(boostTypeLabels[candidate.type]) }}</span>
+                </button>
+                </template>
+            </div>
+
+            <div class="mt-4 flex justify-end gap-2">
+                <button
+                    type="button"
+                    class="px-4 py-2 rounded-md text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    @click="isBoostModalOpen = false"
+                >
+                    {{ ctrans("Cancel") }}
+                </button>
+                <button
+                    type="button"
+                    class="px-4 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                    :disabled="isSavingBoosts"
+                    @click="saveBoosts"
+                >
+                    {{ ctrans("Save") }}
+                </button>
+            </div>
+        </div>
+    </Modal>
 
     <div class="p-4 grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
         <SearchAnalyticsDisplay

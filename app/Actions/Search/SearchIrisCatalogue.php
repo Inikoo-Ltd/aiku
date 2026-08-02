@@ -8,6 +8,7 @@
 namespace App\Actions\Search;
 
 use App\Actions\IrisAction;
+use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -19,7 +20,9 @@ class SearchIrisCatalogue extends IrisAction
 {
     public function handle(string $query): array
     {
-        $results = Search::run('catalogue', $query, ['shop_id' => $this->shop->id, 'is_in_website' => true]);
+        $boosts = UpdateWebsiteSearchBoosts::activeBoostIds($this->website);
+
+        $results = Search::run('catalogue', $query, ['shop_id' => $this->shop->id, 'is_in_website' => true, 'boosts' => $boosts]);
 
         data_set($results, 'results.products', $this->enrichItems(Arr::get($results, 'results.products', []), Product::class, largeImage: true));
         data_set($results, 'results.product_categories', $this->enrichItems(Arr::get($results, 'results.product_categories', []), ProductCategory::class));

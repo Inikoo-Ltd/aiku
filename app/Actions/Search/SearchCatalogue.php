@@ -12,6 +12,7 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Arr;
+use Laravel\Scout\Builder;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SearchCatalogue
@@ -36,6 +37,11 @@ class SearchCatalogue
             $collectionsQuery->where('is_in_website', true);
         }
 
+        $boosts = Arr::get($options, 'boosts', []);
+        $this->applyBoosts($productsQuery, Arr::get($boosts, 'product'));
+        $this->applyBoosts($productCategoriesQuery, Arr::get($boosts, 'product_category'));
+        $this->applyBoosts($collectionsQuery, Arr::get($boosts, 'collection'));
+
         $productsQuery->take(11);
         $productCategoriesQuery->take(10);
         $collectionsQuery->take(10);
@@ -57,5 +63,20 @@ class SearchCatalogue
         ];
     }
 
+    /**
+     * Boosted items float to the top of the results they already match: an _eval sort
+     * ranks them first without pinning them into unrelated searches.
+     *
+     * @param array<int, int>|null $ids
+     */
+    private function applyBoosts(Builder $searchQuery, ?array $ids): void
+    {
+        if (empty($ids)) {
+            return;
+        }
 
+        $searchQuery->options([
+            'sort_by' => '_eval(id:['.implode(',', $ids).']):desc,_text_match:desc',
+        ]);
+    }
 }

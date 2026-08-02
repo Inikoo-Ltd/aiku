@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website\UI;
 use App\Actions\OrgAction;
 use App\Actions\Search\GetWebsiteSearchAnalytics;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
 use App\Actions\Web\Website\WithWebsiteAnalyticsSubNavigation;
 use App\Http\Resources\Web\WebsiteSearchLogCustomersResource;
 use App\Http\Resources\Web\WebsiteSearchLogsResource;
@@ -22,6 +23,7 @@ use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -117,6 +119,17 @@ class ShowWebsiteSearchAnalytics extends OrgAction
                     'subNavigation' => $this->getWebsiteAnalyticsNavigation($this->website),
                 ],
                 'search_insights' => GetWebsiteSearchAnalytics::run($this->website),
+                'search_boosts'   => $this->getSearchBoosts(),
+                'boost_routes'    => [
+                    'update'     => [
+                        'name'       => 'grp.org.shops.show.web.analytics.search.boosts.update',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                    'candidates' => [
+                        'name'       => 'grp.org.shops.show.web.analytics.search.boost_candidates',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                ],
                 'drilldown'       => [
                     'query'    => 'grp.org.shops.show.web.analytics.search.query',
                     'customer' => 'grp.org.shops.show.web.analytics.search.customer',
@@ -127,6 +140,30 @@ class ShowWebsiteSearchAnalytics extends OrgAction
             ]
         )->table($this->websiteSearchLogsTableStructure($this->website))
             ->table($this->customersTableStructure());
+    }
+
+    /**
+     * @return array<int, array{type: string, id: int, code: string, name: string|null}>
+     */
+    private function getSearchBoosts(): array
+    {
+        $boosts = Arr::get($this->website->settings, 'search_boosts', []);
+
+        return array_values(array_filter(array_map(function (array $boost) {
+            $modelClass = Arr::get(UpdateWebsiteSearchBoosts::BOOSTABLE_TYPES, $boost['type']);
+            $model      = $modelClass ? $modelClass::find($boost['id']) : null;
+
+            if (!$model) {
+                return null;
+            }
+
+            return [
+                'type' => $boost['type'],
+                'id'   => $model->id,
+                'code' => $model->code,
+                'name' => $model->name,
+            ];
+        }, $boosts)));
     }
 
     public function getBreadcrumbs(array $routeParameters): array

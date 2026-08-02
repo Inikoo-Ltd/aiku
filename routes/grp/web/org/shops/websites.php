@@ -52,6 +52,8 @@ use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
 use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Website\UI\CreateWebsite;
+use App\Actions\Web\Website\UI\GetWebsiteSearchBoostCandidates;
+use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
 use App\Actions\Web\Website\UI\EditWebsite;
 use App\Actions\Web\Website\UI\IndexWebsites;
 use App\Actions\Web\Website\UI\ShowRestrictedCountry;
@@ -190,6 +192,8 @@ Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('web-user-requests', IndexWebUserRequests::class)->name('web_user_requests.index');
     Route::get('visitors', IndexWebsiteVisitors::class)->name('visitors.index');
     Route::get('search', ShowWebsiteSearchAnalytics::class)->name('search');
+    Route::get('search/boost-candidates', GetWebsiteSearchBoostCandidates::class)->name('search.boost_candidates');
+    Route::post('search/boosts', UpdateWebsiteSearchBoosts::class)->name('search.boosts.update');
     Route::get('search/query', ShowWebsiteSearchQuery::class)->name('search.query');
     Route::get('search/customer/{customer}', ShowWebsiteSearchCustomer::class)->name('search.customer');
 });

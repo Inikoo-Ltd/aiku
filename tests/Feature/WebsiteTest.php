@@ -47,6 +47,7 @@ use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -86,6 +87,7 @@ use Lorisleiva\Actions\ActionRequest;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -917,6 +919,7 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
         'grp.org.shops.show.web.analytics.visitors.index'    => $base,
         'grp.org.shops.show.web.analytics.search'            => $base,
         'grp.org.shops.show.web.analytics.search.query'      => array_merge($base, ['q' => 'tea']),
+        'grp.org.shops.show.web.analytics.search.boost_candidates' => array_merge($base, ['q' => 'tea']),
         'grp.org.shops.show.web.analytics.search.customer'   => [$org, $shop, $w, $customer->slug],
         'grp.org.shops.show.web.announcements.index'         => $base,
         'grp.org.shops.show.web.announcements.create'        => $base,
@@ -1058,6 +1061,39 @@ test('create catalogue webpages', function (Website $website) {
         ->and($productWebpage->model_type)->toBe('Product');
 
     return compact('department', 'family', 'subDepartment', 'product', 'departmentWebpage', 'familyWebpage', 'subDepartmentWebpage', 'productWebpage', 'blogWebpage');
+})->depends('launch website');
+
+test('update website search boosts', function (Website $website) {
+    $website->refresh();
+    createProduct($this->shop);
+    $product = $this->shop->products()->first();
+
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    $response = post(route('grp.org.shops.show.web.analytics.search.boosts.update', $routeParams), [
+        'boosts' => [['type' => 'product', 'id' => $product->id]],
+    ]);
+    $response->assertSuccessful();
+
+    expect(data_get($website->refresh()->settings, 'search_boosts'))
+        ->toEqual([['type' => 'product', 'id' => $product->id]]);
+
+    $tooMany = array_fill(0, 4, ['type' => 'product', 'id' => $product->id]);
+    post(route('grp.org.shops.show.web.analytics.search.boosts.update', $routeParams), ['boosts' => $tooMany])
+        ->assertSessionHasErrors('boosts');
+
+    $product->updateQuietly(['available_quantity' => 5]);
+    expect(UpdateWebsiteSearchBoosts::activeBoostIds($website->refresh()))
+        ->toEqual(['product' => [$product->id]]);
+
+    $product->updateQuietly(['available_quantity' => 0]);
+    expect(UpdateWebsiteSearchBoosts::activeBoostIds($website))->toBe([]);
+
+    post(route('grp.org.shops.show.web.analytics.search.boosts.update', $routeParams), [
+        'boosts' => [['type' => 'product', 'id' => $product->id + 999999]],
+    ])->assertSuccessful();
+
+    expect(data_get($website->refresh()->settings, 'search_boosts'))->toBe([]);
 })->depends('launch website');
 
 test('UI smoke catalogue webpage routes', function (Website $website, array $cat) {
