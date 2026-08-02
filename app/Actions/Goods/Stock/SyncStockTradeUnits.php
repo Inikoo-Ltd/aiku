@@ -8,11 +8,14 @@
 
 namespace App\Actions\Goods\Stock;
 
+use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
+use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateStocks;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
+use App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Goods\Stock;
+use Illuminate\Support\Facades\Bus;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncStockTradeUnits
@@ -31,7 +34,14 @@ class SyncStockTradeUnits
         StockHydrateGrossWeightFromTradeUnits::dispatch($stock);
 
         foreach ($stock->orgStocks as $orgStock) {
-            OrgStockHydratePackedIn::dispatch($orgStock);
+            SyncOrgStockTradeUnits::run($orgStock, $tradeUnitsData);
+
+            $jobs = $orgStock->products
+                ->map(fn ($product) => SyncProductOrgStocksFromTradeUnits::makeJob($product))
+                ->push(SyncDeliveryNoteItemsRequiredPickQuantity::makeJob($orgStock))
+                ->all();
+
+            Bus::chain($jobs)->dispatch();
         }
 
         return $stock;
