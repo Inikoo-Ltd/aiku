@@ -53,13 +53,19 @@ class MacroServiceProvider extends ServiceProvider
             return $tableBuilder->applyTo($this);
         });
 
-        Builder::macro('whereAnyWordStartWith', function (string $column, string|array $value): Builder {
+        $quoteAsRegexLiteral = static function (string $value): string {
+            return DB::connection()->getPdo()->quote(
+                preg_replace('/[\\\\^$.\[\]|()*+?{}]/', '\\\\$0', $value)
+            );
+        };
+
+        Builder::macro('whereAnyWordStartWith', function (string $column, string|array $value) use ($quoteAsRegexLiteral): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
 
             /** @var Builder $this */
-            $quotedValue = DB::connection()->getPdo()->quote($value);
+            $quotedValue = $quoteAsRegexLiteral($value);
 
             return $this->where(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
                 ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
@@ -92,12 +98,12 @@ class MacroServiceProvider extends ServiceProvider
             return $this->whereRaw("$column COLLATE \"C\" ILIKE ?", "%".$value.'%');
         });
 
-        Builder::macro('orWhereAnyWordStartWith', function (string $column, string|array $value): Builder {
+        Builder::macro('orWhereAnyWordStartWith', function (string $column, string|array $value) use ($quoteAsRegexLiteral): Builder {
             if (is_array($value)) {
                 $value = implode(' ', $value);
             }
             /** @var Builder $this */
-            $quotedValue = DB::connection()->getPdo()->quote($value);
+            $quotedValue = $quoteAsRegexLiteral($value);
 
             return $this->orWhere(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
                 ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
