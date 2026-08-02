@@ -25,6 +25,7 @@ import { faDoorOpen } from "@far"
 library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChartLine)
 
 import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
+import SearchMerchandising from "@/Components/DataDisplay/Dashboard/Widget/SearchMerchandising.vue"
 
 // Deep link to the website's search analytics page; null (hidden) when the route
 // doesn't apply, e.g. fulfilment websites
@@ -73,6 +74,7 @@ const props = defineProps<{
         route_restricted_country?: routeType
         iris_search_model?: "luigi" | "internal"
         search_insights?: any
+        search_merchandising?: any
     }
     route_storefront: routeType
     route_landing_page?: routeType
@@ -192,8 +194,15 @@ const links = computed(() => {
                 <div class="border-t border-gray-300 mt-6 pt-4">
                     <div class="flex flex-col xl:flex-row gap-6">
                         <div v-if="showSearchInsights" class="flex-1 min-w-0">
-                            <div class="font-semibold w-fit text-lg mb-2">
-                                {{ trans('Website Search') }}
+                            <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                                <div class="font-semibold w-fit text-lg">
+                                    {{ trans('Website Search') }}
+                                </div>
+                                <SearchMerchandising
+                                    v-if="props.data.search_merchandising"
+                                    :merchandising="props.data.search_merchandising"
+                                    :top-zero-queries="props.data.search_insights?.top_zero_queries"
+                                />
                             </div>
                             <SearchAnalyticsDisplay
                                 :widget="props.data.search_insights"

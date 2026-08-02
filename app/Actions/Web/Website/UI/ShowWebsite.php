@@ -37,6 +37,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowWebsite extends OrgAction
 {
     use HasWorkshopAction;
+    use WithSearchMerchandising;
     use WithWebAuthorisation;
 
     private Fulfilment|Shop|Organisation $parent;
@@ -307,6 +308,9 @@ class ShowWebsite extends OrgAction
                         'website_type'       => $website->shop->type,
                         'iris_search_model'  => Arr::get($website->settings, 'iris_search_model', 'luigi'),
                         'search_insights'    => GetWebsiteSearchAnalytics::run($website),
+                        'search_merchandising' => str_starts_with($request->route()->getName(), 'grp.org.shops.show.web.')
+                            ? $this->searchMerchandisingProps($website, $request->route()->originalParameters())
+                            : null,
                     ],
                     [
                         'pic' => null,// todo this is wrong User::permission("web.{$website->shop_id}.edit")->get()

@@ -58,6 +58,32 @@ class UpdateWebsiteSearchBoosts extends OrgAction
         return $boosts;
     }
 
+    /**
+     * Current boosts enriched for display.
+     *
+     * @return array<int, array{type: string, id: int, code: string, name: string|null}>
+     */
+    public static function currentBoosts(Website $website): array
+    {
+        $boosts = Arr::get($website->settings, 'search_boosts', []);
+
+        return array_values(array_filter(array_map(function (array $boost) {
+            $modelClass = Arr::get(self::BOOSTABLE_TYPES, $boost['type']);
+            $model      = $modelClass ? $modelClass::find($boost['id']) : null;
+
+            if (!$model) {
+                return null;
+            }
+
+            return [
+                'type' => $boost['type'],
+                'id'   => $model->id,
+                'code' => $model->code,
+                'name' => $model->name,
+            ];
+        }, $boosts)));
+    }
+
     public function handle(Website $website, array $boosts): Website
     {
         $validBoosts = [];
