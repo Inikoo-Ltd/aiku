@@ -920,6 +920,7 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
         'grp.org.shops.show.web.analytics.search'            => $base,
         'grp.org.shops.show.web.analytics.search.query'      => array_merge($base, ['q' => 'tea']),
         'grp.org.shops.show.web.analytics.search.boost_candidates' => array_merge($base, ['q' => 'tea']),
+        'grp.org.shops.show.web.analytics.search.page'       => array_merge($base, ['url' => 'https://example.com/p/tea']),
         'grp.org.shops.show.web.analytics.search.customer'   => [$org, $shop, $w, $customer->slug],
         'grp.org.shops.show.web.announcements.index'         => $base,
         'grp.org.shops.show.web.announcements.create'        => $base,
@@ -1146,6 +1147,57 @@ test('import search synonyms command', function () {
 
     unlink($file);
 });
+
+test('propose and decide search synonym suggestions', function (Website $website) {
+    $website->refresh();
+    $lang = $this->shop->language->code;
+    $set  = 'catalogue-'.$lang;
+
+    \App\Models\Helpers\WebsiteSearchLog::create([
+        'ulid'          => (string)\Illuminate\Support\Str::ulid(),
+        'group_id'      => $this->shop->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'       => $this->shop->id,
+        'website_id'    => $website->id,
+        'scope'         => 'catalogue',
+        'query'         => 'aromcandles',
+        'results_count' => 0,
+    ]);
+
+    $suggestionId = $lang.'-aromcandles';
+
+    Http::fake([
+        'api.openai.com/*' => Http::response([
+            'choices' => [['message' => ['content' => '[{"q":"aromcandles","action":"synonym","words":["aromcandles","aroma candles"]}]']]],
+        ]),
+        "*/collections/synonym_suggestions/documents/search*" => Http::response(['hits' => []]),
+        "*/collections/synonym_suggestions/documents?action=upsert" => Http::response(['id' => $suggestionId]),
+        "*/collections/synonym_suggestions/documents/$suggestionId" => Http::response([
+            'id' => $suggestionId, 'language' => $lang, 'query' => 'aromcandles',
+            'words' => ['aromcandles', 'aroma candles'], 'sessions' => 1, 'status' => 'pending',
+        ]),
+        "*/collections/synonym_suggestions" => Http::response(['name' => 'synonym_suggestions']),
+        "*/collections/products/documents/search*" => Http::response(['found' => 5]),
+        "*/synonym_sets/$set/items/*" => Http::response(['id' => 'aromcandles']),
+        "*/synonym_sets/$set*" => Http::response(['items' => []]),
+    ]);
+
+    $this->artisan('search:propose-synonyms')
+        ->expectsOutputToContain('suggestions staged for approval')
+        ->assertExitCode(0);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'documents?action=upsert')
+        && $request['query'] === 'aromcandles' && $request['status'] === 'pending');
+
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    post(route('grp.org.shops.show.web.analytics.search.synonym_suggestions.decide', array_merge($routeParams, [$suggestionId, 'approve'])))
+        ->assertSuccessful()
+        ->assertJson(['status' => 'approved']);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), "/synonym_sets/$set/items/aromcandles")
+        && $request['synonyms'] === ['aromcandles', 'aroma candles']);
+})->depends('launch website');
 
 test('UI smoke catalogue webpage routes', function (Website $website, array $cat) {
     $website->refresh();

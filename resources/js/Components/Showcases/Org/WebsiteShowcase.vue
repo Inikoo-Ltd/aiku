@@ -56,6 +56,14 @@ const searchCustomerUrl = (row: { customer_slug?: string }) => {
     }
 }
 
+const searchPageUrl = (clickedUrl: string) => {
+    try {
+        return route("grp.org.shops.show.web.analytics.search.page", { ...route().params, url: clickedUrl })
+    } catch {
+        return clickedUrl
+    }
+}
+
 const props = defineProps<{
     data: {
         id: number
@@ -210,6 +218,7 @@ const links = computed(() => {
                                 :logs-label="trans('Search analytics')"
                                 :query-url="searchAnalyticsUrl ? searchQueryUrl : undefined"
                                 :customer-url="searchAnalyticsUrl ? searchCustomerUrl : undefined"
+                                :page-url="searchAnalyticsUrl ? searchPageUrl : undefined"
                             />
                         </div>
 

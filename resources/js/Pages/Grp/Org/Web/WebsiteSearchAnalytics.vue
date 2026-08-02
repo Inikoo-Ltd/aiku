@@ -35,6 +35,8 @@ const queryUrl = (query: string) => route(props.drilldown.query, { ...props.dril
 
 const customerUrl = (row: { customer_slug?: string }) =>
     row.customer_slug ? route(props.drilldown.customer, { ...props.drilldown.params, customer: row.customer_slug }) : null
+
+const pageUrl = (clickedUrl: string) => route('grp.org.shops.show.web.analytics.search.page', { ...props.drilldown.params, url: clickedUrl })
 </script>
 
 <template>
@@ -55,6 +57,7 @@ const customerUrl = (row: { customer_slug?: string }) =>
             :logs-url="null"
             :query-url="queryUrl"
             :customer-url="customerUrl"
+            :page-url="pageUrl"
         />
         <SearchTrendChart :trend="search_insights?.trend" />
     </div>

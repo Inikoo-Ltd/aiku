@@ -38,6 +38,7 @@ const props = defineProps<{
     logsLabel?: string
     queryUrl?: (query: string) => string
     customerUrl?: (row: SearcherStat) => string | null
+    pageUrl?: (clickedUrl: string) => string
 }>()
 
 // The full path is unreadable in a narrow column; the last segment is the webpage url
@@ -175,7 +176,8 @@ const searcherHref = (searcher: SearcherStat): string | null => {
                     <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Top pages reached from search") }}</p>
                     <div class="divide-y divide-gray-100">
                         <div v-for="page in widget.top_clicked_pages" :key="page.clicked_url" class="flex justify-between gap-2 py-1">
-                            <a :href="page.clicked_url" target="_blank" class="text-gray-600 truncate min-w-0 hover:underline" :title="page.clicked_url">{{ pagePath(page.clicked_url) }}</a>
+                            <Link v-if="props.pageUrl" :href="props.pageUrl(page.clicked_url)" class="text-gray-600 truncate min-w-0 hover:underline" :title="page.clicked_url">{{ pagePath(page.clicked_url) }}</Link>
+                            <a v-else :href="page.clicked_url" target="_blank" class="text-gray-600 truncate min-w-0 hover:underline" :title="page.clicked_url">{{ pagePath(page.clicked_url) }}</a>
                             <span class="shrink-0 tabular-nums font-medium">{{ page.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' class="text-gray-400" /></span>
                         </div>
                         <p v-if="!widget.top_clicked_pages.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>

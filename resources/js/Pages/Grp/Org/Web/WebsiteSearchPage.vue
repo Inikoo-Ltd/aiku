@@ -7,9 +7,9 @@ import SearchTrendChart from "@/Components/DataDisplay/Dashboard/Widget/SearchTr
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faTimes, faMousePointer } from "@fal"
+import { faExternalLink, faFile } from "@fal"
 
-library.add(faExternalLink, faTimes, faMousePointer)
+library.add(faExternalLink, faFile)
 
 const props = defineProps<{
     pageHead: any
@@ -19,19 +19,10 @@ const props = defineProps<{
     data: any
 }>()
 
+const queryUrl = (query: string) => route(props.drilldown.query, { ...props.drilldown.params, q: query })
+
 const customerUrl = (row: { customer_slug?: string }) =>
     row.customer_slug ? route(props.drilldown.customer, { ...props.drilldown.params, customer: row.customer_slug }) : null
-
-const pageUrl = (clickedUrl: string) => route('grp.org.shops.show.web.analytics.search.page', { ...props.drilldown.params, url: clickedUrl })
-
-const pagePath = (url: string) => {
-    try {
-        const path = new URL(url).pathname.replace(/\/+$/, '')
-        return path.split('/').filter(Boolean).pop() ?? '/'
-    } catch {
-        return url
-    }
-}
 </script>
 
 <template>
@@ -41,39 +32,46 @@ const pagePath = (url: string) => {
     <div class="p-4 grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
         <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-300">
             <h3 class="text-lg font-semibold mb-3">
-                {{ ctrans("Search term") }}: <span class="font-bold">{{ insights.query }}</span>
+                {{ ctrans("Searches landing on this page") }}
+                <a :href="insights.clicked_url" target="_blank" class="text-sm font-normal text-indigo-600 hover:underline">
+                    <FontAwesomeIcon icon="fal fa-external-link" aria-hidden="true" />
+                    {{ ctrans("open page") }}
+                </a>
                 <span class="text-xs font-normal text-gray-400">{{ ctrans("last :days days", { days: String(insights.days) }) }}</span>
             </h3>
 
             <div class="flex flex-wrap gap-x-10 gap-y-3 mb-5">
                 <div>
-                    <p class="text-4xl font-bold">{{ insights.total_searches.toLocaleString() }}</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("Searches") }}</p>
+                    <p class="text-4xl font-bold">{{ insights.total_clicks.toLocaleString() }}</p>
+                    <p class="text-sm text-gray-600">{{ ctrans("Arrivals from search") }}</p>
                     <p class="text-xs text-gray-400">
-                        {{ ctrans(":logged logged in · :guest guests", { logged: String(insights.logged_in_searches), guest: String(insights.guest_searches) }) }}
+                        {{ ctrans(":logged logged in · :guest guests", { logged: String(insights.logged_in), guest: String(insights.guest) }) }}
                     </p>
                 </div>
                 <div>
                     <p class="text-4xl font-bold">{{ insights.unique_customers.toLocaleString() }}</p>
                     <p class="text-sm text-gray-600">{{ ctrans("Customers") }}</p>
                 </div>
-                <div>
-                    <p class="text-4xl font-bold">{{ insights.click_through }}%</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("Click-through") }}</p>
-                </div>
-                <div>
-                    <p class="text-4xl font-bold" :class="insights.zero_results_rate > 0 ? 'text-red-500' : ''">{{ insights.zero_results_rate }}%</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("No results") }}</p>
-                </div>
-                <div>
-                    <p class="text-4xl font-bold">{{ insights.avg_results }}</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("Avg results") }}</p>
-                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
                 <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Customers searching this") }}</p>
+                    <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Search terms leading here") }}</p>
+                    <div class="divide-y divide-gray-100">
+                        <Link
+                            v-for="term in insights.top_queries"
+                            :key="term.query"
+                            :href="queryUrl(term.query)"
+                            class="flex justify-between gap-2 py-1 hover:bg-slate-50 cursor-pointer"
+                        >
+                            <span class="text-gray-600 truncate min-w-0 hover:underline">{{ term.query }}</span>
+                            <span class="shrink-0 tabular-nums font-medium">{{ term.clicks }}</span>
+                        </Link>
+                        <p v-if="!insights.top_queries?.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Customers arriving here") }}</p>
                     <div class="divide-y divide-gray-100">
                         <component
                             :is="customerUrl(searcher) ? Link : 'div'"
@@ -84,19 +82,9 @@ const pagePath = (url: string) => {
                             :class="customerUrl(searcher) ? 'hover:bg-slate-50 cursor-pointer' : ''"
                         >
                             <span class="text-gray-600 truncate min-w-0" :class="customerUrl(searcher) ? 'hover:underline' : ''">{{ searcher.username }}</span>
-                            <span class="shrink-0 tabular-nums font-medium">{{ searcher.searches }}<span class="text-gray-400 font-normal"> / {{ searcher.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span></span>
+                            <span class="shrink-0 tabular-nums font-medium">{{ searcher.clicks }}</span>
                         </component>
                         <p v-if="!insights.top_searchers?.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
-                    </div>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Pages reached") }}</p>
-                    <div class="divide-y divide-gray-100">
-                        <Link v-for="page in insights.top_clicked_pages" :key="page.clicked_url" :href="pageUrl(page.clicked_url)" class="flex justify-between gap-2 py-1 hover:bg-slate-50">
-                            <span class="text-gray-600 truncate min-w-0 hover:underline" :title="page.clicked_url">{{ pagePath(page.clicked_url) }}</span>
-                            <span class="shrink-0 tabular-nums font-medium">{{ page.clicks }}</span>
-                        </Link>
-                        <p v-if="!insights.top_clicked_pages?.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div>
@@ -112,12 +100,16 @@ const pagePath = (url: string) => {
             </div>
         </div>
 
-        <SearchTrendChart :trend="insights.trend" :title="ctrans('Trend for this term')" />
+        <SearchTrendChart :trend="insights.trend" :title="ctrans('Arrivals trend')" />
     </div>
 
     <Table :resource="data" class="mt-2">
         <template #cell(created_at)="{ item }">
             <span class="whitespace-nowrap text-gray-500">{{ useFormatTime(item.created_at, { formatTime: 'hms', keepTimezone: true }) }}</span>
+        </template>
+
+        <template #cell(query)="{ item }">
+            <Link :href="queryUrl(item.query)" class="font-medium text-indigo-600 hover:underline">{{ item.query }}</Link>
         </template>
 
         <template #cell(scope)="{ item }">
@@ -134,21 +126,7 @@ const pagePath = (url: string) => {
         </template>
 
         <template #cell(results_count)="{ item }">
-            <span :class="item.results_count === 0 ? 'text-red-500 font-medium' : 'tabular-nums'">{{ item.results_count }}</span>
-        </template>
-
-        <template #cell(clicked_at)="{ item }">
-            <a
-                v-if="item.clicked_at"
-                :href="item.clicked_url"
-                target="_blank"
-                class="text-green-600 hover:underline whitespace-nowrap text-xs"
-                v-tooltip="item.clicked_url"
-            >
-                <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />
-                {{ useFormatTime(item.clicked_at, { formatTime: 'hms', keepTimezone: true }) }}
-            </a>
-            <FontAwesomeIcon v-else icon="fal fa-times" class="text-gray-300" fixed-width aria-hidden="true" />
+            <span class="tabular-nums">{{ item.results_count }}</span>
         </template>
     </Table>
 </template>
