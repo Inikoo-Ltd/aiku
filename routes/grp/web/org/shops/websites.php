@@ -58,6 +58,8 @@ use App\Actions\Web\Website\UI\ShowRestrictedCountry;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowWebsiteSearchAnalytics;
+use App\Actions\Web\Website\UI\ShowWebsiteSearchCustomer;
+use App\Actions\Web\Website\UI\ShowWebsiteSearchQuery;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshopPreview;
 use App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors;
@@ -188,4 +190,6 @@ Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('web-user-requests', IndexWebUserRequests::class)->name('web_user_requests.index');
     Route::get('visitors', IndexWebsiteVisitors::class)->name('visitors.index');
     Route::get('search', ShowWebsiteSearchAnalytics::class)->name('search');
+    Route::get('search/query', ShowWebsiteSearchQuery::class)->name('search.query');
+    Route::get('search/customer/{customer}', ShowWebsiteSearchCustomer::class)->name('search.customer');
 });

@@ -899,6 +899,7 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
 
     $base        = [$org, $shop, $w];
     $withWebpage = [$org, $shop, $w, $webpage->slug];
+    $customer    = createCustomer($this->shop);
 
     $routes = [
         'grp.org.shops.show.web.websites.index'              => [$org, $shop],
@@ -915,6 +916,8 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
         'grp.org.shops.show.web.analytics.dashboard'         => $base,
         'grp.org.shops.show.web.analytics.visitors.index'    => $base,
         'grp.org.shops.show.web.analytics.search'            => $base,
+        'grp.org.shops.show.web.analytics.search.query'      => array_merge($base, ['q' => 'tea']),
+        'grp.org.shops.show.web.analytics.search.customer'   => [$org, $shop, $w, $customer->slug],
         'grp.org.shops.show.web.announcements.index'         => $base,
         'grp.org.shops.show.web.announcements.create'        => $base,
         'grp.org.shops.show.web.announcements.show'          => [$org, $shop, $w, $announcement->ulid],

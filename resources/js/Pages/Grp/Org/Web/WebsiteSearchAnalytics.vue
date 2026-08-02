@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import { ref } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
+import SearchTrendChart from "@/Components/DataDisplay/Dashboard/Widget/SearchTrendChart.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -12,10 +13,11 @@ import { faExternalLink, faTimes, faSearch, faUsers } from "@fal"
 
 library.add(faExternalLink, faTimes, faSearch, faUsers)
 
-defineProps<{
+const props = defineProps<{
     pageHead: any
     title: string
     search_insights: any
+    drilldown: { query: string, customer: string, params: Record<string, any> }
     data: any
     customers: any
 }>()
@@ -26,14 +28,25 @@ const tabs = [
     { key: 'searches', label: 'Searches', icon: 'fal fa-search' },
     { key: 'customers', label: 'By customer', icon: 'fal fa-users' },
 ] as const
+
+const queryUrl = (query: string) => route(props.drilldown.query, { ...props.drilldown.params, q: query })
+
+const customerUrl = (row: { customer_slug?: string }) =>
+    row.customer_slug ? route(props.drilldown.customer, { ...props.drilldown.params, customer: row.customer_slug }) : null
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
-    <div class="p-4">
-        <SearchAnalyticsDisplay :widget="search_insights" :logs-url="null" />
+    <div class="p-4 grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
+        <SearchAnalyticsDisplay
+            :widget="search_insights"
+            :logs-url="null"
+            :query-url="queryUrl"
+            :customer-url="customerUrl"
+        />
+        <SearchTrendChart :trend="search_insights?.trend" />
     </div>
 
     <div class="px-4 flex gap-2">
@@ -56,7 +69,7 @@ const tabs = [
         </template>
 
         <template #cell(query)="{ item }">
-            <span class="font-medium">{{ item.query }}</span>
+            <Link :href="queryUrl(item.query)" class="font-medium text-indigo-600 hover:underline">{{ item.query }}</Link>
         </template>
 
         <template #cell(scope)="{ item }">
@@ -64,7 +77,7 @@ const tabs = [
         </template>
 
         <template #cell(customer_name)="{ item }">
-            <span v-if="item.customer_name" class="text-gray-600">{{ item.customer_name }}</span>
+            <Link v-if="item.customer_slug" :href="customerUrl(item) ?? ''" class="text-indigo-600 hover:underline">{{ item.customer_name }}</Link>
             <span v-else class="text-gray-400 text-xs">{{ ctrans("Guest") }}</span>
         </template>
 
@@ -93,7 +106,8 @@ const tabs = [
 
     <Table v-show="activeTab === 'customers'" :resource="customers" name="customers" class="mt-2">
         <template #cell(customer_name)="{ item }">
-            <span class="font-medium">{{ item.customer_name }}</span>
+            <Link v-if="item.customer_slug" :href="customerUrl(item) ?? ''" class="font-medium text-indigo-600 hover:underline">{{ item.customer_name }}</Link>
+            <span v-else class="font-medium">{{ item.customer_name }}</span>
         </template>
 
         <template #cell(searches)="{ item }">

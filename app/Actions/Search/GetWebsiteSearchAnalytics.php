@@ -50,8 +50,8 @@ class GetWebsiteSearchAnalytics
 
         $topCustomers = (clone $base)
             ->join('customers', 'customers.id', '=', 'website_search_logs.customer_id')
-            ->selectRaw('customers.name as username, count(*) as searches, count(website_search_logs.clicked_at) as clicks')
-            ->groupBy('customers.name')
+            ->selectRaw('customers.name as username, customers.slug as customer_slug, count(*) as searches, count(website_search_logs.clicked_at) as clicks')
+            ->groupBy('customers.name', 'customers.slug')
             ->orderByDesc('searches')
             ->orderBy('customers.name')
             ->limit(10)
@@ -87,6 +87,7 @@ class GetWebsiteSearchAnalytics
             'top_searchers'         => $topCustomers,
             'top_clicked_pages' => $topClickedPages,
             'devices'           => $devices,
+            'trend'             => GetWebsiteSearchTrend::run($website, $days),
         ];
     }
 

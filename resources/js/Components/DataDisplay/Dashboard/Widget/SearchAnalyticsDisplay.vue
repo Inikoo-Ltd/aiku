@@ -14,6 +14,7 @@ type QueryStat = {
 
 type SearcherStat = {
     username: string
+    customer_slug?: string
     searches: number
     clicks: number
 }
@@ -35,11 +36,15 @@ const props = defineProps<{
     } | null
     logsUrl?: string | null
     logsLabel?: string
+    queryUrl?: (query: string) => string
+    customerUrl?: (row: SearcherStat) => string | null
 }>()
 
+// The full path is unreadable in a narrow column; the last segment is the webpage url
 const pagePath = (url: string) => {
     try {
-        return new URL(url).pathname || '/'
+        const path = new URL(url).pathname.replace(/\/+$/, '')
+        return path.split('/').filter(Boolean).pop() ?? '/'
     } catch {
         return url
     }
@@ -48,6 +53,17 @@ const pagePath = (url: string) => {
 // undefined keeps the historic staff-search target; explicit null hides the link
 const resolvedLogsUrl = props.logsUrl === undefined ? route('grp.sysadmin.search_logs.index') : props.logsUrl
 const statTag = resolvedLogsUrl ? Link : 'div'
+
+// Website context drills into the customer page; the staff widget keeps its per-user filter
+const searcherHref = (searcher: SearcherStat): string | null => {
+    if (props.customerUrl) {
+        return props.customerUrl(searcher)
+    }
+    if (props.logsUrl === undefined) {
+        return `${route('grp.sysadmin.search_logs.index')}?filter[global]=${encodeURIComponent(searcher.username)}`
+    }
+    return null
+}
 </script>
 
 <template>
@@ -90,30 +106,51 @@ const statTag = resolvedLogsUrl ? Link : 'div'
                 <div>
                     <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Top searches") }}</p>
                     <div class="divide-y divide-gray-100">
-                        <div v-for="q in widget.top_queries" :key="q.query" class="flex justify-between gap-2 py-1">
-                            <span class="text-gray-600 truncate min-w-0">{{ q.query }}</span>
+                        <component
+                            :is="queryUrl ? Link : 'div'"
+                            v-for="q in widget.top_queries"
+                            :key="q.query"
+                            :href="queryUrl ? queryUrl(q.query) : undefined"
+                            class="flex justify-between gap-2 py-1"
+                            :class="queryUrl ? 'hover:bg-slate-50 cursor-pointer' : ''"
+                        >
+                            <span class="text-gray-600 truncate min-w-0" :class="queryUrl ? 'hover:underline' : ''">{{ q.query }}</span>
                             <span class="shrink-0 tabular-nums font-medium">{{ q.searches }}<span class="text-gray-400 font-normal"> / {{ q.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span></span>
-                        </div>
+                        </component>
                         <p v-if="!widget.top_queries.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div>
                     <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Searches without results") }}</p>
                     <div class="divide-y divide-gray-100">
-                        <div v-for="q in widget.top_zero_queries" :key="q.query" class="flex justify-between gap-2 py-1">
-                            <span class="text-gray-600 truncate min-w-0">{{ q.query }}</span>
+                        <component
+                            :is="queryUrl ? Link : 'div'"
+                            v-for="q in widget.top_zero_queries"
+                            :key="q.query"
+                            :href="queryUrl ? queryUrl(q.query) : undefined"
+                            class="flex justify-between gap-2 py-1"
+                            :class="queryUrl ? 'hover:bg-slate-50 cursor-pointer' : ''"
+                        >
+                            <span class="text-gray-600 truncate min-w-0" :class="queryUrl ? 'hover:underline' : ''">{{ q.query }}</span>
                             <span class="shrink-0 tabular-nums font-medium">{{ q.searches }}</span>
-                        </div>
+                        </component>
                         <p v-if="!widget.top_zero_queries.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div v-if="widget.top_abandoned_queries">
                     <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Searches not followed") }}</p>
                     <div class="divide-y divide-gray-100">
-                        <div v-for="q in widget.top_abandoned_queries" :key="q.query" class="flex justify-between gap-2 py-1">
-                            <span class="text-gray-600 truncate min-w-0">{{ q.query }}</span>
+                        <component
+                            :is="queryUrl ? Link : 'div'"
+                            v-for="q in widget.top_abandoned_queries"
+                            :key="q.query"
+                            :href="queryUrl ? queryUrl(q.query) : undefined"
+                            class="flex justify-between gap-2 py-1"
+                            :class="queryUrl ? 'hover:bg-slate-50 cursor-pointer' : ''"
+                        >
+                            <span class="text-gray-600 truncate min-w-0" :class="queryUrl ? 'hover:underline' : ''">{{ q.query }}</span>
                             <span class="shrink-0 tabular-nums font-medium">{{ q.searches }}</span>
-                        </div>
+                        </component>
                         <p v-if="!widget.top_abandoned_queries.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
@@ -121,14 +158,14 @@ const statTag = resolvedLogsUrl ? Link : 'div'
                     <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Top searchers") }}</p>
                     <div class="divide-y divide-gray-100">
                         <component
-                            :is="props.logsUrl === undefined ? Link : 'div'"
+                            :is="searcherHref(searcher) ? Link : 'div'"
                             v-for="searcher in widget.top_searchers"
                             :key="searcher.username"
-                            :href="props.logsUrl === undefined ? `${route('grp.sysadmin.search_logs.index')}?filter[global]=${encodeURIComponent(searcher.username)}` : undefined"
+                            :href="searcherHref(searcher) ?? undefined"
                             class="flex justify-between gap-2 py-1"
-                            :class="props.logsUrl === undefined ? 'hover:bg-slate-50' : ''"
+                            :class="searcherHref(searcher) ? 'hover:bg-slate-50 cursor-pointer' : ''"
                         >
-                            <span class="text-gray-600 truncate min-w-0">{{ searcher.username }}</span>
+                            <span class="text-gray-600 truncate min-w-0" :class="searcherHref(searcher) ? 'hover:underline' : ''">{{ searcher.username }}</span>
                             <span class="shrink-0 tabular-nums font-medium">{{ searcher.searches }}<span class="text-gray-400 font-normal"> / {{ searcher.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span></span>
                         </component>
                         <p v-if="!widget.top_searchers?.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>

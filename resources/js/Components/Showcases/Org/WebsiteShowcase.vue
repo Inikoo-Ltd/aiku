@@ -38,6 +38,23 @@ const searchAnalyticsUrl = (() => {
     }
 })()
 
+const searchQueryUrl = (query: string) => {
+    try {
+        return route("grp.org.shops.show.web.analytics.search.query", { ...route().params, q: query })
+    } catch {
+        return ""
+    }
+}
+
+const searchCustomerUrl = (row: { customer_slug?: string }) => {
+    if (!row.customer_slug) return null
+    try {
+        return route("grp.org.shops.show.web.analytics.search.customer", { ...route().params, customer: row.customer_slug })
+    } catch {
+        return null
+    }
+}
+
 const props = defineProps<{
     data: {
         id: number
@@ -178,7 +195,13 @@ const links = computed(() => {
                             <div class="font-semibold w-fit text-lg mb-2">
                                 {{ trans('Website Search') }}
                             </div>
-                            <SearchAnalyticsDisplay :widget="props.data.search_insights" :logs-url="searchAnalyticsUrl" :logs-label="trans('Search analytics')" />
+                            <SearchAnalyticsDisplay
+                                :widget="props.data.search_insights"
+                                :logs-url="searchAnalyticsUrl"
+                                :logs-label="trans('Search analytics')"
+                                :query-url="searchAnalyticsUrl ? searchQueryUrl : undefined"
+                                :customer-url="searchAnalyticsUrl ? searchCustomerUrl : undefined"
+                            />
                         </div>
 
                         <div :class="showSearchInsights ? 'w-full xl:w-56 shrink-0' : ''">
