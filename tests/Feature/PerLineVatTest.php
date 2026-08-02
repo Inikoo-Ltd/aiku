@@ -9,7 +9,9 @@
 
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
+use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
@@ -27,6 +29,7 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Masters\MasterAsset;
 use App\Models\Ordering\Order;
 
 use function Pest\Laravel\actingAs;
@@ -109,6 +112,7 @@ function createZeroRatedProduct(Product $sibling, TaxCategory $orderCategory, Ta
     $product = UpdateProduct::make()->action($product, ['state' => ProductStateEnum::ACTIVE]);
 
     $product->asset->updateQuietly(['master_asset_id' => $masterAsset->id]);
+    $product->updateQuietly(['master_product_id' => $masterAsset->id]);
 
     return $product->refresh();
 }
@@ -261,4 +265,42 @@ test('a reduced rate country expands to every one of its live categories, matchi
 
     /** Spain charges IVA and IVA+RE, the UK only VAT, so Spain contributes two entries. */
     expect($map)->toHaveCount(3);
+});
+
+test('the master products index can be filtered to the ones that are not standard rated', function () {
+    $tea = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0);
+    $masterShop = $tea->asset->masterAsset->masterShop;
+
+    $elementGroups = IndexMasterProducts::make()->getElementGroups($masterShop);
+    expect($elementGroups)->toHaveKey('tax');
+
+    $filter = function (string $element) use ($masterShop, $elementGroups) {
+        $query = MasterAsset::query()->where('master_shop_id', $masterShop->id);
+        ($elementGroups['tax']['engine'])($query, [$element]);
+
+        return $query->pluck('code')->all();
+    };
+
+    expect($filter('overridden'))->toContain('VATM-TEA')
+        ->and($filter('standard'))->not->toContain('VATM-TEA');
+});
+
+test('the catalogue index can be filtered the same way, and keeps products with no master', function () {
+    $tea = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0);
+
+    $elementGroups = IndexProductsInCatalogue::make()->getElementGroups($this->shop);
+    expect($elementGroups)->toHaveKey('tax');
+
+    $shopId = $this->shop->id;
+    $filter = function (string $element) use ($elementGroups, $shopId) {
+        $query = Product::query()->where('shop_id', $shopId);
+        ($elementGroups['tax']['engine'])($query, [$element]);
+
+        return $query->pluck('code')->all();
+    };
+
+    expect($filter('overridden'))->toContain($tea->code)
+        ->and($filter('standard'))->not->toContain($tea->code)
+        /** The stock product has no master, and NOT IN would silently drop it. */
+        ->and($filter('standard'))->toContain($this->standardProduct->code);
 });

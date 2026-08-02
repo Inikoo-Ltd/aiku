@@ -90,6 +90,27 @@ class IndexMasterProducts extends OrgAction
 
             ],
 
+            /**
+             * A master product is standard rated unless `tax_category` overrides it, which is
+             * how tea is zero rated. No counts: they would cost a scan of every master.
+             */
+            'tax' => [
+                'label'    => __('Tax'),
+                'elements' => [
+                    'overridden' => [__('Reduced or zero rated'), null],
+                    'standard'   => [__('Standard rate'), null],
+                ],
+
+                'engine' => function ($query, $elements) {
+                    if (in_array('overridden', $elements) && !in_array('standard', $elements)) {
+                        $query->whereRaw("master_assets.tax_category::text not in ('{}', '[]', 'null')");
+                    } elseif (in_array('standard', $elements) && !in_array('overridden', $elements)) {
+                        $query->whereRaw("master_assets.tax_category::text in ('{}', '[]', 'null')");
+                    }
+                }
+
+            ],
+
         ];
     }
 
