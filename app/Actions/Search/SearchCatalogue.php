@@ -20,6 +20,17 @@ class SearchCatalogue
     use AsAction;
     use WithRawSearchResults;
 
+    /**
+     * Typo-recovery tuning driven by the real no-result queries in the search logs:
+     * split_join_tokens rescues glued words ("aromcandles" -> "arom candles") and
+     * min_len_2typo 6 lets shorter words carry two typos ("auaura" -> "aura").
+     */
+    public const array SEARCH_TUNING = [
+        'split_join_tokens'     => 'always',
+        'typo_tokens_threshold' => 2,
+        'min_len_2typo'         => 6,
+    ];
+
     public function handle(string $query, array $options): array
     {
         $productsQuery          = Product::search($query);
@@ -38,9 +49,9 @@ class SearchCatalogue
         }
 
         $boosts = Arr::get($options, 'boosts', []);
-        $this->applyBoosts($productsQuery, Arr::get($boosts, 'product'));
-        $this->applyBoosts($productCategoriesQuery, Arr::get($boosts, 'product_category'));
-        $this->applyBoosts($collectionsQuery, Arr::get($boosts, 'collection'));
+        $this->applySearchOptions($productsQuery, Arr::get($boosts, 'product'));
+        $this->applySearchOptions($productCategoriesQuery, Arr::get($boosts, 'product_category'));
+        $this->applySearchOptions($collectionsQuery, Arr::get($boosts, 'collection'));
 
         $productsQuery->take(11);
         $productCategoriesQuery->take(10);
@@ -65,18 +76,19 @@ class SearchCatalogue
 
     /**
      * Boosted items float to the top of the results they already match: an _eval sort
-     * ranks them first without pinning them into unrelated searches.
+     * ranks them first without pinning them into unrelated searches. Builder::options()
+     * replaces rather than merges, so the tuning and the boost sort are set together.
      *
-     * @param array<int, int>|null $ids
+     * @param array<int, int>|null $boostIds
      */
-    private function applyBoosts(Builder $searchQuery, ?array $ids): void
+    private function applySearchOptions(Builder $searchQuery, ?array $boostIds): void
     {
-        if (empty($ids)) {
-            return;
+        $searchOptions = self::SEARCH_TUNING;
+
+        if (!empty($boostIds)) {
+            $searchOptions['sort_by'] = '_eval(id:['.implode(',', $boostIds).']):desc,_text_match:desc';
         }
 
-        $searchQuery->options([
-            'sort_by' => '_eval(id:['.implode(',', $ids).']):desc,_text_match:desc',
-        ]);
+        $searchQuery->options($searchOptions);
     }
 }
