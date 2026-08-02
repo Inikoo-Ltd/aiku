@@ -27,6 +27,8 @@ class CrawlWebsite
 
     public string $jobQueue = 'cache-warming';
 
+    private const TRAFFIC_COVERAGE = 0.9;
+
     protected Website $website;
     protected Crawl $crawl;
     private bool $shouldStop = false;
@@ -43,9 +45,7 @@ class CrawlWebsite
             return;
         }
 
-        if (!$crawl->is_seeder) {
-            $this->stopCurrentCrawls($crawl);
-        }
+        $this->stopCurrentCrawls($crawl);
 
         $crawl = $this->protectFromSurges($crawl);
 
@@ -89,8 +89,8 @@ class CrawlWebsite
     }
 
     /**
-     * Most-visited pages first; seeder crawls only warm the head of the traffic
-     * distribution, full crawls warm every page with a visit in the window.
+     * Most-visited pages first, stopping once TRAFFIC_COVERAGE of the weighted views is
+     * covered: the remaining tail is ~60% more fetching for the last tenth of the traffic.
      *
      * @return array<int, string>
      */
@@ -114,17 +114,13 @@ class CrawlWebsite
             return $storefrontUrl ? [$storefrontUrl] : [];
         }
 
-        if (!$crawl->is_seeder) {
-            return $pages->pluck('canonical_url')->all();
-        }
-
         $totalViews = $pages->sum('views');
         $cumulative = 0;
         $urls       = [];
         foreach ($pages as $page) {
             $urls[]     = $page->canonical_url;
             $cumulative += $page->views;
-            if ($cumulative >= $totalViews * 0.8) {
+            if ($cumulative >= $totalViews * self::TRAFFIC_COVERAGE) {
                 break;
             }
         }
@@ -186,7 +182,6 @@ class CrawlWebsite
             Crawl::where('state', '!=', CrawlStateEnum::FINISH)
                 ->where('id', '!=', $crawl->id)
                 ->where('type', $crawl->type)
-                ->where('is_seeder', false)
                 ->where('website_id', $crawl->website_id)->get() as $crawlToStop
         ) {
             StopCrawl::run($crawlToStop);
@@ -212,7 +207,7 @@ class CrawlWebsite
 
     public function getCommandSignature(): string
     {
-        return 'crawl {website?} {--c|concurrency=10} {--deployment} {--s|seeder}';
+        return 'crawl {website?} {--c|concurrency=10} {--deployment}';
     }
 
 
@@ -229,8 +224,7 @@ class CrawlWebsite
                     'depth'       => 0,
                     'concurrency' => $command->option('concurrency'),
                     'trigger'     => $trigger,
-                    'type'        => CrawlTypeEnum::HTML,
-                    'is_seeder'   => $command->option('seeder')
+                    'type'        => CrawlTypeEnum::HTML
                 ]
             );
 
@@ -239,7 +233,7 @@ class CrawlWebsite
             return 0;
         }
 
-        CrawlWebsites::run($trigger, $command->option('seeder'), $command);
+        CrawlWebsites::run($trigger, $command);
 
         return 0;
     }
