@@ -212,35 +212,24 @@ class CrawlWebsite
 
     public function getCommandSignature(): string
     {
-        return 'crawl {website?} {--d|depth=10} {--c|concurrency=10} {--t|type=html} {--deployment} {--s|seeder}';
+        return 'crawl {website?} {--c|concurrency=10} {--deployment} {--s|seeder}';
     }
 
 
     public function asCommand(Command $command): int
     {
-        $type = $command->option('type');
-        if (!in_array($type, ['html', 'inertia', 'i'])) {
-            $command->error("Invalid type option. Accepted values are: html, javascript");
-
-            return 1;
-        }
-
-
-        $crawlType = $type === 'inertia' || $type === 'i' ? CrawlTypeEnum::INERTIA : CrawlTypeEnum::HTML;
-
         $trigger = $command->option('deployment') ? CrawlTriggerEnum::DEPLOYMENT : CrawlTriggerEnum::COMMAND;
 
         if ($command->argument('website')) {
             $website = Website::where('slug', $command->argument('website'))->firstOrFail();
-            $command->info("Crawling website: $website->slug (ID: $website->id)");
-            $command->info("Concurrency: {$command->option('concurrency')} Type: $crawlType->value");
+            $command->info("Warming website: $website->slug (ID: $website->id) Concurrency: {$command->option('concurrency')}");
             /** @var Crawl $crawl */
             $crawl = $website->crawls()->create(
                 [
-                    'depth'       => $command->option('depth'),
+                    'depth'       => 0,
                     'concurrency' => $command->option('concurrency'),
                     'trigger'     => $trigger,
-                    'type'        => $crawlType,
+                    'type'        => CrawlTypeEnum::HTML,
                     'is_seeder'   => $command->option('seeder')
                 ]
             );
@@ -250,7 +239,7 @@ class CrawlWebsite
             return 0;
         }
 
-        CrawlWebsites::run(CrawlTypeEnum::HTML, $trigger, $command->option('depth'), $command->option('seeder'), $command);
+        CrawlWebsites::run($trigger, $command->option('seeder'), $command);
 
         return 0;
     }
