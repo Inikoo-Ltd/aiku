@@ -129,6 +129,32 @@ const fetchResults = debounce(async (query: string) => {
     }
 }, 250)
 
+// On the results page the box is pre-filled from ?q=, so typing without selecting first
+// prepends to the old term and searches the concatenation ("incensesalt lampssoap loaves").
+// Selecting on focus makes the next keystroke replace it, while still allowing edits.
+let isFocusSelection = false
+
+const onFocus = (event: FocusEvent) => {
+    isFocusSelection = true;
+    (event.target as HTMLInputElement)?.select()
+
+    if (inputValue.value.trim()) {
+        openPopover()
+    }
+}
+
+// The mouseup of the click that focused the field would otherwise collapse that selection
+const onMouseUp = (event: MouseEvent) => {
+    if (isFocusSelection) {
+        event.preventDefault()
+        isFocusSelection = false
+    }
+}
+
+const onBlur = () => {
+    isFocusSelection = false
+}
+
 const onSearchInput = (event: Event) => {
     inputValue.value = (event.target as HTMLInputElement)?.value ?? ''
 
@@ -186,7 +212,9 @@ const visitSearchPage = () => {
             ref="inputRef"
             :value="inputValue"
             @input="onSearchInput"
-            @focus="() => { if (inputValue.trim()) openPopover() }"
+            @focus="onFocus"
+            @mouseup="onMouseUp"
+            @blur="onBlur"
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
             :id="id || 'inputIrisSearch'"
             :placeholder="fieldValueSearch?.placeholder ?? trans('Search')"

@@ -155,6 +155,27 @@ const fetchResults = debounce(async (query: string) => {
     }
 }, 250)
 
+// The overlay reopens holding the previous query; selecting it on focus means the next
+// keystroke replaces it instead of being prepended to it (which searched the concatenation)
+let isFocusSelection = false
+
+const onInputFocus = (event: FocusEvent) => {
+    isFocusSelection = true;
+    (event.target as HTMLInputElement)?.select()
+}
+
+// The mouseup of the click that focused the field would otherwise collapse that selection
+const onInputMouseUp = (event: MouseEvent) => {
+    if (isFocusSelection) {
+        event.preventDefault()
+        isFocusSelection = false
+    }
+}
+
+const onInputBlur = () => {
+    isFocusSelection = false
+}
+
 const onSearchInput = (event: Event) => {
     inputValue.value = (event.target as HTMLInputElement)?.value ?? ''
 
@@ -231,6 +252,9 @@ const visitSearchPage = () => {
                         ref="inputRef"
                         :value="inputValue"
                         @input="onSearchInput"
+                        @focus="onInputFocus"
+                        @mouseup="onInputMouseUp"
+                        @blur="onInputBlur"
                         class="h-11 w-full rounded-full border border-[#d1d5db] focus:border-transparent focus:ring-2 focus:ring-gray-700 pl-10"
                         :placeholder="trans('Search')"
                         autocapitalize="none"
