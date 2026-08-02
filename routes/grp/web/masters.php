@@ -17,6 +17,7 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartmentsInMasterSubDepar
 use App\Actions\Catalogue\Shop\UI\CreateShopFromMaster;
 use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
+use App\Actions\Masters\MasterAsset\UI\EditMasterProductComposition;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsBulkEdit;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterCollection;
@@ -299,6 +300,7 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('', [IndexMasterProducts::class, 'inMasterShop'])->name('index');
                 Route::get('{masterProduct}', ShowMasterProduct::class)->name('show');
                 Route::get('{masterProduct}/edit', EditMasterProduct::class)->name('edit');
+                Route::get('{masterProduct}/composition', EditMasterProductComposition::class)->name('composition');
                 Route::get('{masterProduct}/invoices', [IndexInvoicesInProduct::class, 'inMaster'])->name('invoices');
                 Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMaster'])->name('products');
 

@@ -10,19 +10,16 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
-use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -30,6 +27,7 @@ use App\Models\Masters\MasterShop;
 class EditMasterProduct extends OrgAction
 {
     use WithMasterProductNavigation;
+    use WithLineTaxCategories;
     use WithUnitsChangeConfirmation;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
@@ -140,50 +138,14 @@ class EditMasterProduct extends OrgAction
      */
     public function getBlueprint(MasterAsset $masterProduct): array
     {
-        $packedIn = $masterProduct->getStockPackedInByTradeUnit();
-
-        /*
-         * A master covers several organisations and each warehouse can pack the same trade
-         * unit differently. The editor shows every organisation's packed_in and lets it be
-         * edited in place, because the org stock is the physical reality.
-         */
-        $packedInByOrg = DB::table('model_has_trade_units')
-            ->join('org_stocks', 'org_stocks.id', '=', 'model_has_trade_units.model_id')
-            ->join('organisations', 'organisations.id', '=', 'org_stocks.organisation_id')
-            ->where('model_has_trade_units.model_type', 'OrgStock')
-            ->whereIn('model_has_trade_units.trade_unit_id', $masterProduct->tradeUnits->pluck('id'))
-            ->whereNull('org_stocks.deleted_at')
-            ->select([
-                'model_has_trade_units.trade_unit_id',
-                'org_stocks.id as org_stock_id',
-                'organisations.code as org_code',
-                'model_has_trade_units.quantity',
-            ])
-            ->orderBy('organisations.code')
-            ->get()
-            ->groupBy('trade_unit_id');
-
-        $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn, $packedInByOrg) {
+        $tradeUnits = $masterProduct->tradeUnits->map(function (TradeUnit $tradeUnit) {
             /** @var MorphPivot $pivot */
-            $pivot            = $tradeUnit->getRelationValue('pivot');
-            $quantity         = $pivot->getAttribute('quantity');
-            $packedInQuantity = Arr::get($packedIn, $tradeUnit->id, 1);
-            $fraction         = $quantity / $packedInQuantity;
+            $pivot = $tradeUnit->getRelationValue('pivot');
 
-            return array_merge(
-                [
-                    'quantity'        => (int)$quantity,
-                    'packed_in'       => $packedInQuantity,
-                    'fraction'        => $fraction,
-                    'pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($fraction)), $packedInQuantity),
-                    'packed_in_by_org' => ($packedInByOrg->get($tradeUnit->id) ?? collect())->map(fn ($orgStockPivot) => [
-                        'org_stock_id' => $orgStockPivot->org_stock_id,
-                        'org_code'     => $orgStockPivot->org_code,
-                        'packed_in'    => (float) $orgStockPivot->quantity,
-                    ])->values()->all(),
-                ],
-                $tradeUnit->toArray()
-            );
+            return [
+                'quantity' => (int) $pivot->getAttribute('quantity'),
+                'code'     => $tradeUnit->code,
+            ];
         });
 
         $currenciesRate = GetMasterShopCurrenciesRate::run($masterProduct->masterShop);
@@ -211,11 +173,6 @@ class EditMasterProduct extends OrgAction
         if (!$unitsReview['master'] && !$unitsReview['products']) {
             $unitsReview = null;
         }
-
-        $taxCategoryOptions = TaxCategory::orderBy('name')->get()->map(fn (TaxCategory $taxCategory) => [
-            'value' => $taxCategory->id,
-            'label' => $taxCategory->name.' ('.percentage($taxCategory->rate, 1).') #'.$taxCategory->id,
-        ])->all();
 
         $pricesUpdateRoute = [
             'name'       => 'grp.models.master_asset.prices.update',
@@ -371,24 +328,10 @@ class EditMasterProduct extends OrgAction
                 'icon'   => 'fa-light fa-percent',
                 'fields' => [
                     'tax_category' => [
-                        'type'     => 'dynamic_list',
-                        'label'    => __('Tax overrides'),
-                        'value'    => $this->getTaxCategoryRows($masterProduct),
-                        'fields'   => [
-                            [
-                                'key'         => 'order_tax_category_id',
-                                'label'       => __('When the order is taxed at'),
-                                'placeholder' => __('Order tax category'),
-                                'options'     => $taxCategoryOptions,
-                            ],
-                            [
-                                'key'         => 'tax_category_id',
-                                'label'       => __('Tax this product at'),
-                                'placeholder' => __('Product tax category'),
-                                'options'     => $taxCategoryOptions,
-                            ],
-                        ],
-                        'addLabel' => __('Add tax override'),
+                        'type'    => 'select',
+                        'label'   => __('Tax treatment'),
+                        'options' => $this->getReducedRateOptions(),
+                        'value'   => implode(',', $this->collapseToReducedRateCountries($masterProduct->tax_category ?? [])),
                     ],
                 ]
             ],
@@ -422,55 +365,26 @@ class EditMasterProduct extends OrgAction
                 'label'  => __('Trade units'),
                 'icon'   => 'fa-light fa-atom',
                 'fields' => [
-                    'trade_units' => [
-                        'label'        => __('Trade units'),
-                        'saveConfirmation' => $this->getUnitsChangeConfirmation($masterProduct),
-                        'priceContext' => [
-                            'price'    => (float) data_get($masterProduct->master_prices, 'EUR.value', $masterProduct->price),
-                            'rrp'      => (float) data_get($masterProduct->master_rrps, 'EUR.value', $masterProduct->rrp),
-                            'currency' => 'EUR',
-                            'units'    => (float) $masterProduct->units,
-                        ],
-                        'type'         => 'list-selector-trade-unit',
-                        'key_quantity' => 'quantity',
-                        'withQuantity' => true,
-                        'full'         => true,
+                    /*
+                     * Composition, per-warehouse packing and the price they imply are one
+                     * decision with too many controls for this form, so they live on their
+                     * own page. This is only the summary and the door.
+                     */
+                    'composition' => [
+                        'type'         => 'button',
                         'noSaveButton' => true,
-                        'use_confirm'  => true,
-                        'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
-                        'tabs' => array_values(array_filter([
-                            $masterProduct->masterFamily ? [
-                                'label'      => __('To do'),
-                                'routeFetch' => [
-                                    'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                    'parameters' => [
-                                        'masterProductCategory' => $masterProduct->masterFamily->id,
-                                    ],
-                                ],
-                            ] : null,
-
-                            $masterProduct->masterFamily ? [
-                                'label'      => __('Done'),
-                                'routeFetch' => [
-                                    'name'       => 'grp.json.master-product-category.taken-trade-units',
-                                    'parameters' => [
-                                        'masterProductCategory' => $masterProduct->masterFamily->id,
-                                    ],
-                                ],
-                            ] : null,
-
-                            [
-                                'label'      => __('All'),
-                                'search'     => true,
-                                'routeFetch' => [
-                                    'name' => 'grp.json.master_product_category.all_trade_units',
-                                ],
-                            ],
-                        ])),
-                        'value'        => $tradeUnits,
+                        'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']).' × '.$tradeUnit['code'])->implode(', '),
+                        'label_button' => __('Edit composition & packing'),
+                        'icon'         => 'fal fa-atom',
+                        'type_button'  => 'secondary',
+                        'route'        => [
+                            'name'       => 'grp.masters.master_shops.show.master_products.composition',
+                            'parameters' => [
+                                'masterShop'    => $masterProduct->masterShop->slug,
+                                'masterProduct' => $masterProduct->slug,
+                            ]
+                        ],
                     ],
-                    'master_prices' => $masterPricesField,
-                    'master_rrps'   => $masterRRPsField,
                 ],
             ],
 
@@ -508,25 +422,6 @@ class EditMasterProduct extends OrgAction
         ];
     }
 
-
-    /**
-     * `master_assets.tax_category` is stored as order-category-id => override-category-id;
-     * the form edits it as a list of rows.
-     *
-     * @return array<int, array{order_tax_category_id: string, tax_category_id: string}>
-     */
-    public function getTaxCategoryRows(MasterAsset $masterProduct): array
-    {
-        $rows = [];
-        foreach ($masterProduct->tax_category ?? [] as $orderTaxCategoryId => $taxCategoryId) {
-            $rows[] = [
-                'order_tax_category_id' => (string)$orderTaxCategoryId,
-                'tax_category_id'       => (string)$taxCategoryId,
-            ];
-        }
-
-        return $rows;
-    }
 
     public function getBreadcrumbs(MasterAsset $masterAsset, string $routeName, array $routeParameters): array
     {

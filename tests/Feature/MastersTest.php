@@ -1354,9 +1354,37 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
                     ->has('args.updateRoute')
                     ->where('args.updateRoute.name', 'grp.models.master_asset.update')
                     ->where('args.updateRoute.parameters.masterAsset', $masterAsset->id)
-                    ->has('blueprint.5.fields.trade_units.priceContext')
-                    ->has('blueprint.5.fields.master_prices')
-                    ->has('blueprint.5.fields.master_rrps')
+                    ->has('blueprint.6.fields.composition.route')
+                    ->etc()
+            );
+    });
+})->depends('create master asset');
+
+test('UI Edit Master Product Composition', function (MasterAsset $masterAsset) {
+    $response = get(
+        route('grp.masters.master_shops.show.master_products.composition', [
+            'masterShop'    => $masterAsset->masterShop->slug,
+            'masterProduct' => $masterAsset->slug,
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) use ($masterAsset) {
+        $page
+            ->component('EditModel')
+            ->has('breadcrumbs')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) => $head
+                    ->where('title', $masterAsset->code)
+                    ->etc()
+            )
+            ->has(
+                'formData',
+                fn (AssertableInertia $form) => $form
+                    ->has('blueprint.0.fields.trade_units.priceContext')
+                    ->where('blueprint.0.fields.trade_units.type', 'list-selector-trade-unit')
+                    ->has('blueprint.1.fields.master_prices')
+                    ->has('blueprint.1.fields.master_rrps')
                     ->etc()
             );
     });
@@ -1594,9 +1622,8 @@ test('UI Edit Master Product with a trade unit not linked to a stock', function 
     )->toBeFalse();
 
     $response = get(
-        route('grp.masters.master_shops.show.master_families.master_products.edit', [
+        route('grp.masters.master_shops.show.master_products.composition', [
             'masterShop'    => $masterShop->slug,
-            'masterFamily'  => $masterFamily->slug,
             'masterProduct' => $masterAsset->slug,
         ])
     );
@@ -1604,7 +1631,7 @@ test('UI Edit Master Product with a trade unit not linked to a stock', function 
     $response->assertOk();
     $response->assertInertia(
         fn (AssertableInertia $page) => $page->where(
-            'formData.blueprint.5.fields.trade_units.value',
+            'formData.blueprint.0.fields.trade_units.value',
             fn ($tradeUnits) => collect($tradeUnits)->count() === 1
                 && collect($tradeUnits)->every(fn ($tradeUnit) => $tradeUnit['packed_in'] == 1)
         )->etc()

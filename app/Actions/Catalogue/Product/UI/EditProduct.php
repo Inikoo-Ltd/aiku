@@ -688,44 +688,26 @@ class EditProduct extends OrgAction
                             'value' => $product->not_follow_master_trade_units,
                             'information' => __('Would set product to have standalone trade units (Differs from master)')
                         ] : [],
-                        'trade_units' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
-                            'label'        => __('Trade units'),
-                            'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
-                            'type'         => 'list-selector-trade-unit',
-                            'key_quantity' => 'quantity',
-                            'withQuantity' => true,
-                            'full'         => true,
-                            'noSaveButton' => false,
-                            'use_confirm'  => false,
-                            'is_dropship'  => $product->shop->type == ShopTypeEnum::DROPSHIPPING,
-                            'tabs' => array_values(array_filter([
-                                $product->family?->masterProductCategory ? [
-                                    'label'      => __('To do'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $product->family->masterProductCategory->id,
-                                        ],
-                                    ],
-                                ] : null,
-                                $product->family?->masterProductCategory ? [
-                                    'label'      => __('Done'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.taken-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $product->family->masterProductCategory->id,
-                                        ],
-                                    ],
-                                ] : null,
-                                [
-                                    'label'      => __('All'),
-                                    'search'     => true,
-                                    'routeFetch' => [
-                                        'name' => 'grp.json.master_product_category.all_trade_units',
-                                    ],
-                                ],
-                            ])),
-                            'value'        => $tradeUnits,
+                        /*
+                         * Composition, packing and the price they imply are one decision
+                         * with too many controls for this form, so they live on their own
+                         * page. This is only the summary and the door.
+                         */
+                        'composition' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
+                            'type'         => 'button',
+                            'noSaveButton' => true,
+                            'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']).' × '.$tradeUnit['code'])->implode(', '),
+                            'label_button' => __('Edit composition & packing'),
+                            'icon'         => 'fal fa-atom',
+                            'type_button'  => 'secondary',
+                            'route'        => [
+                                'name'       => 'grp.org.shops.show.catalogue.products.all_products.composition',
+                                'parameters' => [
+                                    'organisation' => $product->organisation->slug,
+                                    'shop'         => $product->shop->slug,
+                                    'product'      => $product->slug,
+                                ]
+                            ],
                         ] : [],
                     ]),
                 ],
