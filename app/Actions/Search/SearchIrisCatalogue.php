@@ -22,7 +22,12 @@ class SearchIrisCatalogue extends IrisAction
     {
         $boosts = UpdateWebsiteSearchBoosts::activeBoostIds($this->website);
 
-        $results = Search::run('catalogue', $query, ['shop_id' => $this->shop->id, 'is_in_website' => true, 'boosts' => $boosts]);
+        $results = Search::run('catalogue', $query, [
+            'shop_id'       => $this->shop->id,
+            'is_in_website' => true,
+            'boosts'        => $boosts,
+            'language'      => $this->shop->language->code,
+        ]);
 
         data_set($results, 'results.products', $this->enrichItems(Arr::get($results, 'results.products', []), Product::class, largeImage: true));
         data_set($results, 'results.product_categories', $this->enrichItems(Arr::get($results, 'results.product_categories', []), ProductCategory::class));

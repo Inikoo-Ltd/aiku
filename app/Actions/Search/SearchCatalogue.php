@@ -14,11 +14,13 @@ use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Arr;
 use Laravel\Scout\Builder;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Throwable;
 
 class SearchCatalogue
 {
     use AsAction;
     use WithRawSearchResults;
+    use WithTypesenseApi;
 
     /**
      * Typo-recovery tuning driven by the real no-result queries in the search logs:
@@ -48,10 +50,11 @@ class SearchCatalogue
             $collectionsQuery->where('is_in_website', true);
         }
 
-        $boosts = Arr::get($options, 'boosts', []);
-        $this->applySearchOptions($productsQuery, Arr::get($boosts, 'product'));
-        $this->applySearchOptions($productCategoriesQuery, Arr::get($boosts, 'product_category'));
-        $this->applySearchOptions($collectionsQuery, Arr::get($boosts, 'collection'));
+        $boosts   = Arr::get($options, 'boosts', []);
+        $language = Arr::get($options, 'language');
+        $this->applySearchOptions($productsQuery, Arr::get($boosts, 'product'), $language);
+        $this->applySearchOptions($productCategoriesQuery, Arr::get($boosts, 'product_category'), $language);
+        $this->applySearchOptions($collectionsQuery, Arr::get($boosts, 'collection'), $language);
 
         $productsQuery->take(11);
         $productCategoriesQuery->take(10);
@@ -81,14 +84,40 @@ class SearchCatalogue
      *
      * @param array<int, int>|null $boostIds
      */
-    private function applySearchOptions(Builder $searchQuery, ?array $boostIds): void
+    private function applySearchOptions(Builder $searchQuery, ?array $boostIds, ?string $languageCode): void
     {
         $searchOptions = self::SEARCH_TUNING;
+
+        if ($languageCode && $this->synonymSetExists($languageCode)) {
+            $searchOptions['synonym_sets'] = StoreSearchSynonym::synonymSet($languageCode);
+        }
 
         if (!empty($boostIds)) {
             $searchOptions['sort_by'] = '_eval(id:['.implode(',', $boostIds).']):desc,_text_match:desc';
         }
 
         $searchQuery->options($searchOptions);
+    }
+
+    /**
+     * Referencing a missing synonym set makes Typesense fail the whole search with
+     * a 404, so the set is only attached once it exists. Cached briefly; the cache
+     * is invalidated by StoreSearchSynonym so new sets apply immediately.
+     */
+    private function synonymSetExists(string $languageCode): bool
+    {
+        return (bool)cache()->remember(
+            StoreSearchSynonym::synonymSetExistsCacheKey($languageCode),
+            300,
+            function () use ($languageCode) {
+                try {
+                    return $this->typesenseClient()
+                        ->get($this->typesenseUrl().'/synonym_sets/'.StoreSearchSynonym::synonymSet($languageCode))
+                        ->successful();
+                } catch (Throwable) {
+                    return false;
+                }
+            }
+        );
     }
 }

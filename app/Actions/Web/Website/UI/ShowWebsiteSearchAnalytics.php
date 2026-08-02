@@ -120,6 +120,21 @@ class ShowWebsiteSearchAnalytics extends OrgAction
                 ],
                 'search_insights' => GetWebsiteSearchAnalytics::run($this->website),
                 'search_boosts'   => $this->getSearchBoosts(),
+                'synonym_language' => $this->shop->language->name,
+                'synonym_routes'  => [
+                    'index'  => [
+                        'name'       => 'grp.org.shops.show.web.analytics.search.synonyms.index',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                    'store'  => [
+                        'name'       => 'grp.org.shops.show.web.analytics.search.synonyms.store',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                    'delete' => [
+                        'name'       => 'grp.org.shops.show.web.analytics.search.synonyms.delete',
+                        'parameters' => $request->route()->originalParameters(),
+                    ],
+                ],
                 'boost_routes'    => [
                     'update'     => [
                         'name'       => 'grp.org.shops.show.web.analytics.search.boosts.update',

@@ -1096,6 +1096,38 @@ test('update website search boosts', function (Website $website) {
     expect(data_get($website->refresh()->settings, 'search_boosts'))->toBe([]);
 })->depends('launch website');
 
+test('manage search synonyms', function (Website $website) {
+    $website->refresh();
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    $set = 'catalogue-'.$this->shop->language->code;
+
+    Http::fake([
+        "*/synonym_sets/$set/items/*" => Http::response(['id' => 'aromcandles']),
+        "*/synonym_sets/$set/items"   => Http::response([
+            ['id' => 'aromcandles', 'synonyms' => ['aromcandles', 'aroma candles'], 'root' => ''],
+        ]),
+        "*/synonym_sets/$set"         => Http::response(['name' => $set]),
+    ]);
+
+    post(route('grp.org.shops.show.web.analytics.search.synonyms.store', $routeParams), [
+        'words' => ['Aromcandles', 'aroma candles', 'aromcandles '],
+    ])->assertSuccessful();
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), "/synonym_sets/$set/items/aromcandles")
+        && $request['synonyms'] === ['aromcandles', 'aroma candles']);
+
+    get(route('grp.org.shops.show.web.analytics.search.synonyms.index', $routeParams))
+        ->assertSuccessful()
+        ->assertExactJson([['id' => 'aromcandles', 'synonyms' => ['aromcandles', 'aroma candles']]]);
+
+    delete(route('grp.org.shops.show.web.analytics.search.synonyms.delete', array_merge($routeParams, ['aromcandles'])))
+        ->assertSuccessful();
+
+    post(route('grp.org.shops.show.web.analytics.search.synonyms.store', $routeParams), ['words' => ['only-one']])
+        ->assertSessionHasErrors('words');
+})->depends('launch website');
+
 test('UI smoke catalogue webpage routes', function (Website $website, array $cat) {
     $website->refresh();
 

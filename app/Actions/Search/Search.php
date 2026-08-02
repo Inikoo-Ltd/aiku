@@ -101,7 +101,7 @@ class Search extends OrgAction
         } elseif (in_array($scope, self::SHOP_SCOPES, true)) {
             $shop = Shop::where('slug', $request->query('shop'))->firstOrFail();
             $this->initialisationFromShop($shop, $request);
-            $options = ['shop_id' => $shop->id];
+            $options = ['shop_id' => $shop->id, 'language' => $shop->language->code];
         } else {
             return [];
         }

@@ -3,6 +3,7 @@ import { Head, Link, router } from "@inertiajs/vue3"
 import { ref, watch } from "vue"
 import axios from "axios"
 import { debounce } from "lodash-es"
+import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -12,9 +13,14 @@ import SearchTrendChart from "@/Components/DataDisplay/Dashboard/Widget/SearchTr
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faTimes, faSearch, faUsers, faRocket } from "@fal"
+import { faExternalLink, faTimes, faSearch, faUsers, faRocket, faRandom } from "@fal"
 
-library.add(faExternalLink, faTimes, faSearch, faUsers, faRocket)
+library.add(faExternalLink, faTimes, faSearch, faUsers, faRocket, faRandom)
+
+interface RouteRef {
+    name: string
+    parameters: Record<string, any>
+}
 
 interface BoostItem {
     type: 'product' | 'product_category' | 'collection'
@@ -29,6 +35,8 @@ const props = defineProps<{
     search_insights: any
     search_boosts: BoostItem[]
     boost_routes: { update: { name: string, parameters: Record<string, any> }, candidates: { name: string, parameters: Record<string, any> } }
+    synonym_language: string
+    synonym_routes: { index: RouteRef, store: RouteRef, delete: RouteRef }
     drilldown: { query: string, customer: string, params: Record<string, any> }
     data: any
     customers: any
@@ -97,6 +105,67 @@ const openBoostModal = () => {
     isBoostModalOpen.value = true
 }
 
+interface SynonymEntry {
+    id: string
+    synonyms: string[]
+}
+
+const isSynonymModalOpen = ref(false)
+const synonyms = ref<SynonymEntry[]>([])
+const synonymWords = ref("")
+const isLoadingSynonyms = ref(false)
+const isSavingSynonym = ref(false)
+const synonymError = ref("")
+
+const loadSynonyms = async () => {
+    isLoadingSynonyms.value = true
+    try {
+        const { data } = await axios.get(route(props.synonym_routes.index.name, props.synonym_routes.index.parameters))
+        synonyms.value = data
+    } finally {
+        isLoadingSynonyms.value = false
+    }
+}
+
+const openSynonymModal = () => {
+    synonymWords.value = ""
+    synonymError.value = ""
+    isSynonymModalOpen.value = true
+    loadSynonyms()
+}
+
+const prefillSynonym = (query: string) => {
+    const words = synonymWords.value.split(",").map(word => word.trim()).filter(Boolean)
+    if (!words.includes(query)) {
+        words.push(query)
+    }
+    synonymWords.value = words.join(", ")
+}
+
+const saveSynonym = async () => {
+    const words = synonymWords.value.split(",").map(word => word.trim()).filter(Boolean)
+    if (words.length < 2) {
+        synonymError.value = trans("Enter at least 2 comma-separated words")
+        return
+    }
+    isSavingSynonym.value = true
+    synonymError.value = ""
+    try {
+        await axios.post(route(props.synonym_routes.store.name, props.synonym_routes.store.parameters), { words })
+        synonymWords.value = ""
+        await loadSynonyms()
+    } catch (error: any) {
+        synonymError.value = error?.response?.data?.message ?? trans("Could not save synonym")
+    } finally {
+        isSavingSynonym.value = false
+    }
+}
+
+const deleteSynonym = async (entry: SynonymEntry) => {
+    await axios.delete(route(props.synonym_routes.delete.name, { ...props.synonym_routes.delete.parameters, synonym: entry.id }))
+    await loadSynonyms()
+}
+
 const activeTab = ref<'searches' | 'customers'>('searches')
 
 const tabs = [
@@ -123,6 +192,15 @@ const customerUrl = (row: { customer_slug?: string }) =>
         >
             <FontAwesomeIcon icon="fal fa-rocket" fixed-width aria-hidden="true" />
             {{ ctrans("Boosted items") }}
+        </button>
+        <button
+            type="button"
+            class="px-3 py-1.5 rounded-md text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+            v-tooltip="ctrans('Map failed searches and alternative words to what customers meant')"
+            @click="openSynonymModal"
+        >
+            <FontAwesomeIcon icon="fal fa-random" fixed-width aria-hidden="true" />
+            {{ ctrans("Synonyms") }}
         </button>
         <span
             v-for="boost in search_boosts"
@@ -203,6 +281,76 @@ const customerUrl = (row: { customer_slug?: string }) =>
                 >
                     {{ ctrans("Save") }}
                 </button>
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isSynonymModalOpen" width="w-full max-w-lg" @onClose="isSynonymModalOpen = false">
+        <div class="p-2">
+            <h2 class="text-lg font-medium mb-1">
+                <FontAwesomeIcon icon="fal fa-random" fixed-width aria-hidden="true" />
+                {{ ctrans("Search synonyms") }}
+                <span class="text-sm font-normal text-gray-400">· {{ synonym_language }}</span>
+            </h2>
+            <p class="text-sm text-gray-500 mb-4">
+                {{ ctrans("Words in a group are treated as equivalent when customers search. Shared by every :language shop, so a fix here helps them all.", { language: synonym_language }) }}
+            </p>
+
+            <div v-if="search_insights?.top_zero_queries?.length" class="mb-4">
+                <p class="text-xs text-gray-400 mb-1">{{ ctrans("Recent searches without results, click to use:") }}</p>
+                <div class="flex flex-wrap gap-1.5">
+                    <button
+                        v-for="zero in search_insights.top_zero_queries"
+                        :key="zero.query"
+                        type="button"
+                        class="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 hover:bg-red-100"
+                        @click="prefillSynonym(zero.query)"
+                    >
+                        {{ zero.query }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mb-1">
+                <input
+                    v-model="synonymWords"
+                    type="text"
+                    :placeholder="ctrans('aromcandles, aroma candles')"
+                    class="flex-1 rounded-md border-gray-300 text-sm"
+                    @keyup.enter="saveSynonym"
+                />
+                <button
+                    type="button"
+                    class="px-4 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                    :disabled="isSavingSynonym"
+                    @click="saveSynonym"
+                >
+                    {{ ctrans("Add") }}
+                </button>
+            </div>
+            <p v-if="synonymError" class="text-xs text-red-600 mb-2">{{ synonymError }}</p>
+            <p v-else class="text-xs text-gray-400 mb-2">{{ ctrans("Comma-separated, 2 to 10 words per group") }}</p>
+
+            <div class="max-h-64 overflow-y-auto divide-y divide-gray-100 mt-2">
+                <div v-if="isLoadingSynonyms" class="py-3 text-sm text-gray-400">{{ ctrans("Loading...") }}</div>
+                <p v-else-if="!synonyms.length" class="py-3 text-sm text-gray-400">{{ ctrans("No synonyms yet") }}</p>
+                <template v-else>
+                    <div
+                        v-for="entry in synonyms"
+                        :key="entry.id"
+                        class="flex items-center justify-between gap-2 py-2 px-1 text-sm"
+                    >
+                        <span class="truncate">{{ entry.synonyms.join(" · ") }}</span>
+                        <button
+                            type="button"
+                            class="text-gray-300 hover:text-red-500 shrink-0"
+                            :aria-label="ctrans('Delete')"
+                            @click="deleteSynonym(entry)"
+                        >
+                            <FontAwesomeIcon icon="fal fa-times" aria-hidden="true" />
+                        </button>
+                    </div>
+                </template>
             </div>
         </div>
     </Modal>
