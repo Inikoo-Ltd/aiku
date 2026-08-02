@@ -123,20 +123,13 @@ const createUserForm = useForm<{
     password_confirmation: '',
 });
 
-const openCreateUserDialog = (action: { route?: { name: string, parameters?: object, method?: string } }) => {
+const openCreateUserDialog = () => {
     createUserForm.reset();
     createUserForm.clearErrors();
     showDialog.value = true;
 }
 
 const createUser = () => {
-    createUserForm.clearErrors();
-
-    if (createUserForm.password !== createUserForm.password_confirmation) {
-        createUserForm.setError('password_confirmation', trans('The password confirmation does not match.'));
-        return;
-    }
-
     createUserForm.post(
         route(
              'grp.models.employee.create_user', { employee  : props.employee_id}
@@ -162,7 +155,7 @@ const createUser = () => {
             <Button
                 :icon="faPlus"
                 :label="action.label"
-                @click="() => openCreateUserDialog(action)"
+                @click="() => openCreateUserDialog()"
                 :style="action.style"
             />
             <Dialog

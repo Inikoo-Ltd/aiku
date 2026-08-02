@@ -10,20 +10,26 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\User;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreUserFromEmployee extends OrgAction
 {
-    public function handle(Employee $employee, array $modelData)
+    use WithHumanResourcesEditAuthorisation;
+
+    public function handle(Employee $employee, array $modelData): User
     {
-        if ($employee->user()->where('users.status', true)->exists()) {
-            abort(405, 'User exists for this employee');
-        };
+        if ($employee->user) {
+            abort(422, 'User exists for this employee');
+        }
 
         if ($employee->email) {
             data_set($modelData, 'email', $employee->email);
@@ -36,7 +42,7 @@ class StoreUserFromEmployee extends OrgAction
         data_set($modelData, 'language_id', $employee->organisation->language_id);
         data_set($modelData, 'status', true);
 
-        StoreUser::make()->action($employee, $modelData);
+        return StoreUser::make()->action($employee, $modelData);
     }
 
     public function rules(): array
@@ -44,6 +50,7 @@ class StoreUserFromEmployee extends OrgAction
         $rules = [
             'username'          => [
                 'required',
+                'lowercase',
                 $this->strict ? new AlphaDashDot() : 'string',
                 new IUnique(
                     table: 'users',
@@ -66,10 +73,15 @@ class StoreUserFromEmployee extends OrgAction
         return $rules;
     }
 
-    public function asController(Employee $employee, ActionRequest $request)
+    public function asController(Employee $employee, ActionRequest $request): User
     {
-        $this->initialisationFromGroup($employee->group, $request);
+        $this->initialisation($employee->organisation, $request);
 
-        $this->handle($employee, $this->validatedData);
+        return $this->handle($employee, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 }

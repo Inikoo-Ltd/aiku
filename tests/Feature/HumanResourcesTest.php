@@ -8,6 +8,9 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\SysAdmin\User\StoreUserFromEmployee;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\HumanResources\Employee\DeleteEmployee;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
@@ -1210,3 +1213,34 @@ test('StoreLeave handle creates a leave with pending approval records', function
 
     expect(\App\Models\HumanResources\LeaveApprovalRecord::where('leave_id', $leave->id)->count())->toBeGreaterThanOrEqual(1);
 });
+
+test('StoreUserFromEmployee authorisation comes from the human resources trait', function () {
+    expect(class_uses_recursive(StoreUserFromEmployee::class))
+        ->toContain(WithHumanResourcesEditAuthorisation::class)
+        ->and(method_exists(StoreUserFromEmployee::class, 'authorize'))->toBeTrue();
+});
+
+test('can create a user from an employee', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'employee-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    expect($user)->toBeInstanceOf(User::class)
+        ->and($user->status)->toBeTrue()
+        ->and($employee->refresh()->user_id)->toBe($user->id);
+
+    return $employee;
+});
+
+test('an employee that already has a user can not get a second one', function (Employee $employee) {
+    expect(fn () => StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'employee-dup-' . $employee->id,
+        'password' => 'secret123',
+    ]))->toThrow(HttpException::class);
+})->depends('can create a user from an employee');
