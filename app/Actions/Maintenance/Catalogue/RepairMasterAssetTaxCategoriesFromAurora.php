@@ -66,11 +66,14 @@ class RepairMasterAssetTaxCategoriesFromAurora
             $organisationSource = $this->getOrganisationSource($organisation);
             $organisationSource->initialisation($organisation);
 
+            /**
+             * A real map starts with '{"'. Live Aurora fills the column with 'null' and other
+             * markers on every product - 409k rows pass a not-in filter, 556 pass this one.
+             */
             $auroraProducts = DB::connection('aurora')
                 ->table('Product Dimension')
                 ->select(['Product ID', 'Product Code', 'Product Tax Category Data'])
-                ->whereNotNull('Product Tax Category Data')
-                ->whereNotIn('Product Tax Category Data', ['{}', ''])
+                ->where('Product Tax Category Data', 'like', '{"%')
                 ->get();
 
             $bySource = 0;
