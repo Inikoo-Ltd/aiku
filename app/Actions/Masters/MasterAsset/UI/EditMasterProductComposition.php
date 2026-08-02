@@ -7,6 +7,7 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
@@ -30,6 +31,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditMasterProductComposition extends OrgAction
 {
     use WithUnitsChangeConfirmation;
+    use WithMasterProductSubNavigation;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
@@ -73,7 +75,8 @@ class EditMasterProductComposition extends OrgAction
                                 ]
                             ]
                         ]
-                    ]
+                    ],
+                    'subNavigation' => $this->getMasterProductsSubNavigation($masterAsset),
                 ],
                 'formData' => [
                     'blueprint' => $this->getBlueprint($masterAsset),
