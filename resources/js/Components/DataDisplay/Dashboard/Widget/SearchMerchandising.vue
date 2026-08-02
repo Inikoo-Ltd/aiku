@@ -7,9 +7,9 @@ import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faRocket, faRandom } from "@fal"
+import { faTimes, faRocket, faRandom, faCheck, faSparkles } from "@fal"
 
-library.add(faTimes, faRocket, faRandom)
+library.add(faTimes, faRocket, faRandom, faCheck, faSparkles)
 
 interface RouteRef {
     name: string
@@ -38,6 +38,8 @@ const props = defineProps<{
             synonyms_index: RouteRef
             synonyms_store: RouteRef
             synonyms_delete: RouteRef
+            suggestions_index: RouteRef
+            suggestions_decide: RouteRef
         }
     }
     topZeroQueries?: { query: string }[]
@@ -130,6 +132,7 @@ const openSynonymModal = () => {
     synonymError.value = ""
     isSynonymModalOpen.value = true
     loadSynonyms()
+    loadSuggestions()
 }
 
 const prefillSynonym = (query: string) => {
@@ -162,6 +165,43 @@ const saveSynonym = async () => {
 const deleteSynonym = async (entry: SynonymEntry) => {
     await axios.delete(route(props.merchandising.routes.synonyms_delete.name, { ...props.merchandising.routes.synonyms_delete.parameters, synonym: entry.id }))
     await loadSynonyms()
+}
+
+// AI suggestions
+interface Suggestion {
+    id: string
+    query: string
+    words: string[]
+    sessions: number
+}
+
+const suggestions = ref<Suggestion[]>([])
+const decidingSuggestionId = ref<string | null>(null)
+
+const loadSuggestions = async () => {
+    try {
+        const { data } = await axios.get(route(props.merchandising.routes.suggestions_index.name, props.merchandising.routes.suggestions_index.parameters))
+        suggestions.value = data
+    } catch {
+        suggestions.value = []
+    }
+}
+
+const decideSuggestion = async (suggestion: Suggestion, decision: 'approve' | 'dismiss') => {
+    decidingSuggestionId.value = suggestion.id
+    try {
+        await axios.post(route(props.merchandising.routes.suggestions_decide.name, {
+            ...props.merchandising.routes.suggestions_decide.parameters,
+            suggestion: suggestion.id,
+            decision,
+        }))
+        suggestions.value = suggestions.value.filter(item => item.id !== suggestion.id)
+        if (decision === 'approve') {
+            await loadSynonyms()
+        }
+    } finally {
+        decidingSuggestionId.value = null
+    }
 }
 </script>
 
@@ -292,6 +332,45 @@ const deleteSynonym = async (entry: SynonymEntry) => {
                     >
                         {{ zero.query }}
                     </button>
+                </div>
+            </div>
+
+            <div v-if="suggestions.length" class="mb-4">
+                <p class="text-xs text-gray-400 mb-1">
+                    <FontAwesomeIcon icon="fal fa-sparkles" aria-hidden="true" />
+                    {{ ctrans("AI suggestions from failed searches, approve or dismiss:") }}
+                </p>
+                <div class="divide-y divide-gray-100 rounded-md border border-gray-200">
+                    <div
+                        v-for="suggestion in suggestions"
+                        :key="suggestion.id"
+                        class="flex items-center justify-between gap-2 py-1.5 px-2 text-sm"
+                    >
+                        <span class="truncate">
+                            {{ suggestion.words.join(" · ") }}
+                            <span class="text-xs text-gray-400">({{ suggestion.sessions }} {{ ctrans("searches") }})</span>
+                        </span>
+                        <span class="flex gap-1 shrink-0">
+                            <button
+                                type="button"
+                                class="px-2 py-0.5 rounded text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-40"
+                                :disabled="decidingSuggestionId === suggestion.id"
+                                :aria-label="ctrans('Approve')"
+                                @click="decideSuggestion(suggestion, 'approve')"
+                            >
+                                <FontAwesomeIcon icon="fal fa-check" aria-hidden="true" />
+                            </button>
+                            <button
+                                type="button"
+                                class="px-2 py-0.5 rounded text-gray-500 bg-gray-50 hover:bg-gray-100 disabled:opacity-40"
+                                :disabled="decidingSuggestionId === suggestion.id"
+                                :aria-label="ctrans('Dismiss')"
+                                @click="decideSuggestion(suggestion, 'dismiss')"
+                            >
+                                <FontAwesomeIcon icon="fal fa-times" aria-hidden="true" />
+                            </button>
+                        </span>
+                    </div>
                 </div>
             </div>
 

@@ -28,6 +28,8 @@ trait WithSearchMerchandising
             'synonyms_index'   => 'grp.org.shops.show.web.analytics.search.synonyms.index',
             'synonyms_store'   => 'grp.org.shops.show.web.analytics.search.synonyms.store',
             'synonyms_delete'  => 'grp.org.shops.show.web.analytics.search.synonyms.delete',
+            'suggestions_index'  => 'grp.org.shops.show.web.analytics.search.synonym_suggestions.index',
+            'suggestions_decide' => 'grp.org.shops.show.web.analytics.search.synonym_suggestions.decide',
         ] as $key => $name) {
             $routes[$key] = ['name' => $name, 'parameters' => $routeParameters];
         }
