@@ -142,6 +142,17 @@ test('iris search click endpoint records the click once', function () {
         ->and($log->clicked_at->equalTo($firstClickedAt))->toBeTrue();
 });
 
+test('changing the search engine breaks the cached storefront layout props', function () {
+    // the dump ships websites already on internal, so pin a known starting point first
+    $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'luigi'])]);
+
+    // exactly one break: the unrelated settings write must not trigger it, the engine flip must
+    \App\Actions\Web\Website\BreakWebsiteIrisCache::mock()->shouldReceive('handle')->once();
+
+    $this->website->update(['settings' => array_merge($this->website->refresh()->settings, ['unrelated_flag' => true])]);
+    $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'internal'])]);
+});
+
 test('luigi actions skip websites on internal search', function () {
     $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'luigi'])]);
     expect($this->website->refresh()->usesLuigiSearch())->toBeTrue();
