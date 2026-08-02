@@ -609,7 +609,7 @@ test('UI edit product composition', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.all_products.composition', [$this->organisation->slug, $this->shop->slug, $this->product->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('EditModel')
+            ->component('Goods/ProductComposition')
             ->has('title')
             ->has('pageHead')
             ->has('formData.blueprint.0.fields.units')

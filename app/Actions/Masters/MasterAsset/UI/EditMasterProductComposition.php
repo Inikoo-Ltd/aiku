@@ -48,7 +48,7 @@ class EditMasterProductComposition extends OrgAction
     public function htmlResponse(MasterAsset $masterAsset, ActionRequest $request): Response
     {
         return Inertia::render(
-            'EditModel',
+            'Goods/ProductComposition',
             [
                 'title'       => __('Composition').': '.$masterAsset->code,
                 'breadcrumbs' => $this->getBreadcrumbs(

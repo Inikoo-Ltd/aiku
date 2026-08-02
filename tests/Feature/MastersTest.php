@@ -1370,7 +1370,7 @@ test('UI Edit Master Product Composition', function (MasterAsset $masterAsset) {
 
     $response->assertInertia(function (AssertableInertia $page) use ($masterAsset) {
         $page
-            ->component('EditModel')
+            ->component('Goods/ProductComposition')
             ->has('breadcrumbs')
             ->has(
                 'pageHead',
