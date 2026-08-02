@@ -553,7 +553,7 @@ test("UI Edit Stock in Group", function () {
                     'parameters' => $stock->id
                 ],
             ])->etc())
-            ->has('formData.blueprint.1.fields.trade_units.productsContext')
+            ->has('formData.blueprint.1.fields.composition.route')
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $stock->name)->etc()
@@ -950,4 +950,22 @@ test('warehouse packing can be edited per org stock from the master editor', fun
     $orgStock->refresh();
     expect($orgStock->packed_in)->toBe(12)
         ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(12.0);
+});
+
+test('UI Edit Stock Composition', function () {
+    $stock    = Stock::first();
+    $response = get(
+        route('grp.goods.stocks.composition', [$stock->slug])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($stock) {
+        $page
+            ->component('Goods/ProductComposition')
+            ->has('breadcrumbs')
+            ->has('formData.blueprint.0.fields.trade_units.productsContext')
+            ->where('formData.args.updateRoute.name', 'grp.models.stock.update')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) => $head->where('title', $stock->code)->etc()
+            );
+    });
 });

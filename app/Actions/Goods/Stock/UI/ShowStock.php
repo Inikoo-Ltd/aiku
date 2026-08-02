@@ -88,6 +88,18 @@ class ShowStock extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ] : false,
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Composition'),
+                            'icon'  => ['fal', 'fa-atom'],
+                            'route' => [
+                                'name'       => 'grp.goods.stocks.composition',
+                                'parameters' => [
+                                    'stock' => $stock->slug,
+                                ]
+                            ]
+                        ] : false,
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',
