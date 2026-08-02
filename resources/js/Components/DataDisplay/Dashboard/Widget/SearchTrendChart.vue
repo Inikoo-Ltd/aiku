@@ -11,6 +11,8 @@ import {
     Legend,
 } from "chart.js"
 import { Line } from "vue-chartjs"
+// ctrans is a template-only global (app.config.globalProperties), script scope needs the import
+import { ctrans } from "@/Composables/useTrans"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
