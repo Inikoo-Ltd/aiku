@@ -164,7 +164,7 @@ const submitNotes = async () => {
                                 type="cancel"
                                 size="xs"
                                 :icon="faTrash"
-                                :tooltip="trans('Delete')"
+                                :label="trans('Delete')"
                                 @click="changeModel(true)"
                             />
                         </template>

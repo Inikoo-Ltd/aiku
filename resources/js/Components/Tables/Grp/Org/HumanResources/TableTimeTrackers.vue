@@ -266,7 +266,7 @@ const submitClockIn = async (): Promise<void> => {
                                 type="cancel"
                                 size="xs"
                                 :icon="faTrash"
-                                :tooltip="trans('Delete')"
+                                :label="trans('Delete')"
                                 @click="changeModel(true)"
                             />
                         </template>
