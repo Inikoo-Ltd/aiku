@@ -28,6 +28,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
 
 const props = defineProps < {
@@ -271,52 +272,17 @@ const saveBarcode = (value: string | null) => {
                             @click="openBarcodeModal">
                             <Icon :data="{ icon: 'fal fa-edit' }" />
                         </button>
-                    
-    <!-- Modal: add or edit the org stock barcode by typing or scanning into the input -->
-    <Modal :isOpen="isBarcodeModalOpen" @onClose="isBarcodeModalOpen = false" width="w-full max-w-md">
-        <div class="flex flex-col gap-4 p-2">
-            <div class="text-lg font-semibold">{{ ctrans("Org stock barcode") }}</div>
-            <div class="text-sm text-gray-500">
-                {{ ctrans("Type the barcode, or click the field and scan the item with a barcode scanner.") }}
-            </div>
-            <input
-                ref="barcodeInputElement"
-                v-model="barcodeInput"
-                type="text"
-                autocomplete="off"
-                spellcheck="false"
-                maxlength="54"
-                :placeholder="ctrans('e.g. 5055796528387')"
-                class="w-full rounded-md border-gray-300 py-2 px-3 font-mono text-lg tracking-wide focus:border-indigo-500 focus:ring-indigo-500"
-                @keydown.enter.prevent="saveBarcode(barcodeInput.trim() || null)"
-            />
-            <div class="flex justify-between gap-2">
-                <Button
-                    v-if="data.barcodes?.[0]?.number"
-                    type="negative"
-                    :label="ctrans('Remove barcode')"
-                    :loading="isSavingBarcode"
-                    @click="saveBarcode(null)" />
-                <div class="ml-auto flex gap-2">
-                    <Button type="tertiary" :label="ctrans('Cancel')" @click="isBarcodeModalOpen = false" />
-                    <Button
-                        :label="ctrans('Save')"
-                        :loading="isSavingBarcode"
-                        :disabled="!barcodeInput.trim()"
-                        @click="saveBarcode(barcodeInput.trim())" />
-                </div>
-            </div>
-        </div>
-    </Modal>
-</template>
+                    </template>
+
                     <button
                         v-else-if="data.barcode_update_route"
                         type="button"
-                        class="flex h-14 flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition hover:border-indigo-400 hover:text-indigo-500"
+                        class="flex h-14 flex-1 px-2 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition hover:border-indigo-400 hover:text-indigo-500"
                         @click="openBarcodeModal">
                         <Icon :data="{ icon: 'fal fa-plus' }" />
                         {{ ctrans("Add barcode (type or scan it)") }}
                     </button>
+
                     <div v-else class="h-14 flex-1 text-sm italic text-gray-400 flex items-center">{{ ctrans("No barcode") }}</div>
 
                     <div class="flex flex-col gap-1.5 text-sm">
@@ -400,5 +366,49 @@ const saveBarcode = (value: string | null) => {
                 </div>
             </div>
         </div>
+
+        <!-- Modal: add or edit the org stock barcode by typing or scanning into the input -->
+        <Modal :isOpen="isBarcodeModalOpen" @onClose="isBarcodeModalOpen = false" width="w-full max-w-md">
+            <div class="flex flex-col gap-4 p-2">
+                <div class="flex justify-between items-center">
+                    <div class="text-lg font-semibold">{{ ctrans("Org stock barcode") }}</div>
+                    <div class="text-3xl">
+                        <FontAwesomeIcon icon='fal fa-barcode' class='' fixed-width aria-hidden='true' />
+                    </div>
+                </div>
+                <div class="text-sm text-gray-500">
+                    {{ ctrans("Type the barcode, or click the field and scan the item with a barcode scanner.") }}
+                </div>
+                <input
+                    ref="barcodeInputElement"
+                    v-model="barcodeInput"
+                    type="text"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="54"
+                    :placeholder="ctrans('e.g. 5055796528387')"
+                    class="w-full rounded-md border-gray-300 py-2 px-3 font-mono text-lg tracking-wide focus:border-indigo-500 focus:ring-indigo-500"
+                    @keydown.enter.prevent="saveBarcode(barcodeInput.trim() || null)"
+                />
+                <div class="flex justify-between gap-2">
+                    <Button
+                        v-if="data.barcodes?.[0]?.number"
+                        type="negative"
+                        :label="ctrans('Remove barcode')"
+                        icon="fal fa-trash-alt"
+                        :loading="isSavingBarcode"
+                        @click="saveBarcode(null)" />
+                    <div class="ml-auto flex gap-2 w-full">
+                        <Button type="tertiary" :label="ctrans('Cancel')" @click="isBarcodeModalOpen = false" />
+                        <Button
+                            :label="ctrans('Save')"
+                            :loading="isSavingBarcode"
+                            full
+                            :disabled="!barcodeInput.trim()"
+                            @click="saveBarcode(barcodeInput.trim())" />
+                    </div>
+                </div>
+            </div>
+        </Modal>
     </div>
 </template>
