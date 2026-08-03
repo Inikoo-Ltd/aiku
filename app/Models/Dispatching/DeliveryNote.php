@@ -436,6 +436,15 @@ class DeliveryNote extends Model implements Auditable
         return NaturalLanguage::make()->weight($weight);
     }
 
+    public function hasDangerousGoods(): bool
+    {
+        return $this->deliveryNoteItems()
+            ->whereHas('orgStock.tradeUnits', function ($query) {
+                $query->whereNotNull('un_number')->where('un_number', '<>', 'None');
+            })
+            ->exists();
+    }
+
     public function getNumberParcels(): int
     {
         // AIKU-13ZJ Fallback needed
