@@ -48,6 +48,7 @@ const CENTER = { x: 150, y: 172 }
 
 // Eye follows the mouse anywhere on the page
 const svgEl = ref<SVGSVGElement>()
+const eyeClipId = 'eye-clip-' + Math.random().toString(36).slice(2, 8)
 const pupil = ref({ x: 0, y: 0 })
 const isBlinking = ref(false)
 const showRays = ref(false)
@@ -203,13 +204,19 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
                 <!-- eyelids -->
                 <g :transform="isBlinking || attention === 'asleep' ? 'scale(1, 0.08)' : 'scale(1, 1)'"
                     :class="attention === 'asleep' ? 'transition-transform duration-700' : 'transition-transform duration-100'">
-                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="white" stroke="#cbd5e1" stroke-width="1.5" />
-                    <g :transform="`translate(${pupil.x * 0.6}, ${pupil.y * 0.35})`"
-                        :class="attention === 'following' ? '' : 'transition-transform duration-1000'">
-                        <circle r="6.5" fill="#94a3b8" />
-                        <circle r="2.8" fill="#64748b" />
-                        <circle cx="-1.5" cy="-1.5" r="1" fill="white" />
+                    <clipPath :id="eyeClipId">
+                        <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" />
+                    </clipPath>
+                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="white" />
+                    <g :clip-path="`url(#${eyeClipId})`">
+                        <g :transform="`translate(${pupil.x * 0.6}, ${pupil.y * 0.35})`"
+                            :class="attention === 'following' ? '' : 'transition-transform duration-1000'">
+                            <circle r="6.5" fill="#94a3b8" />
+                            <circle r="2.8" fill="#64748b" />
+                            <circle cx="-1.5" cy="-1.5" r="1" fill="white" />
+                        </g>
                     </g>
+                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
                 </g>
                 <!-- closed lid line when blinking or sleeping -->
                 <path v-if="isBlinking || attention === 'asleep'" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
