@@ -71,7 +71,7 @@ const emits = defineEmits<{
 const layout = inject("layout", {})
 const screenType = inject("screenType", ref('desktop'))
 const expanded = ref(false)
-const webpage_id = inject("webpage_id", {})
+const webpage_id = inject<number | null>("webpage_id", null)
 
 const onSelectProduct = (p: ProductResource) => emits("selectProduct", p)
 const onAddBackInStock = (p: ProductResource) => emits("setBackInStock", p)

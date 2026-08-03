@@ -156,6 +156,30 @@ class ShowPickingSession extends OrgAction
 
             'allow_waiting'               => $allowWaiting,
             'allow_picker_set_not_picked' => !$allowWaiting || (bool)data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false),
+
+            /*
+             * The picker of every note in the session is decided here, so this is the one safe
+             * place to hand the work to somebody else: doing it note by note would leave two
+             * people picking the same one.
+             */
+            'picker'                      => $pickingSession->user ? [
+                'id'           => $pickingSession->user->id,
+                'contact_name' => $pickingSession->user->contact_name,
+            ] : null,
+            'routes'                      => [
+                'update'       => [
+                    'name'       => 'grp.models.picking_session.update',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id,
+                    ],
+                ],
+                'pickers_list' => [
+                    'name'       => 'grp.json.employees.picker_users',
+                    'parameters' => [
+                        'organisation' => $pickingSession->organisation->slug,
+                    ],
+                ],
+            ],
         ];
 
 

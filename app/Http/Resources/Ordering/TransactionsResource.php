@@ -49,6 +49,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $discretionary_offer_label
  * @property mixed $transaction_label
  * @property mixed $product_units
+ * @property mixed $units_changed_to
  * @property mixed $quantity_picked
  * @property bool $is_cut_view
  * @property string|null $batch_codes
@@ -143,6 +144,7 @@ class TransactionsResource extends JsonResource
             'discretionary_offer_label'      => $this->discretionary_offer_label,
             'transaction_label'              => $this->transaction_label,
             'product_units'                  => $this->product_units,
+            'units_changed_to'               => $this->units_changed_to,
             'is_cut_view'                    => $this->is_cut_view,
             'is_gift'                        => $this->is_gift,
             'is_follow_on'                   => $this->is_follow_on,

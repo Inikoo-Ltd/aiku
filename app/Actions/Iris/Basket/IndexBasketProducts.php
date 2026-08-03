@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Services\QueryBuilder;
+use Illuminate\Support\Arr;
 
 class IndexBasketProducts extends OrgAction
 {
@@ -54,6 +55,6 @@ class IndexBasketProducts extends OrgAction
             ])
             ->selectRaw("'{$order->currency->code}'  as currency_code")
             ->withPaginator('', tableName: request()->route()->getName())
-            ->withQueryString();
+            ->appends(Arr::except(request()->query(), ['domain', 'website']));
     }
 }

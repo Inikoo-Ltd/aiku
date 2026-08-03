@@ -88,7 +88,7 @@ class BlogHTMLImport implements ToCollection
                 return Carbon::parse($item);
             };
 
-            $url = 'csv-david-blog-' . Carbon::parse($row[$createdColumnPos])->format('m-d-Y');
+            $url = 'david-blog-' . Carbon::parse($row[$createdColumnPos])->format('m-d-Y');
 
             if (Webpage::where('url', $url)->exists()) {
                 continue;

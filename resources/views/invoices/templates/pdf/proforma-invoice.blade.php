@@ -342,17 +342,7 @@
         <td>{{ $order->currency->symbol . $order->net_amount }}</td>
     </tr>
 
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
-            {{ __('Tax') }}
-
-            <br><small>{{$order->taxCategory->name}}
-                ({{__('rate')}}:{{percentage($order->taxCategory->rate,1)}})
-            </small>
-        </td>
-        <td class="totals">{{ $order->currency->symbol . $order->tax_amount }}</td>
-    </tr>
+    @include('invoices.templates.pdf.tax-rows', ['document' => $order])
 
     <tr class="total">
         <td style="border:none" colspan="4"></td>

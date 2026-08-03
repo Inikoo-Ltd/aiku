@@ -42,6 +42,7 @@ import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
+import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
 
@@ -751,15 +752,26 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
-            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <div>
+                {{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
+                <span
+                    v-if="deliveryNoteItem.barcode"
+                    v-tooltip="ctrans('Org stock barcode') + ' ' + deliveryNoteItem.barcode"
+                >
+                    <FontAwesomeIcon
+                        icon="fal fa-barcode"
+                        class="ml-2 xopacity-70 cursor-pointer"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                </span>
+            </div>
             <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
 
             <!-- Section: DNI Expired date -->
-            <div v-if="false" class="flex items-center flex-wrap">
-                <!-- Label: expired date -->
+            <!-- <div v-if="false" class="flex items-center flex-wrap">
                 <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
 
-                <!-- Button: add/edit expiry date and batch code -->
                 <div v-if="(deliveryNoteItem.is_picked || Number(deliveryNoteItem.quantity_picked) > 0) && state !== 'cancelled'">
                     <Button
                         v-if="deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code"
@@ -782,7 +794,12 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                         </template>
                     </Button>
                 </div>
-            </div>
+            </div> -->
+        </template>
+
+        <!-- Column: Barcode -->
+        <template #cell(barcode)="{ item: deliveryNoteItem }">
+            <BarcodeDisplay :value="deliveryNoteItem.barcode" />
         </template>
 
         <!-- Section: Pickings -->
@@ -1275,10 +1292,18 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         <template #cell(action)="{ item: item }">
                 <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0" >
                     
-                    <div class="flex justify-start items-center">
+                    <div class="flex justify-start items-center gap-x-2">
+                    <!-- Label: partially packed, the rest is still waiting -->
+                    <span
+                        v-if="item.is_partially_packed"
+                        v-tooltip="ctrans('Packed :packed of :picked picked', { packed: Number(item.quantity_packed), picked: Number(item.quantity_picked) })"
+                        class="whitespace-nowrap rounded border border-amber-400 bg-amber-100 px-1.5 text-sm text-amber-700">
+                        {{ Number(item.quantity_packed) }} / {{ Number(item.quantity_picked) }}
+                    </span>
+
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
-                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_picked) })"
+                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_to_pack ?? item.quantity_picked) })"
                         type="secondary"
                         xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
@@ -1293,8 +1318,8 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                         }"
                     />
                     <ButtonWithLink
-                        v-else
-                        v-tooltip="ctrans('Undo packing')"
+                        v-if="item.is_done_packing || item.is_partially_packed"
+                        v-tooltip="item.is_partially_packed ? ctrans('Undo all packing on this item') : ctrans('Undo packing')"
                         type="negative"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :bindToLink="{preserveScroll: true}"

@@ -72,11 +72,11 @@ class EditStock extends OrgAction
                         ]
                     ]
                 ],
-
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Edit sku'),
+                            'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
@@ -89,7 +89,32 @@ class EditStock extends OrgAction
                                     'value' => $stock->name
                                 ],
                             ],
-                        ]
+                        ],
+                        [
+                            'label'  => __('Trade units'),
+                            'icon'   => 'fa-light fa-atom',
+                            'fields' => [
+                                /*
+                                 * Packing, the products it feeds and the delivery note impact
+                                 * are too much command and control for this form, so they live
+                                 * on their own page. This is only the summary and the door.
+                                 */
+                                'composition' => [
+                                    'type'         => 'button',
+                                    'noSaveButton' => true,
+                                    'label'        => $stock->tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit->pivot->quantity).' × '.$tradeUnit->code)->implode(', '),
+                                    'label_button' => __('Edit composition & packing'),
+                                    'icon'         => 'fal fa-atom',
+                                    'type_button'  => 'secondary',
+                                    'route'        => [
+                                        'name'       => 'grp.goods.stocks.composition',
+                                        'parameters' => [
+                                            'stock' => $stock->slug,
+                                        ]
+                                    ],
+                                ],
+                            ],
+                        ],
                     ],
 
                     'args' => [

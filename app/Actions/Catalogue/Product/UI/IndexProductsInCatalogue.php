@@ -21,6 +21,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ExternalShop\ProductInExternalShopResource;
+use App\Exports\Catalogue\ProductsExport;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -68,6 +69,38 @@ class IndexProductsInCatalogue extends OrgAction
                     $states = array_diff($elements, ['price_not_match_master']);
                     if ($states) {
                         $query->whereIn('products.state', $states);
+                    }
+                }
+
+            ],
+
+            /**
+             * A product takes its tax treatment from its master, so the override lives there
+             * rather than on the shop product. No counts: they would cost a scan of the
+             * catalogue on every page load.
+             */
+            'tax' => [
+                'label'    => __('Tax'),
+                'elements' => [
+                    'overridden' => [__('Reduced or zero rated'), null],
+                    'standard'   => [__('Standard rate'), null],
+                ],
+
+                'engine' => function ($query, $elements) {
+                    $overridden = function ($query) {
+                        $query->select('id')
+                            ->from('master_assets')
+                            ->whereRaw("master_assets.tax_category::text not in ('{}', '[]', 'null')");
+                    };
+
+                    if (in_array('overridden', $elements) && !in_array('standard', $elements)) {
+                        $query->whereIn('products.master_product_id', $overridden);
+                    } elseif (in_array('standard', $elements) && !in_array('overridden', $elements)) {
+                        /** A product with no master is standard rated, and NOT IN would drop it. */
+                        $query->where(function ($query) use ($overridden) {
+                            $query->whereNotIn('products.master_product_id', $overridden)
+                                ->orWhereNull('products.master_product_id');
+                        });
                     }
                 }
 
@@ -352,6 +385,43 @@ class IndexProductsInCatalogue extends OrgAction
         ];
     }
 
+    /**
+     * @return array<int, array{key: string, label: string}>
+     */
+    public function getExportFields(): array
+    {
+        $definitions = ProductsExport::fieldDefinitions();
+
+        return array_map(fn ($key) => [
+            'key'   => $key,
+            'label' => __($definitions[$key]['heading']),
+        ], array_keys($definitions));
+    }
+
+    public function getProductsExport(Shop $shop): array
+    {
+        $parameters = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+            'bucket'       => $this->bucket,
+            'prefix'       => ProductsTabsEnum::INDEX->value,
+        ];
+
+        return [
+            'fields'         => $this->getExportFields(),
+            'download_route' => [
+                'xlsx' => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.export',
+                    'parameters' => array_merge($parameters, ['type' => 'xlsx']),
+                ],
+                'csv'  => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.export',
+                    'parameters' => array_merge($parameters, ['type' => 'csv']),
+                ],
+            ],
+        ];
+    }
+
     public function htmlResponse(LengthAwarePaginator $products, ActionRequest $request): Response
     {
         /** @var Shop $shop */
@@ -407,6 +477,7 @@ class IndexProductsInCatalogue extends OrgAction
                     ]
                 ],
                 'data'                         => ProductsResource::collection($products),
+                'products_export'              => $this->getProductsExport($shop),
                 'editable_table'               => $shop->type != ShopTypeEnum::EXTERNAL,
                 'shop_id'                      => $shop->id,
                 'tabs'                         => [

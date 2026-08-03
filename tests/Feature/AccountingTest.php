@@ -20,6 +20,8 @@ use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
 use App\Actions\Accounting\InvoiceCategory\HydrateInvoiceCategories;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\InvoiceTransaction\RefundTaxTransactions;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
@@ -48,6 +50,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Models\Helpers\TaxCategory;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
@@ -1320,10 +1323,16 @@ test('UI show invoice navigation follows the bucket it was opened from', functio
         return $invoice->refresh();
     };
 
-    $newest = $makeInvoice('2026-07-20 10:00:00', InvoicePayStatusEnum::UNPAID);
-    $paid   = $makeInvoice('2026-07-19 12:00:00', InvoicePayStatusEnum::PAID);
-    $middle = $makeInvoice('2026-07-19 10:00:00', InvoicePayStatusEnum::UNPAID);
-    $oldest = $makeInvoice('2026-07-18 10:00:00', InvoicePayStatusEnum::UNPAID);
+    // Anchored to this month, not fixed dates. These only ever need to be ordered relative
+    // to each other, and a hardcoded date drifts into a neighbouring month as the calendar
+    // moves: 2026-07-18/19/20 sat harmlessly in July and on the first of August landed in
+    // now()->subMonth(), inflating the period totals another test in this file asserts on.
+    $anchor = now()->startOfMonth();
+
+    $newest = $makeInvoice($anchor->copy()->addHours(4)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
+    $paid   = $makeInvoice($anchor->copy()->addHours(3)->toDateTimeString(), InvoicePayStatusEnum::PAID);
+    $middle = $makeInvoice($anchor->copy()->addHours(2)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
+    $oldest = $makeInvoice($anchor->copy()->addHours(1)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
 
     $showRoute = fn ($invoice) => route('grp.org.shops.show.dashboard.invoices.show', [$this->organisation->slug, $this->shop->slug, $invoice->slug]);
 
@@ -2041,9 +2050,14 @@ test('UI show refund navigation walks refunds only', function () {
         return $refund->refresh();
     };
 
-    $newest = $makeRefund('2026-07-20 10:00:00');
-    $middle = $makeRefund('2026-07-19 10:00:00');
-    $oldest = $makeRefund('2026-07-18 10:00:00');
+    // Anchored to this month for the same reason as the invoice navigation test above:
+    // only the ordering matters, and a fixed date eventually drifts into a month some
+    // other test asserts totals on.
+    $anchor = now()->startOfMonth();
+
+    $newest = $makeRefund($anchor->copy()->addHours(3)->toDateTimeString());
+    $middle = $makeRefund($anchor->copy()->addHours(2)->toDateTimeString());
+    $oldest = $makeRefund($anchor->copy()->addHours(1)->toDateTimeString());
 
     get(route('grp.org.accounting.refunds.show', [$this->organisation->slug, $middle->slug]))->assertInertia(
         fn (AssertableInertia $page) => $page
@@ -2314,8 +2328,20 @@ test('a single day customer redo keeps the whole period totals in the organisati
         ->where('r.period', $monthStart->format('Y-m'))
         ->first();
 
-    expect((float) $record->sales_grp_currency_external)->toBe(350.0)
-        ->and((int) $record->invoices)->toBe(2);
+    // Compared against what the month actually holds, not a constant: other tests in this
+    // file leave invoices in it — some of them dated by hand — and which month that is
+    // moves with the calendar, so a hardcoded 350.0 only held while those dates happened
+    // to sit outside the asserted month.
+    $periodInvoices = DB::table('invoices')
+        ->where('organisation_id', $this->organisation->id)
+        ->whereBetween('date', [$monthStart, $monthStart->copy()->endOfMonth()]);
+
+    // sales_grp_currency_external sums every row, the invoices counter only counts
+    // type=invoice — refunds are counted separately — so the two read differently.
+    expect((float) $record->sales_grp_currency_external)->toBe((float) (clone $periodInvoices)->sum('grp_net_amount'))
+        ->and((int) $record->invoices)->toBe((int) (clone $periodInvoices)->where('type', 'invoice')->count())
+        ->and((float) $record->sales_grp_currency_external)->toBeGreaterThanOrEqual(350.0)
+        ->and((int) $record->invoices)->toBeGreaterThanOrEqual(2);
 });
 
 test('customer time series merges grouped metrics with invoice periods and metric-only periods', function () {
@@ -2394,4 +2420,37 @@ test('invoice categories index uses time series aggregation', function () {
 
     expect($result->total())->toBeGreaterThanOrEqual(1)
         ->and(collect($result->items())->firstWhere('id', $invoiceCategory->id)->amount)->not->toBeNull();
+});
+
+test('a tax only refund gives back exactly the tax the invoice charged', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['tax_category_id' => TaxCategory::where('rate', 0.2)->firstOrFail()->id]);
+
+    // Three of these lines shed a rounding fraction and one gains it, so the tax of each
+    // line added up is a penny short of the tax charged on the total of 1901.04.
+    foreach ([260.00, 260.00, 260.00, 59.28, 353.92, 353.92, 353.92] as $netAmount) {
+        StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+            'date'            => now(),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 1,
+            'gross_amount'    => $netAmount,
+            'net_amount'      => $netAmount,
+        ]);
+    }
+
+    $invoice = CalculateInvoiceTotals::make()->action($invoice->refresh());
+
+    expect((float) $invoice->net_amount)->toBe(1901.04)
+        ->and((float) $invoice->tax_amount)->toBe(380.21);
+
+    $refund = RefundTaxTransactions::make()->handle($invoice)->refresh();
+
+    expect((float) $refund->tax_amount)->toBe(-380.21)
+        ->and((float) $refund->total_amount)->toBe(-380.21)
+        ->and(round($refund->invoiceTransactions->sum('tax_amount'), 2))->toBe(380.21);
 });

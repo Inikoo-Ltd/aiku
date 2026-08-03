@@ -10,7 +10,9 @@ import PageHeading from '@/Components/Headings/PageHeading.vue';
 import FlatTreeMap from '@/Components/Navigation/FlatTreeMap.vue';
 import { capitalize } from "@/Composables/capitalize"
 
-defineProps(['title', 'pageHead', 'flatTreeMaps']);
+defineProps(['title', 'pageHead', 'flatTreeMaps', 'search_demand']);
+
+import SearchDemandOpportunities from '@/Components/DataDisplay/Dashboard/Widget/SearchDemandOpportunities.vue';
 
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList} from '@fal';
@@ -23,5 +25,8 @@ library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboa
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead"></PageHeading>
     <FlatTreeMap class="mx-4" v-for="(treeMap,idx) in flatTreeMaps" :key="idx" :nodes="treeMap"/>
+    <div class="mx-4 mt-4 max-w-3xl">
+        <SearchDemandOpportunities :demand="search_demand"/>
+    </div>
 </template>
 

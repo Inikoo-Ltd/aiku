@@ -25,7 +25,7 @@ class DetectWebsite
             abort(404, 'Not found');
         }
 
-        $request->merge($this->getWebsiteBaseData($website));
+        $this->applyWebsiteData($request, $this->getWebsiteBaseData($website));
 
         return $next($request);
     }

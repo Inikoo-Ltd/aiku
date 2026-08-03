@@ -8,6 +8,7 @@
 
 namespace App\Actions\Maintenance\Dispatching;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\OrgAction;
 use App\Models\Inventory\OrgStock;
 use Exception;
@@ -34,6 +35,7 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
             }
 
             $orgStock->tradeUnits()->sync($tradeUnits);
+            OrgStockHydratePackedIn::run($orgStock);
         }
 
         return $orgStock;

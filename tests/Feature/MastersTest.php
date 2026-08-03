@@ -1354,20 +1354,84 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
                     ->has('args.updateRoute')
                     ->where('args.updateRoute.name', 'grp.models.master_asset.update')
                     ->where('args.updateRoute.parameters.masterAsset', $masterAsset->id)
+                    ->has('blueprint.6.fields.composition.route')
                     ->etc()
             );
     });
 })->depends('create master asset');
 
-test('UI Index Master Products Bulk Edit', function (MasterShop $masterShop) {
-    $response = get(route('grp.masters.master_shops.show.bulk-edit', [$masterShop->slug]));
+test('UI Edit Master Product Composition', function (MasterAsset $masterAsset) {
+    $response = get(
+        route('grp.masters.master_shops.show.master_products.composition', [
+            'masterShop'    => $masterAsset->masterShop->slug,
+            'masterProduct' => $masterAsset->slug,
+        ])
+    );
 
+    $response->assertInertia(function (AssertableInertia $page) use ($masterAsset) {
+        $page
+            ->component('Goods/ProductComposition')
+            ->has('breadcrumbs')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) => $head
+                    ->where('title', $masterAsset->code)
+                    ->etc()
+            )
+            ->has(
+                'formData',
+                fn (AssertableInertia $form) => $form
+                    ->has('blueprint.0.fields.trade_units.priceContext')
+                    ->where('blueprint.0.fields.trade_units.type', 'list-selector-trade-unit')
+                    ->has('blueprint.1.fields.master_prices')
+                    ->has('blueprint.1.fields.master_rrps')
+                    ->etc()
+            );
+    });
+})->depends('create master asset');
+
+test('UI Index Master Products bulk edit tab lists products with their tax preset', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'BETAB-DEP-'.uniqid(),
+        'name' => 'Bulk Edit Tab Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'BETAB-FAM-'.uniqid(),
+        'name' => 'Bulk Edit Tab Family',
+    ]);
+    StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BETAB-AST-'.uniqid(),
+        'name'    => 'Bulk Edit Tab Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 12.5,
+        'stocks'  => [],
+    ]);
+
+    $response = get(route('grp.masters.master_shops.show.master_families.master_products.index', [
+        $masterFamily->masterShop->slug,
+        $masterFamily->slug,
+        'tab' => 'bulk_edit',
+    ]));
+
+    $response->assertOk();
     $response->assertInertia(
         fn (AssertableInertia $page) => $page
-            ->component('Masters/MasterProductsBulkEdit')
+            ->component('Masters/MasterProducts')
+            ->has('tabs.navigation.bulk_edit')
+            ->has('taxPresetOptions')
+            ->has(
+                'bulk_edit.data.0',
+                fn (AssertableInertia $row) => $row
+                    ->has('code')
+                    ->has('tax_preset')
+                    ->etc()
+            )
             ->etc()
     );
-})->depends('create master shop');
+});
 
 test('UI Index Master Products in family has pricing tab', function () {
     $masterShop = createFreshMasterShop();
@@ -1591,9 +1655,8 @@ test('UI Edit Master Product with a trade unit not linked to a stock', function 
     )->toBeFalse();
 
     $response = get(
-        route('grp.masters.master_shops.show.master_families.master_products.edit', [
+        route('grp.masters.master_shops.show.master_products.composition', [
             'masterShop'    => $masterShop->slug,
-            'masterFamily'  => $masterFamily->slug,
             'masterProduct' => $masterAsset->slug,
         ])
     );
@@ -1601,7 +1664,7 @@ test('UI Edit Master Product with a trade unit not linked to a stock', function 
     $response->assertOk();
     $response->assertInertia(
         fn (AssertableInertia $page) => $page->where(
-            'formData.blueprint.5.fields.trade_units.value',
+            'formData.blueprint.0.fields.trade_units.value',
             fn ($tradeUnits) => collect($tradeUnits)->count() === 1
                 && collect($tradeUnits)->every(fn ($tradeUnit) => $tradeUnit['packed_in'] == 1)
         )->etc()

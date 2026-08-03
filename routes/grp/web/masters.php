@@ -9,7 +9,6 @@
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInProduct;
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
 use App\Actions\Catalogue\Shop\StoreShopFromMaster;
-use App\Actions\Masters\MasterAsset\Json\GetSelectedMasterProductDetails;
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartmentsInMasterDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamiliesInMasterFamilies;
@@ -17,11 +16,10 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartmentsInMasterSubDepar
 use App\Actions\Catalogue\Shop\UI\CreateShopFromMaster;
 use App\Actions\Masters\MasterAsset\UI\CreateMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
+use App\Actions\Masters\MasterAsset\UI\EditMasterProductComposition;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
-use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsBulkEdit;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterCollection;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithMismatch;
-use App\Actions\Masters\MasterAsset\UI\UpdateMasterProductsBulkEdit;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProduct;
 use App\Actions\Masters\MasterProductCategory\UI\ShowCreateMasterVariant;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsWithMissingChildDescription;
@@ -291,14 +289,12 @@ Route::name("master_shops")->prefix('master-shops')
                 });
             });
 
-            Route::get('/master-products-bulk-edit', IndexMasterProductsBulkEdit::class)->name('.bulk-edit');
-            Route::post('/master-products-bulk-edit/selectedProducts/', GetSelectedMasterProductDetails::class)->name('.bulk-edit.selected_list');
-            Route::post('/master-products-bulk-edit/update', UpdateMasterProductsBulkEdit::class)->name('.bulk-edit.update');
 
             Route::prefix('master-products')->as('.master_products.')->group(function () {
                 Route::get('', [IndexMasterProducts::class, 'inMasterShop'])->name('index');
                 Route::get('{masterProduct}', ShowMasterProduct::class)->name('show');
                 Route::get('{masterProduct}/edit', EditMasterProduct::class)->name('edit');
+                Route::get('{masterProduct}/composition', EditMasterProductComposition::class)->name('composition');
                 Route::get('{masterProduct}/invoices', [IndexInvoicesInProduct::class, 'inMaster'])->name('invoices');
                 Route::get('{masterProduct}/products', [IndexProductsInMasterProduct::class, 'inMaster'])->name('products');
 

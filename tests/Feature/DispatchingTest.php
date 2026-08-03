@@ -19,6 +19,7 @@ use App\Actions\Dispatching\BatchCode\UpdateBatchCode;
 use App\Actions\Dispatching\Box\StoreBox;
 use App\Actions\Dispatching\Box\UpdateBox;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
+use App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
@@ -31,6 +32,8 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
@@ -136,6 +139,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use Illuminate\Support\Facades\Cache;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -1376,6 +1381,17 @@ test('delivery note address actions and temp picker and shipping data', function
     \App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote::run($deliveryNote, ['picker_user_id' => $this->user->id]);
 
     expect(\App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote))->toBeArray();
+
+    $deliveryNote->update(['is_cash_on_delivery' => true]);
+    $order = $deliveryNote->orders->first();
+    $order->update(['total_amount' => 2695.42, 'payment_amount' => 0.32]);
+
+    $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote->refresh());
+    expect($shippingData['cash_on_delivery']['amount'])->toBe(2695.10);
+
+    $order->update(['payment_amount' => 2695.42]);
+    $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote->refresh());
+    expect($shippingData['cash_on_delivery'])->toBeNull();
 });
 
 test('change picking bay on delivery note', function () {
@@ -1768,6 +1784,33 @@ test('cancel delivery note', function () {
 
     $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::run($deliveryNote, $this->user, true);
     expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
+});
+
+test('only dispatch supervisors can cancel a delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $user = $this->adminGuest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+
+    $user->syncRoles([RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    actingAs($user->refresh());
+    patch(route('grp.models.delivery_note.state.cancel', $deliveryNote->id));
+    expect($deliveryNote->refresh()->state)->not->toBe(DeliveryNoteStateEnum::CANCELLED);
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles([RolesEnum::getRoleName('dispatch-supervisor', $this->warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    actingAs($user->refresh());
+    patch(route('grp.models.delivery_note.state.cancel', $deliveryNote->id));
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    actingAs($user->refresh());
 });
 
 test('UI show delivery note richer states and tabs', function () {
@@ -2380,3 +2423,113 @@ test('UI show pallet return navigation orders the new bucket by its latest activ
             ->etc()
     );
 });
+
+test('a temporary claim on a delivery note slides forward while it is being used', function () {
+    $deliveryNote = new DeliveryNote();
+    $deliveryNote->forceFill([
+        'id'             => 999999,
+        'state'          => DeliveryNoteStateEnum::HANDLING,
+        'picker_user_id' => null,
+        'packer_user_id' => null,
+    ]);
+
+    $checker = new class () {
+        use \App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
+
+        public function check(DeliveryNote $deliveryNote): bool
+        {
+            return $this->canHandleDeliveryNote($deliveryNote);
+        }
+    };
+
+    // Nobody is assigned and nothing has been claimed
+    expect($checker->check($deliveryNote))->toBeFalse();
+
+    SetTempPickerToDeliveryNote::claimDeliveryNoteHandling($deliveryNote);
+    $claimedUntil = session('temp_handling_delivery_note.expires_at');
+
+    // Picking a real note runs long; using the claim has to push its expiry out
+    $this->travel(30)->minutes();
+    expect($checker->check($deliveryNote))->toBeTrue()
+        ->and(session('temp_handling_delivery_note.expires_at')->gt($claimedUntil))->toBeTrue();
+
+    // Left alone for longer than the window, it lapses
+    $this->travel(120)->minutes();
+    expect($checker->check($deliveryNote))->toBeFalse();
+
+    $this->travelBack();
+});
+
+test('resuming a blocked delivery note also brings its order out of blocked', function () {
+    $deliveryNote = makeDeliveryNote($this);
+
+    // The state P9KXCX8FAB was left in: both note and order blocked, nothing actually waiting
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+    $this->order->update(['state' => OrderStateEnum::HANDLING_BLOCKED]);
+
+    $deliveryNote = StartHandlingDeliveryNote::make()->action($deliveryNote->refresh(), $this->user);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($this->order->refresh()->state)->toBe(OrderStateEnum::HANDLING);
+});
+
+test('sync required pick quantity updates delivery note items in place', function () {
+    $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock    = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $transaction = $this->order->transactions()->where('model_type', 'Product')->first();
+    $transaction->updateQuietly(['quantity_ordered' => 4]);
+
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'SYNC-'.$orgStock->id,
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 10
+    ]);
+
+    DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $transaction->model_id, 'org_stock_id' => $orgStock->id],
+        ['quantity' => 3]
+    );
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($orgStock);
+
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(12.0)
+        ->and((float) $deliveryNoteItem->original_quantity_required)->toBe(12.0)
+        ->and(DeliveryNoteItem::find($deliveryNoteItem->id))->not->toBeNull();
+
+    return $deliveryNoteItem;
+});
+
+test('sync required pick quantity skips non product transactions', function (DeliveryNoteItem $deliveryNoteItem) {
+    $deliveryNoteItem->transaction->updateQuietly(['model_type' => 'Service']);
+
+    DB::table('product_has_org_stocks')
+        ->where('org_stock_id', $deliveryNoteItem->org_stock_id)
+        ->update(['quantity' => 5]);
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($deliveryNoteItem->orgStock);
+
+    expect((float) $deliveryNoteItem->refresh()->quantity_required)->toBe(12.0);
+})->depends('sync required pick quantity updates delivery note items in place');
+
+test('quantity required cannot be set through the strict update path the picking UI uses', function (DeliveryNoteItem $deliveryNoteItem) {
+    UpdateDeliveryNoteItem::make()->action($deliveryNoteItem, [
+        'quantity_required'          => 999,
+        'original_quantity_required' => 999,
+    ]);
+
+    expect((float) $deliveryNoteItem->refresh()->quantity_required)->toBe(12.0);
+})->depends('sync required pick quantity updates delivery note items in place');

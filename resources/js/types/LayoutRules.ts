@@ -42,6 +42,7 @@ export interface Group {
     slug: string
     label: string
     currency: Currency
+    timezones?: { timezone: string, place: string }[]  // clocks shown in the footer, for everybody in the group
 }
 
 // Each organisation have their own state

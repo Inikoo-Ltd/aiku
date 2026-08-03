@@ -48,7 +48,20 @@ const props = defineProps<{
     } | null
     isLoading: boolean
     query: string
+    searchLogUlid?: string | null
 }>()
+
+// keepalive fetch survives the navigation the click triggers
+const recordClick = (url?: string | null) => {
+    if (!props.searchLogUlid || !url) return
+    const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '')
+    fetch(route('iris.json.search.click'), {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': token },
+        body: JSON.stringify({ ulid: props.searchLogUlid, url }),
+    }).catch(() => {})
+}
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = useLocaleStore()
@@ -151,6 +164,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                                 :key="category.id"
                                 :href="category.url"
                                 class="block text-sm text-[#484848] hover:text-[var(--theme-color-0)] hover:underline cursor-pointer truncate transition-colors"
+                                @click="() => recordClick(category.url)"
                                 @success="() => model = false"
                                 v-html="highlightMatch(category.name)"
                             />
@@ -167,6 +181,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                                 :key="collection.id"
                                 :href="collection.url"
                                 class="block text-sm text-[#484848] hover:text-[var(--theme-color-0)] hover:underline cursor-pointer truncate transition-colors"
+                                @click="() => recordClick(collection.url)"
                                 @success="() => model = false"
                                 v-html="highlightMatch(collection.name)"
                             />
@@ -189,6 +204,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                 v-else-if="bestProduct"
                 :href="bestProduct.url"
                 class="p-5 group flex-1 flex flex-col items-center text-center cursor-pointer min-h-0 rounded transition-colors hover:bg-[color-mix(in_srgb,var(--theme-color-0)_8%,var(--theme-color-1))]"
+                @click="() => recordClick(bestProduct.url)"
                 @success="() => model = false"
             >
                 <div class="w-40 h-40 bg-gray-50 overflow-hidden flex items-center justify-center mb-4">
@@ -230,6 +246,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                         :key="product.id"
                         :href="product.url"
                         class="group flex items-center gap-2.5 cursor-pointer min-w-0 rounded-md p-1.5 transition-colors hover:bg-[color-mix(in_srgb,var(--theme-color-0)_10%,var(--theme-color-1))]"
+                        @click="() => recordClick(product.url)"
                         @success="() => model = false"
                     >
                         <div class="w-14 h-14 bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center">

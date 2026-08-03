@@ -183,6 +183,9 @@ export const initialiseApp = () => {
         if (usePage().props?.last_deployment_hash) {
             layout.app.last_deployment_hash = usePage().props?.last_deployment_hash
         }
+        if (usePage().props?.last_deployment_version) {
+            layout.app.last_deployment_version = usePage().props?.last_deployment_version
+        }
 
 
         // Set Organisations, Agents, Digital Agency (for Multiselect in TopBar)

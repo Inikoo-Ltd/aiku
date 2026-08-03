@@ -20,6 +20,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
 use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\UI\WithBucketNavigation;
@@ -66,6 +67,7 @@ class ShowDeliveryNote extends OrgAction
     use GetPlatformLogo;
     use WithBucketNavigation;
     use WithOrderForbiddenCountryCheck;
+    use WithDeliveryNoteHandler;
 
     private Order|Shop|Warehouse|Customer $parent;
     private ReturnDeliveryNote|null $return = null;
@@ -170,14 +172,82 @@ class ShowDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * Offered in the same spot the picking and packing buttons occupy, because that is where
+     * whoever is standing at the bench looks when they cannot act on the note. The padlock
+     * beside the picker's name is easy to miss and reads as a refusal rather than a way in.
+     */
+    public function getTakeOverAction(DeliveryNote $deliveryNote): array
+    {
+        return [
+            'type'    => 'button',
+            'style'   => 'tertiary',
+            'icon'    => 'fal fa-lock',
+            'label'   => __('Unlock to pick'),
+            'tooltip' => __('Assigned to somebody else. Click to take it over so you can pick and pack it'),
+            'key'     => 'take-over',
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note.temp-picker',
+                'parameters' => [
+                    'organisation' => $deliveryNote->organisation->slug,
+                    'shop'         => $deliveryNote->shop->slug,
+                    'deliveryNote' => $deliveryNote->slug,
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * A blocked note waits on items somebody has to decide about, and the state is cleared by
+     * whoever resolves them. If they are resolved another way, by the item being removed from
+     * the order rather than picked, nothing re-evaluates the block and the note is left with
+     * no way forward: the state had no actions at all, so the warehouse could only report it.
+     * Offered only once nothing is genuinely waiting, so a real block still holds.
+     */
+    public function getHandlingBlockedActions(DeliveryNote $deliveryNote): array
+    {
+        $stillWaiting = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
+            ->where(function ($query) {
+                $query->where('has_waiting_crm', true)
+                    ->orWhere('has_waiting_warehouse', true);
+            })
+            ->exists();
+
+        if ($stillWaiting) {
+            return [];
+        }
+
+        return [
+            [
+                'type'    => 'button',
+                'style'   => 'save',
+                'tooltip' => __('Nothing is waiting on this delivery note any more, carry on picking it'),
+                'label'   => __('Resume picking'),
+                'key'     => 'resume-picking',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.handling',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ]
+            ]
+        ];
+    }
+
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
+        if (!$this->allowAction) {
+            return [$this->getTakeOverAction($deliveryNote)];
+        }
+
         $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
             ->where('is_handled', false)
             ->exists();
 
         $actions = [];
-        if (!$hasUnHandledItems && $this->allowAction) {
+        if (!$hasUnHandledItems) {
             if ($deliveryNote->shop->type == ShopTypeEnum::DROPSHIPPING) {
                 $actions[] = [
                     'type'    => 'button',
@@ -253,7 +323,10 @@ class ShowDeliveryNote extends OrgAction
         }
 
 
-        $showCancel = true;
+        $showCancel = (bool)request()->user()?->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ]);
 
         if (in_array($deliveryNote->state, [
             DeliveryNoteStateEnum::CANCELLED,
@@ -465,6 +538,7 @@ class ShowDeliveryNote extends OrgAction
                 ],
             ],
             DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
+            DeliveryNoteStateEnum::HANDLING_BLOCKED => $this->getHandlingBlockedActions($deliveryNote),
             DeliveryNoteStateEnum::PACKING => $this->allowAction ? [
                 [
                     'type'    => 'button',
@@ -480,7 +554,7 @@ class ShowDeliveryNote extends OrgAction
                         ]
                     ]
                 ]
-            ] : [],
+            ] : [$this->getTakeOverAction($deliveryNote)],
             DeliveryNoteStateEnum::PICKED => $this->getPickedActions($deliveryNote),
             DeliveryNoteStateEnum::PACKED => [$this->getPackedActions($deliveryNote)],
             DeliveryNoteStateEnum::FINALISED => [
@@ -844,18 +918,7 @@ class ShowDeliveryNote extends OrgAction
         }
         $this->countriesAddressData ??= GetAddressData::run();
 
-        $handler = $deliveryNote->picker_user_id;
-
-        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
-            $handler = $deliveryNote->packer_user_id;
-        }
-
-        $allowAction = ($handler && $handler == request()->user()->id);
-
-        if (!$allowAction) {
-            $tempHandler = session('temp_handling_delivery_note') ?? [];
-            $allowAction = $deliveryNote->id == data_get($tempHandler, 'value') && now()->lt(data_get($tempHandler, 'expires_at'));
-        }
+        $allowAction = $this->canHandleDeliveryNote($deliveryNote);
 
         $this->allowAction = $allowAction;
 
@@ -866,8 +929,12 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->pickingSessions && $deliveryNote->pickingSessions->isNotEmpty()) {
             $pickingSessions = $deliveryNote->pickingSessions->map(function ($pickingSession) {
                 /** @var PickingSession $pickingSession */
+                $picker = $pickingSession->user?->contact_name;
+
                 return [
-                    'reference' => $pickingSession->reference,
+                    'reference' => $picker
+                        ? $pickingSession->reference.' ('.$picker.')'
+                        : $pickingSession->reference,
                     'route'     => [
                         'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.show',
                         'parameters' => [
@@ -879,8 +946,13 @@ class ShowDeliveryNote extends OrgAction
                 ];
             })->toArray();
 
+            /*
+             * Says where the picker is decided rather than only that a session exists: without
+             * it, somebody looking for the missing padlock has no way of knowing why it is gone
+             * or what to do instead.
+             */
             $warning = [
-                'text'             => __('This DeliveryNote is being picked in Picking Sessions'),
+                'text'             => __('Someone is already picking this, so the picker is set on the picking session, not here. To give it to somebody else, open the picking session and change the picker there.'),
                 'picking_sessions' => $pickingSessions,
             ];
         }
@@ -890,17 +962,29 @@ class ShowDeliveryNote extends OrgAction
             $model = __('Replacement Delivery Note');
         }
 
-        $showChangePickerPacker = $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING;
+        /**
+         * A note being picked as part of a session must not be handed to a second person:
+         * both would pick it and the stock would move twice. Dropshipping was excluded
+         * wholesale in March for this reason, which also blocked the one note in ten that is
+         * picked on its own. Keyed on the session itself, those are free again while the
+         * dangerous case stays shut. To move a note in a session, change the session's picker.
+         */
+        $showChangePickerPacker = $deliveryNote->pickingSessions()->doesntExist();
 
-        $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
+        // Never on a marketplace order: the customer changes it there and we follow, see SetAsWaitingCrm
+        $allowWaiting = $deliveryNote->shop->type != ShopTypeEnum::EXTERNAL
+            && (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
 
         if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
         }
 
+        $allowScanToPack = (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false);
+
         $scanToPack = null;
         if (
-            $deliveryNote->state == DeliveryNoteStateEnum::PACKING
+            $allowScanToPack
+            && $deliveryNote->state == DeliveryNoteStateEnum::PACKING
             && $isEditable
             && $allowAction
             && $deliveryNote->shop->type !== ShopTypeEnum::DROPSHIPPING

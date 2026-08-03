@@ -870,6 +870,22 @@ test('partial card payment settles remainder with balance without float precisio
         ->and((float)$order->payment_amount)->toBe(19.88);
 });
 
+test('settling with zero balance creates no payment record', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+
+    list($order) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+
+    $order->update(['total_amount' => 19.88]);
+    DB::table('customers')->where('id', $this->customer->id)->update(['balance' => 0]);
+
+    $result = App\Actions\Retina\Dropshipping\Orders\SettleRetinaOrderWithBalance::run($order->refresh());
+
+    expect($result['success'])->toBeTrue()
+        ->and($order->payments()->count())->toBe(0);
+});
+
 test('events from another developer machine are not processed', function () {
     $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
     list($order, $orderPaymentApiPoint) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);

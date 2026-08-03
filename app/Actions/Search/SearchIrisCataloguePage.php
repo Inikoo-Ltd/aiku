@@ -10,6 +10,7 @@ namespace App\Actions\Search;
 use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -132,7 +133,7 @@ class SearchIrisCataloguePage extends IrisAction
      */
     private function matchedProductIds(string $query): array
     {
-        $searchQuery = Product::search($query)->where('shop_id', $this->shop->id);
+        $searchQuery = Product::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true);
 
         return array_values(array_unique(array_map('intval', array_filter(array_column($this->rawDocuments($searchQuery), 'id')))));
     }
@@ -294,7 +295,7 @@ class SearchIrisCataloguePage extends IrisAction
      */
     private function matchedCollections(string $query): array
     {
-        $collectionsQuery = Collection::search($query)->where('shop_id', $this->shop->id);
+        $collectionsQuery = Collection::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true);
         $ids              = array_map('intval', array_filter(array_column($this->rawDocuments($collectionsQuery), 'id')));
 
         if (empty($ids)) {
@@ -303,8 +304,9 @@ class SearchIrisCataloguePage extends IrisAction
 
         return Collection::query()
             ->whereIn('id', $ids)
-            ->with(['webpage' => fn ($webpageQuery) => $webpageQuery->where('website_id', $this->website->id)->with('shop')])
+            ->with(['webpage' => fn ($webpageQuery) => $webpageQuery->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE)->with('shop')])
             ->get()
+            ->filter(fn (Collection $collection) => $collection->webpage?->getCanonicalUrl())
             ->map(fn (Collection $collection) => [
                 'id'    => $collection->id,
                 'code'  => $collection->code,
@@ -319,7 +321,7 @@ class SearchIrisCataloguePage extends IrisAction
     public function rules(): array
     {
         return [
-            'q'            => ['required', 'string'],
+            'q'            => ['required', 'string', 'max:100'],
             'categories'   => ['sometimes', 'array'],
             'categories.*' => ['integer'],
             'brands'       => ['sometimes', 'array'],
@@ -338,7 +340,16 @@ class SearchIrisCataloguePage extends IrisAction
     {
         $this->initialisation($request);
 
-        return $this->handle($this->validatedData);
+        $results = $this->handle($this->validatedData);
+
+        $results['search_log_ulid'] = $this->recordWebsiteSearchLog(
+            $request,
+            'catalogue_page',
+            $this->validatedData['q'],
+            (int) Arr::get($results, 'results.total', 0)
+        );
+
+        return $results;
     }
 
     /**

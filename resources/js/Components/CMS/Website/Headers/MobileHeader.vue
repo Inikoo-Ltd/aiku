@@ -34,6 +34,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { computed } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
+import IrisSearchMobile from '@/Iris/Components/IrisSearchMobile.vue'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
 // Add icons to the library
@@ -107,7 +108,14 @@ const getStylesRemoveFontSize = (properties, screenType) => {
                 </IrisSidebar>
 
                 <!-- Search Bar -->
-                <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id && screenType === 'mobile'"
+                <IrisSearchMobile v-if="layout.iris?.iris_search_model === 'internal' && screenType === 'mobile'"
+                    id="iris_search_mobile"
+                    :style="{
+                        ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
+                    }"
+                    class="text-3xl"
+                />
+                <LuigiSearchMobile v-else-if="layout.iris?.luigisbox_tracker_id && screenType === 'mobile'"
                     id="luigi_mobile"
                     :style="{
                         ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),

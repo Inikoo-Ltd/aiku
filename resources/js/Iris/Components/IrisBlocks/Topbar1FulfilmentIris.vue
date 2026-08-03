@@ -14,6 +14,8 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 
 library.add(faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus)
 
+defineOptions({ inheritAttrs: false })
+
 const model = defineModel<TopbarFulfilmentTypes>()
 const isLoggedIn = inject("isPreviewLoggedIn", false)
 

@@ -115,13 +115,6 @@ class Kernel extends HttpKernel
             DevOpsAuthenticationMiddleware::class
         ],
 
-        'bk-api' => [
-            ForceJsonResponse::class,
-            EnsureFrontendRequestsAreStateful::class,
-            SubstituteBindings::class,
-            AddFrameOptionsHeader::class
-        ],
-
         'retina-api' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,

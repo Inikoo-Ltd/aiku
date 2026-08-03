@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Helpers\WebsiteSearchLog;
 use App\Models\Web\Website;
 
 trait WithWebsiteAnalyticsSubNavigation
@@ -58,6 +59,29 @@ trait WithWebsiteAnalyticsSubNavigation
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-users"],
                     "tooltip" => __("Website Visitors"),
+                ],
+            ],
+            [
+                "number"   => WebsiteSearchLog::where('website_id', $website->id)->count(),
+                "label"    => __("Search"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.analytics.search",
+                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-search"],
+                    "tooltip" => __("Website search insights"),
+                ],
+            ],
+            [
+                "label"    => __("Opportunities"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.analytics.search.opportunities",
+                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-lightbulb"],
+                    "tooltip" => __("What customers searched for and did not find"),
                 ],
             ],
 

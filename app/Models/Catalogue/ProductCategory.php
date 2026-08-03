@@ -79,6 +79,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $follow_master
  * @property bool $show_in_website
  * @property int|null $webpage_id
+ * @property bool $is_in_website has a live webpage, mirrored into the search index
  * @property string|null $url
  * @property array<array-key, mixed> $web_images
  * @property int|null $top_seller
@@ -175,6 +176,14 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasImage;
     use HasTranslations;
     use HasSearch;
+    protected static function booted(): void
+    {
+        static::saved(function (ProductCategory $productCategory) {
+            if ($productCategory->wasChanged('webpage_id')) {
+                \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($productCategory);
+            }
+        });
+    }
 
     protected $guarded = [];
 
@@ -215,6 +224,7 @@ class ProductCategory extends Model implements Auditable, HasMedia
             'description'       => (string)$this->description,
             'description_extra' => (string)$this->description_extra,
             'state'             => $this->state->value,
+            'is_in_website'     => (bool) $this->is_in_website,
             'image'             => json_encode(Arr::get($this->web_images, 'main.thumbnail')),
             'created_at'   => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
         ];

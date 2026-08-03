@@ -21,6 +21,7 @@ use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
@@ -50,6 +51,7 @@ class IndexMasterProducts extends OrgAction
     use WithMasterDepartmentSubNavigation;
     use WithMasterFamilySubNavigation;
     use WithMastersAuthorisation;
+    use WithLineTaxCategories;
 
     private Group|MasterShop|MasterProductCategory $parent;
 
@@ -90,6 +92,27 @@ class IndexMasterProducts extends OrgAction
 
             ],
 
+            /**
+             * A master product is standard rated unless `tax_category` overrides it, which is
+             * how tea is zero rated. No counts: they would cost a scan of every master.
+             */
+            'tax' => [
+                'label'    => __('Tax'),
+                'elements' => [
+                    'overridden' => [__('Reduced or zero rated'), null],
+                    'standard'   => [__('Standard rate'), null],
+                ],
+
+                'engine' => function ($query, $elements) {
+                    if (in_array('overridden', $elements) && !in_array('standard', $elements)) {
+                        $query->whereRaw("master_assets.tax_category::text not in ('{}', '[]', 'null')");
+                    } elseif (in_array('standard', $elements) && !in_array('overridden', $elements)) {
+                        $query->whereRaw("master_assets.tax_category::text in ('{}', '[]', 'null')");
+                    }
+                }
+
+            ],
+
         ];
     }
 
@@ -107,6 +130,8 @@ class IndexMasterProducts extends OrgAction
         }
 
         $isSalesTab = $prefix === MasterProductsTabsEnum::SALES->value;
+
+        $isBulkEditTab = $prefix === MasterProductsTabsEnum::BULK_EDIT->value;
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class)
             ->with(['products.shop'])
@@ -167,6 +192,7 @@ class IndexMasterProducts extends OrgAction
             'master_assets.unit',
             'master_assets.units',
             'master_assets.rrp',
+            'master_assets.tax_preset',
             'master_assets.web_images',
             'master_asset_stats.number_current_assets as used_in',
             'currencies.code as currency_code',
@@ -218,6 +244,18 @@ class IndexMasterProducts extends OrgAction
         }
 
         $queryBuilder->select($selects);
+
+        /** The Info cell shows the trade unit composition, same as the pricing tab. */
+        if ($isBulkEditTab) {
+            $queryBuilder->selectSub(
+                "select string_agg(trade_units.code || ' ×' || trim_scale(model_has_trade_units.quantity), ', ' order by trade_units.code)
+                 from model_has_trade_units
+                 join trade_units on trade_units.id = model_has_trade_units.trade_unit_id
+                 where model_has_trade_units.model_type = 'MasterAsset'
+                   and model_has_trade_units.model_id = master_assets.id",
+                'trade_units_label'
+            );
+        }
 
         // PARENT FILTER ONLY
         if ($parent instanceof Group) {
@@ -342,6 +380,18 @@ class IndexMasterProducts extends OrgAction
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
+            }
+
+            /** The bulk edit tab: one row per product, only the fields it makes sense to edit in bulk. */
+            if ($prefix == MasterProductsTabsEnum::BULK_EDIT->value) {
+                $table
+                    ->withGlobalSearch()
+                    ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'name', label: __('Info'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'tax_preset', label: __('Tax'), canBeHidden: false, align: 'right')
+                    ->defaultSort('code');
+
+                return;
             }
 
             if ($sales) {
@@ -579,6 +629,7 @@ class IndexMasterProducts extends OrgAction
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
                 'hide_bulk_edit'          => false,
+                'taxPresetOptions'        => $this->getTaxPresetOptions([]),
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => MasterProductsTabsEnum::navigationExcept($exception),
@@ -595,6 +646,10 @@ class IndexMasterProducts extends OrgAction
                     fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))
                     : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))),
 
+                MasterProductsTabsEnum::BULK_EDIT->value => $this->tab == MasterProductsTabsEnum::BULK_EDIT->value ?
+                    fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value))
+                    : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value))),
+
                 MasterProductsTabsEnum::PRICING->value => $this->parent instanceof MasterProductCategory
                     ? ($this->tab == MasterProductsTabsEnum::PRICING->value ?
                         fn () => MasterProductsPricingResource::collection(IndexMasterProductsPricing::run($this->parent, MasterProductsTabsEnum::PRICING->value))
@@ -605,7 +660,8 @@ class IndexMasterProducts extends OrgAction
         )
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX_ORDERING->value, sortByIndex: true))
-        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true));
+        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true))
+        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value));
 
         if ($this->parent instanceof MasterProductCategory) {
             $response->table(

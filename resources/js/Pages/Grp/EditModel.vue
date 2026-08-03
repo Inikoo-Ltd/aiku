@@ -69,7 +69,8 @@ import {
     faMedal,
     faBullseyePointer,
     faClock,
-    faCalendarCheck
+    faCalendarCheck,
+    faPercent
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -140,7 +141,8 @@ library.add(
     faTh,
     faFolderTree,
     faClock,
-    faCalendarCheck
+    faCalendarCheck,
+    faPercent
 )
 
 const props = defineProps<{

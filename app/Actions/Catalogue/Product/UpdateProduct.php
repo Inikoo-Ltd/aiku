@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
+use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -351,6 +352,8 @@ class UpdateProduct extends OrgAction
             $product->updateQuietly([
                 'price_updated_at' => now()
             ]);
+
+            BreakShopPricesCache::run($product->shop_id);
         }
 
         if (!$this->bulkPriceUpdate && $oldHistoricProduct != $product->current_historic_asset_id) {
@@ -404,7 +407,13 @@ class UpdateProduct extends OrgAction
         $rules = [
             'code'                      => $codeRule,
             'name'                      => ['sometimes', 'required', 'max:250', 'string'],
-            'price'                     => ['sometimes', 'required', 'numeric', 'min:0.01'],
+            /**
+             * Free of charge is a real price: the gold reward gifts, the bottle caps and the
+             * tea samples are all zero, 254 active products in all. StoreProduct, StoreProductVariant
+             * and UpdateMasterAsset all allow it, so a product could be created at zero and a
+             * master held at zero, but the product itself could never be edited back down to it.
+             */
+            'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
             'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'               => ['sometimes', 'required', 'max:1500'],
             'description_title'         => ['sometimes', 'nullable', 'max:255'],

@@ -10,7 +10,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { computed, ref } from "vue"
+import { computed, ref } from 'vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -29,6 +29,8 @@ import Dialog from "primevue/dialog"
 import { Checkbox } from 'primevue'
 import { watch } from 'vue'
 import axios from 'axios'
+
+const screenType = inject('screenType', ref('desktop'))
 library.add(faSeedling, faPenAlt)
 
 const props = defineProps<{
@@ -237,7 +239,7 @@ const submitCloneFromMaster = async () => {
                 v-model:visible="showDialog" 
                 modal 
                 :closable="true" 
-                :dismissableMask=true 
+                :dismissableMask="screenType === 'desktop'" 
                 :style="{ width: '40vw', 'max-height': '40vw' }" 
                 :contentClass="'!pb-0 mb-2'"
             >

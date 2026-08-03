@@ -11,22 +11,23 @@ namespace App\Actions\Web\Crawl;
 use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Crawl;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Spatie\Crawler\Crawler;
-use Spatie\Crawler\CrawlProgress;
-use Spatie\Crawler\CrawlResponse;
-use Spatie\Crawler\Enums\FinishReason;
 
 class CrawlWebsite
 {
     use AsAction;
 
     public string $jobQueue = 'cache-warming';
+
+    private const TRAFFIC_COVERAGE = 0.9;
 
     protected Website $website;
     protected Crawl $crawl;
@@ -44,9 +45,7 @@ class CrawlWebsite
             return;
         }
 
-        if (!$crawl->is_seeder) {
-            $this->stopCurrentCrawls($crawl);
-        }
+        $this->stopCurrentCrawls($crawl);
 
         $crawl = $this->protectFromSurges($crawl);
 
@@ -59,24 +58,89 @@ class CrawlWebsite
         );
         $this->crawl = $crawl;
 
-        $crawler = Crawler::create($this->crawl->website->storefront->canonical_url);
-        if ($crawl->type == CrawlTypeEnum::INERTIA) {
-            $crawler->executeJavaScript();
+        $urls  = $this->getPrioritisedUrls($crawl);
+        $total = count($urls);
+        $crawl->update(['urls_found' => $total]);
+
+        $processed = 0;
+        foreach (array_chunk($urls, max(1, $crawl->concurrency)) as $chunk) {
+            $this->checkIfShouldStop();
+            if ($this->shouldStop) {
+                $this->finish('interrupted', $processed, $total);
+
+                return;
+            }
+
+            Http::pool(fn (Pool $pool) => array_map(
+                fn (string $url) => $pool->connectTimeout(10)->timeout(30)->withHeaders(['User-Agent' => 'aiku-cache-warmer'])->get($url),
+                $chunk
+            ));
+
+            $previousProcessed = $processed;
+            $processed         += count($chunk);
+            echo "[$processed/$total] {$chunk[0]}\n";
+
+            if (intdiv($previousProcessed, 100) !== intdiv($processed, 100)) {
+                $this->crawl->update(['urls_processed' => $processed]);
+            }
         }
 
-        $crawler->internalOnly()
-            ->concurrency($crawl->concurrency)
-            ->shouldStopCallback(function () {
-                return $this->shouldStop;
-            })
-            ->depth($crawl->depth)
-            ->shouldCrawl($this->shouldCrawlUrl(...))
-            ->onCrawled($this->onCrawledUrl(...))
-            ->onCrawled($this->checkIfShouldStop(...))
-            ->onFinished($this->onFinished(...))
-            ->start();
+        $this->finish('completed', $processed, $total);
     }
 
+    /**
+     * Most-visited pages first, stopping once TRAFFIC_COVERAGE of the weighted views is
+     * covered: the remaining tail is ~60% more fetching for the last tenth of the traffic.
+     *
+     * @return array<int, string>
+     */
+    protected function getPrioritisedUrls(Crawl $crawl): array
+    {
+        $pages = DB::connection('aiku_no_sticky')->table('webpages')
+            ->join('website_page_views', 'website_page_views.webpage_id', '=', 'webpages.id')
+            ->leftJoin('website_visitors', 'website_visitors.id', '=', 'website_page_views.website_visitor_id')
+            ->where('webpages.website_id', $crawl->website_id)
+            ->where('webpages.state', WebpageStateEnum::LIVE)
+            ->whereNotNull('webpages.canonical_url')
+            ->where('website_page_views.created_at', '>=', now()->subDays(30))
+            ->groupBy('webpages.id', 'webpages.canonical_url')
+            ->orderByRaw('sum(case when website_visitors.web_user_id is not null then 3 else 1 end) desc, webpages.id')
+            ->select('webpages.canonical_url', DB::raw('sum(case when website_visitors.web_user_id is not null then 3 else 1 end) as views'))
+            ->get();
+
+        if ($pages->isEmpty()) {
+            $storefrontUrl = $crawl->website->storefront?->canonical_url;
+
+            return $storefrontUrl ? [$storefrontUrl] : [];
+        }
+
+        $totalViews = $pages->sum('views');
+        $cumulative = 0;
+        $urls       = [];
+        foreach ($pages as $page) {
+            $urls[]     = $page->canonical_url;
+            $cumulative += $page->views;
+            if ($cumulative >= $totalViews * self::TRAFFIC_COVERAGE) {
+                break;
+            }
+        }
+
+        return $urls;
+    }
+
+    protected function finish(string $reason, int $processed, int $total): void
+    {
+        $this->crawl->update(
+            [
+                'state'          => CrawlStateEnum::FINISH,
+                'end_at'         => now(),
+                'running'        => false,
+                'finish_reason'  => $reason,
+                'urls_processed' => $processed,
+                'urls_found'     => $total
+            ]
+        );
+    }
 
     protected function protectFromSurges(Crawl $crawl): Crawl
     {
@@ -118,19 +182,10 @@ class CrawlWebsite
             Crawl::where('state', '!=', CrawlStateEnum::FINISH)
                 ->where('id', '!=', $crawl->id)
                 ->where('type', $crawl->type)
-                ->where('is_seeder', false)
                 ->where('website_id', $crawl->website_id)->get() as $crawlToStop
         ) {
             StopCrawl::run($crawlToStop);
         }
-    }
-
-    protected function shouldCrawlUrl(string $url): bool
-    {
-        $website = $this->crawl->website;
-        $domain  = preg_replace('/^www\./i', '', parse_url($url, PHP_URL_HOST));
-
-        return $domain === $website->domain && !str_contains($url, '/app/') && !str_contains($url, '/search');
     }
 
     protected function checkIfShouldStop(): void
@@ -150,69 +205,26 @@ class CrawlWebsite
         }
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    protected function onCrawledUrl(string $url, CrawlResponse $response, CrawlProgress $progress): void
-    {
-        echo "[$progress->urlsProcessed/$progress->urlsFound] $url\n";
-
-        if ($progress->urlsProcessed % 100 !== 0) {
-            return;
-        }
-
-        $this->crawl->update(
-            [
-                'urls_processed' => $progress->urlsProcessed,
-                'urls_found'     => $progress->urlsFound
-            ]
-        );
-    }
-
-    protected function onFinished(FinishReason $reason, CrawlProgress $progress): void
-    {
-        $this->crawl->update(
-            [
-                'state'          => CrawlStateEnum::FINISH,
-                'end_at'         => now(),
-                'running'        => false,
-                'finish_reason'  => $reason->value,
-                'urls_processed' => $progress->urlsProcessed,
-                'urls_found'     => $progress->urlsFound
-            ]
-        );
-    }
-
     public function getCommandSignature(): string
     {
-        return 'crawl {website?} {--d|depth=10} {--c|concurrency=10} {--t|type=html} {--deployment} {--s|seeder}';
+        return 'crawl {website?} {--c|concurrency=10} {--deployment}';
     }
 
 
     public function asCommand(Command $command): int
     {
-        $type = $command->option('type');
-        if (!in_array($type, ['html', 'inertia', 'i'])) {
-            $command->error("Invalid type option. Accepted values are: html, javascript");
-
-            return 1;
-        }
-
-
-        $crawlType = $type === 'inertia' || $type === 'i' ? CrawlTypeEnum::INERTIA : CrawlTypeEnum::HTML;
-
         $trigger = $command->option('deployment') ? CrawlTriggerEnum::DEPLOYMENT : CrawlTriggerEnum::COMMAND;
 
         if ($command->argument('website')) {
             $website = Website::where('slug', $command->argument('website'))->firstOrFail();
-            $command->info("Crawling website: $website->slug (ID: $website->id)");
-            $command->info("Depth: {$command->option('depth')}, Concurrency: {$command->option('concurrency')} Type: $crawlType->value");
+            $command->info("Warming website: $website->slug (ID: $website->id) Concurrency: {$command->option('concurrency')}");
             /** @var Crawl $crawl */
             $crawl = $website->crawls()->create(
                 [
-                    'depth'       => $command->option('depth'),
+                    'depth'       => 0,
                     'concurrency' => $command->option('concurrency'),
                     'trigger'     => $trigger,
-                    'type'        => $crawlType,
-                    'is_seeder'   => $command->option('seeder')
+                    'type'        => CrawlTypeEnum::HTML
                 ]
             );
 
@@ -221,7 +233,7 @@ class CrawlWebsite
             return 0;
         }
 
-        CrawlWebsites::run(CrawlTypeEnum::HTML, $trigger, $command->option('depth'), $command->option('seeder'), $command);
+        CrawlWebsites::run($trigger, $command);
 
         return 0;
     }

@@ -39,6 +39,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingBasket extends RetinaAction
 {
+    use \App\Actions\Traits\WithLineTaxCategories;
     use HasBasketDetails;
     use GetPlatformLogo;
     use WithOrderForbiddenCountryCheck;
@@ -308,11 +309,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'information' => '',
                         'price_total' => $order->net_amount
                     ],
-                    [
-                        'label'       => $taxCategory->getLocalizedName(),
-                        'information' => '',
-                        'price_total' => $order->tax_amount
-                    ]
+                    ...$this->getOrderTaxRows($order),
                 ],
                 [
                     [

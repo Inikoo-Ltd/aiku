@@ -39,7 +39,7 @@ class DetectIrisWebsite
                 }
             );
         }
-        $request->merge($websiteData);
+        $this->applyWebsiteData($request, $websiteData);
 
         $response = $next($request);
 

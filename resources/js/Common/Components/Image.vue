@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Image as ImageProxy } from '@/types/Image'
+import { expandGallery } from '@/Common/Composables/useCompactImage'
 
 const fallbackPath = '/fallback/fallback.svg'
 const DEFAULT_ASPECT_RATIO = 16 / 9
@@ -54,6 +55,8 @@ const props = withDefaults(defineProps<{
 const emits = defineEmits<{
   (e: 'onLoadImage'): void
 }>()
+
+const imageSrc = computed(() => expandGallery(props.src) as ImageProxy | null)
 
 
 const dpr =
@@ -148,9 +151,9 @@ const buildSrcSet = (url?: string, url2x?: string) => {
     .join(', ')
 }
 
-const avif = computed(() => props.srcset?.avif ?? buildSrcSet(props.src?.avif, props.src?.avif_2x))
-const webp = computed(() => props.srcset?.webp ?? buildSrcSet(props.src?.webp, props.src?.webp_2x))
-const original = computed(() => props.srcset?.original ?? buildSrcSet(props.src?.original, props.src?.original_2x))
+const avif = computed(() => props.srcset?.avif ?? buildSrcSet(imageSrc.value?.avif, imageSrc.value?.avif_2x))
+const webp = computed(() => props.srcset?.webp ?? buildSrcSet(imageSrc.value?.webp, imageSrc.value?.webp_2x))
+const original = computed(() => props.srcset?.original ?? buildSrcSet(imageSrc.value?.original, imageSrc.value?.original_2x))
 
 
 
@@ -159,7 +162,7 @@ const defaultSrc = computed(() => {
   const h = responsiveHeights.value.desktop
 
   return buildCFUrl(
-    props.src?.original || fallbackPath,
+    imageSrc.value?.original || fallbackPath,
     props.responsiveEnabled ? w : undefined,
     props.responsiveEnabled ? h : undefined
   )

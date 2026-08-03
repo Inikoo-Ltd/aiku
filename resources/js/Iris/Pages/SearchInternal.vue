@@ -72,6 +72,19 @@ const searchQuery = computed(() => {
 })
 
 const products = ref<ProductResource[]>([])
+const searchLogUlid = ref<string | null>(null)
+
+// keepalive fetch survives the navigation the click triggers
+const recordClick = (url?: string | null) => {
+    if (!searchLogUlid.value || !url) return
+    const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '')
+    fetch(route('iris.json.search.click'), {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': token },
+        body: JSON.stringify({ ulid: searchLogUlid.value, url }),
+    }).catch(() => {})
+}
 const facets = ref<InternalFacets>(emptyFacets())
 const collections = ref<InternalCatalogueItem[]>([])
 const totalResults = ref(0)
@@ -136,6 +149,7 @@ const fetchInternalResults = async ({ pageNumber = 1, append = false, resultsOnl
             return
         }
         const results = data.results ?? {}
+        searchLogUlid.value = data.search_log_ulid ?? searchLogUlid.value
         products.value = append ? [...products.value, ...(results.products ?? [])] : (results.products ?? [])
         totalResults.value = results.total ?? 0
         currentPage.value = results.page ?? pageNumber
@@ -533,7 +547,8 @@ const isMobileFilterOpen = ref(false)
                             :class="isResultsRefreshing ? 'opacity-60 pointer-events-none' : ''">
                             <div v-for="product in products" :key="product.id"
                                 :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                                class="relative rounded flex md:flex-1 justify-center">
+                                class="relative rounded flex md:flex-1 justify-center"
+                                @click.capture="() => recordClick(product.url)">
                                 <RenderProduct :code="productCardCode" :product="product"
                                     :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                     :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"

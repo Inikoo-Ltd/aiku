@@ -29,10 +29,10 @@ trait WithPrepareDeliveryStoreFields
             data_set($modelData, 'currency_id', $parent->agent->currency_id, false);
 
         } elseif (class_basename($parent) == 'OrgPartner') {
-            data_set($modelData, 'partner_id', $parent->organisation_id);
-            data_set($modelData, 'parent_code', $parent->organisation->code, false);
-            data_set($modelData, 'parent_name', $parent->organisation->name, false);
-            data_set($modelData, 'currency_id', $parent->organisation->currency_id, false);
+            data_set($modelData, 'partner_id', $parent->partner_id);
+            data_set($modelData, 'parent_code', $parent->partner->code, false);
+            data_set($modelData, 'parent_name', $parent->partner->name, false);
+            data_set($modelData, 'currency_id', $parent->partner->currency_id, false);
 
         }
 

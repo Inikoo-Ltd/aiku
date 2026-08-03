@@ -8,6 +8,9 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\SysAdmin\User\StoreUserFromEmployee;
+use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\HumanResources\Employee\DeleteEmployee;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\HumanResources\Employee\UpdateEmployee;
@@ -417,6 +420,33 @@ test('can store clocking', function () {
 
     expect($clocking)->toBeInstanceOf(Clocking::class)
         ->and($clocking->subject_id)->toBe($employee->id);
+});
+
+test('clocking is bucketed into the day of the workplace timezone not the organisation one', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $aucklandTimezone = \App\Models\Helpers\Timezone::where('name', 'Pacific/Auckland')->firstOrFail();
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name'        => 'Auckland Workplace',
+        'type'        => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+        'timezone_id' => $aucklandTimezone->id,
+    ]);
+
+    $clockedAt = \Illuminate\Support\Carbon::parse('2026-08-03 22:00:00', 'UTC');
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type'       => 'in',
+        'clocked_at' => $clockedAt,
+    ], 0, true);
+
+    $expectedDate = $clockedAt->copy()->setTimezone('Pacific/Auckland')->toDateString();
+
+    expect($expectedDate)->toBe('2026-08-04')
+        ->and($clocking->timesheet->date->toDateString())->toBe($expectedDate);
 });
 
 test('can store clocking machine QR code', function () {
@@ -1507,3 +1537,34 @@ test('StoreLeave handle creates a leave with pending approval records', function
 
     expect(\App\Models\HumanResources\LeaveApprovalRecord::where('leave_id', $leave->id)->count())->toBeGreaterThanOrEqual(1);
 });
+
+test('StoreUserFromEmployee authorisation comes from the human resources trait', function () {
+    expect(class_uses_recursive(StoreUserFromEmployee::class))
+        ->toContain(WithHumanResourcesEditAuthorisation::class)
+        ->and(method_exists(StoreUserFromEmployee::class, 'authorize'))->toBeTrue();
+});
+
+test('can create a user from an employee', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'employee-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    expect($user)->toBeInstanceOf(User::class)
+        ->and($user->status)->toBeTrue()
+        ->and($employee->refresh()->user_id)->toBe($user->id);
+
+    return $employee;
+});
+
+test('an employee that already has a user can not get a second one', function (Employee $employee) {
+    expect(fn () => StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'employee-dup-' . $employee->id,
+        'password' => 'secret123',
+    ]))->toThrow(HttpException::class);
+})->depends('can create a user from an employee');
