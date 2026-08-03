@@ -30,20 +30,7 @@
     {{Vite::useHotFile('grp.hot')->useBuildDirectory('grp')->withEntryPoints(['resources/js/app-grp.js'])}}
     @inertiaHead
 
-    @if (config('services.jsd.widget_key'))
-    <style>
-        iframe[name='JSD widget'] {
-            /* display: block; */
-            bottom: 10px !important;
-            right: 0 !important;
-            /* margin-right: 55px;
-            margin-bottom: 15px; */
 
-            opacity: .80;
-        }
-    </style>
-    <script data-jsd-embedded data-key="{{ config('services.jsd.widget_key') }}" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
-    @endif
 </head>
 <body class="font-sans antialiased h-full text-slate-700">
 @inertia

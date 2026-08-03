@@ -221,12 +221,12 @@ trait WithEbayApiRequest
                 case 'Item Width':
                     $width = Arr::get($product->marketing_dimensions, 'w');
                     $w = in_array($width, [null, 0]) ? 0.5 : $width;
-                    $attributes['Item Height'] = [$w * 100 . 'cm'];
+                    $attributes['Item Width'] = [$w * 100 . 'cm'];
                     break;
                 case 'Item Length':
                     $length = Arr::get($product->marketing_dimensions, 'l');
                     $l = in_array($length, [null, 0]) ? 0.5 : $length;
-                    $attributes['Item Height'] = [$l * 100 . 'cm'];
+                    $attributes['Item Length'] = [$l * 100 . 'cm'];
                     break;
                 default:
                     // Use generic mapping or default value
@@ -291,15 +291,20 @@ trait WithEbayApiRequest
         return trim($descriptions);
     }
 
-    public function getItemAspectsForCategory($categoryId)
+    public function getCategoryTreeId(): int
     {
         $marketplace = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
-        $categoryTree = match ($marketplace) {
+        return match ($marketplace) {
             'EBAY_ES' => 186,
             'EBAY_DE' => 77,
             default => 3
         };
+    }
+
+    public function getItemAspectsForCategory($categoryId)
+    {
+        $categoryTree = $this->getCategoryTreeId();
 
         try {
             $endpoint = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_item_aspects_for_category";
@@ -337,12 +342,12 @@ trait WithEbayApiRequest
 
         $services = [
             'EBAY_GB' => [
-                'UK_OtherCourier'     => [
+                /*'UK_OtherCourier'     => [
                     'service_code' => 'UK_OtherCourier',
                     'service_name' => 'Yodel',
                     'carrier_code' => 'Yodel',
                     'carrier_name' => 'Yodel',
-                ],
+                ],*/
                 'UK_RoyalMailNextDay' => [
                     'service_code' => 'UK_RoyalMailNextDay',
                     'service_name' => 'Royal Mail',
@@ -787,10 +792,11 @@ trait WithEbayApiRequest
             };
 
             $response = Http::withHeaders([
-                'Authorization'    => 'Bearer '.$token,
-                'Content-Type'     => 'application/json',
-                'Accept'           => 'application/json',
-                'Content-Language' => $contentLanguage
+                'Authorization'           => 'Bearer '.$token,
+                'Content-Type'            => 'application/json',
+                'Accept'                  => 'application/json',
+                'Content-Language'        => $contentLanguage,
+                'X-EBAY-C-MARKETPLACE-ID' => $marketplaceId
             ])->withQueryParameters($queryParams)
                 ->$method(
                     $url,
@@ -805,14 +811,16 @@ trait WithEbayApiRequest
             if ($response->status() === 401) {
                 $token    = Arr::get($this->refreshEbayToken(), 'access_token');
                 $response = Http::withHeaders([
-                    'Authorization'    => 'Bearer '.$token,
-                    'Content-Type'     => 'application/json',
-                    'Accept'           => 'application/json',
-                    'Content-Language' => 'en-GB'
-                ])->$method(
-                    $url,
-                    $data
-                );
+                    'Authorization'           => 'Bearer '.$token,
+                    'Content-Type'            => 'application/json',
+                    'Accept'                  => 'application/json',
+                    'Content-Language'        => $contentLanguage,
+                    'X-EBAY-C-MARKETPLACE-ID' => $marketplaceId
+                ])->withQueryParameters($queryParams)
+                    ->$method(
+                        $url,
+                        $data
+                    );
 
                 if ($response->successful()) {
                     return $response->json();
@@ -1236,7 +1244,6 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
             $errMsg = 'Fulfill eBay Order Error: '.$e->getMessage();
-            Log::error($errMsg);
             \Sentry::captureMessage($errMsg);
 
             return ['error' => $e->getMessage()];
@@ -1694,7 +1701,8 @@ trait WithEbayApiRequest
     {
         try {
             $encodedKeyword = urlencode($keyword);
-            $endpoint       = "/commerce/taxonomy/v1/category_tree/3/get_category_suggestions";
+            $categoryTree   = $this->getCategoryTreeId();
+            $endpoint       = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_category_suggestions";
 
             return $this->makeEbayRequest('get', $endpoint, [], [
                 'q' => $encodedKeyword

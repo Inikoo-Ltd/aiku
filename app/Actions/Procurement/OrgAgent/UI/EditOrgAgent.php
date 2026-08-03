@@ -100,6 +100,7 @@ class EditOrgAgent extends OrgAction
     public function getBreadcrumbs(array $routeParameters, $suffix = null): array
     {
         return ShowOrgAgent::make()->getBreadcrumbs(
+            routeName: 'grp.org.procurement.org_agents.show.edit',
             routeParameters: $routeParameters,
             suffix: '(' . __('Editing') . ')'
         );

@@ -37,6 +37,7 @@ import TiktokBusinessAccountsForm
 	from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokBusinessAccountsForm.vue"
 import TiktokConnectedFinish from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelTiktok/TiktokConnectedFinish.vue"
 import AllegroAuthKeyForm from "@/Pages/Retina/Dropshipping/FormCreateSalesChannelAllegro/AllegroAuthKeyForm.vue"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faInfoCircle)
 
 library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers)
@@ -298,43 +299,52 @@ const closeCreateTiktokModal = () => {
 
 const openCreateEbayModal = async () => {
 	isPlatformCreateLoading.value = true
-	const { data } = await axios.get(
-		route("retina.dropshipping.customer_sales_channels.ebay.creating_check")
-	)
+	try {
+		const { data } = await axios.get(
+			route("retina.dropshipping.customer_sales_channels.ebay.creating_check")
+		)
 
-	if (data) {
-		ebayId.value = data.id
-		customerSalesChannelId.value = data.customer_sales_channel_id
-		ebayName.value = data.name
-		switch (data.step) {
-			case "name":
-				currentStep.value = 1
-				steps.value[0].status = "complete"
-				steps.value[1].status = "current"
-				steps.value[2].status = "upcoming"
-				break
-			case "marketplace":
-				currentStep.value = 1
-				steps.value[0].status = "complete"
-				steps.value[1].status = "current"
-				steps.value[2].status = "upcoming"
-				break
-			case "auth":
-				currentStep.value = 2
-				steps.value[0].status = "complete"
-				steps.value[1].status = "complete"
-				steps.value[2].status = "current"
-				break
-			default:
-				currentStep.value = 0
-				steps.value[0].status = "current"
-				steps.value[1].status = "upcoming"
-				steps.value[2].status = "upcoming"
+		if (data) {
+			ebayId.value = data.id
+			customerSalesChannelId.value = data.customer_sales_channel_id
+			ebayName.value = data.name
+			switch (data.step) {
+				case "name":
+					currentStep.value = 1
+					steps.value[0].status = "complete"
+					steps.value[1].status = "current"
+					steps.value[2].status = "upcoming"
+					break
+				case "marketplace":
+					currentStep.value = 1
+					steps.value[0].status = "complete"
+					steps.value[1].status = "current"
+					steps.value[2].status = "upcoming"
+					break
+				case "auth":
+					currentStep.value = 2
+					steps.value[0].status = "complete"
+					steps.value[1].status = "complete"
+					steps.value[2].status = "current"
+					break
+				default:
+					currentStep.value = 0
+					steps.value[0].status = "current"
+					steps.value[1].status = "upcoming"
+					steps.value[2].status = "upcoming"
+			}
 		}
-	}
 
-	isPlatformCreateLoading.value = false
-	isModalCreateEbay.value = true
+		isModalCreateEbay.value = true
+	} catch (error) {
+		notify({
+			title: ctrans("Something went wrong"),
+			text: error.response?.data?.message,
+			type: "error",
+		})
+	} finally {
+		isPlatformCreateLoading.value = false
+	}
 }
 
 provide("closeCreateEbayModal", closeCreateEbayModal)

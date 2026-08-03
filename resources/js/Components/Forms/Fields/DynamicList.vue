@@ -11,6 +11,7 @@ type FieldConfig = {
     key: string
     placeholder?: string
     label?: string
+    options?: { value: string | number; label: string }[]
 }
 
 type RowData = Record<string, string> & { _key: number }
@@ -83,7 +84,22 @@ const removeRow = (key: number) => {
                 v-for="field in fields"
                 :key="field.key"
                 class="flex-1">
+                <select
+                    v-if="field.options"
+                    v-model="row[field.key]"
+                    class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">
+                        {{ field.placeholder ? trans(field.placeholder) : trans("Select") }}
+                    </option>
+                    <option
+                        v-for="option in field.options"
+                        :key="option.value"
+                        :value="String(option.value)">
+                        {{ option.label }}
+                    </option>
+                </select>
                 <input
+                    v-else
                     v-model="row[field.key]"
                     type="text"
                     :placeholder="field.placeholder ? trans(field.placeholder) : field.key"

@@ -9,6 +9,7 @@ export interface SupplierProduct {
     slug: string,
     agent_slug: string,
     supplier_slug: string,
+    id: number,
     current_historic_supplier_product_id: string,
     supplier_id: number
     agent_id: number

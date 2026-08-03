@@ -82,6 +82,35 @@ class EditOrganisationSettings extends OrgAction
         }
 
         $allowWaiting = Arr::get($organisation->settings, 'orders.allow_waiting', false);
+
+        $pickingFields = [
+            'allow_waiting' => [
+                'type'  => 'toggle',
+                'label' => __('Waiting delivery notes'),
+                'value' => $allowWaiting,
+            ],
+        ];
+
+        if ($allowWaiting) {
+            $pickingFields['allow_picker_set_not_picked'] = [
+                'type'  => 'toggle',
+                'label' => __('Allow picker set out of stocks'),
+                'value' => Arr::get($organisation->settings, 'orders.allow_picker_set_not_picked', false),
+            ];
+            $pickingFields['allow_stock_controller_set_not_picked'] = [
+                'type'  => 'toggle',
+                'label' => __('Allow stock controller to set out of stocks'),
+                'value' => Arr::get($organisation->settings, 'orders.allow_stock_controller_set_not_picked', false),
+            ];
+        }
+
+        $pickingFields['allow_scan_to_pack'] = [
+            'type'  => 'toggle',
+            'label' => __('Allow packers to scan items to pack them'),
+            'information'   => __('Scan the items using scanner'),
+            'icon'  => 'fal fa-scanner',
+            'value' => Arr::get($organisation->settings, 'orders.allow_scan_to_pack', false),
+        ];
         $routeParameters = request()->route()->originalParameters();
 
         return Inertia::render(
@@ -216,29 +245,7 @@ class EditOrganisationSettings extends OrgAction
                         [
                             'label' => __('Picking'),
                             'icon' => 'fa-light fa-dolly-flatbed-alt',
-                            'fields' => $allowWaiting ? [
-                                'allow_waiting' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Waiting delivery notes'),
-                                    'value' => $allowWaiting,
-                                ],
-                                'allow_picker_set_not_picked' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Allow picker set out of stocks'),
-                                    'value' => Arr::get($organisation->settings, 'orders.allow_picker_set_not_picked', false),
-                                ],
-                                'allow_stock_controller_set_not_picked' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Allow stock controller to set out of stocks'),
-                                    'value' => Arr::get($organisation->settings, 'orders.allow_stock_controller_set_not_picked', false),
-                                ]
-                            ] : [
-                                'allow_waiting' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Waiting delivery notes'),
-                                    'value' => $allowWaiting,
-                                ]
-                            ],
+                            'fields' => $pickingFields,
                         ],
                         // [
                         //     'label' => __('Shipping'),
@@ -292,7 +299,7 @@ class EditOrganisationSettings extends OrgAction
                         ],
                         [
                             'label' => __('Leave Quota'),
-                            'icon' => 'fa-light fa-calendar-clock',
+                            'icon' => 'fa-light fa-calendar-check',
                             'fields' => [
                                 'hr_annual_leave_days' => [
                                     'type' => 'input',

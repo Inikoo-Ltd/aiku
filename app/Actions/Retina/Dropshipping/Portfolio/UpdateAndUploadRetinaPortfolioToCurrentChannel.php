@@ -42,9 +42,9 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
     public function rules(): array
     {
         return [
-            'customer_product_name' => ['sometimes', 'string'],
+            'customer_product_name' => ['sometimes', 'string', 'max:255'],
             'customer_price' => ['sometimes', 'string', 'numeric'],
-            'customer_description' => ['sometimes', 'string'],
+            'customer_description' => ['sometimes', 'string', 'max:10000'],
         ];
     }
 

@@ -141,7 +141,7 @@ class IndexPalletReturnsBacklog extends OrgAction
 
             if ($typeFilter === PalletReturnTypeEnum::STORED_ITEM) {
                 $table
-                    ->column(key: 'unique_stored_item_count', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'unique_stored_item_count', label: __('SKO'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 $table
                     ->column(key: 'number_pallets', label: __('Pallets'), canBeHidden: false, sortable: true, searchable: true);

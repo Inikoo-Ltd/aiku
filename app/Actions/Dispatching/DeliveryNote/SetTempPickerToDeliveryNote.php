@@ -26,15 +26,13 @@ class SetTempPickerToDeliveryNote extends OrgAction
     use WithFixedAddressActions;
     use WithNoStrictRules;
     use HasDeliveryNoteHydrators;
+    use WithDeliveryNoteHandler;
 
     private DeliveryNote $deliveryNote;
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
-        session()->put('temp_handling_delivery_note', [
-            'value' => $deliveryNote->id,
-            'expires_at' => now()->addMinutes(5),
-        ]);
+        self::claimDeliveryNoteHandling($deliveryNote);
 
         return $deliveryNote;
     }

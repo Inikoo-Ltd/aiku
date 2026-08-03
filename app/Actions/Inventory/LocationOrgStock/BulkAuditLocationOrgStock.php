@@ -33,11 +33,13 @@ class BulkAuditLocationOrgStock extends OrgAction
         foreach ($auditedLocationOrgStocks as $auditedLocationOrgStock) {
             $locationOrgStock = $locationOrgStocks->get($auditedLocationOrgStock['id']);
             if ($locationOrgStock) {
-                AuditLocationOrgStock::make()->action($locationOrgStock, Arr::only($auditedLocationOrgStock, [
+                AuditLocationOrgStock::make()->action(
+                    $locationOrgStock,
+                    Arr::only($auditedLocationOrgStock, [
                         'quantity',
                         'reason',
                         'note'
-                    ]), 
+                    ]),
                     $this->user
                 );
             }

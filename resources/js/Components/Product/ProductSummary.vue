@@ -104,7 +104,7 @@ const props = withDefaults(
 		noTradeUnit?: boolean
 		publicAttachment: array<any>
 		properties?: {
-			country_of_origin?: { code: string; name: string }
+			countries_of_origin?: { code: string; name: string }[]
 			tariff_code?: string
 			duty_rate?: string
 		}

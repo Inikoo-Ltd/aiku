@@ -41,7 +41,6 @@ class StoreEmailOngoingRun extends OrgAction
             /** @var EmailOngoingRun $emailOngoingRun */
             $emailOngoingRun = $outbox->emailOngoingRun()->create($modelData);
             $emailOngoingRun->stats()->create();
-            $emailOngoingRun->intervals()->create();
 
             return $emailOngoingRun;
         });

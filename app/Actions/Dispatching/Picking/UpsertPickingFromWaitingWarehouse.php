@@ -84,7 +84,7 @@ class UpsertPickingFromWaitingWarehouse extends OrgAction
                 $modelData = [
                     'quantity' => Arr::get($modelData, 'quantity', 0),
                 ];
-                UpdatePicking::run($picking, $modelData);
+                UpdatePicking::run($picking, $modelData, $user);
             } else {
                 StorePicking::make()->action($deliveryNoteItem, $user, $modelData);
             }

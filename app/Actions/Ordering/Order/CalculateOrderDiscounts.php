@@ -8,6 +8,9 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\Traits\WithGiftOptOut;
+use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Discounts\OfferAllowance;
@@ -22,28 +25,46 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CalculateOrderDiscounts implements ShouldBeUnique
 {
     use AsAction;
+    use WithGiftOptOut;
 
     public string $jobQueue = 'urgent';
 
     private \Illuminate\Support\Collection $transactions;
+    private \Illuminate\Support\Collection $transactionsQuantityBonus;
 
     private array $enabledOffers = [];
     private array $offerMeters = [];
+    private float $amountOff = 0.0;
     private bool $isLastInvoicedSet = false;
     private bool $isGrAmnestyOfferIdSet = false;
     private int|null $daysSinceLastInvoiced = null;
     private int|null $grAmnestyOfferId = null;
+    private \Illuminate\Support\Carbon|null $honorOffersAt = null;
 
-    public function getJobUniqueId(Order $order): string
+    public function __construct()
     {
-        return $order->id;
+        $this->transactionsQuantityBonus = collect(); // handle accessed before initialized
+    }
+
+    public function getJobUniqueId(Order $order, bool $onlyIfInBasket = false): string
+    {
+        return $order->id.'_'.($onlyIfInBasket ? '1' : '0');
     }
 
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, bool $onlyIfInBasket = false): Order
     {
+        /**
+         * External shops are Faire, and Faire owns the pricing of its own orders: the amounts,
+         * the discount and the tax all come from its payload. Such an order carries no Aiku
+         * offers, so this would compute an amount_off of zero and overwrite what Faire sent.
+         */
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL) {
+            return $order;
+        }
+
         if (in_array($order->state, [
             OrderStateEnum::CANCELLED,
             OrderStateEnum::DISPATCHED,
@@ -52,7 +73,21 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return $order;
         }
 
+        /**
+         * Bulk callers list the baskets of a shop or customer and then queue one job each, with a
+         * delay of up to two hours to spread the load. An order the customer submits inside that
+         * window would otherwise have its discounts recalculated after the fact, against offers
+         * that may since have changed. They pass true, so the order is rechecked at execution time;
+         * callers acting on one known order keep the previous behaviour.
+         */
+        if ($onlyIfInBasket && $order->refresh()->state !== OrderStateEnum::CREATING) {
+            return $order;
+        }
+
         $this->transactions = collect();
+        $this->amountOff    = 0.0;
+
+        $this->honorOffersAt = $order->state == OrderStateEnum::CREATING ? null : $order->submitted_at;
 
         $this->setEnabledOffers($order);
 
@@ -66,10 +101,29 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     'model_type',
                     'model_id',
                     'family_id',
+                    'sub_department_id',
                     'department_id'
                 ])
                 ->where('order_id', $order->id)
                 ->where('quantity_ordered', '>', 0)
+                ->where('model_type', 'Product')
+                ->whereNull('deleted_at')
+                ->get()
+                ->keyBy('id');
+
+            $this->transactionsQuantityBonus = DB::table('transactions')
+                ->select([
+                    'id',
+                    'quantity_ordered',
+                    'gross_amount',
+                    'model_type',
+                    'model_id',
+                    'family_id',
+                    'sub_department_id',
+                    'department_id'
+                ])
+                ->where('order_id', $order->id)
+                ->where('quantity_bonus', '>', 0)
                 ->where('model_type', 'Product')
                 ->whereNull('deleted_at')
                 ->get()
@@ -80,9 +134,12 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $this->processDiscretionaryOffers($order);
 
         DB::transaction(function () use ($order) {
+            DB::table('orders')->where('id', $order->id)->lockForUpdate()->first();
+
             DB::table('transaction_has_offer_allowances')
                 ->where('is_gift', false)
                 ->where('order_id', $order->id)->delete();
+
             DB::table('transactions')->where('order_id', $order->id)
                 ->where('quantity_ordered', '>', 0)
                 ->update([
@@ -92,6 +149,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ]);
 
             $offerAllowancePivots = [];
+
             foreach ($this->transactions as $transaction) {
                 if (property_exists($transaction, 'with_offer')) {
                     $offerAllowancePivots[] = $this->updateTransactionDiscount(
@@ -117,6 +175,33 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     );
                 }
             }
+
+            foreach ($this->transactionsQuantityBonus as $transaction) {
+                if (property_exists($transaction, 'with_offer')) {
+                    $offerAllowancePivots[] = $this->updateTransactionDiscount(
+                        $order,
+                        $transaction,
+                        $transaction->discounted_percentage,
+                        $transaction->discounted_amount,
+                        [
+                            'v' => 1,
+                            'o' => [
+                                'oc'  => $transaction->offer_campaign_id,
+                                'o'   => $transaction->offer_id,
+                                'oa'  => $transaction->offer_allowance_id,
+                                't'   => $transaction->allowance_type,
+                                'p'   => percentage($transaction->discounted_percentage, 1),
+                                'l'   => $transaction->offer_label,
+                                'st'  => $transaction->sub_trigger,
+                                'sto' => $transaction->sub_trigger_offer_id,
+                                'f'   => $transaction->free_items_value ?? 0,
+                                'nf'  => $transaction->number_of_free_items ?? 0
+                            ]
+                        ]
+                    );
+                }
+            }
+
             if ($offerAllowancePivots !== []) {
                 DB::table('transaction_has_offer_allowances')->insert($offerAllowancePivots);
             }
@@ -125,6 +210,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 $this->regenerateSubmittedTransactionDiscounts($order);
             }
         });
+
+        if ((float)$order->amount_off != $this->amountOff) {
+            $order->update(['amount_off' => $this->amountOff]);
+        }
 
         CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
@@ -176,6 +265,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function getGiftsMeters(Order $order): void
     {
+        if ($this->isGiftOptedOut($order)) {
+            return;
+        }
+
         foreach (
             DB::table('offers')
                 ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
@@ -216,12 +309,18 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
+        $isGift = $voucherData->allowance_type === 'gift';
+
+        if ($isGift && $this->isGiftOptedOut($order)) {
+            return;
+        }
+
         $triggerData = json_decode($voucherData->trigger_data, true);
 
         $this->offerMeters[$voucherData->allowance_signature] = [
             'offer_id' => $voucherData->id,
             'label'    => $voucherData->name,
-            'is_gift'  => $voucherData->allowance_type === 'gift',
+            'is_gift'  => $isGift,
             'metadata' => [
                 'current' => $order->gross_amount,
                 'target'  => Arr::get($triggerData, 'item_amount', 0),
@@ -235,11 +334,11 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
 
         foreach (
-            DB::table('offers')
-                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])
-                ->where('customer_id', $order->customer_id)
-                ->where('status', true)
-                ->get() as $customerExclusiveOfferData
+            $this->scopeOffersValidity(
+                DB::table('offers')
+                    ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])
+                    ->where('customer_id', $order->customer_id)
+            )->get() as $customerExclusiveOfferData
         ) {
             if ($customerExclusiveOfferData->type == OfferTypeEnum::CUSTOMER_ANY_ORDER->value) {
                 $enabledOffers[$customerExclusiveOfferData->allowance_signature] = [
@@ -260,13 +359,13 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
 
         if ($order->offer_voucher_id) {
-            $voucherData = DB::table('offers')
-                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
-                ->where('shop_id', $order->shop_id)
-                ->where('status', true)
-                ->where('allowance_type', 'percentage_off')
-                ->where('id', $order->offer_voucher_id)
-                ->first();
+            $voucherData = $this->scopeOffersValidity(
+                DB::table('offers')
+                    ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
+                    ->where('shop_id', $order->shop_id)
+                    ->whereIn('allowance_type', ['percentage_off', 'amount_off'])
+                    ->where('id', $order->offer_voucher_id)
+            )->first();
 
             if ($voucherData) {
                 if ($voucherData->type == OfferTypeEnum::VOUCHER_ANY_ORDER->value) {
@@ -288,12 +387,13 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
 
-        $offersData = DB::table('offers')
-            ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
-            ->where('shop_id', $order->shop_id)
-            ->where('status', true)
-            ->whereIn('trigger_type', [
+        $offersData = $this->scopeOffersValidity(
+            DB::table('offers')
+                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
+                ->where('shop_id', $order->shop_id)
+        )->whereIn('trigger_type', [
                 'Customer',
+                'Product',
                 'ProductCategory',
                 'ShopAiku'//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
             ])->get();
@@ -416,6 +516,38 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                         ];
                     }
                 }
+            } elseif (in_array($offerData->type, [
+                OfferTypeEnum::PRODUCT_FOR_EVERY_QUANTITY_ORDERED->value,
+                OfferTypeEnum::PRODUCT_QUANTITY_ORDERED->value,
+                OfferTypeEnum::PRODUCT_AMOUNT_ORDERED->value,
+            ])) {
+                $enabledOffers[$offerData->allowance_signature] = [
+                    'offer_id'    => $offerData->id,
+                    'offer_label' => $offerData->name,
+                ];
+            } elseif ($offerData->type == OfferTypeEnum::CATEGORY_FOR_EVERY_QUANTITY_ORDERED->value) {
+                if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
+                    $triggerData     = json_decode($offerData->trigger_data, true);
+                    $familyQuantity  = Arr::get($order->categories_data, "family.$offerData->trigger_id.quantity", 0);
+                    $triggerQuantity = Arr::get($triggerData, 'item_quantity', 0);
+
+                    if ($triggerQuantity > 0 && $familyQuantity >= $triggerQuantity) {
+                        $enabledOffers[$offerData->allowance_signature] = [
+                            'offer_id'    => $offerData->id,
+                            'offer_label' => $offerData->name,
+                        ];
+                    }
+
+                    $this->offerMeters[$offerData->allowance_signature] = [
+                        'offer_id' => $offerData->id,
+                        'label'    => $offerData->name,
+                        'is_gift'  => false,
+                        'metadata' => [
+                            'current' => $familyQuantity,
+                            'target'  => $triggerQuantity,
+                        ]
+                    ];
+                }
             } elseif ($offerData->type == 'Category Quantity Ordered Order Interval') {
                 if (in_array($offerData->trigger_id, Arr::get($order->categories_data, 'family_ids', []))) {
                     $amnestyOfferId = $this->getGrAmnestyOfferId($order);
@@ -457,6 +589,33 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
 
         $this->enabledOffers = $enabledOffers;
+    }
+
+    /**
+     * Orders past the basket stage honor the promotions that were valid when the customer
+     * submitted, even if those offers have since finished. Recalculations on such orders
+     * select offers by their validity window at submission time instead of current status,
+     * so a post-submission recalculation (adding a line, replacing an out-of-stock product)
+     * cannot strip discounts the customer already paid for. Suspended offers stay excluded:
+     * suspension is a deliberate kill switch, unlike an offer reaching its end date.
+     */
+    private function scopeOffersValidity(\Illuminate\Database\Query\Builder $query): \Illuminate\Database\Query\Builder
+    {
+        if (!$this->honorOffersAt) {
+            return $query->where('status', true);
+        }
+
+        return $query
+            ->whereNull('deleted_at')
+            ->where(function ($subQuery) {
+                $subQuery->where('status', true)->orWhere('state', OfferStateEnum::FINISHED->value);
+            })
+            ->where(function ($subQuery) {
+                $subQuery->whereNull('start_at')->orWhere('start_at', '<=', $this->honorOffersAt);
+            })
+            ->where(function ($subQuery) {
+                $subQuery->whereNull('end_at')->orWhere('end_at', '>=', $this->honorOffersAt);
+            });
     }
 
 
@@ -503,8 +662,9 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $metadata        = [];
 
         $triggerData = json_decode($offerData->trigger_data, true);
+        $orderNumber = Arr::get($triggerData, 'order_number');
 
-        if ($order->gross_amount >= $triggerData['min_amount']) {
+        if ($order->gross_amount >= Arr::get($triggerData, 'min_amount', 0)) {
             $passAmount = true;
         }
 
@@ -514,12 +674,12 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 OrderStateEnum::CREATING->value,
             ])->count();
 
-        if ($numberOrders == ($triggerData['order_number'] - 1)) {
+        if ($orderNumber !== null && $numberOrders == ($orderNumber - 1)) {
             $passOrderNumber = true;
 
             $metadata = [
                 'current' => $order->gross_amount,
-                'target'  => $triggerData['min_amount'],
+                'target'  => Arr::get($triggerData, 'min_amount', 0),
             ];
         }
 
@@ -537,7 +697,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
         $allowances = DB::table('offer_allowances')
-            ->select(['target_type', 'data', 'offer_id', 'id', 'offer_campaign_id'])
+            ->select(['target_type', 'type', 'data', 'offer_id', 'id', 'offer_campaign_id'])
             ->whereIn('offer_id', array_column($this->enabledOffers, 'offer_id'))
             ->orderBy('id')
             ->get()
@@ -557,12 +717,140 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
     public function processAllowance(array $offerData, object $allowanceData): void
     {
+        if ($allowanceData->type == 'amount_off') {
+            $this->processAllowanceAmountOff($allowanceData);
+
+            return;
+        }
+
         if ($allowanceData->target_type == 'all_products_in_order') {
             $this->processAllowanceAllProductsInOrder($offerData, $allowanceData);
         } elseif ($allowanceData->target_type == 'all_products_in_product_category') {
             $this->processAllowanceAllProductsInProductCategory($offerData, $allowanceData);
         } elseif ($allowanceData->target_type == 'all_products_in_department') {
             $this->processAllowanceAllProductsInDepartment($offerData, $allowanceData);
+        } elseif ($allowanceData->target_type == 'all_products_in_sub_department') {
+            $this->applyPercentageDiscount($offerData, $allowanceData, 'sub_department');
+        } elseif ($allowanceData->target_type == 'all_products_in_collection') {
+            $this->applyPercentageDiscount($offerData, $allowanceData, 'collection');
+        } elseif ($allowanceData->target_type == 'cheapest_products_in_product_category') {
+            $this->processAllowanceFreeItems($offerData, $allowanceData);
+        } elseif ($allowanceData->target_type == 'product' && $allowanceData->type == 'free_items') {
+            $this->processAllowanceFreeItems($offerData, $allowanceData);
+        } elseif ($allowanceData->target_type == 'product' && $allowanceData->type == 'percentage_off') {
+            $this->processAllowanceProductPercentage($offerData, $allowanceData);
+        }
+    }
+
+    public function processAllowanceProductPercentage(array $offerData, object $allowanceData): void
+    {
+        $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
+        $productId        = Arr::get($allowanceOpsData, 'product_id');
+
+        if (!$productId) {
+            return;
+        }
+
+        $productTransactions = $this->transactions
+            ->filter(fn ($transaction) => $transaction->model_id == $productId && $transaction->quantity_ordered > 0);
+
+        if ($productTransactions->isEmpty()) {
+            return;
+        }
+
+        if ($steps = Arr::get($allowanceOpsData, 'steps')) {
+            $totalQuantity = (int)$productTransactions->sum('quantity_ordered');
+            $percentageOff = 0.0;
+            foreach (collect($steps)->sortBy('min_quantity') as $step) {
+                if ($totalQuantity >= (int)Arr::get($step, 'min_quantity', PHP_INT_MAX)) {
+                    $percentageOff = (float)Arr::get($step, 'percentage_off', 0);
+                }
+            }
+        } else {
+            $percentageOff = (float)Arr::get($allowanceOpsData, 'percentage_off', 0);
+
+            $itemQuantity = (int)Arr::get($allowanceOpsData, 'item_quantity', 0);
+            $itemAmount   = (float)Arr::get($allowanceOpsData, 'item_amount', 0);
+            if ($itemQuantity > 0 && $productTransactions->sum('quantity_ordered') < $itemQuantity) {
+                return;
+            }
+            if ($itemAmount > 0 && $productTransactions->sum('gross_amount') < $itemAmount) {
+                return;
+            }
+        }
+
+        $percentageOff = max(0.0, min(1.0, $percentageOff));
+        if ($percentageOff <= 0) {
+            return;
+        }
+
+        foreach ($productTransactions as $transaction) {
+            $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
+            if ($current === null || (is_numeric($current) && (float)$current < $percentageOff)) {
+                $this->applyOfferToTransaction(
+                    $transaction,
+                    $percentageOff,
+                    $offerData['offer_label'],
+                    $allowanceData
+                );
+            }
+        }
+    }
+
+    public function processAllowanceFreeItems(array $offerData, object $allowanceData): void
+    {
+        $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
+        $itemQuantity     = (int)Arr::get($allowanceOpsData, 'item_quantity', 0);
+        $freeQuantity     = (int)Arr::get($allowanceOpsData, 'free_quantity', 0);
+        $categoryId       = Arr::get($allowanceOpsData, 'category_id');
+        $productId        = Arr::get($allowanceOpsData, 'product_id');
+
+        if ($itemQuantity <= 0 || $freeQuantity <= 0 || (!$categoryId && !$productId)) {
+            return;
+        }
+
+        $familyTransactions = $this->transactions
+            ->filter(fn ($transaction) => ($productId ? $transaction->model_id == $productId : $transaction->family_id == $categoryId)
+                && $transaction->quantity_ordered > 0 && $transaction->gross_amount > 0);
+
+        $totalUnits = (int)$familyTransactions->sum('quantity_ordered');
+        $freeUnits  = min(intdiv($totalUnits, $itemQuantity) * $freeQuantity, $totalUnits);
+
+        if ($freeUnits <= 0) {
+            return;
+        }
+
+        $sortedByUnitPrice = $familyTransactions->sortBy(fn ($transaction) => $transaction->gross_amount / $transaction->quantity_ordered)->values();
+
+        foreach ($sortedByUnitPrice as $transaction) {
+            if ($freeUnits <= 0) {
+                break;
+            }
+
+            $takenUnits = (int)min($freeUnits, $transaction->quantity_ordered);
+            $freeUnits  -= $takenUnits;
+
+            $unitPrice        = $transaction->gross_amount / $transaction->quantity_ordered;
+            $discountedAmount = round($unitPrice * $takenUnits, 2);
+            $percentageOff    = $takenUnits / $transaction->quantity_ordered;
+
+            $current = property_exists($transaction, 'discounted_percentage') ? (float)$transaction->discounted_percentage : null;
+            if ($current !== null && $current >= $percentageOff) {
+                continue;
+            }
+
+            $this->applyOfferToTransaction(
+                $transaction,
+                $percentageOff,
+                $offerData['offer_label'],
+                $allowanceData
+            );
+
+            $transaction->allowance_type       = 'free_items';
+            $transaction->discounted_amount    = $discountedAmount;
+            $transaction->net_amount           = (float)$transaction->gross_amount - $discountedAmount;
+            $transaction->free_items_value     = $discountedAmount;
+            $transaction->number_of_free_items = $takenUnits;
         }
     }
 
@@ -593,14 +881,14 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             return;
         }
 
-        foreach ($this->transactions as $transaction) {
-            if ($filterBy == 'family' && $allowanceOpsData['category_id'] != $transaction->family_id) {
-                continue;
-            }
-            if ($filterBy == 'department' && $allowanceOpsData['category_id'] != $transaction->department_id) {
-                continue;
-            }
+        $matchingTransactions = $this->getMatchingTransactions($allowanceOpsData, $filterBy);
 
+        $itemAmount = (float)Arr::get($allowanceOpsData, 'item_amount', 0);
+        if ($itemAmount > 0 && $matchingTransactions->sum('gross_amount') < $itemAmount) {
+            return;
+        }
+
+        foreach ($matchingTransactions as $transaction) {
             $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
 
             // Apply only if undefined or lower than the new percentage
@@ -615,6 +903,65 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 );
             }
         }
+    }
+
+    private function getMatchingTransactions(array $allowanceOpsData, ?string $filterBy): \Illuminate\Support\Collection
+    {
+        $collectionProductIds = [];
+        if ($filterBy == 'collection') {
+            $collectionProductIds = DB::table('collection_has_models')
+                ->where('collection_id', Arr::get($allowanceOpsData, 'collection_id'))
+                ->where('model_type', 'Product')
+                ->pluck('model_id')
+                ->all();
+            if ($collectionProductIds === []) {
+                return collect();
+            }
+        }
+
+        return $this->transactions->filter(
+            fn ($transaction) => match ($filterBy) {
+                'family' => Arr::get($allowanceOpsData, 'category_id') == $transaction->family_id,
+                'department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->department_id,
+                'sub_department' => Arr::get($allowanceOpsData, 'category_id') == $transaction->sub_department_id,
+                'collection' => in_array($transaction->model_id, $collectionProductIds),
+                'product' => Arr::get($allowanceOpsData, 'product_id') == $transaction->model_id,
+                default => true,
+            }
+        );
+    }
+
+    public function processAllowanceAmountOff(object $allowanceData): void
+    {
+        $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
+        $amountOff        = (float)Arr::get($allowanceOpsData, 'amount_off', 0);
+
+        if ($amountOff <= 0) {
+            return;
+        }
+
+        $filterBy = match ($allowanceData->target_type) {
+            'all_products_in_product_category' => 'family',
+            'all_products_in_department' => 'department',
+            'all_products_in_sub_department' => 'sub_department',
+            'all_products_in_collection' => 'collection',
+            'product' => 'product',
+            default => null,
+        };
+
+        $matchingTransactions = $this->getMatchingTransactions($allowanceOpsData, $filterBy);
+        if ($matchingTransactions->isEmpty()) {
+            return;
+        }
+
+        $matchingGross = (float)$matchingTransactions->sum('gross_amount');
+
+        $itemAmount = (float)Arr::get($allowanceOpsData, 'item_amount', 0);
+        if ($itemAmount > 0 && $matchingGross < $itemAmount) {
+            return;
+        }
+
+        $this->amountOff = min($amountOff, $matchingGross);
     }
 
     private function applyDiscretionaryOffer(object $transaction, float $percentageOff, string $label, OfferAllowance $allowance): void
@@ -696,24 +1043,15 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             $label         = $discretionaryOffer['label'];
 
 
-            $transaction = $this->transactions->get($transactionId);
+            $transaction = $this->transactions->get($transactionId) ?? $this->transactionsQuantityBonus->get($transactionId);
 
 
             if (!$transaction) {
                 continue;
             }
 
-            $hasOffer = property_exists($transaction, 'with_offer') && $transaction->with_offer;
-
-
-            if ($hasOffer) {
-                $current = property_exists($transaction, 'discounted_percentage') ? $transaction->discounted_percentage : null;
-                if ((float)$current <= $percentageOff) {
-                    $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
-                }
-            } else {
-                $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
-            }
+            // Force discretionary offer nonetheless.
+            $this->applyDiscretionaryOffer($transaction, $percentageOff, $label, $discretionaryOfferAllowance);
         }
     }
 

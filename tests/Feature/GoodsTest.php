@@ -8,10 +8,12 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Goods\Ingredient\Json\ParseIngredientsList;
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\Stock\HydrateStocks;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
 use App\Actions\Goods\StockFamily\HydrateStockFamily;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
@@ -147,6 +149,24 @@ test('update ingredient', function (Ingredient $ingredient) {
     return $ingredient;
 })->depends('store ingredient');
 
+test('parse pasted ingredients list', function () {
+    StoreIngredient::make()->action($this->group, ['name' => 'Aqua']);
+
+    $parsed = ParseIngredientsList::make()->handle($this->group, "aqua, Linalool*\nGlycerin, , Glycerin", false);
+
+    expect($parsed)->toHaveCount(3)
+        ->and($parsed[0])->toBe(['name' => 'Aqua', 'slug' => 'aqua', 'is_new' => false])
+        ->and($parsed[1]['name'])->toBe('Linalool')
+        ->and($parsed[1]['is_new'])->toBeTrue()
+        ->and($parsed[1]['slug'])->toBeNull()
+        ->and(Ingredient::where('name', 'Linalool')->exists())->toBeFalse();
+
+    $committed = ParseIngredientsList::make()->handle($this->group, 'Linalool*', true);
+
+    expect($committed[0]['slug'])->not->toBeNull()
+        ->and(Ingredient::where('name', 'Linalool')->exists())->toBeTrue();
+});
+
 test('index ingredients', function () {
     $count = Ingredient::count();
     Ingredient::factory()->count(3)->create(['group_id' => $this->group->id]);
@@ -268,6 +288,41 @@ test("UI Show Stocks", function () {
     });
 });
 
+test("UI show stock navigation follows the bucket and sort", function () {
+    $this->withoutExceptionHandling();
+
+    $makeStock = function (string $code, StockStateEnum $state) {
+        $stock = StoreStock::make()->action(
+            $this->group,
+            array_merge(Stock::factory()->definition(), ['code' => $code])
+        );
+        $stock->update(['state' => $state]);
+
+        return $stock->refresh();
+    };
+
+    $first        = $makeStock('NAVSKOA', StockStateEnum::ACTIVE);
+    $discontinued = $makeStock('NAVSKOB', StockStateEnum::DISCONTINUED);
+    $middle       = $makeStock('NAVSKOC', StockStateEnum::ACTIVE);
+    $last         = $makeStock('NAVSKOD', StockStateEnum::ACTIVE);
+
+    get(route("grp.goods.stocks.active_stocks.show", [$middle->slug]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    get(route("grp.goods.stocks.active_stocks.show", [$middle->slug]).'?bucket_sort=-code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $last->name)
+            ->where('navigation.next.label', $first->name)
+            ->etc()
+    );
+
+    expect($discontinued->state)->toBe(StockStateEnum::DISCONTINUED);
+});
+
 test("UI Index Trade Units", function () {
     $response = get(
         route("grp.trade_units.units.index")
@@ -323,6 +378,39 @@ test("UI Show TradeUnit", function () {
             )
             ->has("tabs");
     });
+});
+
+test("UI show trade unit navigation stays in the bucket and the group", function () {
+    $this->withoutExceptionHandling();
+
+    $makeTradeUnit = function (string $code, TradeUnitStatusEnum $status, $group) {
+        $tradeUnit = TradeUnit::factory()->create([
+            'group_id' => $group->id,
+            'code'     => $code,
+            'name'     => $code.' name',
+            'status'   => $status,
+        ]);
+        $tradeUnit->stats()->create();
+
+        return $tradeUnit;
+    };
+
+    $first        = $makeTradeUnit('NAVTUA', TradeUnitStatusEnum::ACTIVE, $this->group);
+    $discontinued = $makeTradeUnit('NAVTUB', TradeUnitStatusEnum::DISCONTINUED, $this->group);
+    $middle       = $makeTradeUnit('NAVTUC', TradeUnitStatusEnum::ACTIVE, $this->group);
+    $last         = $makeTradeUnit('NAVTUD', TradeUnitStatusEnum::ACTIVE, $this->group);
+
+    $otherGroup = \App\Actions\SysAdmin\Group\StoreGroup::make()->action(\App\Models\SysAdmin\Group::factory()->definition());
+    $makeTradeUnit('NAVTUB2', TradeUnitStatusEnum::ACTIVE, $otherGroup);
+
+    get(route("grp.trade_units.units.show", [$middle->slug]).'?bucket=active')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    expect($discontinued->status)->toBe(TradeUnitStatusEnum::DISCONTINUED);
 });
 
 test("UI Edit Trade Unit", function () {
@@ -394,7 +482,7 @@ test("UI Create Stock in Group", function () {
             ])->etc())
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'New SKU')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'New SKO')->etc()
             );
     });
 });
@@ -465,6 +553,7 @@ test("UI Edit Stock in Group", function () {
                     'parameters' => $stock->id
                 ],
             ])->etc())
+            ->has('formData.blueprint.1.fields.composition.route')
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $stock->name)->etc()
@@ -491,7 +580,7 @@ test("UI Create Stock in Stock Family Group", function () {
             ])->etc())
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'New SKU')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'New SKO')->etc()
             );
     });
 });
@@ -777,7 +866,7 @@ test('UI Index Stock Families', function () {
                     ->has('icon')
                     ->has('subNavigation')
                     ->has('actions')
-                    ->where('title', 'Master SKU Families')
+                    ->where('title', 'Master SKO Families')
                     ->etc()
             );
     });
@@ -796,7 +885,7 @@ test('UI Create Stock Family', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $p) => $p
-                    ->where('title', 'New SKU family')
+                    ->where('title', 'New SKO family')
                     ->has('actions')
                     ->etc()
             )
@@ -810,5 +899,90 @@ test('UI Create Stock Family', function () {
                     ])
                     ->etc()
             );
+    });
+});
+
+test('stock and stock family indexes use time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    createStocks($this->group);
+
+    $indexStocks = \App\Actions\Goods\Stock\UI\IndexStocks::make();
+    $group       = $this->group;
+    (function () use ($group) {
+        $this->group = $group;
+    })->call($indexStocks);
+
+    expect($indexStocks->handle($this->group, bucket: 'all')->total())->toBeGreaterThanOrEqual(1)
+        ->and(\App\Actions\Goods\StockFamily\UI\IndexStockFamilies::make()->handle($this->group, bucket: 'all')->total())->toBeGreaterThanOrEqual(0);
+});
+
+test('changing stock trade units recomputes packed_in on the stock and its org stocks', function () {
+    $stocks   = createStocks($this->group);
+    $stock    = $stocks[0];
+    createOrgStocks($this->organisation, [$stock]);
+    $tradeUnit = $stock->tradeUnits()->first();
+
+    SyncStockTradeUnits::run($stock, [
+        $tradeUnit->id => ['quantity' => 6]
+    ]);
+
+    $stock->refresh();
+    $orgStock = $this->organisation->orgStocks()->where('stock_id', $stock->id)->first();
+
+    expect($stock->packed_in)->toBe(6)
+        ->and($orgStock->packed_in)->toBe(6)
+        ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(6.0);
+});
+
+test('warehouse packing can be edited per org stock from the master editor', function () {
+    $stocks = createStocks($this->group);
+    $stock  = $stocks[0];
+    [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+    $tradeUnit = $stock->tradeUnits()->first();
+
+    $response = \Pest\Laravel\patchJson(route('grp.models.org_stock.trade_units.update', [$orgStock->id]), [
+        'trade_units' => [
+            ['id' => $tradeUnit->id, 'quantity' => 12],
+        ],
+    ]);
+    $response->assertOk();
+
+    $orgStock->refresh();
+    expect($orgStock->packed_in)->toBe(12)
+        ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(12.0);
+});
+
+test('UI Edit Stock Composition', function () {
+    $stock    = Stock::first();
+    $response = get(
+        route('grp.goods.stocks.composition', [$stock->slug])
+    );
+    $response->assertInertia(function (AssertableInertia $page) use ($stock) {
+        $page
+            ->component('Goods/ProductComposition')
+            ->has('breadcrumbs')
+            ->has('formData.blueprint.0.fields.trade_units.productsContext')
+            ->where('formData.args.updateRoute.name', 'grp.models.stock.update')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $head) => $head->where('title', $stock->code)->etc()
+            );
+    });
+});
+
+test('UI Show Trade Unit composition tab', function () {
+    $this->withoutExceptionHandling();
+    createStocks($this->group);
+    $tradeUnit = $this->group->tradeUnits()->first();
+
+    $response = get(route('grp.goods.trade-units.show', [$tradeUnit->slug]).'?tab=composition');
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/TradeUnit')
+            ->where('tabs.current', 'composition')
+            ->has('composition.stocks')
+            ->has('composition.org_stocks')
+            ->has('composition.master_products')
+            ->has('composition.products');
     });
 });

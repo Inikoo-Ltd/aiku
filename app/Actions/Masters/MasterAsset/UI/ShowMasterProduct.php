@@ -15,7 +15,7 @@ use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterAsset\GetMasterProductImages;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
@@ -39,7 +39,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterProduct extends GrpAction
+class ShowMasterProduct extends OrgAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -50,6 +50,14 @@ class ShowMasterProduct extends GrpAction
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
+        if (!$this->parent instanceof Group) {
+            $masterShop =  $this->parent instanceof MasterShop ? $this->parent : $this->parent?->masterShop;
+
+            if ($masterShop->id != $masterAsset->master_shop_id) {
+                abort(404, 'Master Product not found under this shop');
+            }
+        }
+
         return $masterAsset;
     }
 
@@ -58,7 +66,7 @@ class ShowMasterProduct extends GrpAction
         $this->parent = $masterShop;
         $group        = group();
 
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -67,7 +75,7 @@ class ShowMasterProduct extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -76,7 +84,7 @@ class ShowMasterProduct extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -84,7 +92,7 @@ class ShowMasterProduct extends GrpAction
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
     {
         $this->parent = $masterDepartment;
-        $this->initialisation($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -95,7 +103,7 @@ class ShowMasterProduct extends GrpAction
         $group = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -235,14 +243,10 @@ class ShowMasterProduct extends GrpAction
                             ]
                         ] : false,
                         [
-                            'key'   => 'assign',
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Add to Other Shop'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
+                            'key'       => 'assign',
+                            'type'      => 'button',
+                            'style'     => 'create',
+                            'label'     => __('Add to Other Shop'),
                         ],
                     ],
                     'subNavigation'        => $this->getMasterProductsSubNavigation($masterAsset),

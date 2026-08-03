@@ -10,7 +10,7 @@ import {Head, router} from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import {capitalize} from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import {computed, ref, inject} from 'vue'
+import {computed, ref, inject, onMounted, onUnmounted} from 'vue'
 import type {Component} from 'vue'
 import {useTabChange} from "@/Composables/tab-change"
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -138,6 +138,22 @@ const props = defineProps<{
     is_forbidden_billing?: boolean
 }>()
 const layout = inject('layout', retinaLayoutStructure)
+
+onMounted(() => {
+    if (window.Echo && layout.user?.customer_id && props.data?.data?.id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`)
+            .listen(".order-submitted", (eventData: { order_id: number }) => {
+                if (eventData.order_id == props.data?.data?.id) {
+                    window.location.href = window.location.pathname.replace("/basket/", "/orders/")
+                }
+            })
+    }
+})
+onUnmounted(() => {
+    if (window.Echo && layout.user?.customer_id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
+    }
+})
 const locale = inject('locale', aikuLocaleStructure)
 
 const isModalUploadOpen = ref(false)

@@ -29,6 +29,7 @@ class EditShippingZoneSchema extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZoneSchema
     {
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($shippingZoneSchema);
     }
 
@@ -44,17 +45,17 @@ class EditShippingZoneSchema extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($shippingZoneSchema, $request),
                     'next'     => $this->getNext($shippingZoneSchema, $request),
                 ],
-                'pageHead' => [
-                    'title'    => $shippingZoneSchema->name,
-                    'icon'     => [
+                'pageHead'    => [
+                    'title'   => $shippingZoneSchema->name,
+                    'icon'    => [
                         'title' => __('Trade Unit'),
                         'icon'  => 'fal fa-atom'
                     ],
-                    'actions'  => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -71,7 +72,7 @@ class EditShippingZoneSchema extends OrgAction
                         [
                             'title'  => __('Edit schema'),
                             'fields' => [
-                                'code' => [
+                                'name' => [
                                     'type'  => 'input',
                                     'label' => __('Name'),
                                     'value' => $shippingZoneSchema->name
@@ -82,7 +83,7 @@ class EditShippingZoneSchema extends OrgAction
 
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.stock.update',
+                            'name'       => 'grp.models.shipping_zone_schema.update',
                             'parameters' => $shippingZoneSchema->id
 
                         ],
@@ -98,13 +99,14 @@ class EditShippingZoneSchema extends OrgAction
             shippingZoneSchema: $shippingZoneSchema,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '(' . __('Editing') . ')'
+            suffix: '('.__('Editing').')'
         );
     }
 
     public function getPrevious(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ?array
     {
         $previous = ShippingZoneSchema::where('slug', '<', $shippingZoneSchema->slug)->orderBy('slug', 'desc')->first();
+
         return $this->getNavigation($previous, $request->route()->getName());
     }
 

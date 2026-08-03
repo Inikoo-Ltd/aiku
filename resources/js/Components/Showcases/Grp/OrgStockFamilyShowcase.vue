@@ -48,10 +48,10 @@ const props = defineProps<{
                 <div class="bg-white p-4 rounded-2xl shadow-md border border-gray-200">
                     <!-- Image -->
                     <div class="bg-white rounded-lg shadow mb-4 overflow-hidden">
-                        <div class="w-full aspect-square" :class="data.family_data.image ? '' : 'h-32'">
+                        <div class="w-full aspect-square" :class="data?.family_data?.image ? '' : 'h-32'">
                             <Image
-                                v-if="data.family_data.image"
-                                :src="data.family_data.image"
+                                v-if="data?.family_data?.image"
+                                :src="data?.family_data?.image"
                                 class="w-full h-full object-cover object-center rounded-t-lg"
                             />
                             <div v-else class="flex justify-center items-center bg-gray-100 w-full h-full">
@@ -62,22 +62,22 @@ const props = defineProps<{
 
                     <!-- Name + Code + State -->
                     <div class="border-t pt-3 space-y-2">
-                        <div class="text-lg font-semibold text-gray-800">{{ data.family_data.name }}</div>
+                        <div class="text-lg font-semibold text-gray-800">{{ data?.family_data?.name }}</div>
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-                                {{ data.family_data.code }}
+                                {{ data?.family_data?.code }}
                             </span>
                             <span
-                                v-if="data.family_data.state"
-                                v-tooltip="data.family_data.state.tooltip"
+                                v-if="data?.family_data?.state"
+                                v-tooltip="data?.family_data?.state.tooltip"
                                 class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border"
                             >
-                                <FontAwesomeIcon :icon="data.family_data.state.icon" :class="data.family_data.state.class" />
-                                <span :class="data.family_data.state.class">{{ data.family_data.state.label }}</span>
+                                <FontAwesomeIcon :icon="data?.family_data?.state.icon" :class="data?.family_data?.state.class" />
+                                <span :class="data?.family_data?.state.class">{{ data?.family_data?.state.label }}</span>
                             </span>
                         </div>
-                        <p v-if="data.family_data.description" class="text-sm text-gray-500 leading-relaxed line-clamp-3">
-                            {{ data.family_data.description }}
+                        <p v-if="data?.family_data?.description" class="text-sm text-gray-500 leading-relaxed line-clamp-3">
+                            {{ data?.family_data?.description }}
                         </p>
                     </div>
                 </div>
@@ -121,23 +121,23 @@ const props = defineProps<{
                     <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{{ trans('Dispatched') }}</h3>
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
                         <div class="p-2 rounded-lg bg-gray-50">
-                            <div class="text-lg font-bold text-gray-800">{{ data.dispatched.today }}</div>
+                            <div class="text-lg font-bold text-gray-800">{{ data?.dispatched?.today }}</div>
                             <div class="text-xs text-gray-500">{{ trans('Today') }}</div>
                         </div>
                         <div class="p-2 rounded-lg bg-gray-50">
-                            <div class="text-lg font-bold text-gray-800">{{ data.dispatched.last_week }}</div>
+                            <div class="text-lg font-bold text-gray-800">{{ data?.dispatched?.last_week }}</div>
                             <div class="text-xs text-gray-500">{{ trans('Last week') }}</div>
                         </div>
                         <div class="p-2 rounded-lg bg-gray-50">
-                            <div class="text-lg font-bold text-gray-800">{{ data.dispatched.last_month }}</div>
+                            <div class="text-lg font-bold text-gray-800">{{ data?.dispatched?.last_month }}</div>
                             <div class="text-xs text-gray-500">{{ trans('Last month') }}</div>
                         </div>
                         <div class="p-2 rounded-lg bg-gray-50">
-                            <div class="text-lg font-bold text-gray-800">{{ data.dispatched.last_year }}</div>
+                            <div class="text-lg font-bold text-gray-800">{{ data?.dispatched?.last_year }}</div>
                             <div class="text-xs text-gray-500">{{ trans('Last year') }}</div>
                         </div>
                         <div class="p-2 rounded-lg bg-blue-50 border border-blue-100">
-                            <div class="text-lg font-bold text-blue-700">{{ data.dispatched.all }}</div>
+                            <div class="text-lg font-bold text-blue-700">{{ data?.dispatched?.all }}</div>
                             <div class="text-xs text-blue-500">{{ trans('All time') }}</div>
                         </div>
                     </div>

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Comms\PostRoom\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Http\Resources\Mail\PostRoomResource;
 use App\InertiaTable\InertiaTable;
@@ -23,7 +23,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexPostRooms extends GrpAction
+class IndexPostRooms extends OrgAction
 {
     public function handle($prefix = null): LengthAwarePaginator
     {
@@ -49,16 +49,11 @@ class IndexPostRooms extends GrpAction
                 'post_rooms.name',
                 'post_room_stats.number_outboxes',
                 'post_room_stats.number_mailshots',
-                'post_room_intervals.dispatched_emails_lw',
-                'post_room_intervals.opened_emails_lw',
-                'post_room_intervals.unsubscribed_lw'
             ])
-            ->selectRaw('(post_room_intervals.runs_all) as runs')
-            ->leftJoin('post_room_stats', 'post_room_stats.post_room_id', '=', 'post_rooms.id')
-            ->leftJoin('post_room_intervals', 'post_room_intervals.post_room_id', '=', 'post_rooms.id');
+            ->leftJoin('post_room_stats', 'post_room_stats.post_room_id', '=', 'post_rooms.id');
 
         return $queryBuilder
-            ->allowedSorts(['name', 'runs', 'number_outboxes', 'number_mailshots', 'dispatched_emails_lw', 'opened_emails_lw', 'unsubscribed_lw'])
+            ->allowedSorts(['name', 'number_outboxes', 'number_mailshots'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -71,7 +66,7 @@ class IndexPostRooms extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle();
     }

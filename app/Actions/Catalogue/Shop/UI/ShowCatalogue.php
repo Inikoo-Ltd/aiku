@@ -36,6 +36,16 @@ class ShowCatalogue extends OrgAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
+        $urlMaster = null;
+        if ($shop->master_shop_id) {
+            $urlMaster = [
+                'name'       => 'grp.masters.master_shops.show',
+                'parameters' => [
+                    $shop->masterShop->slug
+                ]
+            ];
+        }
+
         return Inertia::render(
             'Org/Catalogue/Catalogue',
             [
@@ -53,6 +63,7 @@ class ShowCatalogue extends OrgAction
                         'icon'  => 'fal fa-books'
                     ],
                 ],
+                'url_master'  => $urlMaster,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => CatalogueTabsEnum::navigation()

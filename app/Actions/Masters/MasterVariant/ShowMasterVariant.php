@@ -10,7 +10,7 @@
 namespace App\Actions\Masters\MasterVariant;
 
 use App\Actions\Catalogue\Variant\IndexVariantInMasterVariant;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterVariant;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -26,7 +26,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Masters\MasterProductsResource;
 
-class ShowMasterVariant extends GrpAction
+class ShowMasterVariant extends OrgAction
 {
     use WithMastersAuthorisation;
 
@@ -37,7 +37,7 @@ class ShowMasterVariant extends GrpAction
     {
         $this->parent = $masterFamily;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterVariantTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -47,7 +47,7 @@ class ShowMasterVariant extends GrpAction
     {
         $this->parent = $masterFamily;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterVariantTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -57,7 +57,7 @@ class ShowMasterVariant extends GrpAction
     {
         $this->parent = $masterFamily;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterVariantTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -67,7 +67,7 @@ class ShowMasterVariant extends GrpAction
     {
         $this->parent = $masterFamily;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterVariantTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -75,7 +75,7 @@ class ShowMasterVariant extends GrpAction
     public function inMasterFamily(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterVariant $masterVariant, ActionRequest $request): Response
     {
         $this->parent = $masterFamily;
-        $this->initialisation(group(), $request)->withTab(MasterVariantTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(MasterVariantTabsEnum::values());
 
         return $this->handle($masterVariant);
     }
@@ -143,7 +143,7 @@ class ShowMasterVariant extends GrpAction
      */
     public function asController(MasterVariant $masterVariant, ActionRequest $request): Response
     {
-        $this->initialisation($masterVariant->group, $request);
+        $this->initialisationFromGroup($masterVariant->group, $request);
         return $this->handle($masterVariant);
     }
 

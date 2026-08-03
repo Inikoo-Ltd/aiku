@@ -80,7 +80,7 @@ class IndexLocationOrgStocksForOrganisationStockHistory extends OrgAction
                 ->withTitle(title: __('Locations'))
                 ->withLabelRecord([__('record'), __('records')])
                 ->withGlobalSearch()
-                ->column(key: 'stock_code', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'stock_code', label: __('SKO'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location_code', label: __('Location'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, sortable: true, align: 'right')

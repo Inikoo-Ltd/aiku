@@ -109,7 +109,7 @@ class IndexOrdersInGroup extends OrgAction
                 'organisations.slug as organisation_slug',
             ])
             ->allowedSorts(['id', 'reference', 'date', 'organisation_code', 'shop_code', 'customer_name', 'net_amount'])
-            ->withBetweenDates(['-date'])
+            ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

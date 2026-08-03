@@ -18,36 +18,37 @@ class GetOrgSupplierShowcase
 
     public function handle(OrgSupplier $orgSupplier): array
     {
-
         $supplier = $orgSupplier->supplier;
-        // dd($supplier);
+
         return [
             'contactCard' => [
-                'created_at'  => $supplier->created_at,
-                'company'  => $supplier->company_name,
-                'contact'  => $supplier->contact_name,
-                'location'  => $supplier->location,
-                'email'    => $supplier->email,
-                'phone'    => $supplier->phone,
-                'currency' => $supplier->currency,
-                'address'  => AddressResource::make($supplier->address)->getArray(),
-                'image_id' => $supplier->image_id
+                'created_at' => $supplier->created_at,
+                'company'    => $supplier->company_name,
+                'contact'    => $supplier->contact_name,
+                'location'   => $supplier->location,
+                'email'      => $supplier->email,
+                'phone'      => $supplier->phone,
+                'currency'   => $supplier->currency,
+                'address'    => AddressResource::make($supplier->address)->getArray(),
+                'image_id'   => $supplier->image_id,
             ],
             'stats'       => [
                 [
                     'label' => __('Products'),
-                    'count' => $supplier->stats->number_supplier_products
+                    'icon'  => 'fal fa-box-usd',
+                    'count' => $orgSupplier->stats->number_org_supplier_products,
                 ],
                 [
                     'label' => __('Purchase Orders'),
-                    'count' => $supplier->stats->number_purchase_orders
+                    'icon'  => 'fal fa-clipboard-list',
+                    'count' => $orgSupplier->stats->number_purchase_orders,
                 ],
                 [
                     'label' => __('Deliveries'),
-                    'count' => $supplier->stats->number_stock_deliveries
+                    'icon'  => 'fal fa-truck-container',
+                    'count' => $orgSupplier->stats->number_stock_deliveries,
                 ],
-
-            ]
+            ],
         ];
     }
 }

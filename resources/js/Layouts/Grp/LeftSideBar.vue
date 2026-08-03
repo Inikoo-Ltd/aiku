@@ -61,7 +61,7 @@ const onLogoutAuth = () => {
 		}"
         :class="[
 			layout.leftSidebar.show ? 'w-8/12 md:w-48' : 'w-8/12 md:w-12',
-			layout.app.environment === 'staging' ? 'mt-11 lg:mt-16' : 'mt-11 lg:mt-10',
+			layout.hasTopBanner ? 'mt-11 lg:mt-16' : 'mt-11 lg:mt-10',
 		]"
         id="leftSidebar">
         <!-- Toggle: collapse-expand LeftSideBar -->

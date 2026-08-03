@@ -22,7 +22,7 @@ class GetHtmlLayout extends OrgAction
     use WithProcessEmailStyles;
 
 
-    public function handle(Mailshot|EmailBulkRun $parent): string
+    public function handle(Mailshot|EmailBulkRun $parent): ?string
     {
         if ($parent instanceof EmailBulkRun) {
             $compiledLayout = $parent->outbox->emailOngoingRun->email->liveSnapshot->compiled_layout;

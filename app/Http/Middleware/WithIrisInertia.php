@@ -96,12 +96,14 @@ trait WithIrisInertia
                 "website"              => WebsiteIrisResource::make($website)->getArray(),
                 'theme'                => Arr::get($website->published_layout, 'theme'),
                 'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
+                'iris_search_model'    => Arr::get($website->settings, 'iris_search_model', 'luigi'),
                 'is_have_gtm'          => (bool)Arr::get($website->settings, 'google_tag_id'),
                 'currency'             => [
                     'code'   => $shop->currency->code,
                     'symbol' => $shop->currency->symbol,
                     'name'   => $shop->currency->name,
                 ],
+                'show_price' => (bool) Arr::get($website->settings, 'webpage.show_price', false),
                 'locale'               => $locale,
                 'website_i18n'         => [
                     'current_language' => LanguageResource::make($currentLanguage)->getArray(),

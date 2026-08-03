@@ -10,15 +10,19 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
+use App\Http\Resources\Goods\IngredientsResource;
+use App\Actions\Traits\UI\WithBucketNavigation;
+use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditTradeUnit extends OrgAction
 {
+    use WithBucketNavigation;
+
     use WithGoodsAuthorisation;
 
 
@@ -227,44 +231,6 @@ class EditTradeUnit extends OrgAction
                             ],
                         ],
                         [
-                            'label'  => __('Translations'),
-                            'icon'   => 'fa-light fa-language',
-                            'fields' => [
-                                'name_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('Translate name'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->name,
-                                    'full' => true,
-                                    'value' => $tradeUnit->getTranslations('name_i8n')
-                                ],
-                                'description_title_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('Translate description title'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->description_title,
-                                    'full' => true,
-                                    'value' => $tradeUnit->getTranslations('description_title_i8n')
-                                ],
-                                'description_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('Translate description'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->description,
-                                    'full' => true,
-                                    'value' => $tradeUnit->getTranslations('description_i8n')
-                                ],
-                                'description_extra_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('Translate description extra'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->description_extra,
-                                    'full' => true,
-                                    'value' => $tradeUnit->getTranslations('description_extra_i8n')
-                                ],
-                            ],
-                        ],
-                        [
                             'label'  => __('Tags & Brands'),
                             'icon'   => 'fa-light fa-tags',
                             'fields' => [
@@ -318,17 +284,21 @@ class EditTradeUnit extends OrgAction
                             'icon'   => 'fa-light fa-book-open',
                             'fields' => [
                                 'ingredients' => [
-                                    'type'  => 'select_infinite',
+                                    'type'  => 'ingredients',
                                     'label' => __('Ingredients'),
-                                    'value' => $tradeUnit->ingredients,
+                                    'value' => $tradeUnit->ingredients->pluck('slug')->all(),
                                     'mode' => 'tags',
+                                    'options' => IngredientsResource::collection($tradeUnit->ingredients)->resolve(),
                                     'fetchRoute' => [
                                         'name'       => 'grp.goods.ingredients.index',
                                         'parameters' => []
                                     ],
+                                    'parseRoute' => [
+                                        'name'       => 'grp.json.ingredients.parse',
+                                        'parameters' => []
+                                    ],
                                     'valueProp'  => 'slug',
                                     'labelProp'  => 'name',
-
                                 ],
                                 'origin_country_id' => [
                                     'type'  => 'select',
@@ -512,15 +482,41 @@ class EditTradeUnit extends OrgAction
 
     public function getPrevious(TradeUnit $tradeUnit, ActionRequest $request): ?array
     {
-        $previous = TradeUnit::where('code', '<', $tradeUnit->code)->orderBy('code', 'desc')->first();
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getNeighbour($tradeUnit, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(TradeUnit $tradeUnit, ActionRequest $request): ?array
     {
-        $next = TradeUnit::where('code', '>', $tradeUnit->code)->orderBy('code')->first();
+        return $this->getNavigation($this->getNeighbour($tradeUnit, $request, forward: true), $request->route()->getName());
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    private function getNeighbour(TradeUnit $tradeUnit, ActionRequest $request, bool $forward): ?TradeUnit
+    {
+        $query = TradeUnit::query()->where('trade_units.group_id', $tradeUnit->group_id);
+        $status = match ($request->input('bucket')) {
+            'in_process'    => TradeUnitStatusEnum::IN_PROCESS,
+            'active'        => TradeUnitStatusEnum::ACTIVE,
+            'discontinuing' => TradeUnitStatusEnum::DISCONTINUING,
+            'discontinued'  => TradeUnitStatusEnum::DISCONTINUED,
+            'anomality'     => TradeUnitStatusEnum::ANOMALITY,
+            default         => null,
+        };
+
+        if ($status) {
+            $query->where('trade_units.status', $status);
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $tradeUnit,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'code' => 'trade_units.code',
+                'name' => 'trade_units.name',
+            ],
+            defaultSort: ['trade_units.code', false],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?TradeUnit $tradeUnit, string $routeName): ?array

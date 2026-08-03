@@ -8,7 +8,9 @@
 
 namespace App\Actions\SupplyChain\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Search\GetSearchDemandOpportunities;
+use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use Inertia\Inertia;
@@ -16,21 +18,17 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowSupplyChainDashboard extends GrpAction
+class ShowSupplyChainDashboard extends OrgAction
 {
+    use WithSupplyChainAuthorisation;
     use AsAction;
     use WithInertia;
 
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("supply-chain.{$this->group->id}.view");
-    }
-
 
     public function asController(ActionRequest $request): void
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
     }
 
 
@@ -49,6 +47,7 @@ class ShowSupplyChainDashboard extends GrpAction
                     ],
                     'title' => __('Supply chain'),
                 ],
+                'search_demand' => GetSearchDemandOpportunities::run($this->group),
                 'flatTreeMaps' => [
 
                     [

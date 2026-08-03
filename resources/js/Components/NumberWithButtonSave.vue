@@ -10,7 +10,7 @@ import { faRobot, faPlus, faMinus, faUndoAlt } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import InputNumber from "primevue/inputnumber"
-import { inject, ref, watch } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import { faSave as fadSave } from "@fad"
 import { faSave as falSave, faInfoCircle } from "@fal"
 import { faAsterisk, faQuestion, faSpinner, faMinus as fasMinus, faPlus as fasPlus } from "@fas"
@@ -151,6 +151,39 @@ const onSaveViaForm = async () => {
 }
 const debounceSaveViaForm = debounce(onSaveViaForm, 1000)
 
+// The input displays units (quantity * denominator), so its boundaries have to be expressed in
+// units too, while min/max are given as real quantities like every other prop here.
+const toInputScale = (value?: number | null) => {
+	if (value === undefined || value === null) {
+		return undefined
+	}
+
+	return props.denominator ? Math.round(Number(value) * props.denominator) : Number(value)
+}
+
+const inputMin = computed(() => toInputScale(props.bindToTarget?.min ?? props.min) ?? 0)
+const inputMax = computed(() => toInputScale(props.bindToTarget?.max ?? props.max))
+
+// min/max are bound explicitly above, so they must not be spread over again by bindToTarget.
+const inputBindings = computed(() => {
+	const { min, max, ...rest } = props.bindToTarget ?? {}
+
+	return rest
+})
+
+const inputWidth = computed(() => {
+	if (props.bindToTarget?.fluid) {
+		return undefined
+	}
+
+	const baseWidth = props.denominator ? 75 : 50
+	const displayedValue = props.denominator
+		? `${Math.round(form.quantity * props.denominator)}/${props.denominator}`
+		: new Intl.NumberFormat().format(Number(form.quantity) || 0)
+
+	return `${Math.max(baseWidth, displayedValue.length * 9 + 12)}px`
+})
+
 const keyIconUndo = ref(0)
 
 defineOptions({
@@ -275,7 +308,7 @@ const stopHold = () => {
 			<!-- Section: - and + -->
 			<div
 				class="w-fit transition-all relative inline-flex items-center justify-center"
-				:class="bindToTarget?.fluid ? 'w-full' : 'w-28'">
+				:class="bindToTarget?.fluid ? 'w-full' : 'min-w-28'">
 				<!-- Button: Minus -->
 				<div
 					@mousedown.stop="() => props.readonly || form.processing ? null : startHold(onClickMinusButton)"
@@ -315,24 +348,20 @@ const stopHold = () => {
 						@update:model-value="(e) => (props.denominator? (form.quantity = roundQuantity(e/props.denominator)) : (form.quantity = roundToDecimals(e)))"
 						@input="(e) => (props.denominator ? (form.quantity = roundQuantity(e.value/props.denominator)) : (form.quantity = roundToDecimals(e.value)))"
 						buttonLayout="horizontal"
-						:min="min || 0"
-						:max="max || undefined"
+						:min="inputMin"
+						:max="inputMax"
 						style="width: 100%"
 						:disabled="props.readonly || form.processing || props.disableInput"
 						inputClass="!p-1 lg:!p-0"
 						:suffix="props.denominator ? '/' + props.denominator : undefined"
 						:inputStyle="{
-							width: bindToTarget?.fluid ? undefined : (
-								props.denominator
-									? '75px'
-									: '50px'
-							),
+							width: inputWidth,
 							color: props.readonly ? '#6b7280' : colorTheme ?? '#374151',
 							border: 'none',
 							textAlign: 'center',
 							background: (colorTheme ? colorTheme + '22' : null) ?? 'transparent',
 						}"
-						v-bind="bindToTarget"
+						v-bind="inputBindings"
 					/>
 				</div>
 

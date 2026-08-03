@@ -28,6 +28,8 @@ class StoreVoucherOffers extends OrgAction
 {
     use AsAction;
 
+    public const float MAX_AMOUNT_OFF_RATIO = 0.3;
+
     public function handle(Shop $shop, array $modelData): Offer
     {
 
@@ -78,9 +80,10 @@ class StoreVoucherOffers extends OrgAction
 
 
 
-        if ($allowanceType == 'percentage_off') {
-            $targetId   = Arr::pull($modelData, 'target_id');
-            $targetType = match (Arr::pull($modelData, 'target_type')) {
+        if ($allowanceType == 'percentage_off' || $allowanceType == 'amount_off') {
+            $targetId       = Arr::pull($modelData, 'target_id');
+            $rawTargetType  = Arr::pull($modelData, 'target_type');
+            $targetType     = match ($rawTargetType) {
                 'shop' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER->value,
                 'department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_DEPARTMENT->value,
                 'sub_department' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_SUB_DEPARTMENT->value,
@@ -88,6 +91,22 @@ class StoreVoucherOffers extends OrgAction
                 'collection' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_COLLECTION->value,
                 default => OfferAllowanceTargetTypeEnum::PRODUCT->value
             };
+
+            if ($allowanceType == 'amount_off') {
+                $allowanceOpsData = ['amount_off' => (float)Arr::pull($modelData, 'amount_off')];
+            } else {
+                $allowanceOpsData = ['percentage_off' => $percentageOff];
+            }
+            if (in_array($rawTargetType, ['department', 'sub_department', 'family'])) {
+                $allowanceOpsData['category_id'] = $targetId;
+            } elseif ($rawTargetType == 'collection') {
+                $allowanceOpsData['collection_id'] = $targetId;
+            } elseif ($rawTargetType == 'product') {
+                $allowanceOpsData['product_id'] = $targetId;
+            }
+            if ($rawTargetType != 'shop' && Arr::get($modelData, 'trigger_data.item_amount', 0) > 0) {
+                $allowanceOpsData['item_amount'] = Arr::get($modelData, 'trigger_data.item_amount');
+            }
 
             data_set(
                 $modelData,
@@ -97,10 +116,8 @@ class StoreVoucherOffers extends OrgAction
                         'class'       => OfferAllowanceClass::DISCOUNT->value,
                         'target_type' => $targetType,
                         'target_id'   => $targetId,
-                        'type'        => OfferAllowanceType::PERCENTAGE_OFF->value,
-                        'data'        => [
-                            'percentage_off' => $percentageOff,
-                        ]
+                        'type'        => $allowanceType == 'amount_off' ? OfferAllowanceType::AMOUNT_OFF->value : OfferAllowanceType::PERCENTAGE_OFF->value,
+                        'data'        => $allowanceOpsData
                     ]
                 ]
             );
@@ -147,6 +164,7 @@ class StoreVoucherOffers extends OrgAction
 
         data_forget($modelData, 'gift_product_id');
         data_forget($modelData, 'gift_quantity');
+        data_forget($modelData, 'amount_off');
 
 
         $offer = StoreOffer::run($offerCampaign, $modelData);
@@ -177,8 +195,32 @@ class StoreVoucherOffers extends OrgAction
             'end_at'             => ['required', 'date'],
             'target_type'        => ['required', 'string', 'in:shop,department,sub_department,family,collection,product'],
             'target_id'          => ['required', 'integer'],
-            'allowance_type'     => ['required', 'string', 'in:percentage_off,discounted_shipping,gift'],
+            'allowance_type'     => ['required', 'string', 'in:percentage_off,amount_off,discounted_shipping,gift'],
             'percentage_off'     => ['nullable', 'required_if:allowance_type,percentage_off', 'numeric', 'gt:0', 'lt:100'],
+            'amount_off'         => [
+                'nullable',
+                'required_if:allowance_type,amount_off',
+                'numeric',
+                'gt:0',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if ($this->get('allowance_type') != 'amount_off') {
+                        return;
+                    }
+                    $minPurchase = (float)$this->get('offer_amount', 0);
+                    if ($minPurchase <= 0) {
+                        $fail(__('Amount off vouchers require a minimum purchase amount.'));
+
+                        return;
+                    }
+                    $maxAmountOff = round($minPurchase * self::MAX_AMOUNT_OFF_RATIO, 2);
+                    if ((float)$value > $maxAmountOff) {
+                        $fail(__('The amount off cannot exceed :percentage of the minimum purchase amount (max :max).', [
+                            'percentage' => percentage(self::MAX_AMOUNT_OFF_RATIO, 1),
+                            'max'        => $maxAmountOff,
+                        ]));
+                    }
+                },
+            ],
 
             'gift_quantity'   => ['nullable', 'required_if:allowance_type,gift', 'integer', 'min:0'],
             'gift_product_id' => [

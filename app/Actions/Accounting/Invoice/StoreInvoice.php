@@ -54,7 +54,7 @@ class StoreInvoice extends OrgAction
         }
 
         data_set($modelData, 'uuid', Str::uuid());
-        data_set($modelData, 'ulid', Str::ulid());
+        data_set($modelData, 'ulid', (string) Str::ulid());
 
         data_set($modelData, 'pay_status', InvoicePayStatusEnum::UNPAID);
         data_set($modelData, 'pay_detailed_status', InvoicePayDetailedStatusEnum::UNPAID);
@@ -297,6 +297,7 @@ class StoreInvoice extends OrgAction
             'total_amount'              => ['required', 'numeric'],
             'gross_amount'              => ['required', 'numeric'],
             'rental_amount'             => ['sometimes', 'required', 'numeric'],
+            'amount_off'                => ['sometimes', 'numeric', 'min:0'],
             'goods_amount'              => ['sometimes', 'required', 'numeric'],
             'insurance_amount'          => ['sometimes', 'required', 'numeric'],
             'shipping_amount'           => ['sometimes', 'required', 'numeric'],

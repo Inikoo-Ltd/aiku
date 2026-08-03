@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 
-class StoreMasterProductCategory extends GrpAction
+class StoreMasterProductCategory extends OrgAction
 {
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
@@ -195,7 +195,7 @@ class StoreMasterProductCategory extends GrpAction
             $this->masterShop = $parent;
         }
 
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($parent, $this->validatedData, $createChildren);
     }

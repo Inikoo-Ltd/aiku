@@ -107,9 +107,9 @@ class CallApiApcGbShipping extends OrgAction
         $closedAt = Carbon::createFromFormat('H:i', '16:30');
 
 
-        if ($pickupDate->gt($closedAt)) {
-            $pickupDate = $pickupDate->addDay();
-        }
+        // if ($pickupDate->gt($closedAt)) {
+        //     $pickupDate = $pickupDate->addDay();
+        // }
 
         $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
         $companyName = Str::limit(Arr::get($parentResource, 'to_company_name'), 30);
@@ -145,7 +145,6 @@ class CallApiApcGbShipping extends OrgAction
                 'Items'          => ['Item' => $items]
             ]
         ];
-
 
         $productCode = '';
         if (count($parcels) == 1) {
@@ -277,6 +276,14 @@ class CallApiApcGbShipping extends OrgAction
                 foreach ($errorData as $key => $value) {
                     $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
                 }
+            }
+            if (empty($errorData)) {
+                $failMessage = Arr::get($apiResponse, 'Orders.Order.Messages.Description')
+                    ?: Arr::get($apiResponse, 'Orders.Messages.Description')
+                    ?: 'Shipping request failed';
+
+                $errorData['message'] = strtolower($failMessage);
+                $errorData['others']  = strtolower($failMessage);
             }
         }
 

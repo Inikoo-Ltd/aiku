@@ -169,7 +169,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
 </script>
 
 <template>
-    <nav class="isolate relative xxxoverflow-y-hidden flex text-gray-600 h-8 xl:h-8 border-b border-gray-200 text-xs md:text-sm" aria-label="Breadcrumb">
+    <nav class="isolate relative xxxoverflow-y-hidden flex text-gray-600 h-11 xl:h-8 border-b border-gray-200 text-xs md:text-sm" aria-label="Breadcrumb">
         <!-- Breadcrumb -->
         <TransitionGroup name="list-to-down" tag="ol" class="w-full mx-auto md:px-4 flex">
             <li v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx"
@@ -193,9 +193,9 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                             <Transition name="spin-to-down">
                                 <FontAwesomeIcon v-if="breadcrumb.simple?.icon" :class="breadcrumb.simple.label ? 'mr-1' : ''" fixed-width class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
                             </Transition>
-        
+                            
                             <Transition name="spin-to-down">
-                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 w-[19rem] sm:w-auto">{{ breadcrumb.simple.label }}</div>
+                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 max-w-[50vw] sm:w-auto">{{ breadcrumb.simple.label }}</div>
                             </Transition>
                         </component>
                     </template>
@@ -347,12 +347,12 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
             </div>
 
             <!-- Button: Previous -->
-            <div class="flex justify-center items-center w-12 xl:w-8 h-full">
+            <div class="flex justify-center items-center w-11 xl:w-9 h-full">
                 <Link v-if="props.navigation.previous"
                     @start="() => isLoading = 'bcBack'"
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.previous?.label"
                     :aria-label="ctrans('Previous')"
                 >
@@ -363,11 +363,11 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
             </div>
 
             <!-- Button: Next -->
-            <div class="flex justify-center items-center w-12 xl:w-8 h-full">
+            <div class="flex justify-center items-center w-11 xl:w-9 h-full">
                 <Link v-if="props.navigation.next"
                     @start="() => isLoading = 'bcNext'"
                     @finish="() => isLoading = false"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.next?.label"
                     :aria-label="ctrans('Next')"
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"

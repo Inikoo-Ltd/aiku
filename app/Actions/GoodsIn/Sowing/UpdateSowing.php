@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Models\GoodsIn\Sowing;
+use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -21,13 +22,14 @@ class UpdateSowing extends OrgAction
     use WithActionUpdate;
 
     private Sowing $sowing;
+    private ?User $user = null;
 
     public function handle(Sowing $sowing, array $modelData): Sowing|bool
     {
         $oldQuantity = $sowing->quantity;
 
         if (isset($modelData['quantity']) && $modelData['quantity'] == 0) {
-            return DeleteSowing::make()->action($sowing);
+            return DeleteSowing::make()->action($sowing, $this->user);
         }
 
         if ($sowing->orgStockMovement) {
@@ -51,6 +53,7 @@ class UpdateSowing extends OrgAction
 
     public function asController(Sowing $sowing, ActionRequest $request): void
     {
+        $this->user = $request->user();
         $this->sowing = $sowing;
         $this->initialisationFromShop($sowing->shop, $request);
 

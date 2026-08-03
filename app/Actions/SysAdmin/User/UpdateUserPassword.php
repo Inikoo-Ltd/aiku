@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\User;
 use Exception;
@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateUserPassword extends GrpAction
+class UpdateUserPassword extends OrgAction
 {
     use WithActionUpdate;
 
@@ -44,7 +44,7 @@ class UpdateUserPassword extends GrpAction
 
     public function asController(ActionRequest $request): User
     {
-        $this->initialisation($request->user()->group, $request);
+        $this->initialisationFromGroup($request->user()->group, $request);
 
         return $this->handle($request->user(), $this->validatedData);
     }
@@ -52,7 +52,7 @@ class UpdateUserPassword extends GrpAction
     public function action(User $user, $objectData): User
     {
         $this->asAction = true;
-        $this->initialisation($user->group, $objectData);
+        $this->initialisationFromGroup($user->group, $objectData);
 
         return $this->handle($user, $this->validatedData);
     }

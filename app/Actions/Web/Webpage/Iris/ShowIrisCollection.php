@@ -37,6 +37,10 @@ class ShowIrisCollection extends IrisAction
                 'pageHead'        => [
                     'title' => $collection->name,
                     'model' => __('Collection'),
+                    'afterTitle'    => [
+                        'label' => $collection->code,
+                        'tooltip' => __('Collection Code'),
+                    ],
                     'icon'  => [
                         'icon'  => ['fal', 'fa-album-collection'],
                         'title' => __('Collection'),

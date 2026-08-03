@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted } from "vue"
+import { ref, computed, inject, onMounted, onBeforeUnmount } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
@@ -55,36 +55,51 @@ const listProducts = ref<LastOrderedProduct[]>([])
 const isLoadingFetch = ref(false)
 const isFinish = ref(false)
 
+const routeName = 'iris.json.product_category.last-ordered-products.index'
+
+const isRouteAvailable = () => {
+    if (typeof window === 'undefined' || typeof route !== 'function') {
+        return false
+    }
+
+    try {
+        return route().has(routeName)
+    } catch {
+        return false
+    }
+}
+
 const fetchRecommenders = async () => {
-    if (route().has('iris.json.product_category.last-ordered-products.index')) {
-        try {
-            isLoadingFetch.value = true
-            const response = await axios.get(
-                route('iris.json.product_category.last-ordered-products.index',
-                {  // GetLastOrderedProducts
-                    productCategory: props.fieldValue.family.id,
-                    ignoredProductId: props.fieldValue?.product?.id
-                })
-            )
-            listProducts.value = response.data.data || []
-            // listProducts.value = []
-            console.log(`CRB (${response?.data?.data?.length}): `, response.data)
-            
-            if (!(listProducts.value?.length > 3)) {
-                console.warn('Block CRB are less than 3, will not showed.')
-            }
-        } catch (error: any) {
-            console.error('Error on fetching recommendations:', error)
-        } finally {
-            isLoadingFetch.value = false
-            isFinish.value = true
-        }
+    if (!props.fieldValue?.family?.id || !isRouteAvailable()) {
+        return
+    }
+
+    try {
+        isLoadingFetch.value = true
+        const response = await axios.get(
+            route(routeName, {
+                productCategory: props.fieldValue.family.id,
+                ignoredProductId: props.fieldValue?.product?.id
+            })
+        )
+        listProducts.value = response.data?.data || []
+    } catch (error: any) {
+        console.error('Error on fetching recommendations:', error)
+    } finally {
+        isLoadingFetch.value = false
+        isFinish.value = true
     }
 }
 
 onMounted(() => {
     fetchRecommenders()
     window.crbFetchRecommenders = fetchRecommenders
+})
+
+onBeforeUnmount(() => {
+    if (window.crbFetchRecommenders === fetchRecommenders) {
+        delete window.crbFetchRecommenders
+    }
 })
 </script>
 

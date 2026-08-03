@@ -176,6 +176,13 @@
                     ({{ $invoice->customer['reference'] }})
                 </div>
 
+                @if($invoice->customer['contact_name'] && $invoice->customer['contact_name'] !== $invoice->customer['name'])
+                    <div>
+                        <span class="address_label">{{ __('Contact Name') }}:</span> <span
+                                class="address_value">{{ $invoice->customer['contact_name'] }}</span>
+                    </div>
+                @endif
+
                 <div>
                     <span class="address_label">{{ __('Email') }}:</span> <span
                             class="address_value">{{ $invoice->customer['email'] }}</span>
@@ -397,17 +404,7 @@
         <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
     </tr>
 
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
-            {{ __('Tax') }}
-
-            <br><small>{{$invoice->taxCategory->name}}
-                ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
-            </small>
-        </td>
-        <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
-    </tr>
+    @include('invoices.templates.pdf.tax-rows', ['document' => $invoice])
 
     <tr class="total">
         <td style="border:none" colspan="4"></td>

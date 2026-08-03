@@ -10,6 +10,8 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -23,6 +25,22 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetProductsInCollection extends OrgAction
 {
+    protected function getElementGroups(Collection $collection, $bucket = null): array
+    {
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => array_merge_recursive(
+                    ProductStateEnum::labels($bucket),
+                    ProductStateEnum::count($collection, $bucket)
+                ),
+                'engine' => function ($query, $elements) {
+                    $query->whereIn('products.state', $elements);
+                }
+            ],
+        ];
+    }
+
     public function handle(Collection $collection, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -40,8 +58,6 @@ class GetProductsInCollection extends OrgAction
         $queryBuilder->orderBy('products.state');
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
-        $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->where('products.is_main', true);
 
         $queryBuilder->join('collection_has_models', function ($join) use ($collection) {
@@ -61,6 +77,22 @@ class GetProductsInCollection extends OrgAction
         }
 
 
+
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'asset_time_series',
+            timeSeriesRecordsTable: 'asset_time_series_records',
+            foreignKey: 'asset_id',
+            aggregateColumns: [
+                'invoices'           => 'invoices_all',
+                'sales_external'     => 'sales_all',
+                'customers_invoiced' => 'customers_invoiced_all',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+            localKey: 'asset_id',
+        );
+
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
@@ -77,9 +109,9 @@ class GetProductsInCollection extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
-                'invoices_all',
-                'sales_all',
-                'customers_invoiced_all'
+                $timeSeriesData['selectRaw']['invoices_all'],
+                $timeSeriesData['selectRaw']['sales_all'],
+                $timeSeriesData['selectRaw']['customers_invoiced_all']
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 

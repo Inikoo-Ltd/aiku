@@ -61,9 +61,16 @@ class StartHandlingDeliveryNote extends OrgAction
 
                 if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                     $order = $deliveryNote->orders->first();
+
+                    /*
+                     * Blocked belongs here because the note itself may be started from blocked:
+                     * without it the note went back to handling and the order stayed blocked,
+                     * so the warehouse could pick an order that still read as held.
+                     */
                     if (in_array($order->state, [
                         OrderStateEnum::IN_WAREHOUSE,
                         OrderStateEnum::HANDLING,
+                        OrderStateEnum::HANDLING_BLOCKED,
                     ])) {
                         UpdateOrderStateToHandling::make()->action($order);
                     }

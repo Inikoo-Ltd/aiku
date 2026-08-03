@@ -1485,7 +1485,7 @@ const percentageIncrease = ref(0);
 					v-model="selectedEditProduct.description"
 					class="w-full"
 					:placeholder="trans('Enter text')"
-					:toogle="[
+					:toggle="[
 						'heading1',
 						'heading2',
 						'heading3',

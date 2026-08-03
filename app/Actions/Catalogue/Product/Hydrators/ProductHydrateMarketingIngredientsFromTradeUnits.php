@@ -9,19 +9,22 @@
 namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Models\Catalogue\Product;
+use App\Models\Goods\TradeUnit;
+use App\Models\Masters\MasterAsset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProductHydrateMarketingIngredientsFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
 
-    public function getJobUniqueId(Product $product): string
+    public function getJobUniqueId(MasterAsset|Product $product): string
     {
         return $product->id;
     }
 
-    public function handle(Product $product): void
+    public function handle(MasterAsset|Product $product): void
     {
         $tradeUnits = $product->tradeUnits;
 
@@ -32,7 +35,7 @@ class ProductHydrateMarketingIngredientsFromTradeUnits implements ShouldBeUnique
         }
     }
 
-    private function updateFromSingleTradeUnit($tradeUnit, Product $product): void
+    private function updateFromSingleTradeUnit(TradeUnit $tradeUnit, MasterAsset|Product $product): void
     {
 
         if ($tradeUnit->marketing_ingredients) {
@@ -42,11 +45,12 @@ class ProductHydrateMarketingIngredientsFromTradeUnits implements ShouldBeUnique
         }
     }
 
-    private function updateFromMultipleTradeUnits($tradeUnits, Product $product): void
+    private function updateFromMultipleTradeUnits(Collection $tradeUnits, MasterAsset|Product $product): void
     {
         // For multiple trade units, we'll use the dimensions from the first trade unit that has them
         foreach ($tradeUnits as $tradeUnit) {
             if ($tradeUnit->marketing_ingredients) {
+                if ($product instanceof MasterAsset);
                 $product->updateQuietly([
                     'marketing_ingredients' => $tradeUnit->marketing_ingredients,
                 ]);

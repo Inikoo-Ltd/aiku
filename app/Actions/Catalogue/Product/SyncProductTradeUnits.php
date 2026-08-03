@@ -9,10 +9,12 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
+use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
@@ -24,9 +26,12 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class SyncProductTradeUnits
 {
     use asObject;
+    use WithCustomTradeUnitAudits;
 
     public function handle(Product $product, array $tradeUnitsRaw): Product
     {
+        $oldTradeUnitData = $product->tradeUnits;
+
         $tradeUnits = [];
         foreach ($tradeUnitsRaw as $tradeUnitData) {
             $tradeUnit                  = TradeUnit::find(Arr::get($tradeUnitData, 'id'));
@@ -56,7 +61,14 @@ class SyncProductTradeUnits
         CloneProductImagesFromTradeUnits::run($product);
         $product->refresh();
         SyncProductOrgStocksFromTradeUnits::run($product);
+
+        foreach ($product->refresh()->orgStocks as $orgStock) {
+            SyncDeliveryNoteItemsRequiredPickQuantity::dispatch($orgStock);
+        }
+
         ProductHydrateAvailableQuantity::run($product);
+
+        $this->dispatchCustomAuditTradeUnit($product, $oldTradeUnitData);
 
         return $product;
     }

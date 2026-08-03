@@ -108,7 +108,7 @@ class PublishBanner extends OrgAction
     {
         return [
             'layout'         => ['required', 'array:type,delay,common,components,navigation,published_hash'],
-            'comment'        => ['sometimes', 'required', 'string', 'max:1024'],
+            'comment'        => ['sometimes', 'nullable', 'string', 'max:1024'],
             'publisher_id'   => ['sometimes'],
             'publisher_type' => ['sometimes', 'string'],
         ];

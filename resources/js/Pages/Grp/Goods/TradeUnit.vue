@@ -17,6 +17,7 @@ import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.v
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import TradeUnitShowcase from "@/Components/Goods/TradeUnitShowcase.vue"
+import TradeUnitComposition from "@/Components/Goods/TradeUnitComposition.vue"
 import { routeType } from "@/types/route"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue"
@@ -42,6 +43,7 @@ const props = defineProps<{
         navigation: Navigation
     }
     showcase?: object,
+    composition?: object,
     attachments?: {}
     attachmentRoutes?: {}
     tag_routes: {
@@ -76,6 +78,7 @@ const component = computed(() => {
 
     const components = {
         showcase: TradeUnitShowcase,
+        composition: TradeUnitComposition,
         history: ModelChangelog,
         attachments: AttachmentManagement,
         master_products: TableMasterProducts,

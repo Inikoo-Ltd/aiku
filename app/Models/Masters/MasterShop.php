@@ -37,11 +37,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property numeric $cost_price_ratio
- * @property numeric $price_rrp_ratio
  * @property array<array-key, mixed>|null $offers_data
- * @property float $price_rrp_warning_ratio
  * @property bool $gold_reward_eligible
+ * @property array<array-key, mixed> $price_exchanges
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group|null $group
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
@@ -69,13 +67,15 @@ class MasterShop extends Model implements Auditable
     protected $casts = [
         'data'            => 'array',
         'type'            => ShopTypeEnum::class,
-        'status'           => 'boolean',
-        'offers_data'      => 'array',
+        'status'          => 'boolean',
+        'offers_data'     => 'array',
+        'price_exchanges' => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'offers_data'   => '{}',
+        'data'            => '{}',
+        'offers_data'     => '{}',
+        'price_exchanges' => '{}',
     ];
 
     protected $guarded = [];
@@ -95,6 +95,7 @@ class MasterShop extends Model implements Auditable
     protected array $auditInclude = [
         'code',
         'name',
+        'price_exchanges',
     ];
 
 

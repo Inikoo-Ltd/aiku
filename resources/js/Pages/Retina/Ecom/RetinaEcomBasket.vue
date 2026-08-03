@@ -26,6 +26,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
+import BasketRecommendationsInternal from '@/Components/Retina/BasketRecommendationsInternal.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
 import { InputText, ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -157,6 +158,22 @@ const props = defineProps<{
 
 
 const layout = inject('layout', retinaLayoutStructure)
+
+onMounted(() => {
+    if (window.Echo && layout.user?.customer_id && props.order?.id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`)
+            .listen(".order-submitted", (eventData: { order_id: number }) => {
+                if (eventData.order_id == props.order?.id) {
+                    window.location.href = route("retina.ecom.orders.show", { order: (props.order as any)?.slug })
+                }
+            })
+    }
+})
+onBeforeUnmount(() => {
+    if (window.Echo && layout.user?.customer_id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
+    }
+})
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
 
@@ -442,19 +459,21 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     type: "success"
                 })
                 
-                const addToCartEcommerce = {
-                    currency: layout?.iris?.currency?.code,
-                    value: productLuigi?.attributes?.price || 0,
-                    items: [
-                        {
-                            item_id: productLuigi?.url,
-                        }
-                    ]
+                if (!isInternalRecommendation.value) {
+                    const addToCartEcommerce = {
+                        currency: layout?.iris?.currency?.code,
+                        value: productLuigi?.attributes?.price || 0,
+                        items: [
+                            {
+                                item_id: productLuigi?.url,
+                            }
+                        ]
+                    }
+                    window?.dataLayer?.push({
+                        event: "add_to_cart",
+                        ecommerce: addToCartEcommerce,
+                    })
                 }
-                window?.dataLayer?.push({
-                    event: "add_to_cart",
-                    ecommerce: addToCartEcommerce,
-                })
                 layout?.reload_handle?.()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'
@@ -475,6 +494,9 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
 //         .map(transaction => transaction.id.toString())
 //         .filter(Boolean)
 // })
+
+// Section: recommendations, websites on the internal search model use our own recommender
+const isInternalRecommendation = computed(() => layout.iris?.iris_search_model === 'internal')
 
 const basketProductIdentities = computed(() => {
     if (!props.transactions?.data) return []
@@ -886,7 +908,14 @@ const onChangeInsurance = async (val: boolean) => {
         >
             <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ ctrans('You might also like') }}</h2>
             <div class="bg-white p-4 rounded-md shadow-lg">
+                <BasketRecommendationsInternal
+                    v-if="isInternalRecommendation"
+                    @add-to-basket="(productId: string, productCode: string, product: {}) => onAddProductFromRecommender(productId, productCode, product)"
+                    :listLoadingProducts
+                />
+
                 <BasketRecommendations
+                    v-else
                     @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"
                     :listLoadingProducts
                     xblacklistItems="blackListProductIds"

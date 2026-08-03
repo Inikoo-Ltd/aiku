@@ -11,7 +11,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class RepairLocationOrgStockDefaults implements ShouldBeUnique
 {
     use AsAction;
-    
+
     public string $jobQueue = 'sales_slave_historic';
 
     public function getJobUniqueId(?int $orgStockId): string
@@ -19,7 +19,7 @@ class RepairLocationOrgStockDefaults implements ShouldBeUnique
         return $orgStockId ?? 'empty';
     }
 
-    
+
     public function handle(LocationOrgStock $locationOrgStock, ?Command $command = null)
     {
         $locationOrgStock->update([

@@ -154,6 +154,7 @@ test('approved pastpay order stores payment, marks api point success and submits
 });
 
 test('pastpay term charge is added to the order on success', function () {
+    createWarehouse();
     $paymentAccountShop = createPastpayPaymentAccountShop($this->organisation, $this->shop);
     list($order, $orderPaymentApiPoint) = createOrderWithPastpayApiPoint($this->customer, $this->product, $paymentAccountShop);
 
@@ -306,6 +307,7 @@ test('pastpay invoice uses payment account shop footer and finalizes with base64
         ->and($finalizePayload['invoicePdf'])->toBe('data:application/pdf;base64,'.base64_encode('PDFBYTES'))
         ->and($finalizePayload['invoiceNo'])->toBe($invoice->reference)
         ->and($finalizePayload['totalPrice']['amount'])->toBe((float) $invoice->total_amount)
+        ->and($finalizePayload['dueDate'])->toBe($invoice->date->copy()->addDays(30)->toDateString())
         ->and(isset($finalizePayload['termDays']))->toBeFalse();
 });
 
@@ -444,6 +446,14 @@ test('order partially paid with balance is financed by pastpay only for the rema
     list($order, $orderPaymentApiPoint) = createOrderWithPastpayApiPoint($this->customer, $this->product, $paymentAccountShop);
 
     $startingBalance = (float) $this->customer->balance;
+    if ($startingBalance != 0.0) {
+        StoreCreditTransaction::make()->action($this->customer, [
+            'amount' => -$startingBalance,
+            'type'   => CreditTransactionTypeEnum::REMOVE_FUNDS_OTHER,
+        ]);
+        $this->customer->refresh();
+        $startingBalance = (float) $this->customer->balance;
+    }
     StoreCreditTransaction::make()->action($this->customer, [
         'amount' => 5,
         'type'   => CreditTransactionTypeEnum::ADD_FUNDS_OTHER,
@@ -466,6 +476,7 @@ test('order partially paid with balance is financed by pastpay only for the rema
         })
         ->andReturn(['data' => ['redirectUrl' => 'https://app.demo.pastpay.com/buy/test']]);
 
+    $order->unsetRelation('customer');
     $result = PayOrderWithPastpay::make()->handle($order, $orderPaymentApiPoint, ['days' => 30]);
 
     expect($result['status'])->toBe('ok')

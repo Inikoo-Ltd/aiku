@@ -142,7 +142,8 @@ onBeforeUnmount(() => {
           <Image
             :src="image.source"
             :alt="image.alt"
-            class="w-full h-full object-cover"
+            class="w-full h-full flex items-center justify-center"
+            :style="{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }"
           />
         </div>
       </SwiperSlide>
@@ -203,7 +204,8 @@ onBeforeUnmount(() => {
           <Image
             :src="image.source"
             :alt="image.alt || `Thumbnail ${index + 1}`"
-            class="w-full h-full object-contain"
+            class="w-full h-full flex items-center justify-center"
+            :style="{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }"
           />
         </div>
       </SwiperSlide>

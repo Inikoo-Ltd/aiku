@@ -137,7 +137,7 @@ trait WithTradeUnitIndex
 
     protected function addColumnNumberCurrentStocks(InertiaTable $table): void
     {
-        $table->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+        $table->column(key: 'number_current_stocks', label: __('SKOs'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
     }
 
     protected function addColumnMarketingWeight(InertiaTable $table): void

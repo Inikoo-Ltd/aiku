@@ -31,6 +31,10 @@ class PdfOrgStockLabel
             abort(404, __('Barcode not found for this level'));
         }
 
+        if (blank($barcode['number'])) {
+            abort(404, __('This org stock has no barcode yet'));
+        }
+
         $tradeUnit = $orgStock->tradeUnits->first();
 
         $width  = (float) ($options['width'] ?? 55);
@@ -49,7 +53,7 @@ class PdfOrgStockLabel
             'code'          => $orgStock->code,
             'name'          => $tradeUnit?->name,
             'barcodeNumber' => $barcode['number'],
-            'barcodeType'   => $barcode['level'] === 'unit' ? 'EAN13' : 'C128B',
+            'barcodeType'   => $this->getBarcodeType($barcode['number']),
         ], [], $config);
 
         $filename = 'label-'.$orgStock->code.'-'.$level.'.pdf';
@@ -57,6 +61,15 @@ class PdfOrgStockLabel
         return response($pdf->stream($filename), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="'.$filename.'"');
+    }
+
+    /**
+     * Only a 13 digit number can be drawn as an EAN13, anything else has to fall back to CODE128,
+     * which is what the barcode preview in the browser does too.
+     */
+    private function getBarcodeType(string $number): string
+    {
+        return preg_match('/^\d{13}$/', $number) ? 'EAN13' : 'C128B';
     }
 
     /**

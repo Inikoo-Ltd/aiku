@@ -61,7 +61,7 @@ class OrganisationStockHistoriesExport implements FromQuery, WithMapping, WithHe
     {
         $headings = [
             __('Date'),
-            __('Total SKUs'),
+            __('Total SKOs'),
             __('Out of Stock'),
             __('Locations'),
             $this->isSameCurrency() ? __('Stock Value') : __('Stock Value').' ('.$this->organisation->currency->symbol.')',

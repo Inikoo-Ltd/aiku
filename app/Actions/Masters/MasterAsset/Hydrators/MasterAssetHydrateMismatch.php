@@ -13,6 +13,7 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateNumberMismatches;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Broadcasting\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -39,12 +40,6 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
             $diffFromProduct = $productTradeUnits->diffAssoc($masterAssetTradeUnits);
 
             if ($diffFromMaster->isNotEmpty() || $diffFromProduct->isNotEmpty()) {
-                if ($masterProduct->master_shop_id == 1 && $product->shop_id == 18) {
-                    $masterProduct->updateQuietly([
-                        'mismatch_with_seeder_detected' => true
-                    ]);
-                }
-
                 $masterProduct->updateQuietly([
                     'mismatch_detected' => true
                 ]);
@@ -66,11 +61,6 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
                 $product->updateQuietly([
                     'mismatch_with_master_detected' => false
                 ]);
-                if ($masterProduct->master_shop_id == 1 && $product->shop_id == 18) {
-                    $masterProduct->updateQuietly([
-                        'mismatch_with_seeder_detected' => false
-                    ]);
-                }
             }
         }
 
@@ -79,26 +69,40 @@ class MasterAssetHydrateMismatch implements ShouldBeUnique
 
     public function getCommandSignature(): string
     {
-        return 'master_asset:hydrate_mismatch {master_asset?}}';
+        return 'master_asset:hydrate_mismatch {--master_asset=} {--master_shop=}';
     }
 
     public function asCommand(Command $command): void
     {
-        if ($command->argument('master_asset')) {
-            $masterAsset = MasterAsset::where('slug', $command->argument('master_asset'))->firstOrFail();
+        if ($command->option('master_asset')) {
+            $masterAsset = MasterAsset::where('slug', $command->option('master_asset'))->firstOrFail();
             $this->handle($masterAsset);
 
             return;
         }
 
+        $masterShop = null;
+        $masterShopSlug = $command->option('master_shop');
+        if ($masterShopSlug) {
+            $masterShop = MasterShop::where('slug', $masterShopSlug)->first();
+        }
 
-        $total = MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)->where('master_shop_id', 3)->count();
+        $total = MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)
+            ->when(
+                $masterShop,
+                fn ($q) => $q->where('master_shop_id', $masterShop->id)
+            )
+            ->count();
+
         $bar   = $command->getOutput()->createProgressBar($total);
         $bar->setFormat('debug');
         $bar->start();
 
         MasterAsset::where('type', MasterAssetTypeEnum::PRODUCT)
-            ->where('master_shop_id', 3)
+            ->when(
+                $masterShop,
+                fn ($q) => $q->where('master_shop_id', $masterShop->id)
+            )
             ->orderBy('id')
             ->chunkById(1000, function ($masterProducts) use ($bar) {
                 foreach ($masterProducts as $masterProduct) {

@@ -10,6 +10,7 @@ namespace App\Http\Resources\SupplyChain;
 
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\SupplyChain\Agent;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,15 +24,20 @@ class AgentResource extends JsonResource
         /** @var Agent $agent */
         $agent = $this;
 
+        $currency = $agent->currency ?? $agent->organisation->currency;
+
         return [
-            'code'     => $agent->code,
-            'name'     => $agent->name,
-            'slug'     => $agent->slug,
-            'location' => $agent->organisation->location,
-            'email'    => $agent->organisation->email,
-            'phone'    => $agent->organisation->phone,
-            'address'  => AddressResource::make($agent->organisation->address),
-            'photo'    => $agent->organisation->imageSources()
+            'code'       => $agent->code,
+            'name'       => $agent->name,
+            'slug'       => $agent->slug,
+            'company'    => $agent->organisation->name,
+            'location'   => $agent->organisation->location,
+            'email'      => $agent->organisation->email,
+            'phone'      => $agent->organisation->phone,
+            'address'    => AddressResource::make($agent->organisation->address),
+            'currency'   => $currency ? CurrencyResource::make($currency)->getArray() : null,
+            'created_at' => $agent->created_at,
+            'photo'      => $agent->organisation->imageSources()
         ];
     }
 }

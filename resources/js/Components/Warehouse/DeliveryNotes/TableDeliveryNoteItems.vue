@@ -41,6 +41,8 @@ import LabelPickingLocation from "./LabelPickingLocation.vue"
 import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
+import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
+import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode);
 
@@ -104,7 +106,7 @@ const initSocketListener = () => {
             return;
         }
 
-        let locationOrgStock = itemToSet.locations.find(
+        let locationOrgStock = itemToSet.locations?.find(
             item => item.location_id === affectedData.location_id
         )
 
@@ -113,7 +115,7 @@ const initSocketListener = () => {
             (parseFloat(itemToSet.quantity_not_picked ?? 0) +
             parseFloat(itemToSet.quantity_picked ?? 0));
 
-        const shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
+        const shouldRefetch = (remainingItem > 0) && (locationOrgStock?.quantity != affectedData.new_quantity)
 
         if (shouldRefetch) {
             const response = await axios.get(
@@ -750,14 +752,26 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
-            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <div>
+                {{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
+                <span
+                    v-if="deliveryNoteItem.barcode"
+                    v-tooltip="ctrans('Org stock barcode') + ' ' + deliveryNoteItem.barcode"
+                >
+                    <FontAwesomeIcon
+                        icon="fal fa-barcode"
+                        class="ml-2 xopacity-70 cursor-pointer"
+                        fixed-width
+                        aria-hidden="true"
+                    />
+                </span>
+            </div>
+            <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
 
             <!-- Section: DNI Expired date -->
-            <div v-if="false" class="flex items-center flex-wrap">
-                <!-- Label: expired date -->
+            <!-- <div v-if="false" class="flex items-center flex-wrap">
                 <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
 
-                <!-- Button: add/edit expiry date and batch code -->
                 <div v-if="(deliveryNoteItem.is_picked || Number(deliveryNoteItem.quantity_picked) > 0) && state !== 'cancelled'">
                     <Button
                         v-if="deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code"
@@ -780,7 +794,12 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                         </template>
                     </Button>
                 </div>
-            </div>
+            </div> -->
+        </template>
+
+        <!-- Column: Barcode -->
+        <template #cell(barcode)="{ item: deliveryNoteItem }">
+            <BarcodeDisplay :value="deliveryNoteItem.barcode" />
         </template>
 
         <!-- Section: Pickings -->
@@ -822,6 +841,23 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                 </div>
             </div>
             <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
+        </template>
+
+        <!-- Column: Batch Codes -->
+        <template #cell(batch_codes)="{ item }">
+            <div v-if="item.batch_codes?.length" class="flex flex-wrap gap-1">
+                <span
+                    v-for="code in item.batch_codes"
+                    :key="code"
+                    class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
+                >
+                    <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                    {{ code }}
+                </span>
+            </div>
+            <span v-else class="text-gray-400 italic text-xs">
+                {{ trans("No batch code set") }}
+            </span>
         </template>
 
         <!-- Column: Quantity Required -->
@@ -1256,10 +1292,18 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         <template #cell(action)="{ item: item }">
                 <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0" >
                     
-                    <div class="flex justify-start items-center">
+                    <div class="flex justify-start items-center gap-x-2">
+                    <!-- Label: partially packed, the rest is still waiting -->
+                    <span
+                        v-if="item.is_partially_packed"
+                        v-tooltip="ctrans('Packed :packed of :picked picked', { packed: Number(item.quantity_packed), picked: Number(item.quantity_picked) })"
+                        class="whitespace-nowrap rounded border border-amber-400 bg-amber-100 px-1.5 text-sm text-amber-700">
+                        {{ Number(item.quantity_packed) }} / {{ Number(item.quantity_picked) }}
+                    </span>
+
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
-                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_picked) })"
+                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_to_pack ?? item.quantity_picked) })"
                         type="secondary"
                         xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
@@ -1274,8 +1318,8 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                         }"
                     />
                     <ButtonWithLink
-                        v-else
-                        v-tooltip="ctrans('Undo packing')"
+                        v-if="item.is_done_packing || item.is_partially_packed"
+                        v-tooltip="item.is_partially_packed ? ctrans('Undo all packing on this item') : ctrans('Undo packing')"
                         type="negative"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :bindToLink="{preserveScroll: true}"
@@ -1356,7 +1400,7 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         v-model:visible="isModalLocation"
         modal
         :draggable="false"
-        dismissableMask
+        :dismissableMask="screenType === 'desktop'"
         :style="{ width: '48rem' }"
         :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"

@@ -6,6 +6,7 @@ import { watchEffect } from "vue"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal.js'
 import { useEchoGrpGeneral } from '@/Stores/echo-grp-general.js'
 import { useLiveUsers } from '@/Stores/active-users'
+import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
 
 export const initialiseApp = () => {
     const layout = useLayoutStore()
@@ -32,6 +33,10 @@ export const initialiseApp = () => {
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
         router.on('navigate', (event) => {
+
+            // Close overlays left open by the previous page so they don't block clicks
+            layout.stackedComponents = []
+            resetStuckOverlays()
 
             // To see Vue filename in console (component.vue)
             if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
@@ -171,6 +176,17 @@ export const initialiseApp = () => {
             layout.app.environment = usePage().props?.environment
         }
 
+        // Set latest app deployment time
+        if (usePage().props?.last_deployment_at) {
+            layout.app.last_deployment_at = usePage().props?.last_deployment_at
+        }
+        if (usePage().props?.last_deployment_hash) {
+            layout.app.last_deployment_hash = usePage().props?.last_deployment_hash
+        }
+        if (usePage().props?.last_deployment_version) {
+            layout.app.last_deployment_version = usePage().props?.last_deployment_version
+        }
+
 
         // Set Organisations, Agents, Digital Agency (for Multiselect in TopBar)
         if (usePage().props.layout?.organisations) {
@@ -229,7 +245,10 @@ export const initialiseApp = () => {
 
         if (usePage().props.crm_return_count !== undefined) {
             layout.crm_return_count = usePage().props.crm_return_count as number
-            console.log(layout);
+        }
+
+        if (usePage().props.master_updated_count !== undefined) {
+            layout.master_updated_count = usePage().props.master_updated_count as number
         }
 
         layout.app.name = "Aiku"

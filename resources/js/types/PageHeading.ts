@@ -14,6 +14,7 @@ export interface PageHeadingTypes {
     afterTitle?: {
         label: string
         class?: string
+        tooltip?: string
     }
     platform?:{
         icon: string | string[],
@@ -73,6 +74,16 @@ export interface PageHeadingTypes {
         tooltip: string
         route: routeType
         color?: string  // rgb(75, 0, 130)
+    }[]
+    exports?: {
+        routes: {
+            label: string
+            key?: string
+            icon?: Icon
+            popover?: boolean
+            inside_popover?: boolean
+            route: routeType
+        }[]
     }[]
 }
 

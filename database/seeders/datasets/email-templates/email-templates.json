@@ -502,13 +502,30 @@
   },
    {
     "outboxes": [
+      "price_change"
+    ],
+    "name": "Price change",
+    "content": "price_change.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "products"
+    ]
+  },
+   {
+    "outboxes": [
       "chat_notification_to_customer",
       "price_change_notification",
       "web_user_registration",
-      "oos_in_order_notification", 
+      "oos_in_order_notification",
       "review_reminder",
       "invoice_paid", 
-      "abandoned_cart_reminder"
+      "abandoned_cart_reminder",
+      "gold_reward_reminder_1",
+      "gold_reward_reminder_2",
+      "gold_reward_reminder_3",
+      "prospect_convertion_1",
+      "prospect_convertion_2",
+      "prospect_convertion_3"
     ],
     "name": "Beefree blank email template",
     "content": "beefree_blank_email_template.json",

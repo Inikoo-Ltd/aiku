@@ -16,6 +16,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterProductCategoryTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -49,8 +51,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
             return;
         }
 
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $timeSeries = MasterProductCategoryTimeSeries::where('master_product_category_id', $masterProductCategoryId)->where('frequency', $frequency->value)->first();
 
@@ -71,6 +72,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(MasterProductCategoryTimeSeries $timeSeries, string $from, string $to, bool $hasDropshipping): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $categoryColumn = match ($timeSeries->type) {
             'department' => 'master_department_id',
@@ -95,8 +97,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                 $metrics = ['dropshippers' => 0, 'listings' => 0];
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
+            $rows[] = [
                     'master_product_category_time_series_id' => $timeSeries->id,
                     'period'                                 => $period,
                     'type'                                   => match ($timeSeries->type) {
@@ -104,9 +105,8 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                         'sub_department' => 'S',
                         'family' => 'F',
                     },
-                    'frequency'                              => $timeSeries->frequency->singleLetter()
-                ],
-                [
+                    'frequency'                              => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
                     'sales_external'              => $result->sales_external,
@@ -119,16 +119,20 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                     'sold'                        => $result->sold,
                     ...$metrics,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['master_product_category_time_series_id', 'period', 'frequency', 'type']);
     }
 
-    protected function processPeriodsWithoutInvoices(MasterProductCategoryTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(MasterProductCategoryTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
     {
+        $rows = [];
+
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
         foreach ($nonInvoicePeriods as $periodData) {
@@ -140,8 +144,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                 continue;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
+            $rows[] = [
                     'master_product_category_time_series_id' => $timeSeries->id,
                     'period'                                 => $periodData['period'],
                     'type'                                   => match ($timeSeries->type) {
@@ -149,9 +152,8 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                         'sub_department' => 'S',
                         'family' => 'F',
                     },
-                    'frequency'                              => $timeSeries->frequency->singleLetter()
-                ],
-                [
+                    'frequency'                              => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
                     'sales_external'              => 0,
@@ -164,8 +166,10 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                     'sold'                        => 0,
                     ...$metrics,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 
     protected function getPortfolioStats(int $masterProductCategoryId, string $type, Carbon $periodFrom, Carbon $periodTo): array

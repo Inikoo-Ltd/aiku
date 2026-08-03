@@ -106,7 +106,7 @@ class IndexRetinaStoredItemDeltasInProcess extends RetinaAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'reference', label: __('pallet reference'), canBeHidden: false, sortable: true, searchable: true);
             // $table->column(key: 'customer_reference', label: __("Pallet customer's reference"), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'stored_items', label: __("Customer's SKUs"), canBeHidden: false);
+            $table->column(key: 'stored_items', label: __("Customer's SKOs"), canBeHidden: false);
             $table->column(key: 'actions', label: '', canBeHidden: false);
 
             $table->defaultSort('reference');

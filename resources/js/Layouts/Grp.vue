@@ -7,7 +7,7 @@
   -->
 
 <script setup lang="ts">
-import { onMounted, ref, provide, defineAsyncComponent, watch } from "vue"
+import { onMounted, onUnmounted, ref, provide, defineAsyncComponent, watch } from "vue"
 import { initialiseApp } from "@/Composables/initialiseApp"
 import { usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
@@ -19,178 +19,24 @@ import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
-import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
-import {
-    faPoll,
-    faPhotoVideo, faQuestionCircle,
-    faBrowser,
-    faMegaphone,
-    faAllergies,
-    faSpellCheck,
-    faHandPaper,
-    faHourglassStart, faHourglassHalf, faHourglass,
-    faSadTear,
-    faRainbow,
-    faParking,
-    faSeedling,
-    faBoxCheck,
-    faUsers,
-    faShoppingBasket,
-    faLayerGroup,
-    faInboxOut,
-    faTachometerAltFast,
-    faGlobe,
-    faParachuteBox,
-    faStore,
-    faClock,
-    faTransporter,
-    faRulerTriangle,
-    faRulerCombined,
-    faAtom,
-    faAtomAlt, faGift,
-    faBan,
-    faSnooze,
-    faFileInvoice,
-    faInboxIn,
-    faPaperPlane,
-    faDraftingCompass,
-    faFolderDownload,
-    faExternalLinkAlt,
-    faCheck,
-    faTimes,
-    faTrashAlt,
-    faAsterisk,
-    faPauseCircle,
-    faExclamationTriangle,
-    faSunset,
-    faChair,
-    faSkull,
-    faSkullCow,
-    faToggleOn,
-    faBroadcastTower, faImage,
-    faEye,
-    faEyeSlash,
-    faCheckDouble,
-    faSmile, faUserHeadset,
-    faMailBulk, faEllipsisV,
-    faShare, faUndoAlt, faRobot, faDollyFlatbedAlt, faMonument as falMonument, faUnlink, faBoxOpen, faArrowRight as falArrowRight,
-    faStar as faStarLight,
-    faArrowUp as faArrowUpLight,
-    faMinus as faMinusLight,
-    faTimesCircle as faTimesCircleLight, faHammer, faPlaneArrival, faCheck as falCheck, faCheckCircle as falCheckCircle ,
-    faUserAlien,
-    faTombstone as faTombstoneLight,
-    faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-    faBarcode, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield, faCircle, faExchange,
-    faTrophy, faClipboardCheck, faSpinner, faHistory, faUserClock, faEdit, faStickyNote, faFileExport, faTrafficLight, faPhone,faPager,
-} from "@fal"
-import { faSearch, faBell, faArrowRight, faShippingFast } from "@far"
-import { faViruses, faSave as fadSave } from "@fad"
-import {
-    faAsterisk as fasAsterisk,
-    faBoxHeart,
-    faBadgePercent,
-    faExclamation,
-    faInfo,
-    faPlay,
-    faGlobe as fasGlobe,
-    faStar,
-    faCheckCircle,
-    faTimesCircle,
-    faSkull as fasSkull, faMonument, faCubes, faExclamationTriangle as fasExclamationTriangle, faCandleHolder,
-    faMedal,
-} from "@fas"
-import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Modal from "@/Components/Utils/Modal.vue"
+import Dialog from "primevue/dialog"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import { fetchUnreadCount } from "@/Composables/useNotificationSound"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
+import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
+import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgress.vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
 
-library.add(
-    faRainbow,
-    faAtomAlt, faGift,
-    faOctopusDeploy,
-    faPoll,
-    faPhotoVideo, faQuestionCircle,
-    faBrowser,
-    faMegaphone,
-    faAllergies,
-    faSpellCheck,
-    faHandPaper,
-    faHourglassStart, faHourglassHalf, faHourglass,
-    faSadTear,
-    faPauseCircle,
-    faBoxHeart,
-    faExclamationTriangle,
-    faSunset,
-    faChair,
-    falMonument,
-    faSkull,
-    faSkullCow,
-    faToggleOn,
-    faBroadcastTower, faImage,
-    faEye,
-    faEyeSlash,
-    faCheckDouble,
-    fasAsterisk,
-    faExclamation,
-    faInfo,
-    faPlay,
-    fasGlobe,
-    faStar,
-    faCheckCircle,
-    faTimesCircle,
-    fasSkull,
-    faUsers,
-    faShoppingBasket,
-    faLayerGroup,
-    faInboxOut,
-    faSearch,
-    faBell,
-    faArrowRight,
-    faShippingFast, faGhost, faUmbrella, faCalendarCheck, faProjectDiagram, faUserShield, faCircle, faExchange,
-    faTachometerAltFast,
-    faGlobe,
-    faParachuteBox,
-    faStore,
-    faClock,
-    faTransporter,
-    faParking,
-    faSeedling,
-    faBoxCheck,
-    faStackOverflow,
-    faRulerTriangle,
-    faRulerCombined,
-    faAtom,
-    faBan,
-    faSnooze,
-    faFileInvoice,
-    faInboxIn,
-    faPaperPlane,
-    faDraftingCompass,
-    faFolderDownload,
-    faExternalLinkAlt,
-    faTimes,
-    faTrashAlt,
-    faCheck,
-    faAsterisk,
-    faMailBulk, faEllipsisV,
-    faShare, faUndoAlt, faRobot, faMonument, faCubes, fasExclamationTriangle, faCandleHolder, faMedal, faDollyFlatbedAlt, faViruses, fadSave,
-    faShare, faUndoAlt, faRobot, faUnlink, faBoxOpen, falArrowRight,
-    faBadgePercent, faUserHeadset,
-    faStarLight, faArrowUpLight, faMinusLight, faTimesCircleLight, faHammer, faPlaneArrival, falCheck, falCheckCircle,
-    faUserAlien,
-    faTombstoneLight,
-    faCopyright, faSyncAlt, faArrowFromLeft, faListAlt,
-    faBarcode,
-    faTrophy, faClipboardCheck, faSpinner, faHistory, faUserClock, faEdit, faStickyNote, faFileExport, faTrafficLight, faPhone,faPager, 
-)
+
+import "@/Composables/Icon/ImportGrpFalIcon"
+import "@/Composables/Icon/ImportGrpFarIcon"
+import "@/Composables/Icon/ImportGrpFadIcon"
+import "@/Composables/Icon/ImportGrpFasIcon"
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())
@@ -264,8 +110,20 @@ watch(
 // Method: listen if app recently deployed
 const isLoadingRefreshPage = ref(false)
 const isModalNeedToRefresh = ref(false)
+interface DeploymentInfo {
+    semantic_version: string | null
+    change_log: string | null
+    committers: { name: string, email: string, github_username: string | null, avatar: string | null }[] | null
+    deployed_at: string | null
+}
+const deploymentInfo = ref<DeploymentInfo | null>(null)
+const onDismissRefreshModal = () => {
+    isModalNeedToRefresh.value = false
+    layout.app.newVersionAvailable = true
+}
 const onCheckAppVersion = () => {
-    const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData) => {
+    const xxx = window.Echo.private("app.general").listen(".post-deployed", (eventData: { deployment: DeploymentInfo | null }) => {
+        deploymentInfo.value = eventData?.deployment || null
         if (route().current()?.includes("dashboard.show")) {
             onRefreshPage()
         } else {
@@ -310,8 +168,13 @@ const myAgentId = layout.user?.id
 onMounted(() => {
     fetchUnreadCount(baseUrl, "", myAgentId)
     checkScreenType()
+    window.addEventListener("resize", checkScreenType)
     onCheckAppVersion()
     setColorStyleRoot(layout?.app?.theme)
+})
+
+onUnmounted(() => {
+    window.removeEventListener("resize", checkScreenType)
 })
 
 const fallbackTheme = useColorTheme[3]
@@ -325,6 +188,16 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>
 
 <template>
+    <Teleport v-if="layout.app.newVersionAvailable" to="#topbar_grp">
+        <ScreenWarning
+            class="fixed z-[100] top-0 left-0 cursor-pointer"
+            @click="onRefreshPage()">
+            <span class="text-sm">
+                {{ ctrans("A new version of the app is available. Click here to refresh and get the latest updates.") }}
+            </span>
+        </ScreenWarning>
+    </Teleport>
+
     <div
         id="grp_app"
         class="bg-white relative min-h-screen transition-all duration-200 ease-in-out"
@@ -344,7 +217,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 				layout.leftSidebar.show
 					? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-144px)] lg:w-[calc(100%-192px)]'
 					: 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-36px)] lg:w-[calc(100%-48px)]',
-				layout.app.environment === 'staging' ? 'top-11 lg:top-16' : 'top-11 lg:top-10',
+				layout.hasTopBanner ? 'top-11 lg:top-16' : 'top-11 lg:top-10',
 			]"
             :breadcrumbs="usePage().props.breadcrumbs ?? []"
             :navigation="usePage().props.navigation ?? []"
@@ -368,7 +241,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
             class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
-				layout.app.environment === 'staging' ? 'mt-6' : '',
+				layout.hasTopBanner ? 'mt-6' : '',
 			]">
             <slot />
         </main>
@@ -401,96 +274,116 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 
     <Footer />
 
-    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
-        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-            <div
-                class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
-                <div>
-                    <div
-                        class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
-                        <FontAwesomeIcon
-                            v-if="selectedModal?.status == 'error'"
-                            icon="fal fa-times"
-                            class="text-red-500 text-2xl"
-                            fixed-width
-                            aria-hidden="true" />
-                        <FontAwesomeIcon
-                            v-if="selectedModal?.status == 'success'"
-                            icon="fal fa-check"
-                            class="text-green-500 text-2xl"
-                            fixed-width
-                            aria-hidden="true" />
-                        <FontAwesomeIcon
-                            v-if="selectedModal?.status == 'warning'"
-                            icon="fas fa-exclamation"
-                            class="text-orange-500 text-2xl"
-                            fixed
-                            aria-hidden="true" />
-                        <FontAwesomeIcon
-                            v-if="selectedModal?.status == 'info'"
-                            icon="fas fa-info"
-                            class="text-gray-500 text-2xl"
-                            fixed-width
-                            aria-hidden="true" />
-                    </div>
+    <CloneFromMasterProgress />
 
-                    <div class="mt-3 text-center sm:mt-5">
-                        <div as="h3" class="font-semibold text-2xl">
-                            {{ selectedModal?.title }}
-                        </div>
-                        <div class="mt-2 text-sm text-gray-500">
-                            {{ selectedModal?.description }}
-                        </div>
-                    </div>
+    <Dialog
+        v-model:visible="isModalOpen"
+        modal
+        :dismissableMask="screenType === 'desktop'"
+        :showHeader="false"
+        :style="{ width: '32rem' }"
+        :breakpoints="{ '640px': '90vw' }">
+        <div class="pt-8 pb-4">
+            <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
+                <FontAwesomeIcon
+                    v-if="selectedModal?.status == 'error'"
+                    icon="fal fa-times"
+                    class="text-red-500 text-2xl"
+                    fixed-width
+                    aria-hidden="true" />
+                <FontAwesomeIcon
+                    v-if="selectedModal?.status == 'success'"
+                    icon="fal fa-check"
+                    class="text-green-500 text-2xl"
+                    fixed-width
+                    aria-hidden="true" />
+                <FontAwesomeIcon
+                    v-if="selectedModal?.status == 'warning'"
+                    icon="fas fa-exclamation"
+                    class="text-orange-500 text-2xl"
+                    fixed
+                    aria-hidden="true" />
+                <FontAwesomeIcon
+                    v-if="selectedModal?.status == 'info'"
+                    icon="fas fa-info"
+                    class="text-gray-500 text-2xl"
+                    fixed-width
+                    aria-hidden="true" />
+            </div>
+
+            <div class="mt-3 text-center sm:mt-5">
+                <div class="font-semibold text-2xl">
+                    {{ selectedModal?.title }}
                 </div>
-                <div class="mt-5 sm:mt-6">
-                    <Button
-                        @click="() => (isModalOpen = false)"
-                        :label="ctrans('Ok, Get it')"
-                        full />
+                <div class="mt-2 text-sm text-gray-500">
+                    {{ selectedModal?.description }}
                 </div>
             </div>
-        </div>
-    </Modal>
 
-    <Modal
-        :isOpen="isModalNeedToRefresh"
-        aonClose="isModalNeedToRefresh = false"
-        width="w-full max-w-lg">
-        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-            <div
-                class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
-                <div>
-                    <div
-                        class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
-                        <FontAwesomeIcon
-                            :icon="faSmile"
-                            class="text-green-500 text-2xl"
-                            fixed-width
-                            aria-hidden="true" />
-                    </div>
-
-                    <div class="mt-3 text-center sm:mt-5">
-                        <div as="h3" class="font-semibold text-2xl">
-                            {{ ctrans("Hey, sorry for your inconvenience.") }}
-                        </div>
-                        <div class="mt-2 text-sm text-gray-500">
-                            {{
-                                ctrans(
-                                    "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
-                                )
-                            }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-5 sm:mt-6 flex flex-col gap-4">
-                    <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
-                    <Button @click="() => isModalNeedToRefresh = false" :label="ctrans('Dismiss')" full type="tertiary" />
-                </div>
+            <div class="mt-5 sm:mt-6">
+                <Button
+                    @click="() => (isModalOpen = false)"
+                    :label="ctrans('Ok, Get it')"
+                    full />
             </div>
         </div>
-    </Modal>
+    </Dialog>
+
+    <Dialog
+        v-model:visible="isModalNeedToRefresh"
+        modal
+        :closable="false"
+        :closeOnEscape="false"
+        :showHeader="false"
+        :style="{ width: '32rem' }"
+        :breakpoints="{ '640px': '90vw' }">
+        <div class="pt-8 pb-4">
+            <div class="text-center">
+                <div v-if="deploymentInfo?.semantic_version" class="font-semibold text-2xl">
+                    🚀<span class="mx-2">{{ deploymentInfo.semantic_version }}</span>💥
+                </div>
+                <div v-else class="font-semibold text-2xl">
+                    {{ ctrans("Hey, sorry for your inconvenience.") }}
+                </div>
+
+                <div
+                    v-if="deploymentInfo?.change_log"
+                    class="mt-3 max-h-48 overflow-y-auto rounded-md bg-gray-50 p-3 text-left text-xs text-gray-600 whitespace-pre-line">
+                    {{ deploymentInfo.change_log }}
+                </div>
+
+                <div v-else class="mt-2 text-sm text-gray-500">
+                    {{
+                        ctrans(
+                            "Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen."
+                        )
+                    }}
+                </div>
+
+                <div v-if="deploymentInfo?.committers?.length" class="mt-3 flex items-center justify-center -space-x-2">
+                    <template v-for="committer in deploymentInfo.committers" :key="committer.email">
+                        <img
+                            v-if="committer.avatar"
+                            :src="committer.avatar"
+                            :alt="committer.name"
+                            :title="committer.name"
+                            class="size-7 rounded-full ring-2 ring-white" />
+                        <div
+                            v-else
+                            :title="committer.name"
+                            class="flex size-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-500 ring-2 ring-white">
+                            {{ committer.name.charAt(0).toUpperCase() }}
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="mt-5 sm:mt-6 flex flex-col gap-4">
+                <Button @click="() => onRefreshPage()" :label="ctrans('Refresh page')" full :loading="isLoadingRefreshPage" />
+                <Button @click="() => onDismissRefreshModal()" :label="ctrans('Dismiss')" full type="tertiary" />
+            </div>
+        </div>
+    </Dialog>
 
     <!-- Global declaration: Notification -->
     <notifications

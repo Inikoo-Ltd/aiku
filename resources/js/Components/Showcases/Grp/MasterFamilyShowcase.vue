@@ -11,9 +11,12 @@ import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vu
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { trans } from 'laravel-vue-i18n';
 import Dialog from 'primevue/dialog';
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue';
+import MasterFamilyBestSellers from '@/Components/Master/MasterFamilyBestSellers.vue';
+
+const screenType = inject('screenType', ref('desktop'))
 
 library.add(faAlbumCollection);
 
@@ -23,6 +26,11 @@ const props = defineProps<{
             data: any,
         },
         tags?: Array<any>
+        bestSellers?: {
+            products: any[]
+            currency: string
+            route: { name: string, parameters: Record<string, any> }
+        }
     },
     master_vol_gr_reward?: {
         show_gr_vol: boolean
@@ -168,7 +176,7 @@ const saveGROffer = () => {
                         <FontAwesomeIcon :icon="faExclamationTriangle" />
                         {{ master_vol_gr_reward.missing_gr_children_count }} {{ trans("shop family missing Gold Reward offer") }}
                     </Link>
-                    <Dialog v-model:visible="isOpenModalMasterGROffer" modal header="Gold Reward Offer" :style="{ width: '50rem' }" closable :draggable="false" dismissableMask closeOnEscape>
+                    <Dialog v-model:visible="isOpenModalMasterGROffer" modal header="Gold Reward Offer" :style="{ width: '50rem' }" closable :draggable="false" :dismissableMask="screenType === 'desktop'" closeOnEscape>
                         <InputVolDiscount
                             :form="grOfferForm"
                             fieldName="vol_gr_offer"
@@ -185,6 +193,8 @@ const saveGROffer = () => {
                         </div>
                     </Dialog>
                 </template>
+
+                <MasterFamilyBestSellers v-if="data.bestSellers" :data="data.bestSellers" class="mt-4" />
             </div>
 
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">

@@ -11,7 +11,7 @@ import IrisFooter from "@/Layouts/Iris/Footer.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faBooks } from "@fal"
+import { faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faBooks , faHistory} from "@fal"
 import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add( faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faBooks, faExclamationCircle, faCheckCircle, faArrowRight, faListUl, faEye )
@@ -22,7 +22,7 @@ import { trans } from "laravel-vue-i18n"
 import RetinaEcomLeftSidebar from "./Retina/RetinaEcomLeftSidebar.vue"
 import RetinaMobileNavigationSimple from "./Retina/RetinaMobileNavigationSimple.vue"
 import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
-library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
+library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder,faHistory)
 
 const layout = useLayoutStore()
 const locale = useLocaleStore()

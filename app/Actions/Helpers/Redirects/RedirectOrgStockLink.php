@@ -19,7 +19,7 @@ class RedirectOrgStockLink extends OrgAction
 {
     private $toProducts = false;
 
-    public function handle(OrgStock $orgStock): ?RedirectResponse
+    public function handle(OrgStock $orgStock, ?string $queryString = null): ?RedirectResponse
     {
         /** @var Warehouse $warehouse */
         $warehouse = $orgStock->organisation->warehouses()->first();
@@ -39,7 +39,7 @@ class RedirectOrgStockLink extends OrgAction
             ]);
         }
 
-        return Redirect::to($url);
+        return Redirect::to($url.($queryString ? '?'.$queryString : ''));
     }
 
 
@@ -48,7 +48,7 @@ class RedirectOrgStockLink extends OrgAction
     {
         $this->initialisation($orgStock->organisation, $request);
 
-        return $this->handle($orgStock);
+        return $this->handle($orgStock, $request->getQueryString());
     }
 
     public function toProductsIndex(OrgStock $orgStock, ActionRequest $request): RedirectResponse

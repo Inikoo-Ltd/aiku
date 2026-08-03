@@ -12,6 +12,7 @@ const props = defineProps<{
         luigi_data: {
             luigisbox_tracker_id: string
             luigisbox_private_key: string
+            iris_search_model?: string
         }
     }
 }>()
@@ -58,7 +59,7 @@ const onClickReindex = async () => {
 
 <template>
     <div
-        v-if="webpage?.luigi_data?.luigisbox_tracker_id"
+        v-if="webpage?.luigi_data?.luigisbox_tracker_id && webpage?.luigi_data?.iris_search_model !== 'internal'"
         @click="onClickReindex"
         class="w-full"
     >

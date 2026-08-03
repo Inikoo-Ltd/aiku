@@ -44,7 +44,6 @@ class StoreMasterVariant extends OrgAction
             // Initialize aggregates/relations
             $masterVariant->stats()->create();
             $masterVariant->orderingStats()->create();
-            $masterVariant->orderingIntervals()->create();
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $masterVariant->timeSeries()->create(['frequency' => $frequency]);
             }

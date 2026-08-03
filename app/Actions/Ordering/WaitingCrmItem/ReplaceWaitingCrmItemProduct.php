@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\WaitingCrmItem;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
+use App\Actions\Ordering\Order\CalculateOrderDiscounts;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -89,6 +90,14 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                 }
             }
         });
+
+        /**
+         * The replacement line is stored at full price: StoreTransaction's totals pass skips the
+         * discount recalculation for orders past submission. Run it explicitly so the new line gets
+         * the discounts the customer is entitled to; CalculateOrderDiscounts prices post-submission
+         * orders against the offers valid at submission time, so this cannot alter the other lines.
+         */
+        CalculateOrderDiscounts::run($order->refresh());
     }
 
     public function rules(): array

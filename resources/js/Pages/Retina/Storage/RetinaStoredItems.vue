@@ -61,7 +61,7 @@ const onNoStructureUpload = () => {
 					@click="() => bulk_edit_upload ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
 					type="tertiary"
 					:style="'edit'"
-					:label="'Bulk Edit SKU'"
+					:label="'Bulk Edit SKO'"
 				/>
 		  	</template>
 

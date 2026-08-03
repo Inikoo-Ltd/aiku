@@ -216,7 +216,7 @@ const setError = (e) => {
 												data?.iconRight?.url.name,
 												data?.iconRight?.url.parameters
 											)
-										: ''
+										: undefined
 								">
 								<div class="flex gap-x-2 items-center">
 									<FontAwesomeIcon
@@ -233,7 +233,9 @@ const setError = (e) => {
 									}}</span>
 									<div
 										v-if="data.afterTitle"
-										class="font-normal text-lg leading-none">
+										class="font-normal text-lg leading-none"
+										v-tooltip="data.afterTitle.tooltip || ''"
+									>
 										{{ data.afterTitle.label }}
 									</div>
 								</div>

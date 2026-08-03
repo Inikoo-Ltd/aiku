@@ -228,6 +228,8 @@ trait WithSendBulkEmails
             'prospect-email' => Arr::get($additionalData, 'prospect_email'),
             'prospect-phone' => Arr::get($additionalData, 'prospect_phone'),
             'prospect-company-name' => Arr::get($additionalData, 'prospect_company_name'),
+            'prospect-registration-date' => Arr::get($additionalData, 'prospect_registration_date'),
+
 
             'review-message' => Arr::get($additionalData, 'review_message'),
             'review-link' => Arr::get($additionalData, 'review_link'),
@@ -235,6 +237,8 @@ trait WithSendBulkEmails
             'blade-review-images' => Arr::get($additionalData, 'blade_review_images'),
 
             'review-reminder-links' => Arr::get($additionalData, 'review_reminder_links'),
+            'last-invoice-date' => Arr::get($additionalData, 'last_invoice_date'),
+            'gold-reward-deadline' => Arr::get($additionalData, 'gold_reward_deadline'),
 
             default => $originalPlaceholder,
         };

@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Models\Masters\MasterAsset;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
@@ -73,10 +74,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
- * @property-read Asset|null $masterAsset
+ * @property-read MasterAsset|null $masterAsset
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Model|\Eloquent|null $model
- * @property-read \App\Models\Catalogue\AssetOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Catalogue\AssetOrderingStats|null $orderingStats
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Product|null $product
@@ -152,11 +152,6 @@ class Asset extends Model implements HasMedia
         return $this->hasOne(AssetOrderingStats::class);
     }
 
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(AssetOrderingIntervals::class);
-    }
-
     public function timeSeries(): HasMany
     {
         return $this->hasMany(AssetTimeSeries::class);
@@ -229,7 +224,7 @@ class Asset extends Model implements HasMedia
 
     public function masterAsset(): BelongsTo
     {
-        return $this->belongsTo(Asset::class, 'master_asset_id');
+        return $this->belongsTo(MasterAsset::class, 'master_asset_id');
     }
 
 

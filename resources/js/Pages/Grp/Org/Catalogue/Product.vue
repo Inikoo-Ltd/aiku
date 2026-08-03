@@ -136,9 +136,10 @@ const props = defineProps<{
         }
     }
     product_id: number
+    product_units?: number
+    product_unit?: string
 }>()
 
-const layout = inject('layout')
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const isOpenDialog = ref(false)
@@ -342,26 +343,25 @@ const saveProductReview = async () => {
                 </ButtonReindexWebpage>
             </div>
 
-            <ModalCreateGiftOffers
-                v-if="currentTab === 'offers'"
-                v-tooltip="'Create New Offer'"
-                :shop_data="props.shop_data"
-                :product_id="props.product_id"
-                 />
-
-            <div
-                v-if="currentTab === 'offers' && layout?.app?.environment == 'local'"
-                class="relative inline-flex"
-            >
-                <ModalCreateStepDiscountProduct
+            <template v-if="currentTab === 'offers'">
+                <ModalCreateGiftOffers
                     v-tooltip="'Create New Offer'"
                     :shop_data="props.shop_data"
                     :product_id="props.product_id"
-                />
-                <span class="pointer-events-none absolute -top-2 -right-1.5 z-10 rounded bg-red-500 px-1 py-px text-[10px] font-bold leading-none text-white shadow">
-                    {{ trans('Local') }}
-                </span>
-            </div>
+                    />
+
+                <div                    
+                    class="relative inline-flex"
+                >
+                    <ModalCreateStepDiscountProduct
+                        v-tooltip="'Create New Offer'"
+                        :shop_data="props.shop_data"
+                        :product_id="props.product_id"
+                        :product_units="props.product_units"
+                        :product_unit="props.product_unit"
+                    />
+                </div>
+            </template>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />

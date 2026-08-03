@@ -17,11 +17,12 @@ use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Procurement\WithPrepareDeliveryStoreFields;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydratePurchaseOrders;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurchaseOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurchaseOrders;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
@@ -44,7 +45,6 @@ class StorePurchaseOrder extends OrgAction
 
     public function handle(OrgSupplier|OrgAgent|OrgPartner $parent, array $modelData): PurchaseOrder
     {
-        // dd($parent);
         $modelData = $this->prepareDeliveryStoreFields($parent, $modelData);
         if (!Arr::get($modelData, 'reference')) {
             data_set(
@@ -62,22 +62,22 @@ class StorePurchaseOrder extends OrgAction
         if (!Arr::get($modelData, 'currency_id')) {
             data_set($modelData, 'currency_id', $parent->organisation->currency_id);
         }
-        // dd($parent);
         /** @var PurchaseOrder $purchaseOrder */
         $purchaseOrder = $parent->purchaseOrders()->create($modelData);
 
-        if (class_basename($parent) == 'OrgSupplier') {
+        if ($parent instanceof OrgSupplier) {
             OrgSupplierHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
             SupplierHydratePurchaseOrders::dispatch($parent->supplier)->delay($this->hydratorsDelay);
-        } elseif (class_basename($parent) == 'OrgAgent') {
+        } elseif ($parent instanceof OrgAgent) {
             OrgAgentHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
             AgentHydratePurchaseOrders::dispatch($parent->agent)->delay($this->hydratorsDelay);
-        } elseif (class_basename($parent) == 'OrgPartner') {
+        } elseif ($parent instanceof OrgPartner) {
             OrgPartnerHydratePurchaseOrders::dispatch($parent)->delay($this->hydratorsDelay);
-            OrganisationHydratePurchaseOrders::dispatch($parent->organisation)->delay($this->hydratorsDelay);
         }
 
         OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation)->delay($this->hydratorsDelay);
+        GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->delay($this->hydratorsDelay);
+
         return $purchaseOrder;
     }
 
@@ -93,18 +93,18 @@ class StorePurchaseOrder extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'       => [
+            'reference'      => [
                 'sometimes',
                 'required',
                 $this->strict ? 'alpha_dash' : 'string'
             ],
-            'state'           => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
+            'state'          => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
             'delivery_state' => ['sometimes', 'required', Rule::enum(PurchaseOrderDeliveryStateEnum::class)],
-            'cost_items'      => ['sometimes', 'required', 'numeric', 'min:0'],
-            'cost_shipping'   => ['sometimes', 'required', 'numeric', 'min:0'],
-            'cost_total'      => ['sometimes', 'required', 'numeric', 'min:0'],
-            'date'            => ['sometimes', 'required'],
-            'currency_id'     => ['sometimes', 'required'],
+            'cost_items'     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_shipping'  => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'date'           => ['sometimes', 'required'],
+            'currency_id'    => ['sometimes', 'required'],
         ];
 
         if ($this->strict) {
@@ -128,23 +128,27 @@ class StorePurchaseOrder extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        $numberPurchaseOrdersStateCreating = $this->parent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->count();
-
-        if ($this->strict && $numberPurchaseOrdersStateCreating >= 1) {
-            $validator->errors()->add('purchase_order', 'Are you sure want to create new purchase order?');
+        if (!$this->strict) {
+            return;
         }
 
-        if ($this->strict && $this->parent->orgSupplierProducts()->where('is_available', true)->count() == 0) {
-            $message = match (class_basename($this->parent)) {
-                'OrgAgent' => __("Agent don't have any product"),
-                'OrgSupplier' => __("Supplier don't have any product"),
-                'OrgPartner' => __("Partner don't have any product"),
-            };
+        if ($this->parent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->exists()) {
+            $validator->errors()->add('purchase_order', __('Are you sure want to create new purchase order?'));
+        }
+
+        if ($this->parent instanceof OrgPartner) {
+            return;
+        }
+
+        if ($this->parent->orgSupplierProducts()->where('is_available', true)->doesntExist()) {
+            $message = $this->parent instanceof OrgAgent
+                ? __("Agent don't have any product")
+                : __("Supplier don't have any product");
             $validator->errors()->add('purchase_order', $message);
         }
     }
 
-    public function action(OrgAgent|OrgSupplier|OrgPartner $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): PurchaseOrder
+    public function action(OrgAgent|OrgSupplier|OrgPartner $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): PurchaseOrder
     {
         if (!$audit) {
             PurchaseOrder::disableAuditing();
@@ -178,7 +182,6 @@ class StorePurchaseOrder extends OrgAction
 
     public function inOrgPartner(OrgPartner $orgPartner, ActionRequest $request): PurchaseOrder
     {
-        // dd($orgPartner);
         $this->parent = $orgPartner;
         $this->initialisation($orgPartner->organisation, $request);
 

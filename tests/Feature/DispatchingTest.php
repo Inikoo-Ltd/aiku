@@ -19,6 +19,7 @@ use App\Actions\Dispatching\BatchCode\UpdateBatchCode;
 use App\Actions\Dispatching\Box\StoreBox;
 use App\Actions\Dispatching\Box\UpdateBox;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
+use App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydratePacker;
@@ -31,6 +32,19 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
+use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\Inventory\OrgStock\RepairIal01OrgStockConsumables;
+use App\Actions\Inventory\OrgStock\RetireIal01OrgStocks;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Actions\Maintenance\Catalogue\RemoveIal01FromBillsOfMaterials;
+use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use Illuminate\Routing\Route;
+use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
@@ -96,12 +110,14 @@ use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\Box;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Goods\TradeUnit;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dispatching\Trolley;
 use App\Models\Fulfilment\Pallet;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Goods\Stock;
 use App\Models\Helpers\Address;
@@ -115,9 +131,16 @@ use App\Models\Ordering\Transaction;
 use Config;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
+use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
+use App\Enums\Fulfilment\PalletStoredItem\PalletStoredItemStateEnum;
+use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
+use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use Illuminate\Support\Facades\Cache;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -1358,6 +1381,17 @@ test('delivery note address actions and temp picker and shipping data', function
     \App\Actions\Dispatching\DeliveryNote\SetTempPickerToDeliveryNote::run($deliveryNote, ['picker_user_id' => $this->user->id]);
 
     expect(\App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote))->toBeArray();
+
+    $deliveryNote->update(['is_cash_on_delivery' => true]);
+    $order = $deliveryNote->orders->first();
+    $order->update(['total_amount' => 2695.42, 'payment_amount' => 0.32]);
+
+    $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote->refresh());
+    expect($shippingData['cash_on_delivery']['amount'])->toBe(2695.10);
+
+    $order->update(['payment_amount' => 2695.42]);
+    $shippingData = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($deliveryNote->refresh());
+    expect($shippingData['cash_on_delivery'])->toBeNull();
 });
 
 test('change picking bay on delivery note', function () {
@@ -1491,7 +1525,10 @@ test('picking waiting warehouse and crm flow', function () {
     \App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
 
     $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2]);
-    \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1]);
+    \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run($item->refresh(), $this->user, [
+        'quantity'              => 1,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+    ]);
 
     $item->update(['has_waiting_warehouse' => true, 'quantity_waiting_warehouse' => 2, 'locked_at' => null]);
     $undone = \App\Actions\Dispatching\Picking\UndoSetAsWaitingWarehouse::run($item->refresh());
@@ -1749,6 +1786,33 @@ test('cancel delivery note', function () {
     expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
 });
 
+test('only dispatch supervisors can cancel a delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $user = $this->adminGuest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+
+    $user->syncRoles([RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    actingAs($user->refresh());
+    patch(route('grp.models.delivery_note.state.cancel', $deliveryNote->id));
+    expect($deliveryNote->refresh()->state)->not->toBe(DeliveryNoteStateEnum::CANCELLED);
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles([RolesEnum::getRoleName('dispatch-supervisor', $this->warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    actingAs($user->refresh());
+    patch(route('grp.models.delivery_note.state.cancel', $deliveryNote->id));
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::CANCELLED);
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    actingAs($user->refresh());
+});
+
 test('UI show delivery note richer states and tabs', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
@@ -1815,6 +1879,53 @@ function createPalletReturnWithPallet($ctx): PalletReturn
 
     return $palletReturn->refresh();
 }
+
+test('stored item return rows do not add queries as they grow', function () {
+    $palletReturn = createPalletReturnWithPallet($this);
+    $pallet       = $palletReturn->pallets()->first();
+
+    $addStoredItems = function (int $count) use ($palletReturn, $pallet) {
+        foreach (range(1, $count) as $index) {
+            $storedItem = StoreStoredItem::make()->action(
+                $palletReturn->fulfilmentCustomer,
+                ['reference' => 'NQ'.Str::random(6)]
+            );
+
+            $pallet->storedItems()->attach($storedItem->id, [
+                'quantity' => 1,
+                'state'    => PalletStoredItemStateEnum::ACTIVE,
+            ]);
+
+            $storedItem->update(['total_quantity' => 1]);
+        }
+
+        $pallet->update(['state' => \App\Enums\Fulfilment\Pallet\PalletStateEnum::STORING]);
+    };
+
+    $route = (new \Illuminate\Routing\Route(['GET'], 'x', []))->name('grp.org.warehouses.show.dispatching.pallet-returns.show');
+    request()->setRouteResolver(fn () => $route);
+
+    $countQueries = function () use ($palletReturn) {
+        $queries = 0;
+        DB::listen(function () use (&$queries) {
+            $queries++;
+        });
+
+        PalletReturnItemsWithStoredItemsResource::collection(
+            IndexStoredItemsInReturn::run($palletReturn->refresh(), 'stored_items')
+        )->toArray(request());
+
+        return $queries;
+    };
+
+    $addStoredItems(2);
+    $withTwo = $countQueries();
+
+    $addStoredItems(6);
+    $withEight = $countQueries();
+
+    expect($withEight)->toBe($withTwo);
+});
 
 test('UI goods out pallet return show pages', function () {
     $palletReturn = createPalletReturnWithPallet($this);
@@ -2032,5 +2143,393 @@ test('marks record as failed with a clear message when sku is not found', functi
     $uploadRecord->refresh();
 
     expect($uploadRecord->status)->toBe(UploadRecordStatusEnum::FAILED->value)
-        ->and($uploadRecord->errors)->toContain("SKU 'NON-EXISTENT-SKU' not found.");
+        ->and($uploadRecord->errors)->toContain("SKO 'NON-EXISTENT-SKU' not found.");
 });
+
+test('org stock notes and consumables reach the picking screen', function () {
+    /** @var DeliveryNoteItem $deliveryNoteItem */
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+
+    UpdateOrgStock::make()->action(
+        orgStock: $deliveryNoteItem->orgStock,
+        modelData: [
+            'note_to_pickers' => 'Include :qty import address label(s)',
+            'note_to_packers' => 'Fold the label inside the box',
+            'consumables'     => "IAL01 x 1\nLEAF-02 x 2",
+        ]
+    );
+
+    expect($deliveryNoteItem->orgStock->refresh()->consumables)->toEqual([
+        ['code' => 'IAL01', 'quantity' => 1.0],
+        ['code' => 'LEAF-02', 'quantity' => 2.0],
+    ]);
+
+    $deliveryNoteItem->update(['quantity_picked' => $deliveryNoteItem->quantity_required]);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    $items = IndexDeliveryNoteItemsStateHandling::run(
+        $deliveryNoteItem->deliveryNote,
+        deliveryNoteItemId: $deliveryNoteItem->id
+    );
+
+    $item = DeliveryNoteItemsStateHandlingResource::collection($items)->resolve()[0];
+
+    $quantityOrdered = (int) $deliveryNoteItem->transaction->quantity_ordered;
+
+    expect($item['note_to_pickers'])->toBe("Include $quantityOrdered import address label(s)")
+        ->and($item['note_to_packers'])->toBe('Fold the label inside the box')
+        ->and(GetDeliveryNoteConsumables::run($deliveryNoteItem->deliveryNote))->toEqual([
+            ['code' => 'IAL01', 'quantity' => (float) $quantityOrdered],
+            ['code' => 'LEAF-02', 'quantity' => 2.0 * $quantityOrdered],
+        ]);
+
+    $deliveryNoteItem->update(['quantity_picked' => 0]);
+
+    expect(GetDeliveryNoteConsumables::run($deliveryNoteItem->deliveryNote))
+        ->toBe([]);
+});
+
+test('repair ial01 org stock consumables dry run writes nothing', function () {
+    $result = RepairIal01OrgStockConsumables::run(apply: false);
+
+    expect($result['org_stocks'])->toBe(0)
+        ->and($result['written'])->toBe(0);
+});
+
+test('ial01 bom removal is blocked until a consumable replaces the instruction', function () {
+    /** @var DeliveryNoteItem $deliveryNoteItem */
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('transaction_id')->whereNotNull('org_stock_id')->firstOrFail();
+    $orgStock         = $deliveryNoteItem->orgStock;
+    $product          = $deliveryNoteItem->transaction->model;
+
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, array_merge(
+        TradeUnit::factory()->definition(),
+        ['code' => 'IAL01', 'name' => 'Import Address Labels']
+    ));
+
+    $product->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock->update(['consumables' => null]);
+
+    $action = new RemoveIal01FromBillsOfMaterials();
+
+    expect($action->getProductIds($tradeUnit))->toContain($product->id);
+
+    $blocked = $action->handle(apply: true);
+    expect($blocked['blocked'])->toBeTrue()
+        ->and($product->fresh()->tradeUnits->pluck('id'))->toContain($tradeUnit->id);
+
+    $product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+    $orgStock->update(['consumables' => [['code' => 'IAL01', 'quantity' => 1]]]);
+
+    $done = $action->handle(apply: true);
+    expect($done['blocked'])->toBeFalse()
+        ->and($product->fresh()->tradeUnits->pluck('id'))->not->toContain($tradeUnit->id);
+});
+
+test('ial01 org stock retirement is blocked until boms are clear and labels are picked', function () {
+    $tradeUnit = TradeUnit::where('code', 'IAL01')->firstOr(fn () => StoreTradeUnit::make()->action($this->group, array_merge(
+        TradeUnit::factory()->definition(),
+        ['code' => 'IAL01', 'name' => 'Import Address Labels']
+    )));
+
+    /** @var DeliveryNoteItem $deliveryNoteItem */
+    $deliveryNoteItem = DeliveryNoteItem::whereNotNull('org_stock_id')->firstOrFail();
+    $labelOrgStock    = $deliveryNoteItem->orgStock;
+
+    $labelOrgStock->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+    $labelOrgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action($labelOrgStock, $location, [
+        'quantity'   => 500,
+        'type'       => LocationStockTypeEnum::PICKING,
+        'fetched_at' => now(),
+    ], strict: false);
+
+    $action = new RetireIal01OrgStocks();
+
+    // A bill of materials line still naming the label blocks the write off.
+    $product = $deliveryNoteItem->transaction->model;
+    $product->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]]);
+
+    expect($action->handle(apply: true)['blocked'])->toBeTrue()
+        ->and($locationOrgStock->refresh()->quantity)->toEqual(500);
+
+    $product->tradeUnits()->detach($tradeUnit->id);
+
+    // A label still waiting to be picked blocks it too, a picker cannot pick from an empty location.
+    $deliveryNoteItem->update(['quantity_required' => 5, 'quantity_picked' => 1]);
+    $deliveryNoteItem->deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING]);
+
+    expect($action->countUnpickedLabels($tradeUnit))->toEqual(4.0)
+        ->and($action->handle(apply: true)['blocked'])->toBeTrue()
+        ->and($locationOrgStock->refresh()->quantity)->toEqual(500);
+
+    // Once picked, the stock is written off through an audited movement and the SKO discontinued.
+    $deliveryNoteItem->update(['quantity_picked' => 5]);
+
+    $movementsBefore = $labelOrgStock->orgStockMovements()->count();
+    $result          = $action->handle(apply: true);
+
+    expect($result['blocked'])->toBeFalse()
+        ->and($result['written_off'])->toBeGreaterThan(0)
+        ->and($locationOrgStock->refresh()->quantity)->toEqual(0)
+        ->and($labelOrgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUED)
+        ->and($labelOrgStock->orgStockMovements()->count())->toBe($movementsBefore + $result['written_off']);
+
+    $movement = $labelOrgStock->orgStockMovements()
+        ->where('location_id', $locationOrgStock->location_id)
+        ->latest('id')
+        ->first();
+
+    expect($movement->reason)->toBe(OrgStockMovementReasonEnum::DATA_FIX)
+        ->and((float) $movement->quantity)->toEqual(-500.0)
+        ->and((float) $movement->audited_quantity)->toEqual(0.0);
+});
+
+test('UI show delivery note navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeNoteOn = function (string $date, bool $isPremiumDispatch = false) {
+        $deliveryNote = makeDeliveryNote($this);
+        $deliveryNote->update([
+            'state'               => DeliveryNoteStateEnum::UNASSIGNED,
+            'date'                => $date,
+            'is_premium_dispatch' => $isPremiumDispatch,
+        ]);
+
+        return $deliveryNote->refresh();
+    };
+
+    DeliveryNote::query()->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+
+    $oldest  = $makeNoteOn('2026-07-18 10:00:00');
+    $middle  = $makeNoteOn('2026-07-19 10:00:00');
+    $premium = $makeNoteOn('2026-07-20 10:00:00', isPremiumDispatch: true);
+
+    $showRoute = fn (DeliveryNote $deliveryNote) => route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
+        $this->organisation->slug, $this->warehouse->slug, $deliveryNote->slug,
+    ]);
+
+    get($showRoute($oldest).'?bucket=unassigned')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $premium->reference)
+            ->where('navigation.next.label', $middle->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket=unassigned&bucket_sort=-reference')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('navigation.previous')
+            ->has('navigation.next')
+            ->etc()
+    );
+
+    get($showRoute($middle))->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+
+});
+
+test('UI show pallet return navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeReturnOn = function (string $confirmedAt) {
+        $palletReturn = createPalletReturnWithPallet($this);
+        $palletReturn->update([
+            'state'        => PalletReturnStateEnum::CONFIRMED,
+            'confirmed_at' => $confirmedAt,
+            'date'         => $confirmedAt,
+        ]);
+
+        return $palletReturn->refresh();
+    };
+
+    PalletReturn::query()->update(['state' => PalletReturnStateEnum::DISPATCHED]);
+
+    $oldest = $makeReturnOn('2026-07-18 10:00:00');
+    $middle = $makeReturnOn('2026-07-19 10:00:00');
+    $newest = $makeReturnOn('2026-07-20 10:00:00');
+
+    $showRoute = fn (PalletReturn $palletReturn) => route('grp.org.warehouses.show.dispatching.pallet-returns.show', [
+        $this->organisation->slug, $this->warehouse->slug, $palletReturn->slug,
+    ]);
+
+    get($showRoute($middle).'?bucket=confirmed')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket=confirmed&bucket_sort=date')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle))->assertInertia(
+        fn (AssertableInertia $page) => $page->has('navigation')->etc()
+    );
+
+    PalletReturn::whereIn('id', [$oldest->id, $middle->id, $newest->id])->update(['confirmed_at' => null, 'date' => null]);
+
+    get($showRoute($middle).'?bucket=confirmed')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+});
+
+test('UI show pallet return navigation orders the new bucket by its latest activity', function () {
+    $this->withoutExceptionHandling();
+
+    PalletReturn::query()->update(['state' => PalletReturnStateEnum::DISPATCHED]);
+
+    $makeReturn = function (PalletReturnStateEnum $state, array $timestamps) {
+        $palletReturn = createPalletReturnWithPallet($this);
+        $palletReturn->update(array_merge(['state' => $state, 'date' => null], $timestamps));
+
+        return $palletReturn->refresh();
+    };
+
+    $confirmed = $makeReturn(PalletReturnStateEnum::CONFIRMED, [
+        'confirmed_at' => '2026-07-20 10:00:00',
+        'submitted_at' => '2026-07-14 10:00:00',
+    ]);
+
+    $submitted = $makeReturn(PalletReturnStateEnum::SUBMITTED, [
+        'confirmed_at' => null,
+        'submitted_at' => '2026-07-19 10:00:00',
+    ]);
+
+    $inProcess = $makeReturn(PalletReturnStateEnum::IN_PROCESS, [
+        'confirmed_at' => null,
+        'submitted_at' => null,
+    ]);
+    $inProcess->forceFill(['created_at' => '2026-07-18 10:00:00'])->saveQuietly();
+
+    $showRoute = fn (PalletReturn $palletReturn) => route('grp.org.warehouses.show.dispatching.pallet-returns.show', [
+        $this->organisation->slug, $this->warehouse->slug, $palletReturn->slug,
+    ]);
+
+    get($showRoute($submitted).'?bucket=new')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $confirmed->reference)
+            ->where('navigation.next.label', $inProcess->reference)
+            ->etc()
+    );
+});
+
+test('a temporary claim on a delivery note slides forward while it is being used', function () {
+    $deliveryNote = new DeliveryNote();
+    $deliveryNote->forceFill([
+        'id'             => 999999,
+        'state'          => DeliveryNoteStateEnum::HANDLING,
+        'picker_user_id' => null,
+        'packer_user_id' => null,
+    ]);
+
+    $checker = new class () {
+        use \App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
+
+        public function check(DeliveryNote $deliveryNote): bool
+        {
+            return $this->canHandleDeliveryNote($deliveryNote);
+        }
+    };
+
+    // Nobody is assigned and nothing has been claimed
+    expect($checker->check($deliveryNote))->toBeFalse();
+
+    SetTempPickerToDeliveryNote::claimDeliveryNoteHandling($deliveryNote);
+    $claimedUntil = session('temp_handling_delivery_note.expires_at');
+
+    // Picking a real note runs long; using the claim has to push its expiry out
+    $this->travel(30)->minutes();
+    expect($checker->check($deliveryNote))->toBeTrue()
+        ->and(session('temp_handling_delivery_note.expires_at')->gt($claimedUntil))->toBeTrue();
+
+    // Left alone for longer than the window, it lapses
+    $this->travel(120)->minutes();
+    expect($checker->check($deliveryNote))->toBeFalse();
+
+    $this->travelBack();
+});
+
+test('resuming a blocked delivery note also brings its order out of blocked', function () {
+    $deliveryNote = makeDeliveryNote($this);
+
+    // The state P9KXCX8FAB was left in: both note and order blocked, nothing actually waiting
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+    $this->order->update(['state' => OrderStateEnum::HANDLING_BLOCKED]);
+
+    $deliveryNote = StartHandlingDeliveryNote::make()->action($deliveryNote->refresh(), $this->user);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($this->order->refresh()->state)->toBe(OrderStateEnum::HANDLING);
+});
+
+test('sync required pick quantity updates delivery note items in place', function () {
+    $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock    = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $transaction = $this->order->transactions()->where('model_type', 'Product')->first();
+    $transaction->updateQuietly(['quantity_ordered' => 4]);
+
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'SYNC-'.$orgStock->id,
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 10
+    ]);
+
+    DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $transaction->model_id, 'org_stock_id' => $orgStock->id],
+        ['quantity' => 3]
+    );
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($orgStock);
+
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(12.0)
+        ->and((float) $deliveryNoteItem->original_quantity_required)->toBe(12.0)
+        ->and(DeliveryNoteItem::find($deliveryNoteItem->id))->not->toBeNull();
+
+    return $deliveryNoteItem;
+});
+
+test('sync required pick quantity skips non product transactions', function (DeliveryNoteItem $deliveryNoteItem) {
+    $deliveryNoteItem->transaction->updateQuietly(['model_type' => 'Service']);
+
+    DB::table('product_has_org_stocks')
+        ->where('org_stock_id', $deliveryNoteItem->org_stock_id)
+        ->update(['quantity' => 5]);
+
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($deliveryNoteItem->orgStock);
+
+    expect((float) $deliveryNoteItem->refresh()->quantity_required)->toBe(12.0);
+})->depends('sync required pick quantity updates delivery note items in place');
+
+test('quantity required cannot be set through the strict update path the picking UI uses', function (DeliveryNoteItem $deliveryNoteItem) {
+    UpdateDeliveryNoteItem::make()->action($deliveryNoteItem, [
+        'quantity_required'          => 999,
+        'original_quantity_required' => 999,
+    ]);
+
+    expect((float) $deliveryNoteItem->refresh()->quantity_required)->toBe(12.0);
+})->depends('sync required pick quantity updates delivery note items in place');

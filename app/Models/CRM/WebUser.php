@@ -33,7 +33,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
-use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Sluggable\SlugOptions;
 
 /**
@@ -82,7 +81,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\CRM\WebUserPasswordReset> $passwordResets
  * @property-read Collection<int, \Spatie\Permission\Models\Permission> $permissions
- * @property-read Collection<int, \Spatie\Permission\Models\Role> $roles
+ * @property-read Collection<int, \App\Models\SysAdmin\Role> $roles
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read \App\Models\CRM\WebUserStats|null $stats
@@ -107,7 +106,6 @@ use Spatie\Sluggable\SlugOptions;
 class WebUser extends Authenticatable implements HasMedia, Auditable
 {
     use IsUserable;
-    use HasPermissions;
     use HasEmail;
     use HasImage;
     use InCustomer;

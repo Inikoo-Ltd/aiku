@@ -52,7 +52,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAsset> $minionProduct
- * @property-read \App\Models\Masters\MasterVariantOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterVariantOrderingStats|null $orderingStats
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterVariantStats|null $stats
@@ -129,11 +128,6 @@ class MasterVariant extends Model implements Auditable, HasMedia
     public function orderingStats(): HasOne
     {
         return $this->hasOne(MasterVariantOrderingStats::class);
-    }
-
-    public function orderingIntervals(): HasOne
-    {
-        return $this->hasOne(MasterVariantOrderingIntervals::class);
     }
 
     public function timeSeries(): HasMany

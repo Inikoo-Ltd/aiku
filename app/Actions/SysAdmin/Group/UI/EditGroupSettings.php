@@ -8,7 +8,8 @@
 
 namespace App\Actions\SysAdmin\Group\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
 use App\Models\SysAdmin\Group;
@@ -19,7 +20,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
-class EditGroupSettings extends GrpAction
+class EditGroupSettings extends OrgAction
 {
     use WithSysAdminAuthorization;
 
@@ -32,7 +33,7 @@ class EditGroupSettings extends GrpAction
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         return $this->handle($this->group);
     }
 
@@ -109,6 +110,26 @@ class EditGroupSettings extends GrpAction
                         ],
                     ],
                      [
+                        'label'  => __('Clocks'),
+                        'icon'   => 'fa-light fa-clock',
+                        'fields' => [
+                            'timezones' => [
+                                'type'        => 'select_infinite',
+                                'label'       => __('Timezones shown in the footer'),
+                                'information' => __('These clocks are shown to everybody in the group'),
+                                'options'     => IndexTimeZones::make()->optionsFor($group->world_clock_timezones),
+                                'mode'        => 'multiple',
+                                'fetchRoute'  => [
+                                    'name' => 'grp.json.timezones',
+                                ],
+                                'valueProp'   => 'value',
+                                'labelProp'   => 'label',
+                                'required'    => false,
+                                'value'       => $group->world_clock_timezones,
+                            ],
+                        ],
+                    ],
+                    [
                         'label'  => __('Page Builder'),
                         'icon'   => 'fa-light fa-pager',
                         'fields' => [

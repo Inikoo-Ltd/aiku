@@ -65,7 +65,6 @@ class StoreOutbox extends OrgAction
         /** @var Outbox $outbox */
         $outbox = $orgPostRoom->outboxes()->create($modelData);
         $outbox->stats()->create();
-        $outbox->intervals()->create();
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
             $outbox->timeSeries()->create(['frequency' => $frequency]);
         }

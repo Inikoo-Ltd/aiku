@@ -54,7 +54,7 @@ class CallApiGlsEsShipping extends OrgAction
         $totalWeight = $parent->effective_weight / 1000;
         $totalParcel = count($parent->parcels ?? []);
 
-        if ($totalWeight > $limit && ($countryCode !== 'ES' && $totalParcel > 1)) {
+        if ($this->requiresPerParcelShipments($countryCode, $totalParcel)) {
             return $this->splitByWeightLimit($parent, $shipper, $limit, $totalWeight);
         }
 
@@ -70,6 +70,17 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
         return $this->getGlsEsLabel($shipper, $modelData);
+    }
+
+    /**
+     * EuroBusinessParcel (service 74) rejects Envio with Bultos > 1: in 120 days of production
+     * traffic not one light multi parcel international shipment got through the single Envio
+     * path, while every one sent as one Envio per parcel succeeded. ES and PT (service 1)
+     * accept multi parcel Envios, so they keep the single call.
+     */
+    public function requiresPerParcelShipments(?string $countryCode, int $totalParcel): bool
+    {
+        return !in_array($countryCode, ['ES', 'PT']) && $totalParcel > 1;
     }
 
     public function splitByWeightLimit(DeliveryNote|PalletReturn $parent, Shipper $shipper, float $limit, float $totalWeight)
@@ -285,7 +296,6 @@ class CallApiGlsEsShipping extends OrgAction
 
     public function getGlsEsLabel(Shipper $shipper, array $modelData): array
     {
-        $status    = 'fail';
         $errorData = [];
 
         $uidClient = $this->getAccessToken($shipper);
@@ -328,6 +338,17 @@ class CallApiGlsEsShipping extends OrgAction
             ];
         }
 
+        return $this->parseLabelResponse($postResult, $modelData, $errorData);
+    }
+
+    /**
+     * @param  array<string, mixed>  $modelData
+     * @param  array<string, string>  $errorData
+     */
+    protected function parseLabelResponse(string|bool $postResult, array $modelData, array $errorData = []): array
+    {
+        $status = 'fail';
+
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($postResult);
 
@@ -354,8 +375,20 @@ class CallApiGlsEsShipping extends OrgAction
             } else {
                 $status        = 'success';
                 $numberParcels = count($result);
-                for ($i = 0; $i < count($result); $i++) {
-                    $modelData['label'] = (string)$result[$i];
+
+                if ($numberParcels === 1) {
+                    $modelData['label'] = (string)$result[0];
+                } else {
+                    try {
+                        $modelData['label'] = $this->mergePdfStrings(
+                            array_map(fn ($etiqueta) => base64_decode((string)$etiqueta), $result)
+                        );
+                    } catch (\Throwable $e) {
+                        $status    = 'fail';
+                        $errorData = [
+                            'message' => 'Failed to merge parcel labels: '.$e->getMessage(),
+                        ];
+                    }
                 }
             }
         }
@@ -488,12 +521,12 @@ class CallApiGlsEsShipping extends OrgAction
         }
 
         $shippingNotes = $parent->shipping_notes ?? '';
-        $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60));
+        $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes)), 60, '');
 
         $weight = $splitWeight ?? ($parent->effective_weight / 1000);
 
         $countryCode = Arr::get($parentResource, 'to_address.country_code');
-        if ($countryCode == 'ES') {
+        if (in_array($countryCode, ['ES', 'PT'])) {
             $service = '1';
         } else {
             $service = '74';
@@ -526,7 +559,7 @@ class CallApiGlsEsShipping extends OrgAction
         if (app()->environment('local')) {
             $shipmentData["RefC"] = 'test+' . rand(1000, 9999) . ' ' . strtoupper($parent->reference) . ' V2';
         } else {
-            $shipmentData["RefC"] = strtoupper($parent->reference) . ' V2' . ($suffix !== null ? '-b-' . ($suffix + 1) : '');
+            $shipmentData["RefC"] = $this->buildRefC($parent->reference, $suffix);
         }
 
 
@@ -535,6 +568,8 @@ class CallApiGlsEsShipping extends OrgAction
             $amount               = str_replace('.', ',', (string)$amount);
             $shipmentData["reem"] = $amount;
         }
+
+        $shipmentData = $this->xmlEscape($shipmentData);
 
         return '<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -579,6 +614,42 @@ class CallApiGlsEsShipping extends OrgAction
 </GrabaServicios>
 </soap:Body>
 </soap:Envelope>';
+    }
+
+    /**
+     * RefC (Referencia tipo C) allows at most 15 characters and must stay unique per
+     * shipment, so when it runs over the decorative " V2" marker goes first and only then
+     * the reference itself is trimmed; the "-b-N" parcel suffix is never cut, otherwise the
+     * parcels of one split order would collide on the same reference.
+     */
+    public function buildRefC(string $reference, ?int $suffix): string
+    {
+        $tail = $suffix !== null ? '-b-' . ($suffix + 1) : '';
+        $refC = strtoupper($reference) . ' V2';
+
+        if (strlen($refC . $tail) > 15) {
+            $refC = strtoupper($reference);
+        }
+        if (strlen($refC . $tail) > 15) {
+            $refC = substr($refC, 0, 15 - strlen($tail));
+        }
+
+        return $refC . $tail;
+    }
+
+    /**
+     * Customer supplied values go straight into hand built SOAP XML, so a name like
+     * "Boulangerie & Fils" used to produce an invalid document and a failed shipment.
+     *
+     * @param  array<string, mixed>  $values
+     * @return array<string, string>
+     */
+    protected function xmlEscape(array $values): array
+    {
+        return array_map(
+            fn ($value) => htmlspecialchars((string)$value, ENT_XML1 | ENT_QUOTES, 'UTF-8'),
+            $values
+        );
     }
 
     private function mergePdfStrings(array $pdfStrings): string

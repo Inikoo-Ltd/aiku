@@ -9,9 +9,6 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
-use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateMarketingIngredients;
-use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Enums\Catalogue\Product\ProductUnitRelationshipType;
@@ -19,19 +16,16 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
-use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\Aurora\WithAuroraImages;
 use App\Transfers\Aurora\WithAuroraParsers;
 use App\Transfers\SourceOrganisationService;
-use Exception;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Throwable;
 
 class FetchAuroraTradeUnits extends FetchAuroraAction
 {
@@ -56,207 +50,15 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         if ($tradeUnitData) {
             $metaTradeUnit = TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->first();
             if ($metaTradeUnit) {
+                // Trade units carry group_id only: every organisation reads the same row
+                // and staff maintain them in aiku. Aurora may still send one aiku has
+                // never seen, it may not rewrite an existing one.
                 $tradeUnit = TradeUnit::withTrashed()->where('source_id', $tradeUnitData['trade_unit']['source_id'])->first();
-                if ($tradeUnit) {
-                    try {
-                        $dataToUpdate = Arr::only(
-                            $tradeUnitData['trade_unit'],
-                            [
-                                'name',
-                                'code',
-                                'source_id',
-                                'source_slug',
-                                'fetched_at',
-                                'last_fetched_at'
-                            ]
-                        );
-
-                        $tradeUnit = UpdateTradeUnit::make()->action(
-                            tradeUnit: $tradeUnit,
-                            modelData: $dataToUpdate,
-                            hydratorsDelay: $this->hydratorsDelay,
-                            strict: false,
-                            audit: false
-                        );
-                        $this->recordChange($organisationSource, $tradeUnit->wasChanged());
-                    } catch (Exception $e) {
-                        $this->recordError($organisationSource, $e, $tradeUnitData['trade_unit'], 'TradeUnit', 'update');
-
-                        return null;
-                    }
-                }
 
 
-                if ($organisation->id == 2) {
-                    // Tue 16 Dec 2025 stop updating weights and dimensions from Aurora
-                    //                    $dataToUpdate = Arr::only(
-                    //                        $tradeUnitData['trade_unit'],
-                    //                        ['gross_weight', 'marketing_weight', 'marketing_dimensions']
-                    //                    );
-                    //
-                    //                    if (!Arr::get($tradeUnitData, 'trade_unit.gross_weight')) {
-                    //                        data_forget($tradeUnitData, 'trade_unit.gross_weight');
-                    //                    }
-                    //                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_weight')) {
-                    //                        data_forget($tradeUnitData, 'trade_unit.marketing_weight');
-                    //                    }
-                    //                    if (!Arr::get($tradeUnitData, 'trade_unit.marketing_dimensions')) {
-                    //                        data_forget($tradeUnitData, 'trade_unit.marketing_dimensions');
-                    //                    }
-                    //
-                    //
-                    //                    $tradeUnit = UpdateTradeUnit::make()->action(
-                    //                        tradeUnit: $metaTradeUnit,
-                    //                        modelData: $dataToUpdate,
-                    //                        hydratorsDelay: $this->hydratorsDelay,
-                    //                        strict: false,
-                    //                        audit: false
-                    //                    );
-
-
-                    $skSource = null;
-
-
-                    foreach ($tradeUnit->sources['parts'] as $source) {
-                        $dataSource = explode(':', $source);
-                        if ($dataSource[0] == 2) {
-                            $skSource = $dataSource[1];
-                        }
-                    }
-
-                    if ($skSource) {
-                        $ingredientsToDelete = $tradeUnit->ingredients()->pluck('trade_unit_has_ingredients.ingredient_id')->toArray();
-
-
-                        $ingredients = [];
-
-                        $position = 0;
-                        foreach (
-                            DB::connection('aurora')->table('Part Material Bridge')
-                                ->where('Part SKU', $skSource)->orderBy('Part Material Key')->get() as $auroraIngredients
-                        ) {
-                            $ingredient = $this->parseIngredient(
-                                $organisation->id.
-                                ':'.$auroraIngredients->{'Material Key'}
-                            );
-                            if ($ingredient) {
-                                $ingredientsToDelete = array_diff($ingredientsToDelete, [$ingredient->id]);
-
-                                $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
-
-
-                                $arguments = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
-                                $position++;
-                                $arguments['position']        = $position;
-                                $ingredients[$ingredient->id] = $arguments;
-                            }
-
-                            $tradeUnit->ingredients()->syncWithoutDetaching($ingredients);
-                        }
-
-
-                        $tradeUnit->ingredients()->whereIn('ingredient_id', array_keys($ingredientsToDelete))->forceDelete();
-                        TradeUnitsHydrateMarketingIngredients::run($tradeUnit);
-                        foreach ($tradeUnit->products as $product) {
-                            ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
-                        }
-                    }
-                }
-            } else {
-                try {
-                    $tradeUnit = StoreTradeUnit::make()->action(
-                        group: $organisationSource->getOrganisation()->group,
-                        modelData: $tradeUnitData['trade_unit'],
-                        hydratorsDelay: $this->hydratorsDelay,
-                        strict: false,
-                        audit: false
-                    );
-                    TradeUnit::enableAuditing();
-                    $this->saveMigrationHistory(
-                        $tradeUnit,
-                        Arr::except($tradeUnitData['trade_unit'], ['fetched_at', 'last_fetched_at', 'source_id'])
-                    );
-
-                    $this->recordNew($organisationSource);
-                } catch (Exception|Throwable $e) {
-                    $this->recordError($organisationSource, $e, $tradeUnitData['trade_unit'], 'TradeUnit', 'store');
-
-                    return null;
-                }
-            }
-
-
-            if (!$tradeUnit) {
-                $tradeUnit = TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->first();
-            }
-
-            if ($tradeUnit) {
-                $this->updateTradeUnitSources($tradeUnit, $tradeUnitData['trade_unit']['source_id']);
-
-                if (isset($tradeUnitData['barcodes']) && count($tradeUnitData['barcodes']) > 0) {
-                    $tradeUnit->barcodes()->sync(
-                        $tradeUnitData['barcodes']
-                    );
-
-                    $barcodeId     = null;
-                    $barcodeNumber = null;
-
-                    foreach ($tradeUnitData['barcodes'] as $barcodeKey => $barcodeData) {
-                        if ($barcodeData['status']) {
-                            /** @var Barcode $barcode */
-                            $barcode = Barcode::find($barcodeKey);
-
-                            $barcodeId     = $barcode->id;
-                            $barcodeNumber = $barcode->number;
-                            break;
-                        }
-                    }
-
-                    $tradeUnit->updateQuietly([
-                        'barcode_id' => $barcodeId,
-                        'barcode'    => $barcodeNumber,
-                    ]);
-                }
-
-                // trust only organisation 2 for ingredients
-                if ($organisation->id == 2) {
-                    $ingredientsToDelete = $tradeUnit->ingredients()->pluck('trade_unit_has_ingredients.ingredient_id')->toArray();
-
-                    $dataSource  = explode(':', $tradeUnit->source_id);
-                    $ingredients = [];
-                    $position    = 0;
-                    foreach (
-                        DB::connection('aurora')->table('Part Material Bridge')
-                            ->where('Part SKU', $dataSource[1])->get() as $auroraIngredients
-                    ) {
-                        $ingredient = $this->parseIngredient(
-                            $organisation->id.
-                            ':'.$auroraIngredients->{'Material Key'}
-                        );
-                        if ($ingredient) {
-                            $ingredientsToDelete = array_diff($ingredientsToDelete, [$ingredient->id]);
-
-                            $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
-
-                            $arguments = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
-                            $position++;
-                            $arguments['position']        = $position;
-                            $ingredients[$ingredient->id] = $arguments;
-                        }
-
-
-                        $tradeUnit->ingredients()->syncWithoutDetaching($ingredients);
-                    }
-
-
-                    $tradeUnit->ingredients()->whereIn('ingredient_id', array_keys($ingredientsToDelete))->forceDelete();
-
-                    TradeUnitsHydrateMarketingIngredients::run($tradeUnit);
-                    foreach ($tradeUnit->products as $product) {
-                        ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
-                    }
-                }
-
+                // Ingredients are maintained in aiku for every organisation now. Aurora
+                // used to be trusted for them via sk, which deleted and rewrote the whole
+                // trade_unit_has_ingredients set on each fetch.
 
                 $this->fetchTradeUnitProductPropertiesInfo(
                     $tradeUnit,
@@ -295,36 +97,28 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
             $dangerousGoodsInfo = $this->fetchAuroraProductPropertiesInfo($product);
 
-            if ($this->organisation->id == 1) {
+            // Fill gaps only, for every organisation. aw used to overwrite these
+            // outright, which is the one way Aurora could still rewrite a group level
+            // trade unit that staff had already corrected.
+            $filteredDangerousGoodsInfo = array_filter($dangerousGoodsInfo, function ($value) {
+                return !is_null($value);
+            });
+
+            $fieldsToUpdate = [];
+            foreach ($filteredDangerousGoodsInfo as $field => $value) {
+                if (is_null($tradeUnit->$field)) {
+                    $fieldsToUpdate[$field] = $value;
+                }
+            }
+
+            if (!empty($fieldsToUpdate)) {
                 UpdateTradeUnit::make()->action(
                     tradeUnit: $tradeUnit,
-                    modelData: $dangerousGoodsInfo,
+                    modelData: $fieldsToUpdate,
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
-            } else {
-                $filteredDangerousGoodsInfo = array_filter($dangerousGoodsInfo, function ($value) {
-                    return !is_null($value);
-                });
-
-                // Filter dangerous goods info to only update fields that are currently null
-                $fieldsToUpdate = [];
-                foreach ($filteredDangerousGoodsInfo as $field => $value) {
-                    if (is_null($tradeUnit->$field)) {
-                        $fieldsToUpdate[$field] = $value;
-                    }
-                }
-
-                if (!empty($fieldsToUpdate)) {
-                    UpdateTradeUnit::make()->action(
-                        tradeUnit: $tradeUnit,
-                        modelData: $fieldsToUpdate,
-                        hydratorsDelay: $this->hydratorsDelay,
-                        strict: false,
-                        audit: false
-                    );
-                }
             }
         }
     }

@@ -25,12 +25,16 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -55,6 +59,8 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\SysAdmin\Organisation;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -65,6 +71,7 @@ class ShowOrder extends OrgAction
     use IsOrder;
     use WithOrderingAuthorisation;
     use WithOrderForbiddenCountryCheck;
+    use WithBucketNavigation;
 
     private Shop|Customer|CustomerClient|Purge|CustomerSalesChannel $parent;
     private CustomerSalesChannel $customerSalesChannel;
@@ -142,7 +149,7 @@ class ShowOrder extends OrgAction
         $timeline = [];
         foreach (OrderStateEnum::cases() as $state) {
             if ($state === OrderStateEnum::CREATING) {
-                $timestamp = $order->created_at;
+                $timestamp = $order->date;
             } else {
                 $timestamp = $order->{$state->snake().'_at'} ? $order->{$state->snake().'_at'} : null;
             }
@@ -199,12 +206,20 @@ class ShowOrder extends OrgAction
                     "field"       => "public_notes"
                 ],
                 [
-                    "label"       => __("Order private note"),
+                    "label"       => __("Private CRM note"),
                     "note"        => $order->internal_notes ?? '',
-                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
+                    "information" => __("This note is only visible to staff members in the order. It is not shown in the delivery note."),
                     "editable"    => true,
                     "bgColor"     => "#FCF4A3",
                     "field"       => "internal_notes"
+                ],
+                [
+                    "label"       => __("Private warehouse note"),
+                    "note"        => $order->private_warehouse_note ?? '',
+                    "information" => __("This note is only visible to staff members and is shown in the delivery note."),
+                    "editable"    => true,
+                    "bgColor"     => "#FFD8A8",
+                    "field"       => "private_warehouse_note"
                 ]
             ]
         ];
@@ -375,6 +390,12 @@ class ShowOrder extends OrgAction
                     ],
                     'update_discount'            => [
                         'name'       => 'grp.models.order.discount.update',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
+                    'remove_discount'            => [
+                        'name'       => 'grp.models.order.discount.removal',
                         'parameters' => [
                             'order' => $order->id
                         ]
@@ -798,24 +819,98 @@ class ShowOrder extends OrgAction
 
     public function getPrevious(Order $order, ActionRequest $request): ?array
     {
-        $previous = Order::where('reference', '<', $order->reference)->when(true, function ($query) use ($order, $request) {
-            if ($request->route()->getName() == 'shops.show.orders.show') {
-                $query->where('orders.shop_id', $order->shop_id);
-            }
-        })->orderBy('reference', 'desc')->first();
+        if ($bucket = $this->backlogBucket($request)) {
+            $previous = $this->getOrderBucketNeighbour($order, $request, $bucket, forward: false);
+        } else {
+            $previous = Order::where('reference', '<', $order->reference)->when(true, function ($query) use ($order, $request) {
+                if ($request->route()->getName() == 'shops.show.orders.show') {
+                    $query->where('orders.shop_id', $order->shop_id);
+                }
+            })->orderBy('reference', 'desc')->first();
+        }
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(Order $order, ActionRequest $request): ?array
     {
-        $next = Order::where('reference', '>', $order->reference)->when(true, function ($query) use ($order, $request) {
-            if ($request->route()->getName() == 'shops.show.orders.show') {
-                $query->where('orders.shop_id', $order->shop_id);
-            }
-        })->orderBy('reference')->first();
+        if ($bucket = $this->backlogBucket($request)) {
+            $next = $this->getOrderBucketNeighbour($order, $request, $bucket, forward: true);
+        } else {
+            $next = Order::where('reference', '>', $order->reference)->when(true, function ($query) use ($order, $request) {
+                if ($request->route()->getName() == 'shops.show.orders.show') {
+                    $query->where('orders.shop_id', $order->shop_id);
+                }
+            })->orderBy('reference')->first();
+        }
 
         return $this->getNavigation($next, $request->route()->getName());
+    }
+
+    private function getOrderBucketNeighbour(Order $order, ActionRequest $request, string $bucket, bool $forward): ?Order
+    {
+        $query = $this->bucketNavigationQuery($order, $bucket, $request->input('bucket_scope'));
+
+        if (ltrim((string)$request->input('bucket_sort'), '-') == 'customer_name') {
+            $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $order,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'reference'              => 'orders.reference',
+                'date'                   => 'orders.date',
+                'submitted_at'           => 'orders.submitted_at',
+                'dispatched_at'          => 'orders.dispatched_at',
+                'updated_by_customer_at' => 'orders.updated_by_customer_at',
+                'net_amount'             => 'orders.net_amount',
+                'pay_detailed_status'    => 'orders.pay_detailed_status',
+                'customer_name'          => 'customers.name',
+                'id'                     => 'orders.id',
+            ],
+            defaultSort: ['orders.date', true],
+            forward: $forward,
+            sortValues: ['customers.name' => $order->customer?->name]
+        );
+    }
+
+    private function backlogBucket(ActionRequest $request): ?string
+    {
+        $bucket = $request->input('bucket');
+
+        return in_array($bucket, OrdersBacklogTabsEnum::values()) ? $bucket : null;
+    }
+
+    /**
+     * Mirrors the bucket filters and default sort of IndexOrders so the arrows walk the list the order was opened from.
+     */
+    private function bucketNavigationQuery(Order $order, string $bucket, ?string $scope): Builder
+    {
+        $query = Order::query();
+
+        match ($scope) {
+            'group'        => $query->where('orders.group_id', $order->group_id)
+                ->whereRelation('shop', 'state', ShopStateEnum::OPEN),
+            'organisation' => $query->where('orders.organisation_id', $order->organisation_id)
+                ->whereRelation('shop', 'state', ShopStateEnum::OPEN),
+            default        => $query->where('orders.shop_id', $order->shop_id),
+        };
+
+        if ($bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
+            $query->where('orders.state', OrderStateEnum::SUBMITTED)
+                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED]);
+        } elseif ($bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
+            $query->where('orders.state', OrderStateEnum::SUBMITTED)
+                ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN]);
+        } elseif ($bucket == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value) {
+            $query->whereDate('orders.dispatched_at', Carbon::today());
+        } else {
+            $query->where('orders.state', $order->state);
+        }
+
+        return $query;
     }
 
     private function getNavigation(?Order $order, string $routeName): ?array

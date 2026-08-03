@@ -8,7 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Catalogue\Product;
@@ -20,12 +20,12 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetAllTradeUnitsInProduct extends GrpAction
+class GetAllTradeUnitsInProduct extends OrgAction
 {
     public function asController(Product $product, ActionRequest $request): LengthAwarePaginator
     {
         $parent = $product;
-        $this->initialisation($parent->group, $request);
+        $this->initialisationFromGroup($parent->group, $request);
 
         return $this->handle($product);
     }

@@ -21,6 +21,7 @@ import { inject, onMounted, ref } from "vue";
     import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import { ctrans } from "@/Composables/useTrans"
 
     library.add(faInfoCircle);
 
@@ -87,48 +88,56 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
     onMounted(async () => {
         isLoadingFirstHit.value = true;
-        const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay_policies.index', {
-            ebayUser: ebayId.value
-        }));
+        try {
+            const {data} = await axios.get(route('retina.dropshipping.customer_sales_channels.ebay_policies.index', {
+                ebayUser: ebayId.value
+            }));
 
-        if(data?.fulfillment_policies?.total > 0) {
-            let shippingPolicies = data?.fulfillment_policies?.fulfillmentPolicies?.map((shipping) => {
-                return {
-                    name: shipping.name,
-                    value: shipping.fulfillmentPolicyId
-                };
-            })
+            if(data?.fulfillment_policies?.total > 0) {
+                let shippingPolicies = data?.fulfillment_policies?.fulfillmentPolicies?.map((shipping) => {
+                    return {
+                        name: shipping.name,
+                        value: shipping.fulfillmentPolicyId
+                    };
+                })
 
-            shippingProfiles.value = shippingPolicies;
-        }
-        if(data?.return_policies?.total > 0) {
-            let returnPolicies = data?.return_policies?.returnPolicies?.map((returns) => {
-                return {
-                    name: returns.name,
-                    value: returns.returnPolicyId
-                };
-            })
-            returnProfiles.value = returnPolicies;
-        }
-        if(data?.payment_policies?.total > 0) {
-            let paymentPolicies = data?.payment_policies?.paymentPolicies?.map((payment) => {
-                return {
-                    name: payment.name,
-                    value: payment.paymentPolicyId
-                };
-            })
+                shippingProfiles.value = shippingPolicies;
+            }
+            if(data?.return_policies?.total > 0) {
+                let returnPolicies = data?.return_policies?.returnPolicies?.map((returns) => {
+                    return {
+                        name: returns.name,
+                        value: returns.returnPolicyId
+                    };
+                })
+                returnProfiles.value = returnPolicies;
+            }
+            if(data?.payment_policies?.total > 0) {
+                let paymentPolicies = data?.payment_policies?.paymentPolicies?.map((payment) => {
+                    return {
+                        name: payment.name,
+                        value: payment.paymentPolicyId
+                    };
+                })
 
-            paymentProfiles.value = paymentPolicies;
+                paymentProfiles.value = paymentPolicies;
+            }
+            if(data?.shipping_services?.length > 0) {
+                let shippingServicesData = data?.shipping_services;
+                shippingServices.value = shippingServicesData;
+            }
+            if(data?.tax_categories?.length > 0) {
+                taxCategories.value = data?.tax_categories;
+            }
+        } catch (err) {
+            notify({
+                title: ctrans("Something went wrong"),
+                text: err.response?.data?.message,
+                type: "error"
+            });
+        } finally {
+            isLoadingFirstHit.value = false
         }
-        if(data?.shipping_services?.length > 0) {
-            let shippingServicesData = data?.shipping_services;
-            shippingServices.value = shippingServicesData;
-        }
-        if(data?.tax_categories?.length > 0) {
-            taxCategories.value = data?.tax_categories;
-        }
-
-        isLoadingFirstHit.value = false
     })
 </script>
 

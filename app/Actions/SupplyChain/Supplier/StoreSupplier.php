@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromSupplierInAgent;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
@@ -34,6 +35,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreSupplier extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use AsAction;
     use WithAttributes;
     use WithModelAddressActions;
@@ -91,15 +93,6 @@ class StoreSupplier extends OrgAction
         }
 
         return $supplier;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.".$this->group->id.".edit");
     }
 
     public function rules(): array
@@ -218,7 +211,7 @@ class StoreSupplier extends OrgAction
             /** @var Agent $agent */
             $agent = $supplier->agent;
 
-            return Redirect::route('grp.supply-chain.agents.show.suppliers.index', $agent->slug);
+            return Redirect::route('grp.supply-chain.agents.show.suppliers.show', [$agent->slug, $supplier->slug]);
         }
 
         return Redirect::route('grp.supply-chain.suppliers.show', $supplier->slug);

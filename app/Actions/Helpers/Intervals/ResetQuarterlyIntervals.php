@@ -23,7 +23,6 @@ class ResetQuarterlyIntervals
         $this->intervals = [
             DateIntervalEnum::QUARTER_TO_DAY
         ];
-        $this->doPreviousPeriods =  ['previous_quarters'];
     }
 
 }

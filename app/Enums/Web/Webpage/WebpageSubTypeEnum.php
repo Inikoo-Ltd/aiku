@@ -62,7 +62,28 @@ enum WebpageSubTypeEnum: string
             'mailshot'    => __('mailshot'),
             'article'     => __('article'),
             'content'     => __('content'),
+        ];
+    }
 
+    public static function catalogueLabels(): array
+    {
+        return [
+            self::PRODUCT->value           => 'Product',
+            self::FAMILY->value            => 'Family',
+            self::DEPARTMENT->value        => 'Department',
+            self::SUB_DEPARTMENT->value    => 'Sub Department',
+            self::COLLECTION->value        => 'Collection',
+        ];
+    }
+
+    public static function catalogueCount(): array
+    {
+        return [
+            self::PRODUCT->value           => null,
+            self::FAMILY->value            => null,
+            self::DEPARTMENT->value        => null,
+            self::SUB_DEPARTMENT->value    => null,
+            self::COLLECTION->value        => null,
         ];
     }
 }

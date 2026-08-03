@@ -704,3 +704,19 @@ test('catalogue hydrator', function () {
 test('billables hydrator', function () {
     $this->artisan('hydrate -s bil')->assertExitCode(0);
 });
+
+test('a product can be priced at zero, free gifts are not editable otherwise', function (ProductCategory $family) {
+    $product = StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]],
+            'price'       => 100,
+            'unit'        => 'unit',
+        ]
+    ));
+
+    // The gold reward gifts, bottle caps and tea samples are all priced at zero
+    $product = UpdateProduct::make()->action($product, ['price' => 0]);
+
+    expect((float)$product->refresh()->price)->toBe(0.0);
+})->depends('create family');

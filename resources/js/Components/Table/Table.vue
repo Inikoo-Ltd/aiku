@@ -500,6 +500,7 @@ function dataForNewQueryString() {
     const sort = queryBuilderData.value.sort
     const perPage = queryBuilderData.value.perPage;
     const elementFilter = queryBuilderData.value.elementFilter
+    const additionalElementFilter = queryBuilderData.value.additionalElementFilter
     const period = queryBuilderData.value.periodFilter
     const radioFilter = queryBuilderData.value.radioFilter
     const dateInterval = queryBuilderData.value.dateInterval
@@ -523,6 +524,9 @@ function dataForNewQueryString() {
     if (elementFilter) {
         queryData.elements = elementFilter // elements[state] = working
     }
+    if (additionalElementFilter) {
+        queryData.additionalElements = additionalElementFilter
+    }
     if (period) {
         queryData.period = period // period[type]=year&period[date]=2024
     }
@@ -538,21 +542,39 @@ function generateNewQueryString() {
     const queryStringData = qs.parse(location.search.substring(1))
     const prefix = props.name === 'default' ? '' : props.name + '_'
 
+    const externalFilters = queryStringData[prefix + 'filter'] || {}
+    const managedKeys = [
+        ...map(queryBuilderProps.value.searchInputs, 'key'),
+        ...map(queryBuilderProps.value.filters, 'key'),
+    ]
+
+    forEach(managedKeys, (k : any) => { delete externalFilters[k] })
     // To exclude 'filter', 'columns', 'cursor', and 'sort' that received from the URL
-    forEach(['filter', 'columns', 'cursor', 'sort'], (key) => {
+    forEach(['columns', 'cursor', 'sort'], (key) => {
         delete queryStringData[prefix + key];
     });
 
     // To exclude page number from pagination
     delete queryStringData[pageName.value];
 
-    forEach(dataForNewQueryString(), (value, key) => {
+    const newData = dataForNewQueryString()
+    forEach(newData, (value, key) => {
         if (key === 'page') {
             queryStringData[pageName.value] = value;
+        } else if (key === 'filter') {
+            queryStringData[prefix + 'filter'] = {
+                ...externalFilters,
+                ...value,
+            };
         } else {
             queryStringData[prefix + key] = value;
         }
     });
+
+    if(!newData.filter && Object.keys(externalFilters).length) {
+        queryStringData[prefix + 'filter'] = externalFilters
+    }
+
     let query = qs.stringify(queryStringData, {
 
         encodeValuesOnly: true,
@@ -596,8 +618,15 @@ const visit = (url?: string) => {
             },
             onSuccess() {
                 if ('queryBuilderProps' in usePage().props) {
-                    queryBuilderData.value.cursor = queryBuilderProps.value.cursor;
-                    queryBuilderData.value.page = queryBuilderProps.value.page;
+                    const newCursor = queryBuilderProps.value.cursor;
+                    const newPage   = queryBuilderProps.value.page;
+
+                    if (queryBuilderData.value.cursor !== newCursor || queryBuilderData.value.page !== newPage) {
+                        skipNextDebouncedVisit = true;
+                    }
+
+                    queryBuilderData.value.cursor = newCursor;
+                    queryBuilderData.value.page   = newPage;
                 }
 
                 if (props.preserveScroll === 'table-top') {
@@ -606,7 +635,6 @@ const visit = (url?: string) => {
                         tableFieldset.value.getBoundingClientRect().top +
                         window.pageYOffset +
                         offset;
-
                     window.scrollTo({top});
                 }
 
@@ -634,13 +662,14 @@ let isMounted = false;
 let skipNextDebouncedVisit = false;
 
 watch(queryBuilderData, async () => {
-        if (!isMounted) return;
-        if (skipNextDebouncedVisit) {
-            skipNextDebouncedVisit = false;
-            return;
-        }
-        debouncedFilter();
-    },
+    const skipThisVisit = skipNextDebouncedVisit;
+    skipNextDebouncedVisit = false;
+
+    if (!isMounted) return;
+    if (skipThisVisit) return;
+
+    debouncedFilter();
+},
     {deep: true},
 );
 
@@ -649,6 +678,17 @@ const immediateVisit = () => {
     skipNextDebouncedVisit = true;
     debouncedFilter.cancel();
     visit(location.pathname + '?' + generateNewQueryString());
+};
+
+// TableElements reports the selection it read from the URL right after mount. The server already
+// rendered that selection, so the state is stored without letting the watcher fire off a visit for
+// a query string identical to the current one.
+const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false) => {
+    if (isInitial) {
+        skipNextDebouncedVisit = true;
+    }
+
+    queryBuilderData.value[key] = data;
 };
 
 const inertiaListener = () => {
@@ -724,7 +764,6 @@ const onClickSelectAll = (state: boolean) => {
      emits('onCheckedAll', {data : props.resource.data, allChecked : compIsAllChecked.value})
 }
 
-
 // Check props.isCheckbox to improve performance
 const compIsAllChecked = props.isCheckBox
   ? computed(() => {
@@ -735,7 +774,6 @@ const compIsAllChecked = props.isCheckBox
         })
     })
   : false
-
 
 watch(selectRow, () => {
     emits('onSelectRow', selectRow)
@@ -937,18 +975,29 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                 <!-- Wrapper -->
 
                 <!-- Filter: Checkbox element -->
-                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-gray-300" :class="{
+                    'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
+                }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
-                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                        :tableName="props.name" />
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('elementFilter', data, isInitial)"
+                        :tableName="props.name"
+                    />
+                </div>
+
+                <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
+                    <TableElements :elements="queryBuilderProps.additionalElementGroups"
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('additionalElementFilter', data, isInitial)"
+                        :tableName="props.name"
+                        :isAdditional="true"
+                    />
                 </div>
 
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4 table-query-builder">
 
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
-                    <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
+                    <div v-if="!useTopPagination" class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
                         <!-- Result Number -->
-                        <div v-if="!useTopPagination" class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
+                        <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
                             <div class="grid justify-end items-center text-base font-normal text-gray-700">
                                 <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
                                     <span class="font-semibold tabular-nums">
@@ -1045,6 +1094,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
+                                :appliedValue="queryBuilderProps?.betweenDatesValue"
                                 :tableName="props.name" />
                         </div>
 
@@ -1086,6 +1136,8 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
 
             </div>
 
+            <slot name="before-table" />
+
             <!-- <pre>{{ compResourceData }}</pre> -->
 
             <!-- The Main Table -->
@@ -1095,9 +1147,84 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                         <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
                             :exportLinks="queryBuilderProps.exportLinks"
                             :per-page-options="queryBuilderProps.perPageOptions"
-                            :on-per-page-change="onPerPageChange" 
-                            :custom-wrapper-class="'sticky top-[39px] z-[10] border-b !border-gray-300'"
-                        />
+                            :on-per-page-change="onPerPageChange"
+                            :custom-wrapper-class="'sticky top-[33px] z-[10] border-b !border-gray-300'"
+                        >
+                            <template #topRow="{ data }">
+                                <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center mt-0.5 px-2" :class="data.paginated ? 'mb-2' : ''">
+                                    <!-- Result Number -->
+                                    <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
+                                        <div class="grid justify-end items-center text-base font-normal text-gray-700">
+                                            <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
+                                                <span class="font-semibold tabular-nums">
+                                                    <CountUp :endVal="compResourceMeta?.total || 0" :duration="1.2"
+                                                        :scrollSpyOnce="true" :options="{
+                                                        formattingFn: (number) => locale.number(number)
+                                                    }" />
+                                                </span>
+
+                                                <span class="font-light">
+                                                    {{
+                                                    compResourceMeta.total > 1
+                                                    ? queryBuilderProps.labelRecord?.[1] || queryBuilderProps.labelRecord?.[0] ||
+                                                    trans('records')
+                                                    : queryBuilderProps.labelRecord?.[0] || trans('record')
+                                                    }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Button: Model Operations Bulk -->
+                                        <div v-if="queryBuilderProps.modelOperations?.bulk" class="flex">
+                                            <slot v-for="(linkButton, btnIndex) in queryBuilderProps.modelOperations?.bulk"
+                                                :name="`button${linkButton.label}`" :linkButton="linkButton">
+                                                <Link v-if="linkButton?.route?.name" as="div"
+                                                    :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                                    :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
+                                                    :data="selectRow"
+                                                    :class="[queryBuilderProps.modelOperations?.bulk.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
+                                                <Button
+                                                    :style="Object.values(selectRow).some(value => value) ? linkButton.style : 'disabled'"
+                                                    :icon="linkButton.icon" :label="linkButton.label" size="l"
+                                                    class="h-full border-none rounded-none"
+                                                    :class="{'rounded-l-md': btnIndex === 0, 'rounded-r-md ': btnIndex === queryBuilderProps.modelOperations?.bulk.length - 1}" />
+                                                </Link>
+                                            </slot>
+                                        </div>
+                                    </div>
+
+                                    <!-- Button: Model Operations -->
+                                    <div v-if="queryBuilderProps.modelOperations?.createLink" class="flex">
+                                        <slot v-for="(linkButton, btnIndex) in queryBuilderProps.modelOperations?.createLink"
+                                            :name="`button-${kebabCase(linkButton.label)}`"
+                                            :linkButton="{...linkButton, btnIndex: btnIndex }">
+                                            <!-- {{ linkButton?.route?.name }} -->
+                                            <component v-if="linkButton?.route?.name" :is="linkButton.target ? 'a' : Link" as="div"
+                                                :target="linkButton.target || undefined"
+                                                :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                                :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
+                                                :class="[queryBuilderProps.modelOperations?.createLink.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
+                                                <Button :style="linkButton.style" :type="linkButton.type" :icon="linkButton.icon"
+                                                    :label="linkButton.label" size="xs" key="1" class="h-full" />
+                                            </component>
+                                        </slot>
+                                    </div>
+
+                                    <!-- Search Input Button -->
+                                    <div v-if="queryBuilderProps.globalSearch" class="flex flex-row">
+                                        <slot name="tableFilterSearch" :has-global-search="queryBuilderProps.globalSearch"
+                                            :label="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.label : null"
+                                            :value="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.value : null"
+                                            :on-change="changeGlobalSearchValue">
+                                            <TableFilterSearch v-if="queryBuilderProps.globalSearch" class=""
+                                                @resetSearch="() => resetQuery()" :label="queryBuilderProps.globalSearch.label"
+                                                :value="queryBuilderProps.globalSearch.value" :on-change="changeGlobalSearchValue"
+                                                :on-enter="immediateSearch" :on-start-typing="cancelVisitIfInProgress" :isVisiting />
+                                        </slot>
+                                    </div>
+                                </div>
+                            </template>
+                        </Pagination>
                     </slot>
 
                     <slot name="table">
@@ -1106,7 +1233,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                             :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
                         <table class="divide-y divide-gray-200 bg-white w-full">
                             <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
-                                <tr 
+                                <tr
                                     class="border-t border-gray-200 divide-x divide-gray-200"
                                     :class="{
                                         'border-t': !useTopPagination

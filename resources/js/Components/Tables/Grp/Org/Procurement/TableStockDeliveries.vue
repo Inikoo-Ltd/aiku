@@ -10,7 +10,7 @@ import Icon from '@/Components/Icon.vue';
 import Table from '@/Components/Table/Table.vue';
 import { useFormatTime } from '@/Composables/useFormatTime';
 
-const props = defineProps<{
+defineProps<{
     data: object,
     tab?: string
 }>()
@@ -32,8 +32,8 @@ function stockDeliveryRoute(stockDelivery: { } ) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(state)="{ item: stockDelivery }">
-			<Icon :data="stockDelivery.state_icon" />
-		</template>
+            <Icon :data="stockDelivery.state_icon" />
+        </template>
 
         <template #cell(reference)="{ item: stockDelivery }">
             <Link :href="stockDeliveryRoute(stockDelivery)" class="primaryLink">
@@ -42,7 +42,7 @@ function stockDeliveryRoute(stockDelivery: { } ) {
         </template>
 
         <template #cell(date)="{ item }">
-			{{ useFormatTime(item.date, { formatTime: "EEE, do MMM yy, HH:mm" }) }}
-		</template>
+            {{ useFormatTime(item.date, { formatTime: "EEE, do MMM yy, HH:mm" }) }}
+        </template>
     </Table>
 </template>

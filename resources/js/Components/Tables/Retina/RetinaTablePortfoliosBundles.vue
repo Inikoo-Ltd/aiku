@@ -1369,7 +1369,7 @@ onBeforeUnmount(() => {
 					v-model="selectedEditProduct.description"
 					class="w-full"
 					:placeholder="trans('Input your description')"
-					:toogle="[
+					:toggle="[
 					'heading1',
 					'heading2',
 					'heading3',

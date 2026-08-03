@@ -9,6 +9,7 @@ import { Image } from "@/types/Image"
 import { Colors } from "@/types/Color"
 import { ref } from 'vue'
 import { StackedComponent } from '@/types/LayoutRules'
+import { useFamilyPageBasket } from '@/Composables/useFamilyPageBasket'
 
 const getLocalStorage = () => {
 	let storageIris = {}
@@ -61,6 +62,7 @@ export const useLayoutStore = defineStore("retinaLayout", () => {
     }
     const iris_variables = getLocalStorage().iris_variables || {}
 
+    const { family_page, family_quantity_ordered } = useFamilyPageBasket()
 
-    return { currentQuery, root_active, stackedComponents, app, currentModule, currentRoute, currentParams, leftSidebar, navigation, currentPlatform, rightSidebar, user, iris_varnish, iris_variables, iris }
+    return { currentQuery, root_active, stackedComponents, app, currentModule, currentRoute, currentParams, leftSidebar, navigation, currentPlatform, rightSidebar, user, iris_varnish, iris_variables, iris, family_page, family_quantity_ordered }
 });

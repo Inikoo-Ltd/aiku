@@ -80,5 +80,6 @@ test('slave-only schedules register when app.slave is enabled', function () {
 test('neither master nor slave schedules register when both flags are disabled', function () {
     config(['app.master' => false, 'app.slave' => false]);
 
-    expect(rebuildSchedule()->events())->toHaveCount(2);
+    expect(scheduledEventIds(rebuildSchedule()))
+        ->toEqualCanonicalizing(['horizon:snapshot', 'cloudflare:reload', 'search:propose-synonyms']);
 });

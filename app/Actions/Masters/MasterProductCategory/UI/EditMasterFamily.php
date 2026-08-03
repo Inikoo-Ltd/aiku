@@ -12,6 +12,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Goods\TradeUnitFamily\GetTradeUnitFamilyForFamilies;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditMasterFamily extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     use WithMasterFamilyNavigation;
 
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): Response
@@ -143,8 +145,8 @@ class EditMasterFamily extends OrgAction
                                     'options' => [
                                         'counter' => true,
                                     ],
-                                    'toogle'  => [
-                                        'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                    'toggle'  => [
+                                        'bold', 'italic','fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description
                                 ],
@@ -154,29 +156,11 @@ class EditMasterFamily extends OrgAction
                                     'options' => [
                                         'counter' => true,
                                     ],
-                                    'toogle'  => [
-                                        'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
+                                    'toggle'  => [
+                                        'bold', 'italic','fontSize', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                     ],
                                     'value'   => $masterProductCategory->description_extra
                                 ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('Pricing'),
-                            'title'  => __('id'),
-                            'icon'   => 'fa-light fa-money-bill',
-                            'fields' => [
-                                'cost_price_ratio' => [
-                                    'type'        => 'input_number',
-                                    'bind'        => [
-                                        'maxFractionDigits' => 3
-                                    ],
-                                    'label'       => __('Pricing ratio'),
-                                    'placeholder' => __('Cost price ratio'),
-                                    'required'    => true,
-                                    'value'       => $masterProductCategory->cost_price_ratio,
-                                    'min'         => 0
-                                ]
                             ]
                         ],
                         [
@@ -237,7 +221,7 @@ class EditMasterFamily extends OrgAction
                                     'type'          => 'vol_discount',
                                     'initial_value' => [
                                         'item_quantity'  => $masterProductCategory->gr_vol_discount_quantity,
-                                        'percentage_off' => $masterProductCategory->gr_vol_discount_percentage,
+                                        'percentage_off' => trimDecimalZeros($masterProductCategory->gr_vol_discount_percentage),
                                     ],
                                 ],
                             ],
@@ -247,9 +231,10 @@ class EditMasterFamily extends OrgAction
                             'icon'   => 'fa-light fa-question-circle',
                             'fields' => [
                                 'faq' => [
-                                    'type'  => 'faq-master',
-                                    'label' => __('FAQ'),
-                                    'value' => $masterProductCategory->faq,
+                                    'type'                       => 'faq-master',
+                                    'label'                      => __('FAQ'),
+                                    'value'                      => $masterProductCategory->faq,
+                                    'master_product_category_id' => $masterProductCategory->id,
                                 ],
                             ]
                         ],

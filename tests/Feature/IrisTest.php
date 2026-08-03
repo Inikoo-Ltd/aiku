@@ -58,10 +58,11 @@ test('it processes blocked country regions in DetectWebsite', function () {
     $middleware = new DetectWebsite();
 
     $middleware->handle($request, function ($req) {
-        expect($req->input('has_blocked_country_regions'))->toBeTrue()
-            ->and($req->input('blocked_countries'))->toHaveCount(2)
-            ->and($req->input('blocked_countries'))->toContain('US', 'GB')
-            ->and($req->input('blocked_country_regions'))->toEqual($this->website->blocked_country_regions);
+        expect($req->attributes->get('has_blocked_country_regions'))->toBeTrue()
+            ->and($req->attributes->get('blocked_countries'))->toHaveCount(2)
+            ->and($req->attributes->get('blocked_countries'))->toContain('US', 'GB')
+            ->and($req->attributes->get('blocked_country_regions'))->toEqual($this->website->blocked_country_regions)
+            ->and($req->query->has('has_blocked_country_regions'))->toBeFalse();
 
         return response('OK');
     });
@@ -107,13 +108,89 @@ test('it processes blocked country regions in DetectIrisWebsite', function () {
     $middleware = new DetectIrisWebsite();
 
     $middleware->handle($request, function ($req) {
-        expect($req->input('has_blocked_country_regions'))->toBeTrue()
-            ->and($req->input('blocked_countries'))->toHaveCount(2)
-            ->and($req->input('blocked_countries'))->toContain('US', 'GB')
-            ->and($req->input('blocked_country_regions'))->toEqual($this->website->blocked_country_regions);
+        expect($req->attributes->get('has_blocked_country_regions'))->toBeTrue()
+            ->and($req->attributes->get('blocked_countries'))->toHaveCount(2)
+            ->and($req->attributes->get('blocked_countries'))->toContain('US', 'GB')
+            ->and($req->attributes->get('blocked_country_regions'))->toEqual($this->website->blocked_country_regions)
+            ->and($req->query->has('has_blocked_country_regions'))->toBeFalse();
 
         return response('OK');
     });
+});
+
+test('it blocks a visitor from a restricted region end to end', function () {
+    $this->website->update([
+        'blocked_country_regions' => [
+            'US' => ['postcode' => '/^100/']
+        ]
+    ]);
+
+    DB::table('ip_geolocations')->updateOrInsert(
+        ['ip' => '5.6.7.8'],
+        [
+            'country'    => 'US',
+            'city'       => 'New York',
+            'postcode'   => '10001',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]
+    );
+
+    DetectWebsiteFromDomain::mock()
+        ->shouldReceive('parseDomain')
+        ->andReturn($this->website->domain);
+
+    $request = Request::create(
+        'http://' . $this->website->domain,
+        'GET',
+        server: ['REMOTE_ADDR' => '5.6.7.8', 'HTTP_CF_IPCOUNTRY' => 'US']
+    );
+
+    $middleware = new DetectIrisWebsite();
+
+    $middleware->handle($request, function ($req) {
+        expect(\App\Actions\Web\Website\BlockedCountries\CheckIfCountryRegionsIsBlocked::run($req))->toBeTrue();
+
+        return response('OK');
+    });
+});
+
+test('it blocks a json request from a restricted region in retina', function () {
+    $this->website->update([
+        'blocked_country_regions' => [
+            'US' => ['postcode' => '/^100/']
+        ]
+    ]);
+
+    DB::table('ip_geolocations')->updateOrInsert(
+        ['ip' => '5.6.7.8'],
+        [
+            'country'    => 'US',
+            'city'       => 'New York',
+            'postcode'   => '10001',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]
+    );
+
+    DetectWebsiteFromDomain::shouldRun()->andReturn($this->website);
+
+    $request = Request::create(
+        'http://' . $this->website->domain . '/app/models/order/1/submit',
+        'PATCH',
+        server: [
+            'REMOTE_ADDR'       => '5.6.7.8',
+            'HTTP_CF_IPCOUNTRY' => 'US',
+            'HTTP_ACCEPT'       => 'application/json',
+            'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest',
+        ]
+    );
+
+    $detect = new DetectWebsite();
+    $restrict = new App\Http\Middleware\RestrictCountryRegions();
+
+    expect(fn () => $detect->handle($request, fn ($req) => $restrict->handle($req, fn () => response('OK'))))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
 
 test('it logs firewall blocked country events fetched from Cloudflare', function () {

@@ -13,6 +13,7 @@ import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
 import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
 import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
 import { initialiseIrisVarnishCustomerData, recordWebsiteHit } from '@/Composables/initialiseIrisVarnish'
+import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
 
 
 export const initialiseRetinaApp = () => {
@@ -37,6 +38,10 @@ export const initialiseRetinaApp = () => {
     }
     
     router.on('navigate', (event) => {
+        // Close overlays left open by the previous page so they don't block clicks
+        layout.stackedComponents = []
+        resetStuckOverlays()
+
         // To see Vue filename in console (component.vue)
         if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
             if (window.component.vue !== '') {

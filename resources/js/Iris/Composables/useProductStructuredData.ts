@@ -80,7 +80,11 @@ const buildAdditionalProperties = (
         .map(([name, value]) => ({
             "@type": "PropertyValue",
             name,
-            value: name === "country_of_origin" ? String(value?.name ?? ctrans("No country")) : String(value),
+            value: name === "countries_of_origin"
+                ? (Array.isArray(value) && value.length
+                    ? value.map((country: { name?: string }) => country?.name).filter(Boolean).join(", ")
+                    : ctrans("No country"))
+                : String(value),
         }))
 
     return properties.length ? properties : undefined

@@ -47,6 +47,7 @@ use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\Web\Website\UpdateWebsite;
+use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
@@ -86,6 +87,7 @@ use Lorisleiva\Actions\ActionRequest;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
+use function Pest\Laravel\post;
 
 beforeAll(function () {
     loadDB();
@@ -899,6 +901,7 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
 
     $base        = [$org, $shop, $w];
     $withWebpage = [$org, $shop, $w, $webpage->slug];
+    $customer    = createCustomer($this->shop);
 
     $routes = [
         'grp.org.shops.show.web.websites.index'              => [$org, $shop],
@@ -914,6 +917,12 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
         'grp.org.shops.show.web.websites.restricted_country' => $base,
         'grp.org.shops.show.web.analytics.dashboard'         => $base,
         'grp.org.shops.show.web.analytics.visitors.index'    => $base,
+        'grp.org.shops.show.web.analytics.search'            => $base,
+        'grp.org.shops.show.web.analytics.search.query'      => array_merge($base, ['q' => 'tea']),
+        'grp.org.shops.show.web.analytics.search.opportunities' => $base,
+        'grp.org.shops.show.web.analytics.search.boost_candidates' => array_merge($base, ['q' => 'tea']),
+        'grp.org.shops.show.web.analytics.search.page'       => array_merge($base, ['url' => 'https://example.com/p/tea']),
+        'grp.org.shops.show.web.analytics.search.customer'   => [$org, $shop, $w, $customer->slug],
         'grp.org.shops.show.web.announcements.index'         => $base,
         'grp.org.shops.show.web.announcements.create'        => $base,
         'grp.org.shops.show.web.announcements.show'          => [$org, $shop, $w, $announcement->ulid],
@@ -1054,6 +1063,141 @@ test('create catalogue webpages', function (Website $website) {
         ->and($productWebpage->model_type)->toBe('Product');
 
     return compact('department', 'family', 'subDepartment', 'product', 'departmentWebpage', 'familyWebpage', 'subDepartmentWebpage', 'productWebpage', 'blogWebpage');
+})->depends('launch website');
+
+test('update website search boosts', function (Website $website) {
+    $website->refresh();
+    createProduct($this->shop);
+    $product = $this->shop->products()->first();
+
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    $response = post(route('grp.org.shops.show.web.analytics.search.boosts.update', $routeParams), [
+        'boosts' => [['type' => 'product', 'id' => $product->id]],
+    ]);
+    $response->assertSuccessful();
+
+    expect(data_get($website->refresh()->settings, 'search_boosts'))
+        ->toEqual([['type' => 'product', 'id' => $product->id]]);
+
+    $tooMany = array_fill(0, 4, ['type' => 'product', 'id' => $product->id]);
+    post(route('grp.org.shops.show.web.analytics.search.boosts.update', $routeParams), ['boosts' => $tooMany])
+        ->assertSessionHasErrors('boosts');
+
+    $product->updateQuietly(['available_quantity' => 5]);
+    expect(UpdateWebsiteSearchBoosts::activeBoostIds($website->refresh()))
+        ->toEqual(['product' => [$product->id]]);
+
+    $product->updateQuietly(['available_quantity' => 0]);
+    expect(UpdateWebsiteSearchBoosts::activeBoostIds($website))->toBe([]);
+
+    post(route('grp.org.shops.show.web.analytics.search.boosts.update', $routeParams), [
+        'boosts' => [['type' => 'product', 'id' => $product->id + 999999]],
+    ])->assertSuccessful();
+
+    expect(data_get($website->refresh()->settings, 'search_boosts'))->toBe([]);
+})->depends('launch website');
+
+test('manage search synonyms', function (Website $website) {
+    $website->refresh();
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    $set = 'catalogue-'.$this->shop->language->code;
+
+    Http::fake([
+        "*/synonym_sets/$set/items/*" => Http::response(['id' => 'aromcandles']),
+        "*/synonym_sets/$set/items"   => Http::response([
+            ['id' => 'aromcandles', 'synonyms' => ['aromcandles', 'aroma candles'], 'root' => ''],
+        ]),
+        "*/synonym_sets/$set"         => Http::response(['name' => $set]),
+    ]);
+
+    post(route('grp.org.shops.show.web.analytics.search.synonyms.store', $routeParams), [
+        'words' => ['Aromcandles', 'aroma candles', 'aromcandles '],
+    ])->assertSuccessful();
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), "/synonym_sets/$set/items/aromcandles")
+        && $request['synonyms'] === ['aromcandles', 'aroma candles']);
+
+    get(route('grp.org.shops.show.web.analytics.search.synonyms.index', $routeParams))
+        ->assertSuccessful()
+        ->assertExactJson([['id' => 'aromcandles', 'synonyms' => ['aromcandles', 'aroma candles']]]);
+
+    delete(route('grp.org.shops.show.web.analytics.search.synonyms.delete', array_merge($routeParams, ['aromcandles'])))
+        ->assertSuccessful();
+
+    post(route('grp.org.shops.show.web.analytics.search.synonyms.store', $routeParams), ['words' => ['only-one']])
+        ->assertSessionHasErrors('words');
+})->depends('launch website');
+
+test('import search synonyms command', function () {
+    Http::fake(['*/synonym_sets/*' => Http::response(['id' => 'laboradite'])]);
+
+    $file = tempnam(sys_get_temp_dir(), 'synonyms').'.json';
+    file_put_contents($file, json_encode([
+        ['language' => 'en', 'words' => ['laboradite', 'labradorite']],
+        ['language' => 'en', 'words' => ['only-one']],
+    ]));
+
+    $this->artisan('search:import-synonyms', ['file' => $file])
+        ->expectsOutputToContain('Imported 1 synonyms, 1 failed/skipped')
+        ->assertExitCode(1);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/synonym_sets/catalogue-en/items/laboradite')
+        && $request['synonyms'] === ['laboradite', 'labradorite']);
+
+    unlink($file);
+});
+
+test('propose and decide search synonym suggestions', function (Website $website) {
+    $website->refresh();
+    $lang = $this->shop->language->code;
+    $set  = 'catalogue-'.$lang;
+
+    \App\Models\Helpers\WebsiteSearchLog::create([
+        'ulid'          => (string)\Illuminate\Support\Str::ulid(),
+        'group_id'      => $this->shop->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'       => $this->shop->id,
+        'website_id'    => $website->id,
+        'scope'         => 'catalogue',
+        'query'         => 'aromcandles',
+        'results_count' => 0,
+    ]);
+
+    $suggestionId = $lang.'-aromcandles';
+
+    Http::fake([
+        'api.openai.com/*' => Http::response([
+            'choices' => [['message' => ['content' => '[{"q":"aromcandles","action":"synonym","words":["aromcandles","aroma candles"]}]']]],
+        ]),
+        "*/collections/synonym_suggestions/documents/search*" => Http::response(['hits' => []]),
+        "*/collections/synonym_suggestions/documents?action=upsert" => Http::response(['id' => $suggestionId]),
+        "*/collections/synonym_suggestions/documents/$suggestionId" => Http::response([
+            'id' => $suggestionId, 'language' => $lang, 'query' => 'aromcandles',
+            'words' => ['aromcandles', 'aroma candles'], 'sessions' => 1, 'status' => 'pending',
+        ]),
+        "*/collections/synonym_suggestions" => Http::response(['name' => 'synonym_suggestions']),
+        "*/collections/products/documents/search*" => Http::response(['found' => 5]),
+        "*/synonym_sets/$set/items/*" => Http::response(['id' => 'aromcandles']),
+        "*/synonym_sets/$set*" => Http::response(['items' => []]),
+    ]);
+
+    $this->artisan('search:propose-synonyms')
+        ->expectsOutputToContain('suggestions staged for approval')
+        ->assertExitCode(0);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'documents?action=upsert')
+        && $request['query'] === 'aromcandles' && $request['status'] === 'pending');
+
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    post(route('grp.org.shops.show.web.analytics.search.synonym_suggestions.decide', array_merge($routeParams, [$suggestionId, 'approve'])))
+        ->assertSuccessful()
+        ->assertJson(['status' => 'approved']);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), "/synonym_sets/$set/items/aromcandles")
+        && $request['synonyms'] === ['aromcandles', 'aroma candles']);
 })->depends('launch website');
 
 test('UI smoke catalogue webpage routes', function (Website $website, array $cat) {
@@ -1413,3 +1557,10 @@ it('creates ruleset if none of zone kind exists', function () {
 
     expect($result['result']['id'])->toBe('new_zone_ruleset_id');
 });
+
+test('luigi object from blog webpage without model', function (array $cat) {
+    $object = (new ReindexWebpageLuigiData())->getObjectFromWebpage($cat['blogWebpage']);
+
+    expect($object['type'])->toBe('news')
+        ->and($object['fields']['slug'])->toBe('webpage-'.$cat['blogWebpage']->slug);
+})->depends('create catalogue webpages');

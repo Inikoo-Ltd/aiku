@@ -8,6 +8,7 @@
 
 namespace App\Actions\Discounts\Offer;
 
+use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
@@ -223,11 +224,28 @@ class UpdateProductCategoryOffersData
     protected function getAllowanceLabel(OfferAllowance $offerAllowance): string
     {
         return match ($offerAllowance->type) {
-            OfferAllowanceType::PERCENTAGE_OFF => percentage($offerAllowance->data['percentage_off'], 1),
+            OfferAllowanceType::PERCENTAGE_OFF => $this->getPercentageOffLabel($offerAllowance),
             OfferAllowanceType::GIFT => __('Free gift'),
             OfferAllowanceType::SHIPPING => __('Discounted shipping'),
             default => '',
         };
+    }
+
+    protected function getPercentageOffLabel(OfferAllowance $offerAllowance): string
+    {
+        $percentageOff = Arr::get($offerAllowance->data, 'percentage_off');
+
+        if ($percentageOff === null) {
+            $stepsPercentagesOff = array_filter(Arr::pluck(Arr::get($offerAllowance->data, 'steps', []), 'percentage_off'));
+
+            if (empty($stepsPercentagesOff)) {
+                return '';
+            }
+
+            return __('Up to :percentage off', ['percentage' => percentage(max($stepsPercentagesOff), 1)]);
+        }
+
+        return percentage($percentageOff, 1);
     }
 
     protected function getTriggerModel(Offer $offer): Product|ProductCategory|Collection|Shop|null
@@ -254,6 +272,8 @@ class UpdateProductCategoryOffersData
         $model->update([
             'offers_data' => $modelOfferData
         ]);
+
+        BreakShopPricesCache::run($model instanceof Shop ? $model->id : $model->shop_id);
     }
 
 }

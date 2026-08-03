@@ -27,6 +27,7 @@ import {
 	faMedal
 } from "@fas"
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
+import IrisSearch from "@/Iris/Components/IrisSearch.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -78,7 +79,7 @@ const props = defineProps<{
 			}
 		}
 	}
-	screenType: 'mobile' | 'tablet' | 'desktop'
+	screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -153,7 +154,9 @@ const onClickLogout = () => {
 			<!-- Search -->
 			<div class="flex-1 flex justify-center">
 				<div class="w-full max-w-[760px]">
-					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" :fieldValueSearch="fieldValue?.search"
+					<IrisSearch v-if="layout.iris?.iris_search_model === 'internal'" :fieldValueSearch="fieldValue?.search"
+						id="iris_search_header_1" />
+					<LuigiSearch v-else-if="layout.iris?.luigisbox_tracker_id" :fieldValueSearch="fieldValue?.search"
 						id="luigi_header_2" />
 				</div>
 			</div>

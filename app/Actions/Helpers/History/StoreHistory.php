@@ -8,7 +8,7 @@
 
 namespace App\Actions\Helpers\History;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\History;
@@ -18,7 +18,7 @@ use OwenIt\Auditing\Resolvers\IpAddressResolver;
 use OwenIt\Auditing\Resolvers\UrlResolver;
 use OwenIt\Auditing\Resolvers\UserAgentResolver;
 
-class StoreHistory extends GrpAction
+class StoreHistory extends OrgAction
 {
     public function handle($auditable, array $modelData): History
     {
@@ -61,7 +61,7 @@ class StoreHistory extends GrpAction
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($auditable->group, $modelData);
+        $this->initialisationFromGroup($auditable->group, $modelData);
 
         return $this->handle($auditable, $this->validatedData);
     }

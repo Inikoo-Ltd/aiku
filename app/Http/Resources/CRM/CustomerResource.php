@@ -69,6 +69,13 @@ class CustomerResource extends JsonResource
                 'unsubscribed_at' => $comms->reorder_reminder_unsubscribed_at
             ];
 
+            $subscriptions['gold_reward_reminder'] = [
+                'label'           => __('Gold Reward Reminder'),
+                'field'           => 'is_subscribed_to_gold_reward_reminder',
+                'is_subscribed'   => $comms->is_subscribed_to_gold_reward_reminder,
+                'unsubscribed_at' => $comms->gold_reward_reminder_unsubscribed_at
+            ];
+
             $subscriptions['basket_low_stock'] = [
                 'label'           => __('Basket Low Stock'),
                 'field'           => 'is_subscribed_to_basket_low_stock',

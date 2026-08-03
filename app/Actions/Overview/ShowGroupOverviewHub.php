@@ -8,21 +8,20 @@
 
 namespace App\Actions\Overview;
 
-use App\Actions\GrpAction;
-use App\Actions\Search\GetSearchAnalytics;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithGroupOverviewAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowGroupOverviewHub extends GrpAction
+class ShowGroupOverviewHub extends OrgAction
 {
     use WithGroupOverviewAuthorisation;
 
     public function asController(ActionRequest $request): ActionRequest
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
         return $request;
     }
 
@@ -54,11 +53,6 @@ class ShowGroupOverviewHub extends GrpAction
                                     'row_span' => 10,
                                     'type' => 'overview_display',
                                     'data' => GetGroupOverview::run($this->group)
-                                ],
-                                [
-                                    'col_span' => 1,
-                                    'type' => 'search_analytics',
-                                    'data' => GetSearchAnalytics::run($this->group)
                                 ],
                                 [
                                     'col_span' => 1,

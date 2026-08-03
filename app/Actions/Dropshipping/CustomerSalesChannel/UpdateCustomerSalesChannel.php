@@ -8,8 +8,6 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
@@ -45,16 +43,8 @@ class UpdateCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.pricing.value', Arr::pull($modelData, 'pricing_value'));
         }
 
-        $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
-        $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
+        return $this->update($customerSalesChannel, $modelData, 'settings');
 
-        if (Arr::has($changes, 'status')) {
-            ShopHydratePlatformSalesIntervalsNewChannels::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay(30);
-            ShopHydratePlatformSalesIntervalsNewCustomers::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay(30);
-
-        }
-
-        return $customerSalesChannel;
     }
 
     public function rules(): array

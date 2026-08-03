@@ -12,6 +12,7 @@ namespace Tests\Feature;
 
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\HydrateLocation;
 use App\Actions\Inventory\Location\Hydrators\LocationHydratePallets;
@@ -30,6 +31,7 @@ use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\Inventory\OrgStock\AddLostAndFoundOrgStock;
 use App\Actions\Inventory\OrgStock\AssociateOrgStockToOrgStockFamily;
 use App\Actions\Inventory\OrgStock\DeleteOrgStock;
+use App\Actions\Inventory\OrgStock\FillOrgStockWithTradeUnitsBarcodes;
 use App\Actions\Inventory\OrgStock\HydrateOrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
@@ -88,6 +90,7 @@ use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
+use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\LostAndFoundStock;
@@ -412,21 +415,26 @@ test('audit stock in location', function () {
     expect($locationOrgStock->quantity)->toEqual(2);
 });
 
-test('move stock location', function () {
-    /** @var LocationOrgStock $currentLocation */
-    $currentLocation = LocationOrgStock::first();
-    $targetLocation  = LocationOrgStock::latest()->first();
+test('move stock location', function ($warehouseArea) {
+    /** @var LocationOrgStock $sourceSlot */
+    $sourceSlot = LocationOrgStock::first();
 
-    expect($currentLocation->quantity)->toBeNumeric(2)
-        ->and($targetLocation->quantity)->toBeNumeric(0);
+    $targetSlot = StoreLocationOrgStock::make()->action(
+        $sourceSlot->orgStock,
+        StoreLocation::make()->action($warehouseArea, Location::factory()->definition()),
+        ['type' => LocationStockTypeEnum::PICKING]
+    );
 
-    $currentLocation = MoveOrgStockToOtherLocation::make()->action($currentLocation, $targetLocation, [
+    expect($sourceSlot->quantity)->toBeNumeric(2)
+        ->and($targetSlot->quantity)->toBeNumeric(0);
+
+    $sourceSlot = MoveOrgStockToOtherLocation::make()->action($sourceSlot, $targetSlot, [
         'quantity' => 1
     ]);
-    $targetLocation->refresh();
-    expect($currentLocation->quantity)->toBeNumeric(1)
-        ->and($targetLocation->quantity)->toBeNumeric(1);
-})->depends('detach stock from location');
+    $targetSlot->refresh();
+    expect($sourceSlot->quantity)->toBeNumeric(1)
+        ->and($targetSlot->quantity)->toBeNumeric(1);
+})->depends('create warehouse area');
 
 test('update location', function ($location) {
     $location = UpdateLocation::make()->action($location, ['code' => 'AE-3']);
@@ -696,9 +704,51 @@ test("UI show org stock", function (OrgStock $orgStock) {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $orgStock->code)->etc()
             )
+            ->has("showcase.latest_movements")
             ->has("tabs");
     });
 })->depends('create org stock');
+
+test("UI show org stock navigation follows the bucket and sort", function () {
+    $warehouse = $this->organisation->warehouses->first() ?? createWarehouse();
+    $this->withoutExceptionHandling();
+
+    $makeOrgStock = function (string $code) {
+        $stock = StoreStock::make()->action(
+            $this->group,
+            array_merge(Stock::factory()->definition(), ['code' => $code, 'state' => StockStateEnum::ACTIVE])
+        );
+
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+
+        return $orgStock->refresh();
+    };
+
+    $first  = $makeOrgStock('NAVSTOCKA');
+    $middle = $makeOrgStock('NAVSTOCKB');
+    $last   = $makeOrgStock('NAVSTOCKC');
+
+    $showRoute = fn ($orgStock) => route("grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.show", [
+        $this->organisation->slug,
+        $warehouse->slug,
+        $orgStock->slug
+    ]);
+
+    get($showRoute($middle))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket_sort=-code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $last->name)
+            ->where('navigation.next.label', $first->name)
+            ->etc()
+    );
+});
 
 test("UI index org stocks all", function () {
     $warehouse = Warehouse::first();
@@ -716,7 +766,7 @@ test("UI index org stocks all", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKOs')->etc()
             );
     });
 });
@@ -737,7 +787,7 @@ test("UI index org stocks discontinued", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKOs')->etc()
             );
     });
 });
@@ -758,7 +808,7 @@ test("UI index org stocks abnormally", function () {
             ->has("breadcrumbs")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKOs')->etc()
             );
     });
 });
@@ -826,7 +876,7 @@ test("UI Index Org Stocks", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Current SKUs')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Current SKOs')->etc()
             );
     });
 });
@@ -847,7 +897,7 @@ test("UI Index Org Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'SKU Families')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'SKO Families')->etc()
             );
     });
 });
@@ -887,7 +937,7 @@ test("UI Index Stock Families", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Master SKU Families')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Master SKO Families')->etc()
             );
     });
 });
@@ -903,7 +953,7 @@ test("UI Create stock family", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "New SKU family")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "New SKO family")->etc()
             )
             ->has("formData");
     });
@@ -923,7 +973,7 @@ test("UI index inventory stored item", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "Customer's SKUs")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "Customer's SKOs")->etc()
             )
             ->has("tabs");
     });
@@ -1148,13 +1198,14 @@ test('OrgStockHydrateQuantityInLocations recomputes quantities and short-circuit
     $orgStock         = OrgStock::first();
     $expectedQuantity = (float) $orgStock->locationOrgStocks()->sum('quantity');
 
-    $orgStock->update(['quantity_in_locations' => 9999, 'quantity_available' => 9999]);
+    $orgStock->update(['quantity_in_locations' => 9999, 'quantity_available' => 9999, 'sku_value' => 7, 'value_in_locations' => 0]);
 
     OrgStockHydrateQuantityInLocations::run($orgStock->id);
 
     $orgStock->refresh();
     expect((float) $orgStock->quantity_in_locations)->toBe($expectedQuantity)
-        ->and((float) $orgStock->quantity_available)->toBe($expectedQuantity);
+        ->and((float) $orgStock->quantity_available)->toBe($expectedQuantity)
+        ->and((float) $orgStock->value_in_locations)->toBe($expectedQuantity * 7);
 
     // Guard clauses: null id and missing id return early without throwing
     OrgStockHydrateQuantityInLocations::run(null);
@@ -1576,3 +1627,118 @@ test('UI Index and Show OrganisationStockHistory', function () {
 
     return $history;
 })->depends('create warehouse');
+
+test('org stock indexes use time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    createWarehouse();
+    $stocks = createStocks($this->group);
+    createOrgStocks($this->organisation, $stocks);
+
+    $organisation = $this->organisation;
+
+    $indexOrgStocks = \App\Actions\Inventory\OrgStock\UI\IndexOrgStocks::make();
+    (function () use ($organisation) {
+        $this->organisation = $organisation;
+    })->call($indexOrgStocks);
+
+    $indexOrgStocksWithNoProducts = \App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts::make();
+    (function () use ($organisation) {
+        $this->organisation = $organisation;
+    })->call($indexOrgStocksWithNoProducts);
+
+    expect($indexOrgStocks->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(1)
+        ->and($indexOrgStocksWithNoProducts->handle($this->organisation, bucket: 'all')->total())->toBeGreaterThanOrEqual(0);
+});
+
+test('fill org stock barcode from its single trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000017']);
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBe('5050000000017')
+        ->and($orgStock->refresh()->barcode)->toBe('5050000000017');
+});
+
+test('guess a barcode for org stocks holding several copies of one trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000048']);
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 6]]);
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBe('5050000000048');
+});
+
+test('do not guess a barcode for org stocks that are not a single trade unit', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000024']);
+
+    $otherTradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $orgStock->tradeUnits()->sync([
+        $tradeUnit->id      => ['quantity' => 1],
+        $otherTradeUnit->id => ['quantity' => 1],
+    ]);
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull();
+
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+    $orgStock->update(['independent_barcode' => true]);
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStock->refresh()))->toBeNull()
+        ->and($orgStock->refresh()->barcode)->toBeNull();
+});
+
+test('do not guess a barcode shared by two org stocks of the same organisation', function () {
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $tradeUnit->update(['barcode' => '5050000000031']);
+
+    $orgStocks = collect([1, 2])->map(function () use ($tradeUnit) {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+            'state' => StockStateEnum::ACTIVE
+        ]));
+
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+        return $orgStock->refresh();
+    });
+
+    expect(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->first()))->toBeNull()
+        ->and(FillOrgStockWithTradeUnitsBarcodes::run($orgStocks->last()))->toBeNull();
+});
+
+test('set org stock barcode by hand marks it independent and enforces uniqueness', function () {
+    $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => ' 5050000000055 ']);
+    expect($orgStock->barcode)->toBe('5050000000055')
+        ->and($orgStock->independent_barcode)->toBeTrue();
+
+    $otherStock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+    $otherOrgStock = StoreOrgStock::make()->action($this->organisation, $otherStock);
+
+    expect(fn () => UpdateOrgStock::make()->action($otherOrgStock, ['barcode' => '5050000000055']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $orgStock = UpdateOrgStock::make()->action($orgStock, ['barcode' => null]);
+    expect($orgStock->barcode)->toBeNull()
+        ->and($orgStock->independent_barcode)->toBeFalse();
+});

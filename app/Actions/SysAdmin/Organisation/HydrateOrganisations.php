@@ -38,6 +38,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateSub
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSupplierProducts;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateStockDeliveries;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSuppliers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOutboxes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletDeliveries;
@@ -152,6 +153,7 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateOrgAgents::run($organisation);
             OrganisationHydrateOrgSuppliers::run($organisation);
             OrganisationHydrateOrgSupplierProducts::run($organisation);
+            OrganisationHydrateStockDeliveries::run($organisation);
 
             //fulfilment
             OrganisationHydratePallets::run($organisation);

@@ -2,7 +2,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI\Traits;
 
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
@@ -12,6 +12,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 trait WithDeliveryNoteItemUI
 {
+    use WithDeliveryNoteHandler;
+
     protected function getGlobalSearchFilter(): AllowedFilter
     {
         return AllowedFilter::callback('global', function ($query, $value) {
@@ -63,31 +65,20 @@ trait WithDeliveryNoteItemUI
                     ");
     }
 
-    protected function canHandleDeliveryNote(?DeliveryNote $deliveryNote): bool
+    protected function hasPickingsWithBatchCodes(DeliveryNote $deliveryNote): bool
     {
-        if (!$deliveryNote) {
-            return false;
-        }
-
-        $handler = $deliveryNote->picker_user_id;
-
-        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
-            $handler = $deliveryNote->packer_user_id;
-        }
-
-        $allowAction = ($handler && $handler == request()->user()->id);
-
-        if (!$allowAction && $tempHandler = session('temp_handling_delivery_note')) {
-            $allowAction = $deliveryNote->id == data_get($tempHandler, 'value') && now()->lt(data_get($tempHandler, 'expires_at'));
-        }
-
-        return $allowAction;
+        return DB::table('pickings')
+            ->join('delivery_note_items', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+            ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
+            ->whereNotNull('pickings.batch_code_id')
+            ->exists();
     }
 
     protected function addDeliveryNoteItemBaseTableColumns(InertiaTable $table): void
     {
         $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
         $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+        $table->column(key: 'barcode', label: __('Barcode'), align: 'center');
     }
 
     protected function applyDeliveryNoteItemPickingJoins($query): void
@@ -128,6 +119,9 @@ trait WithDeliveryNoteItemUI
             'org_stocks.name as org_stock_name',
             'org_stocks.slug as org_stock_slug',
             'org_stocks.packed_in as packed_in',
+            'org_stocks.barcode',
+            'org_stocks.note_to_pickers as org_stock_note_to_pickers',
+            'org_stocks.note_to_packers as org_stock_note_to_packers',
             'delivery_note_items.quantity_waiting_crm',
             'delivery_note_items.quantity_waiting_warehouse',
         ];

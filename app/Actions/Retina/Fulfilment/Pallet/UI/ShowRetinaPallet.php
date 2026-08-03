@@ -20,6 +20,7 @@ use App\Http\Resources\Fulfilment\RetinaPalletResource;
 use App\Http\Resources\Fulfilment\StoredItemMovementsResource;
 use App\Http\Resources\Fulfilment\StoredItemResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
@@ -32,6 +33,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowRetinaPallet extends RetinaAction
 {
+    use WithBucketNavigation;
+
     public function asController(Pallet $pallet, ActionRequest $request): Pallet
     {
         $this->initialisation($request)->withTab(PalletTabsEnum::values());
@@ -196,20 +199,43 @@ class ShowRetinaPallet extends RetinaAction
 
     public function getPrevious(Pallet $pallet, ActionRequest $request): ?array
     {
-        $previous = Pallet::where('id', '<', $pallet->id)
-            ->where('fulfilment_customer_id', $request->user()->customer->fulfilmentCustomer->id)
-            ->whereNotNull('slug')->orderBy('id', 'desc')->first();
+        return $this->getNavigation($this->getPalletNeighbour($pallet, $request, forward: false), $request->route()->getName());
+    }
 
-        return $this->getNavigation($previous, $request->route()->getName());
+    private function getPalletNeighbour(Pallet $pallet, ActionRequest $request, bool $forward): ?Pallet
+    {
+        $query = Pallet::query()
+            ->where('pallets.fulfilment_customer_id', $request->user()->customer->fulfilmentCustomer->id)
+            ->whereNotNull('pallets.slug');
+
+        $statuses = match ($request->input('bucket')) {
+            'storing'    => [PalletStatusEnum::STORING, PalletStatusEnum::RETURNING],
+            'in_process' => [PalletStatusEnum::IN_PROCESS],
+            'incidents'  => [PalletStatusEnum::INCIDENT],
+            'returned'   => [PalletStatusEnum::RETURNED],
+            default      => null,
+        };
+
+        if ($statuses) {
+            $query->whereIn('pallets.status', $statuses);
+        }
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $pallet,
+            sort: $request->input('bucket_sort'),
+            sortColumns: [
+                'reference' => 'pallets.reference',
+                'customer_reference' => 'pallets.customer_reference',
+            ],
+            defaultSort: ['pallets.id', false],
+            forward: $forward
+        );
     }
 
     public function getNext(Pallet $pallet, ActionRequest $request): ?array
     {
-        $next = Pallet::where('id', '>', $pallet->id)
-            ->where('fulfilment_customer_id', $request->user()->customer->fulfilmentCustomer->id)
-            ->whereNotNull('slug')->orderBy('id')->first();
-
-        return $this->getNavigation($next, $request->route()->getName());
+        return $this->getNavigation($this->getPalletNeighbour($pallet, $request, forward: true), $request->route()->getName());
     }
 
     private function getNavigation(?Pallet $pallet, string $routeName): ?array

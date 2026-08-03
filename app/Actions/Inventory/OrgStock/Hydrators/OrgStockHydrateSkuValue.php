@@ -36,5 +36,9 @@ class OrgStockHydrateSkuValue implements ShouldBeUnique
         $orgStock->update([
             'sku_value' => $this->getCostPerSku($orgStock, Carbon::now())
         ]);
+
+        if ($orgStock->wasChanged('sku_value')) {
+            OrgStockHydrateValueInLocations::dispatch($orgStock);
+        }
     }
 }

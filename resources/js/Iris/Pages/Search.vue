@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { inject, onBeforeMount } from "vue"
+import { inject, onBeforeMount, onMounted } from "vue"
 
 import { irisLocaleStructure } from "@iris/Composables/useIrisLocaleStructure"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { trans } from "laravel-vue-i18n"
 import { getStyles } from "@/Composables/styles"
-import { onMounted } from "vue"
 import { ctrans } from "@/Composables/useTrans"
-
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', irisLocaleStructure)

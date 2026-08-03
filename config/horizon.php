@@ -187,6 +187,21 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'price_change'         => [
+            'connection'      => 'redis',
+            'queue'           => ['price_change_control', 'price_change'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 10,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 3,
+            'timeout'         => 3600,
+            'retry_after'     => 2,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'common'               => [
             'connection'      => 'redis',
             'queue'           => ['common'],
@@ -285,7 +300,7 @@ return [
             'maxTime'         => 0,
             'maxJobs'         => 0,
             'memory'          => 1280,
-            'tries'           => 10,
+            'tries'           => 25,
             'timeout'         => 3600,
             'retry_after'     => 120,
             'nice'            => 0,
@@ -321,6 +336,20 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'stock-control'               => [
+            'connection'      => 'redis',
+            'queue'           => ['stock-control'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 20,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 10,
+            'timeout'         => 3600,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'analytics'            => [
             'connection'      => 'redis',
             'queue'           => ['analytics'],
@@ -330,7 +359,7 @@ return [
             'maxJobs'         => 0,
             'memory'          => 1280,
             'tries'           => 1,
-            'timeout'         => 5,
+            'timeout'         => 60,
             'nice'            => 5,
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
@@ -386,6 +415,21 @@ return [
             'tries'               => 2,
             'timeout'             => 1000,
             'retry_after'         => 600,
+            'nice'                => 0,
+            'balanceMaxShift'     => 1,
+            'balanceCooldown'     => 3,
+        ],
+        'dropshipping-long'    => [
+            'connection'          => 'redis-long-running',
+            'queue'               => ['dropshipping-long'],
+            'balance'             => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses'        => 2,
+            'maxTime'             => 0,
+            'maxJobs'             => 0,
+            'memory'              => 1280,
+            'tries'               => 1,
+            'timeout'             => 7200,
             'nice'                => 0,
             'balanceMaxShift'     => 1,
             'balanceCooldown'     => 3,
@@ -522,6 +566,9 @@ return [
             'normal'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 6),
             ],
+            'price_change'         => [
+                'maxProcesses' => env('HORIZON_PRICE_CHANGE_WORKERS', 10),
+            ],
             'common'               => [
                 'maxProcesses' => env('HORIZON_COMMON_WORKERS', 2),
             ],
@@ -552,11 +599,17 @@ return [
             'urgent'               => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 16),
             ],
+            'stock-control'               => [
+                'maxProcesses' => env('HORIZON_STOCK_COMTROL_WORKERS', 16),
+            ],
             'low-priority'         => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 24),
             ],
             'dropshipping'         => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 16),
+            ],
+            'dropshipping-long'    => [
+                'maxProcesses' => env('HORIZON_DROPSHIPPING_LONG_WORKERS', 2),
             ],
             'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
@@ -591,6 +644,9 @@ return [
             'normal'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 1),
             ],
+            'price_change'         => [
+                'maxProcesses' => env('HORIZON_PRICE_CHANGE_WORKERS', 1),
+            ],
             'common'               => [
                 'maxProcesses' => env('HORIZON_COMMON_WORKERS', 1),
             ],
@@ -602,6 +658,9 @@ return [
             ],
             'aurora'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_AURORA', 2),
+            ],
+            'analytics'            => [
+                'maxProcesses' => env('HORIZON_ANALYTICS_WORKERS', 1),
             ],
             'sales'                => [
                 'maxProcesses' => env('HORIZON_SALES_WORKERS', 1),
@@ -618,11 +677,17 @@ return [
             'urgent'               => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 2),
             ],
+            'stock-control'               => [
+                'maxProcesses' => env('HORIZON_STOCK_COMTROL_WORKERS', 1),
+            ],
             'low-priority'         => [
-                'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
+                'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 1),
             ],
             'dropshipping'         => [
-                'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
+                'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 1),
+            ],
+            'dropshipping-long'    => [
+                'maxProcesses' => env('HORIZON_DROPSHIPPING_LONG_WORKERS', 1),
             ],
             'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),
@@ -631,19 +696,19 @@ return [
                 'maxProcesses' => env('HORIZON_LONG_HIGH_PRIORITY', 2),
             ],
             'long-low-priority'   => [
-                'maxProcesses' => env('HORIZON_LONG_LOW_PRIORITY', 2),
+                'maxProcesses' => env('HORIZON_LONG_LOW_PRIORITY', 1),
             ],
             'ses'                  => [
-                'maxProcesses' => env('HORIZON_SES_WORKERS', 2),
+                'maxProcesses' => env('HORIZON_SES_WORKERS', 1),
             ],
             'ses-send'                  => [
-                'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
+                'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 1),
             ],
             'ses-analytics'        => [
-                'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 2),
+                'maxProcesses' => env('HORIZON_SES_ANALYTICS_WORKERS', 1),
             ],
             'stock-history'        => [
-                'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 2),
+                'maxProcesses' => env('HORIZON_STOCK_HISTORY_WORKERS', 1),
             ],
             'cache-warming'        => [
                 'maxProcesses' => env('HORIZON_WEB_CACHE_WARMING', 1),
@@ -655,6 +720,9 @@ return [
         'local'      => [
             'normal'               => [
                 'maxProcesses' => env('HORIZON_NORMAL_WORKERS', 3),
+            ],
+            'price_change'         => [
+                'maxProcesses' => env('HORIZON_PRICE_CHANGE_WORKERS', 10),
             ],
             'common'               => [
                 'maxProcesses' => env('HORIZON_COMMON_WORKERS', 1),
@@ -686,11 +754,17 @@ return [
             'urgent'               => [
                 'maxProcesses' => env('HORIZON_URGENT_WORKERS', 5),
             ],
+            'stock-control'               => [
+                'maxProcesses' => env('HORIZON_STOCK_COMTROL_WORKERS', 2),
+            ],
             'low-priority'         => [
                 'maxProcesses' => env('HORIZON_LOW_PRIORITY_WORKERS', 2),
             ],
             'dropshipping'         => [
                 'maxProcesses' => env('HORIZON_DROPSHIPPING_WORKERS', 2),
+            ],
+            'dropshipping-long'    => [
+                'maxProcesses' => env('HORIZON_DROPSHIPPING_LONG_WORKERS', 1),
             ],
             'long-running'         => [
                 'maxProcesses' => env('HORIZON_LONG_WORKERS', 1),

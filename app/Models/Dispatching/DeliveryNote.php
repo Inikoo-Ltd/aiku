@@ -293,7 +293,8 @@ class DeliveryNote extends Model implements Auditable
         'parcels',
         'shipping_notes',
         'customer_notes',
-        'internal_notes'
+        'internal_notes',
+        'private_warehouse_note'
     ];
 
     public function getSlugOptions(): SlugOptions
