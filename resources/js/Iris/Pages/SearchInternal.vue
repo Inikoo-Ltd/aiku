@@ -427,18 +427,18 @@ const isMobileFilterOpen = ref(false)
 
                     <!-- Section: Results -->
                     <main class="box-border md:w-[72%] md:pl-5 lg:pl-7 flex-1 min-w-0">
-                        <div class="text-[22px] md:text-[26px] leading-none font-normal mb-[30px]">
+                        <div class="text-[22px] md:text-[26px] leading-none font-normal lg:mb-[30px]">
                             {{ ctrans('Results for') }}
                             <strong class="text-[var(--theme-color-0)]">{{ searchQuery }}</strong>
                             <span v-if="!isInternalLoading"> ({{ totalResults }})</span>
                         </div>
 
                         <!-- Quick searches: tabs + card rail -->
-                        <div v-if="!isInternalLoading && quickSearchTabs.length" class="mb-4">
+                        <div v-if="!isInternalLoading && quickSearchTabs.length" class="my-4">
                             <!-- Section: Result box categories, collections, etc -->
-                            <div class="mb-2 pb-2 flex flex-wrap justify-end border-b border-[color-mix(in_srgb,var(--iris-color-0)_30%,transparent)]">
+                            <div class="mb-2 pb-2 flex flex-wrap justify-end gap-y-2.5 gap-x-3 border-b border-[color-mix(in_srgb,var(--iris-color-0)_30%,transparent)]">
                                 <div v-for="tab in quickSearchTabs" :key="tab.key"
-                                    class="m-0 flex-grow text-center max-w-64 px-2 py-1 text-base rounded cursor-pointer mt-2.5 mr-0 -mb-px ml-5 text-[18px] font-normal border border-[color-mix(in_srgb,var(--iris-color-0)_40%,transparent)]"
+                                    class="m-0 flex-grow text-center max-w-64 px-2 py-1 text-base rounded cursor-pointer text-[18px] font-normal border border-[color-mix(in_srgb,var(--iris-color-0)_40%,transparent)]"
                                     :class="activeQuickSearch === tab.key ? 'bg-[color-mix(in_srgb,var(--iris-color-0)_10%,transparent)]' : 'text-[#767676] hover:text-black'"
                                     @click="activeQuickSearch = tab.key">
                                     <strong>{{ tab.label }}</strong> ({{ tab.items.length }})
@@ -481,7 +481,7 @@ const isMobileFilterOpen = ref(false)
                                     @progress="updateRailEdges"
                                     @slide-change="updateRailEdges"
                                     @resize="updateRailEdges">
-                                    <SwiperSlide v-for="item in activeRailItems" :key="item.id" class="!w-[200px]">
+                                    <SwiperSlide v-for="item in activeRailItems" :key="item.id" class="!w-[125px] lg:!w-[200px]">
                                         <component
                                             :is="item.url ? LinkIris : 'button'"
                                             :href="item.url || undefined"
@@ -490,11 +490,11 @@ const isMobileFilterOpen = ref(false)
                                             :class="!item.url && isFacetSelected('tags', item.id)
                                                 ? 'border-[var(--theme-color-0)] ring-1 ring-[var(--theme-color-0)]'
                                                 : 'border-gray-200'"
-                                            @click="onRailItemClick(item)">
+                                            @click="onRailItemClick(item)"
+                                        >
                                             <!-- Image (full cover, square) -->
                                             <div class="relative w-full aspect-square">
-                                                <Image v-if="item.image" :src="item.image"
-                                                    class="absolute inset-0 h-full w-full object-cover" />
+                                                <Image v-if="item.image" :src="item.image" class="absolute inset-0 h-full w-full object-cover" />
                                                 <span v-else
                                                     class="absolute inset-0 flex items-center justify-center opacity-30 text-3xl md:text-5xl">
                                                     <svg class="h-[1em] w-[1em]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor">
@@ -543,7 +543,7 @@ const isMobileFilterOpen = ref(false)
 
                         <!-- Section: Results (same product card as the family page) -->
                         <div v-else-if="products.length" xstyle="gridColsVars"
-                            class="xproducts-grid grid-cols-4 grid gap-x-4 gap-y-10 transition-opacity bg-gray-100 p-4 rounded-md"
+                            class="xproducts-grid grid-cols-1 lg:grid-cols-4 grid gap-x-4 gap-y-10 transition-opacity bg-gray-100 p-4 rounded-md"
                             :class="isResultsRefreshing ? 'opacity-60 pointer-events-none' : ''">
                             <div v-for="product in products" :key="product.id"
                                 :style="getStyles(fieldValue?.card_product?.properties, screenType)"
@@ -565,7 +565,7 @@ const isMobileFilterOpen = ref(false)
                         </div>
 
                         <!-- Pagination: load more + info -->
-                        <div v-if="!isInternalLoading && products.length" class="pt-[30px] text-center">
+                        <div v-if="!isInternalLoading && products.length" class="lg:pt-[30px] text-center">
                             <button v-if="products.length < totalResults" type="button"
                                 class="rounded-sm font-bold py-[15px] px-2.5 w-[300px] max-w-full text-center bg-[var(--theme-color-0)] text-white hover:brightness-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 :disabled="isLoadingMore"
