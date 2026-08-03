@@ -237,12 +237,27 @@ const visitSearchPage = () => {
 </script>
 
 <template>
+    <div>
+        <button
+            type="button"
+            :id="id || 'inputIrisSearchMobile'"
+            :aria-label="ctrans('Search')"
+            class="ml-1 xw-14 xh-14 rounded-full flex items-center justify-center touch-none"
+            xstyle="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
+            @click="onFabClick"
+            @touchstart.passive="onFabTouchStart"
+            @touchmove.prevent="onFabTouchMove"
+            @touchend="onFabTouchEnd"
+        >
+            <FontAwesomeIcon icon="far fa-search" class="text-3xl" fixed-width aria-hidden="true" />
+        </button>
+
     <Teleport to="body">
         <!-- Always-present floating search button in the thumb zone; drag it up or down -->
         <button
             v-if="!isOverlayOpen"
             type="button"
-            :id="id || 'inputIrisSearchMobile'"
+            xid="id || 'inputIrisSearchMobile'"
             :aria-label="trans('Search')"
             class="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-40 w-14 h-14 rounded-full bg-[var(--theme-color-0)] text-[var(--theme-color-1)] shadow-lg flex items-center justify-center opacity-60 focus-visible:opacity-100 active:opacity-100 active:scale-95 transition-[opacity,transform] touch-none"
             :style="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
@@ -303,4 +318,5 @@ const visitSearchPage = () => {
             </div>
         </div>
     </Teleport>
+    </div>
 </template>
