@@ -398,6 +398,7 @@ const compTooltipTotalToPay = computed(() => {
                                 }"
                                 mode="currency"
                                 :currency="invoice_pay.currency_code"
+                                :maxFractionDigits="2"
                             />
                         </div>
 
