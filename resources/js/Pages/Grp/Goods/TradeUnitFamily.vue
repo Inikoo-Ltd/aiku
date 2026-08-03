@@ -3,7 +3,7 @@ import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faAtomAlt, faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal, faTrashAlt } from "@fal"
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, ref, inject } from 'vue'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -25,6 +25,8 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import Tag from '@/Components/Tag.vue'
 import { Message } from "primevue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
+
+const screenType = inject('screenType', ref('desktop'))
 
 library.add(
     faAtomAlt,faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube,
@@ -172,7 +174,7 @@ const handleMassAssign = () => {
   
   <!-- PrimeVue Dialog -->
   <Dialog v-model:visible="isModalOpenMassAssign" modal header="Attach Brands & Tags" :contentClass="'w-[40vw] lg:w-[35vw]'"
-    :dismissableMask="true" :contentStyle="{ maxHeight: 'auto', overflowY: 'visible' }">
+    :dismissableMask="screenType === 'desktop'" :contentStyle="{ maxHeight: 'auto', overflowY: 'visible' }">
     <!-- BRANDS -->
     <Message :severity="'warn'" xclosable="true" class="mb-3 !bg-yellow-100 !text-sm">
       <span class="!text-sm">
@@ -211,7 +213,7 @@ const handleMassAssign = () => {
     </template>
   </Dialog>
   <!-- PrimeVue Dialog -->
-  <Dialog v-model:visible="isModalOpen" modal header="Attach Trade Units" :style="{ width: '50vw' }" :dismissableMask="true">
+  <Dialog v-model:visible="isModalOpen" modal header="Attach Trade Units" :style="{ width: '50vw' }" :dismissableMask="screenType === 'desktop'">
     <ListSelector
       v-model="tradeUnits"
       :routeFetch="props.routes.trade_units_route"

@@ -21,6 +21,8 @@ import { inject, ref } from "vue"
 import Image from "@/Common/Components/Image.vue"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 
+const screenType = inject('screenType', ref('desktop'))
+
 const props = withDefaults(
 	defineProps<{
 		data: any[] | TableTS
@@ -355,7 +357,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 			</template>
 		</GridProducts>
 
-		<Dialog v-model:visible="showImagePreview" modal dismissableMask
+		<Dialog v-model:visible="showImagePreview" modal :dismissableMask="screenType === 'desktop'"
 			class="w-full max-w-3xl !border-0 !bg-transparent !shadow-none">
 			<div class="relative flex w-full flex-col items-center justify-center">
 

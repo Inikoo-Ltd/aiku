@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, watch, computed } from 'vue'
+import { onBeforeMount, nextTick, ref, watch, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronDown, faCheckSquare, faSquare, faCalendarAlt } from '@fal'
@@ -17,7 +17,10 @@ library.add(faChevronDown, faCheckSquare, faSquare, faCalendarAlt)
 const props = defineProps<{
     optionsList: string[]
     tableName: string
+    appliedValue?: { column: string, range: string } | null
 }>()
+
+let isInitialising = true
 
 // Method: convert Date to '20250206-20250223'
 const formattedDateRange = (date: string[] | Date[]) => {
@@ -36,6 +39,10 @@ const isLoadingReload = ref(false)
 const dateFilterValue = ref([new Date(), new Date()])
 const hasBetweenQuery = ref(false)
 watch(dateFilterValue, (newValue) => {
+    if (isInitialising) {
+        return
+    }
+
     router.reload(
         {
             data: { [`between[${selectedPeriodType.value}]`]: formattedDateRange(newValue) },  // Sent to url parameter (?tab=showcase, ?tab=menu)
@@ -67,6 +74,10 @@ watch(dateFilterValue, (newValue) => {
 // Section: multiselect
 const selectedPeriodType = ref(props.optionsList?.[0])
 watch(selectedPeriodType, (newValue, oldValue) => {
+    if (isInitialising) {
+        return
+    }
+
     const oldBetween = oldValue ? {
         [`between[${oldValue}]`]: null
     } : {}
@@ -275,9 +286,24 @@ const resetFilter = () => {
     })
 }
 
+const assignInitValue = (fieldName: string, dateRangeString: string) => {
+    const dates = dateRangeString.split('-')  // split '20250206-20250223'
+
+    if (dates.length !== 2) {
+        return false
+    }
+
+    dateFilterValue.value = [new Date(formatDate(dates[0])), new Date(formatDate(dates[1]))]
+    selectedPeriodType.value = fieldName
+    hasBetweenQuery.value = true
+
+    return true
+}
+
 onBeforeMount(() => {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
+    let hasInitValue = false
 
     // To assign init value
     for (let param of urlParams.keys()) {
@@ -286,17 +312,7 @@ onBeforeMount(() => {
             const dateRangeString = urlParams.get(param)  // the value of params ('20250206-20250223')
 
             if (dateRangeString) {
-                const dates = dateRangeString.split('-')  // split '20250206-20250223'
-                // console.log('dates', dates)
-
-                if (dates.length === 2) {
-                    // Store the field name and the date range
-                    dateFilterValue.value = [new Date(formatDate(dates[0])), new Date(formatDate(dates[1]))];
-                    // console.log('dateFilterValue', dateFilterValue.value)
-                    selectedPeriodType.value = fieldName;
-
-                    hasBetweenQuery.value = true
-                }
+                hasInitValue = assignInitValue(fieldName, dateRangeString)
             } else {
                 continue // Skip to the next iteration
             }
@@ -305,6 +321,28 @@ onBeforeMount(() => {
         }
     }
 
+    if (!hasInitValue && props.appliedValue?.range) {
+        assignInitValue(props.appliedValue.column, props.appliedValue.range)
+    }
+
+    nextTick(() => {
+        isInitialising = false
+    })
+})
+
+watch(() => props.appliedValue, (newValue) => {
+    isInitialising = true
+
+    if (newValue?.range) {
+        assignInitValue(newValue.column, newValue.range)
+    } else {
+        dateFilterValue.value = [new Date(), new Date()]
+        hasBetweenQuery.value = false
+    }
+
+    nextTick(() => {
+        isInitialising = false
+    })
 })
 
 // Section: Popover
