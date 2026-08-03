@@ -143,14 +143,14 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
 
             <!-- Corners -->
             <g v-for="corner in [
-                { at: TU, label: 'TU', title: trans('Trade unit'), dy: -26 },
-                { at: SKO, label: 'SKO', title: trans('Org stock'), dy: 36 },
-                { at: P, label: 'P', title: trans('Product'), dy: 36 },
+                { at: TU, label: 'TU', title: trans('Trade unit'), dy: -26, color: '#94a3b8', textColor: '#64748b' },
+                { at: SKO, label: 'SKO', title: trans('Org stock'), dy: 36, color: '#0d9488', textColor: '#0d9488' },
+                { at: P, label: 'P', title: trans('Product'), dy: 36, color: '#94a3b8', textColor: '#64748b' },
             ]" :key="corner.label">
-                <circle :cx="corner.at.x" :cy="corner.at.y" r="14" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" />
-                <circle :cx="corner.at.x" :cy="corner.at.y" r="3" fill="#94a3b8" />
+                <circle :cx="corner.at.x" :cy="corner.at.y" r="14" fill="#f8fafc" :stroke="corner.color" stroke-width="1.5" />
+                <circle :cx="corner.at.x" :cy="corner.at.y" r="3" :fill="corner.color" />
                 <text :x="corner.at.x" :y="corner.at.y + corner.dy" text-anchor="middle"
-                    fill="#64748b" class="text-[13px] font-medium">
+                    :fill="corner.textColor" class="text-[13px] font-medium">
                     {{ corner.label }}
                     <title>{{ corner.title }}</title>
                 </text>
