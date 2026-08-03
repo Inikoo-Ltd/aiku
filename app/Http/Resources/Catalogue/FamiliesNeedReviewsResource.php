@@ -1,10 +1,11 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 19 Jul 2024 16:42:55 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
- */
+ * Author Louis Perez
+ * Created on 03-08-2026-15h-00m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
 
 namespace App\Http\Resources\Catalogue;
 
@@ -12,7 +13,6 @@ use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Helpers\Media;
 use App\Actions\Helpers\Images\GetPictureSources;
-use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -45,7 +45,6 @@ use Illuminate\Support\Arr;
  * @property mixed $is_description_reviewed
  * @property mixed $is_description_extra_reviewed
  * @property mixed $collections
- * @property mixed $last_offer
  * @property mixed $id
  * @property mixed $web_images
  * @property mixed $image_id
@@ -53,7 +52,7 @@ use Illuminate\Support\Arr;
  * @property mixed $health_rank
  * @property mixed $webpage_state
  */
-class FamiliesResource extends JsonResource
+class FamiliesNeedReviewsResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -67,63 +66,36 @@ class FamiliesResource extends JsonResource
             $imageSources = GetPictureSources::run($image);
         }
         $collections = $this->collections ? json_decode($this->collections, true) : [];
-        $lastOffer   = $this->last_offer ? json_decode($this->last_offer, true) : null;
 
         return [
             'id'                            => $this->id,
             'slug'                          => $this->slug,
-            'shop_slug'                     => $this->shop_slug,
-            'shop_code'                     => $this->shop_code,
-            'shop_name'                     => $this->shop_name,
-            'department_slug'               => $this->department_slug,
-            'department_code'               => $this->department_code,
-            'department_name'               => $this->department_name,
-            'sub_department_slug'           => $this->sub_department_slug,
-            'sub_department_code'           => $this->sub_department_code,
-            'sub_department_name'           => $this->sub_department_name,
-            'image'                         => $imageSources,
+            'code'                          => $this->code,
+            'name'                          => $this->name,
             'state'                         => [
                 'tooltip' => $this->state->labels()[$this->state->value],
                 'icon'    => $this->state->stateIcon()[$this->state->value]['icon'],
                 'class'   => $this->state->stateIcon()[$this->state->value]['class']
             ],
-            'code'                          => $this->code,
-            'name'                          => $this->name,
             'description'                   => $this->description,
             'created_at'                    => $this->created_at,
+            'image'                         => $imageSources,
             'updated_at'                    => $this->updated_at,
-            'number_current_products'       => $this->number_current_products ?? 0,
-            'collections'                   => $collections,
-            'last_offer'                    => $lastOffer,
-            'sales_grp_currency_external'   => $this->sales_grp_currency_external ?? 0,
-            'sales_grp_currency_external_ly' => $this->sales_grp_currency_external_ly ?? 0,
-            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
-            'currency_code'                 => $this->currency_code,
-            'invoices'                      => $this->invoices ?? 0,
-            'invoices_ly'                   => $this->invoices_ly ?? 0,
-            'invoices_delta'                => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
-            'dropshippers'                  => $this->dropshippers ?? 0,
-            'listings'                      => $this->listings ?? 0,
-            'sold'                          => $this->sold ?? 0,
-            'organisation_name'             => $this->organisation_name,
-            'organisation_slug'             => $this->organisation_slug,
-            'master_product_category_id'    => $this->master_product_category_id,
-            'webpage_state'                 => $this->webpage_state,
             'is_name_reviewed'              => $this->is_name_reviewed,
             'is_description_title_reviewed' => $this->is_description_title_reviewed,
             'is_description_reviewed'       => $this->is_description_reviewed,
             'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
-            'image_thumbnail'               => Arr::get($this->web_images, 'main.thumbnail'),
-            'health_rank'                   => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
-            'public_url'                    => $this->canonical_url,
-            'gr_detail'                     => $this->whenLoaded('getGROffer', function () {
-                $offer = $this->getGROffer;
-
-                return [
-                    'percentage' => $offer ? (float) data_get($offer->offerAllowances->first()?->data, 'percentage_off', 0) * 100 : 0,
-                    'quantity'   => $offer ? (int) data_get($offer->trigger_data, 'item_quantity', 0) : 0,
-                ];
-            }),
+            'number_current_products'       => $this->number_current_products ?? 0,
+            'shop_slug'                     => $this->shop_slug,
+            'shop_code'                     => $this->shop_code,
+            'shop_name'                     => $this->shop_name,
+            'webpage_state'                 => $this->webpage_state,
+            'collections'                   => $collections,
+            'is_following_master'           => $this->shop_settings ? data_get(json_decode($this->shop_settings), 'catalog.family_follow_master', false) : null,
+            'name_updated_at'               => $this->name_updated_at,
+            'description_updated_at'        => $this->description_updated_at,
+            'description_title_updated_at'  => $this->description_title_updated_at,
+            'extra_description_updated_at'  => $this->extra_description_updated_at,
         ];
     }
 

@@ -85,6 +85,7 @@ class UpdateOrgStock extends OrgAction
                 'nullable',
                 'string',
                 'max:54',
+                'regex:/^[\x20-\x7E]+$/',
                 Rule::unique('org_stocks', 'barcode')
                     ->where('organisation_id', $this->orgStock->organisation_id)
                     ->whereNull('deleted_at')

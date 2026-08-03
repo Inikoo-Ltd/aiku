@@ -6,11 +6,12 @@ import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import { debounce } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch } from "@far"
+import { faSearch, faChevronUp, faChevronDown } from "@far"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
-library.add(faSearch, faTimes)
+import { useIrisSearchMobile } from "@/Iris/Composables/useIrisSearchMobile"
+library.add(faSearch, faTimes, faChevronUp, faChevronDown)
 
 const SearchResultCatalogueMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogueMobile.vue"))
 
@@ -29,7 +30,8 @@ onBeforeMount(() => {
 const internalResults = ref<any>(null)
 const searchLogUlid = ref<string | null>(null)
 const isInternalLoading = ref(false)
-const isOverlayOpen = ref(false)
+// Shared so other components (the sidebar search field) open the very same overlay
+const { isIrisSearchMobileOpen: isOverlayOpen } = useIrisSearchMobile()
 const showDropdown = ref(true)
 const inputRef = ref<HTMLInputElement | null>(null)
 let internalAbort: AbortController | null = null
@@ -59,7 +61,9 @@ const getCachedResponse = (query: string): any | null => {
 }
 
 onBeforeUnmount(() => {
+    isOverlayOpen.value = false
     document.body.style.overflow = ''
+    clearDragHintTimer()
 })
 
 // The floating button can be dragged vertically to uncover content beneath it;
@@ -109,24 +113,58 @@ const onFabClick = () => {
     openOverlay()
 }
 
+// Touching the floating button reveals that it can be moved: most people never
+// discover the drag gesture on their own. It shows on press rather than on a
+// long press, so the arrows are already there by the time the finger moves
+const DRAG_HINT_LINGER_MS = 900
+const isDragHintVisible = ref(false)
+let dragHintHideTimer: ReturnType<typeof setTimeout> | null = null
+
+const clearDragHintTimer = () => {
+    if (dragHintHideTimer !== null) {
+        clearTimeout(dragHintHideTimer)
+        dragHintHideTimer = null
+    }
+}
+
+const showDragHint = () => {
+    clearDragHintTimer()
+    isDragHintVisible.value = true
+}
+
+const hideDragHintSoon = () => {
+    clearDragHintTimer()
+    dragHintHideTimer = setTimeout(() => {
+        dragHintHideTimer = null
+        isDragHintVisible.value = false
+    }, DRAG_HINT_LINGER_MS)
+}
+
 const openOverlay = () => {
     isOverlayOpen.value = true
-    showDropdown.value = true
-    document.body.style.overflow = 'hidden'
-    nextTick(() => inputRef.value?.focus())
-    if (inputValue.value.trim() && !internalResults.value) {
-        isInternalLoading.value = true
-        fetchResults(inputValue.value)
-    }
 }
 
 const closeOverlay = () => {
     isOverlayOpen.value = false
+}
+
+watch(isOverlayOpen, (open) => {
+    if (open) {
+        showDropdown.value = true
+        document.body.style.overflow = 'hidden'
+        nextTick(() => inputRef.value?.focus())
+        if (inputValue.value.trim() && !internalResults.value) {
+            isInternalLoading.value = true
+            fetchResults(inputValue.value)
+        }
+        return
+    }
+
     document.body.style.overflow = ''
     fetchResults.cancel()
     internalAbort?.abort()
     isInternalLoading.value = false
-}
+})
 
 const fetchResults = debounce(async (query: string) => {
     const requestId = ++internalRequestId
@@ -227,22 +265,67 @@ const visitSearchPage = () => {
 </script>
 
 <template>
-    <Teleport to="body">
-        <!-- Always-present floating search button in the thumb zone; drag it up or down -->
+    <div>
         <button
-            v-if="!isOverlayOpen"
             type="button"
             :id="id || 'inputIrisSearchMobile'"
-            :aria-label="trans('Search')"
-            class="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-40 w-14 h-14 rounded-full bg-[var(--theme-color-0)] text-[var(--theme-color-1)] shadow-lg flex items-center justify-center opacity-60 focus-visible:opacity-100 active:opacity-100 active:scale-95 transition-[opacity,transform] touch-none"
-            :style="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
+            :aria-label="ctrans('Search')"
+            class="ml-1 xw-14 xh-14 rounded-full flex items-center justify-center touch-none"
+            xstyle="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
             @click="onFabClick"
             @touchstart.passive="onFabTouchStart"
             @touchmove.prevent="onFabTouchMove"
             @touchend="onFabTouchEnd"
         >
-            <FontAwesomeIcon icon="far fa-search" class="text-xl" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon icon="far fa-search" class="text-3xl" fixed-width aria-hidden="true" />
         </button>
+
+    <Teleport to="body">
+        <!-- Always-present floating search button in the thumb zone; drag it up or down -->
+        <div
+            v-if="!isOverlayOpen"
+            class="fixed right-6 bottom-[calc(env(safe-area-inset-bottom)+13rem)] z-40 w-14 h-14"
+            :style="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
+        >
+            <Transition
+                enter-active-class="transition-opacity duration-75"
+                enter-from-class="opacity-0"
+                leave-active-class="transition-opacity duration-300"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="isDragHintVisible" class="pointer-events-none absolute inset-0" aria-hidden="true">
+                    <FontAwesomeIcon
+                        icon="far fa-chevron-up"
+                        class="dragHintArrowUp absolute left-1/2 -top-6 text-[var(--theme-color-0)]"
+                    />
+                    <FontAwesomeIcon
+                        icon="far fa-chevron-down"
+                        class="dragHintArrowDown absolute left-1/2 -bottom-6 text-[var(--theme-color-0)]"
+                    />
+                    <span class="absolute right-[calc(100%+0.75rem)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-gray-900/85 px-2 py-1 text-xs text-white shadow-lg">
+                        {{ ctrans('Drag up or down to move') }}
+                    </span>
+                </div>
+            </Transition>
+
+            <button
+                type="button"
+                xid="id || 'inputIrisSearchMobile'"
+                :aria-label="trans('Search')"
+                class="w-14 h-14 rounded-full bg-[var(--theme-color-0)] text-[var(--theme-color-1)] shadow-lg flex items-center justify-center opacity-60 focus-visible:opacity-100 active:opacity-100 active:scale-95 transition-[opacity,transform] touch-none"
+                @pointerdown="showDragHint"
+                @pointerup="hideDragHintSoon"
+                @pointercancel="hideDragHintSoon"
+                @pointerleave="hideDragHintSoon"
+                @click="onFabClick"
+                @touchstart.passive="onFabTouchStart"
+                @touchmove.prevent="onFabTouchMove"
+                @touchend="onFabTouchEnd"
+                @touchcancel="onFabTouchEnd"
+            >
+                <FontAwesomeIcon icon="far fa-search" class="text-xl" fixed-width aria-hidden="true" />
+            </button>
+        </div>
 
         <!-- Full-screen overlay: the input sits at the top, immune to the keyboard
              appearing/disappearing (a bottom-pinned input wobbles on iOS) -->
@@ -293,4 +376,45 @@ const visitSearchPage = () => {
             </div>
         </div>
     </Teleport>
+    </div>
 </template>
+
+<style scoped>
+.dragHintArrowUp {
+    animation: dragHintArrowUp 700ms ease-in-out infinite;
+}
+
+.dragHintArrowDown {
+    animation: dragHintArrowDown 700ms ease-in-out infinite;
+}
+
+@keyframes dragHintArrowUp {
+    0%, 100% {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -5px);
+        opacity: 0.5;
+    }
+}
+
+@keyframes dragHintArrowDown {
+    0%, 100% {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, 5px);
+        opacity: 0.5;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dragHintArrowUp,
+    .dragHintArrowDown {
+        animation: none;
+        transform: translate(-50%, 0);
+    }
+}
+</style>

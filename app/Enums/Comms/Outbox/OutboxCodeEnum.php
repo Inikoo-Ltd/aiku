@@ -64,6 +64,9 @@ enum OutboxCodeEnum: string
     case WEB_USER_REGISTRATION = 'web_user_registration';
     case NEW_REVIEW = 'new_review';
     case REVIEW_REMINDER = 'review_reminder';
+    case PROSPECT_CONVERTION_1 = 'prospect_convertion_1';
+    case PROSPECT_CONVERTION_2 = 'prospect_convertion_2';
+    case PROSPECT_CONVERTION_3 = 'prospect_convertion_3';
 
 
     public function type(): OutboxTypeEnum
@@ -128,7 +131,10 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
-            OutboxCodeEnum::GOLD_REWARD_REMINDER_3
+            OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1,
+            OutboxCodeEnum::PROSPECT_CONVERTION_2,
+            OutboxCodeEnum::PROSPECT_CONVERTION_3
             => OutboxTypeEnum::PUSH,
         };
     }
@@ -184,6 +190,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
             OutboxCodeEnum::NEW_REVIEW => 'New review',
             OutboxCodeEnum::REVIEW_REMINDER => 'Review reminder',
+            OutboxCodeEnum::PROSPECT_CONVERTION_1 => 'Prospect conversion 1',
+            OutboxCodeEnum::PROSPECT_CONVERTION_2 => 'Prospect conversion 2',
+            OutboxCodeEnum::PROSPECT_CONVERTION_3 => 'Prospect conversion 3',
         };
     }
 
@@ -239,6 +248,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::WEB_USER_REGISTRATION => 'Web user registration',
             OutboxCodeEnum::NEW_REVIEW => 'New review',
             OutboxCodeEnum::REVIEW_REMINDER => 'Review reminder',
+            OutboxCodeEnum::PROSPECT_CONVERTION_1 => 'Prospect conversion 1',
+            OutboxCodeEnum::PROSPECT_CONVERTION_2 => 'Prospect conversion 2',
+            OutboxCodeEnum::PROSPECT_CONVERTION_3 => 'Prospect conversion 3',
         };
     }
 
@@ -316,8 +328,12 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::REVIEW_REMINDER,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
+
             OutboxCodeEnum::NEW_REVIEW,
-            OutboxCodeEnum::PRICE_CHANGE => ['b2b', 'dropshipping'],
+            OutboxCodeEnum::PRICE_CHANGE,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1,
+            OutboxCodeEnum::PROSPECT_CONVERTION_2,
+            OutboxCodeEnum::PROSPECT_CONVERTION_3 => ['b2b', 'dropshipping'],
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::ABANDONED_CART,
             OutboxCodeEnum::REORDER_REMINDER,
@@ -424,7 +440,10 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::REVIEW_REMINDER,
             OutboxCodeEnum::INVOICE_PAID,
-            OutboxCodeEnum::PRICE_CHANGE
+            OutboxCodeEnum::PRICE_CHANGE,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1,
+            OutboxCodeEnum::PROSPECT_CONVERTION_2,
+            OutboxCodeEnum::PROSPECT_CONVERTION_3
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -477,6 +496,9 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::REVIEW_REMINDER,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1,
+            OutboxCodeEnum::PROSPECT_CONVERTION_2,
+            OutboxCodeEnum::PROSPECT_CONVERTION_3,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
@@ -548,7 +570,10 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
             OutboxCodeEnum::BASKET_PUSH,
-            OutboxCodeEnum::NEW_CUSTOMER_PUSH
+            OutboxCodeEnum::NEW_CUSTOMER_PUSH,
+            OutboxCodeEnum::PROSPECT_CONVERTION_1,
+            OutboxCodeEnum::PROSPECT_CONVERTION_2,
+            OutboxCodeEnum::PROSPECT_CONVERTION_3
             => PostRoomCodeEnum::MARKETING,
 
             OutboxCodeEnum::TEST,

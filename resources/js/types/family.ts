@@ -24,4 +24,11 @@ export interface Family {
 	created_at: string
 	updated_at: string
 	master_product_category_id: number
+	last_offer?: {
+		slug: string
+		name: string
+		state: string
+		start_at: string | null
+		end_at: string | null
+	} | null
 }

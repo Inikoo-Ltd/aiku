@@ -9,6 +9,10 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import Icon from "@/Components/Icon.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPersonDolly, faPeopleArrows, faArchive } from "@fal"
+
+library.add(faPersonDolly, faPeopleArrows, faArchive)
 
 interface OrgSupplier {
     org_supplier_slug: string

@@ -11,7 +11,8 @@ import { RouteParams } from "@/types/route-params";
 import { MasterFamily } from "@/types/master-family";
 import { trans } from "laravel-vue-i18n";
 import { ref, inject } from "vue";
-import { faFolderTree } from "@fal";
+import { faFolderTree, faChevronRight, faChevronDown } from "@fal";
+import { useFormatTime } from "@/Composables/useFormatTime";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Dialog from 'primevue/dialog';
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
@@ -234,6 +235,31 @@ const getIntervalStateColor = (isPositive: boolean) => {
     }
 }
 
+const expandedOffers = ref<Record<number, boolean>>({})
+
+const toggleOffers = (masterFamilyId: number) => {
+    expandedOffers.value[masterFamilyId] = !expandedOffers.value[masterFamilyId]
+}
+
+const visibleOffers = (masterFamily: MasterFamily) => {
+    const offers = masterFamily.last_offers ?? []
+
+    if (expandedOffers.value[masterFamily.id] || offers.length < 2) {
+        return offers
+    }
+
+    return [[...offers].sort(
+        (a, b) => new Date(b.start_at ?? 0).getTime() - new Date(a.start_at ?? 0).getTime()
+    )[0]]
+}
+
+const offerRoute = (offer: { organisation_slug: string, shop_slug: string, offer_slug: string }) => route(
+    "grp.org.shops.show.discounts.offers.show",
+    [offer.organisation_slug, offer.shop_slug, offer.offer_slug])
+
+const offerDate = (date?: string | null) => date
+    ? useFormatTime(date, { localeCode: locale.language.code, formatTime: 'dd MMM yy' })
+    : trans('No date')
 
 </script>
 
@@ -324,6 +350,34 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 {{ family["code"] }}
             </Link>
             <FontAwesomeIcon v-if="family.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch detected in products linked to this master family. Please modify the master family trade units to fix the issue.')"/>
+        </template>
+
+        <template #cell(last_offers)="{ item: family }">
+            <div v-if="family.last_offers?.length" class="flex items-start gap-x-1 text-xs">
+                <FontAwesomeIcon v-if="family.last_offers.length > 1"
+                    :icon="expandedOffers[family.id] ? faChevronDown : faChevronRight"
+                    class="mt-0.5 cursor-pointer text-gray-400 hover:text-gray-600"
+                    v-tooltip="expandedOffers[family.id]
+                        ? trans('Hide the other shops')
+                        : trans(':number more shops', { number: family.last_offers.length - 1 })"
+                    fixed-width @click="toggleOffers(family.id)" />
+                <div class="flex flex-col gap-y-0.5">
+                    <div v-for="offer in visibleOffers(family)" :key="offer.shop_slug" class="whitespace-nowrap">
+                        <span class="font-medium" v-tooltip="offer.shop_name">{{ offer.shop_code }}</span>
+                        <span class="text-gray-400 mx-1">=</span>
+                        <Link :href="offerRoute(offer)" class="secondaryLink" v-tooltip="offer.offer_name">
+                            {{ offer.offer_slug }}
+                        </Link>
+                        <span class="text-gray-400 mx-1">·</span>
+                        <span v-tooltip="trans('Offer date')">{{ offerDate(offer.start_at) }}</span>
+                        <span class="text-gray-400 mx-1">→</span>
+                        <span v-tooltip="trans('Expiration date')">
+                            {{ offer.end_at ? offerDate(offer.end_at) : trans('No expiration') }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <span v-else class="text-gray-400 italic">-</span>
         </template>
 
         <template #cell(products)="{ item: family }">

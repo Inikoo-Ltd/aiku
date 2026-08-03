@@ -19,10 +19,12 @@ import { faCheck, faTimesCircle, faCheckCircle, faBroadcastTower, faSkull } from
 import { faTriangle, faEquals, faMinus } from "@fas"
 import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faCheck)
+library.add(faCheck, faOctopusDeploy)
 
 defineProps<{
     data: object
@@ -222,6 +224,20 @@ function masterFamilyRoute(family: Family) {
         [family.master_product_category_id]);
 }
 
+function offerRoute(family: Family) {
+    if (!family.organisation_slug || !family.shop_slug || !family.last_offer?.slug) {
+        return undefined
+    }
+
+    return route(
+        "grp.org.shops.show.discounts.offers.show",
+        [family.organisation_slug, family.shop_slug, family.last_offer.slug])
+}
+
+const offerDate = (date?: string | null) => date
+    ? useFormatTime(date, { localeCode: locale.language.code, formatTime: 'dd MMM yy' })
+    : trans('No date')
+
 const isLoadingDetach = ref<string[]>([])
 
 const dotClass = (filled: boolean) =>
@@ -391,40 +407,101 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </div>
         </template>
 
+        <template #cell(is_following_master)="{ item: family }">
+            <div class="whitespace-nowrap">
+                <FontAwesomeIcon v-tooltip="family.is_following_master ? ctrans('Family is Following Master') : ctrans('Family is not Following Master')" 
+                    :icon="faOctopusDeploy" :class="family.is_following_master ? 'text-green-500' : 'text-red-500'"
+                />
+            </div>
+        </template>
+
         <template #cell(is_name_reviewed)="{ item }">
-            <div >
-                <FontAwesomeIcon :class="[
-                    'flex items-center justify-center w-4 h-4 rounded-full',
-                    dotClass(item.is_name_reviewed),
-                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="trans('Name needs a review')" />
+            <div class="flex">
+                <FontAwesomeIcon 
+                    :class="[
+                        'flex items-center justify-center w-4 h-4 rounded-full my-auto',
+                        dotClass(item.is_name_reviewed),
+                    ]" 
+                    :icon="statusIcon(item.is_name_reviewed)" 
+                    v-tooltip="!item.is_name_reviewed ? ctrans('Name needs a review') : ''" 
+                />
+                
+                <span class="ml-auto text-right" v-if="!item.is_name_reviewed && item.name_updated_at">
+                    {{ ctrans('Master updated at') }}: <br>
+                    {{ useFormatTime(item.name_updated_at, { formatTime: 'hm' }) }}
+                </span>
             </div>
         </template>
 
         <template #cell(is_description_reviewed)="{ item }">
-            <div>
-                <FontAwesomeIcon :class="[
-                    'flex items-center justify-center w-4 h-4 rounded-full',
-                    dotClass(item.is_description_reviewed),
-                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="trans('Description needs a review')" />
+            <div class="flex">
+                <FontAwesomeIcon 
+                    :class="[
+                        'flex items-center justify-center w-4 h-4 rounded-full my-auto',
+                        dotClass(item.is_description_reviewed),
+                    ]" 
+                    :icon="statusIcon(item.is_description_reviewed)" 
+                    v-tooltip="!item.is_description_reviewed ? ctrans('Description needs a review') : ''" 
+                />
+                
+                <span class="ml-auto text-right" v-if="!item.is_description_reviewed && item.description_updated_at">
+                    {{ ctrans('Master updated at') }}: <br>
+                    {{ useFormatTime(item.description_updated_at, { formatTime: 'hm' }) }}
+                </span>
             </div>
         </template>
 
         <template #cell(is_description_title_reviewed)="{ item }">
-            <div>
-                <FontAwesomeIcon :class="[
-                    'flex items-center justify-center w-4 h-4 rounded-full',
-                    dotClass(item.is_description_title_reviewed),
-                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="trans('Description Title needs a review')" />
+            <div class="flex">
+                <FontAwesomeIcon 
+                    :class="[
+                        'flex items-center justify-center w-4 h-4 rounded-full my-auto',
+                        dotClass(item.is_description_title_reviewed),
+                    ]" 
+                    :icon="statusIcon(item.is_description_title_reviewed)" 
+                    v-tooltip="!item.is_description_title_reviewed ? ctrans('Description Title needs a review') : ''" 
+                />
+                
+                <span class="ml-auto text-right" v-if="!item.is_description_title_reviewed && item.description_title_updated_at">
+                    {{ ctrans('Master updated at') }}: <br>
+                    {{ useFormatTime(item.description_title_updated_at, { formatTime: 'hm' }) }}
+                </span>
             </div>
         </template>
 
         <template #cell(is_description_extra_reviewed)="{ item }">
-            <div>
-                <FontAwesomeIcon :class="[
-                    'flex items-center justify-center w-4 h-4 rounded-full',
-                    dotClass(item.is_description_extra_reviewed),
-                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="trans('Description Extra needs a review')" />
+            <div class="flex">
+                <FontAwesomeIcon 
+                    :class="[
+                        'flex items-center justify-center w-4 h-4 rounded-full my-auto',
+                        dotClass(item.is_description_extra_reviewed),
+                    ]" 
+                    :icon="statusIcon(item.is_description_extra_reviewed)" 
+                    v-tooltip="!item.is_description_extra_reviewed ? ctrans('Extra Description needs a review') : ''" 
+                />
+                
+                <span class="ml-auto text-right" v-if="!item.is_description_extra_reviewed && item.extra_description_updated_at">
+                    {{ ctrans('Master updated at') }}: <br>
+                    {{ useFormatTime(item.extra_description_updated_at, { formatTime: 'hm' }) }}
+                </span>
             </div>
+        </template>
+
+        <template #cell(last_offer)="{ item: family }">
+            <div v-if="family.last_offer" class="whitespace-nowrap text-xs">
+                <Link v-if="offerRoute(family)" :href="(offerRoute(family) as string)" class="secondaryLink"
+                    v-tooltip="family.last_offer.name">
+                {{ family.last_offer.slug }}
+                </Link>
+                <span v-else v-tooltip="family.last_offer.name">{{ family.last_offer.slug }}</span>
+                <span class="text-gray-400 mx-1">·</span>
+                <span v-tooltip="trans('Offer date')">{{ offerDate(family.last_offer.start_at) }}</span>
+                <span class="text-gray-400 mx-1">→</span>
+                <span v-tooltip="trans('Expiration date')">
+                    {{ family.last_offer.end_at ? offerDate(family.last_offer.end_at) : trans('No expiration') }}
+                </span>
+            </div>
+            <span v-else class="text-gray-400 italic">-</span>
         </template>
 
         <template #cell(sold)="{ item }">
