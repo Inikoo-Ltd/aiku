@@ -20,6 +20,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
+use App\Http\Resources\Catalogue\FamiliesNeedReviewsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -572,8 +573,8 @@ class IndexFamilies extends OrgAction
                     : Inertia::optional(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
 
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
-                    fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
-                    : Inertia::optional(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
+                    fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
+                    : Inertia::optional(fn () => FamiliesNeedReviewsResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))
