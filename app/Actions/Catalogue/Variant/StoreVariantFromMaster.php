@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Variant\Traits\WithVariantDataPreparation;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
+use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -49,40 +50,65 @@ class StoreVariantFromMaster extends OrgAction
             }
 
             $website = $variant->shop->website;
-            $leaderProduct = $variant->leaderProduct;
+            $leader = $variant->leaderProduct;
+            $productsInVariant = $variant->fetchProductFromData();
 
-
-            if (!$leaderProduct->webpage()->exists()) {
-                StoreProductWebpage::make()->action($leaderProduct);
-                $leaderProduct->refresh();
+            if (!$leader->webpage) {
+                $webpage = StoreProductWebpage::run($leader);
+                PublishWebpage::make()->action($webpage, [
+                    'comment' => 'first publish'
+                ]);
+                $leader->refresh();
+            } else {
+                UpdateWebpage::make()->action($leader->webpage()->first(), [
+                    'state_data' => [
+                        'state'                 => WebpageStateEnum::LIVE->value,
+                    ]
+                ]);
             }
 
-            PublishWebpage::make()->action($leaderProduct->webpage, [
-                'comment'   => "Initial (Re)Publishing for Variant Creation: {$variant->slug}"
-            ]);
+            $leader->updateQuietly([
+                    'variant_id'        => $variant->id,
+                    'is_for_sale'       => true,
+                    'is_main'           => true,
+                    'is_variant_leader' => true,
+                    'is_minion_variant' => false
+                ]);
 
-            foreach ($variant->fetchProductFromData() as $product) {
-                $isLeader = $leaderProduct->id == $product->id;
+            foreach ($productsInVariant as $product) {
+                if ($product->id == $leader->id) continue; // Skip if leader
+                
                 $product->updateQuietly([
                     'variant_id'        => $variant->id,
                     'is_for_sale'       => true,
-                    'is_main'           => $isLeader,
-                    'is_variant_leader' => $isLeader,
-                    'is_minion_variant' => !$isLeader
+                    'is_main'           => false,
+                    'is_variant_leader' => false,
+                    'is_minion_variant' => true
                 ]);
 
                 if ($product->webpage()->exists()) {
                     UpdateWebpage::make()->action($product->webpage()->first(), [
-                         'state_data' => [
-                             'state'                 => $isLeader ? WebpageStateEnum::LIVE->value : WebpageStateEnum::CLOSED->value,
-                             'redirect_webpage_id'   => $leaderProduct->webpage->id
-                         ]
-                     ]);
-                } else {
-                    StoreRedirectFromWebsite::make()->action($website, [
-                        'from_url'     => $product->slug,
-                        'to_url'       => $leaderProduct->webpage->id,
+                            'state_data' => [
+                                'state'                 => WebpageStateEnum::CLOSED->value,
+                                'redirect_webpage_id'   => $leader->webpage->id,
+                            ]
                     ]);
+                } else {
+                    $webpage = $product->webpage()->first();
+                    if ($redirect = $webpage?->redirectedTo) {
+                        $redirect->update([
+                            'from_webpage_id'   => $webpage->id
+                        ]);
+                        $redirect->refresh();
+                        UpdateRedirect::make()->action($redirect, [
+                            'to_webpage_id' => $leader->webpage->id,
+                        ]);
+                    } else {
+                        StoreRedirectFromWebsite::make()->action($website, [
+                            'from_url'     => strtolower($product->code),
+                            'to_url'       => $leader->webpage->id,
+                        ]);
+                    }
                 }
             }
 
