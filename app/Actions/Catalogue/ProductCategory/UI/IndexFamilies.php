@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\Catalogue\WithCatalogueIndexSubNavigation;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
@@ -46,6 +47,7 @@ class IndexFamilies extends OrgAction
     use WithCatalogueAuthorisation;
     use WithDepartmentSubNavigation;
     use WithCollectionSubNavigation;
+    use WithCatalogueIndexSubNavigation;
     use WithSubDepartmentSubNavigation;
 
     private bool $sales = true;
@@ -428,6 +430,10 @@ class IndexFamilies extends OrgAction
         if ($this->parent instanceof Collection) {
             $subNavigation = $this->getCollectionSubNavigation($this->parent);
         }
+        if ($this->parent instanceof Shop) {
+            unset($navigation[ProductCategoryTabsEnum::SALES->value]);
+            $subNavigation = $this->getFamiliesIndexSubNavigation($this->parent);
+        }
 
         $modelNavigation = [];
 
@@ -556,7 +562,8 @@ class IndexFamilies extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.families.index' => array_merge(
+            'grp.org.shops.show.catalogue.families.index',
+            'grp.org.shops.show.catalogue.families.sales' => array_merge(
                 ShowCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [

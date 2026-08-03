@@ -243,7 +243,7 @@ watch(() => currentTab.value, (tab) => {
             <Button
                 v-if="currentTab === 'index_ordering'"
                 :icon="action.icon"
-                :label="action.label" 
+                :label="action.label"
                 :style="action.style"
                 :onClick="SaveOrder"
                 :loading="loadingOrder"

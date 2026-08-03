@@ -78,6 +78,17 @@ trait WithDepartmentSubNavigation
                 ]
             ],
             [
+                'label'    => __('Sales'),
+                'route'    => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.products.sales',
+                    'parameters' => [$this->organisation->slug, $department->shop->slug, $department->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-money-bill-wave'],
+                    'tooltip' => __('products sales')
+                ]
+            ],
+            [
                 'label'    => __('Collections'),
                 'number'   => $department->stats->number_collections,
                 'route'    => [

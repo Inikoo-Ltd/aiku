@@ -129,7 +129,7 @@ class IndexMasterProducts extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $isSalesTab = $prefix === MasterProductsTabsEnum::SALES->value;
+        $isSalesTab = $prefix === IndexMasterProductsSales::PREFIX;
 
         $isBulkEditTab = $prefix === MasterProductsTabsEnum::BULK_EDIT->value;
 
@@ -217,7 +217,7 @@ class IndexMasterProducts extends OrgAction
             );
         }
 
-        if ($prefix === MasterProductsTabsEnum::SALES->value) {
+        if ($prefix === IndexMasterProductsSales::PREFIX) {
             // Use reusable time series aggregation method
             $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
                 timeSeriesTable: 'master_asset_time_series',
@@ -700,7 +700,8 @@ class IndexMasterProducts extends OrgAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.master_products.index' =>
+            'grp.masters.master_shops.show.master_products.index',
+            'grp.masters.master_shops.show.master_products.sales' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent),
                 $headCrumb(
@@ -711,7 +712,8 @@ class IndexMasterProducts extends OrgAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index', 'grp.masters.master_shops.show.master_families.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index', 'grp.masters.master_shops.show.master_families.master_products.index', 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales', 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.sales', 'grp.masters.master_shops.show.master_families.master_products.sales', 'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales' =>
             array_merge(
                 ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
@@ -722,7 +724,8 @@ class IndexMasterProducts extends OrgAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.master_departments.show.master_products.index' =>
+            'grp.masters.master_shops.show.master_departments.show.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_products.sales' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs(
                     $parent->masterShop,
@@ -814,7 +817,6 @@ class IndexMasterProducts extends OrgAction
 
         return $this->handle(parent: $masterFamily, prefix: MasterProductsTabsEnum::INDEX->value, filterInVariant: $filterInVariant);
     }
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
