@@ -6,10 +6,10 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-use App\Models\Catalogue\Product;
+use App\Models\Helpers\Country;
 
 test('search terms with regex metacharacters do not break the query', function (string $term) {
-    expect(Product::where(fn ($query) => $query->whereAnyWordStartWith('products.name', $term))->count())
+    expect(Country::where(fn ($query) => $query->whereAnyWordStartWith('countries.name', $term))->count())
         ->toBeInt();
 })->with([
     'unbalanced parenthesis'  => 'rose (large',
@@ -22,12 +22,12 @@ test('search terms with regex metacharacters do not break the query', function (
 ]);
 
 test('escaping keeps the search matching real words', function () {
-    $product = Product::first();
+    $country = Country::first();
 
-    expect($product)->not->toBeNull();
+    expect($country)->not->toBeNull();
 
-    $found = Product::where(fn ($query) => $query->whereAnyWordStartWith('products.name', $product->name))
-        ->where('products.id', $product->id)
+    $found = Country::where(fn ($query) => $query->whereAnyWordStartWith('countries.name', $country->name))
+        ->where('countries.id', $country->id)
         ->exists();
 
     expect($found)->toBeTrue();

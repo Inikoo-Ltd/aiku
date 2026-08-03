@@ -1584,7 +1584,7 @@ test('UI Index invoices in org stock family', function () {
     $family      = StoreOrgStockFamily::make()->action($this->organisation, $stockFamily, []);
 
     $this->withoutExceptionHandling();
-    get(route('grp.org.warehouses.show.inventory.org_stock_families.show.invoices.index', [
+    get(route('grp.org.warehouses.show.inventory.org_stock_families.invoices', [
         $this->organisation->slug, $warehouse->slug, $family->slug,
     ]))->assertStatus(200);
 })->depends('create warehouse');
