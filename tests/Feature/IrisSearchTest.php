@@ -10,6 +10,7 @@ use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Search\Search;
 use App\Actions\Search\StoreWebsiteSearchLog;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Enums\Search\WebsiteSearchSourceEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Helpers\WebsiteSearchLog;
 use Illuminate\Support\Facades\Route;
@@ -57,6 +58,27 @@ test('iris search allows single character queries', function () {
 
     $response = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=e');
     $response->assertOk();
+});
+
+test('the search log records which control opened the search, and only known ones', function () {
+    Search::shouldRun()->andReturn(irisSearchResults());
+
+    $logFor = function (string $url) {
+        $response = $this->getJson($url);
+        $response->assertOk();
+
+        return WebsiteSearchLog::where('ulid', $response->json('search_log_ulid'))->first();
+    };
+
+    $base = 'http://'.$this->website->domain.'/json/search/catalogue';
+
+    expect($logFor($base.'?q=candles&source=mobile_floating_button')->source)
+        ->toBe(WebsiteSearchSourceEnum::MOBILE_FLOATING_BUTTON->value);
+
+    // anything the enum does not know about is dropped rather than stored, so a crafted
+    // request cannot invent entry points in the breakdown
+    expect($logFor($base.'?q=tealights&source=<script>alert(1)</script>')->source)->toBeNull()
+        ->and($logFor($base.'?q=incense')->source)->toBeNull();
 });
 
 test('iris search stores a website search log with the response ulid', function () {
