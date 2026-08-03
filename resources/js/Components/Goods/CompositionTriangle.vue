@@ -38,6 +38,7 @@ const CENTER = { x: 150, y: 172 }
 const svgEl = ref<SVGSVGElement>()
 const pupil = ref({ x: 0, y: 0 })
 const isBlinking = ref(false)
+const showRays = ref(false)
 const hoveredEdge = ref<string | null>(null)
 
 let blinkTimer: ReturnType<typeof setTimeout> | null = null
@@ -62,6 +63,12 @@ const scheduleBlink = () => {
             isBlinking.value = false
             scheduleBlink()
         }, 160)
+
+        // Every now and then the eye has a moment
+        if (Math.random() < 0.25) {
+            showRays.value = true
+            setTimeout(() => (showRays.value = false), 1200)
+        }
     }, 2500 + Math.random() * 4500)
 }
 
@@ -151,21 +158,21 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
 
             <!-- The all-seeing eye -->
             <g :transform="`translate(${CENTER.x}, ${CENTER.y})`">
-                <!-- rays -->
-                <g stroke="#f59e0b" stroke-width="1.5" opacity="0.7">
+                <!-- rays: hidden unless the eye is having a moment -->
+                <g stroke="#f59e0b" stroke-width="1.5" :opacity="showRays ? 0.7 : 0" class="transition-opacity duration-500">
                     <line v-for="ray in 8" :key="ray"
                         :x1="Math.cos((ray * Math.PI) / 4) * 22" :y1="Math.sin((ray * Math.PI) / 4) * 22"
                         :x2="Math.cos((ray * Math.PI) / 4) * 28" :y2="Math.sin((ray * Math.PI) / 4) * 28" />
                 </g>
                 <!-- eyelids -->
                 <g :transform="isBlinking ? 'scale(1, 0.08)' : 'scale(1, 1)'" class="transition-transform duration-100">
-                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="white" stroke="#64748b" stroke-width="1.5" />
-                    <circle :cx="pupil.x * 0.6" :cy="pupil.y * 0.35" r="6.5" fill="#0d9488" />
-                    <circle :cx="pupil.x * 0.6" :cy="pupil.y * 0.35" r="2.8" fill="#1e293b" />
+                    <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="white" stroke="#cbd5e1" stroke-width="1.5" />
+                    <circle :cx="pupil.x * 0.6" :cy="pupil.y * 0.35" r="6.5" fill="#94a3b8" />
+                    <circle :cx="pupil.x * 0.6" :cy="pupil.y * 0.35" r="2.8" fill="#64748b" />
                     <circle :cx="pupil.x * 0.6 - 1.5" :cy="pupil.y * 0.35 - 1.5" r="1" fill="white" />
                 </g>
                 <!-- lashes when blinking -->
-                <path v-if="isBlinking" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#64748b" stroke-width="1.5" />
+                <path v-if="isBlinking" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
             </g>
         </svg>
 
