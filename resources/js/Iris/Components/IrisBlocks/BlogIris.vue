@@ -13,14 +13,14 @@ import {
   faTwitter,
   faLinkedin,
   faXTwitter,
-  faInstagram
+  faWhatsapp
 } from "@fortawesome/free-brands-svg-icons"
 
 import Image from "@common/Components/Image.vue"
 //import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
 
-library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin)
+library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin, faXTwitter, faWhatsapp)
 
 const props = defineProps<{
   fieldValue: {
@@ -51,8 +51,11 @@ const displayDate = computed(() => {
 const contentRef = ref<HTMLElement | null>(null)
 const headings = ref<{ id: string; text: string; level: number }[]>([])
 const currentHeadingId = ref<string | null>(null)
+const pageUrl = ref("")
 
 onMounted(async () => {
+  pageUrl.value = window.location.href
+
   await nextTick()
   if (!contentRef.value) return
 
@@ -87,9 +90,21 @@ onMounted(async () => {
   headingElements.forEach((el) => observer.observe(el))
 })
 
-const shareUrl = typeof window !== 'undefined'
-  ? encodeURIComponent(window.location.href)
-  : ''
+const plainTitle = computed(() => {
+  return (props.fieldValue.title ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim()
+})
+
+const shareUrl = computed(() => encodeURIComponent(pageUrl.value))
+const shareTitle = computed(() => encodeURIComponent(plainTitle.value))
 
 const screenType = inject("screenType", "desktop")
 
@@ -172,33 +187,33 @@ console.log(props)
       <div class="flex gap-4">
         <a :href="`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`" target="_blank" rel="noopener"
           class="flex items-center justify-center gap-2 w-full py-2 px-4 text-blue-600 rounded-md text-3xl hover:bg-blue-600 hover:text-gray-100 transition">
-          <FontAwesomeIcon :icon="['fab', 'facebook']" />
+          <FontAwesomeIcon fixed-width :icon="['fab', 'facebook']" />
           
         </a>
 
-        <a :href="`https://twitter.com/intent/tweet?url=${shareUrl}&text=${encodeURIComponent(fieldValue.title)}`"
+        <a :href="`https://x.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`"
           target="_blank" rel="noopener"
           class="flex items-center justify-center gap-2 w-full py-2 px-4 text-gray-800  text-3xl rounded-md hover:bg-gray-800  hover:text-gray-100 transition">
-          <FontAwesomeIcon :icon="faXTwitter" />
+          <FontAwesomeIcon fixed-width :icon="faXTwitter" />
           
         </a>
 
-        <a :href="`https://www.linkedin.com/shareArticle?url=${shareUrl}&title=${encodeURIComponent(fieldValue.title)}`"
+        <a :href="`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`"
           target="_blank" rel="noopener"
           class="flex items-center justify-center gap-2 w-full py-2 px-4 text-blue-800 text-3xl rounded-md hover:bg-blue-800 hover:text-gray-100 transition">
-          <FontAwesomeIcon :icon="['fab', 'linkedin']" />
+          <FontAwesomeIcon fixed-width :icon="['fab', 'linkedin']" />
           
         </a>
 
-        <a :href="`https://www.instagram.com/YOUR_INSTAGRAM_USERNAME/`" target="_blank" rel="noopener"
-          class="flex  items-center justify-center gap-2 w-full py-3 px-4 text-pink-500 text-3xl rounded-md hover:bg-pink-500 hover:text-gray-100 transition">
-          <FontAwesomeIcon :icon="faInstagram" />
-          
+        <a :href="`https://wa.me/?text=${shareTitle}%20${shareUrl}`" target="_blank" rel="noopener"
+          class="flex  items-center justify-center gap-2 w-full py-3 px-4 text-green-500 text-3xl rounded-md hover:bg-green-500 hover:text-gray-100 transition">
+          <FontAwesomeIcon fixed-width :icon="faWhatsapp" />
+
         </a>
 
-        <a :href="`mailto:?subject=${encodeURIComponent(fieldValue.title)}&body=${shareUrl}`"
+        <a :href="`mailto:?subject=${shareTitle}&body=${shareTitle}%0A%0A${shareUrl}`"
           class="flex items-center justify-center gap-2 w-full py-2 px-4 text-gray-600 rounded-md  text-3xl hover:bg-gray-600  hover:text-gray-100 transition">
-          <FontAwesomeIcon :icon="['fas', 'envelope']" />
+          <FontAwesomeIcon fixed-width :icon="['fas', 'envelope']" />
           
         </a>
       </div>
