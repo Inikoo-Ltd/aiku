@@ -27,7 +27,6 @@ class IndexWebUserRequestsInGroup extends OrgAction
 {
     use WithGroupOverviewAuthorisation;
 
-
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

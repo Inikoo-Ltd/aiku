@@ -197,6 +197,7 @@ export const recordWebsiteHit = () => {
       webpage_id: usePage().props.webpage_id,
       original_referer: document.referrer,
       analytics_webpage: usePage().props.webpage_slug,
+      analytics_page_title: document.title,
       analytics_app: isRetina ? "retina" : "iris",
   }, { headers }).catch(() => {})
 }
