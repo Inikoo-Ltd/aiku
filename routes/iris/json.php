@@ -78,7 +78,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('canonical-redirect', GetRedirectUrl::class)->name('canonical_redirect');
 
     Route::get('product-last-seen/{webpage:id}', GetIrisProductLastSeen::class)->name('product_last_seen.index')->withoutScopedBindings()->whereNumber('webpage');
-    Route::post('product-last-seen/{webpage:id}', StoreIrisProductLastSeen::class)->name('product_last_seen.store')->withoutScopedBindings();
+    Route::post('product-last-seen/{webpage:id}', StoreIrisProductLastSeen::class)->name('product_last_seen.store')->withoutScopedBindings()->whereNumber('webpage');
     Route::get('product/{product:id}/alternatives', GetIrisProductAlternatives::class)->name('product.alternatives')->withoutScopedBindings()->whereNumber('product');
     Route::get('product-trends', GetIrisProductTrends::class)->name('product_trends.index');
 
@@ -124,9 +124,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     // Reviews
     Route::get('reviews', GetReviews::class)->name('reviews.index');
-    Route::get('shop/{shop:id}/reviews', [GetReviewableReviews::class, 'inShop'])->name('reviews.shop.show');
-    Route::get('product/{product:id}/reviews', [GetReviewableReviews::class, 'inProduct'])->name('reviews.product.show')->withoutScopedBindings();
-    Route::get('product-category/{productCategory:id}/reviews', [GetReviewableReviews::class, 'inProductCategory'])->name('reviews.product_category.show');
+    Route::get('shop/{shop:id}/reviews', [GetReviewableReviews::class, 'inShop'])->name('reviews.shop.show')->whereNumber('shop');
+    Route::get('product/{product:id}/reviews', [GetReviewableReviews::class, 'inProduct'])->name('reviews.product.show')->withoutScopedBindings()->whereNumber('product');
+    Route::get('product-category/{productCategory:id}/reviews', [GetReviewableReviews::class, 'inProductCategory'])->name('reviews.product_category.show')->whereNumber('productCategory');
     Route::get('product/{product:id}/reviews-third-party', FetchProductReviewThirdParty::class)->name('reviews.third_party.product_review')->whereNumber('product');
 
     // Families Custom Sort
@@ -136,6 +136,6 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('{productCategory}/family-under-department', GetFamiliesUnderDepartmentPage::class)->name('website.category.family_under_department');
 
     Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
-    Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new');
+    Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new')->whereNumber('webpage');
 
 });
