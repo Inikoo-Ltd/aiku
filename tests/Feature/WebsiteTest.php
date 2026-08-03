@@ -420,6 +420,30 @@ test('web sitemap creation', function () {
 
 // UI
 
+test('UI show website exposes showcase props the component actually reads', function (Website $website) {
+    $response = get(route('grp.org.shops.show.web.websites.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+    ]));
+
+    // These live under the showcase tab payload, not the top level: WebsiteShowcase.vue reads
+    // them as props.data.*, so a key in the wrong array silently reads as undefined.
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Org/Web/Website')
+        ->has(
+            'showcase',
+            fn (AssertableInertia $showcase) => $showcase
+                ->has('migrated')
+                ->has('live_visitors')
+                ->has('live_visitors_enabled')
+                ->has('currency_code')
+                ->has('route_live_users')
+                ->etc()
+        )
+        ->etc());
+})->depends('launch website');
+
 test('UI index websites in organisation', function () {
     $response = get(
         route('grp.org.websites.index', [$this->organisation->slug])

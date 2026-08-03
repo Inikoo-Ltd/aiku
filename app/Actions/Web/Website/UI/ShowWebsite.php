@@ -304,7 +304,6 @@ class ShowWebsite extends OrgAction
 
                 'route_storefront'   => $route_storefront,
                 'route_welcome'      => $route_landing_page,
-                'migrated'           => $website->migrated,
                 'luigi_data'         => [
                     'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
                     'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
@@ -327,6 +326,7 @@ class ShowWebsite extends OrgAction
                         'currency_code'        => $website->shop?->currency?->code,
                         'route_live_users'     => $analyticsRoute('live_users'),
                         'website_type'         => $website->shop->type,
+                        'migrated'             => $website->migrated,
                         'iris_search_model'    => Arr::get($website->settings, 'iris_search_model', 'luigi'),
                         'search_insights'      => GetWebsiteSearchAnalytics::run($website),
                         'search_merchandising' => str_starts_with($request->route()->getName(), 'grp.org.shops.show.web.')
