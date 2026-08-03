@@ -33,6 +33,7 @@ const props = defineProps<{
         top_searchers?: SearcherStat[]
         top_clicked_pages?: { clicked_url: string, clicks: number }[]
         devices?: { device: string, searches: number, clicks: number }[]
+        sources?: { source: string, label: string, searches: number, clicks: number, share: number }[]
     } | null
     logsUrl?: string | null
     logsLabel?: string
@@ -200,6 +201,24 @@ const searcherHref = (searcher: SearcherStat): string | null => {
                             <span class="shrink-0 tabular-nums font-medium">{{ page.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' class="text-gray-400" /></span>
                         </div>
                         <p v-if="!widget.top_clicked_pages.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
+                    </div>
+                </div>
+                <div v-if="widget.sources">
+                    <p class="text-xs text-gray-400 font-medium mb-1">{{ ctrans("Where searches start") }}</p>
+                    <div class="divide-y divide-gray-100">
+                        <div v-for="source in widget.sources" :key="source.source" class="py-1">
+                            <div class="flex justify-between gap-2">
+                                <span class="text-gray-600 truncate min-w-0">{{ source.label }}</span>
+                                <span class="shrink-0 tabular-nums font-medium">
+                                    {{ source.share }}%
+                                    <span class="text-gray-400 font-normal">{{ source.searches }} / {{ source.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span>
+                                </span>
+                            </div>
+                            <div class="mt-1 h-1 rounded bg-gray-100 overflow-hidden">
+                                <div class="h-full bg-indigo-400" :style="{ width: `${source.share}%` }" />
+                            </div>
+                        </div>
+                        <p v-if="!widget.sources.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>
                 </div>
                 <div v-if="widget.devices">

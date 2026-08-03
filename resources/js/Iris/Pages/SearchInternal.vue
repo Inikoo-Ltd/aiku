@@ -141,6 +141,7 @@ const fetchInternalResults = async ({ pageNumber = 1, append = false, resultsOnl
                     price_min: priceMin.value !== '' ? priceMin.value : undefined,
                     price_max: priceMax.value !== '' ? priceMax.value : undefined,
                     sort: sortBy.value || undefined,
+                    source: 'search_page',
                 },
                 signal: internalAbort.signal,
             }

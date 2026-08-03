@@ -8,7 +8,9 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Enums\Search\WebsiteSearchSourceEnum;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
 
@@ -20,6 +22,8 @@ class WebsiteSearchLogsResource extends JsonResource
             'id'            => $this->id,
             'query'         => $this->query,
             'scope'         => $this->scope,
+            'source'        => $this->source,
+            'source_label'  => $this->source ? Arr::get(WebsiteSearchSourceEnum::labels(), $this->source, $this->source) : null,
             'customer_name' => $this->customer_name,
             'customer_slug' => $this->customer_slug,
             'device'        => $this->device,
