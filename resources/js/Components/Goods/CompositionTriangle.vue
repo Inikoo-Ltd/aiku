@@ -157,9 +157,9 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
             </g>
 
             <!-- The all-seeing eye -->
-            <g :transform="`translate(${CENTER.x}, ${CENTER.y})`">
+            <g :transform="`translate(${CENTER.x}, ${CENTER.y}) scale(1.3)`">
                 <!-- rays: hidden unless the eye is having a moment -->
-                <g stroke="#f59e0b" stroke-width="1.5" :opacity="showRays ? 0.7 : 0" class="transition-opacity duration-500">
+                <g stroke="#f59e0b" stroke-width="1.5" :opacity="showRays || hoveredEdge ? 0.7 : 0" class="transition-opacity duration-500">
                     <line v-for="ray in 8" :key="ray"
                         :x1="Math.cos((ray * Math.PI) / 4) * 22" :y1="Math.sin((ray * Math.PI) / 4) * 22"
                         :x2="Math.cos((ray * Math.PI) / 4) * 28" :y2="Math.sin((ray * Math.PI) / 4) * 28" />
