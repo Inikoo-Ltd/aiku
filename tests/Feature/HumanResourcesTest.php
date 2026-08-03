@@ -66,6 +66,7 @@ use App\Actions\HumanResources\WorkSchedule\UpdateWorkSchedule;
 use App\Actions\HumanResources\WorkSchedule\DeleteWorkSchedule;
 use App\Actions\HumanResources\TimeTracker\StoreTimeTracker;
 use App\Actions\HumanResources\TimeTracker\DeleteTimeTracker;
+use App\Actions\HumanResources\TimeTracker\ClockInTimeTracker;
 use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
 use App\Actions\HumanResources\TimeTracker\CloseTimeTracker;
 use App\Actions\HumanResources\Timesheet\StoreTimesheet;
@@ -713,9 +714,88 @@ test('can delete clocking', function () {
         'at' => now()->toDateTimeString(),
     ], 0, true);
 
+    $timeTracker = $clocking->timesheet->timeTrackers()->first();
+
     DeleteClocking::make()->handle($clocking);
 
     $this->assertDatabaseMissing('clockings', ['id' => $clocking->id]);
+    $this->assertDatabaseHas('time_trackers', [
+        'id'                => $timeTracker->id,
+        'start_clocking_id' => null,
+        'starts_at'         => null,
+    ]);
+});
+
+test('can add clock in to repair a time tracker missing its start', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Repair Clock In Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $timeTracker = $clockIn->timesheet->timeTrackers()->first();
+
+    DeleteClocking::make()->handle($clockIn);
+
+    $timeTracker->refresh();
+    expect($timeTracker->start_clocking_id)->toBeNull();
+
+    $repaired = ClockInTimeTracker::make()->handle($timeTracker, now(), $employee->id, 'Employee');
+
+    expect($repaired->start_clocking_id)->not->toBeNull()
+        ->and($repaired->starts_at)->not->toBeNull();
+
+    $this->assertDatabaseHas('clockings', [
+        'time_tracker_id' => $timeTracker->id,
+        'type' => \App\Enums\HumanResources\Clocking\ClockingTypeEnum::MANUAL->value,
+    ]);
+});
+
+test('deleting the clock out clocking reopens its time tracker', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Delete Clock Out Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $clockOut = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'out',
+        'at' => now()->addHours(8)->toDateTimeString(),
+    ], 0, true);
+
+    $timeTracker = $clockIn->timesheet->timeTrackers()->first();
+
+    expect($timeTracker->status)->toBe(\App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::CLOSED);
+
+    DeleteClocking::make()->handle($clockOut);
+
+    $this->assertDatabaseMissing('clockings', ['id' => $clockOut->id]);
+    $this->assertDatabaseHas('clockings', ['id' => $clockIn->id]);
+    $this->assertDatabaseHas('time_trackers', [
+        'id'              => $timeTracker->id,
+        'end_clocking_id' => null,
+        'ends_at'         => null,
+        'duration'        => null,
+        'status'          => \App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum::OPEN->value,
+    ]);
 });
 
 test('can delete timesheet and its clockings and time trackers', function () {

@@ -157,7 +157,7 @@ const submitNotes = async () => {
                         v-if="item.delete_route"
                         :routeDelete="item.delete_route"
                         :title="trans('Delete this clocking?')"
-                        :description="trans('This will also remove any time tracker session anchored on this clocking. This action cannot be undone.')"
+                        :description="trans('Any working period anchored on this clocking will keep its record but lose that reference. This action cannot be undone.')"
                     >
                         <template #default="{ changeModel }">
                             <Button

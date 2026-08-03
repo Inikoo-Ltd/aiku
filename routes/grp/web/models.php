@@ -321,6 +321,7 @@ use App\Actions\HumanResources\JobPosition\DeleteJobPosition;
 use App\Actions\HumanResources\JobPosition\StoreJobPosition;
 use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Leave\GenerateEmployeeLeaveBalance;
+use App\Actions\HumanResources\TimeTracker\ClockInTimeTracker;
 use App\Actions\HumanResources\TimeTracker\ClockOutTimeTracker;
 use App\Actions\HumanResources\TimeTracker\DeleteTimeTracker;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
@@ -1407,6 +1408,7 @@ Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () 
     Route::delete('clocking/{clocking:id}', DeleteClocking::class)->name('clocking.delete');
 });
 Route::delete('timesheet/{timesheet:id}', DeleteTimesheet::class)->name('timesheet.delete');
+Route::patch('time-tracker/{timeTracker:id}/clock-in', ClockInTimeTracker::class)->name('time-tracker.clock-in');
 Route::patch('time-tracker/{timeTracker:id}/clock-out', ClockOutTimeTracker::class)->name('time-tracker.clock-out');
 Route::delete('time-tracker/{timeTracker:id}', DeleteTimeTracker::class)->name('time-tracker.delete');
 Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.update');

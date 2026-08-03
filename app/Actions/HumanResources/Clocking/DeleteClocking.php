@@ -13,6 +13,7 @@ use App\Actions\HumanResources\Timesheet\Hydrators\TimesheetHydrateTimeTrackers;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Guest\Hydrators\GuestHydrateClockings;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
@@ -34,19 +35,21 @@ class DeleteClocking extends OrgAction
             $timesheet = $clocking->timesheet;
             $subject   = $clocking->subject;
 
-            // A time tracker session that loses its start or end clocking is no longer
-            // meaningful data (its duration/status can't be trusted), so it goes with the
-            // clocking that anchored it rather than being left dangling. Clockings still
-            // pointing at that tracker are unlinked first to avoid a foreign key violation
-            // when the tracker row is permanently removed.
-            TimeTracker::withTrashed()
-                ->where('start_clocking_id', $clocking->id)
-                ->orWhere('end_clocking_id', $clocking->id)
-                ->get()
-                ->each(function (TimeTracker $timeTracker) {
-                    Clocking::where('time_tracker_id', $timeTracker->id)->update(['time_tracker_id' => null]);
-                    $timeTracker->forceDelete();
-                });
+            // A time tracker anchored on this clocking keeps existing, just loses the
+            // start/end pointer (and the time that pointer supplied) rather than being
+            // deleted itself. Losing its end also reopens it, since a "closed" tracker
+            // with no end clocking is no longer meaningful.
+            TimeTracker::where('start_clocking_id', $clocking->id)->update([
+                'start_clocking_id' => null,
+                'starts_at'         => null,
+            ]);
+
+            TimeTracker::where('end_clocking_id', $clocking->id)->update([
+                'end_clocking_id' => null,
+                'ends_at'         => null,
+                'duration'        => null,
+                'status'          => TimeTrackerStatusEnum::OPEN,
+            ]);
 
             $clocking->forceDelete();
 
@@ -65,10 +68,8 @@ class DeleteClocking extends OrgAction
     }
 
     /**
-     * TimesheetHydrateTimeTrackers recomputes the counters/durations from the time trackers
-     * that remain, but start_at/end_at are only ever set when trackers are created/closed
-     * (see StoreTimeTracker/CloseTimeTracker) - deleting the tracker that set either would
-     * otherwise leave them stale, so they're re-derived here from whatever's left.
+     * Timesheet start_at/end_at are only ever set when trackers are created/closed, so
+     * nulling a tracker's start/end above would otherwise leave them stale.
      */
     private function rehydrateTimesheet(Timesheet $timesheet): void
     {
