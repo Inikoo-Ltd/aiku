@@ -798,6 +798,36 @@ test('deleting the clock out clocking reopens its time tracker', function () {
     ]);
 });
 
+test('deleting the clock in of an already closed tracker does not crash the timesheet rehydration', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id' => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Delete Clock In After Close Workplace ' . rand(100000, 999999),
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockIn = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at' => now()->toDateTimeString(),
+    ], 0, true);
+
+    $clockOut = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'out',
+        'at' => now()->addHours(8)->toDateTimeString(),
+    ], 0, true);
+
+    $timesheet = $clockIn->timesheet;
+
+    DeleteClocking::make()->handle($clockIn);
+
+    $this->assertDatabaseMissing('clockings', ['id' => $clockIn->id]);
+    $this->assertDatabaseHas('clockings', ['id' => $clockOut->id]);
+    $this->assertDatabaseHas('timesheets', ['id' => $timesheet->id, 'start_at' => null]);
+});
+
 test('can delete timesheet and its clockings and time trackers', function () {
     $employee = Employee::factory()->create([
         'organisation_id' => $this->organisation->id,

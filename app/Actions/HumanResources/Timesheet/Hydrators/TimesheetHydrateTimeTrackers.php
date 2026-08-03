@@ -20,14 +20,18 @@ class TimesheetHydrateTimeTrackers implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(Timesheet $timesheet): string
+    public function getJobUniqueId(int $timesheetId): string
     {
-        return $timesheet->id;
+        return (string) $timesheetId;
     }
 
-    public function handle(Timesheet $timesheet): void
+    public function handle(int $timesheetId): void
     {
-        $timesheet->refresh();
+        $timesheet = Timesheet::find($timesheetId);
+
+        if (!$timesheet) {
+            return;
+        }
 
         $stats = [
             'number_time_trackers' => $timesheet->timeTrackers()->count(),
@@ -42,7 +46,7 @@ class TimesheetHydrateTimeTrackers implements ShouldBeUnique
         /** @var TimeTracker $timeTracker */
         foreach ($timeTrackers as $timeTracker) {
             if ($breakStart) {
-                $breakDuration += $breakStart->diffInSeconds($timeTracker->starts_at);
+                $breakDuration += (int) $breakStart->diffInSeconds($timeTracker->starts_at);
                 $breakStart    = null;
             }
 
@@ -55,8 +59,8 @@ class TimesheetHydrateTimeTrackers implements ShouldBeUnique
 
         $stats['number_open_time_trackers'] = $stats['number_time_trackers'] - $numberClosedTimeTrackers;
 
-        if ($timesheet->end_at) {
-            $stats['total_duration'] = $timesheet->start_at->diffInSeconds($timesheet->end_at);
+        if ($timesheet->start_at && $timesheet->end_at) {
+            $stats['total_duration'] = (int) $timesheet->start_at->diffInSeconds($timesheet->end_at);
         }
 
         if ($numberClosedTimeTrackers) {

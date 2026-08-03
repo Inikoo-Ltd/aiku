@@ -81,7 +81,7 @@ class DeleteTimeTracker extends OrgAction
             'end_at'   => $remaining->filter(fn (TimeTracker $timeTracker) => $timeTracker->ends_at)->last()?->ends_at,
         ]);
 
-        TimesheetHydrateTimeTrackers::run($timesheet);
+        TimesheetHydrateTimeTrackers::run($timesheet->id);
     }
 
     public function asController(TimeTracker $timeTracker, ActionRequest $request): TimeTracker

@@ -56,7 +56,7 @@ class ClockInTimeTracker
         if ($timeTracker->ends_at) {
             $timeTracker->update([
                 'status'   => TimeTrackerStatusEnum::CLOSED,
-                'duration' => $clockedAtUtc->diffInSeconds($timeTracker->ends_at),
+                'duration' => (int) $clockedAtUtc->diffInSeconds($timeTracker->ends_at),
             ]);
         }
 
@@ -81,7 +81,7 @@ class ClockInTimeTracker
             'end_at'   => $remaining->filter(fn (TimeTracker $timeTracker) => $timeTracker->ends_at)->last()?->ends_at,
         ]);
 
-        TimesheetHydrateTimeTrackers::run($timesheet);
+        TimesheetHydrateTimeTrackers::run($timesheet->id);
     }
 
     public function rules(): array

@@ -116,7 +116,7 @@ class StoreClocking extends OrgAction
                 );
             }
 
-            TimesheetHydrateTimeTrackers::run($timesheet);
+            TimesheetHydrateTimeTrackers::run($timesheet->id);
 
             return $clocking;
         });

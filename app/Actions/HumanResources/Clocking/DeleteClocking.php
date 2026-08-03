@@ -72,7 +72,7 @@ class DeleteClocking extends OrgAction
             'end_at'   => $remaining->filter(fn (TimeTracker $timeTracker) => $timeTracker->ends_at)->last()?->ends_at,
         ]);
 
-        TimesheetHydrateTimeTrackers::run($timesheet);
+        TimesheetHydrateTimeTrackers::run($timesheet->id);
     }
 
     public function asController(Clocking $clocking, ActionRequest $request): Clocking
