@@ -5,7 +5,7 @@ import { faChevronDown } from "@far"
 import { faChartLine, faPlay, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
-import { faCog, faFolderOpen, faSeedling, faTriangle, faSitemap, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse } from "@fal"
+import { faCog, faFolderOpen, faSeedling, faTriangle, faSitemap, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, faCommentAltSmile, faFileAlt, faAddressCard } from "@fal"
 import "tippy.js/dist/tippy.css"
 import { ref, provide } from "vue"
 import { Link } from "@inertiajs/vue3"
@@ -23,7 +23,7 @@ import ShopIntervalStats from "@/Components/DataDisplay/Dashboard/ShopIntervalSt
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 
-library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse)
+library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, faCommentAltSmile, faFileAlt, faAddressCard)
 
 const locale = useLocaleStore()
 
