@@ -90,6 +90,20 @@ class ShowOrgStock extends OrgAction
                                 'name'       => preg_replace('/\.show$/', '.edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters(),
                             ]
+                        ],
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Packing'),
+                            'icon'  => ['fal', 'fa-atom'],
+                            'route' => [
+                                'name'       => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.composition',
+                                'parameters' => [
+                                    'organisation' => $orgStock->organisation->slug,
+                                    'warehouse'    => $this->warehouse->slug,
+                                    'orgStock'     => $orgStock->slug,
+                                ]
+                            ]
                         ]
                     ],
                     'subNavigation' => $subNavigation
