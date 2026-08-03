@@ -94,12 +94,12 @@ class GetAgentOrganisationNavigation
             ];
         }
 
-        $navigation = $this->getAccountingNavs($user, $organisation, $navigation);
+        // $navigation = $this->getAccountingNavs($user, $organisation, $navigation); // Still no need
 
         $navigation = $this->getHumanResourcesNavs($user, $organisation, $navigation);
 
 
-        $navigation = $this->getReportsNavs($user, $organisation, $navigation);
+        // $navigation = $this->getReportsNavs($user, $organisation, $navigation); // Still no need
 
         return $this->getSettingsNavs($user, $organisation, $navigation);
 
