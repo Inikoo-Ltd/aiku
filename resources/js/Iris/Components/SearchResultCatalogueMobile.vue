@@ -7,6 +7,7 @@ import { useLocaleStore } from '@/Stores/locale'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Image as ImgTS } from '@/types/Image'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { searchRoute } from '@/Iris/Composables/useSearchRoute'
 
 // Mobile twin of SearchResultCatalogue: one thumb-friendly scrolling list instead of
 // desktop's three columns. Chips for categories/collections, large tappable product rows.
@@ -51,7 +52,7 @@ const props = defineProps<{
 const recordClick = (url?: string | null) => {
     if (!props.searchLogUlid || !url) return
     const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '')
-    fetch(route('iris.json.search.click'), {
+    fetch(route(searchRoute('click')), {
         method: 'POST',
         keepalive: true,
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': token },

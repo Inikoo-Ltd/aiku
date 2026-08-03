@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Popover from "primevue/popover"
+import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 library.add(faSearch)
 
 const SearchResultCatalogue = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogue.vue"))
@@ -39,7 +40,6 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const isPopoverVisible = ref(false)
 let internalAbort: AbortController | null = null
-let internalRequestId = 0
 
 // Same client-side cache as the staff SearchBar: repeated queries within the TTL
 // (backspacing, retyping) render instantly without hitting the server
@@ -102,32 +102,37 @@ const onPopoverHide = () => {
 }
 
 const fetchResults = debounce(async (query: string) => {
-    const requestId = ++internalRequestId
     internalAbort?.abort()
-    internalAbort = new AbortController()
+    const abort = new AbortController()
+    internalAbort = abort
     isInternalLoading.value = true
     try {
         const { data } = await axios.get(
-            route('iris.json.search.catalogue', { q: query }),
-            { signal: internalAbort.signal }
+            route(searchRoute('catalogue'), { q: query }),
+            { signal: abort.signal }
         )
-        if (requestId !== internalRequestId) {
-            return
-        }
         cacheResponse(query, data)
         internalResults.value = data.results ?? null
         searchLogUlid.value = data.search_log_ulid ?? null
     } catch (error) {
-        if (axios.isCancel(error) || requestId !== internalRequestId) {
+        if (axios.isCancel(error)) {
             return
         }
+        console.error('Iris catalogue search failed', error)
         internalResults.value = null
     } finally {
-        if (requestId === internalRequestId) {
+        if (internalAbort === abort) {
             isInternalLoading.value = false
         }
     }
 }, 250)
+
+const cancelPendingSearch = () => {
+    fetchResults.cancel()
+    internalAbort?.abort()
+    internalAbort = null
+    isInternalLoading.value = false
+}
 
 // On the results page the box is pre-filled from ?q=, so typing without selecting first
 // prepends to the old term and searches the concatenation ("incensesalt lampssoap loaves").
@@ -159,7 +164,7 @@ const onSearchInput = (event: Event) => {
     inputValue.value = (event.target as HTMLInputElement)?.value ?? ''
 
     if (!inputValue.value.trim()) {
-        fetchResults.cancel()
+        cancelPendingSearch()
         internalResults.value = null
         closePopover()
         return
@@ -169,10 +174,7 @@ const onSearchInput = (event: Event) => {
 
     const cached = getCachedResponse(inputValue.value)
     if (cached) {
-        internalRequestId++
-        fetchResults.cancel()
-        internalAbort?.abort()
-        isInternalLoading.value = false
+        cancelPendingSearch()
         internalResults.value = cached.results ?? null
         searchLogUlid.value = cached.search_log_ulid ?? null
         return

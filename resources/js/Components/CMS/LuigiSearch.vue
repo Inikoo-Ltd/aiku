@@ -13,6 +13,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { LuigiTranslation } from "@/Composables/Unique/LuigiTranslation"
 import { loadLuigiAutocomplete, onFirstInteractionOrIdle } from "@/Composables/useLuigiAutocomplete"
 import Popover from "primevue/popover"
+import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 // import { AutoComplete } from "primevue"   /// No need to import AutoComplete
 library.add(faSearch)
 
@@ -95,7 +96,7 @@ const fetchInternalResults = debounce(async (query: string) => {
     isInternalLoading.value = true
     try {
         const { data } = await axios.get(
-            route('iris.json.search.catalogue', { q: query }),
+            route(searchRoute('catalogue'), { q: query }),
             { signal: internalAbort.signal }
         )
         if (requestId !== internalRequestId) {
