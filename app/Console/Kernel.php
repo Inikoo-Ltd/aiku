@@ -67,6 +67,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
+        $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
 
         if (config('app.master')) {
             $this->logSchedule(

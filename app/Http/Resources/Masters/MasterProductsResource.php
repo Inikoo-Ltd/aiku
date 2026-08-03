@@ -92,6 +92,8 @@ class MasterProductsResource extends JsonResource
             'used_in'                           => $this->used_in,
             'unit'                              => $this->unit,
             'units'                             => $this->units,
+            'tax_preset'                        => $this->tax_preset ?? 'custom',
+            'trade_units_label'                 => $this->trade_units_label ?? null,
             'price'                             => $this->price,
             'rrp'                               => $this->rrp,
             'master_prices'                      => $this->master_prices,

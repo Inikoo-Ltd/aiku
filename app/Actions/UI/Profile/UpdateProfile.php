@@ -13,6 +13,7 @@ use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Models\Helpers\Language;
+use App\Models\Helpers\Timezone;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cookie;
@@ -33,9 +34,9 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['hide_logo'] = $hideLogo;
         }
 
-        if (Arr::exists($modelData, 'timezones')) {
-            $timezones                           = Arr::pull($modelData, 'timezones');
-            $modelData['settings']['timezones'] = $timezones;
+        if (Arr::exists($modelData, 'timezone')) {
+            $timezoneName            = Arr::pull($modelData, 'timezone');
+            $modelData['timezone_id'] = $timezoneName ? Timezone::where('name', $timezoneName)->value('id') : null;
         }
 
         if (Arr::exists($modelData, 'preferred_printer')) {
@@ -59,10 +60,21 @@ class UpdateProfile extends OrgAction
         }
         data_forget($modelData, 'image');
 
+        $languageWasSubmitted = Arr::has($modelData, 'language_id');
+
         $user = $this->update($user, $modelData, ['settings']);
 
         $changes = $user->getChanges();
-        if (Arr::has($changes, 'language_id')) {
+        if (Arr::has($changes, 'timezone_id')) {
+            BreakUserUiProps::run($user);
+        }
+
+        /*
+         * Deliberately keyed on the language being submitted rather than on it changing: when
+         * cached props hold the wrong language, picking the language the account is already set
+         * to is a user's only way out, and gating this on a change made that a silent no-op.
+         */
+        if ($languageWasSubmitted) {
             $language = Language::find($user->language_id);
             $locale   = $language->code;
             app()->setLocale($locale);
@@ -93,7 +105,7 @@ class UpdateProfile extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
-            'timezones'         => ['sometimes', 'array'],
+            'timezone'          => ['sometimes', 'nullable', 'exists:timezones,name'],
             'enable_2fa'        => ['sometimes', 'array'],
             'settings'          => ['sometimes'],
         ];

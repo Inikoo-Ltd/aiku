@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Catalogue\Product\GetProductUploadedImages;
 use App\Actions\Catalogue\Product\UI\CreateProduct;
 use App\Actions\Catalogue\Product\UI\EditProduct;
+use App\Actions\Catalogue\Product\UI\EditProductComposition;
 use App\Actions\Catalogue\Product\UI\ExportProducts;
 use App\Actions\Catalogue\Product\UI\IndexOutOfStockProducts;
 use App\Actions\Catalogue\Product\UI\IndexPendingBackInStockRemindersProducts;
@@ -65,6 +66,7 @@ Route::prefix('products')->as('products.')
                 Route::get('', ShowProduct::class)->name('show');
                 Route::get('images', GetProductUploadedImages::class)->name('images');
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+                Route::get('composition', [EditProductComposition::class, 'inShop'])->name('composition');
                 Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
         });

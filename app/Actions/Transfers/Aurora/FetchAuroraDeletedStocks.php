@@ -9,7 +9,6 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Goods\Stock\StoreStock;
-use App\Actions\Goods\Stock\UpdateStock;
 use App\Models\Goods\Stock;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -32,25 +31,11 @@ class FetchAuroraDeletedStocks extends FetchAuroraAction
 
         if ($stockData = $organisationSource->fetchDeletedStock($organisationSourceId)) {
             if ($baseStock = Stock::withTrashed()->where('source_slug', $stockData['stock']['source_slug'])->first()) {
-                if ($stock = Stock::withTrashed()->where('source_id', $stockData['stock']['source_id'])->first()) {
-                    try {
-                        $stock = UpdateStock::make()->action(
-                            stock: $stock,
-                            modelData: $stockData['stock'],
-                            hydratorsDelay: $this->hydratorsDelay,
-                            strict: false,
-                            audit: false
-                        );
-                        $this->recordChange($organisationSource, $stock->wasChanged());
-                    } catch (Exception $e) {
-                        $this->recordError($organisationSource, $e, $stockData['stock'], 'DeletedStock', 'update');
-
-                        return [
-                            'stock'    => null,
-                            'orgStock' => null
-                        ];
-                    }
-                }
+                // Stocks are group level and maintained in aiku. This branch is reachable
+                // from the every minute stock movements fetch, via parseOrgStock falling
+                // through to here when an org stock is missing, so an update would revert
+                // staff edits with no human anywhere near it.
+                $stock = Stock::withTrashed()->where('source_id', $stockData['stock']['source_id'])->first();
             } else {
                 try {
                     $stock = StoreStock::make()->action(

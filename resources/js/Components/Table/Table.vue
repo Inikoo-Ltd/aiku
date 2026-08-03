@@ -1094,6 +1094,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
+                                :appliedValue="queryBuilderProps?.betweenDatesValue"
                                 :tableName="props.name" />
                         </div>
 

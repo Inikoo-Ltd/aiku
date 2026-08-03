@@ -57,6 +57,13 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
             ];
         }
 
+        if (!$webpage->website->usesLuigiSearch()) {
+            return [
+                'status'  => 'skipped',
+                'message' => 'Website uses internal search, Luigi reindex not needed.'
+            ];
+        }
+
         $accessToken = $this->getAccessToken($webpage->website);
         if (count($accessToken) < 2) {
             return [

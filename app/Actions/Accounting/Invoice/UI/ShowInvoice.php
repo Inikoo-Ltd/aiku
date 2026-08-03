@@ -176,16 +176,9 @@ class ShowInvoice extends OrgAction
                 [
                     'label'       => __('Net'),
                     'information' => '',
-                    // 'styleField'    => [
-                    //     'background' => '#000000CC',
-                    //     'color' => '#fff',
-                    // ],
                     'price_total' => $invoice->net_amount
                 ],
-                [
-                    'label'       => __('Tax'),
-                    'price_total' => $invoice->tax_amount
-                ]
+                ...$this->getInvoiceTaxRows($invoice),
             ],
             [
                 [
@@ -486,6 +479,39 @@ class ShowInvoice extends OrgAction
             ->table(IndexInvoiceTransactions::make()->tableStructure(InvoiceTabsEnum::INVOICE_TRANSACTIONS->value));
     }
 
+
+    /**
+     * One tax row per rate on the invoice, with the net it applies to beside it, matching the
+     * order summary and the pdf. External shop and tax-only invoices keep the single stored
+     * figure, theirs is not derived from the lines.
+     *
+     * @return array<int, array{label: string, information?: string, price_total: mixed}>
+     */
+    public function getInvoiceTaxRows(Invoice $invoice): array
+    {
+        $taxRows = [];
+        if ($invoice->shop->type != ShopTypeEnum::EXTERNAL && !$invoice->is_tax_only) {
+            $taxBreakdown = $invoice->taxBreakdown();
+            foreach ($taxBreakdown as $taxRow) {
+                $taxRows[] = [
+                    'label'       => __('Tax').' ('.$taxRow['name'].')',
+                    'information' => count($taxBreakdown) > 1
+                        ? __('on').' '.$invoice->currency->symbol.number_format($taxRow['net_amount'], 2)
+                        : '',
+                    'price_total' => $taxRow['tax_amount'],
+                ];
+            }
+        }
+
+        if (empty($taxRows)) {
+            $taxRows[] = [
+                'label'       => __('Tax'),
+                'price_total' => $invoice->tax_amount,
+            ];
+        }
+
+        return $taxRows;
+    }
 
     public function jsonResponse(Invoice $invoice): InvoiceResource
     {

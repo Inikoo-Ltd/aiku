@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
@@ -17,6 +18,8 @@ use Illuminate\Support\Arr;
 
 class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
 {
+    use WithLineTaxCategories;
+
     public string $jobQueue = 'urgent';
 
     public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): string
@@ -42,9 +45,10 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             return;
         }
 
+        $this->applyLineTaxCategories($order);
+
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
-        $tax        = $order->taxCategory->rate;
 
         $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
 
@@ -57,9 +61,10 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             $shippingAmount = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         }
 
-        $netAmount = $itemsNet + $shippingAmount + $chargesAmount - $order->amount_off;
+        $taxBreakdown = $this->getOrderTaxBreakdown($order);
 
-        $taxAmount   = $netAmount * $tax;
+        $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
+        $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
         $totalAmount = $netAmount + $taxAmount;
         $grpNet      = $netAmount * $order->grp_exchange;
         $orgNet      = $netAmount * $order->org_exchange;

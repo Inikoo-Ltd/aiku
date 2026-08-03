@@ -172,7 +172,8 @@ class StoreMasterAsset extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ],
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'price'                    => ['sometimes', 'numeric', 'min:0.01'],
+            // Free of charge is a real price, 129 masters hold it; UpdateMasterAsset already allows it
+            'price'                    => ['sometimes', 'numeric', 'min:0'],
             'unit'                     => ['sometimes', 'required', 'string'],
             'rrp'                      => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'              => ['sometimes', 'nullable', 'max:15000'],

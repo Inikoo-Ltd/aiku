@@ -73,6 +73,38 @@ class IndexProductsInCatalogue extends OrgAction
                 }
 
             ],
+
+            /**
+             * A product takes its tax treatment from its master, so the override lives there
+             * rather than on the shop product. No counts: they would cost a scan of the
+             * catalogue on every page load.
+             */
+            'tax' => [
+                'label'    => __('Tax'),
+                'elements' => [
+                    'overridden' => [__('Reduced or zero rated'), null],
+                    'standard'   => [__('Standard rate'), null],
+                ],
+
+                'engine' => function ($query, $elements) {
+                    $overridden = function ($query) {
+                        $query->select('id')
+                            ->from('master_assets')
+                            ->whereRaw("master_assets.tax_category::text not in ('{}', '[]', 'null')");
+                    };
+
+                    if (in_array('overridden', $elements) && !in_array('standard', $elements)) {
+                        $query->whereIn('products.master_product_id', $overridden);
+                    } elseif (in_array('standard', $elements) && !in_array('overridden', $elements)) {
+                        /** A product with no master is standard rated, and NOT IN would drop it. */
+                        $query->where(function ($query) use ($overridden) {
+                            $query->whereNotIn('products.master_product_id', $overridden)
+                                ->orWhereNull('products.master_product_id');
+                        });
+                    }
+                }
+
+            ],
         ];
     }
 

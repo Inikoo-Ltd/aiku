@@ -55,6 +55,7 @@ const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/F
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
 const SelectCreate = defineAsyncComponent(() => import('@/Components/Forms/Fields/SelectCreate.vue'))
 const DynamicList = defineAsyncComponent(() => import('@/Components/Forms/Fields/DynamicList.vue'))
+const TaxPreset = defineAsyncComponent(() => import('@/Components/Forms/Fields/TaxPreset.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
@@ -98,6 +99,7 @@ import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
 import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
 import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
 import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
+import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
 
 export const componentsList: { [key: string]: Component } = {
     'image_crop_square': ImageCropSquare,
@@ -171,6 +173,7 @@ export const componentsList: { [key: string]: Component } = {
     'email_subscriptions': WrapperEmailSubscribetion,
     'set_json_by_form': InputJsonByForm,
     'list-selector-trade-unit': ListSelectorTradeUnit,
+    'trade-units-for-stock': TradeUnitsForStock,
     'file_upload': FileUpload,
     'input-variant' : VariantsField,
     'editOffer' : EditOffer,
@@ -190,6 +193,7 @@ export const componentsList: { [key: string]: Component } = {
     'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
     'select_create': SelectCreate,
     'dynamic_list': DynamicList,
+    'tax_preset': TaxPreset,
     'faq-master' : InputFaqMaster,
     'faq-shop' : InputFaqShop,
     'tags': TagsInput,

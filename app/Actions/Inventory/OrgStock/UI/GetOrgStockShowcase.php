@@ -44,6 +44,15 @@ class GetOrgStockShowcase
                 'currency_code'      => $orgStock->organisation->currency->code,
                 'sales_data'         => GetOrgStockTimeSeriesData::run($orgStock),
                 'barcodes'           => GetOrgStockBarcodes::run($orgStock),
+                'barcode_update_route' => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.update',
+                    'parameters' => [
+                        'organisation' => $warehouse->organisation->slug,
+                        'warehouse'    => $warehouse->slug,
+                        'orgStock'     => $orgStock->slug,
+                    ],
+                    'method'     => 'patch',
+                ],
                 'label_route'        => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.label',
                     'parameters' => [

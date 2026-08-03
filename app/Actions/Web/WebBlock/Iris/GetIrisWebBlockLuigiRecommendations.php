@@ -51,8 +51,7 @@ class GetIrisWebBlockLuigiRecommendations
 
         if ($model instanceof Product) {
             return array_filter([
-                'department_id'      => $model->department_id,
-                'exclude_product_id' => $model->id,
+                'department_id' => $model->department_id,
             ]);
         }
 

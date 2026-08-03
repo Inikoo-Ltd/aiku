@@ -94,6 +94,10 @@ class ShowTradeUnit extends OrgAction
                     fn () => GetTradeUnitShowcase::run($tradeUnit)
                     : Inertia::optional(fn () => GetTradeUnitShowcase::run($tradeUnit)),
 
+                TradeUnitTabsEnum::COMPOSITION->value => $this->tab == TradeUnitTabsEnum::COMPOSITION->value ?
+                    fn () => GetTradeUnitComposition::run($tradeUnit)
+                    : Inertia::optional(fn () => GetTradeUnitComposition::run($tradeUnit)),
+
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
                     fn () => GetTradeUnitAttachment::run($tradeUnit)
                     : Inertia::optional(fn () => GetTradeUnitAttachment::run($tradeUnit)),
@@ -225,16 +229,14 @@ class ShowTradeUnit extends OrgAction
             return null;
         }
 
-        return match ($routeName) {
-            'grp.trade_units.units.show' => [
-                'label' => $tradeUnit->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'tradeUnit' => $tradeUnit->slug
-                    ]
+        return [
+            'label' => $tradeUnit->name,
+            'route' => [
+                'name'       => $routeName,
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->slug
                 ]
-            ],
-        };
+            ]
+        ];
     }
 }

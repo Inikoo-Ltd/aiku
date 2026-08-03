@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp;
 
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Dispatching\WaitingItems\GetCrmReturnedBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetCrmWaitingBadgeData;
 use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
@@ -65,12 +66,41 @@ class GetFirstLoadProps
         data_set($props, 'ziggy', new Ziggy('grp')->toArray());
         data_set($props, 'last_deployment_at', $lastDeployment?->created_at);
         data_set($props, 'last_deployment_hash', $lastDeployment?->commit_hash);
+        data_set($props, 'last_deployment_version', $lastDeployment?->semantic_version);
+
+        // Set outside the cached props so changing the group's clocks does not need a recache of every user
+        if ($user) {
+            data_set($props, 'layout.group.timezones', collect($user->group->world_clock_timezones)
+                ->map(fn (string $timezone) => [
+                    'timezone' => $timezone,
+                    'place'    => IndexTimeZones::make()->clockNameFor($timezone),
+                ])
+                ->all());
+        }
 
 
         return $props;
     }
 
+    /**
+     * These props are cached per language, so they must be built in that language rather than
+     * in whatever locale the request that happens to warm the cache is running under. Recaches
+     * triggered from the console, from queues, or by another user would otherwise store one
+     * user's language under another's cache key.
+     */
     public function getUserUiProps(?User $user, Language $language): array
+    {
+        $localeOfCaller = App::getLocale();
+        App::setLocale($language->code);
+
+        try {
+            return $this->buildUserUiProps($user, $language);
+        } finally {
+            App::setLocale($localeOfCaller);
+        }
+    }
+
+    private function buildUserUiProps(?User $user, Language $language): array
     {
         $availableLanguages = Language::where('status', true)->pluck('id')->toArray();
 
@@ -81,7 +111,7 @@ class GetFirstLoadProps
 
         return [
             'localeData' => [
-                'locale_iso'            => getIsoLocale(App::getLocale()),
+                'locale_iso'            => getIsoLocale($language->code),
                 'language'              => [
                     'id'          => $language->id,
                     'code'        => $language->code,

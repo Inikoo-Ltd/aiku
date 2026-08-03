@@ -22,6 +22,7 @@ use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithGiftOptOut;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Events\RetinaOrderSubmittedEvent;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -148,6 +149,10 @@ class SubmitOrder extends OrgAction
         }
 
         CustomerHydrateTrafficSource::dispatch($order->customer_id);
+
+        /** Tells any other browser tab still showing this order's checkout to redirect away,
+         * so a stale card widget cannot take a second payment */
+        RetinaOrderSubmittedEvent::dispatch($order->customer_id, $order->id);
 
         return $order;
     }

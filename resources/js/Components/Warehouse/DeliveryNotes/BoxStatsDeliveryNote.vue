@@ -592,7 +592,9 @@ function returnNoteRoute(returnDeliveryNote) {
                                 <LoadingIcon v-if="isLoadingSelfTemporarily" />
                                 <FontAwesomeIcon
                                     v-else
-                                    v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
+                                    v-tooltip="allowActions
+                                        ? ctrans('You can work on this delivery note. Click again if your access runs out')
+                                        : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
                                     class="cursor-pointer focus:outline-none"
                                     :icon="allowActions ? faLockOpen : faLock"
                                     :class="allowActions ? 'text-green-500' : 'text-red-500'"
@@ -622,7 +624,9 @@ function returnNoteRoute(returnDeliveryNote) {
                                 <LoadingIcon v-if="isLoadingSelfTemporarily" />
                                 <FontAwesomeIcon
                                     v-else
-                                    v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
+                                    v-tooltip="allowActions
+                                        ? ctrans('You can work on this delivery note. Click again if your access runs out')
+                                        : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
                                     class="cursor-pointer focus:outline-none"
                                     :icon="allowActions ? faLockOpen : faLock"
                                     :class="allowActions ? 'text-green-500' : 'text-red-500'"

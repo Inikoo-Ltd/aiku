@@ -56,6 +56,16 @@ class SettleRetinaOrderWithBalance extends RetinaAction
             $amount = $amountToPay;
         }
 
+        /** A zero-amount settle (no balance, or order already fully paid) must not create a
+         * payment record: staff read the £0.00 "Accounts" row as a failed bank transfer */
+        if ($amount <= 0) {
+            return [
+                'success' => true,
+                'reason'  => 'Nothing to settle with balance',
+                'order'   => $order,
+            ];
+        }
+
         $paymentData = [
             'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
             'amount'                  => $amount,

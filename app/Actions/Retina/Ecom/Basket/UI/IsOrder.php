@@ -14,6 +14,7 @@ use App\Actions\Ordering\Order\GetVoucherData;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
@@ -29,6 +30,8 @@ use Illuminate\Support\Facades\DB;
 
 trait IsOrder
 {
+    use WithLineTaxCategories;
+
     use GetPlatformLogo;
 
     public function getOrderBoxStats(Order $order): array
@@ -275,19 +278,14 @@ trait IsOrder
             ];
         }
 
-        $orderSummary[] =
+        $orderSummary[] = [
             [
-                [
-                    'label'       => __('Net'),
-                    'information' => '',
-                    'price_total' => $order->net_amount,
-                ],
-                [
-                    'label'       => __('Tax').' ('.$taxCategory->getLocalizedName().')',
-                    'information' => '',
-                    'price_total' => $order->tax_amount
-                ]
-            ];
+                'label'       => __('Net'),
+                'information' => '',
+                'price_total' => $order->net_amount,
+            ],
+            ...$this->getOrderTaxRows($order),
+        ];
 
         $orderSummary[] = [
             [

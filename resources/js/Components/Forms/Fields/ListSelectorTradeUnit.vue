@@ -11,7 +11,7 @@ import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from "lodash-es"
 import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue"
-import { watch, ref } from "vue"
+import { watch, ref, computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSave as fadSave } from "@fad"
@@ -41,6 +41,12 @@ const props = defineProps<{
             routeFetch: routeType
         }[]
         is_dropship: boolean
+        priceContext?: {
+            price: number
+            rrp: number
+            currency: string
+            units: number
+        }
     }
 }>()
 
@@ -107,6 +113,34 @@ const onSave = () => {
     emits("submit")
 }
 
+/*
+ * The chicken-and-egg of composition edits: either the product is being repackaged and the
+ * price must scale with it, or the composition was wrong and the price already fits the real
+ * thing. Nothing is repriced automatically; both readings are shown so a human picks one.
+ */
+const priceImpact = computed(() => {
+    const priceContext = props.fieldData.priceContext
+    const rows = setFormValue(props.form, props.fieldName)
+    if (!priceContext?.price || !Array.isArray(rows) || rows.length !== 1) {
+        return null
+    }
+
+    const newUnits = Number(rows[0][props.fieldData.key_quantity ?? 'quantity']) || 1
+    const oldUnits = Number(priceContext.units) || 1
+    if (newUnits === oldUnits) {
+        return null
+    }
+
+    return {
+        oldUnits,
+        newUnits,
+        price: priceContext.price,
+        currency: priceContext.currency,
+        perUnitNow: priceContext.price / oldUnits,
+        scaledPrice: (priceContext.price / oldUnits) * newUnits,
+        perUnitIfKept: priceContext.price / newUnits,
+    }
+})
 </script>
 <template>
     <div class="relative">
@@ -128,6 +162,24 @@ const onSave = () => {
                     <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Price impact: repackaging scales the price, fixing a wrong composition keeps it -->
+    <div v-if="priceImpact" class="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
+        <div class="font-medium text-amber-800">
+            {{ trans('Units change :old → :new — the price does not change by itself. Which is true?', { old: priceImpact.oldUnits, new: priceImpact.newUnits }) }}
+        </div>
+        <div class="mt-1 text-gray-700">
+            {{ trans('Repackaging the product: price should become') }}
+            <span class="font-semibold">{{ priceImpact.scaledPrice.toFixed(2) }} {{ priceImpact.currency }}</span>
+            ({{ trans('keeps :per/unit', { per: priceImpact.perUnitNow.toFixed(2) }) }}) —
+            {{ trans('update it in the price field below.') }}
+        </div>
+        <div class="text-gray-700">
+            {{ trans('Fixing a wrong composition: keep') }}
+            <span class="font-semibold">{{ priceImpact.price.toFixed(2) }} {{ priceImpact.currency }}</span>
+            ({{ trans('becomes :per/unit', { per: priceImpact.perUnitIfKept.toFixed(2) }) }}).
         </div>
     </div>
 

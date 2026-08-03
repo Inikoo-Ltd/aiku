@@ -203,7 +203,7 @@ test('UI show suppliers product in supplier', function (SupplierProduct $supplie
             ->has('pageHead')
             ->has('supplier')
             ->has('tabs')
-            ->has('breadcrumbs', 1);
+            ->has('breadcrumbs', 4);
     });
 })->depends('create supplier product independent supplier');
 

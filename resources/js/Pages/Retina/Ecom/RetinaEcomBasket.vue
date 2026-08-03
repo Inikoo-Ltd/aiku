@@ -158,6 +158,22 @@ const props = defineProps<{
 
 
 const layout = inject('layout', retinaLayoutStructure)
+
+onMounted(() => {
+    if (window.Echo && layout.user?.customer_id && props.order?.id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`)
+            .listen(".order-submitted", (eventData: { order_id: number }) => {
+                if (eventData.order_id == props.order?.id) {
+                    window.location.href = route("retina.ecom.orders.show", { order: (props.order as any)?.slug })
+                }
+            })
+    }
+})
+onBeforeUnmount(() => {
+    if (window.Echo && layout.user?.customer_id) {
+        window.Echo.private(`retina.${layout.user.customer_id}.customer`).stopListening(".order-submitted")
+    }
+})
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
 

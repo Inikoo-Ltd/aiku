@@ -9,10 +9,19 @@
 namespace App\Http\Middleware\Concerns;
 
 use App\Models\Web\Website;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 
 trait DetectsWebsite
 {
+    public const BLOCKED_COUNTRY_KEYS = ['has_blocked_country_regions', 'blocked_countries', 'blocked_country_regions'];
+
+    public function applyWebsiteData(Request $request, array $websiteData): void
+    {
+        $request->attributes->add(Arr::only($websiteData, self::BLOCKED_COUNTRY_KEYS));
+        $request->merge(Arr::except($websiteData, self::BLOCKED_COUNTRY_KEYS));
+    }
+
     public function getWebsiteBaseData(Website $website): array
     {
         $websiteData = [

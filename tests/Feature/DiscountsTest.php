@@ -59,7 +59,9 @@ use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
+use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
@@ -76,6 +78,7 @@ use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
@@ -86,8 +89,11 @@ use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Collection;
+use App\Models\CRM\Customer;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
@@ -1208,6 +1214,21 @@ describe('calculate order discounts', function () {
         expect($categoryDiscount)->toBeInstanceOf(Offer::class);
         $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
         expect((float)$transaction->net_amount)->toBe(80.0);
+    });
+
+    test('CalculateOrderDiscounts leaves an external shop order alone, Faire owns its pricing', function () {
+        $order = Order::latest('id')->first();
+        $originalType = $order->shop->type;
+
+        $order->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL]);
+        $order->update(['amount_off' => 9.24]);
+
+        CalculateOrderDiscounts::run($order->refresh());
+
+        // Faire sent the discount; recalculating from Aiku's offers would zero it
+        expect((float)$order->refresh()->amount_off)->toBe(9.24);
+
+        $order->shop->update(['type' => $originalType]);
     });
 
     test('suspend all active offers', function () {
@@ -2641,6 +2662,93 @@ describe('calculate order discounts', function () {
         $order->update(['state' => OrderStateEnum::CREATING]);
         $transaction->update(['has_discount_when_submitted' => false, 'submitted_offers_data' => []]);
     });
+
+    test('post-submission recalculation honors offers valid at submission time', function () {
+        $shop = $this->shop;
+        if (!$shop->offerCampaigns()->exists()) {
+            SeedShopOfferCampaigns::run($shop);
+        }
+
+        $department = $shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+        $familyData = ProductCategory::factory()->definition();
+        data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $family = StoreProductCategory::make()->action($department, $familyData);
+
+        $tradeUnit = $this->product->tradeUnits()->first();
+
+        $products = [];
+        foreach ([1, 2] as $index) {
+            $productData = array_merge(
+                Product::factory()->definition(),
+                [
+                    'trade_units' => [
+                        [
+                            'id'       => $tradeUnit->id,
+                            'quantity' => 1
+                        ]
+                    ],
+                    'price'       => 100,
+                ]
+            );
+
+            $product          = StoreProduct::make()->action($family, $productData);
+            $products[$index] = UpdateProduct::make()->action($product, ['state' => ProductStateEnum::ACTIVE]);
+        }
+
+        $offer = StoreProductCategoryDiscount::make()->action(
+            $family,
+            [
+                'trigger_data_item_quantity' => 1,
+                'percentage_off'             => 0.25,
+                'type'                       => 'quantity',
+                'duration'                   => 'interval',
+                'start_at'                   => now()->subDay(),
+                'end_at'                     => now()->addDay()->toDateTimeString(),
+            ]
+        );
+        expect($offer)->toBeInstanceOf(Offer::class)
+            ->and($offer->status)->toBeTrue();
+
+        $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+        $order    = StoreOrder::make()->action($customer, []);
+
+        $submittedTransaction = StoreTransaction::make()->action($order, $products[1]->currentHistoricProduct, ['quantity_ordered' => 2]);
+        $order->refresh();
+        $submittedTransaction->refresh();
+        expect((float)$submittedTransaction->net_amount)->toBe(150.0);
+
+        SubmitOrder::make()->action($order);
+        $order->refresh();
+        $submittedTransaction->refresh();
+        expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+            ->and((float)$submittedTransaction->submitted_discount_factor)->toEqualWithDelta(0.75, 0.00001)
+            ->and($submittedTransaction->has_discount_when_submitted)->toBeTrue();
+
+        FinishOffer::run($offer->refresh());
+        expect($offer->refresh()->status)->toBeFalse();
+
+        $newTransaction = StoreTransaction::make()->action(
+            order: $order,
+            historicAsset: $products[2]->currentHistoricProduct,
+            modelData: [
+                'quantity_ordered' => 1,
+                'state'            => TransactionStateEnum::HANDLING_BLOCKED,
+                'status'           => TransactionStatusEnum::PROCESSING,
+                'submitted_at'     => now(),
+            ]
+        );
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $order->refresh();
+        $submittedTransaction->refresh();
+        $newTransaction->refresh();
+
+        expect((float)$submittedTransaction->net_amount)->toBe(150.0)
+            ->and((float)$submittedTransaction->current_discount_factor)->toEqualWithDelta(0.75, 0.00001)
+            ->and((float)$newTransaction->net_amount)->toBe(75.0)
+            ->and((float)$newTransaction->current_discount_factor)->toEqualWithDelta(0.75, 0.00001)
+            ->and((float)$order->goods_amount)->toBe(225.0);
+    });
 });
 
 test('finish and update volume gr offer from master', function () {
@@ -2691,4 +2799,73 @@ test('finish and update volume gr offer from master', function () {
 
     $category->refresh();
     expect($category->has_gr_vol_discount)->toBeFalse();
+});
+
+test('repair aurora submitted transaction snapshots', function () {
+    $basketOrder       = StoreOrder::make()->action($this->customer, []);
+    $basketTransaction = StoreTransaction::make()->action($basketOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 1]);
+    $basketTransaction->update([
+        'state'     => TransactionStateEnum::SUBMITTED,
+        'source_id' => '1:12345',
+    ]);
+
+    $inFlightCustomer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $inFlightOrder       = StoreOrder::make()->action($inFlightCustomer, []);
+    $inFlightTransaction = StoreTransaction::make()->action($inFlightOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 2]);
+    SubmitOrder::make()->action($inFlightOrder);
+    $inFlightTransaction->refresh();
+    $inFlightTransaction->update([
+        'submitted_at'                => null,
+        'submitted_quantity_ordered'  => 0,
+        'submitted_gross_amount'      => null,
+        'submitted_net_amount'        => null,
+        'submitted_discount_factor'   => 1,
+        'submitted_offers_data'       => [],
+        'has_discount_when_submitted' => false,
+        'current_discount_factor'     => 0.75,
+        'net_amount'                  => 150,
+    ]);
+
+    $raceVictimCustomer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $raceVictimOrder       = StoreOrder::make()->action($raceVictimCustomer, []);
+    $raceVictimTransaction = StoreTransaction::make()->action($raceVictimOrder, $this->product->currentHistoricProduct, ['quantity_ordered' => 3]);
+    SubmitOrder::make()->action($raceVictimOrder);
+    $raceVictimTransaction->refresh();
+    $raceVictimTransaction->update([
+        'state'                       => TransactionStateEnum::CREATING,
+        'source_id'                   => '1:12346',
+        'submitted_at'                => null,
+        'submitted_quantity_ordered'  => 0,
+        'submitted_gross_amount'      => null,
+        'submitted_net_amount'        => null,
+        'submitted_discount_factor'   => 1,
+        'submitted_offers_data'       => [],
+        'has_discount_when_submitted' => false,
+    ]);
+
+    $this->artisan('repair:aurora_submitted_transaction_snapshots --dry_run')->assertSuccessful();
+    $basketTransaction->refresh();
+    expect($basketTransaction->state)->toBe(TransactionStateEnum::SUBMITTED->value);
+
+    $this->artisan('repair:aurora_submitted_transaction_snapshots')->assertSuccessful();
+
+    $basketTransaction->refresh();
+    $inFlightTransaction->refresh();
+
+    $raceVictimTransaction->refresh();
+    expect($raceVictimTransaction->state)->toBe(TransactionStateEnum::SUBMITTED->value)
+        ->and($raceVictimTransaction->status)->toBe(TransactionStatusEnum::PROCESSING->value)
+        ->and($raceVictimTransaction->submitted_at)->not->toBeNull()
+        ->and((float)$raceVictimTransaction->submitted_quantity_ordered)->toBe(3.0)
+        ->and($basketTransaction->state)->toBe(TransactionStateEnum::CREATING->value)
+        ->and($inFlightTransaction->submitted_at)->not->toBeNull()
+        ->and((float)$inFlightTransaction->submitted_quantity_ordered)->toBe(2.0)
+        ->and((float)$inFlightTransaction->submitted_net_amount)->toBe(150.0)
+        ->and((float)$inFlightTransaction->submitted_discount_factor)->toEqualWithDelta(0.75, 0.00001)
+        ->and($inFlightTransaction->has_discount_when_submitted)->toBeTrue();
+
+    SubmitOrder::make()->action($basketOrder->refresh());
+    $basketTransaction->refresh();
+    expect($basketTransaction->submitted_at)->not->toBeNull()
+        ->and((float)$basketTransaction->submitted_quantity_ordered)->toBe(1.0);
 });

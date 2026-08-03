@@ -83,6 +83,11 @@ class UpdateGroupSettings extends OrgAction
             $group->update(['settings' => $groupSettings]);
             data_forget($modelData, 'print_by_printnode');
         }
+        if (Arr::has($modelData, 'timezones')) {
+            data_set($groupSettings, 'timezones', array_values(Arr::get($modelData, 'timezones') ?? []));
+            $group->update(['settings' => $groupSettings]);
+            data_forget($modelData, 'timezones');
+        }
         if (Arr::has($modelData, 'jira_base_url')) {
             data_set($groupSettings, 'jira.base_url', Arr::get($modelData, 'jira_base_url'));
             $group->update(['settings' => $groupSettings]);
@@ -185,6 +190,8 @@ class UpdateGroupSettings extends OrgAction
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
+            'timezones'          => ['sometimes', 'array'],
+            'timezones.*'        => ['string', 'timezone'],
             'jira_base_url'      => ['sometimes', 'nullable', 'url'],
             'jira_email'         => ['sometimes', 'nullable', 'email'],
             'jira_api_token'     => ['sometimes', 'nullable', 'string'],

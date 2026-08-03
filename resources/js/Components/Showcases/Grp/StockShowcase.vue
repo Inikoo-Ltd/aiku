@@ -5,8 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, computed, onMounted } from "vue"
-import { Link } from "@inertiajs/vue3"
+import { inject, ref, computed, onMounted, nextTick } from "vue"
+import { Link, router } from "@inertiajs/vue3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -25,6 +25,9 @@ import JsBarcode from "jsbarcode"
 import { ctrans } from "@/Composables/useTrans"
 import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import Modal from "@/Components/Utils/Modal.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { notify } from "@kyvg/vue3-notification"
 library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
 
 const props = defineProps < {
@@ -68,6 +71,7 @@ const props = defineProps < {
             }
             packs: number | null
         }[]
+        barcode_update_route?: routeType
         label_route?: {
             name: string
             parameters: Record<string, string>
@@ -140,17 +144,58 @@ const stockCostStats = computed(() => {
 // }, { immediate: true })
 
 
-onMounted(() => {
+const renderBarcodes = () => {
     props.data.barcodes?.forEach((barcode) => {
+        if (!barcode.number) return
         JsBarcode("#barcode-" + barcode.level, barcode.number, {
-            format: barcode.level === "unit" ? "EAN13" : "CODE128",
+            format: /^\d{13}$/.test(barcode.number) ? "EAN13" : "CODE128",
             lineColor: "#000",
             width: 2,
             height: 50,
             displayValue: true,
         })
     })
-})
+}
+
+onMounted(renderBarcodes)
+
+// Section: edit or add the org stock barcode, typed by hand or fed by a scanner into the input
+const isBarcodeModalOpen = ref(false)
+const barcodeInput = ref("")
+const isSavingBarcode = ref(false)
+
+const barcodeInputElement = ref<HTMLInputElement | null>(null)
+
+const openBarcodeModal = () => {
+    barcodeInput.value = props.data.barcodes?.[0]?.number || ""
+    isBarcodeModalOpen.value = true
+    nextTick(() => barcodeInputElement.value?.focus())
+}
+
+const saveBarcode = (value: string | null) => {
+    if (!props.data.barcode_update_route || isSavingBarcode.value) return
+
+    router.patch(
+        route(props.data.barcode_update_route.name, props.data.barcode_update_route.parameters),
+        { barcode: value },
+        {
+            preserveScroll: true,
+            onStart: () => isSavingBarcode.value = true,
+            onFinish: () => isSavingBarcode.value = false,
+            onSuccess: () => {
+                isBarcodeModalOpen.value = false
+                nextTick(renderBarcodes)
+            },
+            onError: (errors) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: errors.barcode || trans("Could not save the barcode"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
 
 </script>
 
@@ -216,7 +261,63 @@ onMounted(() => {
                         <Icon :data="{ icon: 'fal fa-stop-circle' }" v-tooltip="trans(barcode.label)" />
                     </div>
 
-                    <svg :id="'barcode-' + barcode.level" class="h-14"></svg>
+                    <template v-if="barcode.number">
+                        <svg :id="'barcode-' + barcode.level" class="h-14"></svg>
+                        <button
+                            v-if="data.barcode_update_route"
+                            type="button"
+                            v-tooltip="ctrans('Edit barcode')"
+                            class="text-gray-300 transition hover:text-indigo-500"
+                            @click="openBarcodeModal">
+                            <Icon :data="{ icon: 'fal fa-edit' }" />
+                        </button>
+                    
+    <!-- Modal: add or edit the org stock barcode by typing or scanning into the input -->
+    <Modal :isOpen="isBarcodeModalOpen" @onClose="isBarcodeModalOpen = false" width="w-full max-w-md">
+        <div class="flex flex-col gap-4 p-2">
+            <div class="text-lg font-semibold">{{ ctrans("Org stock barcode") }}</div>
+            <div class="text-sm text-gray-500">
+                {{ ctrans("Type the barcode, or click the field and scan the item with a barcode scanner.") }}
+            </div>
+            <input
+                ref="barcodeInputElement"
+                v-model="barcodeInput"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                maxlength="54"
+                :placeholder="ctrans('e.g. 5055796528387')"
+                class="w-full rounded-md border-gray-300 py-2 px-3 font-mono text-lg tracking-wide focus:border-indigo-500 focus:ring-indigo-500"
+                @keydown.enter.prevent="saveBarcode(barcodeInput.trim() || null)"
+            />
+            <div class="flex justify-between gap-2">
+                <Button
+                    v-if="data.barcodes?.[0]?.number"
+                    type="negative"
+                    :label="ctrans('Remove barcode')"
+                    :loading="isSavingBarcode"
+                    @click="saveBarcode(null)" />
+                <div class="ml-auto flex gap-2">
+                    <Button type="tertiary" :label="ctrans('Cancel')" @click="isBarcodeModalOpen = false" />
+                    <Button
+                        :label="ctrans('Save')"
+                        :loading="isSavingBarcode"
+                        :disabled="!barcodeInput.trim()"
+                        @click="saveBarcode(barcodeInput.trim())" />
+                </div>
+            </div>
+        </div>
+    </Modal>
+</template>
+                    <button
+                        v-else-if="data.barcode_update_route"
+                        type="button"
+                        class="flex h-14 flex-1 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition hover:border-indigo-400 hover:text-indigo-500"
+                        @click="openBarcodeModal">
+                        <Icon :data="{ icon: 'fal fa-plus' }" />
+                        {{ ctrans("Add barcode (type or scan it)") }}
+                    </button>
+                    <div v-else class="h-14 flex-1 text-sm italic text-gray-400 flex items-center">{{ ctrans("No barcode") }}</div>
 
                     <div class="flex flex-col gap-1.5 text-sm">
                         <span v-if="formatWeight(barcode.weight)"
@@ -238,7 +339,7 @@ onMounted(() => {
                         </span>
                     </div>
 
-                    <a v-if="data.label_route"
+                    <a v-if="data.label_route && barcode.number"
                         :href="route(data.label_route.name, { ...data.label_route.parameters, level: barcode.level })"
                         target="_blank"
                         v-tooltip="ctrans('Open PDF label')"

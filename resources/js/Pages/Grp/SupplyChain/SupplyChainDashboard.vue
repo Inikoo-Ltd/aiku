@@ -14,6 +14,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList } from '@fal'
 import Dashboard from '@/Components/DataDisplay/Dashboard/DashboardOld.vue'
+import SearchDemandOpportunities from '@/Components/DataDisplay/Dashboard/Widget/SearchDemandOpportunities.vue'
 
 library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList)
 
@@ -25,6 +26,7 @@ const props = defineProps<{
     dashboard_stats: {
       widgets: {}
     }
+    search_demand?: any
 }>()
 </script>
 
@@ -34,8 +36,11 @@ const props = defineProps<{
     <PageHeading :data="pageHead"></PageHeading>
     <!-- <FlatTreeMap class="mx-4" v-for="(treeMap, idx) in flatTreeMaps" :key="idx" :nodes="treeMap" /> -->
     <div class="mx-4">
-      <Dashboard 
+      <Dashboard
               :dashboard="dashboard_stats"
       />
+    </div>
+    <div class="mx-4 mt-4 max-w-3xl">
+      <SearchDemandOpportunities :demand="search_demand" />
     </div>
 </template>

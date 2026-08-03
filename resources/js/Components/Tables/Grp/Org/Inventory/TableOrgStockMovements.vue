@@ -16,11 +16,13 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue";
 import { faNoteSticky } from "@fortawesome/free-solid-svg-icons";
-import { ref } from "vue";
+import { ref, inject } from 'vue';
 import { Dialog } from "primevue";
 import { useBasicColor } from "@/Composables/useColors";
 import { faTimes } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
+
+const screenType = inject('screenType', ref('desktop'))
 
 library.add(
   faTilde,
@@ -288,7 +290,7 @@ function noteColor(movement) {
       'border-style': 'solid',
       'border-color': noteColor(selectedMovement)
     }"
-    :dismissableMask="true"
+    :dismissableMask="screenType === 'desktop'"
     :closeOnEscape="true"
     :breakpoints="{
       '1360px': '60vw',

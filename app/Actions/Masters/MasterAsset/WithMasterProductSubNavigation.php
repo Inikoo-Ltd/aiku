@@ -74,6 +74,20 @@ trait WithMasterProductSubNavigation
                     'tooltip' => __('Products in shop')
                 ]
             ],
+            [
+                'label'    => __('Composition'),
+                'route'    => [
+                    'name'       => 'grp.masters.master_shops.show.master_products.composition',
+                    'parameters' => [
+                        'masterShop'    => $masterShop->slug,
+                        'masterProduct' => $masterProduct->slug,
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-atom'],
+                    'tooltip' => __('Composition & packing')
+                ]
+            ],
         ];
     }
 

@@ -414,6 +414,7 @@ use App\Actions\SysAdmin\Guest\UpdateGuest;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Actions\SysAdmin\User\DeleteUserAccessToken;
+use App\Actions\SysAdmin\User\StoreUserFromEmployee;
 use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
@@ -479,6 +480,7 @@ Route::patch('notification/{notification}', MarkNotificationAsRead::class)->name
 Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notifications.all.read');
 
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {
+    Route::post('create-user', StoreUserFromEmployee::class)->name('create_user');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inEmployee'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inEmployee'])->name('attachment.detach')->withoutScopedBindings();
     Route::patch('contract/upload', UploadEmployeeContract::class)->name('contract.upload');

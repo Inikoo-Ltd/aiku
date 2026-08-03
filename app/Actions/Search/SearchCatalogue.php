@@ -13,26 +13,45 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Throwable;
 
 class SearchCatalogue
 {
     use AsAction;
     use WithRawSearchResults;
+    use WithTypesenseApi;
+
+    /**
+     * Typo-recovery tuning driven by the real no-result queries in the search logs:
+     * split_join_tokens rescues glued words ("aromcandles" -> "arom candles") and
+     * min_len_2typo 6 lets shorter words carry two typos ("auaura" -> "aura").
+     */
+    public const array SEARCH_TUNING = [
+        'split_join_tokens'     => 'always',
+        'typo_tokens_threshold' => 2,
+        'min_len_2typo'         => 6,
+    ];
+
+    /**
+     * result key => [model class, boost type, hits limit]
+     */
+    protected const array SEARCH_TARGETS = [
+        'products'           => [Product::class, 'product', 11],
+        'product_categories' => [ProductCategory::class, 'product_category', 10],
+        'collections'        => [Collection::class, 'collection', 10],
+    ];
 
     public function handle(string $query, array $options): array
     {
-        $productsQuery          = Product::search($query);
-        $productCategoriesQuery = ProductCategory::search($query);
-        $collectionsQuery       = Collection::search($query);
-        if ($shopId = Arr::get($options, 'shop_id')) {
-            $productsQuery->where('shop_id', $shopId);
-            $productCategoriesQuery->where('shop_id', $shopId);
-            $collectionsQuery->where('shop_id', $shopId);
+        if (config('scout.driver') === 'typesense') {
+            try {
+                $documents = $this->multiSearch($query, $options);
+            } catch (Throwable) {
+                $documents = $this->scoutSearch($query, $options);
+            }
+        } else {
+            $documents = $this->scoutSearch($query, $options);
         }
-
-        $productsQuery->take(11);
-        $productCategoriesQuery->take(10);
-        $collectionsQuery->take(10);
 
         $mapCatalogueItem = static fn (array $document) => [
             'id'    => (int)$document['id'],
@@ -43,13 +62,133 @@ class SearchCatalogue
 
         return [
             'scope'   => 'catalogue',
-            'results' => [
-                'products'           => array_map($mapCatalogueItem, $this->rawDocuments($productsQuery)),
-                'product_categories' => array_map($mapCatalogueItem, $this->rawDocuments($productCategoriesQuery)),
-                'collections'        => array_map($mapCatalogueItem, $this->rawDocuments($collectionsQuery)),
-            ],
+            'results' => array_map(
+                static fn (array $docs) => array_map($mapCatalogueItem, $docs),
+                $documents
+            ),
         ];
     }
 
+    /**
+     * All three collections in one HTTP round trip instead of three sequential ones.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function multiSearch(string $query, array $options): array
+    {
+        $searches = [];
+        foreach (self::SEARCH_TARGETS as [$modelClass, $boostType, $limit]) {
+            $filters = [];
+            if ($shopId = Arr::get($options, 'shop_id')) {
+                $filters[] = "shop_id:=$shopId";
+            }
+            if (Arr::get($options, 'is_in_website')) {
+                $filters[] = 'is_in_website:=true';
+            }
 
+            $searches[] = array_merge(
+                [
+                    'collection'             => (new $modelClass())->searchableAs(),
+                    'q'                      => $query,
+                    'query_by'               => config("scout.typesense.model-settings.$modelClass.search-parameters.query_by") ?? '',
+                    'filter_by'              => implode(' && ', $filters),
+                    'per_page'               => $limit,
+                    'page'                   => 1,
+                    'prioritize_exact_match' => true,
+                    'enable_overrides'       => true,
+                    'prefix'                 => true,
+                ],
+                $this->extraSearchOptions(Arr::get($options, "boosts.$boostType"), Arr::get($options, 'language'))
+            );
+        }
+
+        $response = $this->typesenseClient()
+            ->post($this->typesenseUrl().'/multi_search', ['searches' => $searches])
+            ->throw();
+
+        $documents = [];
+        foreach (array_keys(self::SEARCH_TARGETS) as $index => $key) {
+            if ($error = $response->json("results.$index.error")) {
+                logger()->warning("Typesense multi_search $key failed: $error");
+            }
+            $documents[$key] = Arr::pluck($response->json("results.$index.hits", []), 'document');
+        }
+
+        return $documents;
+    }
+
+    /**
+     * Fallback for non-typesense drivers (tests) and typesense outages.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function scoutSearch(string $query, array $options): array
+    {
+        $documents = [];
+        foreach (self::SEARCH_TARGETS as $key => [$modelClass, $boostType, $limit]) {
+            $searchQuery = $modelClass::search($query);
+
+            if ($shopId = Arr::get($options, 'shop_id')) {
+                $searchQuery->where('shop_id', $shopId);
+            }
+            if (Arr::get($options, 'is_in_website')) {
+                $searchQuery->where('is_in_website', true);
+            }
+
+            $searchQuery->options($this->extraSearchOptions(
+                Arr::get($options, "boosts.$boostType"),
+                Arr::get($options, 'language')
+            ));
+            $searchQuery->take($limit);
+
+            $documents[$key] = $this->rawDocuments($searchQuery);
+        }
+
+        return $documents;
+    }
+
+    /**
+     * Boosted items float to the top of the results they already match: an _eval sort
+     * ranks them first without pinning them into unrelated searches.
+     *
+     * @param array<int, int>|null $boostIds
+     *
+     * @return array<string, mixed>
+     */
+    private function extraSearchOptions(?array $boostIds, ?string $languageCode): array
+    {
+        $searchOptions = self::SEARCH_TUNING;
+
+        if ($languageCode && $this->synonymSetExists($languageCode)) {
+            $searchOptions['synonym_sets'] = StoreSearchSynonym::synonymSet($languageCode);
+        }
+
+        if (!empty($boostIds)) {
+            $searchOptions['sort_by'] = '_eval(id:['.implode(',', $boostIds).']):desc,_text_match:desc';
+        }
+
+        return $searchOptions;
+    }
+
+    /**
+     * Referencing a missing synonym set makes Typesense fail the whole search with
+     * a 404, so the set is only attached once it exists. Cached briefly; the cache
+     * is invalidated by StoreSearchSynonym so new sets apply immediately.
+     */
+    private function synonymSetExists(string $languageCode): bool
+    {
+        return (bool)cache()->remember(
+            StoreSearchSynonym::synonymSetExistsCacheKey($languageCode),
+            300,
+            function () use ($languageCode) {
+                try {
+                    return $this->typesenseClient()
+                        ->get($this->typesenseUrl().'/synonym_sets/'.StoreSearchSynonym::synonymSet($languageCode))
+                        ->successful();
+                } catch (Throwable) {
+                    return false;
+                }
+            }
+        );
+    }
 }

@@ -5,6 +5,7 @@ import Image from "@common/Components/Image.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Iris/Components/LinkIris.vue";
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
+import IrisSearch from "@/Iris/Components/IrisSearch.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
 const props = defineProps<{
@@ -80,7 +81,9 @@ const loadingRedirect = ref(false)
 					<!-- Search Bar -->
 					<div class="relative justify-self-center w-full flex items-center h-full"
 						:class="fieldValue?.search?.is_box_full_width ? 'max-w-[1100px] ' : 'max-w-sm'">
-						<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" :fieldValueSearch="fieldValue?.search"
+						<IrisSearch v-if="layout.iris?.iris_search_model === 'internal'" :fieldValueSearch="fieldValue?.search"
+							id="iris_search_header_2" />
+						<LuigiSearch v-else-if="layout.iris?.luigisbox_tracker_id" :fieldValueSearch="fieldValue?.search"
 							id="luigi_header_2" />
 					</div>
 				</div>

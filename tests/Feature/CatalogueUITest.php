@@ -604,6 +604,19 @@ test('UI edit product', function () {
     });
 });
 
+test('UI edit product composition', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.catalogue.products.all_products.composition', [$this->organisation->slug, $this->shop->slug, $this->product->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/ProductComposition')
+            ->has('title')
+            ->has('pageHead')
+            ->has('formData.blueprint.0.fields.units')
+            ->has('breadcrumbs');
+    });
+});
+
 test('UI create product', function () {
     $response = get(route('grp.org.shops.show.catalogue.families.show.products.create', [$this->organisation->slug, $this->shop->slug, $this->family->slug]));
     $response->assertInertia(function (AssertableInertia $page) {

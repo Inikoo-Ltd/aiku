@@ -18,7 +18,7 @@ use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentFailure;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentSuccess;
 use App\Actions\CRM\Prospect\UI\CreateProspectFromWebBlock;
 
-Route::name('webhooks.')->prefix('webhooks')->group(function () {
+Route::name('webhooks.')->prefix('webhooks')->withoutMiddleware(App\Http\Middleware\RestrictCountryRegions::class)->group(function () {
     Route::name('checkout_com.')->prefix('checkout-com')->group(function () {
         Route::get('/greeting', function () {
             return 'Hello World';

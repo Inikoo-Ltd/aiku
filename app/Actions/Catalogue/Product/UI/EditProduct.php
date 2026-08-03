@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Models\Catalogue\Product;
@@ -27,6 +28,7 @@ class EditProduct extends OrgAction
 {
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
+    use WithUnitsChangeConfirmation;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -295,6 +297,18 @@ class EditProduct extends OrgAction
                             'maxFractionDigits' => 2,
                         ],
                         'value'    => $product->price,
+
+                        /*
+                         * Free is a real price for the gifts and samples, but it is also what an
+                         * accidental zero looks like, so it is the one price worth stopping for.
+                         * Only on zero: prices change thousands of times a month here and a dialog
+                         * on all of them would be clicked away without being read.
+                         */
+                        'saveConfirmation' => [
+                            'whenValueIs' => 0,
+                            'title'       => __('Give this product away for free?'),
+                            'description' => __('A price of zero means customers can order it at no charge. Only gifts and samples should be free.'),
+                        ],
                     ],
                     'rrp_per_unit' => [
                         'type'     => 'input_number',
@@ -316,6 +330,7 @@ class EditProduct extends OrgAction
                 'type'         => 'input_with_warning',
                 'label'        => __('Units'),
                 'value'        => $product->units,
+                'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
                 'showWarning'  => true,
                 'warningTitle' => __('Units mismatch with master product').' ('.$product->units_review.')',
                 'warningBody'  => __('Per-unit prices may be wrong, review units before editing prices'),
@@ -611,6 +626,7 @@ class EditProduct extends OrgAction
                                 'type'  => 'input_number',
                                 'label' => __('Units'),
                                 'value' => $product->units,
+                                'saveConfirmation' => $this->getUnitsChangeConfirmation($product),
                             ],
                             'marketing_weight'     => [
                                 'type'        => 'input_number',
@@ -672,43 +688,26 @@ class EditProduct extends OrgAction
                             'value' => $product->not_follow_master_trade_units,
                             'information' => __('Would set product to have standalone trade units (Differs from master)')
                         ] : [],
-                        'trade_units' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
-                            'label'        => __('Trade units'),
-                            'type'         => 'list-selector-trade-unit',
-                            'key_quantity' => 'quantity',
-                            'withQuantity' => true,
-                            'full'         => true,
-                            'noSaveButton' => false,
-                            'use_confirm'  => false,
-                            'is_dropship'  => $product->shop->type == ShopTypeEnum::DROPSHIPPING,
-                            'tabs' => array_values(array_filter([
-                                $product->family?->masterProductCategory ? [
-                                    'label'      => __('To do'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $product->family->masterProductCategory->id,
-                                        ],
-                                    ],
-                                ] : null,
-                                $product->family?->masterProductCategory ? [
-                                    'label'      => __('Done'),
-                                    'routeFetch' => [
-                                        'name'       => 'grp.json.master-product-category.taken-trade-units',
-                                        'parameters' => [
-                                            'masterProductCategory' => $product->family->masterProductCategory->id,
-                                        ],
-                                    ],
-                                ] : null,
-                                [
-                                    'label'      => __('All'),
-                                    'search'     => true,
-                                    'routeFetch' => [
-                                        'name' => 'grp.json.master_product_category.all_trade_units',
-                                    ],
-                                ],
-                            ])),
-                            'value'        => $tradeUnits,
+                        /*
+                         * Composition, packing and the price they imply are one decision
+                         * with too many controls for this form, so they live on their own
+                         * page. This is only the summary and the door.
+                         */
+                        'composition' => (!$product->masterProduct || $product->not_follow_master_trade_units) ? [
+                            'type'         => 'button',
+                            'noSaveButton' => true,
+                            'label'        => $tradeUnits->map(fn ($tradeUnit) => trimDecimalZeros($tradeUnit['quantity']).' × '.$tradeUnit['code'])->implode(', '),
+                            'label_button' => __('Edit composition & packing'),
+                            'icon'         => 'fal fa-atom',
+                            'type_button'  => 'secondary',
+                            'route'        => [
+                                'name'       => 'grp.org.shops.show.catalogue.products.all_products.composition',
+                                'parameters' => [
+                                    'organisation' => $product->organisation->slug,
+                                    'shop'         => $product->shop->slug,
+                                    'product'      => $product->slug,
+                                ]
+                            ],
                         ] : [],
                     ]),
                 ],

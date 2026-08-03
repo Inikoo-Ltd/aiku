@@ -60,24 +60,20 @@ const deviceIcon = (device: string) => {
 
         <template v-if="widget">
             <div class="flex flex-wrap gap-x-10 gap-y-4 mb-4">
-                <div>
-                    <p class="text-4xl font-bold">{{ widget.active_users.toLocaleString() }}</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("Users") }}</p>
-                </div>
-                <div>
-                    <Link :href="route('grp.sysadmin.guests.index')" class="hover:underline">
-                        <p class="text-4xl font-bold">{{ widget.active_guests.toLocaleString() }}</p>
-                        <p class="text-sm text-gray-600">{{ ctrans("Guests") }}</p>
-                    </Link>
-                </div>
-                <div>
-                    <p class="text-4xl font-bold">{{ widget.active_today.toLocaleString() }}</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("Active today") }}</p>
-                </div>
-                <div>
-                    <p class="text-4xl font-bold">{{ widget.logins.toLocaleString() }}</p>
-                    <p class="text-sm text-gray-600">{{ ctrans("Logins") }}</p>
-                </div>
+                <Link
+                    v-for="stat in [
+                        { label: 'Users', value: widget.active_users, href: route('grp.sysadmin.users.index') },
+                        { label: 'Guests', value: widget.active_guests, href: route('grp.sysadmin.guests.index') },
+                        { label: 'Active today', value: widget.active_today, href: route('grp.sysadmin.users.index') },
+                        { label: 'Logins', value: widget.logins, href: route('grp.sysadmin.analytics.dashboard') },
+                    ]"
+                    :key="stat.label"
+                    :href="stat.href"
+                    class="group"
+                >
+                    <p class="text-4xl font-bold">{{ stat.value.toLocaleString() }}</p>
+                    <p class="text-sm text-gray-600 group-hover:underline">{{ ctrans(stat.label) }}</p>
+                </Link>
             </div>
 
             <div class="grid grid-cols-3 gap-6 text-sm">

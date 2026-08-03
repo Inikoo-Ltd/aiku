@@ -51,6 +51,7 @@ const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> =
 const isOpen = defineModel<boolean>()
 
 const layout = inject('layout', layoutStructure)
+const screenType = inject('screenType', ref('desktop'))
 const isLoadingSearch = ref(false)
 const searchValue = ref('')
 const scope = ref<string | null>(null)
@@ -314,7 +315,7 @@ const closeModal = () => {
 
 <template>
     <TransitionRoot :show="isOpen" as="template" @after-leave="() => { searchValue = ''; resultsSearch = null }" appear>
-        <Dialog as="div" class="relative z-50" @close="closeModal">
+        <Dialog as="div" class="relative z-50" @close="screenType === 'desktop' && closeModal()">
 
             <TransitionChild enter="ease-out duration-200" enter-from="opacity-0" enter-to="opacity-100"
                 leave="ease-in duration-150" leave-from="opacity-100" leave-to="opacity-0">

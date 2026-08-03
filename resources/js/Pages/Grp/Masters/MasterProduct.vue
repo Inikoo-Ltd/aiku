@@ -31,6 +31,8 @@ import { notify } from "@kyvg/vue3-notification"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import { Message } from "primevue"
 
+const screenType = inject('screenType', ref('desktop'))
+
 library.add(
     faChartLine, faCheckCircle, faFolderTree, faFolder, faCube,
     faShoppingCart, faFileInvoice, faStickyNote, faMoneyBillWave, faFolderOpen, faAtom
@@ -226,7 +228,7 @@ onMounted(() => {
         modal 
         :header="ctrans('Add to Other Shops')"
         :closable="true" 
-        :dismissableMask=true 
+        :dismissableMask="screenType === 'desktop'" 
         :style="{ width: '60vw'  }" 
         :contentClass="'!pb-0 mb-2'"
     >

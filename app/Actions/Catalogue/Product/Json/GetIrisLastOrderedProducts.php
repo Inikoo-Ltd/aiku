@@ -92,7 +92,7 @@ class GetIrisLastOrderedProducts extends IrisAction
     }
 
     /** What this shop sold from this family, one purchase per product per date. */
-    private function getShopCandidates(ProductCategory $productCategory, ?string $ignoredProductId): Collection
+    private function getShopCandidates(ProductCategory $productCategory, ?int $ignoredProductId): Collection
     {
         $query = DB::table('transactions')
             ->selectRaw('DISTINCT ON (products.id, transactions.date::date) products.id as product_id, products.code, products.name, products.web_images, webpages.canonical_url, transactions.date as submitted_at')
@@ -107,7 +107,7 @@ class GetIrisLastOrderedProducts extends IrisAction
     }
 
     /** What the other shops sold of the same products, put back on this shop's products. */
-    private function getMasterShopCandidates(ProductCategory $productCategory, ?string $ignoredProductId): Collection
+    private function getMasterShopCandidates(ProductCategory $productCategory, ?int $ignoredProductId): Collection
     {
         $query = DB::table('invoice_transactions')
             ->selectRaw('DISTINCT ON (products.id, invoice_transactions.date::date) products.id as product_id, products.code, products.name, products.web_images, webpages.canonical_url, invoice_transactions.date as submitted_at')
@@ -129,7 +129,7 @@ class GetIrisLastOrderedProducts extends IrisAction
     }
 
     /** What every shop in the group sold of the same trade unit, put back on this shop's products. */
-    private function getGroupCandidates(ProductCategory $productCategory, ?string $ignoredProductId): Collection
+    private function getGroupCandidates(ProductCategory $productCategory, ?int $ignoredProductId): Collection
     {
         $query = DB::table('invoice_transactions')
             ->selectRaw('DISTINCT ON (products.id, invoice_transactions.date::date) products.id as product_id, products.code, products.name, products.web_images, webpages.canonical_url, invoice_transactions.date as submitted_at')
@@ -163,7 +163,7 @@ class GetIrisLastOrderedProducts extends IrisAction
     }
 
     /** Numbers the purchases of each product, and keeps a few purchases of each recent date. */
-    private function fetchCandidates(Builder $query, ?string $ignoredProductId): Collection
+    private function fetchCandidates(Builder $query, ?int $ignoredProductId): Collection
     {
         if ($ignoredProductId) {
             $query->where('products.id', '!=', $ignoredProductId);
@@ -289,7 +289,7 @@ class GetIrisLastOrderedProducts extends IrisAction
     public function rules(): array
     {
         return [
-            'ignoredProductId' => ['sometimes', 'string'],
+            'ignoredProductId' => ['sometimes', 'integer'],
         ];
     }
 

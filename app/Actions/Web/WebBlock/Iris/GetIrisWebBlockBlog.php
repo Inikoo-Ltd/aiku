@@ -48,7 +48,7 @@ class GetIrisWebBlockBlog
             ];
         }
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', $webpage->snapshots()->latest()->first()?->published_at);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', $webpage->snapshots()->latest()->first()?->published_at, false);
         data_set($webBlock, 'web_block.layout.data.fieldValue.latest_blogs', $latestBlogs);
 
         return [

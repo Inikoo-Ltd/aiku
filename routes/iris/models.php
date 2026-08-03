@@ -14,7 +14,6 @@ use App\Actions\Iris\CRM\DeleteIrisBackInStockReminder;
 use App\Actions\Iris\CRM\DeleteIrisPortfolioFavourites;
 use App\Actions\Iris\CRM\StoreIrisBackInStockReminder;
 use App\Actions\Iris\CRM\StoreIrisFavourites;
-use App\Actions\Iris\CRM\StoreIrisProductLastSeen;
 use App\Actions\Iris\CRM\UpdateIrisCustomer;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
@@ -57,7 +56,7 @@ Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::
 Route::post('remind-back-in-stock/{product:id}', StoreIrisBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings()->whereNumber('product');
 Route::delete('remind-back-in-stock/{product:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings()->whereNumber('product');
 
-Route::post('review/{review:id}/react', ReactRetinaReview::class)->name('review.react');
+Route::post('review/{review:id}/react', ReactRetinaReview::class)->name('review.react')->whereNumber('review');
 
 Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(function () {
     Route::patch('update-gr-gift', UpdateRetinaOrderGrGift::class)->name('update_gr_gift');

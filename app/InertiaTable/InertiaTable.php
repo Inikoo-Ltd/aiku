@@ -3,6 +3,7 @@
 namespace App\InertiaTable;
 
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Services\StickyBetweenDates;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
@@ -222,6 +223,7 @@ class InertiaTable
             'title'                           => $this->title,
             'footerRows'                      => $this->footerRows,
             'betweenDates'                    => $this->betweenDates,
+            'betweenDatesValue'               => StickyBetweenDates::resolve($this->betweenDates),
             'dateInterval'                    => $this->dateInterval,
             'withFrequency'                   => $this->withFrequency,
         ];

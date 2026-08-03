@@ -146,6 +146,20 @@ class CancelDeliveryNote extends OrgAction
         return $deliveryNote;
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        $deliveryNote = $request->route('deliveryNote');
+
+        return $request->user()->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ]);
+    }
+
     /**
      * @throws \Throwable
      */

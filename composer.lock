@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ae719ae03ce48e759e6eddd33e083dd9",
+    "content-hash": "74457548390f12ff14726a94ddecdb09",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -9291,16 +9291,16 @@
         },
         {
             "name": "nightowl/agent",
-            "version": "v1.4.1",
+            "version": "v2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lemed99/nightowl-agent.git",
-                "reference": "996635b44e9ad80672b5dc83b4dcc80e3adbf5c4"
+                "reference": "58a0a4fc68847af888667d5d19749f15a599f69f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lemed99/nightowl-agent/zipball/996635b44e9ad80672b5dc83b4dcc80e3adbf5c4",
-                "reference": "996635b44e9ad80672b5dc83b4dcc80e3adbf5c4",
+                "url": "https://api.github.com/repos/lemed99/nightowl-agent/zipball/58a0a4fc68847af888667d5d19749f15a599f69f",
+                "reference": "58a0a4fc68847af888667d5d19749f15a599f69f",
                 "shasum": ""
             },
             "require": {
@@ -9349,7 +9349,7 @@
             ],
             "support": {
                 "issues": "https://github.com/lemed99/nightowl-agent/issues",
-                "source": "https://github.com/lemed99/nightowl-agent/tree/v1.4.1"
+                "source": "https://github.com/lemed99/nightowl-agent/tree/v2.1.0"
             },
             "funding": [
                 {
@@ -9357,7 +9357,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2026-07-20T17:01:27+00:00"
+            "time": "2026-07-31T20:58:49+00:00"
         },
         {
             "name": "nikic/php-parser",
@@ -13940,22 +13940,23 @@
         },
         {
             "name": "spatie/crawler",
-            "version": "9.3.2",
+            "version": "9.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/crawler.git",
-                "reference": "3b3a9a1a8c750b0240c2b7c9e2ef22e84092416e"
+                "reference": "13ac9ee30f5336d300048b964fa8d2af4453048e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/crawler/zipball/3b3a9a1a8c750b0240c2b7c9e2ef22e84092416e",
-                "reference": "3b3a9a1a8c750b0240c2b7c9e2ef22e84092416e",
+                "url": "https://api.github.com/repos/spatie/crawler/zipball/13ac9ee30f5336d300048b964fa8d2af4453048e",
+                "reference": "13ac9ee30f5336d300048b964fa8d2af4453048e",
                 "shasum": ""
             },
             "require": {
-                "guzzlehttp/guzzle": "^7.3",
-                "guzzlehttp/psr7": "^2.0",
+                "guzzlehttp/guzzle": "^7.8.2 || ^8.0",
+                "guzzlehttp/psr7": "^2.6.3 || ^3.0",
                 "php": "^8.4",
+                "psr/http-client": "^1.0",
                 "spatie/robots-txt": "^2.0",
                 "symfony/css-selector": "^7.0|^8.0",
                 "symfony/dom-crawler": "^7.0|^8.0"
@@ -14003,7 +14004,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/crawler/issues",
-                "source": "https://github.com/spatie/crawler/tree/9.3.2"
+                "source": "https://github.com/spatie/crawler/tree/9.4.1"
             },
             "funding": [
                 {
@@ -14015,7 +14016,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-12T15:45:15+00:00"
+            "time": "2026-07-22T06:44:02+00:00"
         },
         {
             "name": "spatie/db-dumper",
@@ -16920,16 +16921,16 @@
         },
         {
             "name": "symfony/dom-crawler",
-            "version": "v8.1.0",
+            "version": "v8.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/dom-crawler.git",
-                "reference": "77ca351474ea018daba5f2e473cbf1b9b8e72ac6"
+                "reference": "1dfadd25537c8fcb6752cce5775f24647d976bdc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/dom-crawler/zipball/77ca351474ea018daba5f2e473cbf1b9b8e72ac6",
-                "reference": "77ca351474ea018daba5f2e473cbf1b9b8e72ac6",
+                "url": "https://api.github.com/repos/symfony/dom-crawler/zipball/1dfadd25537c8fcb6752cce5775f24647d976bdc",
+                "reference": "1dfadd25537c8fcb6752cce5775f24647d976bdc",
                 "shasum": ""
             },
             "require": {
@@ -16966,7 +16967,7 @@
             "description": "Eases DOM navigation for HTML and XML documents",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/dom-crawler/tree/v8.1.0"
+                "source": "https://github.com/symfony/dom-crawler/tree/v8.1.1"
             },
             "funding": [
                 {
@@ -16986,7 +16987,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-05-29T05:06:50+00:00"
+            "time": "2026-06-05T06:23:12+00:00"
         },
         {
             "name": "symfony/error-handler",
