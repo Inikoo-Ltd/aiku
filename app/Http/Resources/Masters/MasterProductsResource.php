@@ -33,6 +33,9 @@ use Illuminate\Support\Arr;
  * @property mixed $used_in
  * @property mixed $id
  * @property mixed $unit
+ * @property mixed $units
+ * @property mixed $description
+ * @property mixed $description_extra
  * @property mixed $currency_code
  * @property mixed $rrp
  * @property mixed $price
@@ -92,6 +95,8 @@ class MasterProductsResource extends JsonResource
             'used_in'                           => $this->used_in,
             'unit'                              => $this->unit,
             'units'                             => $this->units,
+            'description'                       => $this->description,
+            'description_extra'                 => $this->description_extra,
             'tax_preset'                        => $this->tax_preset ?? 'custom',
             'trade_units_label'                 => $this->trade_units_label ?? null,
             'price'                             => $this->price,
