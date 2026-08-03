@@ -3,7 +3,7 @@
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 23-01-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
+ * GitHub: https://github.com/Ganes556
  * Copyright: 2025
  *
 */
@@ -11,7 +11,6 @@
 namespace App\Actions\SysAdmin\WebUserRequest\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\WithWebsiteAnalyticsSubNavigation;
 use App\Http\Resources\CRM\WebUserRequestsResource;
@@ -33,7 +32,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWebUserRequests extends OrgAction
 {
-    use WithCRMAuthorisation;
     use WithWebsiteAnalyticsSubNavigation;
 
 

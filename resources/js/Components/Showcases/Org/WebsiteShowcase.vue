@@ -5,8 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { faFragile, faGlobe, faLink, faSearch, faPencil, faPlaneArrival, faUser, faChartLine } from "@fal"
-import { computed, ref, inject, watch } from "vue"
+import { faFragile, faGlobe, faLink, faSearch, faPencil, faPlaneArrival, faUser, faChartLine, faUserCheck, faUserSecret } from "@fal"
+import { computed, ref, inject, watch, onMounted, onUnmounted } from "vue"
+import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -22,7 +23,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { faDoorOpen } from "@far"
 
-library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChartLine)
+library.add(faGlobe, faLink, faSearch, faFragile, faPlaneArrival, faUser, faChartLine, faUserCheck, faUserSecret)
 
 import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
 import SearchMerchandising from "@/Components/DataDisplay/Dashboard/Widget/SearchMerchandising.vue"
@@ -64,6 +65,16 @@ const searchPageUrl = (clickedUrl: string) => {
     }
 }
 
+const liveUsersUrl = (() => {
+    try {
+        const currentRoute = route().current()
+        const base = currentRoute.includes(".shops.") ? "grp.org.shops.show.web.analytics.live_users" : "grp.org.fulfilments.show.web.analytics.live_users"
+        return route(base, route().params)
+    } catch {
+        return null
+    }
+})()
+
 const props = defineProps<{
     data: {
         id: number
@@ -96,6 +107,30 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+
+const websiteStats = ref([...props.data.website_stats])
+
+onMounted(() => {
+    window.Echo.channel(`website.${props.data.id}.analytics`)
+        .listen('.App\\Events\\Web\\WebsiteVisitorCountUpdated', (e) => {
+            const loggedInStat = websiteStats.value.find(s => s.label === trans('Live (logged in)'))
+            if (loggedInStat) {
+                loggedInStat.value = e.logged_in_count
+            }
+            const loggedOutStat = websiteStats.value.find(s => s.label === trans('Live (guest)'))
+            if (loggedOutStat) {
+                loggedOutStat.value = e.logged_out_count
+            }
+        })
+})
+
+onUnmounted(() => {
+    window.Echo.leaveChannel(`website.${props.data.id}.analytics`)
+})
+
+watch(() => props.data.website_stats, (newStats) => {
+    websiteStats.value = [...newStats]
+}, { deep: true })
 
 // Section: Search engine model (internal / luigi)
 const searchModelOptions = [
@@ -175,7 +210,7 @@ const links = computed(() => {
 
 <template>
     <!-- Box: Url and Buttons in a single row -->
-    <div class="px-6 py-12 lg:px-8">
+    <div class="px-6 pt-4 pb-12 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_20rem] gap-6">
             <!-- URL Box + compact visitor stats -->
             <div class="">
@@ -192,10 +227,17 @@ const links = computed(() => {
                         </a>
                     </div>
 
-                    <div v-for="stat in props.data.website_stats" :key="stat.label" class="flex items-baseline gap-2">
-                        <FontAwesomeIcon v-if="typeof stat.icon === 'string'" :icon="stat.icon" :style="{ color: stat.color }" fixed-width aria-hidden="true" />
-                        <span class="text-2xl font-semibold tabular-nums">{{ (stat.value ?? 0).toLocaleString() }}</span>
-                        <span class="text-sm text-gray-400">{{ stat.label }}</span>
+                    <div v-for="stat in websiteStats" :key="stat.label" class="flex items-baseline gap-2">
+                        <Link v-if="stat.label.includes('Live') && liveUsersUrl" :href="liveUsersUrl" class="flex items-baseline gap-2 hover:opacity-80 transition-opacity">
+                            <FontAwesomeIcon v-if="typeof stat.icon === 'string'" :icon="stat.icon" :style="{ color: stat.color }" fixed-width aria-hidden="true" />
+                            <span class="text-2xl font-semibold tabular-nums">{{ (stat.value ?? 0).toLocaleString() }}</span>
+                            <span class="text-sm text-gray-400">{{ stat.label }}</span>
+                        </Link>
+                        <div v-else class="flex items-baseline gap-2">
+                            <FontAwesomeIcon v-if="typeof stat.icon === 'string'" :icon="stat.icon" :style="{ color: stat.color }" fixed-width aria-hidden="true" />
+                            <span class="text-2xl font-semibold tabular-nums">{{ (stat.value ?? 0).toLocaleString() }}</span>
+                            <span class="text-sm text-gray-400">{{ stat.label }}</span>
+                        </div>
                     </div>
                 </div>
 

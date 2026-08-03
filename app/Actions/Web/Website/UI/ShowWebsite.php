@@ -13,6 +13,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Search\GetWebsiteSearchAnalytics;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Website\Analytics\TrackWebsiteVisitorActivity;
 use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
@@ -165,6 +166,8 @@ class ShowWebsite extends OrgAction
                 'value' => $website->webStats->number_webpages_sub_type_blog,
             ],
         ];
+        $currentVisitors = TrackWebsiteVisitorActivity::make()->getCounts($website);
+
         $website_stats      = [
             [
                 'label' => __('Visitors (24h)'),
@@ -177,6 +180,18 @@ class ShowWebsite extends OrgAction
                 'icon'  => 'fal fa-chart-line',
                 "color" => "#8b5cf6",
                 'value' => $website->webStats->number_hits_last_24_hours,
+            ],
+            [
+                'label' => __('Live (logged in)'),
+                'icon'  => 'fal fa-user-check',
+                "color" => "#10b981",
+                'value' => $currentVisitors['logged_in'],
+            ],
+            [
+                'label' => __('Live (guest)'),
+                'icon'  => 'fal fa-user-secret',
+                "color" => "#6b7280",
+                'value' => $currentVisitors['logged_out'],
             ],
         ];
 

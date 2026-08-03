@@ -10,6 +10,7 @@ namespace App\Actions\Web\Website\Analytics;
 
 use App\Actions\Retina\SysAdmin\ProcessRetinaWebUserRequest;
 use App\Actions\Web\WebsiteVisitor\ProcessWebsiteVisitorTracking;
+use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use Lorisleiva\Actions\ActionRequest;
@@ -42,6 +43,29 @@ class RecordWebsiteHit
         ];
 
         ProcessWebsiteHit::dispatch($metrics, $request->userAgent());
+
+        $browserInfo = GetBrowserInfo::run($request->userAgent());
+
+        $referer = request()->header('referer');
+        $searchInfo = $this->extractSearchInfo($referer);
+
+        TrackWebsiteVisitorActivity::run(
+            $website,
+            $request->session()->getId(),
+            [
+                'url'           => $referer,
+                'page'          => $request->input('analytics_webpage'),
+                'page_title'    => $request->input('analytics_page_title'),
+                'country'       => request()->header('CF-IPCountry') ?? 'XX',
+                'logged_in'     => $request->user() !== null,
+                'device'        => $browserInfo['device'],
+                'browser'       => $browserInfo['browser'],
+                'os'            => $browserInfo['os'],
+                'search_engine' => $searchInfo['engine'],
+                'search_term'   => $searchInfo['term'],
+                'last_active'   => time(),
+            ]
+        );
 
         $geoLocation = [
             $request->header('CF-IPCountry') ?? 'XX',
@@ -125,5 +149,37 @@ class RecordWebsiteHit
         }
 
         return true;
+    }
+
+    protected function extractSearchInfo(?string $referer): array
+    {
+        if (!$referer) {
+            return ['engine' => null, 'term' => null];
+        }
+
+        $url = parse_url($referer);
+        $host = $url['host'] ?? '';
+        $query = $url['query'] ?? '';
+
+        parse_str($query, $params);
+
+        $engines = [
+            'google'     => ['host' => 'google', 'param' => 'q'],
+            'bing'       => ['host' => 'bing', 'param' => 'q'],
+            'yahoo'      => ['host' => 'yahoo', 'param' => 'p'],
+            'duckduckgo' => ['host' => 'duckduckgo', 'param' => 'q'],
+            'baidu'      => ['host' => 'baidu', 'param' => 'wd'],
+        ];
+
+        foreach ($engines as $name => $data) {
+            if (str_contains($host, $data['host'])) {
+                return [
+                    'engine' => ucfirst($name),
+                    'term'   => $params[$data['param']] ?? null
+                ];
+            }
+        }
+
+        return ['engine' => null, 'term' => null];
     }
 }
