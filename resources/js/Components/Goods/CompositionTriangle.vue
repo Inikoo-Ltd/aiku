@@ -53,9 +53,30 @@ const isBlinking = ref(false)
 const showRays = ref(false)
 const hoveredEdge = ref<string | null>(null)
 
+// The eye has moods: it follows the cursor, loses interest after a quiet
+// spell (gaze drifts back to centre), and falls asleep if nothing happens.
+const attention = ref<'following' | 'bored' | 'asleep'>('following')
+
 let blinkTimer: ReturnType<typeof setTimeout> | null = null
+let boredTimer: ReturnType<typeof setTimeout> | null = null
+let sleepTimer: ReturnType<typeof setTimeout> | null = null
+
+const resetAttention = () => {
+    attention.value = 'following'
+    if (boredTimer) clearTimeout(boredTimer)
+    if (sleepTimer) clearTimeout(sleepTimer)
+    boredTimer = setTimeout(() => {
+        attention.value = 'bored'
+        pupil.value = { x: 0, y: 0 }
+    }, 6000)
+    sleepTimer = setTimeout(() => {
+        attention.value = 'asleep'
+    }, 20000)
+}
 
 const onMouseMove = (event: MouseEvent) => {
+    resetAttention()
+
     const svg = svgEl.value
     if (!svg) return
     const rect = svg.getBoundingClientRect()
@@ -87,10 +108,13 @@ const scheduleBlink = () => {
 onMounted(() => {
     window.addEventListener("mousemove", onMouseMove, { passive: true })
     scheduleBlink()
+    resetAttention()
 })
 onBeforeUnmount(() => {
     window.removeEventListener("mousemove", onMouseMove)
     if (blinkTimer) clearTimeout(blinkTimer)
+    if (boredTimer) clearTimeout(boredTimer)
+    if (sleepTimer) clearTimeout(sleepTimer)
 })
 
 const edges = computed(() => [
@@ -177,14 +201,18 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
                         :x2="Math.cos((ray * Math.PI) / 4) * 28" :y2="Math.sin((ray * Math.PI) / 4) * 28" />
                 </g>
                 <!-- eyelids -->
-                <g :transform="isBlinking ? 'scale(1, 0.08)' : 'scale(1, 1)'" class="transition-transform duration-100">
+                <g :transform="isBlinking || attention === 'asleep' ? 'scale(1, 0.08)' : 'scale(1, 1)'"
+                    :class="attention === 'asleep' ? 'transition-transform duration-700' : 'transition-transform duration-100'">
                     <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="white" stroke="#cbd5e1" stroke-width="1.5" />
-                    <circle :cx="pupil.x * 0.6" :cy="pupil.y * 0.35" r="6.5" fill="#94a3b8" />
-                    <circle :cx="pupil.x * 0.6" :cy="pupil.y * 0.35" r="2.8" fill="#64748b" />
-                    <circle :cx="pupil.x * 0.6 - 1.5" :cy="pupil.y * 0.35 - 1.5" r="1" fill="white" />
+                    <g :transform="`translate(${pupil.x * 0.6}, ${pupil.y * 0.35})`"
+                        :class="attention === 'following' ? '' : 'transition-transform duration-1000'">
+                        <circle r="6.5" fill="#94a3b8" />
+                        <circle r="2.8" fill="#64748b" />
+                        <circle cx="-1.5" cy="-1.5" r="1" fill="white" />
+                    </g>
                 </g>
-                <!-- lashes when blinking -->
-                <path v-if="isBlinking" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
+                <!-- closed lid line when blinking or sleeping -->
+                <path v-if="isBlinking || attention === 'asleep'" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
             </g>
         </svg>
 
