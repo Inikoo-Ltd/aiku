@@ -35,10 +35,6 @@ class DeleteClocking extends OrgAction
             $timesheet = $clocking->timesheet;
             $subject   = $clocking->subject;
 
-            // A time tracker anchored on this clocking keeps existing, just loses the
-            // start/end pointer (and the time that pointer supplied) rather than being
-            // deleted itself. Losing its end also reopens it, since a "closed" tracker
-            // with no end clocking is no longer meaningful.
             TimeTracker::where('start_clocking_id', $clocking->id)->update([
                 'start_clocking_id' => null,
                 'starts_at'         => null,
@@ -67,10 +63,6 @@ class DeleteClocking extends OrgAction
         return $clocking;
     }
 
-    /**
-     * Timesheet start_at/end_at are only ever set when trackers are created/closed, so
-     * nulling a tracker's start/end above would otherwise leave them stale.
-     */
     private function rehydrateTimesheet(Timesheet $timesheet): void
     {
         $remaining = $timesheet->timeTrackers()->orderBy('starts_at')->get();

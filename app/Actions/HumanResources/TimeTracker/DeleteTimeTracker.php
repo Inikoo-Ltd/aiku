@@ -30,11 +30,6 @@ class DeleteTimeTracker extends OrgAction
 {
     use WithHumanResourcesEditAuthorisation;
 
-    /**
-     * Clockings and time trackers reference each other (clockings.time_tracker_id,
-     * time_trackers.start/end_clocking_id), both NO ACTION, so clockings.time_tracker_id
-     * is nulled first to break that cycle before either row is force-deleted.
-     */
     public function handle(TimeTracker $timeTracker): TimeTracker
     {
         DB::transaction(function () use ($timeTracker) {
@@ -77,12 +72,6 @@ class DeleteTimeTracker extends OrgAction
         return $timeTracker;
     }
 
-    /**
-     * TimesheetHydrateTimeTrackers recomputes the counters/durations from the time trackers
-     * that remain, but start_at/end_at are only ever set when trackers are created/closed
-     * (see StoreTimeTracker/CloseTimeTracker) - deleting the tracker that set either would
-     * otherwise leave them stale, so they're re-derived here from whatever's left.
-     */
     private function rehydrateTimesheet(Timesheet $timesheet): void
     {
         $remaining = $timesheet->timeTrackers()->orderBy('starts_at')->get();

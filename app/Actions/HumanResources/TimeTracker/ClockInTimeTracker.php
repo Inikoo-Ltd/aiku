@@ -26,9 +26,6 @@ class ClockInTimeTracker
 {
     use AsAction;
 
-    /**
-     * Used to repair a time tracker whose clock in was deleted (see DeleteClocking).
-     */
     public function handle(TimeTracker $timeTracker, Carbon $clockedAtUtc, int $generatorId, string $generatorType): TimeTracker
     {
         if ($timeTracker->start_clocking_id !== null) {
@@ -74,10 +71,6 @@ class ClockInTimeTracker
         return $timeTracker->refresh();
     }
 
-    /**
-     * Timesheet start_at/end_at are only ever set when trackers are created/closed, so
-     * repairing a tracker's clock in needs to re-derive them from whatever now exists.
-     */
     private function rehydrateTimesheet(Timesheet $timesheet): void
     {
         $timesheet->refresh();

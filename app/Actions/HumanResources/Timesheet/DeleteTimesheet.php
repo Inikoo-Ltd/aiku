@@ -33,14 +33,6 @@ class DeleteTimesheet extends OrgAction
 
     private ?string $employeeSlug = null;
 
-    /**
-     * Timesheet has no soft deletes, and time_trackers/clockings both have a NO ACTION
-     * (restrict) foreign key back to timesheets.id, so the timesheet row can't be removed
-     * while either still references it. Clockings and time trackers also reference each
-     * other (clockings.time_tracker_id, time_trackers.start/end_clocking_id), both NO
-     * ACTION, so clockings.time_tracker_id is nulled first to break that cycle before
-     * either table is force-deleted.
-     */
     public function handle(Timesheet $timesheet): void
     {
         $subject                = $timesheet->subject;
