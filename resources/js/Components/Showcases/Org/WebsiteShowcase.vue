@@ -201,22 +201,6 @@ const links = computed(() => {
 
                 <div class="border-t border-gray-300 mt-6 pt-4">
                     <div class="flex flex-col xl:flex-row gap-6">
-                        <div :class="showSearchInsights ? 'w-full xl:w-56 shrink-0' : ''">
-                            <div class="font-semibold w-fit text-lg mb-2">
-                                {{ trans('Product Catalogue') }}
-                            </div>
-                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
-                                <StatsBox v-for="stat in props.data.stats" :stat />
-                            </div>
-
-                            <div class="mt-6 font-semibold w-fit text-lg mb-2">
-                                {{ trans('Content & Blog') }}
-                            </div>
-                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
-                                <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
-                            </div>
-                        </div>
-
                         <div v-if="showSearchInsights" class="flex-1 min-w-0">
                             <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
                                 <div class="font-semibold w-fit text-lg">
@@ -236,6 +220,22 @@ const links = computed(() => {
                                 :customer-url="searchAnalyticsUrl ? searchCustomerUrl : undefined"
                                 :page-url="searchAnalyticsUrl ? searchPageUrl : undefined"
                             />
+                        </div>
+
+                        <div :class="showSearchInsights ? 'w-full xl:w-56 shrink-0' : ''">
+                            <div class="font-semibold w-fit text-lg mb-2">
+                                {{ trans('Product Catalogue') }}
+                            </div>
+                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
+                                <StatsBox v-for="stat in props.data.stats" :stat />
+                            </div>
+
+                            <div class="mt-6 font-semibold w-fit text-lg mb-2">
+                                {{ trans('Content & Blog') }}
+                            </div>
+                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
+                                <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
+                            </div>
                         </div>
                     </div>
                 </div>
