@@ -668,7 +668,7 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
         v-model:visible="isModalLocation"
         modal
         :draggable="false"
-        dismissableMask
+        :dismissableMask="screenType === 'desktop'"
         :style="{ width: '48rem' }"
         :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"

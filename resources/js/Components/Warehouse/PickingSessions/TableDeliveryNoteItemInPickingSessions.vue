@@ -45,6 +45,8 @@ import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
 import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStockHandlingNotes.vue"
 
+const screenType = inject('screenType', ref('desktop'))
+
 library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox)
 
 
@@ -940,7 +942,7 @@ onUnmounted(() => {
         v-model:visible="isModalLocation"
         modal
         :draggable="false"
-        dismissableMask
+        :dismissableMask="screenType === 'desktop'"
         :style="{ width: '42rem' }"
         :breakpoints="{ '1280px': '65vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
