@@ -13,6 +13,7 @@ const props = defineProps<{
         code?: string
         quantity?: number | string
         packed_in?: number | string
+        packed_in_by_org?: { org_code: string; packed_in: number }[]
     }[]
     productsCount?: number
 }>()
@@ -27,6 +28,17 @@ const pickLabel = computed(() => {                                           // 
     return Number.isInteger(packs) ? `${packs}` : packs.toFixed(2)
 })
 const isPartialPick = computed(() => !!pickLabel.value && !Number.isInteger(sellQty.value! / packedQty.value!))
+
+// Per-warehouse packing, the SKO corner's fine print; amber when warehouses disagree
+const orgPacking = computed(() => {
+    const orgs = first.value.packed_in_by_org ?? []
+    if (!orgs.length) return null
+    const distinct = [...new Set(orgs.map(org => Number(org.packed_in)))]
+    return {
+        label: orgs.map(org => `${org.org_code.toUpperCase()} ${Number(org.packed_in)}s`).join(' \u00b7 '),
+        diverges: distinct.length > 1,
+    }
+})
 
 // Triangle geometry (viewBox 0 0 300 270)
 const TU = { x: 150, y: 40 }
@@ -175,6 +187,11 @@ const midpoint = (edge: { from: { x: number; y: number }; to: { x: number; y: nu
                 <path v-if="isBlinking" d="M -18 0 Q 0 4 18 0" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
             </g>
         </svg>
+
+        <div v-if="orgPacking" class="text-center text-xs mt-1"
+            :class="orgPacking.diverges ? 'text-amber-600' : 'text-teal-600/70'">
+            {{ orgPacking.label }}
+        </div>
 
         <div class="text-center text-xs text-gray-400 mt-1">
             <template v-if="tradeUnits?.length > 1">
